@@ -11,8 +11,12 @@ import {
   createRoute,
   updateRoute,
   cloneRoute,
+  getPromediosPorIndicador,
+  sugerirUnidadRutaIA,
 } from '../services/maestroRouteService.js'
 import { getMisClases } from '../services/maestroDataService.js'
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { buildRutaMaestroPdfEstructura, descargarPdfRutaMaestro } from '../domain/generarPdfRutaMaestro.js'
 
 let _uidCounter = 0
 function _uid(prefix = 'tmp') {
@@ -62,6 +66,9 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
           <button class="trb-btn trb-btn-secondary" id="trb-btn-clonar" ${route ? '' : 'disabled title="Guarda primero para poder clonar"'}>
             <i class="bi bi-copy"></i> Clonar esta ruta
           </button>
+          <button class="trb-btn trb-btn-secondary" id="trb-btn-exportar-pdf" ${route ? '' : 'disabled title="Guarda primero para poder exportar"'}>
+            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
+          </button>
           <button class="trb-btn trb-btn-secondary" id="trb-btn-acm" disabled title="Próximamente: el catálogo institucional ACM aún no está disponible en esta versión">
             <i class="bi bi-diagram-3"></i> Importar desde ACM (próximamente)
           </button>
@@ -69,9 +76,14 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
 
         <div class="trb-unidades" id="trb-unidades"></div>
 
-        <button class="trb-btn trb-btn-add-unidad" id="trb-add-unidad">
-          <i class="bi bi-plus-circle"></i> Agregar Unidad
-        </button>
+        <div class="trb-actions-row">
+          <button class="trb-btn trb-btn-add-unidad" id="trb-add-unidad">
+            <i class="bi bi-plus-circle"></i> Agregar Unidad
+          </button>
+          <button class="trb-btn trb-btn-secondary" id="trb-btn-ia-unidad">
+            <i class="bi bi-stars"></i> Sugerir unidad con IA
+          </button>
+        </div>
       </div>
       <div class="trb-footer">
         <button class="trb-btn trb-btn-ghost" id="trb-cancelar">Cancelar</button>
@@ -403,11 +415,62 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
     return { _localId: _uid('ind'), nombre: '', prerequisito_local_id: null }
   }
 
+  // Convierte la sugerencia de sugerirUnidadRutaIA (nombres planos, sin IDs)
+  // al mismo shape local que arman _nuevoObjetivo/_nuevoIndicador, para que
+  // quede editable en el formulario igual que una unidad creada a mano.
+  function _unidadIAToLocalState(sugerencia) {
+    return {
+      _localId: _uid('uni'),
+      nombre: sugerencia?.nombre || '',
+      descripcion: '',
+      objetivos: (sugerencia?.objetivos || []).map((o) => ({
+        _localId: _uid('obj'),
+        nombre: o.nombre || '',
+        indicadores: (o.indicadores || []).map((i) => ({
+          _localId: _uid('ind'),
+          nombre: i.nombre || '',
+          prerequisito_local_id: null,
+        })),
+      })),
+    }
+  }
+
   backdrop.querySelector('#trb-add-unidad').addEventListener('click', () => {
     const nuevaUnidad = { _localId: _uid('uni'), nombre: '', descripcion: '', objetivos: [] }
     state.unidades.push(nuevaUnidad)
     expandedUnidades.add(nuevaUnidad._localId)
     _render()
+  })
+
+  // Sugerencia de unidad con IA: pasa `state.unidades` tal cual está en
+  // memoria como contexto (no vuelve a consultar la ruta ya cargada) para
+  // que GROQ continúe la progresión sin repetir objetivos existentes
+  // (Spec A-02). El maestro revisa/edita la unidad sugerida antes de guardar
+  // — nunca se guarda sola.
+  backdrop.querySelector('#trb-btn-ia-unidad').addEventListener('click', async () => {
+    const btn = backdrop.querySelector('#trb-btn-ia-unidad')
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando…'
+
+    try {
+      const misClases = await getMisClases()
+      const clase = (misClases || []).find((c) => c.id === claseId)
+      const sugerencia = await sugerirUnidadRutaIA({
+        instrumento: clase?.instrumento || 'Música',
+        unidadesExistentes: state.unidades,
+      })
+      const nuevaUnidad = _unidadIAToLocalState(sugerencia)
+      state.unidades.push(nuevaUnidad)
+      expandedUnidades.add(nuevaUnidad._localId)
+      _render()
+      AppToast.success('Unidad sugerida por IA agregada — revísala antes de guardar')
+    } catch (err) {
+      console.error('[TeacherRouteBuilder] Error sugiriendo unidad con IA:', err)
+      AppToast.error('No se pudo generar la sugerencia con IA')
+    } finally {
+      btn.disabled = false
+      btn.innerHTML = '<i class="bi bi-stars"></i> Sugerir unidad con IA'
+    }
   })
 
   backdrop.querySelector('#trb-nombre').addEventListener('input', (e) => {
@@ -447,6 +510,44 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
           ? 'Esa clase ya tiene una ruta propia — no se puede clonar encima'
           : `No se pudo clonar la ruta: ${err.message}`
       )
+    }
+  })
+
+  // Exporta la ruta ya guardada a PDF (nota promedio por indicador, ver
+  // generarPdfRutaMaestro.js — solo disponible con `state.routeId`, igual
+  // que "Clonar esta ruta", porque los indicadores sin id real todavía no
+  // tienen evaluaciones que promediar).
+  backdrop.querySelector('#trb-btn-exportar-pdf').addEventListener('click', async () => {
+    if (!state.routeId) return
+
+    const btn = backdrop.querySelector('#trb-btn-exportar-pdf')
+    btn.disabled = true
+
+    try {
+      const indicadorIds = []
+      state.unidades.forEach((u) => u.objetivos.forEach((o) => o.indicadores.forEach((ind) => {
+        if (ind.id) indicadorIds.push(ind.id)
+      })))
+
+      const [misClases, notasPorIndicador] = await Promise.all([
+        getMisClases(),
+        getPromediosPorIndicador(indicadorIds, claseId),
+      ])
+
+      const clase = (misClases || []).find((c) => c.id === claseId)
+      const maestro = getMaestroLocal()
+      const unidades = buildRutaMaestroPdfEstructura(state.unidades, notasPorIndicador)
+
+      descargarPdfRutaMaestro({
+        claseNombre: clase?.nombre || 'Clase',
+        maestroNombre: maestro?.nombre_completo || '',
+        unidades,
+      })
+    } catch (err) {
+      console.error('[TeacherRouteBuilder] Error exportando PDF:', err)
+      AppToast.error('No se pudo generar el PDF de la ruta.')
+    } finally {
+      btn.disabled = false
     }
   })
 

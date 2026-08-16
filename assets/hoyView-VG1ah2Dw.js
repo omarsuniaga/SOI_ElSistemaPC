@@ -1,8 +1,9 @@
-import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m as a,n as o,o as s,p as c,r as l,s as u,t as d,u as f}from"./pwaInstaller-D9QnnKwe.js";import{i as p}from"./supabase-Cgh_dhNB.js";import{i as m}from"./maestroAuth-BMzDPnai.js";import{r as h,t as g}from"./jspdf.plugin.autotable-DPzO4huE.js";import{t as _}from"./groqService-BEo2aU8D.js";import{t as v}from"./academicService-CSTf75O6.js";import{a as y,i as b,o as x,r as S}from"./portalUtils-CkF82Yyk.js";import{a as C,c as w,i as T,l as E,n as D,o as O,r as k,t as A}from"./maestroRouteService-C-CCRznf.js";import{u as j}from"./weeklyPlanAdapter-E65PNMYx.js";import{t as M}from"./catalogService-M5LBxZnn.js";import{t as N}from"./claseEmergenteModal-DzBloOSJ.js";import{t as P}from"./claseAnalysisModal-D4_bAre7.js";var F={azul:[20,60,130],azulClaro:[220,232,250],dorado:[198,160,20],blanco:[255,255,255],grisOscuro:[40,40,40],grisMedio:[100,100,100],grisClaro:[245,245,248]},I=215.9,L=279.4,R=14;function z(){return new Date().toLocaleDateString(`es-DO`,{day:`2-digit`,month:`long`,year:`numeric`})}function B(e,t=`—`){return String(e??``).trim()||t}function V(e,t=``){e.setFillColor(...F.azul),e.rect(0,0,I,32,`F`),e.setFillColor(...F.dorado),e.rect(0,32,I,2.5,`F`),e.setFillColor(...F.dorado),e.rect(0,0,4,34.5,`F`),e.setTextColor(...F.blanco),e.setFont(`helvetica`,`bold`),e.setFontSize(15),e.text(`EL SISTEMA PUNTA CANA`,16,13),e.setFont(`helvetica`,`normal`),e.setFontSize(8),e.setTextColor(200,215,240),e.text(`Tocamos Corazones, Cambiamos Vidas · Punta Cana`,16,20),e.setFont(`helvetica`,`bold`),e.setFontSize(9),e.setTextColor(...F.dorado),e.text(`RUTA PERSONAL DEL MAESTRO`,I-R,13,{align:`right`}),t&&(e.setFont(`helvetica`,`normal`),e.setFontSize(7.5),e.setTextColor(190,205,230),e.text(t,I-R,20,{align:`right`})),e.setTextColor(...F.grisOscuro)}function H(e,t){e.setFillColor(...F.azul),e.rect(0,L-8,I,8,`F`),e.setFillColor(...F.dorado),e.rect(0,L-8,4,8,`F`),e.setFont(`helvetica`,`normal`),e.setFontSize(6.5),e.setTextColor(...F.blanco),e.text(`El Sistema Punta Cana · Punta Cana, Rep. Dominicana`,16,L-4.5),e.text(`Pág. ${t}`,I-R,L-4.5,{align:`right`})}function U(e,t){return`ruta-maestro-${String(e||`ruta`).toLowerCase().normalize(`NFD`).replace(/[̀-ͯ]/g,``).replace(/[^a-z0-9]+/g,`-`).replace(/^-|-$/g,``)}-${t}.pdf`}function W(e=[],t=new Map){return e.map(e=>({unidadNombre:e.nombre,objetivos:(e.objetivos||[]).map(e=>({nombre:e.nombre,indicadores:(e.indicadores||[]).map(e=>{let n=t.get(e.id);return{nombre:e.nombre,nota:n?.promedio??null,evaluados:n?.evaluados??0}})}))}))}function G({claseNombre:e,maestroNombre:t=``,unidades:n=[]}){let r=new h({unit:`mm`,format:`letter`}),i=z(),a=U(e,new Date().toISOString().slice(0,10));if(V(r,`Generado: ${i}`),r.setFillColor(...F.azulClaro),r.roundedRect(R,42,I-R*2,18,2,2,`F`),r.setFont(`helvetica`,`bold`),r.setFontSize(13),r.setTextColor(...F.azul),r.text(B(e),18,49),r.setFont(`helvetica`,`normal`),r.setFontSize(8),r.setTextColor(...F.grisMedio),r.text(`Maestro: ${B(t)}  ·  Generado: ${i}`,18,56),n.length===0){r.setFont(`helvetica`,`italic`),r.setFontSize(9),r.setTextColor(...F.grisMedio),r.text(`Esta ruta todavía no tiene unidades.`,R,66),H(r,1),r.save(a);return}let o=[];n.forEach((e,t)=>{(e.objetivos||[]).forEach((n,r)=>{let i=`${t+1}.${r+1}`,a=n.indicadores||[];if(a.length===0){o.push([r===0?e.unidadNombre:``,i,B(n.nombre),`(sin indicadores)`,`—`]);return}a.forEach((t,a)=>{let s=t.nota==null?`—`:`${t.nota.toFixed(1)} (n=${t.evaluados})`;o.push([r===0&&a===0?e.unidadNombre:``,a===0?i:``,a===0?B(n.nombre):``,B(t.nombre),s])})})}),g(r,{startY:66,margin:{top:44,left:R,right:R},theme:`grid`,head:[[`Unidad`,`#`,`Objetivo`,`Indicador`,`Nota promedio`]],headStyles:{fillColor:F.azul,textColor:F.blanco,fontStyle:`bold`,fontSize:7.5},styles:{fontSize:7,cellPadding:{top:1.5,bottom:1.5,left:2,right:2},overflow:`linebreak`,valign:`top`},alternateRowStyles:{fillColor:F.grisClaro},columnStyles:{0:{cellWidth:24,fontStyle:`bold`},1:{cellWidth:10},2:{cellWidth:38},3:{cellWidth:78},4:{cellWidth:24,textColor:[217,119,6]}},body:o,didDrawPage:t=>{V(r,`${e}`),H(r,t.pageNumber)}}),H(r,1),r.save(a)}var K=0;function q(e=`tmp`){return K+=1,`${e}-${Date.now()}-${K}`}function J({maestroId:t,claseId:n,route:r=null,onSaved:i}={}){if(!t||!n){e.error(`Falta identificar al maestro o la clase`);return}let a={routeId:r?.id||null,nombre:r?.nombre||``,unidades:ee(r?.unidades||[])},o=document.createElement(`div`);o.className=`trb-backdrop`,o.innerHTML=`
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/AchievementsSummaryModal-DrGzVr84.js","assets/portalUtils-CkF82Yyk.js"])))=>i.map(i=>d[i]);
+import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,d as r,f as i,g as a,h as o,i as s,l as c,n as l,o as u,r as d,s as f,t as p,u as m}from"./pwaInstaller-CABasb_l.js";import{a as h,i as g}from"./supabase-Cgh_dhNB.js";import{i as _}from"./maestroAuth-BMzDPnai.js";import{r as v,t as y}from"./jspdf.plugin.autotable-DPzO4huE.js";import{t as b}from"./groqService-BEo2aU8D.js";import{t as x}from"./academicService-CHV7olLE.js";import{a as S,i as C,o as w,r as T}from"./portalUtils-CkF82Yyk.js";import{a as E,c as D,i as O,l as k,n as A,o as j,r as M,t as N}from"./maestroRouteService-C-CCRznf.js";import{u as P}from"./weeklyPlanAdapter-E65PNMYx.js";import{t as F}from"./catalogService-M5LBxZnn.js";import{t as I}from"./claseEmergenteModal-DzBloOSJ.js";import{t as L}from"./claseAnalysisModal-D4_bAre7.js";var R={azul:[20,60,130],azulClaro:[220,232,250],dorado:[198,160,20],blanco:[255,255,255],grisOscuro:[40,40,40],grisMedio:[100,100,100],grisClaro:[245,245,248]},z=215.9,B=279.4,V=14;function H(){return new Date().toLocaleDateString(`es-DO`,{day:`2-digit`,month:`long`,year:`numeric`})}function U(e,t=`—`){return String(e??``).trim()||t}function W(e,t=``){e.setFillColor(...R.azul),e.rect(0,0,z,32,`F`),e.setFillColor(...R.dorado),e.rect(0,32,z,2.5,`F`),e.setFillColor(...R.dorado),e.rect(0,0,4,34.5,`F`),e.setTextColor(...R.blanco),e.setFont(`helvetica`,`bold`),e.setFontSize(15),e.text(`EL SISTEMA PUNTA CANA`,16,13),e.setFont(`helvetica`,`normal`),e.setFontSize(8),e.setTextColor(200,215,240),e.text(`Tocamos Corazones, Cambiamos Vidas · Punta Cana`,16,20),e.setFont(`helvetica`,`bold`),e.setFontSize(9),e.setTextColor(...R.dorado),e.text(`RUTA PERSONAL DEL MAESTRO`,z-V,13,{align:`right`}),t&&(e.setFont(`helvetica`,`normal`),e.setFontSize(7.5),e.setTextColor(190,205,230),e.text(t,z-V,20,{align:`right`})),e.setTextColor(...R.grisOscuro)}function G(e,t){e.setFillColor(...R.azul),e.rect(0,B-8,z,8,`F`),e.setFillColor(...R.dorado),e.rect(0,B-8,4,8,`F`),e.setFont(`helvetica`,`normal`),e.setFontSize(6.5),e.setTextColor(...R.blanco),e.text(`El Sistema Punta Cana · Punta Cana, Rep. Dominicana`,16,B-4.5),e.text(`Pág. ${t}`,z-V,B-4.5,{align:`right`})}function ee(e,t){return`ruta-maestro-${String(e||`ruta`).toLowerCase().normalize(`NFD`).replace(/[̀-ͯ]/g,``).replace(/[^a-z0-9]+/g,`-`).replace(/^-|-$/g,``)}-${t}.pdf`}function te(e=[],t=new Map){return e.map(e=>({unidadNombre:e.nombre,objetivos:(e.objetivos||[]).map(e=>({nombre:e.nombre,indicadores:(e.indicadores||[]).map(e=>{let n=t.get(e.id);return{nombre:e.nombre,nota:n?.promedio??null,evaluados:n?.evaluados??0}})}))}))}function ne({claseNombre:e,maestroNombre:t=``,unidades:n=[]}){let r=new v({unit:`mm`,format:`letter`}),i=H(),a=ee(e,new Date().toISOString().slice(0,10));if(W(r,`Generado: ${i}`),r.setFillColor(...R.azulClaro),r.roundedRect(V,42,z-V*2,18,2,2,`F`),r.setFont(`helvetica`,`bold`),r.setFontSize(13),r.setTextColor(...R.azul),r.text(U(e),18,49),r.setFont(`helvetica`,`normal`),r.setFontSize(8),r.setTextColor(...R.grisMedio),r.text(`Maestro: ${U(t)}  ·  Generado: ${i}`,18,56),n.length===0){r.setFont(`helvetica`,`italic`),r.setFontSize(9),r.setTextColor(...R.grisMedio),r.text(`Esta ruta todavía no tiene unidades.`,V,66),G(r,1),r.save(a);return}let o=[];n.forEach((e,t)=>{(e.objetivos||[]).forEach((n,r)=>{let i=`${t+1}.${r+1}`,a=n.indicadores||[];if(a.length===0){o.push([r===0?e.unidadNombre:``,i,U(n.nombre),`(sin indicadores)`,`—`]);return}a.forEach((t,a)=>{let s=t.nota==null?`—`:`${t.nota.toFixed(1)} (n=${t.evaluados})`;o.push([r===0&&a===0?e.unidadNombre:``,a===0?i:``,a===0?U(n.nombre):``,U(t.nombre),s])})})}),y(r,{startY:66,margin:{top:44,left:V,right:V},theme:`grid`,head:[[`Unidad`,`#`,`Objetivo`,`Indicador`,`Nota promedio`]],headStyles:{fillColor:R.azul,textColor:R.blanco,fontStyle:`bold`,fontSize:7.5},styles:{fontSize:7,cellPadding:{top:1.5,bottom:1.5,left:2,right:2},overflow:`linebreak`,valign:`top`},alternateRowStyles:{fillColor:R.grisClaro},columnStyles:{0:{cellWidth:24,fontStyle:`bold`},1:{cellWidth:10},2:{cellWidth:38},3:{cellWidth:78},4:{cellWidth:24,textColor:[217,119,6]}},body:o,didDrawPage:t=>{W(r,`${e}`),G(r,t.pageNumber)}}),G(r,1),r.save(a)}var K=0;function q(e=`tmp`){return K+=1,`${e}-${Date.now()}-${K}`}function J({maestroId:t,claseId:r,route:i=null,onSaved:a}={}){if(!t||!r){e.error(`Falta identificar al maestro o la clase`);return}let o={routeId:i?.id||null,nombre:i?.nombre||``,unidades:re(i?.unidades||[])},s=document.createElement(`div`);s.className=`trb-backdrop`,s.innerHTML=`
     <div class="trb-modal" role="dialog" aria-modal="true" aria-label="Mapa de rutas">
       <div class="trb-header">
         <div class="trb-header-titles">
-          <h3>${r?`Editar`:`Nuevo`} mapa de rutas</h3>
+          <h3>${i?`Editar`:`Nuevo`} mapa de rutas</h3>
           <span class="trb-header-subtitle" id="trb-header-subtitle"></span>
         </div>
         <button class="trb-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
@@ -10,14 +11,14 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
       <div class="trb-body">
         <label class="trb-field">
           <span>Nombre de la ruta</span>
-          <input type="text" class="trb-input" id="trb-nombre" placeholder="Ej. Violín Nivel 1 — Grupo A" value="${b(a.nombre)}" />
+          <input type="text" class="trb-input" id="trb-nombre" placeholder="Ej. Violín Nivel 1 — Grupo A" value="${C(o.nombre)}" />
         </label>
 
         <div class="trb-actions-row">
-          <button class="trb-btn trb-btn-secondary" id="trb-btn-clonar" ${r?``:`disabled title="Guarda primero para poder clonar"`}>
+          <button class="trb-btn trb-btn-secondary" id="trb-btn-clonar" ${i?``:`disabled title="Guarda primero para poder clonar"`}>
             <i class="bi bi-copy"></i> Clonar esta ruta
           </button>
-          <button class="trb-btn trb-btn-secondary" id="trb-btn-exportar-pdf" ${r?``:`disabled title="Guarda primero para poder exportar"`}>
+          <button class="trb-btn trb-btn-secondary" id="trb-btn-exportar-pdf" ${i?``:`disabled title="Guarda primero para poder exportar"`}>
             <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
           </button>
           <button class="trb-btn trb-btn-secondary" id="trb-btn-acm" disabled title="Próximamente: el catálogo institucional ACM aún no está disponible en esta versión">
@@ -43,7 +44,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         </button>
       </div>
     </div>
-  `,document.body.appendChild(o);let s=()=>o.remove();o.querySelector(`.trb-close`).addEventListener(`click`,s),o.querySelector(`#trb-cancelar`).addEventListener(`click`,s),o.addEventListener(`click`,e=>{e.target===o&&s()});let c=o.querySelector(`#trb-unidades`),l=o.querySelector(`#trb-header-subtitle`),d=new Set,f=new Set,p=null;function h(){let e=a.unidades.length,t=a.unidades.reduce((e,t)=>e+t.objetivos.length,0),n=_().length;l.textContent=e?`${e} unidad${e===1?``:`es`} · ${t} objetivo${t===1?``:`s`} · ${n} indicador${n===1?``:`es`}`:`Todavía no tiene unidades`}function g(){c.innerHTML=a.unidades.map((e,t)=>v(e,t)).join(``),T(),h()}function _(){let e=[];return a.unidades.forEach(t=>{t.objetivos.forEach(t=>{t.indicadores.forEach(t=>{e.push({id:t._localId,nombre:t.nombre||`(sin nombre)`})})})}),e}function v(e,t){let n=d.has(e._localId),r=e.objetivos.length,i=e.objetivos.reduce((e,t)=>e+t.indicadores.length,0);return`
+  `,document.body.appendChild(s);let c=()=>s.remove();s.querySelector(`.trb-close`).addEventListener(`click`,c),s.querySelector(`#trb-cancelar`).addEventListener(`click`,c),s.addEventListener(`click`,e=>{e.target===s&&c()});let l=s.querySelector(`#trb-unidades`),u=s.querySelector(`#trb-header-subtitle`),d=new Set,f=new Set,p=null;function m(){let e=o.unidades.length,t=o.unidades.reduce((e,t)=>e+t.objetivos.length,0),n=g().length;u.textContent=e?`${e} unidad${e===1?``:`es`} · ${t} objetivo${t===1?``:`s`} · ${n} indicador${n===1?``:`es`}`:`Todavía no tiene unidades`}function h(){l.innerHTML=o.unidades.map((e,t)=>v(e,t)).join(``),S(),m()}function g(){let e=[];return o.unidades.forEach(t=>{t.objetivos.forEach(t=>{t.indicadores.forEach(t=>{e.push({id:t._localId,nombre:t.nombre||`(sin nombre)`})})})}),e}function v(e,t){let n=d.has(e._localId),r=e.objetivos.length,i=e.objetivos.reduce((e,t)=>e+t.indicadores.length,0);return`
       <div class="trb-unidad ${n?`trb-expanded`:``}" data-ui="${t}">
         <div class="trb-card-header" data-role="toggle-unidad" data-ui="${t}">
           <button class="trb-chevron" data-role="toggle-unidad" data-ui="${t}" aria-expanded="${n}" aria-label="${n?`Colapsar`:`Expandir`} unidad">
@@ -51,7 +52,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
           </button>
           <span class="trb-badge-orden">U${t+1}</span>
           <input type="text" class="trb-input trb-input-ghost trb-input-inline" data-role="unidad-nombre" data-ui="${t}"
-                 placeholder="Nombre de la unidad" value="${b(e.nombre)}" />
+                 placeholder="Nombre de la unidad" value="${C(e.nombre)}" />
           <span class="trb-count-pill">${r} obj · ${i} ind</span>
           <button class="trb-icon-btn trb-remove-unidad" data-ui="${t}" title="Quitar unidad">
             <i class="bi bi-trash3"></i>
@@ -62,7 +63,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
           <label class="trb-field trb-field-sm">
             <span>Descripción / síntesis <em>(qué aprende el alumno — se le muestra como resumen de la unidad)</em></span>
             <textarea class="trb-textarea" data-role="unidad-descripcion" data-ui="${t}"
-                      placeholder="Ej. El alumno domina el agarre correcto del arco y la postura corporal base.">${b(e.descripcion||``)}</textarea>
+                      placeholder="Ej. El alumno domina el agarre correcto del arco y la postura corporal base.">${C(e.descripcion||``)}</textarea>
           </label>
           <div class="trb-objetivos">
             ${e.objetivos.map((n,r)=>y(e,n,t,r)).join(``)}
@@ -80,7 +81,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
           </button>
           <span class="trb-badge-orden trb-badge-orden-sm">O${r+1}</span>
           <input type="text" class="trb-input trb-input-ghost trb-input-inline" data-role="objetivo-nombre" data-ui="${n}" data-oi="${r}"
-                 placeholder="Nombre del objetivo" value="${b(t.nombre)}" />
+                 placeholder="Nombre del objetivo" value="${C(t.nombre)}" />
           <span class="trb-count-pill">${a} ind</span>
           <button class="trb-icon-btn trb-remove-objetivo" data-ui="${n}" data-oi="${r}" title="Quitar objetivo">
             <i class="bi bi-trash3"></i>
@@ -89,31 +90,31 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         ${i?`
         <div class="trb-card-body">
           <div class="trb-indicadores">
-            ${t.indicadores.map((e,t)=>x(e,n,r,t)).join(``)}
+            ${t.indicadores.map((e,t)=>b(e,n,r,t)).join(``)}
           </div>
           <button class="trb-btn trb-btn-add-sub trb-btn-add-indicador" data-role="add-indicador" data-ui="${n}" data-oi="${r}">
             <i class="bi bi-plus"></i> Agregar Indicador
           </button>
         </div>`:``}
       </div>
-    `}function x(e,t,n,r){return`
+    `}function b(e,t,n,r){return`
       <div class="trb-indicador" data-ui="${t}" data-oi="${n}" data-ii="${r}">
         <div class="trb-indicador-row">
           <span class="trb-badge-orden trb-badge-orden-xs">I${r+1}</span>
           <input type="text" class="trb-input trb-input-inline" data-role="indicador-nombre" data-ui="${t}" data-oi="${n}" data-ii="${r}"
-                 placeholder="Nombre del indicador" value="${b(e.nombre)}" />
+                 placeholder="Nombre del indicador" value="${C(e.nombre)}" />
           <button class="trb-icon-btn trb-remove-indicador" data-ui="${t}" data-oi="${n}" data-ii="${r}" title="Quitar indicador">
             <i class="bi bi-trash3"></i>
           </button>
         </div>
-        ${S(e,t,n,r)}
+        ${x(e,t,n,r)}
       </div>
-    `}function S(e,t,n,r){let i=_().filter(t=>t.id!==e._localId),a=i.find(t=>t.id===e.prerequisito_local_id)||null,o=p===e._localId?`
+    `}function x(e,t,n,r){let i=g().filter(t=>t.id!==e._localId),a=i.find(t=>t.id===e.prerequisito_local_id)||null,o=p===e._localId?`
       <div class="trb-prereq-panel">
         ${i.length?i.map(i=>`
               <button class="trb-prereq-option ${i.id===e.prerequisito_local_id?`trb-prereq-option-active`:``}"
                       data-role="prereq-pick" data-ui="${t}" data-oi="${n}" data-ii="${r}" data-value="${i.id}">
-                ${b(i.nombre)}
+                ${C(i.nombre)}
               </button>
             `).join(``):`<p class="trb-prereq-empty">Todavía no hay otros indicadores en esta ruta.</p>`}
       </div>`:``;return`
@@ -122,7 +123,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         <div class="trb-prereq-control">
           ${a?`
             <button class="trb-prereq-chip" data-role="prereq-toggle" data-ui="${t}" data-oi="${n}" data-ii="${r}" title="Cambiar prerrequisito">
-              ${b(a.nombre)}
+              ${C(a.nombre)}
             </button>
             <button class="trb-icon-btn trb-prereq-clear" data-role="prereq-clear" data-ui="${t}" data-oi="${n}" data-ii="${r}" title="Quitar prerrequisito">
               <i class="bi bi-x-lg"></i>
@@ -135,7 +136,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         </div>
         ${o}
       </div>
-    `}function T(){c.querySelectorAll(`[data-role="toggle-unidad"]`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation();let n=a.unidades[+e.dataset.ui]._localId;d.has(n)?d.delete(n):d.add(n),g()})}),c.querySelectorAll(`[data-role="toggle-objetivo"]`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation();let{ui:n,oi:r}=e.dataset,i=a.unidades[+n].objetivos[+r]._localId;f.has(i)?f.delete(i):f.add(i),g()})}),c.querySelectorAll(`[data-role="unidad-nombre"]`).forEach(e=>{e.addEventListener(`input`,()=>{a.unidades[+e.dataset.ui].nombre=e.value}),e.addEventListener(`click`,e=>e.stopPropagation())}),c.querySelectorAll(`[data-role="unidad-descripcion"]`).forEach(e=>{e.addEventListener(`input`,()=>{a.unidades[+e.dataset.ui].descripcion=e.value})}),c.querySelectorAll(`[data-role="objetivo-nombre"]`).forEach(e=>{e.addEventListener(`input`,()=>{a.unidades[+e.dataset.ui].objetivos[+e.dataset.oi].nombre=e.value}),e.addEventListener(`click`,e=>e.stopPropagation())}),c.querySelectorAll(`[data-role="indicador-nombre"]`).forEach(e=>{e.addEventListener(`input`,()=>{let{ui:t,oi:n,ii:r}=e.dataset;a.unidades[+t].objetivos[+n].indicadores[+r].nombre=e.value,g()})}),c.querySelectorAll(`[data-role="prereq-toggle"]`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r}=e.dataset,i=a.unidades[+t].objetivos[+n].indicadores[+r]._localId;p=p===i?null:i,g()})}),c.querySelectorAll(`[data-role="prereq-pick"]`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r,value:i}=e.dataset;a.unidades[+t].objetivos[+n].indicadores[+r].prerequisito_local_id=i||null,p=null,g()})}),c.querySelectorAll(`[data-role="prereq-clear"]`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r}=e.dataset;a.unidades[+t].objetivos[+n].indicadores[+r].prerequisito_local_id=null,p=null,g()})}),c.querySelectorAll(`[data-role="add-objetivo"]`).forEach(e=>{e.addEventListener(`click`,()=>{let t=O();a.unidades[+e.dataset.ui].objetivos.push(t),f.add(t._localId),g()})}),c.querySelectorAll(`[data-role="add-indicador"]`).forEach(e=>{e.addEventListener(`click`,()=>{a.unidades[+e.dataset.ui].objetivos[+e.dataset.oi].indicadores.push(A()),g()})}),c.querySelectorAll(`.trb-remove-unidad`).forEach(e=>{e.addEventListener(`click`,()=>{a.unidades.splice(+e.dataset.ui,1),g()})}),c.querySelectorAll(`.trb-remove-objetivo`).forEach(e=>{e.addEventListener(`click`,()=>{a.unidades[+e.dataset.ui].objetivos.splice(+e.dataset.oi,1),g()})}),c.querySelectorAll(`.trb-remove-indicador`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r}=e.dataset;a.unidades[+t].objetivos[+n].indicadores.splice(+r,1),g()})})}function O(){return{_localId:q(`obj`),nombre:``,indicadores:[]}}function A(){return{_localId:q(`ind`),nombre:``,prerequisito_local_id:null}}function j(e){return{_localId:q(`uni`),nombre:e?.nombre||``,descripcion:``,objetivos:(e?.objetivos||[]).map(e=>({_localId:q(`obj`),nombre:e.nombre||``,indicadores:(e.indicadores||[]).map(e=>({_localId:q(`ind`),nombre:e.nombre||``,prerequisito_local_id:null}))}))}}o.querySelector(`#trb-add-unidad`).addEventListener(`click`,()=>{let e={_localId:q(`uni`),nombre:``,descripcion:``,objetivos:[]};a.unidades.push(e),d.add(e._localId),g()}),o.querySelector(`#trb-btn-ia-unidad`).addEventListener(`click`,async()=>{let t=o.querySelector(`#trb-btn-ia-unidad`);t.disabled=!0,t.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Generando…`;try{let t=j(await w({instrumento:(await u()||[]).find(e=>e.id===n)?.instrumento||`Música`,unidadesExistentes:a.unidades}));a.unidades.push(t),d.add(t._localId),g(),e.success(`Unidad sugerida por IA agregada — revísala antes de guardar`)}catch(t){console.error(`[TeacherRouteBuilder] Error sugiriendo unidad con IA:`,t),e.error(`No se pudo generar la sugerencia con IA`)}finally{t.disabled=!1,t.innerHTML=`<i class="bi bi-stars"></i> Sugerir unidad con IA`}}),o.querySelector(`#trb-nombre`).addEventListener(`input`,e=>{a.nombre=e.target.value}),o.querySelector(`#trb-btn-clonar`).addEventListener(`click`,async()=>{if(!a.routeId)return;let t=(await u()||[]).filter(e=>e.id!==n);if(t.length===0){e.error(`No tienes otra clase disponible para clonar esta ruta`);return}let r=await ne(t);if(!r)return;let o=window.prompt(`Nombre para la ruta clonada:`,`Copia de ${a.nombre}`);if(o)try{let t=await D(a.routeId,o,r);e.success(`Ruta clonada correctamente`),s(),i?.(t)}catch(t){let n=t.message?.includes(`duplicate key`)||t.message?.includes(`23505`);e.error(n?`Esa clase ya tiene una ruta propia — no se puede clonar encima`:`No se pudo clonar la ruta: ${t.message}`)}}),o.querySelector(`#trb-btn-exportar-pdf`).addEventListener(`click`,async()=>{if(!a.routeId)return;let t=o.querySelector(`#trb-btn-exportar-pdf`);t.disabled=!0;try{let e=[];a.unidades.forEach(t=>t.objetivos.forEach(t=>t.indicadores.forEach(t=>{t.id&&e.push(t.id)})));let[t,r]=await Promise.all([u(),C(e,n)]),i=(t||[]).find(e=>e.id===n),o=m(),s=W(a.unidades,r);G({claseNombre:i?.nombre||`Clase`,maestroNombre:o?.nombre_completo||``,unidades:s})}catch(t){console.error(`[TeacherRouteBuilder] Error exportando PDF:`,t),e.error(`No se pudo generar el PDF de la ruta.`)}finally{t.disabled=!1}}),o.querySelector(`#trb-guardar`).addEventListener(`click`,async()=>{if(!a.nombre.trim()){e.error(`Ponle un nombre a la ruta antes de guardar`);return}if(a.unidades.length===0){e.error(`Agrega al menos una unidad`);return}if(a.unidades.some(e=>!e.nombre.trim()||e.objetivos.length===0)){e.error(`Cada unidad necesita nombre y al menos un objetivo`);return}let r=te(a.unidades),c=o.querySelector(`#trb-guardar`);c.disabled=!0,c.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Guardando…`;try{let o=a.routeId?await E(a.routeId,r):await k(t,n,a.nombre.trim(),r);e.success(`Ruta guardada`),s(),i?.(o)}catch(t){e.error(`No se pudo guardar la ruta: ${t.message}`),c.disabled=!1,c.innerHTML=`<i class="bi bi-check2"></i> Guardar ruta`}}),g()}async function Y(e,t,n){let r=await O(e,t);if(!r||r.length===0){J({maestroId:e,claseId:t,onSaved:n});return}let i=document.createElement(`div`);i.className=`trb-backdrop`,i.innerHTML=`
+    `}function S(){l.querySelectorAll(`[data-role="toggle-unidad"]`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation();let n=o.unidades[+e.dataset.ui]._localId;d.has(n)?d.delete(n):d.add(n),h()})}),l.querySelectorAll(`[data-role="toggle-objetivo"]`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation();let{ui:n,oi:r}=e.dataset,i=o.unidades[+n].objetivos[+r]._localId;f.has(i)?f.delete(i):f.add(i),h()})}),l.querySelectorAll(`[data-role="unidad-nombre"]`).forEach(e=>{e.addEventListener(`input`,()=>{o.unidades[+e.dataset.ui].nombre=e.value}),e.addEventListener(`click`,e=>e.stopPropagation())}),l.querySelectorAll(`[data-role="unidad-descripcion"]`).forEach(e=>{e.addEventListener(`input`,()=>{o.unidades[+e.dataset.ui].descripcion=e.value})}),l.querySelectorAll(`[data-role="objetivo-nombre"]`).forEach(e=>{e.addEventListener(`input`,()=>{o.unidades[+e.dataset.ui].objetivos[+e.dataset.oi].nombre=e.value}),e.addEventListener(`click`,e=>e.stopPropagation())}),l.querySelectorAll(`[data-role="indicador-nombre"]`).forEach(e=>{e.addEventListener(`input`,()=>{let{ui:t,oi:n,ii:r}=e.dataset;o.unidades[+t].objetivos[+n].indicadores[+r].nombre=e.value,h()})}),l.querySelectorAll(`[data-role="prereq-toggle"]`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r}=e.dataset,i=o.unidades[+t].objetivos[+n].indicadores[+r]._localId;p=p===i?null:i,h()})}),l.querySelectorAll(`[data-role="prereq-pick"]`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r,value:i}=e.dataset;o.unidades[+t].objetivos[+n].indicadores[+r].prerequisito_local_id=i||null,p=null,h()})}),l.querySelectorAll(`[data-role="prereq-clear"]`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r}=e.dataset;o.unidades[+t].objetivos[+n].indicadores[+r].prerequisito_local_id=null,p=null,h()})}),l.querySelectorAll(`[data-role="add-objetivo"]`).forEach(e=>{e.addEventListener(`click`,()=>{let t=w();o.unidades[+e.dataset.ui].objetivos.push(t),f.add(t._localId),h()})}),l.querySelectorAll(`[data-role="add-indicador"]`).forEach(e=>{e.addEventListener(`click`,()=>{o.unidades[+e.dataset.ui].objetivos[+e.dataset.oi].indicadores.push(T()),h()})}),l.querySelectorAll(`.trb-remove-unidad`).forEach(e=>{e.addEventListener(`click`,()=>{o.unidades.splice(+e.dataset.ui,1),h()})}),l.querySelectorAll(`.trb-remove-objetivo`).forEach(e=>{e.addEventListener(`click`,()=>{o.unidades[+e.dataset.ui].objetivos.splice(+e.dataset.oi,1),h()})}),l.querySelectorAll(`.trb-remove-indicador`).forEach(e=>{e.addEventListener(`click`,()=>{let{ui:t,oi:n,ii:r}=e.dataset;o.unidades[+t].objetivos[+n].indicadores.splice(+r,1),h()})})}function w(){return{_localId:q(`obj`),nombre:``,indicadores:[]}}function T(){return{_localId:q(`ind`),nombre:``,prerequisito_local_id:null}}function O(e){return{_localId:q(`uni`),nombre:e?.nombre||``,descripcion:``,objetivos:(e?.objetivos||[]).map(e=>({_localId:q(`obj`),nombre:e.nombre||``,indicadores:(e.indicadores||[]).map(e=>({_localId:q(`ind`),nombre:e.nombre||``,prerequisito_local_id:null}))}))}}s.querySelector(`#trb-add-unidad`).addEventListener(`click`,()=>{let e={_localId:q(`uni`),nombre:``,descripcion:``,objetivos:[]};o.unidades.push(e),d.add(e._localId),h()}),s.querySelector(`#trb-btn-ia-unidad`).addEventListener(`click`,async()=>{let t=s.querySelector(`#trb-btn-ia-unidad`);t.disabled=!0,t.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Generando…`;try{let t=O(await D({instrumento:(await n()||[]).find(e=>e.id===r)?.instrumento||`Música`,unidadesExistentes:o.unidades}));o.unidades.push(t),d.add(t._localId),h(),e.success(`Unidad sugerida por IA agregada — revísala antes de guardar`)}catch(t){console.error(`[TeacherRouteBuilder] Error sugiriendo unidad con IA:`,t),e.error(`No se pudo generar la sugerencia con IA`)}finally{t.disabled=!1,t.innerHTML=`<i class="bi bi-stars"></i> Sugerir unidad con IA`}}),s.querySelector(`#trb-nombre`).addEventListener(`input`,e=>{o.nombre=e.target.value}),s.querySelector(`#trb-btn-clonar`).addEventListener(`click`,async()=>{if(!o.routeId)return;let t=(await n()||[]).filter(e=>e.id!==r);if(t.length===0){e.error(`No tienes otra clase disponible para clonar esta ruta`);return}let i=await ae(t);if(!i)return;let s=window.prompt(`Nombre para la ruta clonada:`,`Copia de ${o.nombre}`);if(s)try{let t=await A(o.routeId,s,i);e.success(`Ruta clonada correctamente`),c(),a?.(t)}catch(t){let n=t.message?.includes(`duplicate key`)||t.message?.includes(`23505`);e.error(n?`Esa clase ya tiene una ruta propia — no se puede clonar encima`:`No se pudo clonar la ruta: ${t.message}`)}}),s.querySelector(`#trb-btn-exportar-pdf`).addEventListener(`click`,async()=>{if(!o.routeId)return;let t=s.querySelector(`#trb-btn-exportar-pdf`);t.disabled=!0;try{let e=[];o.unidades.forEach(t=>t.objetivos.forEach(t=>t.indicadores.forEach(t=>{t.id&&e.push(t.id)})));let[t,i]=await Promise.all([n(),E(e,r)]),a=(t||[]).find(e=>e.id===r),s=_(),c=te(o.unidades,i);ne({claseNombre:a?.nombre||`Clase`,maestroNombre:s?.nombre_completo||``,unidades:c})}catch(t){console.error(`[TeacherRouteBuilder] Error exportando PDF:`,t),e.error(`No se pudo generar el PDF de la ruta.`)}finally{t.disabled=!1}}),s.querySelector(`#trb-guardar`).addEventListener(`click`,async()=>{if(!o.nombre.trim()){e.error(`Ponle un nombre a la ruta antes de guardar`);return}if(o.unidades.length===0){e.error(`Agrega al menos una unidad`);return}if(o.unidades.some(e=>!e.nombre.trim()||e.objetivos.length===0)){e.error(`Cada unidad necesita nombre y al menos un objetivo`);return}let n=ie(o.unidades),i=s.querySelector(`#trb-guardar`);i.disabled=!0,i.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Guardando…`;try{let i=o.routeId?await k(o.routeId,n):await M(t,r,o.nombre.trim(),n);e.success(`Ruta guardada`),c(),a?.(i)}catch(t){e.error(`No se pudo guardar la ruta: ${t.message}`),i.disabled=!1,i.innerHTML=`<i class="bi bi-check2"></i> Guardar ruta`}}),h()}async function Y(e,t,n){let r=await j(e,t);if(!r||r.length===0){J({maestroId:e,claseId:t,onSaved:n});return}let i=document.createElement(`div`);i.className=`trb-backdrop`,i.innerHTML=`
     <div class="trb-modal trb-modal-sm" role="dialog" aria-modal="true">
       <div class="trb-header">
         <h3>Tus rutas para esta clase</h3>
@@ -145,7 +146,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         <div class="trb-route-list">
           ${r.map(e=>`
             <button class="trb-route-item" data-route-id="${e.id}">
-              <span class="trb-route-nombre">${b(e.nombre)}</span>
+              <span class="trb-route-nombre">${C(e.nombre)}</span>
               <span class="trb-route-meta">${e.unidades.length} unidades</span>
             </button>
           `).join(``)}
@@ -155,7 +156,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         </button>
       </div>
     </div>
-  `,document.body.appendChild(i);let a=()=>i.remove();i.querySelector(`.trb-close`).addEventListener(`click`,a),i.addEventListener(`click`,e=>{e.target===i&&a()}),i.querySelector(`#trb-nueva-ruta`).addEventListener(`click`,()=>{a(),J({maestroId:e,claseId:t,onSaved:n})}),i.querySelectorAll(`.trb-route-item`).forEach(i=>{i.addEventListener(`click`,()=>{let o=r.find(e=>e.id===i.dataset.routeId);a(),J({maestroId:e,claseId:t,route:o,onSaved:n})})})}function ee(e){let t=new Map,n=e.map(e=>({...e,_localId:q(`uni`),objetivos:(e.objetivos||[]).map(e=>({...e,_localId:q(`obj`),indicadores:(e.indicadores||[]).map(e=>{let n=q(`ind`);return t.set(e.id,n),{...e,_localId:n}})}))}));return n.forEach(e=>e.objetivos.forEach(e=>e.indicadores.forEach(e=>{e.prerequisito_local_id=e.prerequisito_indicador_id&&t.get(e.prerequisito_indicador_id)||null}))),n}function te(e){return e.map((e,t)=>({id:e._localId,orden:t,nombre:e.nombre.trim(),descripcion:e.descripcion?.trim()||null,objetivos:e.objetivos.map((e,t)=>({id:e._localId,orden:t,nombre:e.nombre.trim(),indicadores:e.indicadores.map((e,t)=>({id:e._localId,orden:t,nombre:e.nombre.trim(),prerequisito_indicador_id:e.prerequisito_local_id||null}))}))}))}function ne(e){return new Promise(t=>{let n=document.createElement(`div`);n.className=`trb-backdrop`,n.innerHTML=`
+  `,document.body.appendChild(i);let a=()=>i.remove();i.querySelector(`.trb-close`).addEventListener(`click`,a),i.addEventListener(`click`,e=>{e.target===i&&a()}),i.querySelector(`#trb-nueva-ruta`).addEventListener(`click`,()=>{a(),J({maestroId:e,claseId:t,onSaved:n})}),i.querySelectorAll(`.trb-route-item`).forEach(i=>{i.addEventListener(`click`,()=>{let o=r.find(e=>e.id===i.dataset.routeId);a(),J({maestroId:e,claseId:t,route:o,onSaved:n})})})}function re(e){let t=new Map,n=e.map(e=>({...e,_localId:q(`uni`),objetivos:(e.objetivos||[]).map(e=>({...e,_localId:q(`obj`),indicadores:(e.indicadores||[]).map(e=>{let n=q(`ind`);return t.set(e.id,n),{...e,_localId:n}})}))}));return n.forEach(e=>e.objetivos.forEach(e=>e.indicadores.forEach(e=>{e.prerequisito_local_id=e.prerequisito_indicador_id&&t.get(e.prerequisito_indicador_id)||null}))),n}function ie(e){return e.map((e,t)=>({id:e._localId,orden:t,nombre:e.nombre.trim(),descripcion:e.descripcion?.trim()||null,objetivos:e.objetivos.map((e,t)=>({id:e._localId,orden:t,nombre:e.nombre.trim(),indicadores:e.indicadores.map((e,t)=>({id:e._localId,orden:t,nombre:e.nombre.trim(),prerequisito_indicador_id:e.prerequisito_local_id||null}))}))}))}function ae(e){return new Promise(t=>{let n=document.createElement(`div`);n.className=`trb-backdrop`,n.innerHTML=`
       <div class="trb-modal trb-modal-sm" role="dialog" aria-modal="true">
         <div class="trb-header">
           <h3>Clonar hacia qué clase</h3>
@@ -165,7 +166,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
           <div class="trb-route-list">
             ${e.map(e=>`
               <button class="trb-route-item" data-clase-id="${e.id}">
-                <span class="trb-route-nombre">${b(e.nombre)}</span>
+                <span class="trb-route-nombre">${C(e.nombre)}</span>
               </button>
             `).join(``)}
           </div>
@@ -369,12 +370,12 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
     .trb-route-item:hover { border-color: var(--pm-primary, #3b82f6); background: rgba(59,130,246,0.08); }
     .trb-route-nombre { font-weight: 600; font-size: 0.88rem; }
     .trb-route-meta { font-size: 0.75rem; color: var(--pm-text-muted, #6b7280); }
-  `,document.head.appendChild(e)}async function re({claseId:n,fecha:r,indicadorId:i,indicadorNombre:o,breadcrumb:s=``,evaluadoPor:l,onSaved:u}={}){if(!n||!r||!i){e.error(`Faltan datos para abrir la calificación del indicador`);return}let f=document.createElement(`div`);f.className=`igm-backdrop`,f.innerHTML=`
+  `,document.head.appendChild(e)}async function oe({claseId:n,fecha:r,indicadorId:i,indicadorNombre:s,breadcrumb:c=``,evaluadoPor:l,onSaved:u}={}){if(!n||!r||!i){e.error(`Faltan datos para abrir la calificación del indicador`);return}let d=document.createElement(`div`);d.className=`igm-backdrop`,d.innerHTML=`
     <div class="igm-modal" role="dialog" aria-modal="true" aria-label="Calificaciones">
       <div class="igm-header">
         <div>
-          ${s?`<div class="igm-breadcrumb">${b(s)}</div>`:``}
-          <h3>${b(o||`Indicador`)}</h3>
+          ${c?`<div class="igm-breadcrumb">${C(c)}</div>`:``}
+          <h3>${C(s||`Indicador`)}</h3>
         </div>
         <button class="igm-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
       </div>
@@ -387,34 +388,34 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         </button>
       </div>
     </div>
-  `,document.body.appendChild(f);let p=!1,m=()=>{f.remove(),p&&u?.()};f.querySelector(`.igm-close`).addEventListener(`click`,m),f.addEventListener(`click`,e=>{e.target===f&&m()});let h=f.querySelector(`.igm-body`),g=new Map;try{let[s,u,v,y]=await Promise.all([M(n),d(n,r),t(i,n),T(i)]);v.forEach(e=>g.set(e.alumno_id,e));let x=new Set(u.presentes),S=new Set(u.ausentes),C=Object.fromEntries(s.map(e=>[e.id,e]));if(x.size===0&&S.size===0){h.innerHTML=`
+  `,document.body.appendChild(d);let g=!1,_=()=>{d.remove(),g&&u?.()};d.querySelector(`.igm-close`).addEventListener(`click`,_),d.addEventListener(`click`,e=>{e.target===d&&_()});let v=d.querySelector(`.igm-body`),y=new Map,x=new Map;async function S(e){let[t,n]=await Promise.all([f(e),m(e)]);x.set(e,{logroIds:new Set(t.map(e=>e.id)),rachaActual:n?.racha_actual||0})}async function w(e,t){try{let[n,r]=await Promise.all([f(e),m(e)]),i=x.get(e)||{logroIds:new Set,rachaActual:0},a=n.filter(e=>!i.logroIds.has(e.id)),o=r?.racha_actual||0,s=o>i.rachaActual;return x.set(e,{logroIds:new Set(n.map(e=>e.id)),rachaActual:o}),a.length===0&&!s?null:{studentName:t,logrosNuevos:a,rachaActual:o,rachaSubio:s}}catch(e){return console.warn(`[IndicadorGradingModal] Error comprobando logros/racha:`,e),null}}async function T(e){let t=e.filter(Boolean);if(t.length===0)return;let{createAchievementsSummaryModal:n}=await h(async()=>{let{createAchievementsSummaryModal:e}=await import(`./AchievementsSummaryModal-DrGzVr84.js`);return{createAchievementsSummaryModal:e}},__vite__mapDeps([0,1]));await n(document.body,t)}async function E(e,t){await T([await w(e,t)])}try{let[c,u,f,m]=await Promise.all([F(n),p(n,r),t(i,n),O(i)]);f.forEach(e=>y.set(e.alumno_id,e));let h=new Set(u.presentes),x=new Set(u.ausentes),D=Object.fromEntries(c.map(e=>[e.id,e]));if(await Promise.all([...h,...x].map(e=>S(e))),h.size===0&&x.size===0){v.innerHTML=`
         <div class="igm-empty">
           <i class="bi bi-clipboard-x"></i>
-          <p>No hay asistencia registrada para el ${b(r)}.</p>
+          <p>No hay asistencia registrada para el ${C(r)}.</p>
           <p class="igm-empty-sub">Pasa asistencia primero para poder calificar este indicador.</p>
         </div>
-      `;return}let w={};if(y){let e=await Promise.all([...x].map(async e=>[e,await A(y.id,e,n)]));w=Object.fromEntries(e)}function E(e){let t=C[e];if(!t)return``;let n=g.get(e)||{},r=n.nota||0,i=y&&!w[e],a=!!n.review_flag;return`
+      `;return}let k={};if(m){let e=await Promise.all([...h].map(async e=>[e,await N(m.id,e,n)]));k=Object.fromEntries(e)}function A(e){let t=D[e];if(!t)return``;let n=y.get(e)||{},r=n.nota||0,i=m&&!k[e],a=!!n.review_flag;return`
         <div class="igm-alumno-row" data-alumno-id="${e}">
           <div class="igm-alumno-info">
-            <span class="igm-alumno-nombre">${b(t.nombre)}</span>
-            ${i?`<span class="igm-warn-badge" title="Prerrequisito no satisfecho"><i class="bi bi-exclamation-triangle-fill"></i> Requiere "${b(y.nombre)}"</span>`:``}
+            <span class="igm-alumno-nombre">${C(t.nombre)}</span>
+            ${i?`<span class="igm-warn-badge" title="Prerrequisito no satisfecho"><i class="bi bi-exclamation-triangle-fill"></i> Requiere "${C(m.nombre)}"</span>`:``}
             ${a?`<span class="igm-review-badge" title="Recalificado el prerrequisito, revisa esta nota"><i class="bi bi-arrow-repeat"></i> Revisar</span>`:``}
           </div>
           <div class="igm-stars" data-alumno-id="${e}">
             ${[1,2,3,4,5].map(e=>`<button class="igm-star ${e<=r?`igm-star-filled`:``}" data-value="${e}" aria-label="${e} estrellas"><i class="bi bi-star-fill"></i></button>`).join(``)}
           </div>
         </div>
-      `}function D(e){let t=C[e];if(!t)return``;let n=g.get(e)||{};if(n.recovery_status===`recuperado`||n.recovery_status===`no_recuperable`){let r=n.recovery_status===`recuperado`?`Recuperado`:`No recuperable`,i=n.recovery_status===`recuperado`?`igm-recuperado`:`igm-no-recuperable`;return`
+      `}function j(e){let t=D[e];if(!t)return``;let n=y.get(e)||{};if(n.recovery_status===`recuperado`||n.recovery_status===`no_recuperable`){let r=n.recovery_status===`recuperado`?`Recuperado`:`No recuperable`,i=n.recovery_status===`recuperado`?`igm-recuperado`:`igm-no-recuperable`;return`
           <div class="igm-alumno-row" data-alumno-id="${e}">
             <div class="igm-alumno-info">
-              <span class="igm-alumno-nombre">${b(t.nombre)}</span>
+              <span class="igm-alumno-nombre">${C(t.nombre)}</span>
             </div>
             <span class="igm-deuda-resuelta ${i}"><i class="bi bi-check-circle-fill"></i> ${r}</span>
           </div>
         `}return`
         <div class="igm-alumno-row igm-alumno-row-deuda" data-alumno-id="${e}">
           <div class="igm-alumno-info">
-            <span class="igm-alumno-nombre">${b(t.nombre)}</span>
+            <span class="igm-alumno-nombre">${C(t.nombre)}</span>
           </div>
           <button class="igm-btn-deuda" data-alumno-id="${e}">
             Con Deudas Académicas
@@ -431,18 +432,18 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
             <button class="igm-btn igm-btn-primary igm-recovery-confirm" data-alumno-id="${e}">Registrar</button>
           </div>
         </div>
-      `}h.innerHTML=`
+      `}v.innerHTML=`
       <div class="igm-section">
         <h4 class="igm-section-title"><i class="bi bi-people-fill"></i> Presentes</h4>
         <div class="igm-alumno-list" id="igm-presentes">
-          ${[...x].map(E).join(``)||`<p class="igm-empty-inline">Sin alumnos presentes</p>`}
+          ${[...h].map(A).join(``)||`<p class="igm-empty-inline">Sin alumnos presentes</p>`}
         </div>
       </div>
 
       <div class="igm-section">
         <h4 class="igm-section-title"><i class="bi bi-exclamation-circle-fill"></i> Con Deudas Académicas</h4>
         <div class="igm-alumno-list" id="igm-ausentes">
-          ${[...S].map(D).join(``)||`<p class="igm-empty-inline">Nadie ausente esta sesión</p>`}
+          ${[...x].map(j).join(``)||`<p class="igm-empty-inline">Nadie ausente esta sesión</p>`}
         </div>
       </div>
 
@@ -454,18 +455,18 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         </button>
         <div class="igm-analisis-resultado" id="igm-analisis-resultado" hidden></div>
       </div>
-    `;function O(){let e=[...x].every(e=>(g.get(e)||{}).nota),t=[...S].every(e=>{let t=(g.get(e)||{}).recovery_status;return t===`recuperado`||t===`no_recuperable`}),n=f.querySelector(`#igm-completar`),r=e&&t;n.disabled=!r,n.classList.toggle(`igm-btn-success`,r),r&&(n.innerHTML=`<i class="bi bi-check2-all"></i> Indicador completamente evaluado`)}function k(){h.querySelectorAll(`.igm-stars`).forEach(t=>{let r=t.dataset.alumnoId;t.querySelectorAll(`.igm-star`).forEach(a=>{a.addEventListener(`click`,async()=>{let o=Number(a.dataset.value);t.querySelectorAll(`.igm-star`).forEach(e=>{e.classList.toggle(`igm-star-filled`,Number(e.dataset.value)<=o)});try{let e=await c({alumnoId:r,indicadorId:i,claseId:n,nota:o,evaluadoPor:l});g.set(r,{...g.get(r)||{},...e,nota:o}),p=!0,O()}catch(t){e.error(`No se pudo guardar: ${t.message}`)}})})})}function j(){h.querySelectorAll(`.igm-btn-deuda`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.alumnoId,n=h.querySelector(`.igm-recovery-form[data-alumno-id="${t}"]`);n&&(n.hidden=!n.hidden)})}),h.querySelectorAll(`.igm-recovery-cancel`).forEach(e=>{e.addEventListener(`click`,()=>{let t=h.querySelector(`.igm-recovery-form[data-alumno-id="${e.dataset.alumnoId}"]`);t&&(t.hidden=!0)})}),h.querySelectorAll(`.igm-recovery-confirm`).forEach(t=>{t.addEventListener(`click`,async()=>{let r=t.dataset.alumnoId,o=h.querySelector(`.igm-recovery-select[data-alumno-id="${r}"]`),s=h.querySelector(`.igm-recovery-notes[data-alumno-id="${r}"]`),c=o.value,u=s.value.trim();t.disabled=!0;try{let t=await a(r,i,n,c,u,null,l);g.set(r,{...g.get(r)||{},...t,recovery_status:c}),p=!0;let o=h.querySelector(`.igm-alumno-row-deuda[data-alumno-id="${r}"]`),s=h.querySelector(`.igm-recovery-form[data-alumno-id="${r}"]`);o&&(o.outerHTML=D(r)),s&&s.remove(),e.success(`Recuperación registrada`),O()}catch(n){e.error(`No se pudo registrar la recuperación: ${n.message}`),t.disabled=!1}})})}function N(){let t=h.querySelector(`#igm-observaciones`),r=h.querySelector(`#igm-analizar`),a=h.querySelector(`#igm-analisis-resultado`);t.addEventListener(`input`,()=>{r.disabled=!t.value.trim()}),r.addEventListener(`click`,async()=>{let s=t.value.trim();if(s){r.disabled=!0,r.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Analizando…`;try{let t=await _(s,{indicadorNombre:o,estudiantesPresentes:[...x].map(e=>C[e]?.nombre).filter(Boolean)});if(a.hidden=!1,a.innerHTML=`
-            <div class="igm-panorama"><i class="bi bi-lightbulb-fill"></i> ${b(t.panorama)}</div>
+    `;function M(){let e=[...h].every(e=>(y.get(e)||{}).nota),t=[...x].every(e=>{let t=(y.get(e)||{}).recovery_status;return t===`recuperado`||t===`no_recuperable`}),n=d.querySelector(`#igm-completar`),r=e&&t;n.disabled=!r,n.classList.toggle(`igm-btn-success`,r),r&&(n.innerHTML=`<i class="bi bi-check2-all"></i> Indicador completamente evaluado`)}function P(){v.querySelectorAll(`.igm-stars`).forEach(t=>{let r=t.dataset.alumnoId;t.querySelectorAll(`.igm-star`).forEach(a=>{a.addEventListener(`click`,async()=>{let s=Number(a.dataset.value);t.querySelectorAll(`.igm-star`).forEach(e=>{e.classList.toggle(`igm-star-filled`,Number(e.dataset.value)<=s)});try{let e=await o({alumnoId:r,indicadorId:i,claseId:n,nota:s,evaluadoPor:l});y.set(r,{...y.get(r)||{},...e,nota:s}),g=!0,M(),E(r,D[r]?.nombre)}catch(t){e.error(`No se pudo guardar: ${t.message}`)}})})})}function I(){v.querySelectorAll(`.igm-btn-deuda`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.alumnoId,n=v.querySelector(`.igm-recovery-form[data-alumno-id="${t}"]`);n&&(n.hidden=!n.hidden)})}),v.querySelectorAll(`.igm-recovery-cancel`).forEach(e=>{e.addEventListener(`click`,()=>{let t=v.querySelector(`.igm-recovery-form[data-alumno-id="${e.dataset.alumnoId}"]`);t&&(t.hidden=!0)})}),v.querySelectorAll(`.igm-recovery-confirm`).forEach(t=>{t.addEventListener(`click`,async()=>{let r=t.dataset.alumnoId,o=v.querySelector(`.igm-recovery-select[data-alumno-id="${r}"]`),s=v.querySelector(`.igm-recovery-notes[data-alumno-id="${r}"]`),c=o.value,u=s.value.trim();t.disabled=!0;try{let t=await a(r,i,n,c,u,null,l);y.set(r,{...y.get(r)||{},...t,recovery_status:c}),g=!0;let o=v.querySelector(`.igm-alumno-row-deuda[data-alumno-id="${r}"]`),s=v.querySelector(`.igm-recovery-form[data-alumno-id="${r}"]`);o&&(o.outerHTML=j(r)),s&&s.remove(),e.success(`Recuperación registrada`),M(),E(r,D[r]?.nombre)}catch(n){e.error(`No se pudo registrar la recuperación: ${n.message}`),t.disabled=!1}})})}function L(){let t=v.querySelector(`#igm-observaciones`),r=v.querySelector(`#igm-analizar`),a=v.querySelector(`#igm-analisis-resultado`);t.addEventListener(`input`,()=>{r.disabled=!t.value.trim()}),r.addEventListener(`click`,async()=>{let c=t.value.trim();if(c){r.disabled=!0,r.innerHTML=`<span class="spinner-border spinner-border-sm"></span> Analizando…`;try{let t=await b(c,{indicadorNombre:s,estudiantesPresentes:[...h].map(e=>D[e]?.nombre).filter(Boolean)});if(a.hidden=!1,a.innerHTML=`
+            <div class="igm-panorama"><i class="bi bi-lightbulb-fill"></i> ${C(t.panorama)}</div>
             ${t.sugerirCalificarConEstrellas?`
               <div class="igm-sugerencia-estrellas">
                 <p>El texto no trae una valoración clara. ¿Cómo calificarías el resultado de la clase para los presentes?</p>
                 <div class="igm-stars igm-stars-grupal" id="igm-stars-grupal">
                   ${[1,2,3,4,5].map(e=>`<button class="igm-star" data-value="${e}" aria-label="${e} estrellas"><i class="bi bi-star-fill"></i></button>`).join(``)}
                 </div>
-                <p class="igm-sugerencia-nota">Se aplicará solo a los ${x.size} alumnos presentes. Los ausentes seguirán "Con Deuda Académica".</p>
+                <p class="igm-sugerencia-nota">Se aplicará solo a los ${h.size} alumnos presentes. Los ausentes seguirán "Con Deuda Académica".</p>
               </div>
             `:``}
-          `,t.sugerirCalificarConEstrellas){let t=a.querySelectorAll(`#igm-stars-grupal .igm-star`);t.forEach(r=>{r.addEventListener(`click`,async()=>{let a=Number(r.dataset.value);t.forEach(e=>e.classList.toggle(`igm-star-filled`,Number(e.dataset.value)<=a));try{await Promise.all([...x].map(async e=>{let t=await c({alumnoId:e,indicadorId:i,claseId:n,nota:a,evaluadoPor:l});g.set(e,{...g.get(e)||{},...t,nota:a});let r=h.querySelector(`.igm-stars[data-alumno-id="${e}"]`);r&&r.querySelectorAll(`.igm-star`).forEach(e=>{e.classList.toggle(`igm-star-filled`,Number(e.dataset.value)<=a)})})),p=!0,e.success(`Calificación grupal aplicada a ${x.size} presentes`),O()}catch(t){e.error(`No se pudo aplicar la calificación grupal: ${t.message}`)}})})}}catch(t){e.error(`No se pudo analizar: ${t.message}`)}finally{r.disabled=!1,r.innerHTML=`<i class="bi bi-magic"></i> Analizar`}}})}k(),j(),N(),O(),f.querySelector(`#igm-completar`).addEventListener(`click`,()=>{e.success(`Indicador marcado como completamente evaluado`),p=!0,m()})}catch(e){console.error(`[IndicadorGradingModal] error:`,e),h.innerHTML=`<p class="igm-empty-inline" style="color:var(--pm-danger,#ef4444)">Error al cargar: ${b(e.message)}</p>`}}if(!document.getElementById(`igm-styles`)){let e=document.createElement(`style`);e.id=`igm-styles`,e.textContent=`
+          `,t.sugerirCalificarConEstrellas){let t=a.querySelectorAll(`#igm-stars-grupal .igm-star`);t.forEach(r=>{r.addEventListener(`click`,async()=>{let a=Number(r.dataset.value);t.forEach(e=>e.classList.toggle(`igm-star-filled`,Number(e.dataset.value)<=a));try{let t=await Promise.all([...h].map(async e=>{let t=await o({alumnoId:e,indicadorId:i,claseId:n,nota:a,evaluadoPor:l});y.set(e,{...y.get(e)||{},...t,nota:a});let r=v.querySelector(`.igm-stars[data-alumno-id="${e}"]`);return r&&r.querySelectorAll(`.igm-star`).forEach(e=>{e.classList.toggle(`igm-star-filled`,Number(e.dataset.value)<=a)}),w(e,D[e]?.nombre)}));g=!0,e.success(`Calificación grupal aplicada a ${h.size} presentes`),M(),T(t)}catch(t){e.error(`No se pudo aplicar la calificación grupal: ${t.message}`)}})})}}catch(t){e.error(`No se pudo analizar: ${t.message}`)}finally{r.disabled=!1,r.innerHTML=`<i class="bi bi-magic"></i> Analizar`}}})}P(),I(),L(),M(),d.querySelector(`#igm-completar`).addEventListener(`click`,()=>{e.success(`Indicador marcado como completamente evaluado`),g=!0,_()})}catch(e){console.error(`[IndicadorGradingModal] error:`,e),v.innerHTML=`<p class="igm-empty-inline" style="color:var(--pm-danger,#ef4444)">Error al cargar: ${C(e.message)}</p>`}}if(!document.getElementById(`igm-styles`)){let e=document.createElement(`style`);e.id=`igm-styles`,e.textContent=`
     .igm-backdrop {
       position: fixed; inset: 0; background: rgba(15,23,42,0.55);
       display: flex; align-items: center; justify-content: center;
@@ -561,14 +562,14 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
     .igm-stars-grupal { display: flex; gap: 0.25rem; }
     .igm-stars-grupal .igm-star { font-size: 1.4rem; }
     .igm-sugerencia-nota { font-size: 0.72rem !important; color: var(--pm-text-muted) !important; margin-top: 0.35rem !important; }
-  `,document.head.appendChild(e)}function X(e){let[t,n]=(e||`00:00`).split(`:`).map(Number);return t*60+n}function ie(e,t,n){let r=X(e),i=X(t);return n>=r&&n<i?`en-curso`:n>=i?`pasada`:r-n<=15?`proxima`:`futura`}function ae(t,n,r){let i=document.createElement(`div`);i.id=`pm-hoy-autonav-banner`,i.innerHTML=`
+  `,document.head.appendChild(e)}function X(e){let[t,n]=(e||`00:00`).split(`:`).map(Number);return t*60+n}function se(e,t,n){let r=X(e),i=X(t);return n>=r&&n<i?`en-curso`:n>=i?`pasada`:r-n<=15?`proxima`:`futura`}function ce(t,n,r){let i=document.createElement(`div`);i.id=`pm-hoy-autonav-banner`,i.innerHTML=`
     <div class="pm-autonav-content">
       <i class="bi bi-play-circle-fill pm-autonav-icon"></i>
       <span class="pm-autonav-msg">Abriendo clase en curso…</span>
       <span class="pm-autonav-count" id="pm-autonav-count">3</span>
       <button class="pm-autonav-cancel" id="pm-autonav-cancel">Cancelar</button>
     </div>
-  `,document.body.appendChild(i);let a=3,o=!1,s=document.getElementById(`pm-autonav-count`),c=setInterval(()=>{o||(a--,s&&(s.textContent=a),a<=0&&(clearInterval(c),i.remove(),o||(window.router?window.router.navigate(`asistencia?clase=${t}&fecha=${n}`):r?.(t))))},1e3);document.getElementById(`pm-autonav-cancel`)?.addEventListener(`click`,()=>{o=!0,clearInterval(c),i.remove(),e.show(`Auto-navegación cancelada`,`info`)})}async function oe(e,{onClaseClick:t}={}){e.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;let n=m();if(!n){e.innerHTML=`<p class="pm-empty">No hay sesión activa.</p>`;return}let r=new Date,a=r.toLocaleDateString(`es-ES`,{weekday:`long`}).toLowerCase(),c=`${r.getFullYear()}-${String(r.getMonth()+1).padStart(2,`0`)}-${String(r.getDate()).padStart(2,`0`)}`;try{let d=await o(n.id,c);if(d&&d.length>0){e.innerHTML=se(d,a,r),le(e,c,n.id);return}let p=await u();if(!p||p.length===0){e.innerHTML=`
+  `,document.body.appendChild(i);let a=3,o=!1,s=document.getElementById(`pm-autonav-count`),c=setInterval(()=>{o||(a--,s&&(s.textContent=a),a<=0&&(clearInterval(c),i.remove(),o||(window.router?window.router.navigate(`asistencia?clase=${t}&fecha=${n}`):r?.(t))))},1e3);document.getElementById(`pm-autonav-cancel`)?.addEventListener(`click`,()=>{o=!0,clearInterval(c),i.remove(),e.show(`Auto-navegación cancelada`,`info`)})}async function le(e,{onClaseClick:t}={}){e.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;let a=_();if(!a){e.innerHTML=`<p class="pm-empty">No hay sesión activa.</p>`;return}let o=new Date,s=o.toLocaleDateString(`es-ES`,{weekday:`long`}).toLowerCase(),c=`${o.getFullYear()}-${String(o.getMonth()+1).padStart(2,`0`)}-${String(o.getDate()).padStart(2,`0`)}`;try{let f=await l(a.id,c);if(f&&f.length>0){e.innerHTML=ue(f,s,o),fe(e,c,a.id);return}let p=await n();if(!p||p.length===0){e.innerHTML=`
         <div class="pm-hoy-empty-state">
           <div class="pm-hoy-empty-card">
             <div class="pm-hoy-empty-icon"><i class="bi bi-lightning-charge-fill"></i></div>
@@ -579,9 +580,9 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
             </button>
           </div>
         </div>
-      `,$(e,c,n.id,[]);return}let m=p.map(e=>e.id),h=Object.fromEntries(p.map(e=>[e.id,e])),g=await j(n.id).catch(()=>[]),_=Object.fromEntries((g||[]).map(e=>[String(e.group_id),e])),C=(await l(m)).filter(e=>e.dia?.toLowerCase()===a).sort((e,t)=>e.hora_inicio.localeCompare(t.hora_inicio));if(!C||C.length===0){e.innerHTML=`
+      `,$(e,c,a.id,[]);return}let m=p.map(e=>e.id),h=Object.fromEntries(p.map(e=>[e.id,e])),g=await P(a.id).catch(()=>[]),_=Object.fromEntries((g||[]).map(e=>[String(e.group_id),e])),v=(await d(m)).filter(e=>e.dia?.toLowerCase()===s).sort((e,t)=>e.hora_inicio.localeCompare(t.hora_inicio));if(!v||v.length===0){e.innerHTML=`
         <div style="padding: 1rem 1rem 2rem;">
-          <h2 class="pm-date-header">${S(a)} ${y(r)}</h2>
+          <h2 class="pm-date-header">${T(s)} ${S(o)}</h2>
           <div class="pm-hoy-empty-state">
             <div class="pm-hoy-empty-card">
               <div class="pm-hoy-empty-icon"><i class="bi bi-lightning-charge-fill"></i></div>
@@ -593,10 +594,10 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
             </div>
           </div>
         </div>
-      `,$(e,c,n.id,p);return}let w=new Date(r);w.setDate(w.getDate()-3);let T=`${w.getFullYear()}-${String(w.getMonth()+1).padStart(2,`0`)}-${String(w.getDate()).padStart(2,`0`)}`,E=new Date(r);E.setDate(E.getDate()-1);let D=`${E.getFullYear()}-${String(E.getMonth()+1).padStart(2,`0`)}-${String(E.getDate()).padStart(2,`0`)}`,O=(await f(n.id,T,D)||[]).filter(e=>{if(!m.includes(e.clase_id))return!1;let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return!t&&!(e.borrador===!1&&n)}),k=(await f(n.id,c,c)).filter(e=>m.includes(e.clase_id)).filter(e=>{let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return t||e.borrador===!1&&n}),A=new Set(k.map(e=>e.clase_id)),M=await s(m),N={};for(let e of M||[])e.clase_id&&(N[e.clase_id]=(N[e.clase_id]||0)+1);let F=[...new Set(C.map(e=>e.salon_id).filter(Boolean))],I=F.length>0?await i(F):[],L=Object.fromEntries(I.map(e=>[e.id,e.nombre])),R=r.getHours()*60+r.getMinutes(),z=null,B=null,V=C.map(e=>{let t=h[e.clase_id],n=A.has(t.id),r=N[t.id]||0,i=ie(e.hora_inicio,e.hora_fin,R),a=_[String(t.id)]||null;i===`en-curso`&&(!n&&!z&&(z=t.id),n&&!B&&(B=t.id));let o=n?`<span class="pm-badge pm-badge-success"><i class="bi bi-check-circle-fill me-1"></i>Registrada</span>`:`<span class="pm-badge pm-badge-danger">Sin registrar</span>`,s=i===`en-curso`?`<span class="pm-badge pm-badge-en-curso"><i class="bi bi-circle-fill pm-pulse-dot me-1"></i>En curso</span>`:i===`proxima`?`<span class="pm-badge pm-badge-proxima"><i class="bi bi-clock me-1"></i>Próximamente</span>`:``;return`
+      `,$(e,c,a.id,p);return}let y=new Date(o);y.setDate(y.getDate()-3);let b=`${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,`0`)}-${String(y.getDate()).padStart(2,`0`)}`,E=new Date(o);E.setDate(E.getDate()-1);let D=`${E.getFullYear()}-${String(E.getMonth()+1).padStart(2,`0`)}-${String(E.getDate()).padStart(2,`0`)}`,O=(await i(a.id,b,D)||[]).filter(e=>{if(!m.includes(e.clase_id))return!1;let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return!t&&!(e.borrador===!1&&n)}),k=(await i(a.id,c,c)).filter(e=>m.includes(e.clase_id)).filter(e=>{let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return t||e.borrador===!1&&n}),A=new Set(k.map(e=>e.clase_id)),j=await u(m),M={};for(let e of j||[])e.clase_id&&(M[e.clase_id]=(M[e.clase_id]||0)+1);let N=[...new Set(v.map(e=>e.salon_id).filter(Boolean))],F=N.length>0?await r(N):[],I=Object.fromEntries(F.map(e=>[e.id,e.nombre])),R=o.getHours()*60+o.getMinutes(),z=null,B=null,V=v.map(e=>{let t=h[e.clase_id],n=A.has(t.id),r=M[t.id]||0,i=se(e.hora_inicio,e.hora_fin,R),a=_[String(t.id)]||null;i===`en-curso`&&(!n&&!z&&(z=t.id),n&&!B&&(B=t.id));let o=n?`<span class="pm-badge pm-badge-success"><i class="bi bi-check-circle-fill me-1"></i>Registrada</span>`:`<span class="pm-badge pm-badge-danger">Sin registrar</span>`,s=i===`en-curso`?`<span class="pm-badge pm-badge-en-curso"><i class="bi bi-circle-fill pm-pulse-dot me-1"></i>En curso</span>`:i===`proxima`?`<span class="pm-badge pm-badge-proxima"><i class="bi bi-clock me-1"></i>Próximamente</span>`:``;return`
         <div class="pm-clase-card ${[n?`registrada`:`sin-registrar`,i===`en-curso`?`pm-clase-en-curso`:``,i===`proxima`?`pm-clase-proxima`:``,i===`pasada`?`pm-clase-pasada`:``].filter(Boolean).join(` `)}" data-clase-id="${t.id}">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <div class="pm-clase-nombre">${b(t.nombre)}</div>
+            <div class="pm-clase-nombre">${C(t.nombre)}</div>
             <div class="d-flex flex-wrap gap-1 justify-content-end align-items-start">
               ${s}
               ${o}
@@ -609,10 +610,10 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
             </div>
           </div>
           <div class="pm-clase-meta">
-            <div class="meta-item"><i class="bi bi-clock"></i> ${x(e.hora_inicio)} – ${x(e.hora_fin)}</div>
-            <div class="meta-item"><i class="bi bi-music-note-beamed"></i> ${b(t.instrumento||`—`)}</div>
+            <div class="meta-item"><i class="bi bi-clock"></i> ${w(e.hora_inicio)} – ${w(e.hora_fin)}</div>
+            <div class="meta-item"><i class="bi bi-music-note-beamed"></i> ${C(t.instrumento||`—`)}</div>
             <div class="meta-item"><i class="bi bi-people"></i> ${r} alumnos</div>
-            ${e.salon_id?`<div class="meta-item"><i class="bi bi-geo-alt"></i> ${b(L[e.salon_id]||`Salón`)}</div>`:``}
+            ${e.salon_id?`<div class="meta-item"><i class="bi bi-geo-alt"></i> ${C(I[e.salon_id]||`Salón`)}</div>`:``}
           </div>
           ${a?`<div class="pm-badge pm-badge-info mt-2"><i class="bi bi-diagram-3 me-1"></i>ACM Semana ${a.current_week||1}</div>`:``}
         </div>
@@ -626,7 +627,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
           ${O.map(e=>{let t=h[e.clase_id];if(!t)return``;let n=e.fecha?e.fecha.split(`-`).reverse().slice(0,2).join(`/`):`—`;return`
               <button class="pm-pendiente-item" data-clase-id="${t.id}" data-fecha="${e.fecha}">
                 <div class="pm-pendiente-info">
-                  <span class="pm-pendiente-nombre">${b(t.nombre)}</span>
+                  <span class="pm-pendiente-nombre">${C(t.nombre)}</span>
                   <span class="pm-pendiente-fecha">${n}</span>
                 </div>
                 <span class="pm-pendiente-cta">Registrar <i class="bi bi-arrow-right"></i></span>
@@ -634,33 +635,33 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         </div>
       </div>`:``;e.innerHTML=`
       <div style="padding: 1rem 1rem 2rem;">
-        <h2 class="pm-date-header">${S(a)} ${y(r)}</h2>
+        <h2 class="pm-date-header">${T(s)} ${S(o)}</h2>
         ${H}
         <div class="pm-clases-container">
           ${V}
         </div>
       </div>
-    `,e.querySelectorAll(`.pm-pendiente-item`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.claseId,r=e.dataset.fecha;try{await v.createSnapshotFromPlan(t,r,n.id)}catch{}window.router&&window.router.navigate(`asistencia?clase=${t}&fecha=${r}`)})}),e.querySelectorAll(`.pm-clase-card`).forEach(e=>{let r=e.querySelector(`.pm-analisis-btn`);r?r.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let t=r.dataset.claseId;console.log(`[HoyView] Abriendo análisis para clase:`,t),P(t,c)}):console.warn(`[HoyView] No se encontró botón de análisis en card`);let i=e.querySelector(`.pm-mapa-btn`);i&&i.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let t=i.dataset.claseId;Z(t,n,c)}),e.addEventListener(`click`,async()=>{if(e.classList.contains(`pm-card-loading`))return;e.classList.add(`pm-card-loading`);let r=e.dataset.claseId;try{await v.createSnapshotFromPlan(r,c,n.id)}catch(e){console.error(`Error generando snapshot:`,e)}e.classList.remove(`pm-card-loading`),t?.(r)})});let U=z||B;U&&(requestAnimationFrame(()=>{let t=e.querySelector(`[data-clase-id="${U}"]`);t&&typeof t.scrollIntoView==`function`&&t.scrollIntoView({behavior:`smooth`,block:`center`})}),z&&setTimeout(()=>{ae(z,c,t)},800))}catch(t){e.innerHTML=`<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${b(t.message)}</p>`}}async function Z(e,t,r){let i=await n(t.id,e,!0);if(!i||i.length===0){Y(t.id,e,()=>{Z(e,t,r)});return}let a=i[0];await Q(a,e,t,r)}async function Q(e,t,n,i){let a=await r(e.id,t),o=Object.fromEntries((a||[]).map(e=>[e.indicador_id,e.check_state])),s=document.createElement(`div`);s.className=`pmr-backdrop`;function c(e){return e===`double`?`<i class="bi bi-check2-all pmr-check-double" title="Doble check: todos evaluados"></i>`:e===`single`?`<i class="bi bi-check2 pmr-check-single" title="Check simple: hay deudas pendientes"></i>`:`<span class="pmr-check-none" title="Sin dictar todavía"></span>`}let l=(e.unidades||[]).map(e=>`
+    `,e.querySelectorAll(`.pm-pendiente-item`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.claseId,n=e.dataset.fecha;try{await x.createSnapshotFromPlan(t,n,a.id)}catch{}window.router&&window.router.navigate(`asistencia?clase=${t}&fecha=${n}`)})}),e.querySelectorAll(`.pm-clase-card`).forEach(e=>{let n=e.querySelector(`.pm-analisis-btn`);n?n.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let t=n.dataset.claseId;console.log(`[HoyView] Abriendo análisis para clase:`,t),L(t,c)}):console.warn(`[HoyView] No se encontró botón de análisis en card`);let r=e.querySelector(`.pm-mapa-btn`);r&&r.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let t=r.dataset.claseId;Z(t,a,c)}),e.addEventListener(`click`,async()=>{if(e.classList.contains(`pm-card-loading`))return;e.classList.add(`pm-card-loading`);let n=e.dataset.claseId;try{await x.createSnapshotFromPlan(n,c,a.id)}catch(e){console.error(`Error generando snapshot:`,e)}e.classList.remove(`pm-card-loading`),t?.(n)})});let U=z||B;U&&(requestAnimationFrame(()=>{let t=e.querySelector(`[data-clase-id="${U}"]`);t&&typeof t.scrollIntoView==`function`&&t.scrollIntoView({behavior:`smooth`,block:`center`})}),z&&setTimeout(()=>{ce(z,c,t)},800))}catch(t){e.innerHTML=`<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${C(t.message)}</p>`}}async function Z(e,t,n){let r=await c(t.id,e,!0);if(!r||r.length===0){Y(t.id,e,()=>{Z(e,t,n)});return}let i=r[0];await Q(i,e,t,n)}async function Q(e,t,n,r){let i=await s(e.id,t),a=Object.fromEntries((i||[]).map(e=>[e.indicador_id,e.check_state])),o=document.createElement(`div`);o.className=`pmr-backdrop`;function c(e){return e===`double`?`<i class="bi bi-check2-all pmr-check-double" title="Doble check: todos evaluados"></i>`:e===`single`?`<i class="bi bi-check2 pmr-check-single" title="Check simple: hay deudas pendientes"></i>`:`<span class="pmr-check-none" title="Sin dictar todavía"></span>`}let l=(e.unidades||[]).map(e=>`
     <div class="pmr-unidad">
-      <div class="pmr-unidad-title">${b(e.nombre)}</div>
+      <div class="pmr-unidad-title">${C(e.nombre)}</div>
       ${(e.objetivos||[]).map(t=>`
         <div class="pmr-objetivo">
-          <div class="pmr-objetivo-title">${b(t.nombre)}</div>
+          <div class="pmr-objetivo-title">${C(t.nombre)}</div>
           <div class="pmr-indicadores">
             ${(t.indicadores||[]).map(n=>`
-              <button class="pmr-indicador" data-indicador-id="${n.id}" data-indicador-nombre="${b(n.nombre)}" data-breadcrumb="${b(e.nombre)} &gt; ${b(t.nombre)}">
-                ${c(o[n.id])}
-                <span>${b(n.nombre)}</span>
+              <button class="pmr-indicador" data-indicador-id="${n.id}" data-indicador-nombre="${C(n.nombre)}" data-breadcrumb="${C(e.nombre)} &gt; ${C(t.nombre)}">
+                ${c(a[n.id])}
+                <span>${C(n.nombre)}</span>
               </button>
             `).join(``)}
           </div>
         </div>
       `).join(``)}
     </div>
-  `).join(``);s.innerHTML=`
+  `).join(``);o.innerHTML=`
     <div class="pmr-modal" role="dialog" aria-modal="true">
       <div class="pmr-header">
-        <h3><i class="bi bi-signpost-2-fill"></i> ${b(e.nombre)}</h3>
+        <h3><i class="bi bi-signpost-2-fill"></i> ${C(e.nombre)}</h3>
         <div class="pmr-header-actions">
           <button class="pmr-editar-btn" title="Editar ruta"><i class="bi bi-pencil-square"></i></button>
           <button class="pmr-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
@@ -670,7 +671,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         ${l||`<p class="pmr-empty">Esta ruta todavía no tiene unidades.</p>`}
       </div>
     </div>
-  `,document.body.appendChild(s);let u=()=>s.remove();s.querySelector(`.pmr-close`).addEventListener(`click`,u),s.addEventListener(`click`,e=>{e.target===s&&u()}),s.querySelector(`.pmr-editar-btn`).addEventListener(`click`,()=>{u(),Y(n.id,t,()=>{Z(t,n,i)})}),s.querySelectorAll(`.pmr-indicador`).forEach(r=>{r.addEventListener(`click`,async()=>{u(),await re({claseId:t,fecha:i,indicadorId:r.dataset.indicadorId,indicadorNombre:r.dataset.indicadorNombre,breadcrumb:r.dataset.breadcrumb,evaluadoPor:n.user_id,onSaved:()=>Q(e,t,n,i)})})})}if(!document.getElementById(`pmr-styles`)){let e=document.createElement(`style`);e.id=`pmr-styles`,e.textContent=`
+  `,document.body.appendChild(o);let u=()=>o.remove();o.querySelector(`.pmr-close`).addEventListener(`click`,u),o.addEventListener(`click`,e=>{e.target===o&&u()}),o.querySelector(`.pmr-editar-btn`).addEventListener(`click`,()=>{u(),Y(n.id,t,()=>{Z(t,n,r)})}),o.querySelectorAll(`.pmr-indicador`).forEach(i=>{i.addEventListener(`click`,async()=>{u(),await oe({claseId:t,fecha:r,indicadorId:i.dataset.indicadorId,indicadorNombre:i.dataset.indicadorNombre,breadcrumb:i.dataset.breadcrumb,evaluadoPor:n.user_id,onSaved:()=>Q(e,t,n,r)})})})}if(!document.getElementById(`pmr-styles`)){let e=document.createElement(`style`);e.id=`pmr-styles`,e.textContent=`
     .pmr-backdrop {
       position: fixed; inset: 0; background: rgba(15,23,42,0.55);
       display: flex; align-items: center; justify-content: center;
@@ -715,23 +716,23 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
       background: var(--pm-primary, #3b82f6); color: white; border-color: var(--pm-primary, #3b82f6);
       transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
-  `,document.head.appendChild(e)}function se(e,t,n){let r=e.map(e=>{let t=`${e.hora_inicio?e.hora_inicio.slice(0,5):`—`} – ${e.hora_fin?e.hora_fin.slice(0,5):`—`}`,n=e.motivo||``,r=e.contenido||e.observaciones||``,i=ce(e.motivo);return`
+  `,document.head.appendChild(e)}function ue(e,t,n){let r=e.map(e=>{let t=`${e.hora_inicio?e.hora_inicio.slice(0,5):`—`} – ${e.hora_fin?e.hora_fin.slice(0,5):`—`}`,n=e.motivo||``,r=e.contenido||e.observaciones||``,i=de(e.motivo);return`
       <div class="pm-clase-card pm-emergente-card" data-eme-id="${e.id}">
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div class="pm-clase-nombre">${b(e.nombre_clase)}</div>
+          <div class="pm-clase-nombre">${C(e.nombre_clase)}</div>
           <span class="pm-badge pm-badge-warning">
             <i class="bi bi-exclamation-triangle-fill me-1"></i>Emergente
           </span>
         </div>
-        ${n?`<div class="pm-eme-motivo ${i}">${b(n)}</div>`:``}
+        ${n?`<div class="pm-eme-motivo ${i}">${C(n)}</div>`:``}
         <div class="pm-clase-meta">
           <div class="meta-item"><i class="bi bi-clock"></i> ${t}</div>
-          ${r?`<div class="meta-item"><i class="bi bi-chat-text"></i> ${b(r)}</div>`:``}
+          ${r?`<div class="meta-item"><i class="bi bi-chat-text"></i> ${C(r)}</div>`:``}
         </div>
       </div>
     `}).join(``);return`
     <div style="padding: 1rem 1rem 2rem;">
-      <h2 class="pm-date-header">${S(t)} ${y(n)}</h2>
+      <h2 class="pm-date-header">${T(t)} ${S(n)}</h2>
       <p class="pm-eme-subtitle">
         <i class="bi bi-exclamation-triangle-fill"></i>
         Clase emergente registrada — reemplaza tus clases programadas de hoy
@@ -740,7 +741,7 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
         ${r}
       </div>
     </div>
-  `}function ce(e){return{suplencia:`pm-eme-motivo-suplencia`,eventual:`pm-eme-motivo-eventual`,reforzamiento:`pm-eme-motivo-reforzamiento`,otro:`pm-eme-motivo-otro`}[e]||`pm-eme-motivo-otro`}function le(e,t,n){e.querySelectorAll(`.pm-emergente-card`).forEach(e=>{e.addEventListener(`click`,()=>{e.classList.contains(`pm-card-loading`)||(e.classList.add(`pm-card-loading`),window.router&&window.router.navigate(`clase-emergente?fecha=${t}`),e.classList.remove(`pm-card-loading`))})})}function $(t,n,r,i){t.querySelector(`#btn-clase-emergente`)?.addEventListener(`click`,async()=>{let t=[];try{let e=(i||[]).map(e=>e.id);if(e.length>0){let n=await s(e),r={};n.forEach(e=>{if(!e.alumnos)return;r[e.alumno_id]||(r[e.alumno_id]=[]);let t=i.find(t=>t.id===e.clase_id);t&&r[e.alumno_id].push(t.nombre)});let a=new Set;t=n.map(e=>e.alumnos).filter(Boolean).filter(e=>a.has(e.id)?!1:(a.add(e.id),!0)).map(e=>({...e,clase_nombres:r[e.id]||[]}))}}catch(e){console.warn(`[HoyView] No se pudieron cargar alumnos para clase emergente:`,e)}N({fecha:n,clases:i||[],alumnos:t,maestroId:r,onSave:async t=>{let{data:n,error:r}=await p.from(`sesiones_clase`).insert([t]).select().single();if(r)throw r;e.success(`Clase emergente creada. Procedé a pasar asistencia.`),window.location.hash=`#/asistencia?sesion=${n.id}&fecha=${t.fecha}`}})})}if(!document.getElementById(`pm-hoy-pendientes-styles`)){let e=document.createElement(`style`);if(e.id=`pm-hoy-pendientes-styles`,!document.getElementById(`pm-badge-warning-style`)){let e=document.createElement(`style`);e.id=`pm-badge-warning-style`,e.textContent=`
+  `}function de(e){return{suplencia:`pm-eme-motivo-suplencia`,eventual:`pm-eme-motivo-eventual`,reforzamiento:`pm-eme-motivo-reforzamiento`,otro:`pm-eme-motivo-otro`}[e]||`pm-eme-motivo-otro`}function fe(e,t,n){e.querySelectorAll(`.pm-emergente-card`).forEach(e=>{e.addEventListener(`click`,()=>{e.classList.contains(`pm-card-loading`)||(e.classList.add(`pm-card-loading`),window.router&&window.router.navigate(`clase-emergente?fecha=${t}`),e.classList.remove(`pm-card-loading`))})})}function $(t,n,r,i){t.querySelector(`#btn-clase-emergente`)?.addEventListener(`click`,async()=>{let t=[];try{let e=(i||[]).map(e=>e.id);if(e.length>0){let n=await u(e),r={};n.forEach(e=>{if(!e.alumnos)return;r[e.alumno_id]||(r[e.alumno_id]=[]);let t=i.find(t=>t.id===e.clase_id);t&&r[e.alumno_id].push(t.nombre)});let a=new Set;t=n.map(e=>e.alumnos).filter(Boolean).filter(e=>a.has(e.id)?!1:(a.add(e.id),!0)).map(e=>({...e,clase_nombres:r[e.id]||[]}))}}catch(e){console.warn(`[HoyView] No se pudieron cargar alumnos para clase emergente:`,e)}I({fecha:n,clases:i||[],alumnos:t,maestroId:r,onSave:async t=>{let{data:n,error:r}=await g.from(`sesiones_clase`).insert([t]).select().single();if(r)throw r;e.success(`Clase emergente creada. Procedé a pasar asistencia.`),window.location.hash=`#/asistencia?sesion=${n.id}&fecha=${t.fecha}`}})})}if(!document.getElementById(`pm-hoy-pendientes-styles`)){let e=document.createElement(`style`);if(e.id=`pm-hoy-pendientes-styles`,!document.getElementById(`pm-badge-warning-style`)){let e=document.createElement(`style`);e.id=`pm-badge-warning-style`,e.textContent=`
         .pm-badge-warning {
           background: rgba(245,158,11,0.15);
           color: #d97706;
@@ -1017,4 +1018,4 @@ import{i as e}from"./AppModal-Du6jXNYA.js";import{a as t,c as n,i as r,l as i,m 
       border-radius: 999px;
       box-shadow: 0 12px 30px rgba(59,130,246,0.22);
     }
-  `,document.head.appendChild(e)}export{oe as renderHoyView};
+  `,document.head.appendChild(e)}export{le as renderHoyView};

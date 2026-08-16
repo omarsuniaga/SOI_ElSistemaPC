@@ -139,16 +139,16 @@ import{i as e}from"./portalUtils-CkF82Yyk.js";function t(t,n){if(!n||n.length===
         </div>
       `:``}
       <div class="pm-achievement-details">
-        ${t.approvedNodes.map(t=>`
-          <div class="pm-badge-node">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>${e(t)}</span>
+        ${(t.logrosNuevos||[]).map(t=>`
+          <div class="pm-badge-node" title="${e(t.descripcion||``)}">
+            <i class="bi bi-${e(t.icono||`award-fill`)}"></i>
+            <span>${e(t.nombre)}</span>
           </div>
         `).join(``)}
-        ${t.levelPromoted?`
+        ${t.rachaSubio?`
           <div class="pm-badge-level">
-            <i class="bi bi-arrow-up-circle-fill"></i>
-            <span>Promovido a: ${e(t.levelPromoted)}</span>
+            <i class="bi bi-fire"></i>
+            <span>Racha: ${e(String(t.rachaActual))} clase${t.rachaActual===1?``:`s`} seguida${t.rachaActual===1?``:`s`}</span>
           </div>
         `:``}
       </div>

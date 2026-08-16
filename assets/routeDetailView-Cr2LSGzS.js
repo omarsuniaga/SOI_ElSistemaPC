@@ -1,4 +1,4 @@
-import{t as e}from"./academicService-CSTf75O6.js";var t={async render(e){let t=e?.id,n=new URLSearchParams(window.location.hash.split(`?`)[1]).get(`studentId`),r=document.createElement(`div`);return r.className=`pm-view pm-animate-fade-in`,r.innerHTML=`
+import{t as e}from"./academicService-CHV7olLE.js";var t={async render(e){let t=e?.id,n=new URLSearchParams(window.location.hash.split(`?`)[1]).get(`studentId`),r=document.createElement(`div`);return r.className=`pm-view pm-animate-fade-in`,r.innerHTML=`
       <div class="pm-asist-header" style="margin-bottom: 2rem;">
         <button class="btn-icon-pm" id="back-to-library" style="margin-bottom: 0.5rem; margin-left: -8px;">
           <i class="bi bi-chevron-left"></i> Volver a Librería

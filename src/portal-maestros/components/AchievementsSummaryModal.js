@@ -1,7 +1,17 @@
 import { escHTML } from '../utils/portalUtils.js';
 
 /**
- * AchievementsSummaryModal: Muestra un resumen de los logros alcanzados tras la sesión.
+ * AchievementsSummaryModal: Muestra un resumen de los logros/rachas reales
+ * (alumnos_logros/rachas, alimentados por fn_evaluar_logros_alumno/
+ * fn_actualizar_racha_alumno vía trigger sobre evaluacion_indicador — ver
+ * openspec/changes/juego-gamificado-planificacion/spec.md, B-03) alcanzados
+ * tras calificar en IndicadorGradingModal.js.
+ *
+ * `results: Array<{ studentName: string, logrosNuevos?: Array<{nombre, descripcion, icono}>, rachaActual?: number, rachaSubio?: boolean }>`
+ * — cada entrada solo aparece si el alumno obtuvo algo nuevo (el caller ya
+ * filtra "sin novedades", Spec B-03 "sin logros nuevos, no se muestra el
+ * modal").
+ *
  * Diseño inspirado en Apple (Glassmorphism, feedback positivo).
  */
 export function createAchievementsSummaryModal(container, results) {
@@ -35,16 +45,16 @@ export function createAchievementsSummaryModal(container, results) {
         </div>
       ` : ''}
       <div class="pm-achievement-details">
-        ${res.approvedNodes.map(node => `
-          <div class="pm-badge-node">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>${escHTML(node)}</span>
+        ${(res.logrosNuevos || []).map(logro => `
+          <div class="pm-badge-node" title="${escHTML(logro.descripcion || '')}">
+            <i class="bi bi-${escHTML(logro.icono || 'award-fill')}"></i>
+            <span>${escHTML(logro.nombre)}</span>
           </div>
         `).join('')}
-        ${res.levelPromoted ? `
+        ${res.rachaSubio ? `
           <div class="pm-badge-level">
-            <i class="bi bi-arrow-up-circle-fill"></i>
-            <span>Promovido a: ${escHTML(res.levelPromoted)}</span>
+            <i class="bi bi-fire"></i>
+            <span>Racha: ${escHTML(String(res.rachaActual))} clase${res.rachaActual === 1 ? '' : 's'} seguida${res.rachaActual === 1 ? '' : 's'}</span>
           </div>
         ` : ''}
       </div>

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import './setup.js'
 import { createNodeEvaluationCard } from '../../src/portal-maestros/components/NodeEvaluationCard.js'
-import { createAchievementsSummaryModal } from '../../src/portal-maestros/components/AchievementsSummaryModal.js'
 import { academicService } from '../../src/modules/academic-routes/services/academicService.js'
 
 // Mock de academicService
@@ -96,54 +95,9 @@ describe('NodeEvaluationCard', () => {
   })
 })
 
-describe('AchievementsSummaryModal', () => {
-  let container
-  const mockResults = [
-    {
-      studentName: 'Juan Perez',
-      approvedNodes: ['Postura', 'Afinación'],
-      levelPromoted: 'Nivel 2'
-    },
-    {
-      studentName: 'Maria Garcia',
-      approvedNodes: ['Ritmo'],
-      levelPromoted: null
-    }
-  ]
-
-  beforeEach(() => {
-    document.body.innerHTML = ''
-    container = document.createElement('div')
-    document.body.appendChild(container)
-  })
-
-  it('debe renderizar la lista de logros recibida', () => {
-    createAchievementsSummaryModal(container, mockResults)
-    
-    const studentNames = container.querySelectorAll('.pm-student-name')
-    expect(studentNames[0].textContent).toBe('Juan Perez')
-    expect(studentNames[1].textContent).toBe('Maria Garcia')
-
-    const badges = container.querySelectorAll('.pm-badge-node')
-    expect(badges.length).toBe(3) // 2 para Juan, 1 para Maria
-    expect(badges[0].textContent.trim()).toBe('Postura')
-    
-    const promotion = container.querySelector('.pm-badge-level')
-    expect(promotion.textContent).toContain('Promovido a: Nivel 2')
-  })
-
-  it('debe cerrarse al hacer clic en continuar', async () => {
-    const promise = createAchievementsSummaryModal(container, mockResults)
-    const btn = container.querySelector('#pm-achievements-close')
-    
-    btn.click()
-    
-    await promise // Espera a que la promesa se resuelva
-    expect(container.querySelector('.pm-modal-overlay')).toBeNull()
-  })
-
-  it('no debe renderizar nada si results está vacío', () => {
-    createAchievementsSummaryModal(container, [])
-    expect(container.innerHTML).toBe('')
-  })
-})
+// AchievementsSummaryModal: cobertura movida a
+// src/portal-maestros/components/__tests__/AchievementsSummaryModal.test.js
+// (openspec/changes/juego-gamificado-planificacion, Spec B-03) — el
+// componente pasó de recibir `approvedNodes`/`levelPromoted` (sistema legado
+// de nodes/levels, ya no produce evaluaciones reales) a `logrosNuevos`/
+// `rachaActual`/`rachaSubio` (alumnos_logros/rachas reales).

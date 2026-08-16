@@ -19,6 +19,7 @@ import {
 } from '../services/maestroDataService.js'
 import { checkPrerequisiteSatisfied, getDirectPrerequisite } from '../services/maestroRouteService.js'
 import { analyzeIndicadorObservation } from '../services/groqService.js'
+import showRachaRevealOverlay from './RachaRevealOverlay.js'
 
 /**
  * @param {Object} opts
@@ -228,6 +229,9 @@ export async function openIndicadorGradingModal({
               )
               .join('')}
           </div>
+          <button class="igm-btn-racha" data-alumno-id="${alumnoId}" title="Mostrar racha al alumno">
+            <i class="bi bi-fire"></i> Mostrar racha
+          </button>
         </div>
       `
     }
@@ -339,6 +343,21 @@ export async function openIndicadorGradingModal({
               AppToast.error(`No se pudo guardar: ${err.message}`)
             }
           })
+        })
+      })
+    }
+
+    // Disparo SIEMPRE manual (Spec R-02): a diferencia de _checkAndShowAchievements
+    // (automático tras guardar), este botón solo abre el overlay cuando el
+    // maestro lo toca explícitamente. Lee del snapshot en memoria
+    // (achievementsBaseline, ya poblado por _snapshotAchievements al abrir el
+    // modal y refrescado tras cada guardado) — sin consulta nueva a Supabase.
+    function _bindRachaButtons() {
+      body.querySelectorAll('.igm-btn-racha').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const alumnoId = btn.dataset.alumnoId
+          const rachaActual = achievementsBaseline.get(alumnoId)?.rachaActual ?? null
+          showRachaRevealOverlay({ alumnoNombre: alumnosMap[alumnoId]?.nombre, rachaActual })
         })
       })
     }
@@ -472,6 +491,7 @@ export async function openIndicadorGradingModal({
     }
 
     _bindStars()
+    _bindRachaButtons()
     _bindDeudaButtons()
     _bindAnalizar()
     _refreshCompletarBtn()
@@ -539,6 +559,14 @@ if (!document.getElementById('igm-styles')) {
     .igm-stars { display: flex; gap: 0.15rem; }
     .igm-star { background: none; border: none; cursor: pointer; color: #d1d5db; font-size: 1.1rem; padding: 0.1rem; }
     .igm-star-filled { color: #f59e0b; }
+
+    .igm-btn-racha {
+      background: rgba(249,115,22,0.08); color: #ea580c;
+      border: 1px solid rgba(249,115,22,0.25); border-radius: 8px;
+      padding: 0.3rem 0.6rem; font-size: 0.72rem; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .igm-btn-racha:active { transform: scale(0.97); }
 
     .igm-btn-deuda {
       background: rgba(239,68,68,0.08); color: var(--pm-danger, #ef4444);

@@ -427,6 +427,409 @@ export async function getRutasMaestro(claseId, instrumento = null) {
   return rutasFiltradas
 }
 
+export async function getPersonalRoutes(maestroId, claseId, forceRefresh = false) {
+  if (!maestroId || !claseId) return []
+
+  const cacheKey = `personal_routes_${maestroId}_${claseId}`
+
+  if (!forceRefresh) {
+    const cached = viewCache.getCached(cacheKey)
+    if (cached) return cached
+  }
+
+  try {
+    // Import here to avoid circular dependencies
+    const { getTeacherRoutes } = await import('./maestroRouteService.js')
+    const routes = await getTeacherRoutes(maestroId, claseId)
+    viewCache.set(cacheKey, routes, 'personal_routes')
+    return routes
+  } catch (err) {
+    console.warn('[MaestroData] Error cargando rutas personales:', err.message)
+    return []
+  }
+}
+
+/**
+ * Get prerequisite graph for a route
+ * @param {string} routeId - Route ID
+ * @returns {Promise<Object>} Adjacency list of prerequisites
+ */
+export async function getRoutePrerequisites(routeId) {
+  if (!routeId) return {}
+
+  const cacheKey = `route_prerequisites_${routeId}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { getRoutePrerequisites: getPrereqs } = await import('./maestroRouteService.js')
+    const prerequisites = await getPrereqs(routeId)
+    viewCache.set(cacheKey, prerequisites, 'prerequisites')
+    return prerequisites
+  } catch (err) {
+    console.warn('[MaestroData] Error cargando prerequisitos:', err.message)
+    return {}
+  }
+}
+
+/**
+ * Get recovery sessions for a class
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Recovery sessions with status
+ */
+export async function getRecoverySessions(claseId) {
+  if (!claseId) return []
+
+  const cacheKey = `recovery_sessions_${claseId}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .select(
+        'id, alumno_id, maestro_indicador_id, clase_id, recovery_status, recovery_timestamp, recovery_notes'
+      )
+      .eq('clase_id', claseId)
+      .not('recovery_status', 'is', null)
+      .order('recovery_timestamp', { ascending: false })
+
+    if (error) {
+      console.warn('[MaestroData] Error loading recovery sessions:', error.message)
+      return []
+    }
+
+    const sessions = data || []
+    viewCache.set(cacheKey, sessions, 'recovery_sessions')
+    return sessions
+  } catch (err) {
+    console.error('[MaestroData] getRecoverySessions error:', err)
+    return []
+  }
+}
+
+/**
+ * Get check states for all indicators in a route per class
+ * Check state indicates grading progress: "none" | "single" | "double"
+ * @param {string} routeId - Route ID
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Array of {indicador_id, check_state, stats}
+ */
+export async function getIndicadorCheckStates(routeId, claseId) {
+  if (!routeId || !claseId) return []
+
+  const cacheKey = `check_states_${routeId}_${claseId}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    // Resolvemos la jerarquía paso a paso (no anidando awaits dentro de .in())
+    // para poder manejar de forma segura resultados vacíos/null en cada nivel.
+    const { data: unidades, error: unidadesError } = await supabase
+      .from('maestro_unidades')
+      .select('id')
+      .eq('ruta_id', routeId)
+    if (unidadesError) {
+      console.warn('[MaestroData] Error loading unidades:', unidadesError.message)
+      return []
+    }
+    const unidadIds = (unidades || []).map((u) => u.id)
+    if (unidadIds.length === 0) return []
+
+    const { data: objetivos, error: objetivosError } = await supabase
+      .from('maestro_objetivos')
+      .select('id')
+      .in('unidad_id', unidadIds)
+    if (objetivosError) {
+      console.warn('[MaestroData] Error loading objetivos:', objetivosError.message)
+      return []
+    }
+    const objetivoIds = (objetivos || []).map((o) => o.id)
+    if (objetivoIds.length === 0) return []
+
+    // Query: For each indicador in route, count evaluations and recovery status
+    // check_state = "none" if no evaluations
+    // check_state = "single" if >= 1 evaluation but some students absent/not recovered
+    // check_state = "double" if all students evaluated or recovered
+    const { data: indicadores, error: indError } = await supabase
+      .from('maestro_indicadores')
+      .select('id')
+      .in('objetivo_id', objetivoIds)
+
+    if (indError) {
+      console.warn('[MaestroData] Error loading indicators:', indError.message)
+      return []
+    }
+
+    const indicadorIds = (indicadores || []).map((i) => i.id)
+    if (indicadorIds.length === 0) return []
+
+    // Total real de alumnos inscritos en la clase — SIN esto, un indicador
+    // con una sola fila en evaluacion_indicador (de 20 alumnos reales) se
+    // marcaba "doble check" (completo) porque el código solo miraba las
+    // filas que YA existían, nunca cuántas deberían existir. Bug crítico
+    // encontrado en revisión adversarial.
+    const { count: totalAlumnos, error: alumnosError } = await supabase
+      .from('alumnos_clases')
+      .select('alumno_id', { count: 'exact', head: true })
+      .eq('clase_id', claseId)
+      .eq('activo', true)
+
+    if (alumnosError) {
+      console.warn('[MaestroData] Error loading alumnos inscritos:', alumnosError.message)
+      return indicadorIds.map((id) => ({ indicador_id: id, check_state: 'none' }))
+    }
+
+    // Una sola consulta para las evaluaciones de TODOS los indicadores de la
+    // ruta (en vez de una consulta por indicador), agrupadas en memoria.
+    const { data: allEvals, error: evalError } = await supabase
+      .from('evaluacion_indicador')
+      .select('maestro_indicador_id, alumno_id, recovery_status')
+      .in('maestro_indicador_id', indicadorIds)
+      .eq('clase_id', claseId)
+
+    if (evalError) {
+      console.warn('[MaestroData] Error loading evaluations:', evalError.message)
+      return indicadorIds.map((id) => ({ indicador_id: id, check_state: 'none' }))
+    }
+
+    const evalsByIndicador = new Map()
+    for (const ev of allEvals || []) {
+      const list = evalsByIndicador.get(ev.maestro_indicador_id) || []
+      list.push(ev)
+      evalsByIndicador.set(ev.maestro_indicador_id, list)
+    }
+
+    const checkStates = indicadorIds.map((indicadorId) => {
+      const evals = evalsByIndicador.get(indicadorId) || []
+      if (evals.length === 0) {
+        return { indicador_id: indicadorId, check_state: 'none' }
+      }
+      const hasUnresolvedDebt = evals.some((e) => e.recovery_status === 'pendiente' || e.recovery_status === null)
+      // "Doble check" exige que TODOS los alumnos inscritos tengan una fila
+      // resuelta (calificados, recuperados, o no_aplica/no_recuperable), no
+      // solo que las filas existentes no tengan deuda pendiente.
+      const faltanAlumnosPorTocar = (totalAlumnos ?? evals.length) > evals.length
+      return {
+        indicador_id: indicadorId,
+        check_state: hasUnresolvedDebt || faltanAlumnosPorTocar ? 'single' : 'double',
+        stats: { evaluados: evals.length, total: totalAlumnos ?? evals.length },
+      }
+    })
+
+    viewCache.set(cacheKey, checkStates, 'check_states')
+    return checkStates
+  } catch (err) {
+    console.error('[MaestroData] getIndicadorCheckStates error:', err)
+    return []
+  }
+}
+
+/**
+ * Save (upsert) a star grade for a PRESENT student on a personal-route indicator.
+ * Sets recovery_status = 'no_aplica' explicitly — el alumno estaba presente,
+ * no hay deuda que resolver. Sin este valor explícito, el DEFAULT 'pendiente'
+ * de la columna lo dejaría marcado como si tuviera deuda (bug detectado al
+ * revisar la migración 20260812000002).
+ * @param {Object} params
+ * @param {string} params.alumnoId
+ * @param {string} params.indicadorId - Id de maestro_indicadores
+ * @param {string} params.claseId
+ * @param {number} params.nota - 1 a 5
+ * @param {string} [params.observaciones]
+ * @param {string} params.evaluadoPor - auth.uid() del maestro (maestro.user_id, NO maestro.id)
+ * @returns {Promise<Object>}
+ */
+export async function saveIndicadorNota({ alumnoId, indicadorId, claseId, nota, observaciones, evaluadoPor }) {
+  if (!alumnoId || !indicadorId || !claseId) {
+    throw new Error('Missing required parameters: alumnoId, indicadorId, claseId')
+  }
+
+  const { data, error } = await supabase
+    .from('evaluacion_indicador')
+    .upsert(
+      {
+        alumno_id: alumnoId,
+        maestro_indicador_id: indicadorId,
+        clase_id: claseId,
+        nota: nota ?? null,
+        observaciones: observaciones ?? null,
+        recovery_status: 'no_aplica',
+        evaluado_por: evaluadoPor || null,
+      },
+      { onConflict: 'alumno_id,maestro_indicador_id,clase_id' }
+    )
+    .select()
+
+  if (error) {
+    throw new Error(`Failed to save nota: ${error.message}`)
+  }
+
+  viewCache.invalidate('check_states')
+  return data[0] || {}
+}
+
+/**
+ * Update (upsert) recovery status for a student indicator.
+ * Usa upsert (no plain UPDATE) porque un alumno ausente puede no tener
+ * todavía ninguna fila en evaluacion_indicador para este indicador.
+ * Además dispara la reevaluación de cadena de prerrequisitos (R2.3):
+ * marca con review_flag = true los indicadores posteriores de este alumno
+ * que dependían de este indicador y fueron calificados bajo advertencia
+ * blanda (prerrequisito no satisfecho en su momento).
+ * @param {string} alumnoId - Student ID
+ * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
+ * @param {string} claseId - Class ID
+ * @param {string} status - Recovery status: 'recuperado' | 'no_recuperable'
+ * @param {string} notes - Optional recovery notes
+ * @param {number} grade - Optional recovery grade (1-5)
+ * @param {string} [evaluadoPor] - auth.uid() del maestro
+ * @returns {Promise<Object>} Updated evaluation record
+ */
+export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, status, notes, grade, evaluadoPor) {
+  if (!alumnoId || !indicadorId || !claseId) {
+    throw new Error('Missing required parameters: alumnoId, indicadorId, claseId')
+  }
+  if (status !== 'recuperado' && status !== 'no_recuperable') {
+    throw new Error(`Invalid recovery status: ${status}`)
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .upsert(
+        {
+          alumno_id: alumnoId,
+          maestro_indicador_id: indicadorId,
+          clase_id: claseId,
+          recovery_status: status,
+          recovery_notes: notes || null,
+          recovery_timestamp: new Date().toISOString(),
+          recovery_grade: grade || null,
+          evaluado_por: evaluadoPor || null,
+        },
+        { onConflict: 'alumno_id,maestro_indicador_id,clase_id' }
+      )
+      .select()
+
+    if (error) {
+      throw new Error(`Failed to update recovery status: ${error.message}`)
+    }
+
+    viewCache.invalidate('check_states')
+
+    if (status === 'recuperado') {
+      await _flagDependentIndicadores(alumnoId, indicadorId, claseId)
+    }
+
+    return data[0] || {}
+  } catch (err) {
+    console.error('[MaestroData] updateRecoveryStatus error:', err)
+    throw err
+  }
+}
+
+/**
+ * Reevaluación de cadena (R2.3): cuando un alumno recupera `indicadorId`,
+ * busca los indicadores de la misma ruta que lo tienen como prerrequisito,
+ * y si ese alumno ya tiene una evaluación registrada ahí, la marca con
+ * review_flag = true para que el maestro la revise. No recalifica sola.
+ * @private
+ */
+async function _flagDependentIndicadores(alumnoId, indicadorId, claseId) {
+  try {
+    const { data: dependientes, error: depError } = await supabase
+      .from('indicador_prerequisito')
+      .select('indicador_id')
+      .eq('prerequisito_indicador_id', indicadorId)
+
+    if (depError || !dependientes || dependientes.length === 0) return
+
+    const dependientesIds = dependientes.map((d) => d.indicador_id)
+
+    const { error: flagError } = await supabase
+      .from('evaluacion_indicador')
+      .update({ review_flag: true })
+      .eq('alumno_id', alumnoId)
+      .eq('clase_id', claseId)
+      .in('maestro_indicador_id', dependientesIds)
+
+    if (flagError) {
+      console.warn('[MaestroData] Warning flagging dependent indicadores:', flagError.message)
+    }
+  } catch (err) {
+    console.warn('[MaestroData] _flagDependentIndicadores error:', err.message)
+  }
+}
+
+/**
+ * Get attendance state for a class on a given date (for grading modal partitioning)
+ * Usa la tabla real `asistencias` (clase_id, alumno_id, fecha, estado) — NO existe
+ * columna sesion_id en esa tabla; el filtro real es por fecha (ver
+ * supabase/migrations/20260520_add_unique_asistencias_constraint.sql).
+ * Valores reales de `estado`: 'presente' | 'ausente' | 'justificado'.
+ * @param {string} claseId - Class ID
+ * @param {string} fecha - Fecha de la sesión, formato 'YYYY-MM-DD'
+ * @returns {Promise<Object>} { presentes: [...], ausentes: [...] }
+ */
+export async function getAttendanceForClass(claseId, fecha) {
+  if (!claseId || !fecha) return { presentes: [], ausentes: [] }
+
+  try {
+    const { data: attendance, error } = await supabase
+      .from('asistencias')
+      .select('alumno_id, estado')
+      .eq('clase_id', claseId)
+      .eq('fecha', fecha)
+
+    if (error) {
+      console.warn('[MaestroData] Error loading attendance:', error.message)
+      return { presentes: [], ausentes: [] }
+    }
+
+    const presentes = (attendance || [])
+      .filter((a) => a.estado === 'presente' || a.estado === 'tarde')
+      .map((a) => a.alumno_id)
+    const ausentes = (attendance || [])
+      .filter((a) => a.estado === 'ausente' || a.estado === 'justificado')
+      .map((a) => a.alumno_id)
+
+    return { presentes, ausentes }
+  } catch (err) {
+    console.error('[MaestroData] getAttendanceForClass error:', err)
+    return { presentes: [], ausentes: [] }
+  }
+}
+
+/**
+ * Get all evaluations for a personal-route indicator in a class
+ * Used for check-state calculation and recovery cascade
+ * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Evaluation records for this indicator+class
+ */
+export async function getIndicadorEvaluations(indicadorId, claseId) {
+  if (!indicadorId || !claseId) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .select('*')
+      .eq('maestro_indicador_id', indicadorId)
+      .eq('clase_id', claseId)
+
+    if (error) {
+      console.warn('[MaestroData] Error loading evaluations:', error.message)
+      return []
+    }
+
+    return data || []
+  } catch (err) {
+    console.error('[MaestroData] getIndicadorEvaluations error:', err)
+    return []
+  }
+}
+
 export default {
   getMisClases,
   getHorariosClases,
@@ -439,5 +842,12 @@ export default {
   prefetchMonthData,
   invalidateClasesCache,
   invalidateAllCache,
+  getPersonalRoutes,
+  getRoutePrerequisites,
+  getRecoverySessions,
+  getIndicadorCheckStates,
+  updateRecoveryStatus,
+  getAttendanceForClass,
+  getIndicadorEvaluations,
   CACHE_KEYS,
 }

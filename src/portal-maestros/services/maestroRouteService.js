@@ -6,6 +6,13 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 
+function _normalizeUuidLike(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null
+  return text
+}
+
 /**
  * Get all routes for a teacher in a given class
  * @param {string} maestroId - Teacher ID
@@ -14,12 +21,23 @@ import { supabase } from '../../lib/supabaseClient.js'
  */
 export async function getTeacherRoutes(maestroId, claseId) {
   try {
+    const normalizedMaestroId = _normalizeUuidLike(maestroId)
+    const normalizedClaseId = _normalizeUuidLike(claseId)
+
+    if (!normalizedMaestroId || !normalizedClaseId) {
+      console.warn('[MaestroRouteService] Invalid teacher/class id for route fetch:', {
+        maestroId,
+        claseId,
+      })
+      return []
+    }
+
     // Fetch all routes for teacher+class combo
     const { data: routes, error: routesError } = await supabase
       .from('maestro_routes')
       .select('id, maestro_id, clase_id, nombre, descripcion, created_at, updated_at')
-      .eq('maestro_id', maestroId)
-      .eq('clase_id', claseId)
+      .eq('maestro_id', normalizedMaestroId)
+      .eq('clase_id', normalizedClaseId)
 
     if (routesError) {
       console.warn('[MaestroRouteService] Error fetching routes:', routesError.message)

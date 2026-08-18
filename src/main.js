@@ -102,6 +102,8 @@ import { renderAlianzasView } from './modules/alianzas/views/alianzasView.js'
 import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
 import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
 import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
+import { renderPulsoView } from './modules/hermes/views/pulsoView.js'
+import { renderRulesView } from './modules/hermes/views/rulesView.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -783,6 +785,12 @@ function registerModules() {
     )
     router.register('hermes-consulta', (mount) =>
       renderHermesConsultaView(mount),
+    )
+    router.register('hermes-pulso', (mount) =>
+      renderPulsoView(mount),
+    )
+    router.register('hermes-reglas', (mount) =>
+      renderRulesView(mount),
     )
   } catch (error) {
     console.error('Error registering hermes routes:', error)

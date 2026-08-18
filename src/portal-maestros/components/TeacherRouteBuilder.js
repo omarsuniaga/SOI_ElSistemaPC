@@ -287,7 +287,9 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
     unidadesContainer.querySelectorAll('[data-role="toggle-unidad"]').forEach((el) => {
       el.addEventListener('click', (e) => {
         e.stopPropagation()
-        const localId = state.unidades[+el.dataset.ui]._localId
+        const unidad = state.unidades[Number(el.dataset.ui)]
+        if (!unidad?._localId) return
+        const localId = unidad._localId
         if (expandedUnidades.has(localId)) expandedUnidades.delete(localId)
         else expandedUnidades.add(localId)
         _render()
@@ -297,7 +299,9 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
       el.addEventListener('click', (e) => {
         e.stopPropagation()
         const { ui, oi } = el.dataset
-        const localId = state.unidades[+ui].objetivos[+oi]._localId
+        const objetivo = state.unidades[Number(ui)]?.objetivos?.[Number(oi)]
+        if (!objetivo?._localId) return
+        const localId = objetivo._localId
         if (expandedObjetivos.has(localId)) expandedObjetivos.delete(localId)
         else expandedObjetivos.add(localId)
         _render()
@@ -326,8 +330,6 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
       el.addEventListener('input', () => {
         const { ui, oi, ii } = el.dataset
         state.unidades[+ui].objetivos[+oi].indicadores[+ii].nombre = el.value
-        // El nombre cambia las opciones de prerrequisito visibles en otros selects
-        _render()
       })
     })
     // Prerrequisito (componente atómico: toggle abre/cierra el panel, pick
@@ -335,7 +337,9 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
     unidadesContainer.querySelectorAll('[data-role="prereq-toggle"]').forEach((el) => {
       el.addEventListener('click', () => {
         const { ui, oi, ii } = el.dataset
-        const localId = state.unidades[+ui].objetivos[+oi].indicadores[+ii]._localId
+        const indicador = state.unidades[Number(ui)]?.objetivos?.[Number(oi)]?.indicadores?.[Number(ii)]
+        if (!indicador?._localId) return
+        const localId = indicador._localId
         openPrereqId = openPrereqId === localId ? null : localId
         _render()
       })
@@ -361,15 +365,19 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
     // de inmediato, sin un toque extra para desplegarlo.
     unidadesContainer.querySelectorAll('[data-role="add-objetivo"]').forEach((el) => {
       el.addEventListener('click', () => {
+        const unidad = state.unidades[Number(el.dataset.ui)]
+        if (!unidad) return
         const nuevo = _nuevoObjetivo()
-        state.unidades[+el.dataset.ui].objetivos.push(nuevo)
+        unidad.objetivos.push(nuevo)
         expandedObjetivos.add(nuevo._localId)
         _render()
       })
     })
     unidadesContainer.querySelectorAll('[data-role="add-indicador"]').forEach((el) => {
       el.addEventListener('click', () => {
-        state.unidades[+el.dataset.ui].objetivos[+el.dataset.oi].indicadores.push(_nuevoIndicador())
+        const objetivo = state.unidades[Number(el.dataset.ui)]?.objetivos?.[Number(el.dataset.oi)]
+        if (!objetivo) return
+        objetivo.indicadores.push(_nuevoIndicador())
         _render()
       })
     })
@@ -377,20 +385,28 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
     // Quitar
     unidadesContainer.querySelectorAll('.trb-remove-unidad').forEach((el) => {
       el.addEventListener('click', () => {
-        state.unidades.splice(+el.dataset.ui, 1)
+        const index = Number(el.dataset.ui)
+        if (Number.isNaN(index) || !state.unidades[index]) return
+        state.unidades.splice(index, 1)
         _render()
       })
     })
     unidadesContainer.querySelectorAll('.trb-remove-objetivo').forEach((el) => {
       el.addEventListener('click', () => {
-        state.unidades[+el.dataset.ui].objetivos.splice(+el.dataset.oi, 1)
+        const unidad = state.unidades[Number(el.dataset.ui)]
+        const index = Number(el.dataset.oi)
+        if (!unidad || Number.isNaN(index) || !unidad.objetivos[index]) return
+        unidad.objetivos.splice(index, 1)
         _render()
       })
     })
     unidadesContainer.querySelectorAll('.trb-remove-indicador').forEach((el) => {
       el.addEventListener('click', () => {
         const { ui, oi, ii } = el.dataset
-        state.unidades[+ui].objetivos[+oi].indicadores.splice(+ii, 1)
+        const indicadorList = state.unidades[Number(ui)]?.objetivos?.[Number(oi)]?.indicadores
+        const index = Number(ii)
+        if (!indicadorList || Number.isNaN(index) || !indicadorList[index]) return
+        indicadorList.splice(index, 1)
         _render()
       })
     })

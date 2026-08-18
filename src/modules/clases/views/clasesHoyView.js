@@ -1,10 +1,9 @@
 import '../styles/clasesHoy.css'
 import { router } from '../../../core/router/router.js'
-import { obtenerClasesDelDia, DIAS_SEMANA, obtenerDiaActual, COMPLIANCE_META } from '../api/clasesHoyApi.js'
+import { obtenerClasesDelDia, justificarAusencia, DIAS_SEMANA, obtenerDiaActual, COMPLIANCE_META } from '../api/clasesHoyApi.js'
 import { formatHora, escapeHTML } from '../utils/clasesUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { crearAsistencia, ESTADOS } from '../../asistencias/api/asistenciasApi.js'
 import { whatsappLink } from '../../../shared/utils/phoneUtils.js'
 
 let _abortController = null
@@ -271,12 +270,11 @@ function aplicarFiltros(container) {
 
 async function guardarJustificacion(container, sesion, alumno, motivo) {
   try {
-    await crearAsistencia({
-      clase_id: sesion.claseId,
-      alumno_id: alumno.id,
+    await justificarAusencia({
+      claseId: sesion.claseId,
+      alumnoId: alumno.id,
       fecha: sesion.fecha,
-      estado: ESTADOS.JUSTIFICADO,
-      justificacion_texto: motivo,
+      motivo,
     })
     AppToast.success(`${alumno.nombre_completo} quedó justificado en "${sesion.nombre}"`)
     await cargarYRenderizar(container, sesion.dia)

@@ -1,0 +1,216 @@
+/* pulso.css — Estilos para Pulso Institucional */
+
+.pulso-container {
+  padding: 1rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.pulso-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pulso-header .card-title {
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.pulso-header small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.pulso-filters {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.pulso-filters .form-label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.pulso-filters .form-select-sm {
+  font-size: 0.875rem;
+  border-color: #cbd5e1;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pulso-filters .form-select-sm:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.pulso-feed {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.pulso-evento-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.pulso-evento-row:last-child {
+  border-bottom: none;
+}
+
+.pulso-evento-row:hover {
+  background-color: #f1f5f9;
+}
+
+.pulso-evento-badge {
+  width: 4px;
+  height: auto;
+  min-height: 60px;
+  border-radius: 2px;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.pulso-evento-content {
+  flex-grow: 1;
+}
+
+.pulso-evento-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+}
+
+.pulso-evento-tipo {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.pulso-evento-timestamp {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pulso-evento-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.pulso-evento-entidad {
+  font-weight: 500;
+  color: #475569;
+}
+
+.pulso-evento-id {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.pulso-evento-payload {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-left: 2px solid #cbd5e1;
+  border-radius: 0.25rem;
+  color: #64748b;
+  word-break: break-word;
+}
+
+.pulso-evento-payload small {
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+/* Load More Button */
+.btn-outline-secondary {
+  border-color: #cbd5e1;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #334155;
+}
+
+.btn-outline-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Reconnect Banner */
+.alert-warning {
+  background-color: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+  border-radius: 0.5rem;
+}
+
+.alert-warning .bi {
+  color: #d97706;
+}
+
+/* Empty State */
+.alert-info {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  border-radius: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pulso-container {
+    padding: 0.5rem;
+  }
+
+  .pulso-header .card-title {
+    font-size: 1.25rem;
+  }
+
+  .pulso-evento-row {
+    padding: 0.75rem;
+  }
+
+  .pulso-evento-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pulso-evento-timestamp {
+    width: 100%;
+    text-align: left;
+  }
+
+  .pulso-filters .row {
+    row-gap: 1rem;
+  }
+}
+
+/* Smooth transitions */
+.pulso-evento-row,
+.pulso-filters,
+.pulso-feed {
+  transition: all 0.3s ease;
+}

@@ -50,4 +50,7 @@ export {
   completarTarea,
   guardarFeedback,
   getTareasFiltradas,
+  getPulsoEventos,
+  getRules,
+  updateRule,
 } from './tareasApi.js'

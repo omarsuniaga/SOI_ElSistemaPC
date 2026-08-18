@@ -1052,7 +1052,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                 <p style="font-size:0.85rem; color:var(--pm-text-muted); max-width:420px; margin:0 auto 1.1rem;">
                   Unidad → Objetivo → Indicador, con el check de calificación de cada alumno presente.
                 </p>
-                <button type="button" class="btn btn-primary fw-semibold rounded-3 btn-modal-ruta-full" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-primary fw-semibold rounded-3 btn-modal-ruta-full">
                   <i class="bi bi-signpost-2-fill me-1"></i>Abrir mapa
                 </button>
               </div>

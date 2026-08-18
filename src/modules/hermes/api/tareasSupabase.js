@@ -600,3 +600,86 @@ export async function rechazarToolCall(tareaId, motivo, actor) {
 
   if (error) throw error
 }
+
+// ─── Batch 2: Pulso Institucional ────────────────────────────────────────────
+
+/**
+ * Obtiene eventos procesados para el dashboard Pulso Institucional.
+ * RLS automático: DIR ve todos; ACM, ADM, LOG, etc. ven solo sus eventos.
+ *
+ * @param {number} [offset=0] — posición de inicio
+ * @param {number} [limit=100] — cantidad de registros
+ * @param {object} [filters={}] — { tipo?, entidad_tipo?, departamento?, searchText? }
+ * @returns {Promise<Array>}
+ */
+export async function getPulsoEventos(offset = 0, limit = 100, filters = {}) {
+  let query = supabase
+    .from('soi_eventos')
+    .select('id, tipo, entidad_tipo, entidad_id, payload, created_at')
+    .eq('procesado', true)
+
+  if (filters.tipo) query = query.eq('tipo', filters.tipo)
+  if (filters.entidad_tipo) query = query.eq('entidad_tipo', filters.entidad_tipo)
+  if (filters.departamento) query = query.eq('departamento', filters.departamento)
+  if (filters.searchText) {
+    // Búsqueda en payload como JSON (si la estructura lo permite)
+    query = query.ilike('payload::text', `%${filters.searchText}%`)
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Obtiene reglas reactivas (hermes_reactive_rules) para un departamento.
+ * RLS automático filtra por departamento del usuario.
+ *
+ * @param {string} [departamento=null] — si se proporciona, filtra por ese departamento
+ * @returns {Promise<Array>}
+ */
+export async function getRules(departamento = null) {
+  let query = supabase
+    .from('hermes_reactive_rules')
+    .select('id, rule_type, nombre, descripcion, enabled, departamento, conditions_json, created_at, updated_at')
+
+  if (departamento) {
+    query = query.eq('departamento', departamento)
+  }
+
+  const { data, error } = await query.order('rule_type', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Actualiza una regla reactiva (enabled, descripcion, etc.).
+ * RLS automático: solo se pueden actualizar reglas del departamento del usuario (o todas si DIR).
+ *
+ * @param {string} ruleId
+ * @param {object} updates — { enabled?, descripcion?, conditions_json? }
+ * @returns {Promise<object>}
+ */
+export async function updateRule(ruleId, updates = {}) {
+  const payload = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if (updates.enabled !== undefined) payload.enabled = updates.enabled
+  if (updates.descripcion !== undefined) payload.descripcion = updates.descripcion
+  if (updates.conditions_json !== undefined) payload.conditions_json = updates.conditions_json
+
+  const { data, error } = await supabase
+    .from('hermes_reactive_rules')
+    .update(payload)
+    .eq('id', ruleId)
+    .select('id, rule_type, nombre, descripcion, enabled, departamento, conditions_json, created_at, updated_at')
+    .single()
+
+  if (error) throw error
+  return data
+}

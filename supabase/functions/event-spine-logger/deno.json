@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.0.0"
+  },
+  "tasks": {
+    "dev": "deno run --watch --allow-all --env supabase functions serve",
+    "test": "deno test --allow-all test.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"]
+  }
+}

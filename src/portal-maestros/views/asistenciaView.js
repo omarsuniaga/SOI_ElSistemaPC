@@ -98,6 +98,13 @@ import {
  * Carga la sesión por ID, construye un objeto clase sintético desde
  * el campo `actividad`, y extrae los alumnos del campo `asistencia` (jsonb).
  */
+function normalizeNullableId(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null
+  return text
+}
+
 async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, router }) {
   try {
     const { data: sesion, error } = await supabase
@@ -115,13 +122,15 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
     const hoy = new Date()
     const localToday = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
     const fechaHoy = fecha || sesion.fecha || localToday
+    const claseId = normalizeNullableId(sesion.clase_id)
     const clase = {
-      id: sesionId,
+      id: claseId || sesionId,
+      clase_id: claseId,
       nombre: sesion.actividad || 'Clase Emergente',
       instrumento: '',
     }
 
-    localStorage.setItem('pm_active_clase_id', sesionId)
+    localStorage.setItem('pm_active_clase_id', claseId || sesionId)
 
     // Extraer IDs del jsonb asistencia
     const asistenciaData = Array.isArray(sesion.asistencia) ? sesion.asistencia : []
@@ -157,7 +166,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       justificaciones,
       maestro,
       fechaHoy,
-      claseId: null,
+      claseId,
       sesionId,
       hasConflict: false,
       serverDSL: sesion.contenido || '',

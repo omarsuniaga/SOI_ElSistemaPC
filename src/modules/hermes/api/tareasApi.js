@@ -60,3 +60,8 @@ export const getProcessContracts = api.getProcessContracts
 export const startProcessCase = api.startProcessCase
 export const getProcessCaseDetail = api.getProcessCaseDetail
 export const closeProcessCase = api.closeProcessCase
+
+// ─── Batch 2: Pulso Institucional ────────────────────────────────────────────
+export const getPulsoEventos = api.getPulsoEventos
+export const getRules = api.getRules
+export const updateRule = api.updateRule

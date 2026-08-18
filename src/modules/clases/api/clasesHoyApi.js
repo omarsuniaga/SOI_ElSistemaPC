@@ -53,6 +53,25 @@ export const COMPLIANCE_META = {
 }
 
 /**
+ * Justifica una ausencia asegurando que el registro de asistencia quede
+ * vinculado a una sesión real. La RPC mantiene ambas escrituras atómicas.
+ */
+export async function justificarAusencia({ claseId, alumnoId, fecha, motivo = '' }) {
+  const { data, error } = await supabase.rpc('registrar_justificacion_asistencia', {
+    p_clase_id: claseId,
+    p_alumno_id: alumnoId,
+    p_fecha: fecha,
+    p_motivo: motivo,
+  })
+
+  if (error) {
+    throw new Error(`No se pudo justificar la ausencia: ${error.message}`)
+  }
+
+  return data
+}
+
+/**
  * Registros de asistencia pendiente (tabla registros_pendientes, ya
  * calculada/escalada por supabase/functions/escalate-asistencias-notifications)
  * para las clases del día, indexados por clase_id. Solo existen registros

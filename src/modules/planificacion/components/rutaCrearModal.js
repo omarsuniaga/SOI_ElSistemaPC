@@ -86,10 +86,30 @@ export function openRutaCrearModal(onCreated) {
       <div class="objetivo-row" data-idx="${i}">
         <input type="text" class="form-control form-control-sm" placeholder="Semanas" value="${obj.semana_inicio}-${obj.semana_fin}" style="width: 80px;">
         <textarea class="form-control form-control-sm" rows="2" placeholder="Descripción del objetivo">${obj.descripcion}</textarea>
-        <button type="button" class="btn btn-sm btn-link text-danger" onclick="this.closest('.objetivo-row').remove()">Eliminar</button>
+        <button type="button" class="btn btn-sm btn-link text-danger btn-remove-objetivo">Eliminar</button>
       </div>
     `).join('')
   }
+
+  document.getElementById('objetivos-list').addEventListener('click', (event) => {
+    const button = event.target.closest('.btn-remove-objetivo')
+    if (!button) return
+
+    const row = button.closest('.objetivo-row')
+    const index = Number(row?.dataset.idx)
+
+    if (Number.isNaN(index)) return
+
+    if (objetivos.length <= 1) {
+      AppToast.warning('Debe quedar al menos un objetivo')
+      return
+    }
+
+    objetivos = objetivos
+      .filter((_, i) => i !== index)
+      .map((obj, i) => ({ ...obj, orden: i + 1 }))
+    _renderObjetivos()
+  })
 
   document.getElementById('btn-agregar-objetivo').addEventListener('click', () => {
     const maxSemana = Math.max(...objetivos.map(o => o.semana_fin))

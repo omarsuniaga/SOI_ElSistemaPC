@@ -95,4 +95,20 @@ export function registerRoutesAdminDashboard() {
       </div>`
     }
   })
+
+  // Orquestador de Conciertos Hermes (SOP-SOI-CON-001)
+  router.register('admin-conciertos', async (container) => {
+    try {
+      container.innerHTML = `<div id="admin-conciertos-container"></div>`
+      const { renderHermesConcertOrchestratorView } = await import('../hermes/views/hermesConcertOrchestratorView.js')
+      renderHermesConcertOrchestratorView('admin-conciertos-container')
+    } catch (error) {
+      console.error('[admin-conciertos] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder p-4 text-center text-muted">
+        <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+        <p>Error al cargar el Orquestador de Conciertos: ${error.message}</p>
+      </div>`
+    }
+  })
 }
+

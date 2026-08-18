@@ -54,3 +54,16 @@ export {
   getRules,
   updateRule,
 } from './tareasApi.js'
+
+// Re-export de la API de Orquestación de Conciertos (SOP-SOI-CON-001)
+export {
+  orquestarConcierto,
+  confirmarTiempoTraslado,
+  getEventoConcierto,
+  getTareasConcierto,
+  procesarFeedbackTarea,
+  getAlertasConcierto,
+  getHitosConcierto,
+  enviarMensajeTelegram,
+} from './hermesOrchestrationApi.js'
+

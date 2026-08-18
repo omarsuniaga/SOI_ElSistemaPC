@@ -104,6 +104,8 @@ import { renderProcedimientosView } from './modules/hermes/views/procedimientosV
 import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
 import { renderPulsoView } from './modules/hermes/views/pulsoView.js'
 import { renderRulesView } from './modules/hermes/views/rulesView.js'
+import { renderHermesConcertOrchestratorView } from './modules/hermes/views/hermesConcertOrchestratorView.js'
+
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -792,6 +794,13 @@ function registerModules() {
     router.register('hermes-reglas', (mount) =>
       renderRulesView(mount),
     )
+    router.register('hermes-conciertos', (mount) =>
+      renderHermesConcertOrchestratorView(mount),
+    )
+    router.register('hermes-orquestador', (mount) =>
+      renderHermesConcertOrchestratorView(mount),
+    )
+
   } catch (error) {
     console.error('Error registering hermes routes:', error)
   }

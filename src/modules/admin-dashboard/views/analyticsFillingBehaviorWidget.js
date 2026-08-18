@@ -1,6 +1,10 @@
 import '../styles/analyticsFillingBehavior.css'
-import { getTeacherFillingMetrics, getFillingMetricsByMaestro } from '../api/analyticsFillingBehaviorAdapter.js'
+import { getTeacherFillingMetrics } from '../api/analyticsFillingBehaviorAdapter.js'
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
+import { sendWhatsAppReminder, isValidWhatsAppNumber } from '../../metricas/services/attendanceNotificationService.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
+import { supabase } from '../../../lib/supabaseClient.js'
+import { config } from '../../../core/config/config.js'
 
 function esc(str) {
   if (!str) return ''
@@ -82,6 +86,122 @@ function renderDistributionBar(stats) {
     const w = (s.pct / totalW) * 100
     return `<span style="display:inline-block;width:${w}%;min-width:4px;height:6px;background:${s.color};border-radius:3px 0 0 3px;" title="${s.label}: ${s.pct}%"></span>`
   }).join('')
+}
+
+async function getMaestrosPendingAlerts(maestros) {
+  try {
+    if (config?.isDemoMode) {
+      // Demo alerts simulation
+      return {
+        '+584129876543': 1,
+      }
+    }
+
+    const phones = maestros
+      .filter(m => m.maestro_phone)
+      .map(m => m.maestro_phone)
+
+    if (phones.length === 0) return {}
+
+    const { data, error } = await supabase
+      .from('notificaciones_asistencia')
+      .select('destinatario_telefono, id')
+      .in('destinatario_telefono', phones)
+      .eq('tipo', 'recordatorio_asistencia_maestro')
+      .eq('estado', 'pendiente')
+
+    if (error) {
+      console.warn('[analyticsFillingBehaviorWidget] Error fetching pending alerts:', error.message)
+      return {}
+    }
+
+    const alertsMap = {}
+    if (data) {
+      data.forEach(row => {
+        alertsMap[row.destinatario_telefono] = (alertsMap[row.destinatario_telefono] || 0) + 1
+      })
+    }
+    return alertsMap
+  } catch (err) {
+    console.error('Error fetching pending alerts:', err)
+    return {}
+  }
+}
+
+function openTeacherReminderModal(data) {
+  // Validar teléfono
+  if (!isValidWhatsAppNumber(data.phone)) {
+    const errorModal = new AppModal({
+      title: '⚠️ Número Inválido',
+      body: `<div class="alert alert-warning">
+        <p class="mb-1">No se puede enviar el recordatorio al número <code>${esc(data.phone || 'no asignado')}</code>.</p>
+        <p class="mb-0"><small>Verifique el contacto en el perfil del maestro (Formato: +58414XXXXXXX).</small></p>
+      </div>`,
+    })
+    errorModal.show()
+    return
+  }
+
+  // Mensaje personalizado
+  const message = `Buenos días, estimado(a) Prof. ${data.name},\n\nLe recordamos cordialmente que tiene ${data.incompleto} clase(s) con asistencia pendiente por registrar en el portal SOI.\n\nPor favor, cuando disponga de tiempo complete el registro.\n\n¡Muchas gracias! 🎵`
+
+  const modal = new AppModal({
+    title: '🔔 Recordar Maestro',
+    body: `
+      <div class="modal-body p-0">
+        <div class="alert alert-info mb-3">
+          <strong>Maestro:</strong> ${esc(data.name)}<br>
+          <strong>Teléfono WhatsApp:</strong> <code>${esc(data.phone)}</code><br>
+          <strong>Clases Incompletas:</strong> <span class="badge bg-warning text-dark">${data.incompleto} sesión(es)</span>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Mensaje a Enviar:</label>
+          <div class="p-3 bg-light rounded border border-secondary-subtle" style="white-space: pre-wrap; font-size: 0.9rem;">
+            ${esc(message)}
+          </div>
+        </div>
+      </div>
+    `,
+    footer: `
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      <button type="button" class="btn btn-warning text-dark fw-semibold" id="btn-send-teacher-reminder">
+        <i class="bi bi-whatsapp me-1"></i>Enviar Recordatorio
+      </button>
+    `,
+    onShow: () => {
+      const sendBtn = document.getElementById('btn-send-teacher-reminder')
+      if (sendBtn) {
+        sendBtn.addEventListener('click', async () => {
+          modal.hide()
+          try {
+            const result = await sendWhatsAppReminder({
+              recipient_phone: data.phone,
+              recipient_name: data.name,
+              message: message,
+              tipo: 'recordatorio_asistencia_maestro',
+            })
+
+            const successModal = new AppModal({
+              title: '✅ Recordatorio Encolado',
+              body: `<div class="alert alert-success">
+                <p class="mb-1">El recordatorio para <strong>${esc(data.name)}</strong> ha sido registrado.</p>
+                <p class="mb-0"><small>HERMES procesará la entrega vía WhatsApp.</small></p>
+              </div>`,
+            })
+            successModal.show()
+          } catch (err) {
+            const errorModal = new AppModal({
+              title: '❌ Error',
+              body: `<div class="alert alert-danger">${esc(err.message)}</div>`,
+            })
+            errorModal.show()
+          }
+        })
+      }
+    },
+  })
+
+  modal.show()
 }
 
 export function analyticsFillingBehaviorWidget(containerId) {
@@ -185,7 +305,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
     }).join('')
   }
 
-  function renderMaestroTable(metrics) {
+  function renderMaestroTable(metrics, pendingAlerts = {}) {
     if (metrics.length === 0) return '<div class="premium-no-data">Sin datos</div>'
 
     return `
@@ -199,10 +319,12 @@ export function analyticsFillingBehaviorWidget(containerId) {
               <th>Obs. 1° ${InfoTooltip('observacion')}</th>
               <th>Simultáneo</th>
               <th>Incompleto ${InfoTooltip('analitca_comportamiento')}</th>
+              <th>Pendientes</th>
               <th>Dur. Obs (s) ${InfoTooltip('observacion')}</th>
               <th>IA % ${InfoTooltip('confianza_ia')}</th>
               <th>Orden Pref.</th>
               <th>Última Clase</th>
+              <th class="text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -212,6 +334,8 @@ export function analyticsFillingBehaviorWidget(containerId) {
               const incompleto = total - clasificadas
               const aiPct = m.uso_ai_fill_percent || 0
               const orderLabel = classifyOrder(m) === 'asistencia_primero' ? 'Asistencia' : classifyOrder(m) === 'observaciones_primero' ? 'Obs.' : classifyOrder(m) === 'simultaneo' ? 'Simul.' : '—'
+              const pendingCount = pendingAlerts[m.maestro_phone] || 0
+
               return `
                 <tr>
                   <td><strong>${esc(m.maestro_nombre)}</strong></td>
@@ -221,6 +345,13 @@ export function analyticsFillingBehaviorWidget(containerId) {
                   <td><span class="badge bg-success-subtle text-success-emphasis px-2 py-1">${m.orden_simultaneo || 0}</span></td>
                   <td>
                     <span class="badge ${incompleto > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'} px-2 py-1">${incompleto}</span>
+                  </td>
+                  <td class="text-center">
+                    ${pendingCount > 0 ? `
+                      <span class="badge bg-warning text-dark" title="Alertas pendientes">
+                        ⏳ ${pendingCount}
+                      </span>
+                    ` : '<span class="text-muted">—</span>'}
                   </td>
                   <td>
                     <span class="badge ${classifyAvgDuration(m.promedio_duracion_observaciones) === 'detallada' ? 'bg-success text-white' : classifyAvgDuration(m.promedio_duracion_observaciones) === 'normal' ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary-emphasis'} px-2 py-1">
@@ -237,6 +368,13 @@ export function analyticsFillingBehaviorWidget(containerId) {
                   </td>
                   <td><span class="badge bg-info-subtle text-info-emphasis px-2 py-1" style="font-size:0.7rem;">${orderLabel}</span></td>
                   <td style="font-size:0.75rem;color:var(--bs-secondary-color);">${m.fecha_ultima_clase || '—'}</td>
+                  <td class="text-center">
+                    ${incompleto > 0 ? `
+                      <button class="btn btn-sm btn-outline-warning" data-action="remind-teacher-direct" data-teacher-phone="${esc(m.maestro_phone || '')}" data-teacher-name="${esc(m.maestro_nombre)}" data-incompleto="${incompleto}">
+                        <i class="bi bi-whatsapp me-1"></i>Recordar
+                      </button>
+                    ` : '<span class="badge bg-success-subtle text-success-emphasis">✓ Al día</span>'}
+                  </td>
                 </tr>
               `
             }).join('')}
@@ -275,7 +413,8 @@ export function analyticsFillingBehaviorWidget(containerId) {
           return
         }
 
-        this.render(metrics)
+        const pendingAlerts = await getMaestrosPendingAlerts(metrics)
+        this.render(metrics, pendingAlerts)
       } catch (err) {
         console.error('[analyticsFillingBehaviorWidget] Error:', err)
         container.innerHTML = `
@@ -290,7 +429,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
       }
     },
 
-    render(metrics) {
+    render(metrics, pendingAlerts = {}) {
       const stats = calculateStats(metrics)
 
       const html = `
@@ -333,14 +472,31 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
           <section class="maestro-metrics-section">
             <h3>Detalle por Maestro</h3>
-            ${renderMaestroTable(metrics)}
+            ${renderMaestroTable(metrics, pendingAlerts)}
           </section>
         </div>
       `
 
       container.innerHTML = html
       this.attachFilterEvents()
+      this.attachActionEvents()
       attachInfoTooltipEvents(container)
+    },
+
+    attachActionEvents() {
+      container.querySelectorAll('[data-action="remind-teacher-direct"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const teacherName = btn.dataset.teacherName
+          const phone = btn.dataset.teacherPhone
+          const incompleto = btn.dataset.incompleto
+
+          openTeacherReminderModal({
+            name: teacherName,
+            phone: phone,
+            incompleto: incompleto,
+          })
+        })
+      })
     },
 
     attachFilterEvents() {

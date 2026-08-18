@@ -2,6 +2,7 @@ import { router } from '../../core/router/router.js'
 import CumplimientoMaestrosWidget from './views/cumplimientoMaestrosWidget.js'
 import DirectorReportingPanel from './views/directorReportingPanel.js'
 import { analyticsFillingBehaviorWidget } from './views/analyticsFillingBehaviorWidget.js'
+import { attendanceAlertsWidget } from './views/attendanceAlertsWidget.js'
 import { directorTrendReportView } from './views/directorTrendReportView.js'
 
 /**
@@ -33,15 +34,25 @@ export function registerRoutesAdminDashboard() {
     }
   })
 
-  // Analítica de Llenado de Asistencias
+  // Analítica de Llenado de Asistencias + Alertas de Asistencia
   router.register('admin-dashboard-analitca-llenado', (container) => {
     try {
-      container.innerHTML = `<div id="analytics-filling-container"></div>`
+      container.innerHTML = `
+        <div class="container-fluid pt-4">
+          <div id="attendance-alerts-container" class="mb-5"></div>
+          <hr class="my-5">
+          <div id="analytics-filling-container"></div>
+        </div>
+      `
+      // Cargar widget de alertas de asistencia
+      attendanceAlertsWidget('attendance-alerts-container')
+
+      // Cargar widget de analítica de llenado
       const widget = analyticsFillingBehaviorWidget('analytics-filling-container')
       widget.init()
     } catch (error) {
       console.error('[admin-dashboard-analitca-llenado] Error:', error)
-      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar analítica: ${error.message}</p></div>`
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar datos: ${error.message}</p></div>`
     }
   })
 

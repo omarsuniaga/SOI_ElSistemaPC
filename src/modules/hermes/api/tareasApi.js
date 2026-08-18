@@ -65,3 +65,6 @@ export const closeProcessCase = api.closeProcessCase
 export const getPulsoEventos = api.getPulsoEventos
 export const getRules = api.getRules
 export const updateRule = api.updateRule
+export const getPulsoScore = api.getPulsoScore
+export const getPulsoScoreHistory = api.getPulsoScoreHistory
+

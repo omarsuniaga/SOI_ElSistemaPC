@@ -683,3 +683,36 @@ export async function updateRule(ruleId, updates = {}) {
   if (error) throw error
   return data
 }
+
+/**
+ * Calcula en tiempo real el Pulso Score institucional (0-100).
+ *
+ * @param {boolean} [persistir=false] — Si es true, guarda el snapshot en pulso_score_history
+ * @returns {Promise<object>} { score, nivel, componentes, conteos, calculado_at }
+ */
+export async function getPulsoScore(persistir = false) {
+  const { data, error } = await supabase.rpc('fn_calcular_pulso_score', {
+    p_persistir: persistir,
+  })
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Obtiene el historial de mediciones de Pulso Score para visualización de tendencias.
+ *
+ * @param {number} [limit=10]
+ * @returns {Promise<Array>}
+ */
+export async function getPulsoScoreHistory(limit = 10) {
+  const { data, error } = await supabase
+    .from('pulso_score_history')
+    .select('*')
+    .order('calculado_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+

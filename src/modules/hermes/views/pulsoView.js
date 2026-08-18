@@ -16,6 +16,8 @@
 import '../styles/pulso.css'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { getPulsoScore } from '../api/tareasApi.js'
+
 
 const TIPO_COLORES = {
   'sesion.iniciada': '#3B82F6',      // azul
@@ -52,7 +54,9 @@ const state = {
   cargando: false,
   reconectando: false,
   tiposCounts: {},
+  pulsoScore: null,
 }
+
 
 let _abortController = null
 let _realtimeChannel = null
@@ -193,9 +197,14 @@ function _updateReconnectBanner(container) {
 
 async function recargarEventos(container) {
   state.offset = 0
-  await fetchEventos(0)
+  await Promise.all([
+    fetchEventos(0),
+    fetchPulsoScore(false),
+  ])
   renderEventosFeed(container)
+  renderPulsoScoreWidget(container)
 }
+
 
 function renderEventosFeed(container) {
   const feed = container.querySelector('#pulso-feed')
@@ -245,6 +254,97 @@ function attachEvents(container) {
   filterDepto?.addEventListener('change', applyFilters)
 }
 
+async function fetchPulsoScore(persistir = false) {
+  try {
+    const data = await getPulsoScore(persistir)
+    state.pulsoScore = data
+  } catch (err) {
+    console.warn('[Pulso] Could not fetch Pulso Score:', err.message)
+    state.pulsoScore = null
+  }
+}
+
+function renderPulsoScoreWidget(container) {
+  const target = container.querySelector('#pulso-score-widget-slot')
+  if (!target) return
+
+  if (!state.pulsoScore) {
+    target.innerHTML = `
+      <div class="pulso-score-card p-3 mb-4 d-flex justify-content-between align-items-center">
+        <span class="text-muted small"><i class="bi bi-speedometer2 me-1"></i> Pulso Score no disponible en este momento</span>
+        <button id="btn-recalcular-score" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-clockwise"></i> Recalcular</button>
+      </div>
+    `
+    return
+  }
+
+  const { score, nivel, componentes = {} } = state.pulsoScore
+  const nivelBadge = nivel || (score >= 80 ? 'optimo' : score >= 60 ? 'atencion' : 'critico')
+  const nivelLabel = nivel === 'optimo' ? 'Salud Operativa Óptima' : nivel === 'atencion' ? 'Atención Requerida' : 'Alerta Crítica'
+
+  target.innerHTML = `
+    <div class="pulso-score-card p-3 mb-4">
+      <div class="row align-items-center g-3">
+        <div class="col-auto">
+          <div class="pulso-score-badge-circle ${nivelBadge}">
+            <span style="font-size: 1.5rem; line-height: 1;">${score}</span>
+            <span style="font-size: 0.6rem; opacity: 0.85;">/ 100</span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+            <div>
+              <h5 class="fw-bold m-0 text-dark">Pulso Score Institucional</h5>
+              <small class="text-muted">${nivelLabel} · Ponderación en tiempo real</small>
+            </div>
+            <button id="btn-recalcular-score" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-arrow-repeat me-1"></i> Recalcular
+            </button>
+          </div>
+
+          <div class="row g-2 mt-1">
+            <div class="col-6 col-md-3">
+              <div class="pulso-component-pill">
+                <div class="fw-bold text-dark">${componentes.asistencia_pct ?? 100}%</div>
+                <div class="text-muted" style="font-size: 0.68rem;">Asistencia (40%)</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="pulso-component-pill">
+                <div class="fw-bold text-dark">${componentes.tareas_tiempo_pct ?? 100}%</div>
+                <div class="text-muted" style="font-size: 0.68rem;">Tareas a Tiempo (30%)</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="pulso-component-pill">
+                <div class="fw-bold text-dark">${componentes.cobertura_registro_pct ?? 100}%</div>
+                <div class="text-muted" style="font-size: 0.68rem;">Cobertura Clases (20%)</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="pulso-component-pill">
+                <div class="fw-bold text-dark">${componentes.penalizacion_vencidas_pct ?? 100}%</div>
+                <div class="text-muted" style="font-size: 0.68rem;">Sin Vencidas (10%)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+
+  const btnRecalc = target.querySelector('#btn-recalcular-score')
+  if (btnRecalc) {
+    btnRecalc.addEventListener('click', async () => {
+      btnRecalc.disabled = true
+      AppToast.info('Recalculando Pulso Score...')
+      await fetchPulsoScore(true)
+      renderPulsoScoreWidget(container)
+      AppToast.success('Pulso Score actualizado con éxito.')
+    })
+  }
+}
+
 function _renderUI(container) {
   const now = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
@@ -260,6 +360,10 @@ function _renderUI(container) {
           <small class="text-muted">Última actualización: ${now}</small>
         </div>
       </div>
+
+      <!-- Pulso Score 0-100 Widget Slot -->
+      <div id="pulso-score-widget-slot"></div>
+
 
       <!-- Reconnect Banner -->
       <div id="pulso-reconnect-banner" class="alert alert-warning d-none mb-3">
@@ -346,11 +450,16 @@ export async function renderPulsoView(container) {
   attachEvents(container)
 
   // Initial load
-  await fetchEventos(0)
+  await Promise.all([
+    fetchEventos(0),
+    fetchPulsoScore(false),
+  ])
   renderEventosFeed(container)
+  renderPulsoScoreWidget(container)
 
   // Setup Realtime subscription
   setupRealtime(container)
+
 
   return {
     teardown: () => {

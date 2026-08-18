@@ -214,3 +214,45 @@
 .pulso-feed {
   transition: all 0.3s ease;
 }
+
+/* Pulso Score 0-100 Widget */
+.pulso-score-card {
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.pulso-score-badge-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.pulso-score-badge-circle.optimo {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.pulso-score-badge-circle.atencion {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.pulso-score-badge-circle.critico {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.pulso-component-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+

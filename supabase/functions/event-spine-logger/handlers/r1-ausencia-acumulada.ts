@@ -12,6 +12,8 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SoiEvento, HandlerResult } from '../types.ts'
 import { crearTareaDesdeEvento } from '../lib/hermes.ts'
 import { enrichDescription } from '../lib/groq.ts'
+import { handleWhatsAppPadresAusencias } from './r6-whatsapp-padres.ts'
+
 
 /**
  * Handle a single unjustified absence event.
@@ -131,8 +133,17 @@ export async function handleAusenciaAcumulada(
     `[R1_ESCALATION_CREATED] alumno_id=${alumnoId}, tareaId=${result.tareaId}, faltas=${faltaCount}`
   )
 
+  // Trigger Phase 4A: Proactive WhatsApp alert to parents (Rule R6 with 48h guard)
+  try {
+    await handleWhatsAppPadresAusencias(alumnoId, faltaCount, evento, supabase)
+  } catch (waErr) {
+    console.error(`[R1_WHATSAPP_TRIGGER_ERROR] alumno_id=${alumnoId}:`, waErr)
+    // Non-fatal: task creation succeeds even if WhatsApp enqueuing fails
+  }
+
   return {
     handled: true,
     taskId: result.tareaId,
   }
 }
+

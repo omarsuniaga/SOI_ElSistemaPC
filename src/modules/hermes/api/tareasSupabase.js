@@ -747,4 +747,20 @@ export async function ejecutarAnalisisPatrones() {
   return data?.analisis || data
 }
 
+/**
+ * Obtiene las métricas de efectividad de las reglas reactivas HERMES.
+ *
+ * @returns {Promise<Array>}
+ */
+export async function getRuleEffectiveness() {
+  const { data, error } = await supabase
+    .from('soi_rule_effectiveness')
+    .select('*')
+    .order('rule_type', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+
 

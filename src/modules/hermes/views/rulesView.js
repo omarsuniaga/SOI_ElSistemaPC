@@ -13,7 +13,7 @@
 
 import '../styles/rules.css'
 import { supabase } from '../../../lib/supabaseClient.js'
-import { getRules, updateRule } from '../api/tareasApi.js'
+import { getRules, updateRule, getRuleEffectiveness } from '../api/tareasApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
 const RULE_LABELS = {
@@ -22,6 +22,7 @@ const RULE_LABELS = {
   R3: { nombre: 'R3 - Período Cerrado', icono: 'lock', color: '#6B7280' },
   R4: { nombre: 'R4 - Sesión sin Asistencia', icono: 'people', color: '#3B82F6' },
   R5: { nombre: 'R5 - Justificación Rechazada', icono: 'x-circle', color: '#8B5CF6' },
+  R6: { nombre: 'R6 - WhatsApp Padres (3 Faltas)', icono: 'whatsapp', color: '#25D366' },
 }
 
 const DEPARTAMENTOS = {
@@ -37,6 +38,7 @@ const DEPARTAMENTOS = {
 
 const state = {
   rules: [],
+  effectiveness: {},
   cargando: false,
   guardando: {},
 }
@@ -58,10 +60,19 @@ function formatDate(isoString) {
 async function loadRules() {
   state.cargando = true
   try {
-    // RLS automático filtra por departamento del usuario
-    const rules = await getRules()
+    const [rules, effList] = await Promise.all([
+      getRules(),
+      getRuleEffectiveness().catch(() => []),
+    ])
+
+    state.effectiveness = {}
+    if (Array.isArray(effList)) {
+      effList.forEach((e) => {
+        state.effectiveness[e.rule_type] = e
+      })
+    }
+
     state.rules = rules.sort((a, b) => {
-      // Ordenar por rule_type (R1, R2, etc.) y luego por departamento
       return a.rule_type.localeCompare(b.rule_type) || a.departamento.localeCompare(b.departamento)
     })
   } catch (err) {
@@ -71,6 +82,7 @@ async function loadRules() {
     state.cargando = false
   }
 }
+
 
 async function toggleRuleEnabled(ruleId, currentEnabled, container) {
   const newEnabled = !currentEnabled
@@ -127,15 +139,16 @@ function renderRulesTable(container) {
 
   let html = `
     <div class="table-responsive">
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover align-middle">
         <thead class="table-light">
           <tr>
             <th style="width: 15%;">Regla</th>
-            <th style="width: 15%;">Departamento</th>
-            <th style="width: 25%;">Nombre</th>
-            <th style="width: 25%;">Descripción</th>
-            <th style="width: 10%;">Habilitada</th>
-            <th style="width: 10%;">Acciones</th>
+            <th style="width: 12%;">Departamento</th>
+            <th style="width: 20%;">Nombre</th>
+            <th style="width: 23%;">Descripción</th>
+            <th style="width: 14%;">Efectividad</th>
+            <th style="width: 8%;">Habilitada</th>
+            <th style="width: 8%;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -145,6 +158,11 @@ function renderRulesTable(container) {
     const label = RULE_LABELS[rule.rule_type] || { nombre: rule.rule_type, icono: 'gear', color: '#9CA3AF' }
     const depto = DEPARTAMENTOS[rule.departamento] || rule.departamento
     const isSaving = state.guardando[rule.id]
+    const eff = state.effectiveness?.[rule.rule_type] || {}
+    const tasa = eff.tasa_exito ?? 100
+    const resueltos = eff.casos_resueltos ?? 0
+    const total = eff.total_activaciones ?? 0
+    const badgeClass = tasa >= 85 ? 'success' : tasa >= 70 ? 'warning' : 'danger'
 
     html += `
       <tr class="rules-row" data-rule-id="${escapeHtml(rule.id)}">
@@ -173,6 +191,14 @@ function renderRulesTable(container) {
           </div>
         </td>
         <td>
+          <span class="badge bg-${badgeClass} text-white d-inline-block mb-1" style="font-size: 0.75rem;">
+            ${tasa}% efectividad
+          </span>
+          <small class="text-muted d-block" style="font-size: 0.7rem;">
+            (${resueltos}/${total} casos resueltos)
+          </small>
+        </td>
+        <td>
           <div class="form-check form-switch">
             <input class="form-check-input rule-enabled-toggle" type="checkbox"
                    ${rule.enabled ? 'checked' : ''}
@@ -191,6 +217,7 @@ function renderRulesTable(container) {
       </tr>
     `
   }
+
 
   html += `
         </tbody>

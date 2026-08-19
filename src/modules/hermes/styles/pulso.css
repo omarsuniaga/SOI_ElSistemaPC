@@ -256,3 +256,42 @@
   text-align: center;
 }
 
+/* AI Weekly Pattern Analysis */
+.pulso-ai-card {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05);
+}
+
+.pulso-ai-header-badge {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pulso-ai-section-box {
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid #cbd5e1;
+}
+
+.pulso-ai-section-box.patrones {
+  border-left-color: #f59e0b;
+}
+
+.pulso-ai-section-box.tendencias {
+  border-left-color: #10b981;
+}
+
+.pulso-ai-section-box.recomendaciones {
+  border-left-color: #6366f1;
+}
+
+

@@ -716,3 +716,35 @@ export async function getPulsoScoreHistory(limit = 10) {
   return data || []
 }
 
+/**
+ * Obtiene el análisis semanal de patrones más reciente generado por IA.
+ *
+ * @returns {Promise<object|null>}
+ */
+export async function getUltimoAnalisisSemanal() {
+  const { data, error } = await supabase
+    .from('soi_analisis_semanal')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data || null
+}
+
+/**
+ * Invoca la Edge Function soi-pattern-analyzer para generar un nuevo análisis de IA.
+ *
+ * @returns {Promise<object>}
+ */
+export async function ejecutarAnalisisPatrones() {
+  const { data, error } = await supabase.functions.invoke('soi-pattern-analyzer', {
+    method: 'POST',
+  })
+
+  if (error) throw error
+  return data?.analisis || data
+}
+
+

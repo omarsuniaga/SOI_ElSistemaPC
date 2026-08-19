@@ -16,7 +16,8 @@
 import '../styles/pulso.css'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { getPulsoScore } from '../api/tareasApi.js'
+import { getPulsoScore, getUltimoAnalisisSemanal, ejecutarAnalisisPatrones } from '../api/tareasApi.js'
+
 
 
 const TIPO_COLORES = {
@@ -55,7 +56,10 @@ const state = {
   reconectando: false,
   tiposCounts: {},
   pulsoScore: null,
+  analisisSemanal: null,
+  cargandoAnalisis: false,
 }
+
 
 
 let _abortController = null
@@ -200,10 +204,13 @@ async function recargarEventos(container) {
   await Promise.all([
     fetchEventos(0),
     fetchPulsoScore(false),
+    fetchAnalisisSemanal(),
   ])
   renderEventosFeed(container)
   renderPulsoScoreWidget(container)
+  renderAnalisisSemanalWidget(container)
 }
+
 
 
 function renderEventosFeed(container) {
@@ -345,6 +352,102 @@ function renderPulsoScoreWidget(container) {
   }
 }
 
+async function fetchAnalisisSemanal() {
+  try {
+    const data = await getUltimoAnalisisSemanal()
+    state.analisisSemanal = data
+  } catch (err) {
+    console.warn('[Pulso] Could not fetch weekly analysis:', err.message)
+    state.analisisSemanal = null
+  }
+}
+
+function renderAnalisisSemanalWidget(container) {
+  const target = container.querySelector('#pulso-ai-analysis-slot')
+  if (!target) return
+
+  if (!state.analisisSemanal) {
+    target.innerHTML = `
+      <div class="pulso-ai-card p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="pulso-ai-header-badge"><i class="bi bi-robot me-1"></i> Groq AI</span>
+          <span class="text-muted small">Sin análisis semanal de patrones generado aún.</span>
+        </div>
+        <button id="btn-generar-analisis-ai" class="btn btn-sm btn-primary">
+          <i class="bi bi-stars me-1"></i> Generar Análisis Semanal con IA
+        </button>
+      </div>
+    `
+  } else {
+    const { resumen_ejecutivo, patrones = [], tendencias = [], recomendaciones = [], total_eventos_analizados, created_at } = state.analisisSemanal
+    const fechaStr = new Date(created_at).toLocaleDateString('es-ES', { weekday: 'short', month: 'short', day: 'numeric' })
+
+    target.innerHTML = `
+      <div class="pulso-ai-card p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="pulso-ai-header-badge"><i class="bi bi-cpu-fill me-1"></i> Inteligencia HERMES</span>
+            <h5 class="fw-bold m-0 text-dark">Análisis Semanal de Patrones</h5>
+            <small class="text-muted">(${total_eventos_analizados || 0} eventos · ${fechaStr})</small>
+          </div>
+          <button id="btn-generar-analisis-ai" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-arrow-repeat me-1"></i> Regenerar Análisis
+          </button>
+        </div>
+
+        <p class="text-secondary small mb-3 fst-italic bg-light p-2 rounded">
+          "${escapeHtml(resumen_ejecutivo)}"
+        </p>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="pulso-ai-section-box patrones h-100">
+              <h6 class="fw-bold text-warning mb-2 small"><i class="bi bi-exclamation-octagon me-1"></i> Patrones Detectados</h6>
+              <ul class="mb-0 ps-3 small text-muted">
+                ${patrones.map(p => `<li>${escapeHtml(p)}</li>`).join('') || '<li>Sin anomalías críticas.</li>'}
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="pulso-ai-section-box tendencias h-100">
+              <h6 class="fw-bold text-success mb-2 small"><i class="bi bi-graph-up-arrow me-1"></i> Tendencias Positivas</h6>
+              <ul class="mb-0 ps-3 small text-muted">
+                ${tendencias.map(t => `<li>${escapeHtml(t)}</li>`).join('') || '<li>Operación estable.</li>'}
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="pulso-ai-section-box recomendaciones h-100">
+              <h6 class="fw-bold text-primary mb-2 small"><i class="bi bi-lightbulb me-1"></i> Recomendaciones</h6>
+              <ul class="mb-0 ps-3 small text-muted">
+                ${recomendaciones.map(r => `<li>${escapeHtml(r)}</li>`).join('') || '<li>Continuar seguimiento estándar.</li>'}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  const btnAi = target.querySelector('#btn-generar-analisis-ai')
+  if (btnAi) {
+    btnAi.addEventListener('click', async () => {
+      btnAi.disabled = true
+      AppToast.info('Generando análisis de patrones con Groq AI...')
+      try {
+        const nuevo = await ejecutarAnalisisPatrones()
+        state.analisisSemanal = nuevo
+        renderAnalisisSemanalWidget(container)
+        AppToast.success('Análisis de IA completado exitosamente.')
+      } catch (err) {
+        console.error('[Pulso] Error generando análisis:', err)
+        AppToast.error(`Fallo al generar análisis: ${err.message}`)
+        btnAi.disabled = false
+      }
+    })
+  }
+}
+
 function _renderUI(container) {
   const now = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
@@ -363,6 +466,10 @@ function _renderUI(container) {
 
       <!-- Pulso Score 0-100 Widget Slot -->
       <div id="pulso-score-widget-slot"></div>
+
+      <!-- AI Pattern Analysis Slot -->
+      <div id="pulso-ai-analysis-slot"></div>
+
 
 
       <!-- Reconnect Banner -->
@@ -453,12 +560,15 @@ export async function renderPulsoView(container) {
   await Promise.all([
     fetchEventos(0),
     fetchPulsoScore(false),
+    fetchAnalisisSemanal(),
   ])
   renderEventosFeed(container)
   renderPulsoScoreWidget(container)
+  renderAnalisisSemanalWidget(container)
 
   // Setup Realtime subscription
   setupRealtime(container)
+
 
 
   return {

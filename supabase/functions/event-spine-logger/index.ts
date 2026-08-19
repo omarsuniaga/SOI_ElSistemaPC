@@ -250,14 +250,18 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // Authentication check
+  // Authentication check (accepts x-internal-key or service_role bearer)
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  const isServiceRole = serviceKey && authHeader.includes(serviceKey)
   const internalKey = req.headers.get('x-internal-key')
-  if (internalKey !== INTERNAL_KEY) {
-    console.warn('[AUTH_FAILED] x-internal-key mismatch')
+
+  if (!isServiceRole && internalKey !== INTERNAL_KEY) {
+    console.warn('[AUTH_FAILED] Invalid credentials for event-spine-logger')
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Unauthorized: invalid x-internal-key',
+        error: 'Unauthorized: invalid x-internal-key or Authorization',
       }),
       {
         status: 401,
@@ -267,7 +271,39 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    let body: Record<string, any> | null = null
+    try {
+      if (req.method === 'POST') {
+        body = await req.json()
+      }
+    } catch {
+      // Body is optional (e.g. pg_cron GET/POST without payload)
+    }
+
+    // Direct Webhook Single-Event Processing (Phase 4E Sub-second Realtime)
+    if (body?.record && (body.table === 'soi_eventos' || !body.table)) {
+      const singleEvent = body.record as SoiEvento
+      if (!singleEvent.procesado) {
+        console.log(`[WEBHOOK_DIRECT] Processing single event ${singleEvent.id} in real-time`)
+        const success = await processEvent(singleEvent)
+        return new Response(
+          JSON.stringify({
+            success: true,
+            mode: 'webhook_direct',
+            processed: success ? 1 : 0,
+            errors: success ? 0 : 1,
+            timestamp: new Date().toISOString(),
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      }
+    }
+
     const result = await processBatch()
+
     return new Response(
       JSON.stringify({
         success: true,

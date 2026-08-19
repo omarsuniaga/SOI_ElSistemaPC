@@ -300,7 +300,101 @@ Deno.serve(async (req: Request) => {
     return errorResponse(`Error en DB: ${msg}`, 502)
   }
 
+  // ── Reconocimiento de Representantes / Alumnos del SOI ───────────────────
+  // Si el remitente es un padre/madre de un alumno activo, procesar como respuesta/justificación
+  const cleanPhone = jid.replace('@s.whatsapp.net', '').replace(/\D/g, '')
+  const last8Digits = cleanPhone.slice(-8)
+
+  if (last8Digits.length >= 8) {
+    try {
+      const { data: alumnosEncontrados } = await supabase
+        .from('alumnos')
+        .select('id, nombre, apellido, familiar_nombre, familiar_telefono, contacto_emergencia_telefono, tlf_alumno')
+        .eq('activo', true)
+        .or(`familiar_telefono.ilike.%${last8Digits}%,contacto_emergencia_telefono.ilike.%${last8Digits}%,tlf_alumno.ilike.%${last8Digits}%`)
+        .limit(1)
+
+      if (alumnosEncontrados && alumnosEncontrados.length > 0) {
+        const alumno = alumnosEncontrados[0]
+        console.log(`[webhook] Remitente reconocido como representante de alumno ${alumno.id} (${alumno.nombre})`)
+
+        // Buscar última inasistencia registrada
+        const { data: ultimaAsistencia } = await supabase
+          .from('asistencias')
+          .select('id, clase_id')
+          .eq('alumno_id', alumno.id)
+          .eq('estado', 'ausente')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        // 1. Insertar en tabla de justificaciones si existe registro de inasistencia
+        if (ultimaAsistencia?.id) {
+          await supabase.from('justificaciones').insert({
+            asistencia_id: ultimaAsistencia.id,
+            alumno_id: alumno.id,
+            clase_id: ultimaAsistencia.clase_id,
+            motivo: 'Justificación vía WhatsApp',
+            descripcion: texto,
+            estado: 'pendiente',
+          })
+        }
+
+        // 2. Emitir evento en el Event Spine (soi_eventos)
+        await supabase.from('soi_eventos').insert({
+          tipo: 'justificacion.creada',
+          entidad_tipo: 'alumno',
+          entidad_id: alumno.id,
+          payload: {
+            alumno_id: alumno.id,
+            nombre_alumno: `${alumno.nombre || ''} ${alumno.apellido || ''}`.trim(),
+            motivo: texto,
+            telefono: cleanPhone,
+            origen: 'whatsapp_inbound',
+          },
+          procesado: false,
+        })
+
+        // 3. Crear tarea para Coordinación Académica
+        await supabase.from('tareas_institucionales').insert({
+          texto: `Revisar justificación de inasistencia vía WhatsApp para ${alumno.nombre} ${alumno.apellido || ''}: "${texto.slice(0, 120)}"`,
+          departamento: 'ACM',
+          prioridad: 'media',
+          estado: 'pendiente',
+        })
+
+        // 4. Encolar acuse de recibo automático al representante
+        const mensajeAcuse = `Estimado/a representante de ${alumno.nombre}: Hemos recibido su mensaje y registrado la solicitud de justificación. La Coordinación Académica revisará el caso a la brevedad. Gracias por comunicarse con El Sistema Punta Cana.`
+        await supabase.from('hermes_whatsapp_queue').insert({
+          jid,
+          mensaje: mensajeAcuse,
+          estado: 'pendiente',
+        })
+
+        // 5. Registrar en webhook log
+        await supabase.from('whatsapp_webhook_log').insert({
+          message_id: messageId,
+          jid_remitente: jid,
+          mensaje_texto: texto,
+          push_name: pushName,
+          intencion_detectada: 'justificacion_inasistencia_alumno',
+          respuesta_enviada: mensajeAcuse,
+        })
+
+        return json({
+          ok: true,
+          handled: 'soi_alumno_justificacion',
+          alumno_id: alumno.id,
+          nombre: alumno.nombre,
+        })
+      }
+    } catch (inboundErr) {
+      console.error('[webhook] Error verificando alumno/representante:', inboundErr)
+    }
+  }
+
   if (!conversacion) {
+
     // Servicio público: solo abierto si hay un período activo que lo habilita.
     // Responde SIN LLM, solo desde la KB cerrada (anti-inyección + ahorro de tokens).
     let servicioActivo = false

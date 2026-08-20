@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
       const cleanNumber = String(msg.jid).replace(/\D/g, '')
 
       try {
+        // Nota: fn_whatsapp_reclamar_pendientes ya marcó estado='procesando' e incrementó intentos.
         // Enviar vía REST API a Evolution API
         const sendRes = await fetch(`${gatewayUrl}/message/sendText/${instanceName}`, {
           method: 'POST',

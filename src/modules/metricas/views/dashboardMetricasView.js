@@ -4,7 +4,6 @@ import {
   getEstadisticasPeriodoActivo,
   getResumenAlertas,
   getAlumnosDestacados,
-  getAnalisisAsistenciasPeriodoActivo,
 } from '../api/metricasApi.js'
 import { callDslRpc } from '../api/observabilidadApi.js'
 import { callGroq } from '../../../portal-maestros/services/groqService.js'
@@ -12,9 +11,7 @@ import { renderMetricCard } from '../components/MetricCard.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { systemLogsWidget } from './systemLogsWidget.js'
 import { auditTrailWidget } from './auditTrailWidget.js'
-import { analisisAsistenciasWidget } from '../components/analisisAsistenciasWidget.js'
 import '../styles/metricas-observabilidad.css'
-
 
 const state = {
   activeTab: localStorage.getItem('pm_metrics_tab') || 'resumen',
@@ -162,8 +159,6 @@ function renderResumenTab() {
         ${renderMetricCard({ label: 'Instrumentos en Lutería', value: s.instrumentos_taller || 0, icon: 'bi-tools', color: 'dark' })}
       </div>
       
-      <div class="col-12 mt-4" id="analisis-asistencias-widget-container"></div>
-      
       <div class="col-12 mt-4">
         <h5 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>Alumnos Destacados</h5>
         <div class="page-glass p-0 overflow-hidden">
@@ -173,7 +168,6 @@ function renderResumenTab() {
     </div>
   `
 }
-
 
 function renderOperacionesTab() {
   return `
@@ -185,7 +179,6 @@ function renderOperacionesTab() {
       <div class="alert alert-info small mb-4">
         <i class="bi bi-info-circle me-1"></i> <strong>Punto Ciego Analítico:</strong> Este panel cruza la tasa de asistencia de los estudiantes con las demoras y cumplimiento de llenado de registros por parte del personal docente.
       </div>
-
       <div class="row g-4">
         <div class="col-12 col-xl-7">
           <div class="p-3 border rounded-3 bg-light bg-opacity-25 shadow-sm">
@@ -285,22 +278,6 @@ function _attachEvents(container) {
 
 async function _onTabChange() {
   if (state.activeTab === 'resumen') {
-    // 1. Widget de Análisis de Asistencias e Inasistencias del Período Activo
-    try {
-      const widget = analisisAsistenciasWidget('analisis-asistencias-widget-container')
-      if (widget) {
-        state.activeWidgetInstances.push(widget)
-        await widget.init()
-      }
-    } catch (err) {
-      console.error('Error al cargar widget de asistencias:', err)
-      const el = state.container?.querySelector('#analisis-asistencias-widget-container')
-      if (el) {
-        el.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No se pudo cargar el análisis de asistencias del período activo.</div>`
-      }
-    }
-
-    // 2. Alumnos destacados
     const destacados = await getAlumnosDestacados()
     const area = state.container.querySelector('#destacados-placeholder')
     if (area) {
@@ -325,7 +302,6 @@ async function _onTabChange() {
       `
     }
   }
-
 
   if (state.activeTab === 'operaciones') {
     // 1. CumplimientoMaestrosWidget
@@ -393,39 +369,15 @@ Sé conciso y concreto.`
  * Compila el contexto de datos REALES para la IA a partir del estado del Hub
  * (KPIs ya cargados) más el payload DSL (hotspots y rendimiento docente).
  */
-function _compilarContextoIA(dslData, asistenciaData = null) {
+function _compilarContextoIA(dslData) {
   const s = state.stats || {}
   const ra = state.resumenAlertas || {}
   return {
     periodo_activo: {
-      nombre: asistenciaData?.periodo?.nombre || s.nombre || 'Período Activo',
-      total_alumnos: s.alumnos_activos ?? asistenciaData?.resumen?.totalAlumnosEvaluados ?? null,
+      total_alumnos: s.alumnos_activos ?? null,
       promedio_general: (s.promedio_integrado ?? s.promedio_calificacion_periodo) ?? null,
       asistencia_hoy_porcentaje: s.tasa_asistencia_periodo ?? null,
     },
-    analisis_inasistencias_periodo: asistenciaData ? {
-      total_alumnos_evaluados: asistenciaData.resumen?.totalAlumnosEvaluados,
-      alumnos_con_faltas: asistenciaData.resumen?.alumnosConFaltas,
-      alumnos_asistencia_perfecta: asistenciaData.resumen?.alumnosSinFaltas,
-      porcentaje_alumnos_con_faltas: asistenciaData.resumen?.porcentajeAlumnosConFaltas,
-      total_faltas_registradas: asistenciaData.resumen?.totalAusentes,
-      total_justificadas: asistenciaData.resumen?.totalJustificados,
-      tasa_ausentismo_global: asistenciaData.resumen?.tasaAusentismo,
-      total_sesiones_registradas_maestros: asistenciaData.resumen?.totalSesionesRegistradas,
-      alumnos_criticos_mas_faltas: (asistenciaData.alumnos || []).filter(a => a.nivelRiesgo === 'critico').slice(0, 5).map(a => ({
-        alumno: a.alumnoNombre,
-        instrumento: a.instrumento,
-        faltas: a.totalAusentes,
-        tasa_asistencia: a.tasaAsistencia,
-        clases_afectadas: a.clasesAfectadas,
-      })),
-      maestros_con_mas_ausencias: (asistenciaData.maestros || []).slice(0, 3).map(m => ({
-        maestro: m.maestroNombre,
-        sesiones: m.totalSesiones,
-        ausencias: m.totalAusentes,
-        tasa_ausentismo: m.tasaAusentismo,
-      })),
-    } : null,
     alertas: { total: ra.total ?? 0, rojas: ra.rojas ?? 0 },
     hotspots_pedagogicos: (dslData?.nodeDifficulty || []).slice(0, 5),
     rendimiento_docente: (dslData?.complianceData || []).slice(0, 10),
@@ -437,16 +389,12 @@ function _attachGlobalEventsIA() {
     const area = state.container.querySelector('#ia-result-area')
     if (!area) return
     area.innerHTML =
-      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Compilando datos reales de asistencia y observabilidad para IA...</p></div>'
+      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Compilando datos reales y analizando con IA...</p></div>'
 
     try {
-      // 1. Compilar datos reales (DataAdapter: Supabase o mock según modo)
-      const [dslData, asistenciaData] = await Promise.all([
-        callDslRpc('global').catch(() => ({})),
-        getAnalisisAsistenciasPeriodoActivo().catch(() => null),
-      ])
-      const contexto = _compilarContextoIA(dslData, asistenciaData)
-
+      // 1. Compilar datos reales (DataAdapter: Supabase RPC o mock según modo)
+      const dslData = await callDslRpc('global')
+      const contexto = _compilarContextoIA(dslData)
 
       // 2. Síntesis con IA real (GROQ) con prompt antialucinación
       let narrativa = null
@@ -606,19 +554,6 @@ function _openGuiaAnaliticaModal() {
                 
                 <div class="obs-guia-panel-card">
                   <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-bold small text-danger obs-guia-card-title">Análisis de Inasistencias del Período Activo</span>
-                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle extra-small">Asistencias</span>
-                  </div>
-                  <p class="extra-small text-secondary mb-3 lh-base">
-                    Evalúa todas las sesiones registradas por los maestros desde el inicio del período lectivo activo. Permite cuantificar cuántos alumnos han faltado, el ranking de inasistencias por estudiante, las faltas justificadas y la tasa de ausentismo por materia y docente.
-                  </p>
-                  <div class="obs-guia-data-badge">
-                    <i class="bi bi-calendar2-check me-1 text-danger"></i> sesiones_clase + asistencias
-                  </div>
-                </div>
-
-                <div class="obs-guia-panel-card">
-                  <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="fw-bold small text-warning obs-guia-card-title">Alumnos Destacados</span>
                     <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle extra-small">Rendimiento</span>
                   </div>
@@ -631,7 +566,6 @@ function _openGuiaAnaliticaModal() {
                 </div>
               </div>
             </div>
-
 
             <!-- PANEL OPERACIONES -->
             <div class="guia-panel d-none" id="pane-operaciones">

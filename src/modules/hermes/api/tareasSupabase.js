@@ -802,6 +802,3 @@ export async function getRuleEffectiveness() {
   if (error) throw error
   return data || []
 }
-
-
-

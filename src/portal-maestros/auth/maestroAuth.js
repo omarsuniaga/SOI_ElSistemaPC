@@ -50,12 +50,6 @@ function _setSessionMode(persistent = true) {
   }
 }
 
-function _isNullLike(value) {
-  if (value == null) return true
-  const text = String(value).trim().toLowerCase()
-  return text === '' || text === 'null' || text === 'undefined'
-}
-
 /**
  * Login con email + password. Verifica que el user_id exista en tabla maestros.
  * @param {string} email
@@ -354,13 +348,6 @@ export function getMaestroLocal() {
       // lo descartamos y limpiamos inmediatamente para forzar una sincronización limpia sin UUID corrupto.
       if (parsed && typeof parsed.id === 'string' && parsed.id.startsWith('admin-')) {
         localStorage.removeItem(STORAGE_KEY)
-        return null
-      }
-
-      // Si el cache quedó contaminado con un ID nulo literal, también lo descartamos.
-      // Ese caso se cuela como string desde algunos flujos legacy y rompe UUID queries.
-      if (!parsed || _isNullLike(parsed.id)) {
-        clearMaestroLocal()
         return null
       }
 

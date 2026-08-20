@@ -13,7 +13,7 @@ import { config } from '../../../core/config/config.js'
 const DEFAULT_CONFIG = {
   id: '00000000-0000-0000-0000-000000000001',
   gateway_url: 'https://gateway.elsistema.local/api',
-  api_key: 'sk_live_soi_baileys_secure',
+  api_key: '***REDACTED-ROTATED***',
   instance_name: 'soi-main',
   numero_wid: '+1 (829) 555-0188',
   numero_nombre: 'El Sistema Punta Cana (Oficial)',

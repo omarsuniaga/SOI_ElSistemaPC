@@ -40,7 +40,6 @@ const DEFAULT_OPTIONS = {
 }
 
 let _options = { ...DEFAULT_OPTIONS }
-let _selectedRutaId = null
 
 const VALIDATION = {
   nombreMax: 100,
@@ -52,7 +51,6 @@ const VALIDATION = {
  */
 export async function openClaseModal(clase = null, options = {}) {
   _options = { ...DEFAULT_OPTIONS, ...options }
-  _selectedRutaId = clase?.ruta_id || null
   const isEdicion = !!clase
   let inscritosIds = []
 
@@ -329,10 +327,8 @@ function _attachModalEvents(modalBody, _clase) {
       }
 
       openRutaSelectorModal(instrumento, 'Cualquier Nivel', (rutaId) => {
-        _selectedRutaId = rutaId
-        // Update the visual indicator if the DOM is still live
-        const rutaDisplay = modalBody.querySelector('#modal-ruta-display')
-        if (rutaDisplay) rutaDisplay.value = 'Ruta seleccionada ✓'
+        modalBody.querySelector('#modal-ruta_id').value = rutaId
+        modalBody.querySelector('#modal-ruta-display').value = 'Ruta seleccionada ✓'
         AppToast.success('Ruta asignada a la clase')
       })
     })
@@ -597,14 +593,12 @@ function _attachModalEvents(modalBody, _clase) {
   updateCount()
 }
 
-async function _handleSave(modalBody, originalClase, submission = null) {
+async function _handleSave(modalBody, originalClase) {
   const isEdicion = !!originalClase
 
   const getFormData = () => {
-    const maestroSuplente = modalBody.querySelector('#modal-maestro_suplente_id')
-    const tieneSuplenteInput = modalBody.querySelector('#modal-tiene_suplente')
-    const maestroSuplenteValue = maestroSuplente?.value || ''
-    const tieneSuplente = tieneSuplenteInput?.checked || false
+    const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id').value
+    const tieneSuplente = modalBody.querySelector('#modal-tiene_suplente').checked
 
     const data = {
       nombre: modalBody.querySelector('#modal-nombre').value.trim(),
@@ -617,7 +611,7 @@ async function _handleSave(modalBody, originalClase, submission = null) {
       estado: modalBody.querySelector('#modal-estado').value,
       tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
       descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
-      ruta_id: _selectedRutaId || modalBody.querySelector('#modal-ruta_id')?.value || null,
+      ruta_id: modalBody.querySelector('#modal-ruta_id')?.value || null,
       horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
         dia: row.querySelector('[name="horario-dia"]').value,
         hora_inicio: row.querySelector('[name="horario-hora_inicio"]').value,
@@ -628,7 +622,7 @@ async function _handleSave(modalBody, originalClase, submission = null) {
     return data
   }
 
-  const formData = submission?.formData || getFormData()
+  const formData = getFormData()
   const claseObj = new Clase(formData)
   const errores = claseObj.validate()
 
@@ -638,10 +632,7 @@ async function _handleSave(modalBody, originalClase, submission = null) {
   }
 
   // ── Helpers para leer slots del panel rotativa ───────────────────────────
-  // CRITICAL: Capture slots ONCE from DOM before any second AppModal can
-  // destroy this modalBody.  The submission?.slots fallback handles the
-  // recursive call after the conflict modal has already wiped the DOM.
-  const _readSlots = () => submission?.slots ||
+  const _readSlots = () =>
     Array.from(modalBody.querySelectorAll('#slots-container .slot-row')).map(row => ({
       alumno_id:   row.querySelector('.slot-alumno-select').value,
       hora_inicio: row.querySelector('.slot-hora-inicio').value,
@@ -650,16 +641,8 @@ async function _handleSave(modalBody, originalClase, submission = null) {
     })).filter(s => s.alumno_id)
       .sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
 
-  // Capture slots eagerly so the conflict-modal onConfirm callback never
-  // reads from a destroyed DOM.
-  const currentSlots = _readSlots()
-
-  const selectedAlumnoIds = submission?.selectedAlumnoIds || (formData.tipo_clase === 'rotativa'
-    ? currentSlots.map(slot => slot.alumno_id)
-    : Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value))
-
   const _syncGrupal = async (claseId) => {
-    const newIds = selectedAlumnoIds
+    const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
     const currentIds = currentEnrolled.map(i => i.alumno_id)
     const toAdd    = newIds.filter(id => !currentIds.includes(id))
@@ -697,6 +680,10 @@ async function _handleSave(modalBody, originalClase, submission = null) {
 
   // ── Verificación de Solapes/Conflictos ──────────────────────────────────
   if (!modalBody.dataset.overrideConflicts) {
+    const selectedAlumnoIds = formData.tipo_clase === 'rotativa'
+      ? _readSlots().map(s => s.alumno_id)
+      : Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+
     const conflictos = await verificarSolapamientoCompleto({
       claseId: isEdicion ? originalClase.id : null,
       maestroId: formData.maestro_principal_id,
@@ -710,11 +697,7 @@ async function _handleSave(modalBody, originalClase, submission = null) {
           conflictos,
           onConfirm: async () => {
             modalBody.dataset.overrideConflicts = 'true'
-            const saved = await _handleSave(modalBody, originalClase, {
-              formData,
-              slots: currentSlots,
-              selectedAlumnoIds,
-            })
+            const saved = await _handleSave(modalBody, originalClase)
             if (saved) {
               await resolverConflictosClases(conflictos, formData.nombre)
             }
@@ -741,8 +724,9 @@ async function _handleSave(modalBody, originalClase, submission = null) {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
       } else {
-        if (selectedAlumnoIds.length > 0) {
-          await Promise.all(selectedAlumnoIds.map(aid => inscribirAlumno(resultClase.id, aid)))
+        const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+        if (selectedIds.length > 0) {
+          await Promise.all(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
         }
       }
     }

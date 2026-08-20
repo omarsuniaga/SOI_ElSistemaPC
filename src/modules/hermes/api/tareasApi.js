@@ -75,6 +75,3 @@ export const getPulsoScoreHistory = api.getPulsoScoreHistory
 export const getUltimoAnalisisSemanal = api.getUltimoAnalisisSemanal
 export const ejecutarAnalisisPatrones = api.ejecutarAnalisisPatrones
 export const getRuleEffectiveness = api.getRuleEffectiveness
-
-
-

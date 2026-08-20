@@ -34,13 +34,6 @@ const BLOCK_GAP = 58
 const LEFT_PAD = 46
 const TOP_PAD = 58
 
-function normalizeNullableId(value) {
-  if (value == null) return null
-  const text = String(value).trim()
-  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null
-  return text
-}
-
 /**
  * Combina check_states hijos en el estado agregado del padre:
  *   'double' solo si TODOS los hijos están 'double' (unidad/objetivo "se apagan"
@@ -65,29 +58,18 @@ function _aggregateState(childStates) {
  * @param {string} fechaHoy - 'YYYY-MM-DD'
  */
 export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
-  const normalizedClaseId = normalizeNullableId(claseId)
-  const normalizedMaestroId = normalizeNullableId(maestro?.id)
-
-  if (!normalizedClaseId || !normalizedMaestroId) {
-    console.warn('[teacherRouteMapPanel] Cannot open route map without valid ids:', {
-      claseId,
-      maestroId: maestro?.id,
-    })
-    return
-  }
-
-  const routes = await getPersonalRoutes(normalizedMaestroId, normalizedClaseId, true)
+  const routes = await getPersonalRoutes(maestro.id, claseId, true)
 
   if (!routes || routes.length === 0) {
-    openTeacherRoutePicker(normalizedMaestroId, normalizedClaseId, () => {
-      abrirMapaDeRutas(normalizedClaseId, { ...maestro, id: normalizedMaestroId }, fechaHoy)
+    openTeacherRoutePicker(maestro.id, claseId, () => {
+      abrirMapaDeRutas(claseId, maestro, fechaHoy)
     })
     return
   }
 
   // Fase 1: una ruta activa por clase (UNIQUE(maestro_id, clase_id) en el schema)
   const route = routes[0]
-  await _renderMapaDeRutasPanel(route, normalizedClaseId, { ...maestro, id: normalizedMaestroId }, fechaHoy)
+  await _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy)
 }
 
 async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
@@ -231,6 +213,7 @@ function _renderMapaSVG(canvas, route, checkByIndicador, { onIndicadorClick, onO
     .map((n, i) => {
       const r = NODE_R[n.type]
       const encendido = n.checkState !== 'double'
+      const fill = encendido ? NODE_COLOR[n.type] : OFF_COLOR
       const glowId = `pmr-glow-${i}`
       const gradId = `pmr-grad-${i}`
       const titulo = n.node.nombre || ''

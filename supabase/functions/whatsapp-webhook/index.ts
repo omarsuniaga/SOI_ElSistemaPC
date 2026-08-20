@@ -477,7 +477,6 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!conversacion) {
-
     // Servicio público: solo abierto si hay un período activo que lo habilita.
     // Responde SIN LLM, solo desde la KB cerrada (anti-inyección + ahorro de tokens).
     let servicioActivo = false

@@ -176,14 +176,6 @@ describe('getMaestroLocal() -- cache de sesion', () => {
     localStorage.setItem(STORAGE_KEY, 'json-invalido{{{')
     expect(getMaestroLocal()).toBeNull()
   })
-
-  it('descarta maestro cacheado con id null-like', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'null', nombre_completo: 'Test' }))
-    localStorage.setItem('pm-session-expires', new Date(Date.now() + 86400000).toISOString())
-    sessionStorage.setItem('pm-session-active', 'true')
-    expect(getMaestroLocal()).toBeNull()
-    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
-  })
 })
 
 // Suite 4: admin puro vs admin-maestro

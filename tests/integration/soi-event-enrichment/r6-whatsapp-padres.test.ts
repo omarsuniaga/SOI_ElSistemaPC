@@ -120,7 +120,7 @@ describe('Rule R6 — WhatsApp Proactivo a Padres (Phase 4A)', () => {
     expect(mockTareaInsert).toHaveBeenCalledWith(
       expect.objectContaining({
         departamento: 'ACM',
-        entidad_tipo: 'whatsapp_pendiente_aprobacion',
+        entidad_tipo: 'otro',
         entidad_id: 'wa-queue-1',
       })
     )

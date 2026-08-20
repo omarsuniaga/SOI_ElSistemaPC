@@ -2,7 +2,6 @@ import { router } from '../../core/router/router.js'
 import CumplimientoMaestrosWidget from './views/cumplimientoMaestrosWidget.js'
 import DirectorReportingPanel from './views/directorReportingPanel.js'
 import { analyticsFillingBehaviorWidget } from './views/analyticsFillingBehaviorWidget.js'
-import { attendanceAlertsWidget } from './views/attendanceAlertsWidget.js'
 import { directorTrendReportView } from './views/directorTrendReportView.js'
 
 /**
@@ -34,25 +33,15 @@ export function registerRoutesAdminDashboard() {
     }
   })
 
-  // Analítica de Llenado de Asistencias + Alertas de Asistencia
+  // Analítica de Llenado de Asistencias
   router.register('admin-dashboard-analitca-llenado', (container) => {
     try {
-      container.innerHTML = `
-        <div class="container-fluid pt-4">
-          <div id="attendance-alerts-container" class="mb-5"></div>
-          <hr class="my-5">
-          <div id="analytics-filling-container"></div>
-        </div>
-      `
-      // Cargar widget de alertas de asistencia
-      attendanceAlertsWidget('attendance-alerts-container')
-
-      // Cargar widget de analítica de llenado
+      container.innerHTML = `<div id="analytics-filling-container"></div>`
       const widget = analyticsFillingBehaviorWidget('analytics-filling-container')
       widget.init()
     } catch (error) {
       console.error('[admin-dashboard-analitca-llenado] Error:', error)
-      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar datos: ${error.message}</p></div>`
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar analítica: ${error.message}</p></div>`
     }
   })
 
@@ -95,20 +84,4 @@ export function registerRoutesAdminDashboard() {
       </div>`
     }
   })
-
-  // Orquestador de Conciertos Hermes (SOP-SOI-CON-001)
-  router.register('admin-conciertos', async (container) => {
-    try {
-      container.innerHTML = `<div id="admin-conciertos-container"></div>`
-      const { renderHermesConcertOrchestratorView } = await import('../hermes/views/hermesConcertOrchestratorView.js')
-      renderHermesConcertOrchestratorView('admin-conciertos-container')
-    } catch (error) {
-      console.error('[admin-conciertos] Error:', error)
-      container.innerHTML = `<div class="pm-placeholder p-4 text-center text-muted">
-        <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
-        <p>Error al cargar el Orquestador de Conciertos: ${error.message}</p>
-      </div>`
-    }
-  })
 }
-

@@ -105,10 +105,6 @@
   background: rgba(249, 115, 22, 0.04);
 }
 
-[data-bs-theme="dark"] .clases-hoy__card.has-pendiente {
-  background: rgba(249, 115, 22, 0.08);
-}
-
 .clases-hoy__filtros {
   display: flex;
   flex-wrap: wrap;
@@ -224,8 +220,10 @@
   100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
 }
 
-[data-bs-theme="dark"] .clases-hoy__dia-pill,
-[data-bs-theme="dark"] .clases-hoy__kpi,
-[data-bs-theme="dark"] .clases-hoy__card {
-  background: var(--bs-body-bg, #1c1c1e);
+@media (prefers-color-scheme: dark) {
+  .clases-hoy__dia-pill,
+  .clases-hoy__kpi,
+  .clases-hoy__card {
+    background: var(--bs-body-bg, #1c1c1e);
+  }
 }

@@ -89,6 +89,7 @@ async function processQueue() {
       continue
     }
 
+    // Nota: fn_whatsapp_reclamar_pendientes ya marcó estado='procesando' e incrementó intentos.
     try {
       const url = `${config.gateway_url.replace(/\/$/, '')}/message/sendText`
       const headers = {

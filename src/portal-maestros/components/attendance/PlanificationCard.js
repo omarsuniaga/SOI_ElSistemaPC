@@ -20,12 +20,7 @@ function normalizeNullableId(value) {
 }
 
 export function createPlanificationCard(container, opts) {
-  const claseId = normalizeNullableId(
-    opts.claseId ||
-    opts.clase?.id ||
-    opts.clase?.clase_id ||
-    localStorage.getItem('pm_active_clase_id')
-  )
+  const claseId = normalizeNullableId(opts.claseId)
   let activeRoute = null
   let weeklyPlan = null
   let progressMap = {}
@@ -449,15 +444,6 @@ export function createPlanificationCard(container, opts) {
     if (btnAbrir) {
       btnAbrir.onclick = async (e) => {
         e.stopPropagation()
-        if (!claseId) {
-          console.warn('[PlanificationCard] No class id available to open route map', {
-            claseId: opts.claseId,
-            clase: opts.clase,
-            activeClassId: localStorage.getItem('pm_active_clase_id'),
-          })
-          AppToast.warning('No se pudo identificar la clase activa para abrir el mapa de rutas.')
-          return
-        }
         await abrirMapaDeRutas(claseId, opts.maestro, opts.fechaHoy)
       }
     }

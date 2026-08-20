@@ -1,39 +1,17 @@
-import { AppModal } from '../../../shared/components/AppModal.js'
 import { escapeHTML } from '../utils/clasesUtils.js'
 
 /**
  * Abre un modal de resolución de conflictos para el usuario al crear/editar una clase.
  *
- * Una sola acción, que resuelve lo que se puede resolver sin ambigüedad y
- * señala el resto:
- *
- *  - Salón: se libera el salón en conflicto de la clase existente — es un
- *    recurso físico, no hay decisión pedagógica que tomar ahí. La clase
- *    nueva pasa a usarlo.
- *  - Maestro y alumnos: NO se mutan. Desasignar un maestro o desinscribir
- *    un alumno es una decisión pedagógica, y el solape de alumnos muchas
- *    veces es intencional (ensayos generales que se superponen con clases
- *    individuales).
- *
- * En todos los casos la clase existente queda marcada como pendiente de
- * revisión, con el detalle exacto de qué se resolvió solo y qué falta
- * decidir — así el solape no pasa inadvertido.
+ * El usuario decide qué lado tiene prioridad. La clase no prioritaria queda
+ * marcada para modificación posterior; el sistema no reasigna recursos.
  *
  * @param {Object} options
  * @param {Array} options.conflictos Lista de objetos de conflicto { tipo, clase_nombre, detalle, horario }
- * @param {Function} options.onConfirm Callback al confirmar guardar y resolver los conflictos
+ * @param {Function} options.onConfirm Callback con prioridad: nueva | existentes
+ * @param {Function} options.onCancel Callback al cancelar el guardado
  */
-export function openClaseConflictModal({ conflictos = [], onConfirm }) {
-  const tieneSalon = conflictos.some(c => c.tipo === 'salón')
-  const tieneOtros = conflictos.some(c => c.tipo !== 'salón')
-
-  const explicacion = []
-  if (tieneSalon) {
-    explicacion.push('el salón en conflicto se libera de la clase existente para que lo use esta clase nueva')
-  }
-  if (tieneOtros) {
-    explicacion.push('los conflictos de maestro o alumnos NO se tocan automáticamente — quedan para que los decidas vos')
-  }
+export function openClaseConflictModal({ conflictos = [], onConfirm, onCancel }) {
 
   const bodyHtml = `
     <div class="alert alert-warning mb-3 d-flex align-items-center gap-2">
@@ -52,46 +30,60 @@ export function openClaseConflictModal({ conflictos = [], onConfirm }) {
             <div class="fw-bold text-dark">${escapeHTML(c.clase_nombre || 'Clase en conflicto')}</div>
             <div class="small text-secondary mt-1">${escapeHTML(c.detalle)}</div>
             ${c.horario ? `<div class="badge text-bg-dark mt-1"><i class="bi bi-clock me-1"></i>${escapeHTML(c.horario)}</div>` : ''}
-            ${c.tipo === 'salón'
-              ? '<div class="small text-success mt-1"><i class="bi bi-check-circle me-1"></i>Se libera automáticamente</div>'
-              : '<div class="small text-danger mt-1"><i class="bi bi-hand-index-thumb me-1"></i>Requiere tu decisión — queda marcada</div>'}
+            <div class="small text-danger mt-1"><i class="bi bi-hand-index-thumb me-1"></i>La clase no prioritaria quedará marcada para modificación</div>
           </div>
         </div>
       `).join('')}
     </div>
 
     <div class="p-3 bg-body-tertiary rounded border small text-muted">
-      Si continuás, esta clase se guarda y ${explicacion.join('; ')}.
-      ${conflictos.length === 1 ? 'La clase de arriba queda' : 'Las clases de arriba quedan'}
-      marcada${conflictos.length === 1 ? '' : 's'} como <strong>pendiente de revisión</strong>.
+      Elegí qué lado tiene prioridad. El otro quedará marcado como <strong>pendiente de modificación</strong>, sin cambios automáticos de salón, maestro o alumnos.
     </div>
   `
 
-  AppModal.open({
-    title: '⚠️ Conflicto de Clases Detectado',
-    size: 'md',
-    hideSave: true,
-    cancelText: 'Cancelar',
-    body: bodyHtml,
+  // AppModal is a singleton used by the class editor. This dialog must not
+  // replace it, or the retry after confirmation would lose the form fields.
+  document.getElementById('clase-conflict-dialog')?.remove()
+
+  const dialog = document.createElement('div')
+  dialog.id = 'clase-conflict-dialog'
+  dialog.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3'
+  dialog.style.cssText = 'z-index: 1060; background: rgba(0, 0, 0, .45);'
+  dialog.innerHTML = `
+    <section class="bg-body rounded shadow-lg border" role="dialog" aria-modal="true" aria-labelledby="clase-conflict-title" style="width: min(560px, 100%); max-height: 90vh; overflow: auto;">
+      <header class="px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+        <h2 id="clase-conflict-title" class="h6 mb-0">⚠️ Conflicto de Clases Detectado</h2>
+        <button type="button" class="btn-close" aria-label="Cerrar" data-conflict-cancel></button>
+      </header>
+      <div class="p-3">${bodyHtml}</div>
+      <footer class="px-3 py-2 border-top d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-conflict-cancel>Cancelar</button>
+        <button type="button" class="btn btn-outline-warning btn-sm" data-conflict-confirm="existentes">
+          Priorizar existentes
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" data-conflict-confirm="nueva">
+          Priorizar esta clase
+        </button>
+      </footer>
+    </section>
+  `
+
+  const close = () => dialog.remove()
+  const cancel = () => {
+    close()
+    if (onCancel) onCancel()
+  }
+  dialog.querySelectorAll('[data-conflict-cancel]').forEach((button) => {
+    button.addEventListener('click', cancel)
   })
-
-  // Insert the custom action button inside the modal footer.
-  requestAnimationFrame(() => {
-    const footer = document.querySelector('.app-modal-footer')
-    if (!footer) return
-
-    footer.querySelectorAll('.conflict-action-btn').forEach(btn => btn.remove())
-
-    const btnConfirm = document.createElement('button')
-    btnConfirm.className = 'btn btn-warning btn-sm conflict-action-btn'
-    btnConfirm.innerHTML = tieneSalon
-      ? '<i class="bi bi-door-open me-1"></i>Guardar y liberar salón'
-      : '<i class="bi bi-flag-fill me-1"></i>Guardar y marcar para revisión'
-    btnConfirm.onclick = async () => {
-      AppModal.close()
-      if (onConfirm) await onConfirm()
-    }
-
-    footer.appendChild(btnConfirm)
+  dialog.querySelectorAll('[data-conflict-confirm]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      close()
+      if (onConfirm) await onConfirm(button.dataset.conflictConfirm)
+    })
   })
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) cancel()
+  })
+  document.body.appendChild(dialog)
 }

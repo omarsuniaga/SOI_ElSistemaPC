@@ -786,55 +786,47 @@ export async function verificarSolapamientoCompleto({ claseId = null, maestroId,
 }
 
 /**
- * Marca las clases en conflicto como pendientes de revisión, en vez de
- * mutar sus datos en automático (desalojar salón, quitar alumnos): quien
- * coordina horarios decide cómo resolver el solape, no el sistema.
+ * Marca solo la clase no prioritaria como pendiente de revisión. Nunca mueve
+ * salón, maestro ni alumnos automáticamente: la prioridad es una decisión
+ * humana y la modificación posterior también.
  *
  * @param {Array} conflictos - conflictos devueltos por verificarSolapamientoCompleto
- * @param {string} nuevaClaseNombre - nombre de la clase que se guardó pese al solape
+ * @param {Object} decision - prioridad y datos de la clase recién guardada
  */
-export async function resolverConflictosClases(conflictos = [], nuevaClaseNombre = '') {
+export async function resolverConflictosClases(conflictos = [], {
+  prioridad = 'nueva',
+  nuevaClaseId = null,
+  nuevaClaseNombre = '',
+} = {}) {
   const porClase = new Map()
   for (const c of conflictos) {
     if (!c.clase_id) continue
     if (!porClase.has(c.clase_id)) porClase.set(c.clase_id, [])
     porClase.get(c.clase_id).push(c)
   }
-  if (porClase.size === 0) return
+  if (porClase.size === 0 || !nuevaClaseId) return
 
-  await Promise.all(Array.from(porClase.entries()).map(async ([claseId, confs]) => {
-    const acciones = []
-
-    // Salón: recurso físico, no hay ambigüedad pedagógica en liberarlo.
-    // La clase nueva pasa a usarlo; la vieja queda sin salón en ese
-    // horario hasta que alguien le asigne otro.
-    for (const c of confs.filter(c => c.tipo === 'salón' && c.dia && c.hora_inicio && c.hora_fin)) {
-      await supabase
-        .from('clase_horarios')
-        .update({ salon_id: null })
-        .eq('clase_id', claseId)
-        .eq('dia', c.dia)
-        .eq('hora_inicio', c.hora_inicio)
-        .eq('hora_fin', c.hora_fin)
-      acciones.push(
-        `Se liberó el salón del ${c.dia} ${formatHora(c.hora_inicio)}-${formatHora(c.hora_fin)} ` +
-        `(ahora lo usa "${nuevaClaseNombre}") — asignale uno nuevo a este horario.`
-      )
-    }
-
-    // Maestro y alumnos: no se mutan. Desasignar un maestro o desinscribir
-    // un alumno es una decisión pedagógica — y el solape de alumnos muchas
-    // veces es intencional (ensayos generales que se superponen con
-    // clases individuales). Quedan señalados para que alguien decida.
-    for (const c of confs.filter(c => c.tipo !== 'salón')) {
-      acciones.push(c.detalle)
-    }
-
+  if (prioridad === 'existentes') {
+    const detalles = Array.from(porClase.entries()).flatMap(([claseId, confs]) => {
+      const nombre = confs[0]?.clase_nombre || claseId
+      return confs.map(c => `Con "${nombre}": ${c.detalle}`)
+    })
     await supabase
       .from('clases')
       .update({
         necesita_revision: true,
-        revision_motivo: `Conflicto con "${nuevaClaseNombre}": ${acciones.join(' ')}`,
+        revision_motivo: `Las clases existentes tienen prioridad. ${detalles.join(' ')}`,
+      })
+      .eq('id', nuevaClaseId)
+    return
+  }
+
+  await Promise.all(Array.from(porClase.entries()).map(async ([claseId, confs]) => {
+    await supabase
+      .from('clases')
+      .update({
+        necesita_revision: true,
+        revision_motivo: `La clase "${nuevaClaseNombre}" tiene prioridad. ${confs.map(c => c.detalle).join(' ')}`,
       })
       .eq('id', claseId)
   }))

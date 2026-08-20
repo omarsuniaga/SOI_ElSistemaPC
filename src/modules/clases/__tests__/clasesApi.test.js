@@ -314,7 +314,7 @@ describe('clasesApi Integration', () => {
       return updates
     }
 
-    it('frees the room for a salón conflict and flags the class for review', async () => {
+    it('prioritizes the new class and flags the conflicting existing class without changing its room', async () => {
       const updates = mockTables()
       const conflictos = [
         {
@@ -324,43 +324,50 @@ describe('clasesApi Integration', () => {
         },
       ]
 
-      await clasesApi.resolverConflictosClases(conflictos, 'Clase Nueva')
+      await clasesApi.resolverConflictosClases(conflictos, {
+        prioridad: 'nueva',
+        nuevaClaseId: 'clase-nueva',
+        nuevaClaseNombre: 'Clase Nueva',
+      })
 
-      expect(supabase.from).toHaveBeenCalledWith('clase_horarios')
-      const horarioUpdate = updates.clase_horarios[0]
-      expect(horarioUpdate.payload).toEqual({ salon_id: null })
-      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('clase_id', 'clase-vieja')
-      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('dia', 'miércoles')
-      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('hora_inicio', '16:30:00')
-      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('hora_fin', '18:30:00')
-
+      expect(supabase.from).not.toHaveBeenCalledWith('clase_horarios')
       expect(supabase.from).toHaveBeenCalledWith('clases')
       const claseUpdate = updates.clases[0]
       expect(claseUpdate.payload.necesita_revision).toBe(true)
-      expect(claseUpdate.payload.revision_motivo).toContain('liberó el salón')
+      expect(claseUpdate.payload.revision_motivo).toContain('Clase Nueva')
+      expect(claseUpdate.payload.revision_motivo).toContain('tiene prioridad')
       expect(claseUpdate.chain.eq).toHaveBeenCalledWith('id', 'clase-vieja')
     })
 
-    it('does NOT touch class_horarios for maestro/alumnos conflicts — only flags for human review', async () => {
+    it('prioritizes existing classes and flags the newly saved class for review', async () => {
       const updates = mockTables()
       const conflictos = [
         { clase_id: 'clase-vieja', tipo: 'maestro', detalle: 'El maestro ya tiene la clase "Violas" en este horario.' },
         { clase_id: 'clase-vieja', tipo: 'alumnos', detalle: '2 alumnos en dos clases a la misma hora.' },
       ]
 
-      await clasesApi.resolverConflictosClases(conflictos, 'Clase Nueva')
+      await clasesApi.resolverConflictosClases(conflictos, {
+        prioridad: 'existentes',
+        nuevaClaseId: 'clase-nueva',
+        nuevaClaseNombre: 'Clase Nueva',
+      })
 
       expect(supabase.from).not.toHaveBeenCalledWith('clase_horarios')
       expect(updates.clases).toHaveLength(1)
       expect(updates.clases[0].payload.necesita_revision).toBe(true)
+      expect(updates.clases[0].payload.revision_motivo).toContain('clases existentes tienen prioridad')
       expect(updates.clases[0].payload.revision_motivo).toContain('El maestro ya tiene')
       expect(updates.clases[0].payload.revision_motivo).toContain('2 alumnos en dos clases')
-      expect(updates.clases[0].payload.revision_motivo).not.toContain('liberó el salón')
+      expect(updates.clases[0].chain.eq).toHaveBeenCalledWith('id', 'clase-nueva')
     })
 
     it('does nothing when there are no conflicting class ids', async () => {
       mockTables()
-      await clasesApi.resolverConflictosClases([], 'Clase Nueva')
+      await clasesApi.resolverConflictosClases([], {
+        prioridad: 'nueva',
+        nuevaClaseId: 'clase-nueva',
+        nuevaClaseNombre: 'Clase Nueva',
+      })
       expect(supabase.from).not.toHaveBeenCalled()
     })
   })

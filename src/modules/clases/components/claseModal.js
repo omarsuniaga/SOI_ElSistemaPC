@@ -597,8 +597,10 @@ async function _handleSave(modalBody, originalClase) {
   const isEdicion = !!originalClase
 
   const getFormData = () => {
-    const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id').value
-    const tieneSuplente = modalBody.querySelector('#modal-tiene_suplente').checked
+    const maestroSuplenteSelect = modalBody.querySelector('#modal-maestro_suplente_id')
+    const tieneSuplenteSwitch = modalBody.querySelector('#modal-tiene_suplente')
+    const maestroSuplenteValue = maestroSuplenteSelect?.value || ''
+    const tieneSuplente = tieneSuplenteSwitch?.checked || false
 
     const data = {
       nombre: modalBody.querySelector('#modal-nombre').value.trim(),
@@ -695,14 +697,14 @@ async function _handleSave(modalBody, originalClase) {
       return new Promise((resolve) => {
         openClaseConflictModal({
           conflictos,
-          onConfirm: async () => {
+          onConfirm: async (prioridad) => {
             modalBody.dataset.overrideConflicts = 'true'
+            modalBody.dataset.conflictPriority = prioridad
+            modalBody._conflictosPendientes = conflictos
             const saved = await _handleSave(modalBody, originalClase)
-            if (saved) {
-              await resolverConflictosClases(conflictos, formData.nombre)
-            }
             resolve(saved)
-          }
+          },
+          onCancel: () => resolve(false),
         })
       })
     }
@@ -729,6 +731,18 @@ async function _handleSave(modalBody, originalClase) {
           await Promise.all(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
         }
       }
+    }
+
+    const prioridadConflicto = modalBody.dataset.conflictPriority
+    const conflictosPendientes = modalBody._conflictosPendientes
+    if (prioridadConflicto && conflictosPendientes?.length) {
+      await resolverConflictosClases(conflictosPendientes, {
+        prioridad: prioridadConflicto,
+        nuevaClaseId: resultClase.id,
+        nuevaClaseNombre: formData.nombre,
+      })
+      delete modalBody.dataset.conflictPriority
+      delete modalBody._conflictosPendientes
     }
 
     AppToast.success(isEdicion ? 'Clase actualizada' : 'Clase creada')

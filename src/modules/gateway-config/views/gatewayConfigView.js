@@ -21,6 +21,7 @@ const state = {
   config: null,
   stats: null,
   queue: [],
+  dedupHoras: 24,
   filtroCola: 'todos',
   cargando: false,
   enviandoTest: false,
@@ -101,10 +102,13 @@ export async function renderGatewayConfigView(container) {
         activo: container.querySelector('#inp-activo')?.checked ?? true,
       }
 
+      const dedupHoras = Number(container.querySelector('#inp-dedup-horas')?.value ?? 24)
+
       try {
         state.cargando = true
         render(container)
         await gatewayApi.actualizarGatewayConfig(payload)
+        await gatewayApi.actualizarDedupHoras(dedupHoras)
         AppToast.success('Configuración y políticas Anti-Ban actualizadas exitosamente.')
         await cargarDatos(container)
       } catch (err) {
@@ -146,14 +150,16 @@ async function cargarDatos(container) {
   try {
     state.cargando = true
     renderLoading(container)
-    const [cfg, stats, queue] = await Promise.all([
+    const [cfg, stats, queue, dedupHoras] = await Promise.all([
       gatewayApi.obtenerGatewayConfig(),
       gatewayApi.obtenerGatewayStats(),
       gatewayApi.obtenerColaMensajes(25),
+      gatewayApi.obtenerDedupHoras(),
     ])
     state.config = cfg
     state.stats = stats
     state.queue = queue
+    state.dedupHoras = dedupHoras
     state.cargando = false
     render(container)
   } catch (err) {
@@ -176,7 +182,7 @@ function renderLoading(container) {
 }
 
 function render(container) {
-  const { config, stats, queue, filtroCola, cargando, enviandoTest } = state
+  const { config, stats, queue, dedupHoras, filtroCola, cargando, enviandoTest } = state
   const isOnline = stats?.status === 'online' && config?.activo
   const pctConsumo = stats ? Math.round((stats.enviadosHoy / Math.max(1, stats.capHoy)) * 100) : 0
 
@@ -377,6 +383,17 @@ function render(container) {
                 <div class="col-md-6">
                   <label class="form-label fw-bold text-muted mb-1">Fecha de Inicio de Warmup</label>
                   <input type="date" id="inp-warmup-desde" class="form-control form-control-sm" value="${config?.warmup_desde || ''}" />
+                </div>
+
+                <div class="col-12"><hr class="my-1"></div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-muted mb-1">Anti-repetición por número (horas)</label>
+                  <input type="number" min="0" id="inp-dedup-horas" class="form-control form-control-sm" value="${dedupHoras ?? 24}" />
+                  <small class="text-muted d-block mt-1">
+                    <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                    Mínimo de horas entre dos mensajes al mismo número. <strong>24 en producción.</strong> Bájalo solo para pruebas controladas y vuelve a subirlo después.
+                  </small>
                 </div>
 
                 <div class="col-12 mt-2">

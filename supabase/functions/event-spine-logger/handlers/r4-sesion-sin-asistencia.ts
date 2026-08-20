@@ -11,6 +11,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SoiEvento, HandlerResult } from '../types.ts'
 import { crearTareaDesdeEvento } from '../lib/hermes.ts'
+import { handleWhatsAppMaestroAsistenciaPendiente } from './r7-whatsapp-maestros.ts'
 
 /**
  * Handle a session creation event.
@@ -143,6 +144,14 @@ export async function handleSesionCreada(
   console.log(
     `[R4_REMINDER_CREATED] sesion_id=${sesionId}, maestro_id=${maestroId}, tareaId=${result.tareaId}`
   )
+
+  // Trigger Rule R7: Proactive WhatsApp reminder to the maestro
+  try {
+    await handleWhatsAppMaestroAsistenciaPendiente(maestroId, sesionId, fecha, evento, supabase)
+  } catch (waErr) {
+    console.error(`[R4_WHATSAPP_TRIGGER_ERROR] maestro_id=${maestroId}:`, waErr)
+    // Non-fatal: task creation succeeds even if WhatsApp enqueuing fails
+  }
 
   return {
     handled: true,

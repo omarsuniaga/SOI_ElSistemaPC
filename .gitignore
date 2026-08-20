@@ -60,3 +60,8 @@ supabase/.temp/
 
 # Graphify artifacts
 graphify-out/
+
+# WhatsApp session credentials (Baileys) — never commit
+scripts/whatsapp-runner/auth_info_baileys/
+**/auth_info_baileys/
+*.baileys-store.json

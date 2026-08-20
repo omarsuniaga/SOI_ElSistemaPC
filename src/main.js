@@ -388,6 +388,7 @@ const NAV_GROUPS = [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
       { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
       { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'hermes-reglas', label: 'Reglas Reactivas', icon: 'bi-sliders' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
       { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
       { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },

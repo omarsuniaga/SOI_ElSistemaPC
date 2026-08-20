@@ -11,6 +11,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SoiEvento, HandlerResult } from '../types.ts'
 import { crearTareaDesdeEvento } from '../lib/hermes.ts'
+import { handleWhatsAppTareaVencida } from './r8-whatsapp-tareas.ts'
 
 /**
  * Handle a task overdue event.
@@ -108,6 +109,14 @@ export async function handleTareaVencida(
   console.log(
     `[R2_ESCALATION_CREATED] titulo="${titulo}", departamento=${departamento}, tareaId=${result.tareaId}`
   )
+
+  // Trigger Rule R8: Proactive WhatsApp seguimiento to configured DIR contact
+  try {
+    await handleWhatsAppTareaVencida(titulo, departamento, diasVencida, evento, supabase)
+  } catch (waErr) {
+    console.error(`[R2_WHATSAPP_TRIGGER_ERROR] titulo="${titulo}":`, waErr)
+    // Non-fatal: task creation succeeds even if WhatsApp enqueuing fails
+  }
 
   return {
     handled: true,

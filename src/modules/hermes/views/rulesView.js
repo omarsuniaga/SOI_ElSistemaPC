@@ -13,7 +13,14 @@
 
 import '../styles/rules.css'
 import { supabase } from '../../../lib/supabaseClient.js'
-import { getRules, updateRule, getRuleEffectiveness } from '../api/tareasApi.js'
+import {
+  getRules,
+  updateRule,
+  getRuleEffectiveness,
+  getPendingWhatsappApprovals,
+  aprobarWhatsapp,
+  rechazarWhatsapp,
+} from '../api/tareasApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
 const RULE_LABELS = {
@@ -41,6 +48,8 @@ const state = {
   effectiveness: {},
   cargando: false,
   guardando: {},
+  whatsappPendientes: [],
+  whatsappProcesando: {},
 }
 
 let _abortController = null
@@ -81,6 +90,111 @@ async function loadRules() {
   } finally {
     state.cargando = false
   }
+}
+
+async function loadWhatsappPendientes() {
+  try {
+    state.whatsappPendientes = await getPendingWhatsappApprovals()
+  } catch (err) {
+    console.error('[Rules] Error cargando mensajes WhatsApp pendientes:', err)
+    state.whatsappPendientes = []
+  }
+}
+
+async function aprobarWhatsappPendiente(queueId, container) {
+  state.whatsappProcesando[queueId] = true
+  renderWhatsappPendientes(container)
+  try {
+    await aprobarWhatsapp(queueId)
+    AppToast.success('Mensaje aprobado — se enviará en el próximo ciclo del despachador')
+    await loadWhatsappPendientes()
+  } catch (err) {
+    console.error('[Rules] Error aprobando mensaje WhatsApp:', err)
+    AppToast.error(`Error aprobando: ${err.message}`)
+  } finally {
+    delete state.whatsappProcesando[queueId]
+    renderWhatsappPendientes(container)
+  }
+}
+
+async function rechazarWhatsappPendiente(queueId, container) {
+  const motivo = window.prompt('Motivo del rechazo (opcional):') || null
+  state.whatsappProcesando[queueId] = true
+  renderWhatsappPendientes(container)
+  try {
+    await rechazarWhatsapp(queueId, motivo)
+    AppToast.success('Mensaje rechazado — no se enviará')
+    await loadWhatsappPendientes()
+  } catch (err) {
+    console.error('[Rules] Error rechazando mensaje WhatsApp:', err)
+    AppToast.error(`Error rechazando: ${err.message}`)
+  } finally {
+    delete state.whatsappProcesando[queueId]
+    renderWhatsappPendientes(container)
+  }
+}
+
+function renderWhatsappPendientes(container) {
+  const section = container.querySelector('#whatsapp-pendientes-section')
+  if (!section) return
+
+  if (state.whatsappPendientes.length === 0) {
+    section.innerHTML = `
+      <div class="card-body">
+        <h5 class="card-title mb-1">
+          <i class="bi bi-whatsapp me-2" style="color: #25D366;"></i>
+          Mensajes WhatsApp pendientes de aprobación
+        </h5>
+        <small class="text-muted">No hay mensajes esperando aprobación (reglas R6, R7, R8).</small>
+      </div>
+    `
+    return
+  }
+
+  let html = `
+    <div class="card-body">
+      <h5 class="card-title mb-3">
+        <i class="bi bi-whatsapp me-2" style="color: #25D366;"></i>
+        Mensajes WhatsApp pendientes de aprobación (${state.whatsappPendientes.length})
+      </h5>
+      <div class="list-group">
+  `
+
+  for (const msg of state.whatsappPendientes) {
+    const procesando = state.whatsappProcesando[msg.id]
+    html += `
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <small class="text-muted d-block">${escapeHtml(msg.jid)} · ${formatDate(msg.created_at)}</small>
+            <span>${escapeHtml(msg.mensaje)}</span>
+          </div>
+          <div class="d-flex gap-2 flex-shrink-0">
+            <button class="btn btn-sm btn-success wa-aprobar-btn" data-queue-id="${escapeHtml(msg.id)}" ${procesando ? 'disabled' : ''}>
+              <i class="bi bi-check-lg"></i> Aprobar
+            </button>
+            <button class="btn btn-sm btn-outline-danger wa-rechazar-btn" data-queue-id="${escapeHtml(msg.id)}" ${procesando ? 'disabled' : ''}>
+              <i class="bi bi-x-lg"></i> Rechazar
+            </button>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  html += `
+      </div>
+    </div>
+  `
+
+  section.innerHTML = html
+
+  section.querySelectorAll('.wa-aprobar-btn').forEach((btn) => {
+    btn.addEventListener('click', () => aprobarWhatsappPendiente(btn.dataset.queueId, container))
+  })
+  section.querySelectorAll('.wa-rechazar-btn').forEach((btn) => {
+    btn.addEventListener('click', () => rechazarWhatsappPendiente(btn.dataset.queueId, container))
+  })
 }
 
 
@@ -292,6 +406,10 @@ function _renderUI(container) {
       <!-- Rules Table -->
       <div id="rules-table" class="rules-table card">
       </div>
+
+      <!-- WhatsApp Pending Approvals (Fase 3 / Reglas R6, R7, R8) -->
+      <div id="whatsapp-pendientes-section" class="card mt-4">
+      </div>
     </div>
   `
 
@@ -308,13 +426,15 @@ export async function renderRulesView(container) {
   state.cargando = true
 
   // Initial load
-  await loadRules()
+  await Promise.all([loadRules(), loadWhatsappPendientes()])
   renderRulesTable(container)
+  renderWhatsappPendientes(container)
 
   return {
     teardown: () => {
       _abortController.abort()
       state.rules = []
+      state.whatsappPendientes = []
     },
   }
 }

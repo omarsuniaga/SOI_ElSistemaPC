@@ -216,6 +216,42 @@ export async function obtenerGatewayStats() {
   }
 }
 
+/**
+ * Ventana anti-spam "un mensaje por número cada X horas" — configurable desde
+ * el portal en vez de estar fija en el código (system_config.whatsapp_dedup_jid_horas).
+ * Bajarla solo para pruebas controladas; producción debe quedar en 24.
+ */
+export async function obtenerDedupHoras() {
+  if (config.isDemoMode || !supabase) return 24
+
+  try {
+    const { data, error } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'whatsapp_dedup_jid_horas')
+      .maybeSingle()
+
+    if (error) return 24
+    return Number(data?.value) || 24
+  } catch {
+    return 24
+  }
+}
+
+export async function actualizarDedupHoras(horas) {
+  const valor = String(Math.max(0, Number(horas) || 24))
+
+  if (config.isDemoMode || !supabase) return valor
+
+  const { error } = await supabase
+    .from('system_config')
+    .update({ value: valor, updated_at: new Date().toISOString() })
+    .eq('key', 'whatsapp_dedup_jid_horas')
+
+  if (error) throw error
+  return valor
+}
+
 export async function obtenerColaMensajes(limite = 20) {
   if (!config.isDemoMode && supabase) {
     try {

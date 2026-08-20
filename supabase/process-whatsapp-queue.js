@@ -32,42 +32,6 @@ const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 const MAX_TOKENS_PER_MESSAGE = Number(process.env.WHATSAPP_MAX_TOKENS_PER_MESSAGE || WHATSAPP_SECURITY_DEFAULTS.maxTokensPerTurn)
 const MAX_CHARS_PER_MESSAGE = Number(process.env.WHATSAPP_MAX_CHARS_PER_MESSAGE || WHATSAPP_SECURITY_DEFAULTS.maxCharsPerMessage)
 
-// Helper to check if current time is inside quiet hours
-function isQuietHours(startStr, endStr) {
-  if (!startStr || !endStr) return false
-
-  const now = new Date()
-  
-  // Format current time as HH:MM:SS in Dominican Republic timezone (America/Santo_Domingo)
-  const options = {
-    timeZone: 'America/Santo_Domingo',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  }
-  
-  try {
-    const timeParts = new Intl.DateTimeFormat('en-US', options).format(now).split(':')
-    const currentMinutes = parseInt(timeParts[0], 10) * 60 + parseInt(timeParts[1], 10)
-    
-    const startParts = startStr.split(':')
-    const startMinutes = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10)
-    
-    const endParts = endStr.split(':')
-    const endMinutes = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10)
-    
-    if (startMinutes < endMinutes) {
-      return currentMinutes >= startMinutes && currentMinutes <= endMinutes
-    } else {
-      return currentMinutes >= startMinutes || currentMinutes <= endMinutes
-    }
-  } catch (err) {
-    console.error('[Queue Processor] Error checking quiet hours:', err)
-    return false
-  }
-}
-
 async function processQueue() {
   console.log('⏰ [Hermes Outbox] Iniciando procesamiento de la cola de WhatsApp...')
 
@@ -88,45 +52,10 @@ async function processQueue() {
     process.exit(0)
   }
 
-  // 2. Fetch Global config to check quiet hours
-  const { data: globalConfig, error: globalError } = await supabase
-    .from('hermes_config')
-    .select('*')
-    .maybeSingle()
-
-  if (globalError) {
-    console.warn('⚠️ No se pudo cargar hermes_config para validar horas silenciosas:', globalError.message)
-  }
-
-  if (globalConfig && globalConfig.enable_whatsapp === false) {
-    console.log('⚠️ Alertas de WhatsApp desactivadas globalmente en las preferencias.')
-    process.exit(0)
-  }
-
-  if (globalConfig && isQuietHours(globalConfig.quiet_hours_start, globalConfig.quiet_hours_end)) {
-    console.log(`😴 [Horas Silenciosas] En período de descanso (${globalConfig.quiet_hours_start} - ${globalConfig.quiet_hours_end}). Mensajes retenidos.`)
-    process.exit(0)
-  }
-
-  // 2b. Anti-ban: respetar tope diario efectivo (warm-up) antes de enviar
-  const { data: capHoy } = await supabase.rpc('fn_whatsapp_cap_hoy')
-  const { data: enviadosHoy } = await supabase.rpc('fn_whatsapp_enviados_hoy')
-  const restanteHoy = Math.max((capHoy ?? 0) - (enviadosHoy ?? 0), 0)
-  if (restanteHoy <= 0) {
-    console.log(`🚦 Tope diario alcanzado (${enviadosHoy}/${capHoy}). No se envía más hoy.`)
-    process.exit(0)
-  }
-  const batchSize = config.batch_size ?? 10
-  const limite = Math.min(batchSize, restanteHoy)
-
-  // 3. Fetch pending messages (respetando el tope efectivo)
+  // 2. Claim eligible messages atomically. The database is the policy authority
+  // for caps, consent, opt-out, quiet hours and duplicate-worker protection.
   const { data: pendingMessages, error: queueError } = await supabase
-    .from('hermes_whatsapp_queue')
-    .select('*')
-    .eq('estado', 'pendiente')
-    .lt('intentos', 3)
-    .order('created_at', { ascending: true })
-    .limit(limite)
+    .rpc('fn_whatsapp_reclamar_pendientes', { p_limite: config.batch_size ?? 10 })
 
   if (queueError) {
     console.error('❌ Error consultando la cola de mensajes:', queueError.message)
@@ -159,11 +88,6 @@ async function processQueue() {
         .eq('id', message.id)
       continue
     }
-
-    await supabase
-      .from('hermes_whatsapp_queue')
-      .update({ estado: 'procesando', intentos: message.intentos + 1 })
-      .eq('id', message.id)
 
     try {
       const url = `${config.gateway_url.replace(/\/$/, '')}/message/sendText`
@@ -211,7 +135,7 @@ async function processQueue() {
     } catch (err) {
       console.error(`   ❌ Fallo al despachar mensaje ${message.id}:`, err.message)
       
-      const isFinalFail = message.intentos + 1 >= 3
+      const isFinalFail = message.intentos >= 3
       const newStatus = isFinalFail ? 'fallido' : 'pendiente'
 
       await supabase

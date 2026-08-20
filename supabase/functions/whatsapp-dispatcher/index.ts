@@ -23,8 +23,25 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
   }
+  if (req.method !== 'POST') {
+    return json({ error: 'Método no permitido' }, 405)
+  }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  // ── 0. Kill switch global (lee de system_config) ─────────────────────
+  const { data: killSwitch, error: killSwitchError } = await supabase
+    .from('system_config')
+    .select('value')
+    .eq('key', 'whatsapp_ingest_enabled')
+    .maybeSingle()
+
+  if (killSwitchError) {
+    console.error('[WhatsApp Dispatcher] Error leyendo system_config:', killSwitchError.message)
+  } else if (killSwitch?.value === 'false') {
+    console.log('[WhatsApp Dispatcher] whatsapp_ingest_enabled=false. No se despacha nada.')
+    return json({ status: 'skipped', reason: 'whatsapp_ingest_enabled=false' })
+  }
 
   try {
     // 1. Obtener configuración activa del Gateway
@@ -75,13 +92,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 3. Obtener lote de mensajes pendientes de la cola (Outbox)
+    // 3. Claim only messages approved by the database policy gate.
     const { data: pendingMessages, error: queueError } = await supabase
-      .from('hermes_whatsapp_queue')
-      .select('*')
-      .eq('estado', 'pendiente')
-      .order('created_at', { ascending: true })
-      .limit(batchSize)
+      .rpc('fn_whatsapp_reclamar_pendientes', { p_limite: batchSize })
 
     if (queueError || !pendingMessages || pendingMessages.length === 0) {
       return json({ status: 'idle', message: 'No hay mensajes pendientes en la cola' })
@@ -97,12 +110,6 @@ Deno.serve(async (req) => {
       const cleanNumber = String(msg.jid).replace(/\D/g, '')
 
       try {
-        // Marcar como procesando
-        await supabase
-          .from('hermes_whatsapp_queue')
-          .update({ estado: 'procesando', intentos: (msg.intentos || 0) + 1 })
-          .eq('id', msg.id)
-
         // Enviar vía REST API a Evolution API
         const sendRes = await fetch(`${gatewayUrl}/message/sendText/${instanceName}`, {
           method: 'POST',

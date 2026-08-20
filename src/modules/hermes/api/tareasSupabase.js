@@ -601,6 +601,47 @@ export async function rechazarToolCall(tareaId, motivo, actor) {
   if (error) throw error
 }
 
+// ─── Fase 3: aprobación humana de mensajes WhatsApp (Regla R6) ────────────────
+
+/**
+ * Lista los mensajes de hermes_whatsapp_queue esperando aprobación de ACM/DIR
+ * antes de encolarse para envío real.
+ */
+export async function getPendingWhatsappApprovals() {
+  const { data, error } = await supabase
+    .from('hermes_whatsapp_queue')
+    .select('id, jid, mensaje, created_at')
+    .eq('estado', 'pendiente_aprobacion')
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Aprueba un mensaje de WhatsApp pendiente: lo mueve a 'pendiente' para que
+ * el dispatcher lo tome en el próximo ciclo. Verificado server-side por rol
+ * (admin/superadmin/direccion/coordinacion_academica) en fn_hermes_aprobar_whatsapp.
+ * @param {string} queueId
+ */
+export async function aprobarWhatsapp(queueId) {
+  const { error } = await supabase.rpc('fn_hermes_aprobar_whatsapp', { p_queue_id: queueId })
+  if (error) throw error
+}
+
+/**
+ * Rechaza un mensaje de WhatsApp pendiente: lo cancela, nunca se envía.
+ * @param {string} queueId
+ * @param {string} [motivo]
+ */
+export async function rechazarWhatsapp(queueId, motivo) {
+  const { error } = await supabase.rpc('fn_hermes_rechazar_whatsapp', {
+    p_queue_id: queueId,
+    p_motivo: motivo || null,
+  })
+  if (error) throw error
+}
+
 // ─── Batch 2: Pulso Institucional ────────────────────────────────────────────
 
 /**

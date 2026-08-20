@@ -46,6 +46,11 @@ export const observarTarea = api.observarTarea
 export const aprobarToolCall = api.aprobarToolCall
 export const rechazarToolCall = api.rechazarToolCall
 
+// ─── Fase 3: aprobación humana de mensajes WhatsApp (Regla R6) ────────────────
+export const getPendingWhatsappApprovals = api.getPendingWhatsappApprovals
+export const aprobarWhatsapp = api.aprobarWhatsapp
+export const rechazarWhatsapp = api.rechazarWhatsapp
+
 // ─── SP-3: vista de procedimientos (Director) ──────────────────────────────────
 export const getProcedimientos = api.getProcedimientos
 

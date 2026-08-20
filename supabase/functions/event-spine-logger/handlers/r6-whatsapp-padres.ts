@@ -26,6 +26,18 @@ export async function handleWhatsAppPadresAusencias(
   evento: SoiEvento,
   supabase: SupabaseClient
 ): Promise<WhatsAppPadresResult> {
+  // 0. Kill switch global (lee de system_config)
+  const { data: killSwitch } = await supabase
+    .from('system_config')
+    .select('value')
+    .eq('key', 'whatsapp_ingest_enabled')
+    .maybeSingle()
+
+  if (killSwitch?.value === 'false') {
+    console.log(`[R6_KILL_SWITCH] whatsapp_ingest_enabled=false: no se encola para alumno_id=${alumnoId}`)
+    return { sent: false, skipped: true, reason: 'whatsapp_ingest_disabled' }
+  }
+
   // 1. Query hermes_reactive_rules for R6 in ACM department
   const { data: rule, error: ruleError } = await supabase
     .from('hermes_reactive_rules')
@@ -69,7 +81,7 @@ export async function handleWhatsAppPadresAusencias(
   // 3. Fetch student & parent details from alumnos
   const { data: alumno, error: alumnoError } = await supabase
     .from('alumnos')
-    .select('id, nombre, apellido, familiar_nombre, familiar_telefono, contacto_emergencia_telefono, tlf_alumno')
+    .select('id, nombre_completo, representante_nombre, familiar_nombre, familiar_telefono, contacto_emergencia_telefono, representante_tlf, tlf_alumno')
     .eq('id', alumnoId)
     .single()
 
@@ -79,7 +91,12 @@ export async function handleWhatsAppPadresAusencias(
   }
 
   // Extract best available phone
-  const rawPhone = alumno.familiar_telefono || alumno.contacto_emergencia_telefono || alumno.tlf_alumno
+  const rawPhone =
+    alumno.familiar_telefono ||
+    alumno.representante_tlf ||
+    alumno.contacto_emergencia_telefono ||
+    alumno.tlf_alumno
+
   if (!rawPhone || !String(rawPhone).trim()) {
     console.log(`[R6_NO_PHONE] alumno_id=${alumnoId}: No contact phone found for student`)
     return { sent: false, skipped: true, reason: 'no_phone' }
@@ -91,27 +108,65 @@ export async function handleWhatsAppPadresAusencias(
     return { sent: false, skipped: true, reason: 'invalid_phone' }
   }
 
-  const studentFullName = `${alumno.nombre || ''} ${alumno.apellido || ''}`.trim()
+  // Respetar opt-out (SIS-COM-01). Comparación por sufijo de dígitos: el jid se ha
+  // guardado con y sin "@s.whatsapp.net" en distintos puntos del pipeline.
+  const last8 = cleanPhone.slice(-8)
+  const { data: optOutRow } = await supabase
+    .from('whatsapp_optout')
+    .select('jid')
+    .ilike('jid', `%${last8}%`)
+    .maybeSingle()
+
+  if (optOutRow) {
+    console.log(`[R6_OPTOUT] alumno_id=${alumnoId}: Representante en whatsapp_optout, no se encola`)
+    return { sent: false, skipped: true, reason: 'optout' }
+  }
+
+  const studentFullName = (alumno.nombre_completo || 'el estudiante').trim()
   const customTemplate =
     conditions.template ||
     'Estimado/a representante de {nombre_alumno}: Le informamos que el/la estudiante ha acumulado {faltas} inasistencias injustificadas en los últimos 7 días en El Sistema Punta Cana. Por favor comuníquese con Coordinación Académica para coordinar el seguimiento.'
+
 
   const messageText = customTemplate
     .replace('{nombre_alumno}', studentFullName)
     .replace('{faltas}', String(faltaCount))
 
+  // Fase 3: por defecto el disparo requiere aprobación humana antes de encolarse
+  // para envío real. Se desactiva poniendo requiere_aprobacion=false en el
+  // conditions_json de la regla R6.
+  const requiereAprobacion = conditions.requiere_aprobacion !== false
+  const estadoInicial = requiereAprobacion ? 'pendiente_aprobacion' : 'pendiente'
+
   // 4. Enqueue WhatsApp message into hermes_whatsapp_queue
-  const { error: queueError } = await supabase
+  const { data: queuedRow, error: queueError } = await supabase
     .from('hermes_whatsapp_queue')
     .insert({
       jid: cleanPhone,
       mensaje: messageText,
-      estado: 'pendiente',
+      estado: estadoInicial,
     })
+    .select('id')
+    .single()
 
   if (queueError) {
     console.error(`[R6_QUEUE_FAILED] alumno_id=${alumnoId}: ${queueError.message}`)
     return { sent: false, error: queueError.message }
+  }
+
+  if (requiereAprobacion) {
+    const { error: tareaError } = await supabase.from('tareas_institucionales').insert({
+      titulo: `Aprobar envío de WhatsApp: ${studentFullName} (${faltaCount} faltas)`,
+      descripcion: messageText,
+      departamento: 'ACM',
+      prioridad: 'media',
+      estado: 'pendiente',
+      entidad_tipo: 'otro',
+      entidad_id: queuedRow?.id ?? null,
+    })
+    if (tareaError) {
+      console.error(`[R6_TASK_FAILED] alumno_id=${alumnoId}: ${tareaError.message}`)
+    }
   }
 
   // 5. Emit audit event to soi_eventos (used for subsequent 48h dedup)
@@ -119,8 +174,8 @@ export async function handleWhatsAppPadresAusencias(
     .from('soi_eventos')
     .insert({
       tipo: 'notificacion.whatsapp_padres',
-      origen_tabla: 'alumnos',
-      origen_id: alumnoId,
+      entidad_tipo: 'alumnos',
+      entidad_id: alumnoId,
       payload: {
         alumno_id: alumnoId,
         telefono: cleanPhone,

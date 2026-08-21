@@ -36,6 +36,32 @@ const logger = pino({ level: 'silent' })
 let currentSock = null
 let queueInterval = null
 
+// sendMessage() de Baileys resuelve en cuanto el mensaje se encola localmente,
+// NO cuando el servidor de WhatsApp lo confirma. Si el socket se cae justo
+// después (visto en producción: "Conexión cerrada (428)" tras un envío), la
+// promesa igual resuelve aunque la trama nunca haya llegado — falso 'enviado'.
+// Por eso esperamos el evento messages.update con status >= SERVER_ACK (2)
+// antes de marcar la fila como enviada en la cola.
+const WA_STATUS_SERVER_ACK = 2
+const pendingAcks = new Map() // messageId -> { resolve }
+
+function esperarConfirmacionServidor(messageId, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pendingAcks.delete(messageId)
+      reject(new Error('Timeout esperando confirmación de entrega del servidor de WhatsApp (posible caída de conexión)'))
+    }, timeoutMs)
+
+    pendingAcks.set(messageId, {
+      resolve: () => {
+        clearTimeout(timer)
+        pendingAcks.delete(messageId)
+        resolve()
+      },
+    })
+  })
+}
+
 async function startWhatsApp() {
   const authDir = path.join(__dirname, 'auth_info_baileys')
   const { state, saveCreds } = await useMultiFileAuthState(authDir)
@@ -62,6 +88,19 @@ async function startWhatsApp() {
   currentSock = sock
 
   sock.ev.on('creds.update', saveCreds)
+
+  // Confirmación real de entrega: resuelve las promesas pendientes en
+  // pendingAcks cuando WhatsApp confirma recepción server-side (status >= 2).
+  sock.ev.on('messages.update', (updates) => {
+    for (const { key, update } of updates) {
+      const messageId = key?.id
+      const status = update?.status
+      if (!messageId || typeof status !== 'number' || status < WA_STATUS_SERVER_ACK) continue
+
+      const pending = pendingAcks.get(messageId)
+      if (pending) pending.resolve()
+    }
+  })
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update
@@ -163,8 +202,16 @@ function iniciarDespachadorCola() {
         console.log(`\n📤 [DESPACHANDO ALERTA ID ${item.id}] Destino: ${cleanJid}`)
 
         try {
-          await currentSock.sendMessage(cleanJid, { text: item.mensaje })
-          console.log(`   ✅ Mensaje entregado con éxito a ${cleanJid}`)
+          const sentMsg = await currentSock.sendMessage(cleanJid, { text: item.mensaje })
+          const messageId = sentMsg?.key?.id
+
+          if (messageId) {
+            await esperarConfirmacionServidor(messageId)
+          } else {
+            console.warn(`   ⚠️ No se pudo obtener el ID del mensaje enviado a ${cleanJid}; no se verificará confirmación de entrega.`)
+          }
+
+          console.log(`   ✅ Mensaje confirmado por WhatsApp para ${cleanJid}`)
 
           await supabase
             .from('hermes_whatsapp_queue')

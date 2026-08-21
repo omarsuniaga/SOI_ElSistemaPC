@@ -102,7 +102,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
   try {
     const { data: sesion, error } = await supabase
       .from('sesiones_clase')
-      .select('*')
+      .select('id, actividad, fecha, asistencia, contenido, borrador, estado')
       .eq('id', sesionId)
       .single()
 
@@ -229,7 +229,7 @@ export async function renderAsistenciaView(
       // y uno borrador (borrador=true, con la asistencia real). Consolidamos ambos.
       supabase
         .from('sesiones_clase')
-        .select('*')
+        .select('id, tipo, asistencia, updated_at, contenido, borrador, estado')
         .eq('clase_id', claseId)
         .eq('maestro_id', maestro.id)
         .eq('fecha', fechaHoy)

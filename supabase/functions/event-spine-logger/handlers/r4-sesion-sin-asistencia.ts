@@ -43,7 +43,10 @@ export async function handleSesionCreada(
   supabase: SupabaseClient,
   { groqEnabled = false } = {}
 ): Promise<HandlerResult> {
-  const sesionId = evento.payload?.sesion_id as string | undefined
+  // El trigger fn_soi_evento_sesion_creada() no incluye sesion_id en el payload
+  // (solo clase_id/maestro_id/fecha/horario_id) — el id de la sesión ya viaja
+  // en evento.entidad_id (NEW.id de sesiones_clase), que es la fuente correcta.
+  const sesionId = (evento.payload?.sesion_id as string | undefined) ?? evento.entidad_id ?? undefined
   const maestroId = evento.payload?.maestro_id as string | undefined
   const fecha = evento.payload?.fecha as string | undefined
 

@@ -143,7 +143,7 @@ async function processEvent(evento: SoiEvento): Promise<boolean> {
     // unknown event types or unmet conditions are gracefully skipped
     const { error: updateError } = await supabase
       .from('soi_eventos')
-      .update({ procesado: true, updated_at: new Date().toISOString() })
+      .update({ procesado: true })
       .eq('id', evento.id)
 
     if (updateError) {

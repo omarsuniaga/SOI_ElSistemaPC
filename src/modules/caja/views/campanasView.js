@@ -14,8 +14,8 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function estadoBadge(campana) {
@@ -101,7 +101,7 @@ function participacionesOverlay(nombre, participaciones, familias) {
           + '<td style="padding:0.6rem 0.75rem;text-align:center">'
           + (p.aceptada ? '<span style="color:' + VERDE + ';font-weight:700">Si</span>' : '<span style="color:#94a3b8">No</span>')
           + '</td>'
-          + '<td style="padding:0.6rem 0.75rem;text-align:right;font-size:0.8125rem">' + fmtMoney(p.monto_recuperado) + '</td>'
+          + '<td style="padding:0.6rem 0.75rem;text-align:right;font-size:0.8125rem">' + fmtMoney(p.monto_recuperado_centavos) + '</td>'
           + '</tr>'
       }).join('')
 

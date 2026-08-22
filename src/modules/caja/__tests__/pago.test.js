@@ -21,13 +21,13 @@ describe('validatePagoMetodo', () => {
 })
 
 describe('buildPago', () => {
-  const base = { familia_id: 'fam-1', cuota_ids: ['c1'], monto: 300, metodo_pago: 'efectivo', cajero_id: 'usr-1', notas: '' }
+  const base = { familia_id: 'fam-1', cuota_ids: ['c1'], monto_centavos: 30000, metodo_pago: 'efectivo', cajero_id: 'usr-1', notas: '' }
 
   test('builds pago with required fields', () => {
     const p = buildPago(base)
     expect(p.familia_id).toBe('fam-1')
     expect(p.cuota_ids).toEqual(['c1'])
-    expect(p.monto).toBe(300)
+    expect(p.monto_centavos).toBe(30000)
     expect(p.metodo_pago).toBe('efectivo')
     expect(p.cajero_id).toBe('usr-1')
   })
@@ -46,19 +46,19 @@ describe('buildPago', () => {
 
 describe('distribuirPago', () => {
   const cuotas = [
-    { id: 'c1', monto_final: 300, estado: 'vencida', fecha_vencimiento: '2026-04-05' },
-    { id: 'c2', monto_final: 200, estado: 'pendiente', fecha_vencimiento: '2026-06-05' },
+    { id: 'c1', monto_final_centavos: 30000, estado: 'vencida', fecha_vencimiento: '2026-04-05' },
+    { id: 'c2', monto_final_centavos: 20000, estado: 'pendiente', fecha_vencimiento: '2026-06-05' },
   ]
 
   test('applies greedy oldest-first distribution', () => {
-    const r = distribuirPago(cuotas, 300)
+    const r = distribuirPago(cuotas, 30000)
     expect(r.distribucion[0].cuota_id).toBe('c1')
-    expect(r.distribucion[0].montoCubierto).toBe(300)
+    expect(r.distribucion[0].montoCubierto).toBe(30000)
     expect(r.distribucion[0].newEstado).toBe('pagada')
   })
 
   test('covers multiple cuotas when enough payment', () => {
-    const r = distribuirPago(cuotas, 500)
+    const r = distribuirPago(cuotas, 50000)
     expect(r.distribucion).toHaveLength(2)
     expect(r.distribucion[0].newEstado).toBe('pagada')
     expect(r.distribucion[1].newEstado).toBe('pagada')
@@ -66,14 +66,14 @@ describe('distribuirPago', () => {
   })
 
   test('returns sobrante when payment exceeds total', () => {
-    const r = distribuirPago(cuotas, 600)
-    expect(r.montoSobrante).toBe(100)
+    const r = distribuirPago(cuotas, 60000)
+    expect(r.montoSobrante).toBe(10000)
   })
 
   test('partial payment leaves remainder', () => {
-    const r = distribuirPago(cuotas, 100)
-    expect(r.distribucion[0].montoCubierto).toBe(100)
-    expect(r.distribucion[0].montoRestante).toBe(200)
+    const r = distribuirPago(cuotas, 10000)
+    expect(r.distribucion[0].montoCubierto).toBe(10000)
+    expect(r.distribucion[0].montoRestante).toBe(20000)
     expect(r.distribucion[0].newEstado).toBe('vencida')
   })
 })

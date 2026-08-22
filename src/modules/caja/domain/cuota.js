@@ -1,6 +1,7 @@
 /**
  * Domain: cuota
  * Financial quota management — no Supabase imports.
+ * All monetary fields are integer centavos (RD$1.00 = 100 centavos). ADR-002.
  */
 
 export const CUOTA_ESTADOS = {
@@ -24,9 +25,9 @@ const VALID_TRANSITIONS = {
 }
 
 /**
- * @param {{ familia_id, alumno_id, ciclo_mes, ciclo_anio, monto_base, concepto }} params
+ * @param {{ familia_id, alumno_id, ciclo_mes, ciclo_anio, monto_base_centavos, concepto }} params
  */
-export function buildCuotaForCiclo({ familia_id, alumno_id, ciclo_mes, ciclo_anio, monto_base, concepto }) {
+export function buildCuotaForCiclo({ familia_id, alumno_id, ciclo_mes, ciclo_anio, monto_base_centavos, concepto }) {
   const mm = String(ciclo_mes).padStart(2, '0')
   const fecha_vencimiento = `${ciclo_anio}-${mm}-05`
   return {
@@ -34,8 +35,8 @@ export function buildCuotaForCiclo({ familia_id, alumno_id, ciclo_mes, ciclo_ani
     alumno_id,
     ciclo_mes,
     ciclo_anio,
-    monto_base,
-    monto_final: monto_base,
+    monto_base_centavos,
+    monto_final_centavos: monto_base_centavos,
     concepto,
     estado: 'pendiente',
     fecha_vencimiento,
@@ -48,9 +49,9 @@ export function canTransitionTo(currentEstado, targetEstado) {
   return allowed.includes(targetEstado)
 }
 
-export function applyPagoToCuota(cuota, montoPagado) {
-  const montoCubierto = Math.min(montoPagado, cuota.monto_final)
-  const montoRestante = cuota.monto_final - montoCubierto
+export function applyPagoToCuota(cuota, montoPagadoCentavos) {
+  const montoCubierto = Math.min(montoPagadoCentavos, cuota.monto_final_centavos)
+  const montoRestante = cuota.monto_final_centavos - montoCubierto
   const newEstado = montoRestante === 0 ? 'pagada' : cuota.estado
   return { newEstado, montoRestante, montoCubierto }
 }

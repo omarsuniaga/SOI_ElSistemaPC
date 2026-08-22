@@ -52,7 +52,7 @@ export async function getFamiliaById(id) {
   if (familiaRes.error) return handleResult(familiaRes)
 
   const movimientos = walletRes.data ?? []
-  const saldo = movimientos.length > 0 ? movimientos[0].saldo_resultante : 0
+  const saldo = movimientos.length > 0 ? movimientos[0].saldo_resultante_centavos : 0
 
   const walletConfigRes = await supabase
     .from('wallet_config')
@@ -137,26 +137,26 @@ export async function registrarPago(pagoData, cuotaIds) {
       .in('estado', ['pendiente', 'vencida', 'en_mora'])
   }
 
-  // Credit wallet if surplus
+  // Credit wallet if surplus (montoSobrante is in centavos)
   if (montoSobrante > 0) {
     const walletRes = await supabase
       .from('wallet_movimientos')
-      .select('saldo_resultante')
+      .select('saldo_resultante_centavos')
       .eq('familia_id', pagoData.familia_id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    const saldoAnterior = walletRes.data?.saldo_resultante ?? 0
+    const saldoAnterior = walletRes.data?.saldo_resultante_centavos ?? 0
 
     await supabase.from('wallet_movimientos').insert({
       familia_id: pagoData.familia_id,
       tipo: 'credito',
-      monto: montoSobrante,
+      monto_centavos: montoSobrante,
       origen: 'pago',
       referencia_id: pagoRes.data.id,
       descripcion: 'Saldo a favor del pago',
-      saldo_resultante: saldoAnterior + montoSobrante,
+      saldo_resultante_centavos: saldoAnterior + montoSobrante,
     })
   }
 
@@ -173,7 +173,7 @@ export async function getWalletByFamilia(familia_id) {
     supabase.from('wallet_config').select('*').eq('familia_id', familia_id).maybeSingle(),
   ])
   const movimientos = movsRes.data ?? []
-  const saldo = movimientos.length > 0 ? movimientos[0].saldo_resultante : 0
+  const saldo = movimientos.length > 0 ? movimientos[0].saldo_resultante_centavos : 0
   return { data: { movimientos, config: configRes.data ?? null, saldo }, error: movsRes.error ?? configRes.error ?? null }
 }
 
@@ -404,13 +404,13 @@ export async function getScoreByRepresentante(representante_id) {
 export async function getCierreCajaHoy() {
   const result = await supabase.from('vw_ingresos_diarios').select('*')
   if (result.error) return handleResult(result)
-  // Aggregate the view rows into cierre shape
+  // Aggregate the view rows into cierre shape. Money values are centavos.
   const rows = result.data ?? []
   const porMetodo = {}
   let totalGeneral = 0
   for (const row of rows) {
-    totalGeneral += Number(row.total ?? 0)
-    porMetodo[row.metodo_pago] = { count: Number(row.count ?? 0), total: Number(row.total ?? 0) }
+    totalGeneral += Number(row.total_centavos ?? 0)
+    porMetodo[row.metodo_pago] = { count: Number(row.count ?? 0), total: Number(row.total_centavos ?? 0) }
   }
   return {
     data: {
@@ -429,7 +429,7 @@ export async function registrarCierreCaja(cierreData) {
     .insert({
       fecha: cierreData.fecha ?? new Date().toISOString().slice(0, 10),
       cajero_id: cierreData.cajero_id ?? null,
-      total_general: cierreData.totalGeneral ?? 0,
+      total_general_centavos: cierreData.totalGeneral ?? 0,
       por_metodo: cierreData.porMetodo ?? {},
       cantidad_transacciones: cierreData.cantidadTransacciones ?? 0,
       notas: cierreData.notas ?? null,

@@ -17,59 +17,59 @@ describe('calcularSaldoActual', () => {
     expect(calcularSaldoActual([])).toBe(0)
   })
 
-  test('returns saldo_resultante of last movement', () => {
+  test('returns saldo_resultante_centavos of last movement', () => {
     const movs = [
-      { tipo: 'credito', saldo_resultante: 100 },
-      { tipo: 'credito', saldo_resultante: 200 },
+      { tipo: 'credito', saldo_resultante_centavos: 100 },
+      { tipo: 'credito', saldo_resultante_centavos: 200 },
     ]
     expect(calcularSaldoActual(movs)).toBe(200)
   })
 
-  test('returns last movement saldo_resultante regardless of tipo', () => {
+  test('returns last movement saldo_resultante_centavos regardless of tipo', () => {
     const movs = [
-      { tipo: 'credito', saldo_resultante: 200 },
-      { tipo: 'debito', saldo_resultante: 50 },
+      { tipo: 'credito', saldo_resultante_centavos: 200 },
+      { tipo: 'debito', saldo_resultante_centavos: 50 },
     ]
     expect(calcularSaldoActual(movs)).toBe(50)
   })
 })
 
 describe('buildMovimientoCredito', () => {
-  const base = { familia_id: 'fam-1', monto: 100, origen: 'pago', referencia_id: 'pago-1', descripcion: 'Crédito', saldoAnterior: 50 }
+  const base = { familia_id: 'fam-1', monto_centavos: 100, origen: 'pago', referencia_id: 'pago-1', descripcion: 'Crédito', saldoAnterior: 50 }
 
   test('tipo is credito', () => {
     const m = buildMovimientoCredito(base)
     expect(m.tipo).toBe('credito')
   })
 
-  test('saldo_resultante = saldoAnterior + monto', () => {
+  test('saldo_resultante_centavos = saldoAnterior + monto_centavos', () => {
     const m = buildMovimientoCredito(base)
-    expect(m.saldo_resultante).toBe(150)
+    expect(m.saldo_resultante_centavos).toBe(150)
   })
 
   test('includes all required fields', () => {
     const m = buildMovimientoCredito(base)
     expect(m.familia_id).toBe('fam-1')
-    expect(m.monto).toBe(100)
+    expect(m.monto_centavos).toBe(100)
     expect(m.origen).toBe('pago')
   })
 })
 
 describe('buildMovimientoDebito', () => {
-  const base = { familia_id: 'fam-1', monto: 30, origen: 'accesorio', referencia_id: 'acc-1', descripcion: 'Débito', saldoAnterior: 100 }
+  const base = { familia_id: 'fam-1', monto_centavos: 30, origen: 'accesorio', referencia_id: 'acc-1', descripcion: 'Débito', saldoAnterior: 100 }
 
   test('tipo is debito', () => {
     const m = buildMovimientoDebito(base)
     expect(m.tipo).toBe('debito')
   })
 
-  test('saldo_resultante = saldoAnterior - monto', () => {
+  test('saldo_resultante_centavos = saldoAnterior - monto_centavos', () => {
     const m = buildMovimientoDebito(base)
-    expect(m.saldo_resultante).toBe(70)
+    expect(m.saldo_resultante_centavos).toBe(70)
   })
 
-  test('throws when monto > saldoAnterior', () => {
-    expect(() => buildMovimientoDebito({ ...base, monto: 200 })).toThrow()
+  test('throws when monto_centavos > saldoAnterior', () => {
+    expect(() => buildMovimientoDebito({ ...base, monto_centavos: 200 })).toThrow()
   })
 })
 
@@ -97,13 +97,13 @@ describe('canDebitarWallet', () => {
 })
 
 describe('alertaSaldoBajo', () => {
-  test('returns true when saldoActual < saldo_minimo_alerta', () => {
-    expect(alertaSaldoBajo({ saldo_minimo_alerta: 50 }, 30)).toBe(true)
+  test('returns true when saldoActual < saldo_minimo_alerta_centavos', () => {
+    expect(alertaSaldoBajo({ saldo_minimo_alerta_centavos: 50 }, 30)).toBe(true)
   })
 
-  test('returns false when saldoActual >= saldo_minimo_alerta', () => {
-    expect(alertaSaldoBajo({ saldo_minimo_alerta: 50 }, 50)).toBe(false)
-    expect(alertaSaldoBajo({ saldo_minimo_alerta: 50 }, 100)).toBe(false)
+  test('returns false when saldoActual >= saldo_minimo_alerta_centavos', () => {
+    expect(alertaSaldoBajo({ saldo_minimo_alerta_centavos: 50 }, 50)).toBe(false)
+    expect(alertaSaldoBajo({ saldo_minimo_alerta_centavos: 50 }, 100)).toBe(false)
   })
 })
 
@@ -120,29 +120,29 @@ describe('WALLET_STATUS', () => {
 
 describe('canOperateWallet', () => {
   test('returns true when status is operativa', () => {
-    expect(canOperateWallet({ status: 'operativa', modo: 'mixto', saldo_minimo_alerta: 0 })).toBe(true)
+    expect(canOperateWallet({ status: 'operativa', modo: 'mixto', saldo_minimo_alerta_centavos: 0 })).toBe(true)
   })
   test('returns true when status is undefined (legacy)', () => {
-    expect(canOperateWallet({ modo: 'mixto', saldo_minimo_alerta: 0 })).toBe(true)
+    expect(canOperateWallet({ modo: 'mixto', saldo_minimo_alerta_centavos: 0 })).toBe(true)
   })
   test('returns false when status is congelada', () => {
-    expect(canOperateWallet({ status: 'congelada', modo: 'mixto', saldo_minimo_alerta: 0 })).toBe(false)
+    expect(canOperateWallet({ status: 'congelada', modo: 'mixto', saldo_minimo_alerta_centavos: 0 })).toBe(false)
   })
   test('returns false when status is devuelta', () => {
-    expect(canOperateWallet({ status: 'devuelta', modo: 'mixto', saldo_minimo_alerta: 0 })).toBe(false)
+    expect(canOperateWallet({ status: 'devuelta', modo: 'mixto', saldo_minimo_alerta_centavos: 0 })).toBe(false)
   })
 })
 
 describe('freezeWallet', () => {
   test('sets status to congelada and records timestamp', () => {
-    const cfg = { status: 'operativa', modo: 'mixto', saldo_minimo_alerta: 0 }
+    const cfg = { status: 'operativa', modo: 'mixto', saldo_minimo_alerta_centavos: 0 }
     const ts = '2026-06-22T10:00:00.000Z'
     const result = freezeWallet(cfg, ts)
     expect(result.status).toBe('congelada')
     expect(result.congelada_en).toBe(ts)
   })
   test('does not mutate original config', () => {
-    const cfg = { status: 'operativa', modo: 'mixto', saldo_minimo_alerta: 0 }
+    const cfg = { status: 'operativa', modo: 'mixto', saldo_minimo_alerta_centavos: 0 }
     freezeWallet(cfg, '2026-06-22T10:00:00.000Z')
     expect(cfg.status).toBe('operativa')
   })
@@ -153,8 +153,8 @@ describe('buildRefundMovimiento', () => {
     const cfg = { status: 'congelada', familia_id: 'fam-001' }
     const mov = buildRefundMovimiento({ familia_id: 'fam-001', saldo: 200, walletConfig: cfg })
     expect(mov.tipo).toBe('debito')
-    expect(mov.monto).toBe(200)
-    expect(mov.saldo_resultante).toBe(0)
+    expect(mov.monto_centavos).toBe(200)
+    expect(mov.saldo_resultante_centavos).toBe(0)
     expect(mov.origen).toBe('ajuste')
   })
   test('throws when saldo is 0', () => {

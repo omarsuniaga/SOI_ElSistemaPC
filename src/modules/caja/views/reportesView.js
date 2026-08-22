@@ -17,8 +17,8 @@ import { generateImpactoSocial } from '../pdf/reporteImpactoSocial.js'
 
 const VERDE = '#059669'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function loadingSpinner() {
@@ -89,7 +89,7 @@ export async function render(container, session) {
     + '<i class="bi bi-download"></i> Descargar PDF</button>'
 
   // --- Card 3: Reporte de mora ---
-  const familiasMora = familiaList.filter(f => (f.saldo_pendiente || 0) > 0 || (f.cuotas_pendientes || 0) > 0)
+  const familiasMora = familiaList.filter(f => (f.saldo_pendiente_centavos || 0) > 0 || (f.cuotas_pendientes || 0) > 0)
   const moraCardBody =
     '<p style="font-size:0.875rem;color:#64748b;margin-bottom:0.75rem">Familias con cuotas pendientes</p>'
     + '<div style="margin-bottom:1rem">'
@@ -184,8 +184,8 @@ export async function render(container, session) {
     const cuotasMora = familiasMora.map(f => ({
       familia_id: f.id,
       fecha_vencimiento: f.proxima_cuota_vencimiento || new Date().toISOString(),
-      monto_base: f.saldo_pendiente || 0,
-      saldo_pendiente: f.saldo_pendiente || 0,
+      monto_base_centavos: f.saldo_pendiente_centavos || 0,
+      saldo_pendiente_centavos: f.saldo_pendiente_centavos || 0,
     }))
     const representantes = familiasMora.map(f => ({
       familia_id: f.id,

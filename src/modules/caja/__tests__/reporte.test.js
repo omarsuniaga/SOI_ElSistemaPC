@@ -9,9 +9,9 @@ import {
 
 describe('aggregateCierreCaja', () => {
   const pagos = [
-    { monto: 300, metodo_pago: 'efectivo', familia_id: 'fam-1' },
-    { monto: 200, metodo_pago: 'transferencia', familia_id: 'fam-2' },
-    { monto: 100, metodo_pago: 'efectivo', familia_id: 'fam-3' },
+    { monto_centavos: 300, metodo_pago: 'efectivo', familia_id: 'fam-1' },
+    { monto_centavos: 200, metodo_pago: 'transferencia', familia_id: 'fam-2' },
+    { monto_centavos: 100, metodo_pago: 'efectivo', familia_id: 'fam-3' },
   ]
 
   test('calculates totalGeneral correctly', () => {
@@ -37,10 +37,10 @@ describe('aggregateCierreCaja', () => {
 describe('buildEstadoCuentaFamiliar', () => {
   const familia = { id: 'fam-1', nombre_familia: 'García' }
   const cuotas = [
-    { estado: 'pagada', monto_base: 300, monto_final: 300 },
-    { estado: 'pendiente', monto_base: 300, monto_final: 300 },
+    { estado: 'pagada', monto_base_centavos: 300, monto_final_centavos: 300 },
+    { estado: 'pendiente', monto_base_centavos: 300, monto_final_centavos: 300 },
   ]
-  const pagos = [{ monto: 300, fecha_pago: '2026-05-10' }]
+  const pagos = [{ monto_centavos: 300, fecha_pago: '2026-05-10' }]
   const wallet = { saldo: 50 }
 
   test('includes familia in result', () => {
@@ -93,7 +93,7 @@ describe('buildMoraReport', () => {
 
 describe('buildImpactoSocial', () => {
   const becas = [{ alumno_id: 'alu-1', porcentaje: 50 }]
-  const patrocinios = [{ alumno_id: 'alu-1', monto_mensual: 150 }]
+  const patrocinios = [{ alumno_id: 'alu-1', monto_mensual_centavos: 150 }]
   const exoneraciones = [{ cuota_id: 'c1', porcentaje: 30 }]
 
   test('counts becas and patrocinios', () => {

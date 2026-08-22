@@ -15,8 +15,8 @@ const HEADER_TEXT_COLOR = [255, 255, 255]
 const LABEL_COLOR = [100, 116, 139]
 const VALUE_COLOR = [15, 23, 42]
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {

@@ -52,18 +52,18 @@ describe('buildParticipacion', () => {
     expect(p.familia_id).toBe('fam-1')
   })
 
-  test('monto_recuperado defaults to 0', () => {
+  test('monto_recuperado_centavos defaults to 0', () => {
     const p = buildParticipacion('camp-1', 'fam-1')
-    expect(p.monto_recuperado).toBe(0)
+    expect(p.monto_recuperado_centavos).toBe(0)
   })
 })
 
 describe('calcularMontoRecuperado', () => {
-  test('sums monto_recuperado from all participaciones', () => {
+  test('sums monto_recuperado_centavos from all participaciones', () => {
     const parts = [
-      { monto_recuperado: 100 },
-      { monto_recuperado: 200 },
-      { monto_recuperado: 50 },
+      { monto_recuperado_centavos: 100 },
+      { monto_recuperado_centavos: 200 },
+      { monto_recuperado_centavos: 50 },
     ]
     expect(calcularMontoRecuperado(parts)).toBe(350)
   })

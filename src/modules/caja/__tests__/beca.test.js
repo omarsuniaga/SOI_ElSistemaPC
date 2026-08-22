@@ -29,7 +29,7 @@ describe('buildBeca', () => {
 })
 
 describe('aplicarBecaACuota', () => {
-  const cuota = { id: 'c1', monto_base: 300 }
+  const cuota = { id: 'c1', monto_base_centavos: 30000 }
   const beca = { porcentaje: 50 }
 
   test('returns estado becada', () => {
@@ -37,14 +37,14 @@ describe('aplicarBecaACuota', () => {
     expect(r.newEstado).toBe('becada')
   })
 
-  test('monto_final = monto_base * (1 - porcentaje/100)', () => {
+  test('monto_final_centavos = monto_base_centavos * (1 - porcentaje/100)', () => {
     const r = aplicarBecaACuota(cuota, beca)
-    expect(r.monto_final).toBe(150)
+    expect(r.monto_final_centavos).toBe(15000)
   })
 
-  test('100% beca → monto_final = 0', () => {
+  test('100% beca → monto_final_centavos = 0', () => {
     const r = aplicarBecaACuota(cuota, { porcentaje: 100 })
-    expect(r.monto_final).toBe(0)
+    expect(r.monto_final_centavos).toBe(0)
   })
 })
 

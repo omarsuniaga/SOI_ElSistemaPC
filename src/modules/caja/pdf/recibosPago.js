@@ -15,8 +15,8 @@ const HEADER_TEXT_COLOR = [255, 255, 255]
 const LABEL_COLOR = [100, 116, 139]
 const VALUE_COLOR = [15, 23, 42]
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {
@@ -91,7 +91,7 @@ export function generateReciboPago(pago, familia, cajero) {
     body: [[
       pago.concepto || (pago.cuota_id ? 'Cuota ' + pago.cuota_id : 'Pago general'),
       pago.metodo_pago || '-',
-      fmtMoney(pago.monto),
+      fmtMoney(pago.monto_centavos),
     ]],
     headStyles: { fillColor: BRAND_COLOR, textColor: HEADER_TEXT_COLOR, fontStyle: 'bold', fontSize: 9 },
     bodyStyles: { fontSize: 9 },
@@ -112,7 +112,7 @@ export function generateReciboPago(pago, familia, cajero) {
   doc.text('TOTAL PAGADO:', totalBoxX + 4, afterDetalle + 7)
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
-  doc.text(fmtMoney(pago.monto), totalBoxX + totalBoxW - 4, afterDetalle + 11, { align: 'right' })
+  doc.text(fmtMoney(pago.monto_centavos), totalBoxX + totalBoxW - 4, afterDetalle + 11, { align: 'right' })
 
   // --- Cajero ---
   const afterTotal = afterDetalle + 26

@@ -8,8 +8,8 @@ import { generateCierreCaja } from '../pdf/cierreCajaDiario.js'
 
 const VERDE = '#059669'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {

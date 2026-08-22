@@ -9,10 +9,10 @@
 // ---------------------------------------------------------------------------
 
 const familias = [
-  { id: 'fam-001', nombre_familia: 'Familia García Pérez', activa: true, fecha_ingreso: '2023-09-01', rep_nombre: 'María García', telefono_whatsapp: '+58 412 555 0001', score: 88, nivel: 'B', cuotas_pendientes: 2, saldo_pendiente: 300, saldo_wallet: 50, alumnos_count: 2 },
-  { id: 'fam-002', nombre_familia: 'Familia López Torres', activa: true, fecha_ingreso: '2024-01-15', rep_nombre: 'Carlos López', telefono_whatsapp: '+58 414 555 0002', score: 55, nivel: 'C', cuotas_pendientes: 4, saldo_pendiente: 600, saldo_wallet: 0, alumnos_count: 1 },
-  { id: 'fam-003', nombre_familia: 'Familia Rodríguez Vega', activa: true, fecha_ingreso: '2022-03-10', rep_nombre: 'Ana Rodríguez', telefono_whatsapp: '+58 416 555 0003', score: 95, nivel: 'A', cuotas_pendientes: 0, saldo_pendiente: 0, saldo_wallet: 200, alumnos_count: 1 },
-  { id: 'fam-004', nombre_familia: 'Familia Martínez Díaz', activa: true, fecha_ingreso: '2023-04-20', rep_nombre: 'Pedro Martínez', telefono_whatsapp: '+58 424 555 0004', score: 28, nivel: 'E', cuotas_pendientes: 6, saldo_pendiente: 900, saldo_wallet: 0, alumnos_count: 2 },
+  { id: 'fam-001', nombre_familia: 'Familia García Pérez', activa: true, fecha_ingreso: '2023-09-01', rep_nombre: 'María García', telefono_whatsapp: '+58 412 555 0001', score: 88, nivel: 'B', cuotas_pendientes: 2, saldo_pendiente_centavos: 30000, saldo_wallet_centavos: 5000, alumnos_count: 2 },
+  { id: 'fam-002', nombre_familia: 'Familia López Torres', activa: true, fecha_ingreso: '2024-01-15', rep_nombre: 'Carlos López', telefono_whatsapp: '+58 414 555 0002', score: 55, nivel: 'C', cuotas_pendientes: 4, saldo_pendiente_centavos: 60000, saldo_wallet_centavos: 0, alumnos_count: 1 },
+  { id: 'fam-003', nombre_familia: 'Familia Rodríguez Vega', activa: true, fecha_ingreso: '2022-03-10', rep_nombre: 'Ana Rodríguez', telefono_whatsapp: '+58 416 555 0003', score: 95, nivel: 'A', cuotas_pendientes: 0, saldo_pendiente_centavos: 0, saldo_wallet_centavos: 20000, alumnos_count: 1 },
+  { id: 'fam-004', nombre_familia: 'Familia Martínez Díaz', activa: true, fecha_ingreso: '2023-04-20', rep_nombre: 'Pedro Martínez', telefono_whatsapp: '+58 424 555 0004', score: 28, nivel: 'E', cuotas_pendientes: 6, saldo_pendiente_centavos: 90000, saldo_wallet_centavos: 0, alumnos_count: 2 },
 ]
 
 const representantes = {
@@ -23,43 +23,43 @@ const representantes = {
 }
 
 let cuotas = [
-  { id: 'cuota-001', familia_id: 'fam-001', alumno_id: 'alum-001', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'pendiente', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
-  { id: 'cuota-002', familia_id: 'fam-001', alumno_id: 'alum-001', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'vencida', fecha_vencimiento: '2026-05-05', ciclo_mes: 5, ciclo_anio: 2026 },
-  { id: 'cuota-003', familia_id: 'fam-002', alumno_id: 'alum-002', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'en_mora', fecha_vencimiento: '2026-04-05', ciclo_mes: 4, ciclo_anio: 2026 },
-  { id: 'cuota-004', familia_id: 'fam-002', alumno_id: 'alum-002', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'en_mora', fecha_vencimiento: '2026-03-05', ciclo_mes: 3, ciclo_anio: 2026 },
-  { id: 'cuota-005', familia_id: 'fam-002', alumno_id: 'alum-002', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'pendiente', ciclo_mes: 6, ciclo_anio: 2026, fecha_vencimiento: '2026-06-05' },
-  { id: 'cuota-006', familia_id: 'fam-002', alumno_id: 'alum-003', concepto: 'instrumento', monto_base: 150, monto_final: 150, estado: 'pendiente', ciclo_mes: 6, ciclo_anio: 2026, fecha_vencimiento: '2026-06-05' },
-  { id: 'cuota-007', familia_id: 'fam-003', alumno_id: 'alum-004', concepto: 'mensualidad', monto_base: 150, monto_final: 120, estado: 'pagada', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
-  { id: 'cuota-008', familia_id: 'fam-003', alumno_id: 'alum-004', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'becada', fecha_vencimiento: '2026-05-05', ciclo_mes: 5, ciclo_anio: 2026 },
-  { id: 'cuota-009', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'en_mora', fecha_vencimiento: '2026-01-05', ciclo_mes: 1, ciclo_anio: 2026 },
-  { id: 'cuota-010', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'en_mora', fecha_vencimiento: '2026-02-05', ciclo_mes: 2, ciclo_anio: 2026 },
-  { id: 'cuota-011', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'en_mora', fecha_vencimiento: '2026-03-05', ciclo_mes: 3, ciclo_anio: 2026 },
-  { id: 'cuota-012', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'vencida', fecha_vencimiento: '2026-04-05', ciclo_mes: 4, ciclo_anio: 2026 },
-  { id: 'cuota-013', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'pendiente', fecha_vencimiento: '2026-05-05', ciclo_mes: 5, ciclo_anio: 2026 },
-  { id: 'cuota-014', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base: 150, monto_final: 150, estado: 'pendiente', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
+  { id: 'cuota-001', familia_id: 'fam-001', alumno_id: 'alum-001', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'pendiente', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
+  { id: 'cuota-002', familia_id: 'fam-001', alumno_id: 'alum-001', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'vencida', fecha_vencimiento: '2026-05-05', ciclo_mes: 5, ciclo_anio: 2026 },
+  { id: 'cuota-003', familia_id: 'fam-002', alumno_id: 'alum-002', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'en_mora', fecha_vencimiento: '2026-04-05', ciclo_mes: 4, ciclo_anio: 2026 },
+  { id: 'cuota-004', familia_id: 'fam-002', alumno_id: 'alum-002', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'en_mora', fecha_vencimiento: '2026-03-05', ciclo_mes: 3, ciclo_anio: 2026 },
+  { id: 'cuota-005', familia_id: 'fam-002', alumno_id: 'alum-002', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'pendiente', ciclo_mes: 6, ciclo_anio: 2026, fecha_vencimiento: '2026-06-05' },
+  { id: 'cuota-006', familia_id: 'fam-002', alumno_id: 'alum-003', concepto: 'instrumento', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'pendiente', ciclo_mes: 6, ciclo_anio: 2026, fecha_vencimiento: '2026-06-05' },
+  { id: 'cuota-007', familia_id: 'fam-003', alumno_id: 'alum-004', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 12000, estado: 'pagada', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
+  { id: 'cuota-008', familia_id: 'fam-003', alumno_id: 'alum-004', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'becada', fecha_vencimiento: '2026-05-05', ciclo_mes: 5, ciclo_anio: 2026 },
+  { id: 'cuota-009', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'en_mora', fecha_vencimiento: '2026-01-05', ciclo_mes: 1, ciclo_anio: 2026 },
+  { id: 'cuota-010', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'en_mora', fecha_vencimiento: '2026-02-05', ciclo_mes: 2, ciclo_anio: 2026 },
+  { id: 'cuota-011', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'en_mora', fecha_vencimiento: '2026-03-05', ciclo_mes: 3, ciclo_anio: 2026 },
+  { id: 'cuota-012', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'vencida', fecha_vencimiento: '2026-04-05', ciclo_mes: 4, ciclo_anio: 2026 },
+  { id: 'cuota-013', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'pendiente', fecha_vencimiento: '2026-05-05', ciclo_mes: 5, ciclo_anio: 2026 },
+  { id: 'cuota-014', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'pendiente', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
 ]
 
 let pagos = [
-  { id: 'pago-001', familia_id: 'fam-003', cuota_ids: ['cuota-007'], monto: 120, metodo_pago: 'transferencia', cajero_id: 'user-cajero-001', notas: '', created_at: '2026-06-03T10:00:00Z', referencia: 'TRF-20260603-001' },
+  { id: 'pago-001', familia_id: 'fam-003', cuota_ids: ['cuota-007'], monto_centavos: 12000, metodo_pago: 'transferencia', cajero_id: 'user-cajero-001', notas: '', created_at: '2026-06-03T10:00:00Z', referencia: 'TRF-20260603-001' },
 ]
 
 let walletMovimientos = {
   'fam-001': [
-    { id: 'wm-001', familia_id: 'fam-001', tipo: 'credito', monto: 50, origen: 'pago', referencia_id: null, descripcion: 'Saldo favor pago anterior', saldo_resultante: 50, created_at: '2026-06-01T09:00:00Z' },
+    { id: 'wm-001', familia_id: 'fam-001', tipo: 'credito', monto_centavos: 5000, origen: 'pago', referencia_id: null, descripcion: 'Saldo favor pago anterior', saldo_resultante_centavos: 5000, created_at: '2026-06-01T09:00:00Z' },
   ],
   'fam-002': [],
   'fam-003': [
-    { id: 'wm-002', familia_id: 'fam-003', tipo: 'credito', monto: 300, origen: 'patrocinio', referencia_id: null, descripcion: 'Patrocinio Fundación ABC', saldo_resultante: 300, created_at: '2026-05-01T08:00:00Z' },
-    { id: 'wm-003', familia_id: 'fam-003', tipo: 'debito', monto: 100, origen: 'accesorio', referencia_id: 'asig-001', descripcion: 'Cargo flauta traversa', saldo_resultante: 200, created_at: '2026-05-15T11:00:00Z' },
+    { id: 'wm-002', familia_id: 'fam-003', tipo: 'credito', monto_centavos: 30000, origen: 'patrocinio', referencia_id: null, descripcion: 'Patrocinio Fundación ABC', saldo_resultante_centavos: 30000, created_at: '2026-05-01T08:00:00Z' },
+    { id: 'wm-003', familia_id: 'fam-003', tipo: 'debito', monto_centavos: 10000, origen: 'accesorio', referencia_id: 'asig-001', descripcion: 'Cargo flauta traversa', saldo_resultante_centavos: 20000, created_at: '2026-05-15T11:00:00Z' },
   ],
   'fam-004': [],
 }
 
 const walletConfigs = {
-  'fam-001': { id: 'wc-001', familia_id: 'fam-001', modo: 'mixto', saldo_minimo_alerta: 20, activo: true },
-  'fam-002': { id: 'wc-002', familia_id: 'fam-002', modo: 'solo_cuotas', saldo_minimo_alerta: 0, activo: true },
-  'fam-003': { id: 'wc-003', familia_id: 'fam-003', modo: 'mixto', saldo_minimo_alerta: 50, activo: true },
-  'fam-004': { id: 'wc-004', familia_id: 'fam-004', modo: 'solo_cuotas', saldo_minimo_alerta: 0, activo: true },
+  'fam-001': { id: 'wc-001', familia_id: 'fam-001', modo: 'mixto', saldo_minimo_alerta_centavos: 2000, activo: true },
+  'fam-002': { id: 'wc-002', familia_id: 'fam-002', modo: 'solo_cuotas', saldo_minimo_alerta_centavos: 0, activo: true },
+  'fam-003': { id: 'wc-003', familia_id: 'fam-003', modo: 'mixto', saldo_minimo_alerta_centavos: 5000, activo: true },
+  'fam-004': { id: 'wc-004', familia_id: 'fam-004', modo: 'solo_cuotas', saldo_minimo_alerta_centavos: 0, activo: true },
 }
 
 let accesorios = [
@@ -130,7 +130,7 @@ export async function getFamiliaById(id) {
   const famPagos = pagos.filter(p => p.familia_id === id)
   const movs = walletMovimientos[id] || []
   const config = walletConfigs[id] || null
-  const saldo = movs.length > 0 ? movs[movs.length - 1].saldo_resultante : 0
+  const saldo = movs.length > 0 ? movs[movs.length - 1].saldo_resultante_centavos : 0
   return { data: { ...familia, representante: rep, cuotas: famCuotas, pagos: famPagos, wallet: { movimientos: movs, config, saldo } }, error: null }
 }
 
@@ -160,12 +160,12 @@ export async function registrarPago(pagoData, cuotaIds) {
   }
   if (pagoData.montoSobrante > 0) {
     const movs = walletMovimientos[pagoData.familia_id] || []
-    const saldoAnterior = movs.length > 0 ? movs[movs.length - 1].saldo_resultante : 0
-    const newMov = { id: genId('wm'), familia_id: pagoData.familia_id, tipo: 'credito', monto: pagoData.montoSobrante, origen: 'pago', referencia_id: newPago.id, descripcion: 'Saldo a favor del pago', saldo_resultante: saldoAnterior + pagoData.montoSobrante, created_at: new Date().toISOString() }
+    const saldoAnterior = movs.length > 0 ? movs[movs.length - 1].saldo_resultante_centavos : 0
+    const newMov = { id: genId('wm'), familia_id: pagoData.familia_id, tipo: 'credito', monto_centavos: pagoData.montoSobrante, origen: 'pago', referencia_id: newPago.id, descripcion: 'Saldo a favor del pago', saldo_resultante_centavos: saldoAnterior + pagoData.montoSobrante, created_at: new Date().toISOString() }
     if (!walletMovimientos[pagoData.familia_id]) walletMovimientos[pagoData.familia_id] = []
     walletMovimientos[pagoData.familia_id].push(newMov)
     const f = familias.find(fa => fa.id === pagoData.familia_id)
-    if (f) f.saldo_wallet = newMov.saldo_resultante
+    if (f) f.saldo_wallet_centavos = newMov.saldo_resultante_centavos
   }
   return { data: newPago, error: null }
 }
@@ -173,8 +173,8 @@ export async function registrarPago(pagoData, cuotaIds) {
 export async function getWalletByFamilia(familia_id) {
   await delay()
   const movs = walletMovimientos[familia_id] || []
-  const config = walletConfigs[familia_id] || { modo: 'mixto', saldo_minimo_alerta: 0, activo: true }
-  const saldo = movs.length > 0 ? movs[movs.length - 1].saldo_resultante : 0
+  const config = walletConfigs[familia_id] || { modo: 'mixto', saldo_minimo_alerta_centavos: 0, activo: true }
+  const saldo = movs.length > 0 ? movs[movs.length - 1].saldo_resultante_centavos : 0
   return { data: { movimientos: movs, config, saldo }, error: null }
 }
 
@@ -184,7 +184,7 @@ export async function registrarMovimientoWallet(movData) {
   if (!walletMovimientos[movData.familia_id]) walletMovimientos[movData.familia_id] = []
   walletMovimientos[movData.familia_id].push(newMov)
   const f = familias.find(fa => fa.id === movData.familia_id)
-  if (f) f.saldo_wallet = newMov.saldo_resultante
+  if (f) f.saldo_wallet_centavos = newMov.saldo_resultante_centavos
   return { data: newMov, error: null }
 }
 
@@ -312,10 +312,10 @@ export async function getCierreCajaHoy() {
   const porMetodo = {}
   let totalGeneral = 0
   for (const p of pagosHoy) {
-    totalGeneral += p.monto
+    totalGeneral += p.monto_centavos
     if (!porMetodo[p.metodo_pago]) porMetodo[p.metodo_pago] = { count: 0, total: 0 }
     porMetodo[p.metodo_pago].count++
-    porMetodo[p.metodo_pago].total += p.monto
+    porMetodo[p.metodo_pago].total += p.monto_centavos
   }
   return { data: { fecha: hoy, totalGeneral, porMetodo, cantidadTransacciones: pagosHoy.length, cajero_nombre: 'Katherine Pérez', cerrado: cierresCaja.some(c => c.fecha === hoy) }, error: null }
 }

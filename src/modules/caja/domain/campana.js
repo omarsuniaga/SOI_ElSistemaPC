@@ -1,6 +1,7 @@
 /**
  * Domain: campana
  * Payment campaign management — no Supabase imports.
+ * Monetary fields are integer centavos (RD$1.00 = 100 centavos). ADR-002.
  */
 
 export function buildCampana({ nombre, descripcion, incentivo, fecha_inicio, fecha_fin, creado_por }) {
@@ -26,10 +27,10 @@ export function buildParticipacion(campana_id, familia_id) {
   return {
     campana_id,
     familia_id,
-    monto_recuperado: 0,
+    monto_recuperado_centavos: 0,
   }
 }
 
 export function calcularMontoRecuperado(participaciones) {
-  return participaciones.reduce((sum, p) => sum + (p.monto_recuperado || 0), 0)
+  return participaciones.reduce((sum, p) => sum + (p.monto_recuperado_centavos || 0), 0)
 }

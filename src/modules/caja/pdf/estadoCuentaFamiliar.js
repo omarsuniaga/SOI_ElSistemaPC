@@ -16,8 +16,8 @@ const VALUE_COLOR = [15, 23, 42]
 const RED_COLOR = [239, 68, 68]
 const GREEN_COLOR = [5, 150, 105]
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {
@@ -113,7 +113,7 @@ export function generateEstadoCuenta(statement) {
     fmtDate(m.fecha_pago || m.created_at),
     m.concepto || m.descripcion || 'Pago',
     m.metodo_pago || '-',
-    fmtMoney(m.monto),
+    fmtMoney(m.monto_centavos),
   ])
 
   autoTable(doc, {

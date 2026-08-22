@@ -43,8 +43,8 @@ export const cuotaPendiente = {
   alumno_id: 'alu-001',
   ciclo_mes: 6,
   ciclo_anio: 2026,
-  monto_base: 300,
-  monto_final: 300,
+  monto_base_centavos: 30000,
+  monto_final_centavos: 30000,
   concepto: 'mensualidad',
   estado: 'pendiente',
   fecha_vencimiento: '2026-06-05',
@@ -55,7 +55,7 @@ export const cuotaPagada = {
   ...cuotaPendiente,
   id: 'cuota-002',
   estado: 'pagada',
-  monto_final: 300,
+  monto_final_centavos: 30000,
 }
 
 export const cuotaVencida = {
@@ -86,7 +86,7 @@ export const cuotaBecada = {
   ...cuotaPendiente,
   id: 'cuota-006',
   estado: 'becada',
-  monto_final: 150,
+  monto_final_centavos: 15000,
 }
 
 export const cuotaPrePagada = {
@@ -102,7 +102,7 @@ export const pago = {
   id: 'pago-001',
   familia_id: 'fam-001',
   cuota_ids: ['cuota-001'],
-  monto: 300,
+  monto_centavos: 30000,
   metodo_pago: 'efectivo',
   cajero_id: 'usr-cajero-001',
   notas: 'Pago en caja',
@@ -114,11 +114,11 @@ export const walletMovimiento = {
   id: 'wmov-001',
   familia_id: 'fam-001',
   tipo: 'credito',
-  monto: 100,
+  monto_centavos: 10000,
   origen: 'pago',
   referencia_id: 'pago-001',
   descripcion: 'Pago excedente',
-  saldo_resultante: 100,
+  saldo_resultante_centavos: 10000,
   created_at: '2026-06-10T10:00:00Z',
 }
 
@@ -126,7 +126,7 @@ export const walletConfig = {
   id: 'wcfg-001',
   familia_id: 'fam-001',
   modo: 'mixto',
-  saldo_minimo_alerta: 50,
+  saldo_minimo_alerta_centavos: 5000,
   activo: true,
   created_at: '2026-01-01T00:00:00Z',
 }
@@ -234,7 +234,7 @@ export const patrocinio = {
   alumno_id: 'alu-001',
   familia_id: 'fam-001',
   cubre: 'cuota',
-  monto_mensual: 150,
+  monto_mensual_centavos: 15000,
   activo: true,
   fecha_inicio: '2026-01-01',
   fecha_fin: null,

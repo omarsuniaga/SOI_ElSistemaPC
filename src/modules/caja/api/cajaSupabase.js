@@ -113,54 +113,31 @@ export async function getPagosByFamilia(familia_id) {
 }
 
 /**
- * Registers a payment: inserts pago, updates cuota estados, and optionally
- * adds a wallet credit if there is a surplus (montoSobrante > 0).
+ * Registers a payment atomically via fn_registrar_pago_transaccional: locks
+ * the familia row (FOR UPDATE), distributes the payment oldest-first across
+ * the selected cuotas (partial payments tracked via monto_pagado_centavos,
+ * audited per-cuota in aplicaciones_pago), and credits any surplus to the
+ * wallet — all inside a single DB transaction. This closes the read-modify-
+ * write race that existed when these three writes were separate client
+ * calls (G-01: two cajeros paying the same familia concurrently).
+ *
+ * cuotaIds is the cajero's selection; the server decides how much of the
+ * payment each one actually receives (it may cover fewer if the payment
+ * doesn't reach them all, oldest-first).
  */
 export async function registrarPago(pagoData, cuotaIds) {
-  const { montoSobrante, ...pagoInsert } = pagoData
+  const { familia_id, monto_centavos, metodo_pago, referencia, notas } = pagoData
 
-  // Insert pago
-  const pagoRes = await supabase
-    .from('pagos')
-    .insert({ ...pagoInsert, cuota_ids: cuotaIds })
-    .select()
-    .single()
+  const result = await supabase.rpc('fn_registrar_pago_transaccional', {
+    p_familia_id: familia_id,
+    p_monto_centavos: monto_centavos,
+    p_metodo_pago: metodo_pago,
+    p_referencia: referencia ?? null,
+    p_notas: notas ?? null,
+    p_cuota_ids: cuotaIds,
+  })
 
-  if (pagoRes.error) return handleResult(pagoRes)
-
-  // Update cuota states to 'pagada'
-  if (cuotaIds.length > 0) {
-    await supabase
-      .from('cuotas')
-      .update({ estado: 'pagada' })
-      .in('id', cuotaIds)
-      .in('estado', ['pendiente', 'vencida', 'en_mora'])
-  }
-
-  // Credit wallet if surplus (montoSobrante is in centavos)
-  if (montoSobrante > 0) {
-    const walletRes = await supabase
-      .from('wallet_movimientos')
-      .select('saldo_resultante_centavos')
-      .eq('familia_id', pagoData.familia_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    const saldoAnterior = walletRes.data?.saldo_resultante_centavos ?? 0
-
-    await supabase.from('wallet_movimientos').insert({
-      familia_id: pagoData.familia_id,
-      tipo: 'credito',
-      monto_centavos: montoSobrante,
-      origen: 'pago',
-      referencia_id: pagoRes.data.id,
-      descripcion: 'Saldo a favor del pago',
-      saldo_resultante_centavos: saldoAnterior + montoSobrante,
-    })
-  }
-
-  return handleResult(pagoRes)
+  return handleResult(result)
 }
 
 // ---------------------------------------------------------------------------

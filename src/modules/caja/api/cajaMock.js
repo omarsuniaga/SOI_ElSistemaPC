@@ -4,6 +4,8 @@
  * All operations return Promises to mirror the real adapter.
  */
 
+import { distribuirPago } from '../domain/pago.js'
+
 // ---------------------------------------------------------------------------
 // Mock data fixtures
 // ---------------------------------------------------------------------------
@@ -150,21 +152,42 @@ export async function getPagosByFamilia(familia_id) {
   return { data: pagos.filter(p => p.familia_id === familia_id), error: null }
 }
 
+/**
+ * Mirrors fn_registrar_pago_transaccional's behavior: distributes the
+ * payment oldest-first across the selected cuotas, tracking partial
+ * payments via monto_pagado_centavos (only fully-covered cuotas move to
+ * 'pagada'), and credits any surplus to the wallet.
+ */
 export async function registrarPago(pagoData, cuotaIds) {
   await delay()
-  const newPago = { id: genId('pago'), ...pagoData, cuota_ids: cuotaIds, created_at: new Date().toISOString() }
-  pagos.push(newPago)
-  for (const cuotaId of cuotaIds) {
-    const cuota = cuotas.find(c => c.id === cuotaId)
-    if (cuota && ['pendiente', 'vencida', 'en_mora'].includes(cuota.estado)) cuota.estado = 'pagada'
+  const { familia_id, monto_centavos } = pagoData
+
+  const cuotasSeleccionadas = cuotaIds
+    .map(id => cuotas.find(c => c.id === id))
+    .filter(c => c && ['pendiente', 'vencida', 'en_mora'].includes(c.estado))
+    .map(c => ({ ...c, monto_final_centavos: c.monto_final_centavos - (c.monto_pagado_centavos || 0) }))
+
+  const { distribucion, montoSobrante } = distribuirPago(cuotasSeleccionadas, monto_centavos)
+  const cuotasAplicadas = []
+
+  for (const { cuota_id, montoCubierto, newEstado } of distribucion) {
+    const cuota = cuotas.find(c => c.id === cuota_id)
+    if (!cuota) continue
+    cuota.monto_pagado_centavos = (cuota.monto_pagado_centavos || 0) + montoCubierto
+    cuota.estado = newEstado
+    cuotasAplicadas.push(cuota_id)
   }
-  if (pagoData.montoSobrante > 0) {
-    const movs = walletMovimientos[pagoData.familia_id] || []
+
+  const newPago = { id: genId('pago'), ...pagoData, cuota_ids: cuotasAplicadas, created_at: new Date().toISOString() }
+  pagos.push(newPago)
+
+  if (montoSobrante > 0) {
+    const movs = walletMovimientos[familia_id] || []
     const saldoAnterior = movs.length > 0 ? movs[movs.length - 1].saldo_resultante_centavos : 0
-    const newMov = { id: genId('wm'), familia_id: pagoData.familia_id, tipo: 'credito', monto_centavos: pagoData.montoSobrante, origen: 'pago', referencia_id: newPago.id, descripcion: 'Saldo a favor del pago', saldo_resultante_centavos: saldoAnterior + pagoData.montoSobrante, created_at: new Date().toISOString() }
-    if (!walletMovimientos[pagoData.familia_id]) walletMovimientos[pagoData.familia_id] = []
-    walletMovimientos[pagoData.familia_id].push(newMov)
-    const f = familias.find(fa => fa.id === pagoData.familia_id)
+    const newMov = { id: genId('wm'), familia_id, tipo: 'credito', monto_centavos: montoSobrante, origen: 'pago', referencia_id: newPago.id, descripcion: 'Saldo a favor del pago', saldo_resultante_centavos: saldoAnterior + montoSobrante, created_at: new Date().toISOString() }
+    if (!walletMovimientos[familia_id]) walletMovimientos[familia_id] = []
+    walletMovimientos[familia_id].push(newMov)
+    const f = familias.find(fa => fa.id === familia_id)
     if (f) f.saldo_wallet_centavos = newMov.saldo_resultante_centavos
   }
   return { data: newPago, error: null }

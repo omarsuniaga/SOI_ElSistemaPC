@@ -88,7 +88,8 @@ export async function renderDetail(container, session, familiaId) {
     return { teardown() {} }
   }
 
-  const { familia, representante, cuotas, pagos, wallet } = data
+  const familia = data
+  const { representante, cuotas, pagos, wallet } = data
   const nivel = familia.nivel || clasificarNivel(familia.score || 50)
 
   const cuotasRows = (cuotas || []).slice(0, 10).map(c =>
@@ -97,7 +98,7 @@ export async function renderDetail(container, session, familiaId) {
     + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + c.fecha_vencimiento + '</td>'
     + '<td style="padding:0.5rem 0.75rem;text-align:right;font-size:0.8125rem;font-weight:600">' + fmtMoney(c.monto_final_centavos) + '</td>'
     + '<td style="padding:0.5rem 0.75rem">'
-    + '<span style="font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:6px;background:' + (c.estado === 'pagada' ? '#d1fae5' : c.estado === 'en_mora' ? '#fee2e2' : '#fef9c3') + '">' + c.estado + '</span>'
+    + '<span style="font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px;' + (c.estado === 'pagada' ? 'background:#d1fae5;color:#065f46' : c.estado === 'en_mora' ? 'background:#fee2e2;color:#7f1d1d' : 'background:#fef9c3;color:#713f12') + '">' + c.estado + '</span>'
     + '</td></tr>'
   ).join('')
 

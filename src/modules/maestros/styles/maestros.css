@@ -109,45 +109,6 @@
   color: var(--bs-primary);
 }
 
-/* Responsive & layout overrides */
-@media (max-width: 576px) {
-  .maestros-header-premium {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 14px;
-    margin-bottom: 1rem !important;
-  }
-
-  .maestros-header-actions {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .btn-premium-action {
-    flex-grow: 1;
-    min-height: 44px;
-    border-radius: 9px;
-  }
-
-  .maestros-filter-toolbar {
-    flex-direction: column;
-    align-items: stretch !important;
-    gap: 10px;
-    margin-bottom: 1rem !important;
-  }
-
-  .premium-search-container,
-  .premium-select-container {
-    width: 100% !important;
-  }
-
-  .premium-search-input,
-  .premium-filter-select {
-    min-height: 44px;
-  }
-}
 
 .maestros-header-premium {
   display: flex;
@@ -314,3 +275,71 @@
 .chip-remove:hover {
   color: var(--bs-danger) !important;
 }
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/* RESPONSIVE LAYOUT (Mobile & Tablet)                                     */
+/* ──────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .maestros-header-premium {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+    margin-bottom: 1rem !important;
+  }
+
+  .maestros-title-premium {
+    font-size: 1.25rem;
+  }
+
+  .maestros-header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .maestros-header-actions .btn-premium-action,
+  .maestros-header-actions .btn {
+    flex: 1 1 auto;
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+
+  .maestros-filter-toolbar {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px;
+    margin-bottom: 1rem !important;
+  }
+
+  .premium-search-container,
+  .premium-select-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .premium-search-input,
+  .premium-filter-select {
+    width: 100% !important;
+    min-height: 42px;
+  }
+
+  .list-group-item {
+    padding: 0.75rem 0.85rem !important;
+  }
+
+  .list-group-item .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .maestros-title-premium {
+    font-size: 1.15rem;
+  }
+}
+

@@ -72,9 +72,11 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   _navAbortController?.abort()
   _navAbortController = new AbortController()
 
+  document.querySelector('.app-mobile-header')?.remove()
   document.querySelector('.app-sidebar')?.remove()
   document.querySelector('.app-bottom-nav')?.remove()
   document.querySelector('.mobile-sub-sheet')?.remove()
+  document.querySelector('.mobile-sheet-backdrop')?.remove()
 
   if (!isAuthenticated) return
 
@@ -84,6 +86,25 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   const activeGroup = getGroupForRoute(profile.navGroups, currentRoute)
   const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark'
 
+  // 1. Header Móvil Superior (Visible solo en <= 1024px)
+  const mobileHeader = document.createElement('header')
+  mobileHeader.className = 'app-mobile-header'
+  mobileHeader.innerHTML = `
+    <div class="mobile-header-brand" role="button" tabindex="0" title="Ir a inicio">
+      <div class="mobile-header-icon"><i class="bi ${profile.brandIcon}"></i></div>
+      <span class="mobile-header-title">${profile.brandText}</span>
+    </div>
+    <div class="mobile-header-actions">
+      <button class="mobile-header-btn" id="mobileBtnTheme" title="Cambiar tema">
+        <i class="bi ${isDark ? 'bi-sun-fill' : 'bi-moon-fill'}"></i>
+      </button>
+      <button class="mobile-header-btn danger" id="mobileBtnLogout" title="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+    </div>
+  `
+
+  // 2. Sidebar Desktop
   const sidebar = document.createElement('aside')
   sidebar.className = 'app-sidebar'
   sidebar.innerHTML = `
@@ -130,12 +151,13 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     </div>
   `
 
+  // 3. Barra Inferior Móvil (Bottom Navigation)
   const bottomNav = document.createElement('nav')
   bottomNav.className = 'app-bottom-nav'
   bottomNav.innerHTML = profile.navGroups
     .map(
       (g) => `
-    <button class="bottom-tab ${g.id === activeGroup ? 'active' : ''}" data-group="${g.id}">
+    <button class="bottom-tab ${g.id === activeGroup ? 'active' : ''}" data-group="${g.id}" title="${g.label}">
       <i class="bi ${g.icon}"></i>
       <span>${g.label}</span>
     </button>
@@ -143,19 +165,35 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     )
     .join('')
 
+  // 4. Backdrop & Sub-Sheet Móvil
+  const sheetBackdrop = document.createElement('div')
+  sheetBackdrop.className = 'mobile-sheet-backdrop'
+
   const subSheet = document.createElement('div')
   subSheet.className = 'mobile-sub-sheet'
   subSheet.innerHTML = `
     <div class="sheet-handle"></div>
-    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-title-row d-flex justify-content-between align-items-center">
+      <div class="sheet-title" id="sheetTitle"></div>
+      <button class="btn btn-sm btn-link text-muted sheet-close-btn p-1 me-2" id="btnCloseSubSheet" title="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
     <div class="sheet-items" id="sheetItems"></div>
   `
 
+  document.body.prepend(mobileHeader)
   document.body.prepend(sidebar)
+  document.body.prepend(sheetBackdrop)
   document.body.prepend(bottomNav)
   document.body.prepend(subSheet)
 
   const { signal } = _navAbortController
+
+  const closeSubSheet = () => {
+    subSheet.classList.remove('open')
+    sheetBackdrop.classList.remove('open')
+  }
 
   const syncBottomNavState = (route = localStorage.getItem(storageKey) || profile.defaultRoute) => {
     const nextGroup = getGroupForRoute(profile.navGroups, route)
@@ -164,10 +202,11 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     })
     const currentSheetGroup = subSheet.dataset.group
     if (subSheet.classList.contains('open') && currentSheetGroup && currentSheetGroup !== nextGroup) {
-      subSheet.classList.remove('open')
+      closeSubSheet()
     }
   }
 
+  // Eventos de Sidebar Desktop
   sidebar.querySelectorAll('.nav-group-header').forEach((btn) => {
     btn.addEventListener(
       'click',
@@ -196,37 +235,40 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     () => router.navigate(profile.defaultRoute),
     { signal },
   )
-  sidebar.querySelector('.sidebar-brand')?.addEventListener(
-    'keydown',
-    (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        router.navigate(profile.defaultRoute)
-      }
-    },
+
+  // Cambio de Tema sincronizado (Desktop y Móvil)
+  const applyThemeUpdate = () => {
+    toggleTheme()
+    const isDarkNow = document.documentElement.getAttribute('data-bs-theme') === 'dark'
+    const iconClass = isDarkNow ? 'bi bi-sun-fill' : 'bi bi-moon-fill'
+    const sideIcon = sidebar.querySelector('#sidebarBtnTheme i')
+    if (sideIcon) sideIcon.className = iconClass
+    const mobIcon = mobileHeader.querySelector('#mobileBtnTheme i')
+    if (mobIcon) mobIcon.className = iconClass
+  }
+
+  sidebar.querySelector('#sidebarBtnTheme')?.addEventListener('click', applyThemeUpdate, { signal })
+  mobileHeader.querySelector('#mobileBtnTheme')?.addEventListener('click', applyThemeUpdate, { signal })
+
+  // Cierre de Sesión (Desktop y Móvil)
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.reload()
+  }
+
+  sidebar.querySelector('#sidebarBtnLogout')?.addEventListener('click', handleLogout, { signal })
+  mobileHeader.querySelector('#mobileBtnLogout')?.addEventListener('click', handleLogout, { signal })
+
+  // Click en brand del Header móvil
+  mobileHeader.querySelector('.mobile-header-brand')?.addEventListener(
+    'click',
+    () => router.navigate(profile.defaultRoute),
     { signal },
   )
 
-  sidebar.querySelector('#sidebarBtnTheme').addEventListener(
-    'click',
-    () => {
-      toggleTheme()
-      const isDarkNow = document.documentElement.getAttribute('data-bs-theme') === 'dark'
-      sidebar.querySelector('#sidebarBtnTheme i').className = isDarkNow
-        ? 'bi bi-sun-fill'
-        : 'bi bi-moon-fill'
-    },
-    { signal },
-  )
-
-  sidebar.querySelector('#sidebarBtnLogout').addEventListener(
-    'click',
-    async () => {
-      await supabase.auth.signOut()
-      window.location.reload()
-    },
-    { signal },
-  )
+  // Backdrop y botón de cierre del Sheet
+  sheetBackdrop.addEventListener('click', closeSubSheet, { signal })
+  subSheet.querySelector('#btnCloseSubSheet')?.addEventListener('click', closeSubSheet, { signal })
 
   function openSheet(groupId) {
     const group = profile.navGroups.find((g) => g.id === groupId)
@@ -250,11 +292,12 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
 
     subSheet.dataset.group = groupId
     subSheet.classList.add('open')
+    sheetBackdrop.classList.add('open')
 
     itemsEl.querySelectorAll('.sheet-item').forEach((btn) => {
       btn.addEventListener('click', () => {
         router.navigate(btn.dataset.route)
-        subSheet.classList.remove('open')
+        closeSubSheet()
         bottomNav.querySelectorAll('.bottom-tab').forEach((t) =>
           t.classList.toggle('active', t.dataset.group === getGroupForRoute(profile.navGroups, btn.dataset.route)),
         )
@@ -266,7 +309,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     tab.addEventListener('click', () => {
       const groupId = tab.dataset.group
       if (subSheet.classList.contains('open') && subSheet.dataset.group === groupId) {
-        subSheet.classList.remove('open')
+        closeSubSheet()
       } else {
         openSheet(groupId)
         bottomNav

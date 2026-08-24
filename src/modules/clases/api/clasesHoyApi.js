@@ -223,3 +223,22 @@ export async function obtenerClasesDelDia(diaFiltro = null) {
 
   return { dia, fecha, esHoy, sesiones, kpis }
 }
+
+/**
+ * Justifica la ausencia de un alumno delegando la persistencia a la RPC canónica.
+ */
+export async function justificarAusencia({ claseId, alumnoId, fecha, motivo }) {
+  const { data, error } = await supabase.rpc('registrar_justificacion_asistencia', {
+    p_clase_id: claseId,
+    p_alumno_id: alumnoId,
+    p_fecha: fecha,
+    p_motivo: motivo,
+  })
+
+  if (error) {
+    throw new Error(`No se pudo justificar la ausencia: ${error.message}`)
+  }
+
+  return data
+}
+

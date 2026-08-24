@@ -20,11 +20,13 @@ vi.mock('../../auth/maestroAuth.js', () => ({
 const mockGetMisClases = vi.fn()
 const mockGetSesiones = vi.fn()
 const mockGetSalones = vi.fn(() => Promise.resolve([]))
+const mockGetHorariosClases = vi.fn(() => Promise.resolve([]))
 
 vi.mock('../../services/maestroDataService.js', () => ({
   getMisClases: (...args) => mockGetMisClases(...args),
   getSesiones: (...args) => mockGetSesiones(...args),
   getSalones: (...args) => mockGetSalones(...args),
+  getHorariosClases: (...args) => mockGetHorariosClases(...args),
 }))
 
 // misClasesView resuelve nombres de alumnos y causas de justificación con
@@ -108,6 +110,7 @@ describe('misClasesView', () => {
     vi.clearAllMocks()
     mockGetMisClases.mockResolvedValue(CLASES)
     mockGetSalones.mockResolvedValue([])
+    mockGetHorariosClases.mockResolvedValue([])
     getMaestroLocal.mockReturnValue({ id: 'maestro-1' })
     setupSupabase()
     container = document.createElement('div')
@@ -202,6 +205,81 @@ describe('misClasesView', () => {
 
     expect(container.textContent).toContain('contenido-violin')
     expect(container.textContent).not.toContain('contenido-cello')
+  })
+
+  // ── Respaldo de hora/salón desde el horario recurrente de la clase ─────
+  // La mayoría de las sesiones reales (88 de 103) no guardan hora ni salón
+  // propios — el maestro nunca los captura al tomar asistencia. Deben
+  // resolverse desde clase_horarios, indexado por día de la semana.
+
+  it('usa el horario recurrente cuando la sesión no tiene hora propia', async () => {
+    mockGetHorariosClases.mockResolvedValue([
+      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: null },
+    ])
+    // 2026-08-20 es jueves
+    mockGetSesiones.mockResolvedValue([
+      sesionBase({ fecha: '2026-08-20', hora_inicio: null, hora_fin: null }),
+    ])
+
+    await renderMisClasesView(container)
+
+    expect(container.textContent).toContain('15:30')
+    expect(container.textContent).toContain('17:00')
+  })
+
+  it('respeta la hora propia de la sesión si existe, sin usar el horario recurrente', async () => {
+    mockGetHorariosClases.mockResolvedValue([
+      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: null },
+    ])
+    mockGetSesiones.mockResolvedValue([
+      sesionBase({ fecha: '2026-08-20', hora_inicio: '09:00:00', hora_fin: '10:00:00' }),
+    ])
+
+    await renderMisClasesView(container)
+
+    expect(container.textContent).toContain('09:00')
+    expect(container.textContent).not.toContain('15:30')
+  })
+
+  it('elige el horario del dia correcto cuando la clase se reune varios dias con horas distintas', async () => {
+    mockGetHorariosClases.mockResolvedValue([
+      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '14:00:00', hora_fin: '17:00:00', salon_id: null },
+      { clase_id: 'clase-1', dia: 'sábado', hora_inicio: '09:00:00', hora_fin: '13:00:00', salon_id: null },
+    ])
+    // 2026-08-22 es sábado
+    mockGetSesiones.mockResolvedValue([
+      sesionBase({ fecha: '2026-08-22', hora_inicio: null, hora_fin: null }),
+    ])
+
+    await renderMisClasesView(container)
+
+    expect(container.textContent).toContain('09:00')
+    expect(container.textContent).not.toContain('14:00')
+  })
+
+  it('resuelve el salón desde el horario recurrente cuando la sesión no trae salon_id', async () => {
+    mockGetHorariosClases.mockResolvedValue([
+      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: 'salon-1' },
+    ])
+    mockGetSalones.mockResolvedValue([{ id: 'salon-1', nombre: 'Aula Magna' }])
+    mockGetSesiones.mockResolvedValue([
+      sesionBase({ fecha: '2026-08-20', salon_id: null }),
+    ])
+
+    await renderMisClasesView(container)
+
+    expect(container.textContent).toContain('Aula Magna')
+  })
+
+  it('sin horario recurrente para ese día, no rompe y muestra el guion por defecto', async () => {
+    mockGetHorariosClases.mockResolvedValue([])
+    mockGetSesiones.mockResolvedValue([
+      sesionBase({ fecha: '2026-08-20', hora_inicio: null, hora_fin: null }),
+    ])
+
+    await renderMisClasesView(container)
+
+    expect(container.querySelector('.pm-misclases-card-hora')?.textContent).toContain('—')
   })
 
   // ── Roster detallado: quién asistió, quién faltó, quién justificó ──────

@@ -188,6 +188,17 @@ export async function generateDailyReport(sesionId) {
       attByAlumno[a.alumno_id] = a
     })
 
+    // Causa de la justificación (tabla aparte — el JSONB de asistencia solo
+    // trae alumno_id + estado, nunca el motivo).
+    const { data: justificaciones } = await supabase
+      .from('justificaciones')
+      .select('alumno_id, motivo')
+      .eq('sesion_id', sesionId)
+    const motivoByAlumno = {}
+    ;(justificaciones || []).forEach((j) => {
+      motivoByAlumno[j.alumno_id] = j.motivo
+    })
+
     const landscape = alumnos.length > 20
 
     // Parse DSL content from sesiones_clase.contenido (Bug #3 fix)
@@ -234,7 +245,9 @@ export async function generateDailyReport(sesionId) {
         const a = attByAlumno[al.id]
         const estado = a?.estado ?? '—'
         const cell = ['P', 'A', 'J'].includes(estado) ? attendanceCell(estado) : esc(estado)
-        const obs_ = esc(a?.observacion || '')
+        // La observación puntual del maestro tiene prioridad; si no hay,
+        // se muestra la causa registrada en `justificaciones` (motivo).
+        const obs_ = esc(a?.observacion || motivoByAlumno[al.id] || '')
         return `<tr>
         <td>${i + 1}</td>
         <td>${esc(al.nombre_completo)}</td>
@@ -247,7 +260,7 @@ export async function generateDailyReport(sesionId) {
     const table = `
       <p class="rpt-section-title">Registro de asistencia</p>
       <table class="rpt-table">
-        <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación</th></tr></thead>
+        <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
     `
@@ -603,16 +616,19 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const [sesRes, obsRes, progRes, claseRes, alumnosRes, prevSesRes, justRes] = await Promise.all([
       supabase
         .from('sesiones_clase')
-        .select('id, fecha, asistencia')
+        // `contenido` es donde el maestro escribe realmente (95 de 142 sesiones).
+        .select('id, fecha, asistencia, contenido')
         .eq('clase_id', claseId)
         .gte('fecha', rangeStart)
         .lte('fecha', rangeEnd)
         .order('fecha'),
       supabase
         .from('observaciones_sesion')
-        .select('sesion_clase_id, contenido_ia_dsl, contenido_dsl')
+        // FIX: la tabla usa `sesion_id` y `contenido_raw`.
+        // `sesion_clase_id` y `contenido_dsl` no existen aquí y hacían fallar la query entera.
+        .select('sesion_id, contenido_ia_dsl, contenido_raw')
         .in(
-          'sesion_clase_id',
+          'sesion_id',
           // will be filtered after sesiones are loaded — fetch broad and filter
           (
             await supabase
@@ -626,7 +642,10 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
       supabase
         .from('progresos')
         .select(
-          `id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
+          // FIX: la columna es `evaluacion_tipo`, no `tipo`.
+          // Se suman estado_cualitativo y calificacion: son la señal de progreso real.
+          `id, alumno_id, objetivo_id, evaluacion_tipo, estado_cualitativo, calificacion,
+                 contenido_dsl, created_at,
                  alumnos(nombre_completo),
                  curriculo_objetivos(descripcion, categoria)`,
         )
@@ -697,8 +716,18 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
 
     const obsMap = {}
     obsData.forEach((o) => {
-      obsMap[o.sesion_clase_id] = o
+      obsMap[o.sesion_id] = o
     })
+
+    /**
+     * Texto de contenido de una sesión, por orden de confiabilidad:
+     * DSL generado por IA -> texto libre estructurado -> lo que escribió el maestro
+     * en sesiones_clase.contenido (la fuente con más cobertura).
+     */
+    const contenidoDeSesion = (sesion) => {
+      const obs = obsMap[sesion.id]
+      return obs?.contenido_ia_dsl || obs?.contenido_raw || sesion.contenido || ''
+    }
 
     // Aggregate totals
     let totalP = 0,
@@ -727,9 +756,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     // Collect unique content items across all sessions
     const contentSet = new Set()
     sesiones.forEach((s) => {
-      const obs = obsMap[s.id]
-      if (!obs) return
-      const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
+      const raw = contenidoDeSesion(s)
+      if (!raw) return
       raw.split(/[\n,]/).forEach((item) => {
         const clean = item.replace(/^\s*[-*\d.]+\s*/, '').trim()
         if (clean.length > 2 && clean.length < 60) contentSet.add(clean)
@@ -740,9 +768,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     // Collect obs blocks across sessions
     const allObs = []
     sesiones.forEach((s) => {
-      const obs = obsMap[s.id]
-      if (!obs) return
-      const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
+      const raw = contenidoDeSesion(s)
+      if (!raw) return
       raw.split('\n').forEach((line) => {
         if (/destacad|excelente/i.test(line))
           allObs.push({
@@ -777,8 +804,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const sessionCards = sesiones
       .map((s, i) => {
         const st = calcAttendanceStats(s.asistencia)
-        const obs = obsMap[s.id]
-        const rawContent = obs?.contenido_ia_dsl || obs?.contenido_dsl || ''
+        const rawContent = contenidoDeSesion(s)
         const firstContent =
           rawContent
             .split(/[\n,]/)[0]
@@ -869,7 +895,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
         // Badge
         const attPct = pct(aP, total)
         let badge, badgeClass
-        if (attPct >= 90 && progByAlumno[al.id]?.some((p) => p.tipo === 'LOGRADO')) {
+        if (attPct >= 90 && progByAlumno[al.id]?.some((p) => p.estado_cualitativo === 'LOGRADO')) {
           badge = 'Destacado'
           badgeClass = 'badge-destacado'
         } else if (attPct < 60) {
@@ -916,8 +942,10 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
             .slice(0, 3)
             .map((p) => {
               const label = p.curriculo_objetivos?.descripcion || p.contenido_dsl || 'Objetivo'
-              const pctVal = p.tipo === 'LOGRADO' ? 100 : p.tipo === 'EN_PROGRESO' ? 60 : 30
-              return progressBar(p.tipo, label.slice(0, 28), pctVal)
+              // El estado vive en `estado_cualitativo`; `evaluacion_tipo` siempre vale 'observacion'.
+              const estado = p.estado_cualitativo
+              const pctVal = estado === 'LOGRADO' ? 100 : estado === 'EN_PROGRESO' ? 60 : 30
+              return progressBar(estado, label.slice(0, 28), pctVal)
             })
             .join('')}
         </div>
@@ -1019,8 +1047,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
                     </td></tr>
                 <tr><td>Logros individuales</td>
                     <td>${prevSesiones.length > 0 ? '—' : '0'}</td>
-                    <td>${progresos.filter((p) => p.tipo === 'LOGRADO').length}</td>
-                    <td class="delta-up" style="font-weight:700">${progresos.filter((p) => p.tipo === 'LOGRADO').length}</td>
+                    <td>${progresos.filter((p) => p.estado_cualitativo === 'LOGRADO').length}</td>
+                    <td class="delta-up" style="font-weight:700">${progresos.filter((p) => p.estado_cualitativo === 'LOGRADO').length}</td>
                 </tr>
               </tbody>
             </table>

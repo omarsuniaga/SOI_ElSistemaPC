@@ -204,6 +204,39 @@ describe('generateDailyReport', () => {
     expect(htmlArg).toContain('Carlos Ruiz')
   })
 
+  it('clase regular: el HTML incluye la causa de la justificación de un ausente', async () => {
+    supabase.from.mockImplementation((table) => {
+      if (table === 'sesiones_clase') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          lte: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: SESION_REGULAR, error: null }),
+          then: (fn) => Promise.resolve({ count: 1, error: null }).then(fn),
+          catch: (fn) => Promise.resolve({ count: 1, error: null }).catch(fn),
+        }
+      }
+      if (table === 'clases')
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: CLASE_DATA, error: null }) }
+      if (table === 'maestros')
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+      if (table === 'alumnos_clases')
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: ALUMNOS_CLASE, error: null }) }
+      // a2 (Bruno Vera) está 'A' en SESION_REGULAR — se le adjunta una justificación
+      if (table === 'justificaciones')
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [{ alumno_id: 'a2', motivo: 'Cita médica' }], error: null }),
+        }
+      return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), lte: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }), then: (fn) => Promise.resolve({ count: 1 }).then(fn), catch: (fn) => Promise.resolve({ count: 1 }).catch(fn) }
+    })
+
+    await generateDailyReport('sesion-1')
+
+    const [htmlArg] = openReport.mock.calls[0]
+    expect(htmlArg).toContain('Cita médica')
+  })
+
   // ── Sesión emergente ───────────────────────────────────────────────────
 
   it('sesión emergente (clase_id=null): NO muestra error y llama openReport', async () => {

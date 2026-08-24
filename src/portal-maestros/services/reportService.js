@@ -188,6 +188,17 @@ export async function generateDailyReport(sesionId) {
       attByAlumno[a.alumno_id] = a
     })
 
+    // Causa de la justificación (tabla aparte — el JSONB de asistencia solo
+    // trae alumno_id + estado, nunca el motivo).
+    const { data: justificaciones } = await supabase
+      .from('justificaciones')
+      .select('alumno_id, motivo')
+      .eq('sesion_id', sesionId)
+    const motivoByAlumno = {}
+    ;(justificaciones || []).forEach((j) => {
+      motivoByAlumno[j.alumno_id] = j.motivo
+    })
+
     const landscape = alumnos.length > 20
 
     // Parse DSL content from sesiones_clase.contenido (Bug #3 fix)
@@ -234,7 +245,9 @@ export async function generateDailyReport(sesionId) {
         const a = attByAlumno[al.id]
         const estado = a?.estado ?? '—'
         const cell = ['P', 'A', 'J'].includes(estado) ? attendanceCell(estado) : esc(estado)
-        const obs_ = esc(a?.observacion || '')
+        // La observación puntual del maestro tiene prioridad; si no hay,
+        // se muestra la causa registrada en `justificaciones` (motivo).
+        const obs_ = esc(a?.observacion || motivoByAlumno[al.id] || '')
         return `<tr>
         <td>${i + 1}</td>
         <td>${esc(al.nombre_completo)}</td>
@@ -247,7 +260,7 @@ export async function generateDailyReport(sesionId) {
     const table = `
       <p class="rpt-section-title">Registro de asistencia</p>
       <table class="rpt-table">
-        <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación</th></tr></thead>
+        <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
     `

@@ -8,7 +8,17 @@ import {
   getSemanaActualSantoDomingo,
 } from '../api/adminMaestroApi.js'
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
+import { cargarHistorialInstitucional } from '../../../portal-maestros/services/historialClasesService.js'
+import { generateInstitutionalReportHTML } from '../../../portal-maestros/services/reportService.js'
+import { openReport } from '../../../portal-maestros/services/reportTemplates.js'
+import { AppToast } from '../../../shared/components/AppToast.js'
 import '../styles/admin-dashboard.css'
+
+function hoyISO(offsetDias = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDias)
+  return d.toISOString().split('T')[0]
+}
 
 export class CumplimientoMaestrosWidget {
   constructor(containerId) {
@@ -20,6 +30,12 @@ export class CumplimientoMaestrosWidget {
     this.customDates = getSemanaActualSantoDomingo()
     this.currentFilter = {
       estado: null,
+    }
+    this.reportePanelOpen = false
+    this.generandoReporte = false
+    this.reporteRango = {
+      desde: hoyISO(-30),
+      hasta: hoyISO(0),
     }
   }
 
@@ -213,13 +229,18 @@ export class CumplimientoMaestrosWidget {
             </select>
           </div>
 
-          <button id="btnRefresh" class="btn-premium-action btn-premium-secondary ms-auto">
+          <button id="btnReporteInstitucional" class="btn-premium-action btn-premium-secondary ms-auto">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Reporte Institucional
+          </button>
+          <button id="btnRefresh" class="btn-premium-action btn-premium-secondary ms-2">
             <i class="bi bi-arrow-clockwise"></i> Actualizar
           </button>
           <button id="btnGotoNotificaciones" class="btn-premium-action btn-premium-primary ms-2" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; color: white;">
             <i class="bi bi-bell-fill animate-bell"></i> Centro de Actividad
           </button>
         </div>
+
+        ${this.reportePanelOpen ? this.renderReportePanel() : ''}
 
         <!-- Stats Overview Cards -->
         <div class="metrics-grid mb-4">
@@ -267,6 +288,36 @@ export class CumplimientoMaestrosWidget {
     `
 
     this.container.innerHTML = html
+  }
+
+  /**
+   * Render inline panel to pick a custom date range and trigger the
+   * institutional report (all teachers, all classes, in that range).
+   */
+  renderReportePanel() {
+    const { desde, hasta } = this.reporteRango
+    return `
+      <div id="reportePanel" style="background: rgba(79,70,229,0.06); border: 1px solid rgba(79,70,229,0.25); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem;">
+        <div style="flex: 1 1 260px; min-width: 220px;">
+          <h5 style="margin:0 0 0.35rem; font-size:0.95rem; font-weight:700;"><i class="bi bi-file-earmark-pdf-fill" style="color:#7c3aed;"></i> Reporte Institucional de Clases Dadas</h5>
+          <p style="margin:0; font-size:0.78rem; color:#8b949e;">PDF con todas las clases de todos los maestros en el rango seleccionado: asistencia, roster y contenido registrado.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:0.25rem;">
+          <label for="reporteDesde" style="font-size:0.72rem; color:#8b949e;">Desde</label>
+          <input type="date" id="reporteDesde" class="premium-select" value="${desde}" max="${hasta}" style="padding:0.4rem 0.6rem;">
+        </div>
+        <div style="display:flex; flex-direction:column; gap:0.25rem;">
+          <label for="reporteHasta" style="font-size:0.72rem; color:#8b949e;">Hasta</label>
+          <input type="date" id="reporteHasta" class="premium-select" value="${hasta}" min="${desde}" style="padding:0.4rem 0.6rem;">
+        </div>
+        <button id="btnGenerarReporteInstitucional" class="btn-premium-action btn-premium-primary" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border:none; color:white;">
+          <i class="bi bi-download"></i> Generar PDF
+        </button>
+        <button id="btnCerrarReportePanel" class="btn-action-icon" title="Cerrar" style="margin-left:auto;">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    `
   }
 
   /**
@@ -358,6 +409,40 @@ export class CumplimientoMaestrosWidget {
     }
     btnGotoNotificaciones?.addEventListener('click', this._btnGotoNotificacionesHandler)
 
+    const btnReporteInstitucional = document.getElementById('btnReporteInstitucional')
+    this._btnReporteInstitucionalHandler = () => {
+      this.reportePanelOpen = !this.reportePanelOpen
+      this.render()
+      this.attachEventListeners()
+    }
+    btnReporteInstitucional?.addEventListener('click', this._btnReporteInstitucionalHandler)
+
+    if (this.reportePanelOpen) {
+      const reporteDesde = document.getElementById('reporteDesde')
+      const reporteHasta = document.getElementById('reporteHasta')
+      const btnGenerarReporteInstitucional = document.getElementById('btnGenerarReporteInstitucional')
+      const btnCerrarReportePanel = document.getElementById('btnCerrarReportePanel')
+
+      this._reporteDesdeHandler = (e) => {
+        this.reporteRango.desde = e.target.value
+      }
+      this._reporteHastaHandler = (e) => {
+        this.reporteRango.hasta = e.target.value
+      }
+      this._btnCerrarReportePanelHandler = () => {
+        this.reportePanelOpen = false
+        this.render()
+        this.attachEventListeners()
+      }
+      this._btnGenerarReporteInstitucionalHandler = () =>
+        this.onGenerarReporteInstitucional(btnGenerarReporteInstitucional)
+
+      reporteDesde?.addEventListener('change', this._reporteDesdeHandler)
+      reporteHasta?.addEventListener('change', this._reporteHastaHandler)
+      btnCerrarReportePanel?.addEventListener('click', this._btnCerrarReportePanelHandler)
+      btnGenerarReporteInstitucional?.addEventListener('click', this._btnGenerarReporteInstitucionalHandler)
+    }
+
     this._contactarHandlers = []
     this._detalleHandlers = []
 
@@ -405,6 +490,52 @@ export class CumplimientoMaestrosWidget {
   }
 
   /**
+   * Build and download the institutional report: all teachers' classes in
+   * the custom date range picked in the panel.
+   */
+  async onGenerarReporteInstitucional(btn) {
+    if (this.generandoReporte) return
+
+    const { desde, hasta } = this.reporteRango
+    if (!desde || !hasta || desde > hasta) {
+      AppToast.error('Seleccioná un rango de fechas válido (desde no puede ser posterior a hasta).')
+      return
+    }
+
+    this.generandoReporte = true
+    const originalHtml = btn?.innerHTML
+    if (btn) {
+      btn.disabled = true
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span>Generando...`
+    }
+
+    try {
+      const { sesiones } = await cargarHistorialInstitucional({ desde, hasta })
+
+      if (!sesiones || sesiones.length === 0) {
+        AppToast.info('No hay clases registradas en el rango seleccionado.')
+        return
+      }
+
+      const rangoLabel = `${desde} a ${hasta}`
+      const html = generateInstitutionalReportHTML(sesiones, { rangoLabel })
+      const fechaArchivo = hoyISO(0)
+      openReport(html, `reporte-institucional-${fechaArchivo}`, {
+        title: `Reporte Institucional de Clases · ${rangoLabel}`,
+      })
+    } catch (err) {
+      console.error('[CumplimientoMaestrosWidget] Error generando reporte institucional:', err)
+      AppToast.error('Error al generar el reporte institucional: ' + err.message)
+    } finally {
+      this.generandoReporte = false
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = originalHtml
+      }
+    }
+  }
+
+  /**
    * Cleanup event listeners
    */
   destroy() {
@@ -412,6 +543,11 @@ export class CumplimientoMaestrosWidget {
     const filterEstado = document.getElementById('filterEstado')
     const btnRefresh = document.getElementById('btnRefresh')
     const btnGotoNotificaciones = document.getElementById('btnGotoNotificaciones')
+    const btnReporteInstitucional = document.getElementById('btnReporteInstitucional')
+    const reporteDesde = document.getElementById('reporteDesde')
+    const reporteHasta = document.getElementById('reporteHasta')
+    const btnGenerarReporteInstitucional = document.getElementById('btnGenerarReporteInstitucional')
+    const btnCerrarReportePanel = document.getElementById('btnCerrarReportePanel')
 
     if (selectRangoFechas && this._selectRangoHandler) {
       selectRangoFechas.removeEventListener('change', this._selectRangoHandler)
@@ -424,6 +560,21 @@ export class CumplimientoMaestrosWidget {
     }
     if (btnGotoNotificaciones && this._btnGotoNotificacionesHandler) {
       btnGotoNotificaciones.removeEventListener('click', this._btnGotoNotificacionesHandler)
+    }
+    if (btnReporteInstitucional && this._btnReporteInstitucionalHandler) {
+      btnReporteInstitucional.removeEventListener('click', this._btnReporteInstitucionalHandler)
+    }
+    if (reporteDesde && this._reporteDesdeHandler) {
+      reporteDesde.removeEventListener('change', this._reporteDesdeHandler)
+    }
+    if (reporteHasta && this._reporteHastaHandler) {
+      reporteHasta.removeEventListener('change', this._reporteHastaHandler)
+    }
+    if (btnGenerarReporteInstitucional && this._btnGenerarReporteInstitucionalHandler) {
+      btnGenerarReporteInstitucional.removeEventListener('click', this._btnGenerarReporteInstitucionalHandler)
+    }
+    if (btnCerrarReportePanel && this._btnCerrarReportePanelHandler) {
+      btnCerrarReportePanel.removeEventListener('click', this._btnCerrarReportePanelHandler)
     }
 
     if (this._contactarHandlers) {

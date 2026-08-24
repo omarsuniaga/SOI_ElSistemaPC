@@ -593,26 +593,31 @@ function _attachModalEvents(modalBody, _clase) {
   updateCount()
 }
 
-async function _handleSave(modalBody, originalClase) {
+async function _handleSave(modalBody, originalClase, saveContext = null) {
   const isEdicion = !!originalClase
 
   const getFormData = () => {
+    const required = (selector, label) => {
+      const control = modalBody.querySelector(selector)
+      if (!control) throw new Error(`No se encontró el campo ${label}. Reabrí el formulario e intentá de nuevo.`)
+      return control
+    }
     const maestroSuplenteSelect = modalBody.querySelector('#modal-maestro_suplente_id')
     const tieneSuplenteSwitch = modalBody.querySelector('#modal-tiene_suplente')
     const maestroSuplenteValue = maestroSuplenteSelect?.value || ''
     const tieneSuplente = tieneSuplenteSwitch?.checked || false
 
     const data = {
-      nombre: modalBody.querySelector('#modal-nombre').value.trim(),
-      programa_id: modalBody.querySelector('#modal-programa_id').value,
-      maestro_principal_id: modalBody.querySelector('#modal-maestro_id').value,
+      nombre: required('#modal-nombre', 'Nombre de la Clase').value.trim(),
+      programa_id: required('#modal-programa_id', 'Programa').value,
+      maestro_principal_id: required('#modal-maestro_id', 'Maestro Titular').value,
       maestro_suplente_id: tieneSuplente ? maestroSuplenteValue : null,
       tiene_suplente: tieneSuplente,
-      instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
-      capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
-      estado: modalBody.querySelector('#modal-estado').value,
+      instrumento: required('#modal-instrumento', 'Instrumento').value.trim(),
+      capacidad_maxima: parseInt(required('#modal-max_alumnos', 'Máx. Alumnos').value) || 20,
+      estado: required('#modal-estado', 'Estado').value,
       tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
-      descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
+      descripcion: required('#modal-notas_pedagogicas', 'Notas Pedagógicas').value.trim(),
       ruta_id: modalBody.querySelector('#modal-ruta_id')?.value || null,
       horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
         dia: row.querySelector('[name="horario-dia"]').value,
@@ -624,7 +629,13 @@ async function _handleSave(modalBody, originalClase) {
     return data
   }
 
-  const formData = getFormData()
+  let formData
+  try {
+    formData = saveContext?.formData || getFormData()
+  } catch (err) {
+    AppToast.error(err.message)
+    return false
+  }
   const claseObj = new Clase(formData)
   const errores = claseObj.validate()
 
@@ -644,7 +655,8 @@ async function _handleSave(modalBody, originalClase) {
       .sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
 
   const _syncGrupal = async (claseId) => {
-    const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+    const newIds = saveContext?.selectedAlumnoIds ||
+      Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
     const currentIds = currentEnrolled.map(i => i.alumno_id)
     const toAdd    = newIds.filter(id => !currentIds.includes(id))
@@ -656,7 +668,7 @@ async function _handleSave(modalBody, originalClase) {
   }
 
   const _syncRotativa = async (claseId) => {
-    const slots = _readSlots()
+    const slots = saveContext?.rotativaSlots || _readSlots()
     if (slots.length === 0) { AppToast.warning('Agregá al menos un turno'); return false }
 
     // Validate all slots have times
@@ -694,6 +706,11 @@ async function _handleSave(modalBody, originalClase) {
     })
 
     if (conflictos.length > 0) {
+      const contextoConflicto = {
+        formData,
+        selectedAlumnoIds,
+        rotativaSlots: formData.tipo_clase === 'rotativa' ? _readSlots() : null,
+      }
       return new Promise((resolve) => {
         openClaseConflictModal({
           conflictos,
@@ -701,7 +718,7 @@ async function _handleSave(modalBody, originalClase) {
             modalBody.dataset.overrideConflicts = 'true'
             modalBody.dataset.conflictPriority = prioridad
             modalBody._conflictosPendientes = conflictos
-            const saved = await _handleSave(modalBody, originalClase)
+            const saved = await _handleSave(modalBody, originalClase, contextoConflicto)
             resolve(saved)
           },
           onCancel: () => resolve(false),
@@ -726,7 +743,8 @@ async function _handleSave(modalBody, originalClase) {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
       } else {
-        const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+        const selectedIds = saveContext?.selectedAlumnoIds ||
+          Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
         if (selectedIds.length > 0) {
           await Promise.all(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
         }

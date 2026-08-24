@@ -8,17 +8,12 @@
 
 import { config } from '../../../core/config/config.js'
 import * as supabase from './planificacionSupabase.js'
-import * as mock from './planificacionMock.js'
 import * as plantillasSupabase from './plantillasSupabase.js'
-import * as plantillasMock from './plantillasMock.js'
 import * as plantillasPlanificacionSupabase from './plantillasPlanificacionSupabase.js'
-import * as plantillasPlanificacionMock from './plantillasPlanificacionMock.js'
 
-const impl = config.isDemoMode ? mock : supabase
-const plantillasImpl = config.isDemoMode ? plantillasMock : plantillasSupabase
-const plantillasPlanificacionImpl = config.isDemoMode
-  ? plantillasPlanificacionMock
-  : plantillasPlanificacionSupabase
+const impl = supabase
+const plantillasImpl = plantillasSupabase
+const plantillasPlanificacionImpl = plantillasPlanificacionSupabase
 
 export const obtenerPlanificaciones = (maestroId) => impl.obtenerPlanificaciones(maestroId)
 export const obtenerPlanificacion = (id) => impl.obtenerPlanificacion(id)

@@ -431,6 +431,41 @@ export async function obtenerEstadoCumplimientoMaestro(maestroId, periodoId = nu
   }
 }
 
+/**
+ * Fuente única de verdad para las clases programadas y su cumplimiento.
+ * El cálculo vive en PostgreSQL para que Portal Maestros, Admin y Hermes
+ * clasifiquen la misma clase/fecha de la misma forma.
+ */
+export async function obtenerEstadosAsistenciaMaestro(maestroId, desde, hasta) {
+  if (!maestroId || !desde || !hasta) return []
+
+  const { data, error } = await supabase.rpc('fn_estado_asistencia_maestro', {
+    p_maestro_id: maestroId,
+    p_desde: desde,
+    p_hasta: hasta,
+  })
+
+  if (error) throwError('No se pudo obtener el estado de asistencia del maestro', error)
+  return data || []
+}
+
+/**
+ * Resumen centralizado de solvencia. Con maestroId nulo solo puede ser usado
+ * por un administrador; un maestro solo puede consultar su propio resumen.
+ */
+export async function obtenerResumenCumplimientoAsistencia(desde, hasta, maestroId = null) {
+  if (!desde || !hasta) return []
+
+  const { data, error } = await supabase.rpc('fn_resumen_cumplimiento_asistencia', {
+    p_desde: desde,
+    p_hasta: hasta,
+    p_maestro_id: maestroId,
+  })
+
+  if (error) throwError('No se pudo obtener el resumen de cumplimiento', error)
+  return data || []
+}
+
 // ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
 
 /**

@@ -4,8 +4,9 @@ import {
   obtenerMaestros,
   crearMaestroConAuth,
   actualizarMaestro,
-  inactivarMaestro,
-  activarMaestro,
+  previsualizarRetiroMaestro,
+  retirarMaestroSeguro,
+  reactivarMaestroSeguro,
   validarEmail,
 } from '../api/maestrosApi.js'
 import {
@@ -682,8 +683,8 @@ function openViewModal(id) {
       <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-edit" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Editar Perfil">
         <i class="bi bi-pencil me-1"></i>Editar
       </button>
-      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-delete" style="background: rgba(220, 53, 69, 0.45); font-size: 0.8rem; border-radius: 6px;" type="button" title="Eliminar Maestro">
-        <i class="bi bi-trash me-1"></i>Eliminar
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-delete" style="background: rgba(220, 53, 69, 0.45); font-size: 0.8rem; border-radius: 6px;" type="button" title="Retirar maestro de forma segura">
+        <i class="bi bi-person-dash me-1"></i>Retirar
       </button>
     </div>
   `
@@ -1224,24 +1225,99 @@ function openDeleteModal(id) {
   const nombre = maestro.nombre || maestro.name || ''
   const isActive = maestro.is_active !== false
 
+  if (!isActive) {
+    AppModal.open({
+      title: '▶️ Reactivar Maestro',
+      size: 'sm',
+      saveText: 'Reactivar',
+      body: `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+        <p class="text-muted small mb-0">Se restaurará su acceso, pero las clases no se reasignarán automáticamente.</p>`,
+      onSave: async () => {
+        try {
+          await reactivarMaestroSeguro(id)
+          maestro.is_active = true
+          applyFilters()
+          showToast('Maestro reactivado correctamente', 'success')
+        } catch (error) {
+          showToast(error.message || 'No se pudo reactivar el maestro', 'error')
+          return false
+        }
+      },
+    })
+    return
+  }
+
+  void openRetirementReview(maestro)
+}
+
+async function openRetirementReview(maestro) {
+  let preview
+  try {
+    preview = await previsualizarRetiroMaestro(maestro.id)
+  } catch (error) {
+    showToast(error.message || 'No se pudieron revisar las relaciones del maestro', 'error')
+    return
+  }
+
+  const principales = Array.isArray(preview?.clases_principales) ? preview.clases_principales : []
+  const suplencias = Array.isArray(preview?.clases_suplente) ? preview.clases_suplente : []
+  const replacementOptions = state.maestrosOriginales
+    .filter((item) => item.id !== maestro.id && item.is_active !== false)
+    .map(
+      (item) =>
+        `<option value="${item.id}">${escapeHTML(item.nombre || item.nombre_completo || 'Maestro')}</option>`,
+    )
+    .join('')
+  const dependencies = Object.entries(preview?.dependencias || {})
+    .map(
+      ([key, value]) =>
+        `<li><strong>${escapeHTML(key)}</strong>: ${Number(value?.count || 0)} registro(s), ${escapeHTML(value?.on_delete || 'sin regla')}</li>`,
+    )
+    .join('')
+
   AppModal.open({
-    title: isActive ? '⏸️ Desactivar Maestro' : '▶️ Reactivar Maestro',
-    size: 'sm',
-    saveText: isActive ? 'Desactivar' : 'Reactivar',
-    body: isActive
-      ? `<p>¿Desactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro no aparecerá en las listas, pero sus datos se conservarán.</p>`
-      : `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro volverá a aparecer en las listas.</p>`,
-    onSave: async () => {
-      if (isActive) {
-        await inactivarMaestro(id)
-        showToast('Maestro desactivado correctamente', 'success')
-      } else {
-        await activarMaestro(id)
-        showToast('Maestro reactivado correctamente', 'success')
+    title: 'Retirar maestro de forma segura',
+    size: 'lg',
+    saveText: 'Confirmar retiro',
+    body: `
+      <div class="alert alert-warning">
+        <i class="bi bi-shield-exclamation me-1"></i>
+        Se retirará el acceso de <strong>${escapeHTML(maestro.nombre || maestro.nombre_completo || '')}</strong>.
+        El historial, sesiones y alumnos se conservarán.
+      </div>
+      <h6>Clases principales (${principales.length})</h6>
+      ${
+        principales.length
+          ? `<ul class="small mb-3">${principales.map((clase) => `<li>${escapeHTML(clase.nombre || 'Clase sin nombre')}</li>`).join('')}</ul>
+           <label class="form-label fw-semibold" for="retirement-replacement">Maestro de reemplazo <span class="text-danger">*</span></label>
+           <select class="form-select mb-3" id="retirement-replacement"><option value="">Selecciona un reemplazo…</option>${replacementOptions}</select>`
+          : '<p class="text-muted small">No tiene clases principales que transferir.</p>'
       }
-      applyFilters()
+      ${suplencias.length ? `<p class="small text-muted">${suplencias.length} suplencia(s) serán desvinculadas sin eliminar las clases.</p>` : ''}
+      <details class="mb-3">
+        <summary class="small fw-semibold">Ver todas las relaciones detectadas (${Object.keys(preview?.dependencias || {}).length})</summary>
+        <ul class="small text-muted mt-2 mb-0">${dependencies || '<li>Sin relaciones directas activas.</li>'}</ul>
+      </details>
+      <label class="form-label" for="retirement-reason">Motivo del retiro <span class="text-muted">(opcional)</span></label>
+      <textarea class="form-control" id="retirement-reason" rows="2" maxlength="500" placeholder="Ej.: cambio de institución, fin de contrato…"></textarea>
+    `,
+    onSave: async () => {
+      const replacementId = document.getElementById('retirement-replacement')?.value || null
+      const reason = document.getElementById('retirement-reason')?.value || ''
+      if (principales.length > 0 && !replacementId) {
+        showToast('Debes seleccionar un maestro de reemplazo para las clases principales.', 'error')
+        return false
+      }
+
+      try {
+        await retirarMaestroSeguro(maestro.id, replacementId, reason)
+        maestro.is_active = false
+        applyFilters()
+        showToast('Maestro retirado y relaciones operativas resueltas correctamente', 'success')
+      } catch (error) {
+        showToast(error.message || 'No se pudo retirar el maestro', 'error')
+        return false
+      }
     },
   })
 }

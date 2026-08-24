@@ -712,6 +712,29 @@
   gap: 0.35rem;
 }
 
+.btn-action-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.btn-action-icon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.btn-action-icon:active {
+  transform: translateY(0);
+}
+
 .btn-action-primary-light {
   transition: all 0.15s ease;
 }
@@ -727,13 +750,15 @@
 }
 
 [data-bs-theme="dark"] .btn-action-primary-light {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 [data-bs-theme="dark"] .btn-action-primary-light:hover {
   background: #3b82f6;
   color: #fff;
+  border-color: #3b82f6;
 }
 
 .btn-action-success-light {
@@ -751,13 +776,15 @@
 }
 
 [data-bs-theme="dark"] .btn-action-success-light {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 [data-bs-theme="dark"] .btn-action-success-light:hover {
   background: #10b981;
   color: #fff;
+  border-color: #10b981;
 }
 
 /* Footer elements */

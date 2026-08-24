@@ -9,3 +9,4 @@ export const obtenerPagosAlumno = (...args) => getApi().obtenerPagosAlumno(...ar
 export const obtenerBalanceAlumnos = (...args) => getApi().obtenerBalanceAlumnos(...args)
 export const registrarPagosLote = (...args) => getApi().registrarPagosLote(...args)
 export const obtenerCobradoHoy = (...args) => getApi().obtenerCobradoHoy(...args)
+export const obtenerPoliticaCobranza = (...args) => getApi().obtenerPoliticaCobranza(...args)

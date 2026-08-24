@@ -166,6 +166,39 @@ export async function activarMaestro(id) {
   }
 }
 
+/** Obtiene las relaciones que se deben resolver antes de retirar un maestro. */
+export async function previsualizarRetiroMaestro(id) {
+  const { data, error } = await supabase.rpc('preview_retiro_maestro', {
+    p_maestro_id: id,
+  })
+
+  if (error) throw new Error(error.message || 'No se pudo analizar las relaciones del maestro')
+  return data
+}
+
+/**
+ * Retira un maestro sin borrar su historia académica. Las clases principales
+ * se transfieren en la misma transacción al maestro indicado.
+ */
+export async function retirarMaestroSeguro(id, replacementId, motivo = '') {
+  const { data, error } = await supabase.rpc('retirar_maestro_seguro', {
+    p_maestro_id: id,
+    p_reemplazo_maestro_id: replacementId || null,
+    p_motivo: motivo || null,
+  })
+
+  if (error) throw new Error(error.message || 'No se pudo retirar el maestro')
+  return data
+}
+
+export async function reactivarMaestroSeguro(id) {
+  const { error } = await supabase.rpc('reactivar_maestro_seguro', {
+    p_maestro_id: id,
+  })
+
+  if (error) throw new Error(error.message || 'No se pudo reactivar el maestro')
+}
+
 /**
  * Elimina permanentemente un maestro (hard delete)
  * Solo se permite si no tiene clases asignadas

@@ -98,8 +98,29 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
   })
   const asistenciaPromedio = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
 
+  // Indexar una vez evita volver a recorrer todas las sesiones por cada clase
+  // y por cada alumno cuando se amplía el período de análisis.
+  const sesionesPorClase = new Map()
+  const asistenciaPorClaseAlumno = new Map()
+  for (const sesion of sesiones) {
+    const sesionesClase = sesionesPorClase.get(sesion.clase_id) || []
+    sesionesClase.push(sesion)
+    sesionesPorClase.set(sesion.clase_id, sesionesClase)
+
+    if (!Array.isArray(sesion.asistencia)) continue
+    const asistenciaAlumnos = asistenciaPorClaseAlumno.get(sesion.clase_id) || new Map()
+    for (const asistencia of sesion.asistencia) {
+      if (!asistencia?.alumno_id) continue
+      const acumulado = asistenciaAlumnos.get(asistencia.alumno_id) || { presentes: 0, total: 0 }
+      acumulado.total++
+      if (asistencia.estado === 'P') acumulado.presentes++
+      asistenciaAlumnos.set(asistencia.alumno_id, acumulado)
+    }
+    asistenciaPorClaseAlumno.set(sesion.clase_id, asistenciaAlumnos)
+  }
+
   const clasesDataMap = clases.map(clase => {
-    const sesionesClase = sesiones.filter(s => s.clase_id === clase.id)
+    const sesionesClase = sesionesPorClase.get(clase.id) || []
     const completadas = sesionesClase.filter(s => s.estado === 'registrada').length
     const pending = sesionesClase.filter(s => s.estado === 'pendiente').length
     const alumnos = inscripcionesPorClase[clase.id] || []
@@ -129,12 +150,12 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
       : 0
 
     const riskStudents = []
+    const asistenciaAlumnos = asistenciaPorClaseAlumno.get(clase.id) || new Map()
     for (const alum of alumnos) {
-      const alumSes = sesionesClase
-        .filter(s => s.asistencia?.some(a => a.alumno_id === alum.id))
-        .map(s => s.asistencia.find(a => a.alumno_id === alum.id))
-      const alumPres = alumSes.filter(a => a?.estado === 'P').length
-      const pct = alumSes.length > 0 ? Math.round((alumPres / alumSes.length) * 100) : 0
+      const asistenciaAlumno = asistenciaAlumnos.get(alum.id)
+      const pct = asistenciaAlumno?.total > 0
+        ? Math.round((asistenciaAlumno.presentes / asistenciaAlumno.total) * 100)
+        : 0
       if (pct > 0 && pct < 70) {
         riskStudents.push({ id: alum.id, nombre: alum.nombre_completo, pct })
       }

@@ -1,75 +1,65 @@
 import { loadJsonMock } from '../../../core/utils/loadJsonMock.js'
 
-const DATA_PATH = '/assets/data/mocks/metricas_periodo.json'
-
 export async function getResumenAlumnos() {
-  const data = await loadJsonMock(DATA_PATH)
-  return data.estadisticas_periodo[0]?.total_alumnos || 0
+  const data = await loadJsonMock('/assets/data/mocks/resumen_alumnos.json')
+  return data
 }
 
 export async function getResumenAlumno(alumnoId) {
-  return null
+  const data = await loadJsonMock('/assets/data/mocks/resumen_alumnos.json')
+  return data.find(a => a.id === alumnoId) || null
 }
 
-export async function getEstadisticasPeriodo() {
-  const data = await loadJsonMock(DATA_PATH)
-  return data.configuraciones
+export async function getEstadisticasPeriodo(periodoId) {
+  const data = await loadJsonMock('/assets/data/mocks/estadisticas_periodo.json')
+  return data.find(p => p.id === periodoId) || null
 }
 
 export async function getEstadisticasPeriodoActivo() {
-  const data = await loadJsonMock(DATA_PATH)
-  const activo = data.configuraciones.find(c => c.activo)
-  const est = data.estadisticas_periodo.find(e => e.periodo_id === activo?.id)
-  return activo ? {
-    ...activo,
-    ...est,
-    // Campos mapeados al contrato real de vw_estadisticas_periodo
-    alumnos_activos: est.total_alumnos ?? 0,
-    promedio_calificacion_periodo: est.promedio_calificaciones ?? 7.82,
-    promedio_integrado: est.promedio_calificaciones ?? 7.82, // Demo: sin estrellas, integrado = notas
-    tasa_asistencia_periodo: est.tasa_asistencia_promedio ?? 87.5,
-    // Hardcodes legacy (out of scope para esta task)
-    alumnos_riesgo: 3,
-    instrumentos_taller: 2
-  } : null
-}
-
-export async function getResumenCierreAcademico() {
+  const data = await loadJsonMock('/assets/data/mocks/estadisticas_periodo.json')
+  const activo = data?.find(p => p.activo) || null
+  if (activo) {
+    return {
+      ...activo,
+      alumnos_activos: 270,
+      promedio_integrado: 77.7,
+      promedio_calificacion_periodo: 77.7,
+      tasa_asistencia_periodo: 92.5,
+      alumnos_honor: 43,
+      alumnos_riesgo: 38,
+      catedras_activas: 20,
+      instrumentos_taller: 3
+    }
+  }
   return {
-    rango: { fechaInicio: null, fechaFin: null },
-    resumen: {
-      totalClases: 12,
-      totalContenido: 34,
-      totalPresentes: 210,
-      totalAusentes: 18,
-      totalJustificados: 9,
-      totalAlumnos: 42,
-    },
-    clases: [
-      { claseNombre: 'Violín 1', instrumento: 'Violín', maestroNombre: 'Prof. A', sesiones: 6, contenidosTrabajados: 18, presentes: 104, ausentes: 8, justificados: 4 },
-      { claseNombre: 'Coro Inicial', instrumento: 'Coro', maestroNombre: 'Prof. B', sesiones: 6, contenidosTrabajados: 16, presentes: 106, ausentes: 10, justificados: 5 },
-    ],
-    alumnos: [
-      { alumnoNombre: 'Valeria Russo', presentes: 12, ausentes: 0, justificados: 0, totalRegistrosProgreso: 8, tasaAsistencia: 100, justificaciones: [] },
-      { alumnoNombre: 'Mateo Fernández', presentes: 10, ausentes: 2, justificados: 1, totalRegistrosProgreso: 7, tasaAsistencia: 84.6, justificaciones: ['Cita médica'] },
-    ],
+    id: 'mock-periodo-1',
+    nombre: 'Período Lectivo 2026',
+    activo: true,
+    alumnos_activos: 270,
+    promedio_integrado: 77.7,
+    promedio_calificacion_periodo: 77.7,
+    tasa_asistencia_periodo: 92.5,
+    alumnos_honor: 43,
+    alumnos_riesgo: 38,
+    catedras_activas: 20,
+    instrumentos_taller: 3
   }
 }
 
-export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin, cerradoPor = null, observaciones = null } = {}) {
+export async function getResumenCierreAcademico(params) {
   return {
-    ok: true,
-    periodoId: periodoId || 'mock-periodo',
-    fechaInicio: fechaInicio || null,
-    fechaFin: fechaFin || null,
-    cerradoPor,
-    observaciones,
-    snapshotId: 'mock-snapshot',
+    totales: { clases: 120, alumnos: 270, contenidosTrabajados: 450, presentes: 1890, ausentes: 90, justificados: 60, tasaAsistenciaGlobal: 92.8 },
+    alumnos: [],
+    clases: []
   }
 }
 
-export async function getTasaAsistenciaPeriodo(alumnoId, desde, hasta = null) {
-  return 87.5
+export async function getTasaAsistenciaPeriodo(alumnoId, desde, hasta) {
+  return 92.5
+}
+
+export async function cerrarPeriodoAcademico(params) {
+  return { success: true, message: 'Período cerrado exitosamente (Mock)' }
 }
 
 export async function getAlertasConfig() {
@@ -84,17 +74,17 @@ export async function updateAlertaConfig(alertaId, updates) {
 
 export async function getAlertasActivas(options = {}) {
   const data = await loadJsonMock('/assets/data/mocks/alertas_config.json')
-  return data.alertas.filter(a => a.activo)
+  return data?.alertas?.filter(a => a.activo) || []
 }
 
 export async function getResumenAlertas() {
   const data = await loadJsonMock('/assets/data/mocks/alertas_config.json')
-  const activas = data.alertas.filter(a => a.activo)
+  const activas = data?.alertas?.filter(a => a.activo) || []
   return {
-    total: activas.length,
-    rojas: activas.filter(a => a.color === 'rojo').length,
-    naranjas: activas.filter(a => a.color === 'naranja').length,
-    amarillas: activas.filter(a => a.color === 'amarillo').length
+    total: activas.length || 38,
+    rojas: activas.filter(a => a.color === 'rojo').length || 12,
+    naranjas: activas.filter(a => a.color === 'naranja').length || 16,
+    amarillas: activas.filter(a => a.color === 'amarillo').length || 10
   }
 }
 
@@ -118,8 +108,50 @@ export async function getRiesgoAbandono({ nivel = null } = {}) {
 
 export async function getAlumnosDestacados() {
   return [
-    { nombre_completo: 'Valeria Russo', promedio: 9.85, programa: 'Violín Cátedra' },
-    { nombre_completo: 'Thiago Silva', promedio: 9.72, programa: 'Violín Inicial' },
-    { nombre_completo: 'Delfina Lombardi', promedio: 9.60, programa: 'Violín Cátedra' }
+    { id: '1', nombre_completo: 'Abigail Oller', promedio: 100, programa: 'Oboe', nivel: 'basico', categoria: 'destacado' },
+    { id: '2', nombre_completo: 'Sara Patricia Bello Cabrera', promedio: 100, programa: 'Flauta dulce', nivel: 'basico', categoria: 'destacado' },
+    { id: '3', nombre_completo: 'Francisco Emanuel López', promedio: 99, programa: 'Viola', nivel: 'basico', categoria: 'destacado' },
+    { id: '4', nombre_completo: 'Ismeray Lara Doñe', promedio: 99, programa: 'Iniciación Musical', nivel: 'basico', categoria: 'destacado' },
+    { id: '5', nombre_completo: 'Yangel Jair Medina Ramírez', promedio: 99, programa: 'Clarinete', nivel: 'avanzado', categoria: 'destacado' },
+    { id: '6', nombre_completo: 'Helen Siri', promedio: 98, programa: 'Violín', nivel: 'basico', categoria: 'destacado' },
+    { id: '7', nombre_completo: 'Dyakenson Lamerique', promedio: 98, programa: 'Violín', nivel: 'avanzado', categoria: 'destacado' },
+    { id: '8', nombre_completo: 'Alina Marola Jiménez Vargas', promedio: 98, programa: 'Flauta', nivel: 'intermedio', categoria: 'destacado' }
   ]
 }
+
+export async function getDestacadosYRiesgoAcademico({ categoria = null } = {}) {
+  const todos = [
+    { id: '1', nombre_completo: 'Abigail Oller', promedio: 100, programa: 'Oboe', nivel: 'basico', categoria: 'destacado' },
+    { id: '2', nombre_completo: 'Sara Patricia Bello Cabrera', promedio: 100, programa: 'Flauta dulce', nivel: 'basico', categoria: 'destacado' },
+    { id: '3', nombre_completo: 'Francisco Emanuel López', promedio: 99, programa: 'Viola', nivel: 'basico', categoria: 'destacado' },
+    { id: '4', nombre_completo: 'Ismeray Lara Doñe', promedio: 99, programa: 'Iniciación Musical', nivel: 'basico', categoria: 'destacado' },
+    { id: '5', nombre_completo: 'Yangel Jair Medina Ramírez', promedio: 99, programa: 'Clarinete', nivel: 'avanzado', categoria: 'destacado' },
+    { id: '6', nombre_completo: 'Helen Siri', promedio: 98, programa: 'Violín', nivel: 'basico', categoria: 'destacado' },
+    { id: '7', nombre_completo: 'Dyakenson Lamerique', promedio: 98, programa: 'Violín', nivel: 'avanzado', categoria: 'destacado' },
+    { id: '8', nombre_completo: 'Alina Marola Jiménez Vargas', promedio: 98, programa: 'Flauta', nivel: 'intermedio', categoria: 'destacado' },
+    { id: '9', nombre_completo: 'Samuel Sosa', promedio: 83.5, programa: 'Piano', nivel: 'intermedio', categoria: 'regular' },
+    { id: '10', nombre_completo: 'Ronald Gonzalez', promedio: 79, programa: 'Piano', nivel: 'basico', categoria: 'regular' },
+    { id: '11', nombre_completo: 'Lismell Noba Jimenez', promedio: 42, programa: 'Iniciación Musical', nivel: 'basico', categoria: 'riesgo_academico' }
+  ]
+
+  if (categoria) return todos.filter(a => a.categoria === categoria)
+  return todos
+}
+
+export async function getHistorialCierresPeriodos(limitOrOptions = 20) {
+  return [
+    {
+      id: 'cierre-mock-1',
+      periodo_id: 'periodo-2025-2',
+      fecha_inicio: '2025-09-01',
+      fecha_fin: '2025-12-15',
+      cerrado_por: 'Administrador Demo',
+      observaciones: 'Cierre de ciclo regular sin novedades.',
+      resumen: { clases: 240, alumnos: 265, tasaAsistenciaGlobal: 93.4 },
+      created_at: '2025-12-16T18:00:00.000Z',
+      periodos: { nombre: 'Ciclo Regular 2025-II', cerrado: true }
+    }
+  ]
+}
+
+export const getCierresAcademicos = getHistorialCierresPeriodos

@@ -65,3 +65,8 @@ graphify-out/
 scripts/whatsapp-runner/auth_info_baileys/
 **/auth_info_baileys/
 *.baileys-store.json
+
+# Scratch and debug directories
+scratch/
+docs/scratch/
+

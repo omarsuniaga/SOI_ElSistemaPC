@@ -1,8 +1,7 @@
 import { config } from "../../../core/config/config.js"
 import * as supabaseImpl from "./inventarioSupabase.js"
-import * as mockImpl from "./inventarioMock.js"
 
-const getApi = () => (config.isDemoMode ? mockImpl : supabaseImpl)
+const getApi = () => supabaseImpl
 
 export const obtenerActivos = (...args) => getApi().obtenerActivos(...args)
 export const crearActivo = (...args) => getApi().crearActivo(...args)

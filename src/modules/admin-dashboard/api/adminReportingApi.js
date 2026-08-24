@@ -5,6 +5,7 @@
 
 import { supabase } from '../../../lib/supabaseClient.js'
 import { getFillingMetricsByMaestro, getTeacherFillingMetricsPerSession } from './analyticsFillingBehaviorAdapter.js'
+import { obtenerResumenCumplimientoAsistencia } from '../../asistencias/api/asistenciasSupabase.js'
 import * as trendService from './trendAnalysisService.js'
 
 /**
@@ -371,12 +372,14 @@ export async function exportComplianceReport(format = 'csv') {
 export async function getMaestroTrendReportWithFilling(maestroId, daysBack = 30) {
   try {
     const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const until = new Date().toISOString().split('T')[0]
 
-    // Get notification trend (existing function)
-    const notificationTrend = await getMaestroTrendAnalysis(maestroId, daysBack)
-
-    // Get filling metrics
-    const fillingMetrics = await getFillingMetricsByMaestro(maestroId)
+    // La solvencia usa el mismo motor que el calendario del maestro.
+    const [notificationTrend, fillingMetrics, cumplimientoRows] = await Promise.all([
+      getMaestroTrendAnalysis(maestroId, daysBack),
+      getFillingMetricsByMaestro(maestroId),
+      obtenerResumenCumplimientoAsistencia(since, until, maestroId),
+    ])
     const recentFilling = fillingMetrics.filter(m => m.fecha >= since)
 
     // Analyze filling trends
@@ -389,6 +392,14 @@ export async function getMaestroTrendReportWithFilling(maestroId, daysBack = 30)
       notification_trend: notificationTrend,
       filling_trends: fillingTrends,
       anomalies,
+      cumplimiento_asistencia: cumplimientoRows[0] ?? {
+        maestro_id: maestroId,
+        total_clases: 0,
+        registradas: 0,
+        pendientes: 0,
+        vencidas: 0,
+        es_solvente: true,
+      },
       summary: {
         total_classes_analyzed: recentFilling.length,
         avg_ai_usage: recentFilling.length > 0

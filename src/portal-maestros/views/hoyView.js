@@ -6,7 +6,7 @@ import { escHTML, formatHora, capitalize, formatFechaPortal } from '../utils/por
 import {
   getMisClases,
   getHorariosClases,
-  getSesiones,
+  getSesionesResumen,
   getInscripcionesClases,
   getSalones,
   getEmergentesHoy,
@@ -157,10 +157,10 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     ayer.setDate(ayer.getDate() - 1)
     const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth() + 1).padStart(2, '0')}-${String(ayer.getDate()).padStart(2, '0')}`
 
-    const [todosHorarios, sesionesRecientes, todasSesiones, inscripciones] = await Promise.all([
+    const [todosHorarios, sesionesHastaHoy, inscripciones] = await Promise.all([
       getHorariosClases(claseIds).catch(() => []),
-      getSesiones(maestro.id, desde3d, ayerStr).catch(() => []),
-      getSesiones(maestro.id, fechaHoy, fechaHoy).catch(() => []),
+      // Una sola consulta resumida sustituye los dos rangos solapados de sesiones.
+      getSesionesResumen(maestro.id, desde3d, fechaHoy).catch(() => []),
       getInscripcionesClases(claseIds).catch(() => []),
     ])
 
@@ -188,14 +188,17 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
       return
     }
 
-    const pendientesRecientes = (sesionesRecientes || []).filter((s) => {
+    const pendientesRecientes = (sesionesHastaHoy || []).filter((s) => {
+      if (s.fecha > ayerStr) return false
       if (!claseIds.includes(s.clase_id)) return false
       const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
       const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
       return !tieneAsistencia && !(s.borrador === false && tieneContenido)
     })
 
-    const sesionesHoy = (todasSesiones || []).filter((s) => claseIds.includes(s.clase_id))
+    const sesionesHoy = (sesionesHastaHoy || []).filter(
+      (s) => s.fecha === fechaHoy && claseIds.includes(s.clase_id),
+    )
     const sesionesRegistradas = sesionesHoy.filter((s) => {
       const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
       const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0

@@ -18,9 +18,9 @@ export function systemLogsWidget(containerId) {
     container.innerHTML = `
       <div class="row g-3">
         <div class="col-12 col-lg-8">
-          <div class="p-3 bg-light bg-opacity-25 border rounded-3 h-100">
+          <div class="obs-panel-card p-3 h-100">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-              <span class="small fw-semibold text-secondary">Filtro de Severidad:</span>
+              <span class="small fw-semibold" style="color: var(--obs-text-secondary);">Filtro de Severidad:</span>
               <div class="btn-group btn-group-sm shadow-sm" role="group">
                 <button class="btn btn-outline-secondary ${activeFilter === 'ALL' ? 'active' : ''}" data-log-filter="ALL">TODOS</button>
                 <button class="btn btn-outline-info ${activeFilter === 'INFO' ? 'active' : ''}" data-log-filter="INFO">INFO</button>
@@ -48,10 +48,10 @@ export function systemLogsWidget(containerId) {
         </div>
 
         <div class="col-12 col-lg-4">
-          <div class="p-3 bg-light bg-opacity-25 border rounded-3 h-100 d-flex flex-column justify-content-between">
+          <div class="obs-panel-card p-3 h-100 d-flex flex-column justify-content-between">
             <div>
               <h6 class="fw-bold text-primary mb-2"><i class="bi bi-bug me-1"></i>Simulador de Eventos Técnicos</h6>
-              <p class="extra-small text-muted lh-base">
+              <p class="extra-small lh-base" style="color: var(--obs-text-secondary);">
                 Genera de manera interactiva excepciones en caliente para evaluar el sistema de alertas tempranas, el flujo RLS de Supabase y la tolerancia offline.
               </p>
               <div class="vstack gap-2 mt-3">
@@ -70,9 +70,9 @@ export function systemLogsWidget(containerId) {
               </div>
             </div>
 
-            <div class="mt-4 border-top pt-3">
-              <span class="small fw-semibold text-secondary d-block mb-1">Audit Trail de Conectividad</span>
-              <p class="extra-small text-muted mb-0">
+            <div class="mt-4 border-top pt-3" style="border-color: var(--obs-border) !important;">
+              <span class="small fw-semibold d-block mb-1" style="color: var(--obs-text-secondary);">Audit Trail de Conectividad</span>
+              <p class="extra-small mb-0" style="color: var(--obs-text-muted);">
                 La PWA encola de forma resiliente todos los logs de excepción locales en su almacenamiento cacheado cuando no detecta conexión a internet.
               </p>
             </div>
@@ -118,108 +118,103 @@ export function systemLogsWidget(containerId) {
           ? l.timestamp.substring(11, 19)
           : new Date().toISOString().substring(11, 19)
 
-        let html = `
+        const networkBadge = l.network_status
+          ? `<span class="obs-log-net">${escapeHTML(l.network_status)}</span>`
+          : ''
+
+        const stackTrace = l.stack
+          ? `<div class="obs-log-stack">${escapeHTML(l.stack)}</div>`
+          : ''
+
+        return `
         <div class="obs-log-item">
-          <span class="obs-log-ts">[${ts}]</span>
-          <span class="${lvlClass}">[${l.level}]</span>
-          <span class="obs-log-module">${escapeHTML(l.module)}</span>:
+          <span class="obs-log-ts">[${escapeHTML(ts)}]</span>
+          <span class="${lvlClass}">[${escapeHTML(l.level)}]</span>
+          <span class="obs-log-module">&lt;${escapeHTML(l.module || 'SYSTEM')}&gt;</span>
           <span>${escapeHTML(l.message)}</span>
-          <span class="obs-log-net">${l.network}</span>
+          ${networkBadge}
+          ${stackTrace}
+        </div>
       `
-
-        if (l.stack) {
-          html += `<pre class="obs-log-stack">${escapeHTML(l.stack)}</pre>`
-        }
-
-        html += `</div>`
-        return html
       })
       .join('')
   }
 
   function attachEvents() {
-    // Filtros
     container.querySelectorAll('[data-log-filter]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        container.querySelectorAll('[data-log-filter]').forEach((b) => b.classList.remove('active'))
-        btn.classList.add('active')
-        activeFilter = btn.dataset.logFilter
+      btn.addEventListener('click', (e) => {
+        activeFilter = e.target.dataset.logFilter
+        container
+          .querySelectorAll('[data-log-filter]')
+          .forEach((b) => b.classList.remove('active'))
+        e.target.classList.add('active')
         loadLogs()
       })
     })
 
-    // Limpiar logs
-    container.querySelector('#btn-clear-logs')?.addEventListener('click', () => {
-      localStorage.setItem('soi_system_logs', JSON.stringify([]))
-      AppToast.show('Consola de logs de sistema limpiada con éxito', 'success')
-      loadLogs()
-    })
-
-    // Simulaciones
     container.querySelector('#btn-mock-rls')?.addEventListener('click', async () => {
       await recordSystemLog({
         level: 'ERROR',
-        module: 'SupabaseClient',
-        message:
-          'Security policy violation for select on public.ausencias_auditoria table (RLS error).',
-        stack:
-          'Error: Row Level Security block\n  at executeSelect (supabaseClient.js:84:18)\n  at getAuditLogs (observabilidadSupabase.js:46:12)',
+        module: 'SUPABASE_RLS',
+        message: 'Acceso denegado a tabla protegida: maestros_salarios (código 42501)',
+        network_status: navigator.onLine ? 'ONLINE' : 'OFFLINE',
+        stack: 'Error: RLS violation at supabaseClient.js:42\n    at fetchData (adminApi.js:18)',
       })
-      AppToast.show('Log de error de RLS inyectado', 'danger')
-      loadLogs()
+      AppToast.show('Falla RLS simulada y registrada en el sistema de observabilidad', 'danger')
+      await loadLogs()
     })
 
     container.querySelector('#btn-mock-timeout')?.addEventListener('click', async () => {
       await recordSystemLog({
         level: 'WARNING',
-        module: 'HTTPClient',
-        message:
-          'Request timed out for endpoint /rpc/get_institutional_radar. Falling back to offline fallback state.',
-        stack: 'TimeoutException: Request took longer than 5000ms',
+        module: 'HTTP_FETCH',
+        message: 'Timeout (5000ms) al sincronizar lote de asistencias PWA',
+        network_status: navigator.onLine ? 'ONLINE' : 'OFFLINE',
+        stack: 'FetchError: Request timeout at syncQueue.js:88',
       })
-      AppToast.show('Log de timeout de red inyectado', 'warning')
-      loadLogs()
+      AppToast.show('Advertencia de timeout HTTP registrada en la consola técnica', 'warning')
+      await loadLogs()
     })
 
     container.querySelector('#btn-mock-vitals')?.addEventListener('click', async () => {
       await recordSystemLog({
         level: 'INFO',
-        module: 'PWA',
-        message:
-          'Core Web Vitals: FID: 11ms (Excelente), LCP: 980ms (Excelente), CLS: 0.012 (Excelente).',
+        module: 'CORE_VITALS',
+        message: 'LCP: 1.2s | FID: 14ms | CLS: 0.01 — Rendimiento óptimo en cliente PWA',
+        network_status: navigator.onLine ? 'ONLINE' : 'OFFLINE',
       })
-      AppToast.show('Log de Core Web Vitals inyectado', 'success')
-      loadLogs()
+      AppToast.show('Métricas de rendimiento Web Vitals reportadas con éxito', 'success')
+      await loadLogs()
     })
+
+    onlineListener = () => {
+      _updateLiveNetStatus()
+      loadLogs()
+    }
+    offlineListener = () => {
+      _updateLiveNetStatus()
+      loadLogs()
+    }
+    window.addEventListener('online', onlineListener)
+    window.addEventListener('offline', offlineListener)
+  }
+
+  function destroy() {
+    if (onlineListener) {
+      window.removeEventListener('online', onlineListener)
+      onlineListener = null
+    }
+    if (offlineListener) {
+      window.removeEventListener('offline', offlineListener)
+      offlineListener = null
+    }
   }
 
   return {
-    async init() {
+    init: async () => {
       container = document.getElementById(containerId)
-      if (!container) {
-        console.error(`[systemLogsWidget] Contenedor #${containerId} no encontrado en el DOM`)
-        return
-      }
-
       await render()
-
-      // Registrar listeners reactivos para el estado de red en vivo
-      onlineListener = () => {
-        _updateLiveNetStatus()
-        AppToast.show('Conectividad restablecida. Sistema Online.', 'success')
-      }
-      offlineListener = () => {
-        _updateLiveNetStatus()
-        AppToast.show('Conexión perdida. Trabajando en modo Offline.', 'warning')
-      }
-
-      window.addEventListener('online', onlineListener)
-      window.addEventListener('offline', offlineListener)
     },
-
-    destroy() {
-      if (onlineListener) window.removeEventListener('online', onlineListener)
-      if (offlineListener) window.removeEventListener('offline', offlineListener)
-    },
+    destroy,
   }
 }

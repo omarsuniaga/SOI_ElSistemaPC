@@ -1,6 +1,6 @@
 import { saveMethodology } from '../services/classEventService.js';
 
-const FIELDS = [
+const DEFAULT_FIELDS = [
   { key: 'warmup', label: 'Calentamiento', type: 'text', placeholder: 'Ej: ejercicios preparatorios, técnica básica' },
   { key: 'sound_focus', label: 'Enfoque de Sonido', type: 'text', placeholder: 'Ej: calidad sonora, proyección' },
   { key: 'intonation_focus', label: 'Enfoque de Afinación', type: 'text', placeholder: 'Ej: intervalos, escalas' },
@@ -21,10 +21,10 @@ function formatTime(date) {
 /**
  * Creates a collapsible methodology form card with 30s debounce auto-save.
  *
- * @param {{ classEventId: string, onSave?: Function, initialData?: object }} opts
+ * @param {{ classEventId: string, onSave?: Function, initialData?: object, fields?: object[] }} opts
  * @returns {{ el: HTMLElement, getData: () => object, destroy: () => void }}
  */
-export function createMethodologyForm({ classEventId, onSave, initialData = {} }) {
+export function createMethodologyForm({ classEventId, onSave, initialData = {}, fields = DEFAULT_FIELDS }) {
   let collapsed = true;
   let timer = null;
 
@@ -41,7 +41,7 @@ export function createMethodologyForm({ classEventId, onSave, initialData = {} }
         </button>
       </div>
       <div class="pm-methodology-form-body" style="display:${collapsed ? 'none' : 'block'}">
-        ${FIELDS.map(f => {
+        ${fields.map(f => {
           const val = initialData[f.key] || '';
           if (f.type === 'textarea') {
             return `

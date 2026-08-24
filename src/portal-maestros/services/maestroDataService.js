@@ -11,6 +11,7 @@ const CACHE_KEYS = {
   MIS_CLASES: 'mis_clases',
   HORARIOS: 'horarios',
   SESIONES: 'sesiones',
+  SESIONES_RESUMEN: 'sesiones_resumen',
   INSCRIPCIONES: 'inscripciones',
   SALONES: 'salones',
   AUSENCIAS: 'ausencias',
@@ -163,6 +164,39 @@ export async function getSesiones(maestroId, desde, hasta, forceRefresh = false)
       .lte('fecha', hasta)
     if (error) {
       console.warn('[MaestroData] Error cargando sesiones:', error.message)
+      return []
+    }
+    const sesiones = data || []
+    _setCacheIfCurrent(generation, cacheKey, sesiones, 'sesiones')
+    return sesiones
+  }, forceRefresh)
+}
+
+/**
+ * Obtiene únicamente los campos necesarios para tableros y alertas. Las
+ * pantallas de edición siguen usando getSesiones(), que conserva el registro
+ * completo. Mantener caches separados evita servir un resumen a una pantalla
+ * que necesite editar la sesión.
+ */
+export async function getSesionesResumen(maestroId, desde, hasta, forceRefresh = false) {
+  if (!maestroId) return []
+  const cacheKey = `${CACHE_KEYS.SESIONES_RESUMEN}_${maestroId}_${desde}_${hasta}`
+
+  if (!forceRefresh) {
+    const cached = viewCache.getCached(cacheKey)
+    if (cached) return cached
+  }
+
+  return _singleFlight(cacheKey, async (generation) => {
+    const { data, error } = await supabase
+      .from('sesiones_clase')
+      .select('id, clase_id, fecha, estado, borrador, asistencia, contenido, contenido_dsl, updated_at')
+      .eq('maestro_id', maestroId)
+      .gte('fecha', desde)
+      .lte('fecha', hasta)
+
+    if (error) {
+      console.warn('[MaestroData] Error cargando resumen de sesiones:', error.message)
       return []
     }
     const sesiones = data || []

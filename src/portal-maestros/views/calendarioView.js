@@ -11,7 +11,11 @@ import {
   invalidateClasesCache,
 } from '../services/maestroDataService.js'
 import { autoJustificarClasesProgramadas } from '../services/emergenteJustificacionService.js'
-import { getPeriodoActivo, obtenerEstadoCumplimientoMaestro } from '../../modules/asistencias/api/asistenciasSupabase.js'
+import {
+  getPeriodoActivo,
+  obtenerEstadoCumplimientoMaestro,
+  obtenerEstadosAsistenciaMaestro,
+} from '../../modules/asistencias/api/asistenciasSupabase.js'
 import { eliminarSesion } from '../../modules/planificacion/api/sesionesSupabase.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 
@@ -137,6 +141,45 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       classCount: 0,
       hasAssignedClasses: false,
     }
+  }
+
+  // La RPC es la fuente compartida con Admin/ACM y Hermes. El cálculo local
+  // se conserva temporalmente como respaldo mientras se despliega la migración
+  // en todos los entornos.
+  try {
+    const estados = await obtenerEstadosAsistenciaMaestro(maestroId, desde, hasta)
+    const estadoMap = new Map()
+    const dotsMap = new Map()
+    const prioridad = { futura: 0, registrada: 1, 'cubierta_emergente': 1, pendiente: 2, vencida: 3 }
+
+    for (const item of estados) {
+      const estadoCalendario = item.estado === 'cubierta_emergente'
+        ? 'cubierta-emergente'
+        : item.estado
+      const actual = estadoMap.get(item.fecha)
+      const actualNormalizado = actual === 'cubierta-emergente' ? 'cubierta_emergente' : actual
+      if (!actual || prioridad[item.estado] > prioridad[actualNormalizado]) {
+        estadoMap.set(item.fecha, estadoCalendario)
+      }
+
+      if (!dotsMap.has(item.fecha)) dotsMap.set(item.fecha, [])
+      const dot = item.estado === 'registrada' || item.estado === 'cubierta_emergente'
+        ? 'verde'
+        : item.estado === 'futura'
+          ? 'gris'
+          : item.estado === 'pendiente' && item.sesion_id
+            ? 'amarillo'
+            : 'rojo'
+      dotsMap.get(item.fecha).push(dot)
+    }
+
+    for (const [fecha, estado] of estadoMap) {
+      if (estado === 'futura') estadoMap.set(fecha, 'sin-clase')
+    }
+
+    return { estadoMap, dotsMap, classCount: clases.length, hasAssignedClasses: true }
+  } catch (error) {
+    console.warn('[Calendario] RPC de cumplimiento no disponible; usando respaldo local.', error.message)
   }
 
   // 2 & 3. Horarios y sesiones del mes en paralelo (con cache)

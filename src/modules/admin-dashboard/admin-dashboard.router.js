@@ -49,8 +49,10 @@ export function registerRoutesAdminDashboard() {
   router.register('admin-maestro-detalle', async (container, params) => {
     try {
       container.innerHTML = `<div id="maestro-detalle-container" class="p-4"></div>`
-      const { default: MaestroDetalleView } = await import('./views/maestroDetalleView.js')
-      const view = new MaestroDetalleView('maestro-detalle-container', params.maestroId)
+      const { MaestroDetalleView } = await import('./views/maestroDetalleView.js')
+      const maestroId = params?.maestroId ?? params?.id
+      if (!maestroId) throw new Error('No se recibió el identificador del maestro')
+      const view = new MaestroDetalleView('maestro-detalle-container', maestroId)
       view.init()
     } catch (error) {
       console.error('[admin-maestro-detalle] Error:', error)

@@ -14,6 +14,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') ?? ''
+// llama-3.3-70b-versatile fue deprecado por Groq (shutdown 08/16/26); reemplazo
+// oficial recomendado: openai/gpt-oss-120b. Configurable via env var.
+const PATTERN_ANALYZER_MODEL = Deno.env.get('PATTERN_ANALYZER_MODEL')?.trim() || 'openai/gpt-oss-120b'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -114,7 +117,7 @@ Responde ÚNICAMENTE con el objeto JSON válido.`
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: PATTERN_ANALYZER_MODEL,
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2,
             response_format: { type: 'json_object' },
@@ -149,7 +152,7 @@ Responde ÚNICAMENTE con el objeto JSON válido.`
         tendencias: analisisJson.tendencias || [],
         recomendaciones: analisisJson.recomendaciones || [],
         score_promedio: pulsoData?.score ?? null,
-        modelo_usado: GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'algoritmo-heuristico-local',
+        modelo_usado: GROQ_API_KEY ? PATTERN_ANALYZER_MODEL : 'algoritmo-heuristico-local',
       })
       .select()
       .single()

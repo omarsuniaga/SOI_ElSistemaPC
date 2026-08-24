@@ -46,6 +46,17 @@ export async function registrarPagosLote(pagos) {
   return { data, error }
 }
 
+// FIN-P13: los umbrales de mora viven en esta fila única y editable por un
+// flujo administrativo auditado — el portal solo la lee, nunca la calcula.
+export async function obtenerPoliticaCobranza() {
+  const { data, error } = await supabase
+    .from('finanzas_politica_cobranza')
+    .select('dia_vencimiento, dias_mora_amarilla, dias_mora_critica, bloqueo_requiere_aprobacion')
+    .limit(1)
+    .maybeSingle()
+  return { data, error }
+}
+
 export async function obtenerCobradoHoy() {
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)

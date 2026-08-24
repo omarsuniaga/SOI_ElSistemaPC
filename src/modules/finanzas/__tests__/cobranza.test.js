@@ -8,13 +8,14 @@ describe('calcularEstadoFinanciero', () => {
   test('exento → siempre verde sin evaluar fechas', () => {
     const res = calcularEstadoFinanciero(alumnoExento, [], new Date('2026-06-22'))
     expect(res.estado).toBe('verde')
-    expect(res.bloqueado).toBe(false)
+    expect(res.requiereAprobacionDireccion).toBe(false)
   })
 
-  test('sin pagos → rojo bloqueado', () => {
+  test('sin pagos → rojo, requiere revisión de Dirección (nunca bloqueo automático)', () => {
     const res = calcularEstadoFinanciero(alumnoBase, [], new Date('2026-06-22'))
     expect(res.estado).toBe('rojo')
-    expect(res.bloqueado).toBe(true)
+    expect(res.requiereAprobacionDireccion).toBe(true)
+    expect(res).not.toHaveProperty('bloqueado')
   })
 
   test('último pago < 30 días → verde', () => {
@@ -27,14 +28,25 @@ describe('calcularEstadoFinanciero', () => {
     const pagos = [{ concepto: 'mensualidad', periodo_mes: '2026-05-01' }]
     const res = calcularEstadoFinanciero(alumnoBase, pagos, new Date('2026-06-22'))
     expect(res.estado).toBe('amarillo')
-    expect(res.bloqueado).toBe(false)
+    expect(res.requiereAprobacionDireccion).toBe(false)
   })
 
-  test('mora >= 60 días → rojo bloqueado', () => {
+  test('mora >= 60 días → rojo, requiere revisión de Dirección', () => {
     const pagos = [{ concepto: 'mensualidad', periodo_mes: '2026-03-01' }]
     const res = calcularEstadoFinanciero(alumnoBase, pagos, new Date('2026-06-22'))
     expect(res.estado).toBe('rojo')
-    expect(res.bloqueado).toBe(true)
+    expect(res.requiereAprobacionDireccion).toBe(true)
+  })
+
+  test('respeta los umbrales de finanzas_politica_cobranza en vez de valores fijos', () => {
+    const pagos = [{ concepto: 'mensualidad', periodo_mes: '2026-05-01' }]
+    // 52 días de mora: con umbrales por defecto (30/60) esto sería 'amarillo';
+    // con una política más estricta (15/45) debe pasar a 'rojo' sin tocar código.
+    const res = calcularEstadoFinanciero(alumnoBase, pagos, new Date('2026-06-22'), {
+      dias_mora_amarilla: 15,
+      dias_mora_critica: 45,
+    })
+    expect(res.estado).toBe('rojo')
   })
 
   test('ignora conceptos que no son mensualidad', () => {

@@ -334,7 +334,7 @@ function _renderFormModal({ title, saveText, programa = null }) {
           <label class="form-label-compact">Descripción</label>
           <textarea class="form-control input-dense" id="prog-descripcion" rows="3" maxlength="${VALIDATION.descripcionMax}">${escapeHTML(programa?.descripcion || '')}</textarea>
         </div>
-        <div class="col-12">
+        <div class="col-12" style="display: none;">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="prog-activo" ${programa?.activo !== false ? 'checked' : ''}>
             <label class="form-check-label" for="prog-activo">Programa Activo</label>

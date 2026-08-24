@@ -6,20 +6,32 @@
 
 import { supabase } from '../../../lib/supabaseClient.js'
 
-export const ROLES_USUARIO = [
-  'superadmin',
-  'admin',
-  'direccion',
-  'coordinacion_academica',
-  'maestro',
-  'monitor',
-  'finanzas',
-  'operaciones',
-  'representante',
-  'alumno',
-  'jurado',
-  'user',
-]
+export let ROLES_USUARIO = []
+
+/**
+ * Carga los roles disponibles desde Supabase system_config
+ */
+export async function cargarRolesSistema() {
+  const { data, error } = await supabase
+    .from('system_config')
+    .select('value')
+    .eq('key', 'available_roles')
+    .single()
+    
+  if (!error && data?.value) {
+    try {
+      ROLES_USUARIO = JSON.parse(data.value)
+    } catch (e) {
+      console.warn('Error parsing available_roles from system_config', e)
+    }
+  }
+  
+  if (ROLES_USUARIO.length === 0) {
+    // Fallback in case of config missing
+    ROLES_USUARIO = ['maestro', 'user', 'admin']
+  }
+  return ROLES_USUARIO
+}
 
 /**
  * Crea un usuario vía Edge Function.

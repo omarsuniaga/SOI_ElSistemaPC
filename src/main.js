@@ -616,7 +616,10 @@ function renderNavbar(_container, isAuthenticated = false) {
   `,
   ).join('')
 
-  // ── Mobile sub-sheet ──────────────────────────────────────
+  // ── Mobile sub-sheet & Backdrop ──────────────────────────
+  const sheetBackdrop = document.createElement('div')
+  sheetBackdrop.className = 'mobile-sheet-backdrop'
+
   const subSheet = document.createElement('div')
   subSheet.className = 'mobile-sub-sheet'
   subSheet.innerHTML = `
@@ -628,13 +631,18 @@ function renderNavbar(_container, isAuthenticated = false) {
     <div class="sheet-items" id="sheetItems"></div>
   `
 
+  document.body.prepend(sheetBackdrop)
   document.body.prepend(subSheet)
   document.body.prepend(bottomNav)
   document.body.prepend(sidebar)
 
-  subSheet.querySelector('#sheetCloseBtn')?.addEventListener('click', () => {
+  const closeSheet = () => {
     subSheet.classList.remove('open')
-  })
+    sheetBackdrop.classList.remove('open')
+  }
+
+  subSheet.querySelector('#sheetCloseBtn')?.addEventListener('click', closeSheet)
+  sheetBackdrop.addEventListener('click', closeSheet, { signal })
 
   // ── Eventos sidebar ───────────────────────────────────────
   sidebar.querySelectorAll('.nav-group-header').forEach((btn) => {
@@ -691,10 +699,12 @@ function renderNavbar(_container, isAuthenticated = false) {
       .join('')
     subSheet.dataset.group = groupId
     subSheet.classList.add('open')
+    sheetBackdrop.classList.add('open')
+
     subSheet.querySelectorAll('.sheet-item').forEach((btn) => {
       btn.addEventListener('click', () => {
         router.navigate(btn.dataset.route)
-        subSheet.classList.remove('open')
+        closeSheet()
       })
     })
   }
@@ -703,7 +713,7 @@ function renderNavbar(_container, isAuthenticated = false) {
     tab.addEventListener('click', () => {
       const groupId = tab.dataset.group
       if (subSheet.classList.contains('open') && subSheet.dataset.group === groupId) {
-        subSheet.classList.remove('open')
+        closeSheet()
       } else {
         openSheet(groupId)
         bottomNav
@@ -722,11 +732,12 @@ function renderNavbar(_container, isAuthenticated = false) {
         !subSheet.contains(e.target) &&
         !bottomNav.contains(e.target)
       ) {
-        subSheet.classList.remove('open')
+        closeSheet()
       }
     },
     { signal },
   )
+
 
   // ── Sincronizar estado activo en route change ─────────────
   window.addEventListener(

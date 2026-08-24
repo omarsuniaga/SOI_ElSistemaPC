@@ -1454,3 +1454,113 @@ export function generateRangeReportHTML(sesiones, { maestroNombre, claseLabel, r
 
   return wrapDocument(portada + paginasSesion)
 }
+
+// ---------------------------------------------------------------------------
+// Doc 5 — Institutional Report (todas las clases de TODOS los maestros)
+// ---------------------------------------------------------------------------
+
+/**
+ * Arma (sin efectos secundarios) el HTML del reporte institucional: una
+ * página índice con TODAS las sesiones de TODOS los maestros en el rango
+ * (fecha, maestro, clase, hora, P/A/J) más una página por sesión con roster
+ * y contenido, igual que generateRangeReportHTML pero cada página muestra
+ * el docente propio de esa sesión en vez de un único maestro fijo.
+ *
+ * @param {Array} sesiones — shape de historialClasesService.cargarHistorialInstitucional(),
+ *                           cada sesión trae su propio `maestroNombre`
+ * @param {Object} contexto
+ * @param {string} contexto.rangoLabel — ej. "01/08/2026 – 31/08/2026"
+ * @returns {string} documento HTML completo (wrapDocument ya aplicado)
+ */
+export function generateInstitutionalReportHTML(sesiones, { rangoLabel }) {
+  const totalP = sesiones.reduce((sum, s) => sum + s.presentes, 0)
+  const totalA = sesiones.reduce((sum, s) => sum + s.ausentes, 0)
+  const totalJ = sesiones.reduce((sum, s) => sum + s.justificados, 0)
+  const totalMaestros = new Set(sesiones.map((s) => s.maestroNombre).filter(Boolean)).size
+  const totalPaginas = sesiones.length + 1
+
+  const indiceRows = sesiones
+    .map(
+      (s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(formatDate(s.fecha))}</td>
+        <td>${esc(s.maestroNombre || 'Docente')}</td>
+        <td>${esc(s.claseNombre)}</td>
+        <td>${esc(formatHora(s.horaInicio))}</td>
+        <td style="text-align:center">${s.presentes}</td>
+        <td style="text-align:center">${s.ausentes}</td>
+        <td style="text-align:center">${s.justificados}</td>
+      </tr>
+    `,
+    )
+    .join('')
+
+  const portada = `
+    <div class="page land">
+      ${header({
+        docTag: 'REPORTE INSTITUCIONAL DE CLASES',
+        clase: 'Todos los maestros',
+        docente: 'Dirección / Coordinación Académica',
+        periodo: rangoLabel,
+      })}
+      ${metricChips([
+        { label: 'Maestros', value: totalMaestros, type: 'navy' },
+        { label: 'Sesiones', value: sesiones.length, type: 'navy' },
+        { label: 'Presentes', value: totalP, type: 'ok' },
+        { label: 'Ausentes', value: totalA, type: 'bad' },
+        { label: 'Justificados', value: totalJ, type: 'warn' },
+      ])}
+      <p class="rpt-section-title">Índice de sesiones</p>
+      <table class="rpt-table">
+        <thead><tr><th>#</th><th>Fecha</th><th>Maestro</th><th>Clase</th><th>Hora</th><th>P</th><th>A</th><th>J</th></tr></thead>
+        <tbody>${indiceRows}</tbody>
+      </table>
+      ${footer(1, totalPaginas, rangoLabel)}
+    </div>
+  `
+
+  const paginasSesion = sesiones
+    .map((s, i) => {
+      const rosterRows = (s.roster || [])
+        .map(
+          (a, j) => `
+        <tr>
+          <td>${j + 1}</td>
+          <td>${esc(a.nombre)}</td>
+          <td style="text-align:center">${esc(ESTADO_LABEL_RPT[a.estado] || a.estado)}</td>
+          <td style="font-size:6.5pt;color:#6b7085">${esc(a.motivo || '')}</td>
+        </tr>
+      `,
+        )
+        .join('')
+
+      return `
+        <div class="page">
+          ${header({
+            docTag: `SESIÓN · ${formatDate(s.fecha)}`,
+            clase: s.claseNombre,
+            docente: s.maestroNombre || 'Docente',
+            periodo: `${formatHora(s.horaInicio)}–${formatHora(s.horaFin)}${s.salonNombre ? ' · ' + s.salonNombre : ''}`,
+          })}
+          ${metricChips([
+            { label: 'Presentes', value: s.presentes, type: 'ok' },
+            { label: 'Ausentes', value: s.ausentes, type: 'bad' },
+            { label: 'Justificados', value: s.justificados, type: 'warn' },
+            { label: 'Total', value: s.totalRegistros, type: 'navy' },
+          ])}
+          <p class="rpt-section-title">Asistencia detallada</p>
+          <table class="rpt-table">
+            <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
+            <tbody>${rosterRows || '<tr><td colspan="4">Sin registro de asistencia individual.</td></tr>'}</tbody>
+          </table>
+          <p class="rpt-section-title">Contenido de la sesión</p>
+          <p style="font-size:8pt;line-height:1.4;white-space:pre-wrap;">${esc(s.contenido) || 'Sin contenido registrado.'}</p>
+          ${footer(i + 2, totalPaginas, formatDate(s.fecha))}
+        </div>
+      `
+    })
+    .join('')
+
+  return wrapDocument(portada + paginasSesion)
+}

@@ -25,7 +25,7 @@ vi.mock('../maestroDataService.js', () => ({
 vi.mock('../../../lib/supabaseClient.js', () => ({ supabase: { from: vi.fn() } }))
 
 import { supabase } from '../../../lib/supabaseClient.js'
-import { cargarHistorialClases } from '../historialClasesService.js'
+import { cargarHistorialClases, cargarHistorialInstitucional } from '../historialClasesService.js'
 
 const CLASES = [
   { id: 'clase-1', nombre: 'Violín 101', maestro_principal_id: 'maestro-1' },
@@ -38,6 +38,11 @@ const ALUMNOS = [
   { id: 'a3', nombre_completo: 'Carlos Ruiz' },
 ]
 
+const MAESTROS = [
+  { id: 'maestro-1', nombre_completo: 'Prof. Ana' },
+  { id: 'maestro-2', nombre_completo: 'Prof. Bruno' },
+]
+
 function sesionBase(overrides) {
   return {
     id: 's1',
@@ -45,6 +50,7 @@ function sesionBase(overrides) {
     hora_inicio: '14:00:00',
     hora_fin: '15:00:00',
     clase_id: 'clase-1',
+    maestro_id: 'maestro-1',
     salon_id: null,
     borrador: false,
     contenido: '#Ana [Escalas] práctica de vibrato',
@@ -57,10 +63,20 @@ function sesionBase(overrides) {
   }
 }
 
-function setupSupabase({ clases = CLASES, alumnos = ALUMNOS, justificaciones = [] } = {}) {
+function setupSupabase({
+  clases = CLASES,
+  alumnos = ALUMNOS,
+  justificaciones = [],
+  maestros = MAESTROS,
+  sesionesInstitucionales = [],
+} = {}) {
   supabase.from.mockImplementation((table) => {
     if (table === 'clases') {
-      return { select: vi.fn().mockReturnThis(), or: vi.fn().mockResolvedValue({ data: clases, error: null }) }
+      return {
+        select: vi.fn().mockReturnThis(),
+        or: vi.fn().mockResolvedValue({ data: clases, error: null }),
+        in: vi.fn().mockResolvedValue({ data: clases, error: null }),
+      }
     }
     if (table === 'alumnos') {
       return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: alumnos, error: null }) }
@@ -69,6 +85,17 @@ function setupSupabase({ clases = CLASES, alumnos = ALUMNOS, justificaciones = [
       return {
         select: vi.fn().mockReturnThis(),
         in: vi.fn().mockResolvedValue({ data: justificaciones, error: null }),
+      }
+    }
+    if (table === 'maestros') {
+      return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: maestros, error: null }) }
+    }
+    if (table === 'sesiones_clase') {
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockResolvedValue({ data: sesionesInstitucionales, error: null }),
       }
     }
     return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: [], error: null }) }
@@ -219,5 +246,114 @@ describe('historialClasesService', () => {
     await cargarHistorialClases({ maestroId: 'maestro-cualquiera', dias: 7 })
 
     expect(mockGetSesiones).toHaveBeenCalledWith('maestro-cualquiera', expect.any(String), expect.any(String))
+  })
+})
+
+// ── cargarHistorialInstitucional — reporte de TODOS los maestros ─────────
+describe('cargarHistorialInstitucional', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetSalones.mockResolvedValue([])
+    mockGetHorariosClases.mockResolvedValue([])
+    setupSupabase()
+  })
+
+  it('trae sesiones de VARIOS maestros, cada una con su propio maestroNombre', async () => {
+    setupSupabase({
+      sesionesInstitucionales: [
+        sesionBase({ id: 's1', maestro_id: 'maestro-1', clase_id: 'clase-1', contenido: 'contenido-ana' }),
+        sesionBase({ id: 's2', maestro_id: 'maestro-2', clase_id: 'clase-2', contenido: 'contenido-bruno' }),
+      ],
+    })
+
+    const { sesiones } = await cargarHistorialInstitucional({ desde: '2026-08-01', hasta: '2026-08-31' })
+
+    expect(sesiones).toHaveLength(2)
+    expect(sesiones.find((s) => s.id === 's1').maestroNombre).toBe('Prof. Ana')
+    expect(sesiones.find((s) => s.id === 's2').maestroNombre).toBe('Prof. Bruno')
+  })
+
+  it('no filtra por maestro — no depende de ningún maestroId', async () => {
+    setupSupabase({
+      sesionesInstitucionales: [
+        sesionBase({ id: 's1', maestro_id: 'maestro-1' }),
+        sesionBase({ id: 's2', maestro_id: 'maestro-2' }),
+      ],
+    })
+
+    const { sesiones } = await cargarHistorialInstitucional({ desde: '2026-08-01', hasta: '2026-08-31' })
+
+    expect(sesiones.map((s) => s.id).sort()).toEqual(['s1', 's2'])
+  })
+
+  it('consulta sesiones_clase filtrando por borrador=false y el rango de fechas explícito', async () => {
+    const eqMock = vi.fn().mockReturnThis()
+    const gteMock = vi.fn().mockReturnThis()
+    const lteMock = vi.fn().mockResolvedValue({ data: [], error: null })
+    supabase.from.mockImplementation((table) => {
+      if (table === 'sesiones_clase') {
+        return { select: vi.fn().mockReturnThis(), eq: eqMock, gte: gteMock, lte: lteMock }
+      }
+      return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+    })
+
+    await cargarHistorialInstitucional({ desde: '2026-08-01', hasta: '2026-08-31' })
+
+    expect(eqMock).toHaveBeenCalledWith('borrador', false)
+    expect(gteMock).toHaveBeenCalledWith('fecha', '2026-08-01')
+    expect(lteMock).toHaveBeenCalledWith('fecha', '2026-08-31')
+  })
+
+  it('resuelve roster y causa de justificación igual que la vista de un solo maestro', async () => {
+    setupSupabase({
+      sesionesInstitucionales: [sesionBase({ id: 's1', maestro_id: 'maestro-1' })],
+      justificaciones: [{ sesion_id: 's1', alumno_id: 'a3', motivo: 'Cita médica' }],
+    })
+
+    const { sesiones } = await cargarHistorialInstitucional({ desde: '2026-08-01', hasta: '2026-08-31' })
+
+    expect(sesiones[0].roster.find((r) => r.alumnoId === 'a1').nombre).toBe('Ana Torres')
+    expect(sesiones[0].roster.find((r) => r.alumnoId === 'a3').motivo).toBe('Cita médica')
+  })
+
+  it('aplica el respaldo de hora/salón desde clase_horarios igual que la vista de un solo maestro', async () => {
+    mockGetHorariosClases.mockResolvedValue([
+      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: null },
+    ])
+    setupSupabase({
+      sesionesInstitucionales: [
+        sesionBase({ id: 's1', maestro_id: 'maestro-1', fecha: '2026-08-20', hora_inicio: null, hora_fin: null }),
+      ],
+    })
+
+    const { sesiones } = await cargarHistorialInstitucional({ desde: '2026-08-01', hasta: '2026-08-31' })
+
+    expect(sesiones[0].horaInicio).toBe('15:30:00')
+  })
+
+  it('sin sesiones en el rango, devuelve un arreglo vacío sin romper', async () => {
+    setupSupabase({ sesionesInstitucionales: [] })
+
+    const { sesiones } = await cargarHistorialInstitucional({ desde: '2026-01-01', hasta: '2026-01-02' })
+
+    expect(sesiones).toEqual([])
+  })
+
+  it('un error de Supabase no rompe la vista — devuelve vacío', async () => {
+    supabase.from.mockImplementation((table) => {
+      if (table === 'sesiones_clase') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lte: vi.fn().mockResolvedValue({ data: null, error: { message: 'timeout' } }),
+        }
+      }
+      return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+    })
+
+    const { sesiones } = await cargarHistorialInstitucional({ desde: '2026-08-01', hasta: '2026-08-31' })
+
+    expect(sesiones).toEqual([])
   })
 })

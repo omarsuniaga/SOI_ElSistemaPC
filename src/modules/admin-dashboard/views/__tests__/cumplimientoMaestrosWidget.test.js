@@ -41,8 +41,9 @@ vi.mock('../../../../shared/components/AppToast.js', () => ({
   AppToast: mockAppToast,
 }))
 
+const mockNavigate = vi.hoisted(() => vi.fn())
 vi.mock('../../../../core/router/router.js', () => ({
-  router: { navigate: vi.fn() },
+  router: { navigate: mockNavigate },
 }))
 
 import { CumplimientoMaestrosWidget } from '../cumplimientoMaestrosWidget.js'
@@ -195,5 +196,68 @@ describe('CumplimientoMaestrosWidget — Reporte Institucional', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(mockCargarHistorialInstitucional).toHaveBeenCalledWith({ desde: '2026-01-01', hasta: '2026-01-31' })
+  })
+})
+
+describe('CumplimientoMaestrosWidget — propagación del rango al detalle de maestro', () => {
+  let container
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetMaestrosComplianceStatus.mockResolvedValue([maestroCompliance({})])
+    container = document.createElement('div')
+    container.id = 'test-container'
+    document.body.appendChild(container)
+  })
+
+  afterEach(() => {
+    container?.remove()
+  })
+
+  async function initWidget() {
+    const widget = new CumplimientoMaestrosWidget('test-container')
+    await widget.init()
+    return widget
+  }
+
+  it('"Ver detalle" navega con el mismo rango (desde/hasta) que está activo en la lista', async () => {
+    await initWidget()
+
+    container.querySelector('.btn-detalle').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(mockNavigate).toHaveBeenCalledWith('admin-maestro-detalle', {
+      id: 'maestro-1',
+      desde: '2026-08-17',
+      hasta: '2026-08-23',
+    })
+  })
+
+  it('"Contactar por WhatsApp" también lleva el rango activo, no solo el flag de auto-abrir', async () => {
+    await initWidget()
+
+    container.querySelector('.btn-contactar').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(mockNavigate).toHaveBeenCalledWith('admin-maestro-detalle', {
+      id: 'maestro-1',
+      autoOpenWhatsApp: true,
+      desde: '2026-08-17',
+      hasta: '2026-08-23',
+    })
+  })
+
+  it('si el admin cambia el rango antes de ver el detalle, el detalle recibe el rango nuevo, no el default', async () => {
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'mes_actual'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+
+    container.querySelector('.btn-detalle').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    const llamada = mockNavigate.mock.calls.find((c) => c[0] === 'admin-maestro-detalle')
+    expect(llamada[1]).not.toEqual({ id: 'maestro-1', desde: '2026-08-17', hasta: '2026-08-23' })
   })
 })

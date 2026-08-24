@@ -52,7 +52,8 @@ export function registerRoutesAdminDashboard() {
       const { MaestroDetalleView } = await import('./views/maestroDetalleView.js')
       const maestroId = params?.maestroId ?? params?.id
       if (!maestroId) throw new Error('No se recibió el identificador del maestro')
-      const view = new MaestroDetalleView('maestro-detalle-container', maestroId)
+      const rango = params?.desde && params?.hasta ? { desde: params.desde, hasta: params.hasta } : null
+      const view = new MaestroDetalleView('maestro-detalle-container', maestroId, rango)
       view.init()
     } catch (error) {
       console.error('[admin-maestro-detalle] Error:', error)

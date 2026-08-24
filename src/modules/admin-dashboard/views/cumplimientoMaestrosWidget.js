@@ -476,16 +476,28 @@ export class CumplimientoMaestrosWidget {
    */
   onContactarMaestro(maestroId) {
     import('../../../core/router/router.js').then(({ router }) => {
-      router.navigate('admin-maestro-detalle', { id: maestroId, autoOpenWhatsApp: true })
+      router.navigate('admin-maestro-detalle', {
+        id: maestroId,
+        autoOpenWhatsApp: true,
+        desde: this.customDates.desde,
+        hasta: this.customDates.hasta,
+      })
     })
   }
 
   /**
-   * Navigate to Maestro Detalle view
+   * Navigate to Maestro Detalle view, carrying the date range currently
+   * selected in this list so the detail's pendientes/vencidas count match
+   * what the admin just saw here instead of silently recomputing its own
+   * "semana actual" window.
    */
   onVerDetalle(maestroId) {
     import('../../../core/router/router.js').then(({ router }) => {
-      router.navigate('admin-maestro-detalle', { id: maestroId })
+      router.navigate('admin-maestro-detalle', {
+        id: maestroId,
+        desde: this.customDates.desde,
+        hasta: this.customDates.hasta,
+      })
     })
   }
 

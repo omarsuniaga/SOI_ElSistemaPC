@@ -15,10 +15,27 @@ function escHTML(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 }
 
+function formatRangoCorto(fechaISO) {
+  if (!fechaISO) return '---'
+  const [, , mes, dia] = String(fechaISO).match(/^(\d{4})-(\d{2})-(\d{2})$/) || []
+  if (!dia || !mes) return fechaISO
+  return `${dia}/${mes}`
+}
+
 export class MaestroDetalleView {
-  constructor(containerId, maestroId) {
+  /**
+   * @param {string} containerId
+   * @param {string} maestroId
+   * @param {{desde: string, hasta: string} | null} [rango] — rango elegido
+   *   por el admin en la lista de Cumplimiento de Maestros. Si no se recibe
+   *   (navegación directa sin ese contexto), se usa la semana actual por
+   *   defecto — pero entonces las cifras de esta vista pueden NO coincidir
+   *   con lo que el admin vio en la lista si allí había otro rango activo.
+   */
+  constructor(containerId, maestroId, rango = null) {
     this.containerId = containerId
     this.maestroId = maestroId
+    this.rango = rango
     this.container = document.getElementById(containerId)
     this.maestro = null
     this.clasesProgramadas = []
@@ -37,9 +54,14 @@ export class MaestroDetalleView {
         </div>
       `
 
+      // Si no llegó un rango desde la lista (navegación directa), se usa el
+      // mismo default que adminMaestroApi aplicaría igual — así lo que se
+      // muestra en pantalla siempre coincide con lo que se consultó.
+      this.rangoActivo = this.rango || getSemanaActualSantoDomingo()
+
       const [maestro, clasesProgramadas, historico, notificaciones] = await Promise.all([
         getMaestroProfile(this.maestroId),
-        getMaestroClasesDetalle(this.maestroId),
+        getMaestroClasesDetalle(this.maestroId, this.rango),
         getMaestroHistoricoDesempeno(this.maestroId),
         getMaestroNotificationHistory(this.maestroId),
       ])
@@ -253,7 +275,13 @@ export class MaestroDetalleView {
                 Detalle Canónico por Clase (fn_estado_asistencia_maestro)
               </h4>
               <p style="margin:0.25rem 0 0;color:#64748b;font-size:0.8rem;">
-                Programación de clases de la semana activa y estado de cierre de bitácoras
+                Programación y estado de cierre de bitácoras ·
+                <span style="color:#a5b4fc;font-weight:700;">
+                  ${formatRangoCorto(this.rangoActivo?.desde)} – ${formatRangoCorto(this.rangoActivo?.hasta)}
+                </span>
+                ${this.rango
+                  ? '<span style="color:#64748b;">(rango heredado del panel)</span>'
+                  : '<span style="color:#64748b;">(semana actual por defecto)</span>'}
               </p>
             </div>
 

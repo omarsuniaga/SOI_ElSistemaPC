@@ -252,12 +252,16 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
 
   // Cierre de Sesión (Desktop y Móvil)
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    if (supabase?.auth) {
+      await supabase.auth.signOut()
+    }
+    useAuth.logout()
     window.location.reload()
   }
 
   sidebar.querySelector('#sidebarBtnLogout')?.addEventListener('click', handleLogout, { signal })
   mobileHeader.querySelector('#mobileBtnLogout')?.addEventListener('click', handleLogout, { signal })
+
 
   // Click en brand del Header móvil
   mobileHeader.querySelector('.mobile-header-brand')?.addEventListener(
@@ -336,6 +340,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
 
 // ── Acceso por rol ────────────────────────────────────────────────────────────
 async function getUserRole(userId) {
+  if (!supabase?.from) return null
   const { data } = await supabase.from('profiles').select('rol').eq('id', userId).maybeSingle()
   return data?.rol || null
 }
@@ -357,10 +362,14 @@ function renderAccessDenied(app, brandText) {
     </div>
   `
   app.querySelector('#btnSalir')?.addEventListener('click', async () => {
-    await supabase.auth.signOut()
+    if (supabase?.auth) {
+      await supabase.auth.signOut()
+    }
+    useAuth.logout()
     window.location.reload()
   })
 }
+
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 /**

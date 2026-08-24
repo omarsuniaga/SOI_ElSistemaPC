@@ -3,8 +3,7 @@
  *
  * SEGURIDAD: todas las llamadas a IA pasan por la Edge Function `groq-proxy`.
  * Las API keys (Groq y OpenRouter) viven en los secrets del servidor y NUNCA
- * se envían al navegador. (Antes este servicio leía la key de `system_config`
- * y llamaba a los proveedores directo desde el browser — eso quedó eliminado.)
+ * se envían al navegador.
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
@@ -31,9 +30,8 @@ function proxyBase() {
 }
 
 async function authHeaders() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const sessionResult = await supabase?.auth?.getSession?.()
+  const session = sessionResult?.data?.session
   const anon = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
   return {
     Authorization: `Bearer ${session?.access_token ?? anon}`,
@@ -67,7 +65,7 @@ async function requestOpenRouter(messages, model = 'google/gemini-flash-1.5-exp'
 async function requestGroq(messages, temp = 0.7) {
   return proxyChat({
     provider: 'groq',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-20b',
     messages,
     temperature: temp,
     max_tokens: 1024,
@@ -75,10 +73,9 @@ async function requestGroq(messages, temp = 0.7) {
 }
 
 export async function createAiService() {
-  // Disponibilidad de proveedores: el servidor decide qué key existe. Intentamos
-  // OpenRouter primero (modelos gratuitos) y caemos a Groq si falla.
   let tryOpenRouter = true
   let tryGroq = true
+
 
   async function _requestWithFallback(messages, temp = 0.7, cacheKey = null) {
     const { canMakeRequest, withRateLimit, getCachedResponse } = await import('./groqRateLimiter.js')

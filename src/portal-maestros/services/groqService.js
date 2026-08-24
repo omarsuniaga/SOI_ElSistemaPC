@@ -10,7 +10,7 @@ import { segmentObservation, inferTipo, detectNote, detectTask } from '../utils/
 import { buildSeccionContext, expandSeccionItems } from '../data/seccionesOrquestales.js'
 
 const GROQ_CONFIG = {
-  model: 'llama-3.1-8b-instant',
+  model: 'openai/gpt-oss-20b',
   whisperModel: 'whisper-large-v3',
   temperature: 0.2,
 }
@@ -32,9 +32,8 @@ function proxyBase() {
  * Build auth headers using the current Supabase session JWT.
  */
 async function authHeaders() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const sessionResult = await supabase?.auth?.getSession?.()
+  const session = sessionResult?.data?.session
   const token = session?.access_token ?? ''
   return {
     Authorization: `Bearer ${token}`,
@@ -77,9 +76,8 @@ async function proxyChat(messages, temperature = GROQ_CONFIG.temperature) {
  * POST to /transcribe endpoint of the proxy.
  */
 async function proxyTranscribe(audioBlob) {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const sessionResult = await supabase?.auth?.getSession?.()
+  const session = sessionResult?.data?.session
   const token = session?.access_token ?? ''
 
   const formData = new FormData()
@@ -91,7 +89,6 @@ async function proxyTranscribe(audioBlob) {
     headers: {
       Authorization: `Bearer ${token}`,
       apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
-      // Do NOT set Content-Type — browser sets it with the boundary automatically
     },
     body: formData,
   })
@@ -102,7 +99,7 @@ async function proxyTranscribe(audioBlob) {
 }
 
 // ---------------------------------------------------------------------------
-// System prompts (unchanged from original)
+// System prompts
 // ---------------------------------------------------------------------------
 
 const SYSTEM_PROMPT = `
@@ -187,6 +184,7 @@ Usá esta rúbrica para inferir estado y nota según la evidencia del texto:
 LOGRO CONCRETO → LOGRADO, nota 5
   Disparadores: "logró perfectamente", "quedó resuelto", "con precisión", "dominaron", "sin errores"
   Ej: "los violines lograron la entrada con precisión"
+
 
 LOGRO PARCIAL → LOGRADO, nota 4
   Disparadores: "mejoró notablemente", "salió bien", "ya casi", "lograron mayormente"

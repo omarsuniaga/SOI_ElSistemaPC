@@ -80,14 +80,18 @@ async function login(email, password, remember = false) {
       localStorage.removeItem('demo_mode')
       config.isDemoMode = false
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol, estado')
-        .eq('id', result.user.id)
-        .maybeSingle()
+      let profile = null
+      if (supabase?.from) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('rol, estado')
+          .eq('id', result.user.id)
+          .maybeSingle()
+        profile = data
+      }
 
       if (profile?.estado === 'pendiente') {
-        await supabase.auth.signOut()
+        if (supabase?.auth) await supabase.auth.signOut()
         clearSession()
         state.user = null
         state.session = null
@@ -95,7 +99,7 @@ async function login(email, password, remember = false) {
         return { success: true, pendingApproval: true }
       }
       if (profile?.estado === 'rechazado') {
-        await supabase.auth.signOut()
+        if (supabase?.auth) await supabase.auth.signOut()
         clearSession()
         state.user = null
         state.session = null
@@ -105,8 +109,8 @@ async function login(email, password, remember = false) {
 
       // Guarda de rol: el portal admin es exclusivo de administradores.
       // Un maestro (u otro rol) debe usar su propio portal.
-      if (profile?.rol !== 'admin') {
-        await supabase.auth.signOut()
+      if (profile && profile.rol !== 'admin') {
+        if (supabase?.auth) await supabase.auth.signOut()
         clearSession()
         state.user = null
         state.session = null
@@ -180,15 +184,15 @@ function isAuthenticated() {
 }
 
 async function refreshAuth() {
-  // Supabase ya persiste su propia sesión en localStorage.
-  // La usamos directamente como fuente de verdad.
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession()
-
-  if (error || !session) {
-    clearSession()
+  if (!supabase?.auth) {
+    const session = getSession()
+    if (session?.user) {
+      state.session = session
+      state.user = session.user
+      state.loading = false
+      notifyListeners()
+      return { authenticated: true, user: state.user }
+    }
     state.user = null
     state.session = null
     state.loading = false
@@ -196,22 +200,46 @@ async function refreshAuth() {
     return { authenticated: false }
   }
 
-  // Sincronizar custom storage para que isAuthenticated() siga funcionando
-  const persistent = getSession()?.persistent ?? true
-  saveSession(session, persistent)
+  try {
+    const {
+      data: { session } = {},
+      error,
+    } = await supabase.auth.getSession()
 
-  // Desactivar modo demo si hay una sesión real de Supabase activa
-  localStorage.removeItem('demo_mode')
-  config.isDemoMode = false
+    if (error || !session) {
+      clearSession()
+      state.user = null
+      state.session = null
+      state.loading = false
+      notifyListeners()
+      return { authenticated: false }
+    }
 
-  state.session = session
-  state.user = session.user
-  state.loading = false
-  notifyListeners()
-  return { authenticated: true, user: state.user }
+    // Sincronizar custom storage para que isAuthenticated() siga funcionando
+    const persistent = getSession()?.persistent ?? true
+    saveSession(session, persistent)
+
+    // Desactivar modo demo si hay una sesión real de Supabase activa
+    localStorage.removeItem('demo_mode')
+    config.isDemoMode = false
+
+    state.session = session
+    state.user = session.user
+    state.loading = false
+    notifyListeners()
+    return { authenticated: true, user: state.user }
+  } catch (err) {
+    console.warn('[useAuth] Error recuperando sesión:', err)
+    state.user = null
+    state.session = null
+    state.loading = false
+    notifyListeners()
+    return { authenticated: false }
+  }
 }
 
 refreshAuth()
+
 
 export const useAuth = {
   subscribe,

@@ -76,7 +76,12 @@ export async function getMisClases(forceRefresh = false) {
   return _singleFlight(cacheKey, async (generation) => {
     const { data, error } = await supabase
       .from('clases')
-      .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, route_version_id, tipo_clase')
+      // maestro_suplente_id/maestro_id/maestro_auxiliar_id se traen aunque
+      // el filtro .or() ya los use: sin esto, el resto del portal no puede
+      // saber si el maestro logueado es titular o suplente de esta clase.
+      .select(
+        'id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, maestro_suplente_id, maestro_auxiliar_id, maestro_id, route_version_id, tipo_clase',
+      )
       .or(
         `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
       )

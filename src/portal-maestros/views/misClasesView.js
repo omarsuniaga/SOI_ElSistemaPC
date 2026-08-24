@@ -94,7 +94,10 @@ function _renderSesionCard(s) {
     <article class="pm-card pm-misclases-card">
       <div class="pm-misclases-card-top">
         <div class="pm-misclases-card-meta">
-          <strong>${escHTML(s.claseNombre)}</strong>
+          <span style="display:flex;align-items:center;gap:0.4rem;">
+            <strong>${escHTML(s.claseNombre)}</strong>
+            ${s.esSuplencia ? `<span class="pm-badge pm-badge-info" title="Estás como suplente en esta clase — el registro queda a nombre del titular">Suplencia</span>` : ''}
+          </span>
           <span class="pm-misclases-card-hora">
             <i class="bi bi-clock"></i> ${escHTML(formatHora(s.horaInicio))}–${escHTML(formatHora(s.horaFin))}
           </span>
@@ -134,7 +137,7 @@ function _generarHTML({ clases, sesiones }) {
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .map(
       (c) =>
-        `<option value="${c.id}" ${estadoActual.claseId === c.id ? 'selected' : ''}>${escHTML(c.nombre)}</option>`,
+        `<option value="${c.id}" ${estadoActual.claseId === c.id ? 'selected' : ''}>${c.esSuplencia ? '🔁 ' : ''}${escHTML(c.nombre)}</option>`,
     )
     .join('')
 

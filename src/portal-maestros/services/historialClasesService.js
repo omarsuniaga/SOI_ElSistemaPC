@@ -23,6 +23,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { DIAS_ES } from '../utils/portalUtils.js'
 import { getSesiones, getSalones, getHorariosClases } from './maestroDataService.js'
 import { calcAttendanceStats } from './reportService.js'
+import { resolverPertenenciaClase } from './suplenciaService.js'
 
 export const RANGOS = [
   { dias: 7, label: 'Últimos 7 días' },
@@ -44,13 +45,19 @@ export function rangoFechas(dias) {
 async function _getClasesDeMaestro(maestroId) {
   const { data, error } = await supabase
     .from('clases')
-    .select('id, nombre, instrumento, maestro_principal_id')
+    // maestro_suplente_id/maestro_id se traen aunque el filtro .or() ya los
+    // use: sin esto no se puede saber si el maestroId es titular o suplente
+    // de cada clase (ver resolverPertenenciaClase más abajo).
+    .select('id, nombre, instrumento, maestro_principal_id, maestro_suplente_id, maestro_id')
     .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`)
   if (error) {
     console.warn('[HistorialClases] Error cargando clases del maestro:', error.message)
     return []
   }
-  return data || []
+  return (data || []).map((c) => ({
+    ...c,
+    esSuplencia: resolverPertenenciaClase(c, maestroId).esSuplente,
+  }))
 }
 
 async function _cargarClasesPorId(claseIds) {
@@ -198,6 +205,10 @@ async function _enriquecerSesiones(confirmadas, { claseById, maestroNombreById =
         horaFin,
         claseId: s.clase_id,
         claseNombre: claseById.get(s.clase_id)?.nombre || 'Clase sin nombre',
+        // Solo tiene sentido en cargarHistorialClases (vista propia del
+        // maestro) — cargarHistorialInstitucional no lo trae, queda en
+        // false por defecto y no rompe nada.
+        esSuplencia: claseById.get(s.clase_id)?.esSuplencia || false,
         ...(maestroNombreById
           ? { maestroId: s.maestro_id, maestroNombre: maestroNombreById.get(s.maestro_id) || 'Maestro sin nombre' }
           : {}),

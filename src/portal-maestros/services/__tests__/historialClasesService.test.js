@@ -247,6 +247,41 @@ describe('historialClasesService', () => {
 
     expect(mockGetSesiones).toHaveBeenCalledWith('maestro-cualquiera', expect.any(String), expect.any(String))
   })
+
+  // ── esSuplencia: distinción propia/suplida (SPEC §4.4/§9) ───────────────
+
+  it('una clase donde el maestroId es el suplente queda marcada esSuplencia=true', async () => {
+    setupSupabase({
+      clases: [{ id: 'clase-1', nombre: 'Violín 101', maestro_principal_id: 'maestro-titular', maestro_suplente_id: 'maestro-1' }],
+    })
+    mockGetSesiones.mockResolvedValue([sesionBase({})])
+
+    const { clases, sesiones } = await cargarHistorialClases({ maestroId: 'maestro-1', dias: 30 })
+
+    expect(clases[0].esSuplencia).toBe(true)
+    expect(sesiones[0].esSuplencia).toBe(true)
+  })
+
+  it('una clase donde el maestroId es el titular queda marcada esSuplencia=false', async () => {
+    setupSupabase({
+      clases: [{ id: 'clase-1', nombre: 'Violín 101', maestro_principal_id: 'maestro-1', maestro_suplente_id: 'maestro-suplente' }],
+    })
+    mockGetSesiones.mockResolvedValue([sesionBase({})])
+
+    const { clases, sesiones } = await cargarHistorialClases({ maestroId: 'maestro-1', dias: 30 })
+
+    expect(clases[0].esSuplencia).toBe(false)
+    expect(sesiones[0].esSuplencia).toBe(false)
+  })
+
+  it('una clase sin suplente asignado queda marcada esSuplencia=false (no rompe el caso normal)', async () => {
+    mockGetSesiones.mockResolvedValue([sesionBase({})])
+
+    const { clases, sesiones } = await cargarHistorialClases({ maestroId: 'maestro-1', dias: 30 })
+
+    expect(clases[0].esSuplencia).toBe(false)
+    expect(sesiones[0].esSuplencia).toBe(false)
+  })
 })
 
 // ── cargarHistorialInstitucional — reporte de TODOS los maestros ─────────

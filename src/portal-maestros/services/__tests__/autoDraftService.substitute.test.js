@@ -94,6 +94,78 @@ describe('autoDraftService substitute audit integration', () => {
     expect(enqueueMock).not.toHaveBeenCalled()
   })
 
+  it('saves the row under the titular id but audits the real actor via actorMaestroId', async () => {
+    isSubstituteAssignmentMock.mockReturnValue(true)
+
+    const deleteChain = {
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+    }
+    const insertChain = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'obs-2' }, error: null }),
+    }
+    fromMock.mockReturnValueOnce(deleteChain).mockReturnValueOnce(insertChain)
+
+    await saveObservation(
+      'ses-1',
+      'maestro-titular', // dueño de la fila — lo que ahora pasa asistenciaView.js/ObservationSaveButton.js
+      'Contenido de prueba',
+      { indicador_id: 'ind-1', evaluaciones: [] },
+      null,
+      null,
+      {
+        clase: {
+          id: 'clase-1',
+          nombre: 'Violín Inicial',
+          maestro_principal_id: 'maestro-titular',
+          maestro_suplente_id: 'maestro-suplente',
+        },
+        actorMaestroId: 'maestro-suplente', // quien realmente escribió
+        fechaHoy: '2026-08-14',
+      },
+    )
+
+    // La fila en observaciones_sesion queda bajo el titular
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ maestro_id: 'maestro-titular' }),
+    )
+    // isSubstituteAssignment se evalúa con el ACTOR real, no con el dueño de la fila
+    expect(isSubstituteAssignmentMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'clase-1' }),
+      'maestro-suplente',
+    )
+    // La bitácora atribuye el evento al suplente real, no al titular
+    expect(logSubstituteActivityMock).toHaveBeenCalledWith(
+      expect.objectContaining({ maestroSuplenteId: 'maestro-suplente' }),
+    )
+  })
+
+  it('sin actorMaestroId explícito, sigue funcionando como antes (retro-compatible)', async () => {
+    isSubstituteAssignmentMock.mockReturnValue(true)
+
+    const deleteChain = { delete: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() }
+    const insertChain = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'obs-3' }, error: null }),
+    }
+    fromMock.mockReturnValueOnce(deleteChain).mockReturnValueOnce(insertChain)
+
+    await saveObservation(
+      'ses-1',
+      'maestro-suplente',
+      'Contenido de prueba',
+      { indicador_id: 'ind-1', evaluaciones: [] },
+      null,
+      null,
+      { clase: { id: 'clase-1', maestro_principal_id: 'maestro-titular', maestro_suplente_id: 'maestro-suplente' } },
+    )
+
+    expect(isSubstituteAssignmentMock).toHaveBeenCalledWith(expect.anything(), 'maestro-suplente')
+  })
+
   it('does not log substitute content when the maestro is not the assigned substitute', async () => {
     isSubstituteAssignmentMock.mockReturnValue(false)
 

@@ -94,13 +94,18 @@ export function createObservationSaveButton(container, opts) {
       const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
       await saveObservation(
         opts.sesionId,
-        opts.maestro.id,
+        // Dueño de la fila: titular preferido (opts.maestroIdSesion), igual que
+        // sesiones_clase — así el suplente edita la misma observación en vez de
+        // crear una paralela. El actor real sigue viajando en auditContext para
+        // que la bitácora de suplencias no se rompa.
+        opts.maestroIdSesion || opts.maestro.id,
         raw,
         parsed,
         resultado.dslGenerado || null,
         resultado.textoMejorado || null,
         {
           clase: opts.clase || null,
+          actorMaestroId: opts.maestro.id,
           maestroUserId: opts.maestro?.user_id || opts.maestro?.id || null,
           fechaHoy: opts.fechaHoy || null,
         },

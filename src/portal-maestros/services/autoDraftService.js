@@ -123,10 +123,14 @@ export async function discardDraft(draftId) {
 /**
  * Finalize an observation (delete draft, insert permanent record).
  * @param {string} sesionId
- * @param {string} maestroId
+ * @param {string} maestroId - Dueño de la fila (titular preferido — puede no
+ *   ser quien la escribió realmente; ver auditContext.actorMaestroId).
  * @param {string} contenidoRaw - Texto original del maestro (lenguaje natural o DSL)
  * @param {Object} contenidoParsed - Datos cuantificados extraídos del texto
  * @param {string|null} contenidoIaDsl - DSL generado por IA (null si el maestro escribió en DSL directo)
+ * @param {string|null} contenidoIaMejorado
+ * @param {Object} auditContext - `actorMaestroId` es quien realmente escribió
+ *   (puede ser el suplente); si no llega, se asume igual a `maestroId`.
  * @returns {Promise<Object>} saved row
  */
 export async function saveObservation(
@@ -138,6 +142,7 @@ export async function saveObservation(
   contenidoIaMejorado = null,
   auditContext = {},
 ) {
+  const actorMaestroId = auditContext.actorMaestroId || maestroId
   try {
     // Delete any active draft first
     const { error: deleteError } = await supabase
@@ -165,12 +170,12 @@ export async function saveObservation(
 
     if (error) throw error
 
-    if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, maestroId)) {
+    if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, actorMaestroId)) {
       await logSubstituteActivity({
         action: 'SUBSTITUTE_CONTENT',
         clase: auditContext.clase,
         maestroTitularId: auditContext.clase?.maestro_principal_id,
-        maestroSuplenteId: maestroId,
+        maestroSuplenteId: actorMaestroId,
         fecha: auditContext.fechaHoy || auditContext.fecha || null,
         sesionId,
         userId: auditContext.userId || auditContext.maestroUserId || null,

@@ -86,6 +86,9 @@
   --pm-danger-bg: rgba(255, 59, 48, 0.15);
   --pm-danger-text: #dc2626;
 
+  --pm-info-bg: rgba(0, 122, 255, 0.15);
+  --pm-info-text: #0056b3;
+
   /* ── Z-index scale ────────────────────────────────────────── */
   --pm-z-sidebar: 200;
   --pm-z-header: 100;
@@ -141,6 +144,9 @@
 
   --pm-danger-bg: rgba(255, 59, 48, 0.2);
   --pm-danger-text: #f87171;
+
+  --pm-info-bg: rgba(0, 122, 255, 0.2);
+  --pm-info-text: #60a5fa;
 
   /* Glass effects para dark mode */
   --pm-glass-bg: rgba(28, 28, 30, 0.7);

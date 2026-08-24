@@ -81,6 +81,8 @@ import { createAutoDraftManager } from '../components/attendance/AutoDraftManage
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
 import { createStudentList } from '../components/attendance/StudentList.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
+import { logSubstituteActivity } from '../services/substituteAuditService.js'
+import { resolverPertenenciaClase } from '../services/suplenciaService.js'
 import {
   generateDailyReport,
   generateMonthlyAttendance,
@@ -220,6 +222,11 @@ export async function renderAsistenciaView(
     const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
 
     // ── Batch 1: datos cacheados (instantáneos si hoyView ya cargó) + sesión en paralelo ──
+    // La query de sesión NO filtra por maestro_id: una clase con suplente debe
+    // resolver a la MISMA sesión del día sin importar quién la abra (titular o
+    // suplente) — de lo contrario cada actor crea su propia fila paralela.
+    // El filtro por dueño legítimo se aplica después, en JS, una vez que se
+    // conoce `clase` (ver maestroIdSesion más abajo).
     const [misClases, todosHorarios, todasInscripciones, sesionRes] = await Promise.all([
       getMisClases(), // cache: 1min
       getHorariosClases([claseId]), // cache: 5min
@@ -231,7 +238,6 @@ export async function renderAsistenciaView(
         .from('sesiones_clase')
         .select('*')
         .eq('clase_id', claseId)
-        .eq('maestro_id', maestro.id)
         .eq('fecha', fechaHoy)
         .order('borrador', { ascending: true })   // registradas primero
         .order('updated_at', { ascending: false }), // más reciente primero dentro de cada grupo
@@ -240,6 +246,30 @@ export async function renderAsistenciaView(
     if (!clase) {
       container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Clase no encontrada.</p>`
       return
+    }
+
+    // Dueño de la sesión de HOY: siempre el titular cuando se conoce (regla
+    // 4.3 de SPEC_suplencias_auditoria.md — lo que registra el suplente se
+    // guarda en la clase del titular, nunca en una fila propia del suplente).
+    // idsRelevantes filtra las sesiones traídas (clase_id+fecha, sin
+    // maestro_id) a solo las que pertenecen a esta relación titular/suplente,
+    // para no mezclar por accidente sesiones de otro maestro que comparta
+    // clase_id por otra vía (ej. clase_horarios con maestro_id propio en otro
+    // horario del mismo día).
+    const { maestroIdSesion, esSuplente: esSuplenteDeEstaClase, idsRelevantes } =
+      resolverPertenenciaClase(clase, maestro.id)
+
+    // Bitácora: registra la simple entrada del suplente a la clase (SPEC
+    // §5.2). No bloquea el render — es trazabilidad, no autorización.
+    if (esSuplenteDeEstaClase) {
+      logSubstituteActivity({
+        action: 'SUBSTITUTE_ENTER',
+        clase,
+        fecha: fechaHoy,
+        maestroSuplenteId: maestro.id,
+        userId: maestro.user_id || maestro.id || null,
+        summary: `El suplente entró a "${clase.nombre || 'Clase'}"`,
+      }).catch((err) => console.warn('[asistencia] No se pudo auditar la entrada del suplente:', err))
     }
 
     const horario = todosHorarios.find((h) => h.dia?.toLowerCase() === diaHoy)
@@ -258,7 +288,7 @@ export async function renderAsistenciaView(
       })
 
     // Primary session: prefer registered (borrador=false), fallback to most-recent draft
-    const todasSesionesHoy = sesionRes.data || []
+    const todasSesionesHoy = (sesionRes.data || []).filter((s) => idsRelevantes.has(String(s.maestro_id)))
     const sesionExistenteData = todasSesionesHoy[0] || null
 
     // Merge asistencia from ALL sessions of the day — the registered session may have
@@ -435,6 +465,7 @@ export async function renderAsistenciaView(
       estado,
       justificaciones,
       maestro,
+      maestroIdSesion,
       fechaHoy,
       claseId,
       sesionId,
@@ -460,6 +491,7 @@ function _renderVista(container, ctx) {
     estado,
     justificaciones,
     maestro,
+    maestroIdSesion,
     fechaHoy,
     claseId,
     snapshots,
@@ -1830,7 +1862,7 @@ function _renderVista(container, ctx) {
   // === Auto-Draft Manager ===
   const _draftMgr = createAutoDraftManager(container, {
     sesionId,
-    maestroId: maestro.id,
+    maestroId: maestroIdSesion,
     editor,
     sesionExistenteData,
     onDraftRecovered: (content) => {
@@ -1857,6 +1889,7 @@ function _renderVista(container, ctx) {
     claseId,
     clase,
     maestro,
+    maestroIdSesion,
     fechaHoy,
     alumnos,
     estado,
@@ -1971,7 +2004,10 @@ function _renderVista(container, ctx) {
 
       const payload = {
         ...(sesionId ? {} : { clase_id: claseId }),
-        maestro_id: maestro.id,
+        // Titular preferido (maestroIdSesion): si esto lo guarda el suplente,
+        // la fila sigue siendo la del titular — ver comentario junto a su
+        // declaración más arriba.
+        maestro_id: maestroIdSesion,
         fecha: fechaHoy,
         estado: 'pendiente',
         borrador: true,
@@ -2150,7 +2186,7 @@ function _renderVista(container, ctx) {
               .from('sesiones_clase')
               .select('id')
               .eq('clase_id', claseId)
-              .eq('maestro_id', maestro.id)
+              .eq('maestro_id', maestroIdSesion)
               .eq('fecha', fechaHoy)
               .maybeSingle()
             if (sData) sesionId = sData.id

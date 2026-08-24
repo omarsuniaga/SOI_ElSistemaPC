@@ -194,4 +194,44 @@ describe('misClasesView', () => {
     )
     expect(openReport).toHaveBeenCalledOnce()
   })
+
+  // ── Distinción visual: clases propias vs. suplidas (SPEC §4.4/§9) ─────
+
+  it('una sesión de una clase suplida muestra el badge "Suplencia"', async () => {
+    mockCargarHistorialClases.mockResolvedValue({
+      clases: CLASES,
+      sesiones: [sesionResuelta({ esSuplencia: true })],
+    })
+
+    await renderMisClasesView(container)
+
+    expect(container.textContent).toContain('Suplencia')
+  })
+
+  it('una sesión de una clase propia (titular) NO muestra el badge "Suplencia"', async () => {
+    mockCargarHistorialClases.mockResolvedValue({
+      clases: CLASES,
+      sesiones: [sesionResuelta({ esSuplencia: false })],
+    })
+
+    await renderMisClasesView(container)
+
+    expect(container.querySelector('.pm-misclases-card .pm-badge-info')).toBeFalsy()
+  })
+
+  it('el selector de clase marca las clases suplidas para distinguirlas de las propias', async () => {
+    mockCargarHistorialClases.mockResolvedValue({
+      clases: [
+        { id: 'clase-1', nombre: 'Violín 101', esSuplencia: false },
+        { id: 'clase-2', nombre: 'Cello 201', esSuplencia: true },
+      ],
+      sesiones: [sesionResuelta({})],
+    })
+
+    await renderMisClasesView(container)
+
+    const opciones = [...container.querySelectorAll('#pm-misclases-clase option')].map((o) => o.textContent)
+    expect(opciones.find((t) => t.includes('Cello 201'))).toContain('🔁')
+    expect(opciones.find((t) => t.includes('Violín 101'))).not.toContain('🔁')
+  })
 })

@@ -23,3 +23,6 @@
 
 /* Wizard de inscripción: tokens visuales sobre Bootstrap */
 @import url('./13-wizard.css');
+
+/* Mis Clases Dadas: historial de contenido y asistencia del maestro */
+@import url('./14-mis-clases.css');

@@ -162,8 +162,9 @@ export async function getDetalleSesion(sesionId) {
       `
       id, fecha, hora_inicio, hora_fin,
       tema_principal, observaciones_generales, estado,
+      contenido, salon_id,
       clases (
-        nombre, instrumento,
+        nombre, instrumento, salon,
         maestros!fk_clases_maestro_principal ( nombre_completo )
       )
     `,
@@ -230,9 +231,13 @@ export async function getDetalleSesion(sesionId) {
       horaFin: sc.hora_fin,
       temaPrincipal: sc.tema_principal,
       observacionesGenerales: sc.observaciones_generales,
+      // Contenido tal cual lo escribió el maestro. Es la columna viva:
+      // `tema_principal` y `observaciones_generales` quedaron casi sin uso.
+      contenido: sc.contenido ?? null,
       estado: sc.estado,
       claseNombre: sc.clases?.nombre ?? '—',
       instrumento: sc.clases?.instrumento ?? '—',
+      salon: sc.clases?.salon ?? null,
       maestroNombre: sc.clases?.maestros?.nombre_completo ?? '—',
     },
     asistencias: (asistencias || []).map((a) => ({
@@ -666,11 +671,15 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     if (sesiones && sesiones.length > 0) {
       sesiones.forEach((row) => {
         const clase = {
+          // Sin esto la fila del timeline renderiza data-id="undefined" y el
+          // modal de detalle nunca puede abrir.
+          sesion_clase_id: row.sesion_clase_id,
           clase_id: row.clase_id,
           clase_nombre: row.nombre_clase,
           fecha: row.fecha,
           hora_inicio: row.hora_inicio,
           hora_fin: row.hora_fin,
+          salon_id: row.salon_id || null,
           maestro_nombre: row.maestro_principal || 'Sin asignar',
           maestro_auxiliar_nombre: row.maestro_auxiliar || null,
           observacion_clase: row.observacion_clase || null,

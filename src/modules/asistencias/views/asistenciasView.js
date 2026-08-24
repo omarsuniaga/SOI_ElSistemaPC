@@ -217,18 +217,25 @@ function renderAccordions() {
             ${(dia.clases || [])
               .map(
                 (c) => `
-              <div class="list-group-item d-flex align-items-center justify-content-between py-3 px-3 hover-bg-light" data-action="view-detail" data-id="${c.sesionId}" style="cursor: pointer;">
-                <div>
-                  <h6 class="mb-1 fw-bold text-body">${escapeHTML(c.claseNombre)}</h6>
-                  <small class="text-muted"><i class="bi bi-person me-1"></i>Maestro: ${escapeHTML(c.maestroNombre || '—')}</small>
+              <div class="list-group-item py-3 px-3 hover-bg-light" data-action="view-detail" data-id="${c.sesion_clase_id}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                  <div class="min-w-0">
+                    <h6 class="mb-1 fw-bold text-body">${escapeHTML(c.clase_nombre || 'Clase sin nombre')}</h6>
+                    <small class="text-muted">
+                      <i class="bi bi-person me-1"></i>${escapeHTML(c.maestro_nombre || '—')}
+                      <span class="mx-1">•</span>
+                      <i class="bi bi-clock me-1"></i>${escapeHTML((c.hora_inicio || '--:--').slice(0, 5))}-${escapeHTML((c.hora_fin || '--:--').slice(0, 5))}
+                    </small>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">${c.presentes || 0} Pres.</span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">${c.ausentes || 0} Aus.</span>
+                    <button class="btn btn-sm btn-outline-primary ms-2 btn-evaluar-nodo-fast" data-sesion="${c.sesion_clase_id}">
+                      <i class="bi bi-star me-1"></i>Evaluar 1-5★
+                    </button>
+                  </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge bg-success-subtle text-success border border-success-subtle">${c.presentes || 0} Pres.</span>
-                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">${c.ausentes || 0} Aus.</span>
-                  <button class="btn btn-sm btn-outline-primary ms-2 btn-evaluar-nodo-fast" data-sesion="${c.sesionId}">
-                    <i class="bi bi-star me-1"></i>Evaluar 1-5★
-                  </button>
-                </div>
+                ${renderContenidoPreview(c)}
               </div>
             `,
               )
@@ -242,9 +249,74 @@ function renderAccordions() {
     .join('')
 }
 
+/**
+ * Adelanto del contenido de clase en la fila del timeline.
+ * `observacion_clase` viene de sesiones_clase.contenido (lo que escribe el maestro);
+ * `observacion_sesion` de observaciones_sesion.contenido_raw. Se prefiere el primero.
+ */
+function renderContenidoPreview(clase) {
+  const texto = (clase.observacion_clase || clase.observacion_sesion || '').trim()
+  if (!texto) return ''
+
+  const LIMITE = 180
+  const resumen = texto.length > LIMITE ? `${texto.slice(0, LIMITE).trimEnd()}…` : texto
+
+  return `
+    <div class="mt-2 ps-1 border-start border-3 border-primary-subtle">
+      <div class="ps-2 small text-secondary" style="white-space: pre-wrap; word-break: break-word;">${escapeHTML(resumen)}</div>
+    </div>
+  `
+}
+
 function formatTimelineDate(dateStr) {
   const date = new Date(dateStr + 'T12:00:00')
   return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function formatFechaLarga(fecha) {
+  if (!fecha) return '—'
+  const date = new Date(`${fecha}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return fecha
+  return date.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+/**
+ * Muestra el contenido de clase tal cual lo escribió el maestro.
+ * Se preserva el texto literal (white-space: pre-wrap) porque es evidencia
+ * institucional: no se reformatea ni se interpreta al mostrarlo.
+ *
+ * `contenido` es la fuente viva; `temaPrincipal` / `observacionesGenerales`
+ * son columnas legacy que quedaron casi sin uso y sirven solo de respaldo.
+ */
+function renderContenidoMaestro(sesion) {
+  const contenido = (sesion.contenido || '').trim()
+
+  if (contenido) {
+    return `<div class="contenido-maestro border rounded-3 p-3 bg-body" style="white-space: pre-wrap; word-break: break-word;">${escapeHTML(contenido)}</div>`
+  }
+
+  const legacy = [
+    sesion.temaPrincipal && `<p class="fw-semibold mb-1">${escapeHTML(sesion.temaPrincipal)}</p>`,
+    sesion.observacionesGenerales &&
+      `<p class="text-secondary small mb-0">${escapeHTML(sesion.observacionesGenerales)}</p>`,
+  ]
+    .filter(Boolean)
+    .join('')
+
+  if (legacy) {
+    return `<div class="border rounded-3 p-3 bg-body">${legacy}</div>`
+  }
+
+  return `
+    <div class="alert alert-light border small mb-0">
+      El maestro no registró contenido para esta sesión.
+    </div>
+  `
 }
 
 function _attachEvents(container) {
@@ -296,15 +368,15 @@ async function openDetailModal(sesionId) {
       body: `
         <div class="row g-4">
           <div class="col-md-8">
-            <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Tema Principal</label>
-            <p class="fw-semibold">${escapeHTML(detail.sesion.temaPrincipal || 'No especificado')}</p>
-            <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Observaciones Generales</label>
-            <p class="text-secondary small">${escapeHTML(detail.sesion.observacionesGenerales || 'Sin observaciones.')}</p>
+            <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Contenido registrado por el maestro</label>
+            ${renderContenidoMaestro(detail.sesion)}
           </div>
           <div class="col-md-4 bg-body-tertiary p-3 rounded">
-            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${detail.sesion.fecha}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${(detail.sesion.horaInicio || '--:--').slice(0, 5)} - ${(detail.sesion.horaFin || '--:--').slice(0, 5)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${escapeHTML(formatFechaLarga(detail.sesion.fecha))}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${escapeHTML((detail.sesion.horaInicio || '--:--').slice(0, 5))} - ${escapeHTML((detail.sesion.horaFin || '--:--').slice(0, 5))}</strong></div>
             <div class="d-flex justify-content-between mb-2"><span>Maestro:</span> <strong>${escapeHTML(detail.sesion.maestroNombre)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Clase:</span> <strong>${escapeHTML(detail.sesion.claseNombre || '—')}</strong></div>
+            ${detail.sesion.salon ? `<div class="d-flex justify-content-between mb-2"><span>Lugar:</span> <strong>${escapeHTML(detail.sesion.salon)}</strong></div>` : ''}
             <button class="btn btn-sm btn-primary w-100 mt-2" id="btn-evaluar-modal-inner">
               <i class="bi bi-star me-1"></i>Evaluar Contenido (1-5★)
             </button>

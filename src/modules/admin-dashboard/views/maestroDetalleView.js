@@ -117,6 +117,9 @@ export class MaestroDetalleView {
 
           <!-- BOTONES DE ACCIÓN RÁPIDA -->
           <div style="display:flex;align-items:center;gap:0.75rem;">
+            <button class="btn btn-sm" id="btnVerClasesDadas" style="background:linear-gradient(135deg, #6366f1, #a855f7);border:none;border-radius:12px;padding:0.6rem 1.25rem;font-weight:700;font-size:0.9rem;display:inline-flex;align-items:center;gap:0.5rem;color:#fff;">
+              <i class="bi bi-journal-richtext" style="font-size:1.1rem;"></i> Ver Clases Dadas y Contenido
+            </button>
             <button class="btn btn-success" id="btnOpenWhatsAppModal" style="background:linear-gradient(135deg, #25D366, #128C7E);border:none;border-radius:12px;padding:0.6rem 1.25rem;font-weight:700;font-size:0.9rem;display:inline-flex;align-items:center;gap:0.5rem;box-shadow:0 4px 15px rgba(37,211,102,0.3);color:#fff;">
               <i class="bi bi-whatsapp" style="font-size:1.1rem;"></i> Enviar Recordatorio WhatsApp
             </button>
@@ -459,6 +462,10 @@ export class MaestroDetalleView {
   attachEvents() {
     document.getElementById('btnVolver')?.addEventListener('click', () => {
       router.navigate('admin-dashboard')
+    })
+
+    document.getElementById('btnVerClasesDadas')?.addEventListener('click', () => {
+      router.navigate('admin-maestro-clases', { maestroId: this.maestroId })
     })
 
     document.getElementById('btnFiltroTodas')?.addEventListener('click', () => {

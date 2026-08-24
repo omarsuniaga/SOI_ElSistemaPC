@@ -1,6 +1,6 @@
 // src/portal-maestros/services/__tests__/reportService.test.js
 import { describe, it, expect } from 'vitest'
-import { calcAttendanceStats, buildAlumnoAttMap } from '../reportService.js'
+import { calcAttendanceStats, buildAlumnoAttMap, generateRangeReportHTML } from '../reportService.js'
 
 describe('calcAttendanceStats', () => {
   it('counts P, A, J from a session asistencia array', () => {
@@ -29,5 +29,68 @@ describe('buildAlumnoAttMap', () => {
     expect(result['a1']['s2']).toBe('J')
     expect(result['a2']['s1']).toBe('A')
     expect(result['a2']['s2']).toBe('P')
+  })
+})
+
+describe('generateRangeReportHTML', () => {
+  const sesiones = [
+    {
+      fecha: '2026-08-20',
+      horaInicio: '14:00:00',
+      horaFin: '15:00:00',
+      claseNombre: 'Violín 101',
+      salonNombre: 'Aula Magna',
+      contenido: 'Escalas mayores',
+      presentes: 1,
+      ausentes: 1,
+      justificados: 1,
+      totalRegistros: 3,
+      roster: [
+        { nombre: 'Ana Torres', estado: 'P', motivo: null },
+        { nombre: 'Bruno Vera', estado: 'A', motivo: null },
+        { nombre: 'Carlos Ruiz', estado: 'J', motivo: 'Cita médica' },
+      ],
+    },
+  ]
+
+  it('incluye el índice, el contenido literal y el roster con causa de justificación', () => {
+    const html = generateRangeReportHTML(sesiones, {
+      maestroNombre: 'Prof. Ana',
+      claseLabel: 'Violín 101',
+      rangoLabel: 'Últimos 30 días',
+    })
+
+    expect(html).toContain('Violín 101')
+    expect(html).toContain('Prof. Ana')
+    expect(html).toContain('Escalas mayores')
+    expect(html).toContain('Ana Torres')
+    expect(html).toContain('Cita médica')
+    expect(html).toContain('Aula Magna')
+  })
+
+  it('escapa HTML en el contenido y en el motivo de justificación', () => {
+    const html = generateRangeReportHTML(
+      [
+        {
+          ...sesiones[0],
+          contenido: '<script>alert(1)</script>',
+          roster: [{ nombre: 'Ana', estado: 'J', motivo: '<img src=x onerror=alert(1)>' }],
+        },
+      ],
+      { maestroNombre: 'Prof. Ana', claseLabel: 'Violín 101', rangoLabel: 'Últimos 30 días' },
+    )
+
+    expect(html).not.toContain('<script>alert(1)</script>')
+    expect(html).not.toContain('<img src=x')
+  })
+
+  it('sin sesiones, no rompe y arma solo la portada', () => {
+    const html = generateRangeReportHTML([], {
+      maestroNombre: 'Prof. Ana',
+      claseLabel: 'Todas mis clases',
+      rangoLabel: 'Últimos 7 días',
+    })
+
+    expect(html).toContain('Índice de sesiones')
   })
 })

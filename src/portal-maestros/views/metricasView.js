@@ -200,6 +200,10 @@ function generarHTML(datos) {
         </select>
       </header>
 
+      <button type="button" id="pm-btn-ver-misclases" class="pm-btn pm-btn-muted pm-btn-sm" style="width:auto;margin-bottom:1rem;">
+        <i class="bi bi-journal-text"></i> Ver mis clases dadas
+      </button>
+
       <section class="pm-dashboard-overview" aria-label="Indicadores generales">
         <div class="pm-overview-card primary">
           <div class="pm-overview-ring" aria-label="Asistencia general ${asistenciaPromedio}%">
@@ -628,6 +632,10 @@ function generarHTML(datos) {
 function bindEvents(container) {
   console.log('[MetricasView.bindEvents] Iniciando bind, container:', container)
   console.log('[MetricasView.bindEvents] HTML length:', container?.innerHTML?.length || 0)
+  container.querySelector('#pm-btn-ver-misclases')?.addEventListener('click', () => {
+    window.router?.navigate('mis-clases')
+  })
+
   // Filtro de período SIN reload
   const selectPeriodo = container.querySelector('#pm-filter-periodo')
   selectPeriodo?.addEventListener('change', async (e) => {

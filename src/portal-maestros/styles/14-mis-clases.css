@@ -1,0 +1,105 @@
+/* ============================================================
+   MIS CLASES DADAS — historial de contenido y asistencia del maestro
+   ============================================================ */
+
+.pm-misclases {
+  padding: 1rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.pm-misclases-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.pm-misclases-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 0.15rem;
+  color: var(--pm-text);
+}
+
+.pm-misclases-subtitle {
+  font-size: 0.85rem;
+  color: var(--pm-text-muted);
+  margin: 0;
+}
+
+.pm-misclases-filtros {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pm-misclases-dia {
+  margin-bottom: 1.5rem;
+}
+
+.pm-misclases-dia-titulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--pm-text-muted);
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--pm-border);
+}
+
+.pm-misclases-card {
+  margin-bottom: 0.75rem;
+}
+
+.pm-misclases-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pm-misclases-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--pm-text);
+}
+
+.pm-misclases-card-hora,
+.pm-misclases-card-salon {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pm-misclases-card-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.pm-misclases-contenido {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  background: var(--pm-surface-2);
+  border-radius: var(--pm-radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--pm-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pm-misclases-contenido--vacio {
+  color: var(--pm-text-muted);
+  font-style: italic;
+}

@@ -150,9 +150,12 @@ export async function getDetalleSesion(sesionId) {
       horaFin: sc.hora_fin,
       temaPrincipal: sc.tema || 'Sin tema',
       observacionesGenerales: sc.contenido || '',
+      // Espeja la forma del adaptador real: el contenido del maestro va en `contenido`.
+      contenido: sc.contenido || null,
       estado: sc.estado,
       claseNombre: classInfo.nombre ?? '—',
       instrumento: classInfo.instrumento ?? '—',
+      salon: classInfo.salon ?? null,
       maestroNombre: teacherInfo.nombre_completo ?? '—',
     },
     asistencias: asistencias.map(a => {
@@ -341,6 +344,8 @@ export async function getReporteConsolidado({ fecha, claseId } = {}) {
     const scAsistencias = dbAsistencias.filter(a => a.sesion_clase_id === row.id)
 
     const clase = {
+      // Necesario para que la fila del timeline pueda abrir el modal de detalle.
+      sesion_clase_id: row.id,
       clase_id: row.clase_id,
       clase_nombre: classInfo.nombre ?? '—',
       fecha: row.fecha,

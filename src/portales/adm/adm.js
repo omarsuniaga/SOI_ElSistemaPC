@@ -4,7 +4,9 @@
  * postulados, calendario de citas, resumen de asistencias, sistema/config y tareas
  * Hermes del depto ADM.
  *
- * Gating: rol 'admin' por ahora (rol fino 'administrador' a futuro).
+ * Gating: 'admin', 'superadmin' y 'coordinacion_academica' comparten acceso
+ * completo a este portal (decisión explícita al agregar "Clases Dadas" —
+ * coordinación académica necesita ver el mismo vistazo aéreo que admin).
  */
 
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
@@ -77,7 +79,7 @@ bootAdminPortal({
   brandIcon: 'bi-clipboard-data',
   navGroups,
   registrars: allRegistrars,
-  allowedRoles: ['admin'],
+  allowedRoles: ['admin', 'superadmin', 'coordinacion_academica'],
   defaultRoute: 'clases-hoy',
   hermesDept: 'ADM',
 }).catch((err) => {

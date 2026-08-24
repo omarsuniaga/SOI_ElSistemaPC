@@ -60,6 +60,21 @@ export function registerRoutesAdminDashboard() {
     }
   })
 
+  // Clases Dadas de un Maestro — contenido, roster y análisis IA de progreso
+  router.register('admin-maestro-clases', async (container, params) => {
+    try {
+      container.innerHTML = `<div id="maestro-clases-container" class="p-4"></div>`
+      const { MaestroClasesContenidoView } = await import('./views/maestroClasesContenidoView.js')
+      const maestroId = params?.maestroId ?? params?.id
+      if (!maestroId) throw new Error('No se recibió el identificador del maestro')
+      const view = new MaestroClasesContenidoView('maestro-clases-container', maestroId)
+      view.init()
+    } catch (error) {
+      console.error('[admin-maestro-clases] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar clases dadas: ${error.message}</p></div>`
+    }
+  })
+
   // Reporte de Tendencias para Director
   router.register('admin-dashboard-tendencias', (container) => {
     try {

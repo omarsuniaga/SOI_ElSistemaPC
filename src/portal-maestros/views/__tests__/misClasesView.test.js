@@ -3,116 +3,81 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 /**
  * misClasesView.test.js
  *
- * "Mis Clases Dadas": historial del maestro con el contenido tal cual lo
- * registró, asistencia detallada por alumno (con causa de justificación)
- * y metadatos de cada sesión confirmada. Cubre:
- * - Solo se muestran sesiones confirmadas (borrador === false).
- * - El contenido se muestra literal, sin escapar de más ni de menos.
- * - Los conteos P/A/J salen del JSONB `asistencia` de sesiones_clase.
- * - El roster detallado resuelve nombres y causa de justificación.
- * - El filtro por clase excluye sesiones de otras clases.
+ * "Mis Clases Dadas": render e interacción. La lógica de datos (roster,
+ * causa de justificación, respaldo de hora/salón) vive en
+ * historialClasesService.js y se cubre en su propio test — acá se mockea
+ * directo para no duplicar esa cobertura.
  */
 
 vi.mock('../../auth/maestroAuth.js', () => ({
-  getMaestroLocal: vi.fn(() => ({ id: 'maestro-1' })),
+  getMaestroLocal: vi.fn(() => ({ id: 'maestro-1', nombre_completo: 'Prof. Ana' })),
 }))
 
-const mockGetMisClases = vi.fn()
-const mockGetSesiones = vi.fn()
-const mockGetSalones = vi.fn(() => Promise.resolve([]))
-const mockGetHorariosClases = vi.fn(() => Promise.resolve([]))
-
-vi.mock('../../services/maestroDataService.js', () => ({
-  getMisClases: (...args) => mockGetMisClases(...args),
-  getSesiones: (...args) => mockGetSesiones(...args),
-  getSalones: (...args) => mockGetSalones(...args),
-  getHorariosClases: (...args) => mockGetHorariosClases(...args),
+const mockCargarHistorialClases = vi.fn()
+vi.mock('../../services/historialClasesService.js', () => ({
+  cargarHistorialClases: (...args) => mockCargarHistorialClases(...args),
+  RANGOS: [
+    { dias: 7, label: 'Últimos 7 días' },
+    { dias: 30, label: 'Últimos 30 días' },
+    { dias: 90, label: 'Últimos 90 días' },
+  ],
 }))
 
-// misClasesView resuelve nombres de alumnos y causas de justificación con
-// consultas directas a supabase (no pasan por maestroDataService) — mismo
-// patrón que el resto de las vistas del portal.
-vi.mock('../../../lib/supabaseClient.js', () => ({ supabase: { from: vi.fn() } }))
+vi.mock('../../services/reportService.js', () => ({
+  generateDailyReport: vi.fn(),
+  generateRangeReportHTML: vi.fn(() => '<html>reporte</html>'),
+}))
 
-vi.mock('../../services/reportService.js', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, generateDailyReport: vi.fn() }
-})
-
-// El reporte de rango arma su propio HTML con estos builders — se dejan
-// como passthrough para poder inspeccionar el contenido final, y se
-// espía openReport para no abrir un modal real en jsdom.
 vi.mock('../../services/reportTemplates.js', () => ({
-  header: vi.fn((d) => `[header clase=${d.clase} docente=${d.docente} periodo=${d.periodo}]`),
-  footer: vi.fn((p, t) => `[footer ${p}/${t}]`),
-  metricChips: vi.fn((m) => `[chips ${m.map((x) => `${x.label}:${x.value}`).join(',')}]`),
-  wrapDocument: vi.fn((html) => html),
   openReport: vi.fn(() => true),
-  esc: vi.fn((s) => String(s ?? '')),
 }))
 
-import { supabase } from '../../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../../auth/maestroAuth.js'
-import { generateDailyReport } from '../../services/reportService.js'
+import { generateDailyReport, generateRangeReportHTML } from '../../services/reportService.js'
 import { openReport } from '../../services/reportTemplates.js'
-import { renderMisClasesView } from '../misClasesView.js'
+
+// misClasesView.js guarda `estadoActual`/`_ultimosDatos` como singletons de
+// módulo (mismo patrón que metricasView.js) — sin resetModules() un test que
+// cambia el filtro de clase deja ese estado pisado para el siguiente test.
+let renderMisClasesView
 
 const CLASES = [
   { id: 'clase-1', nombre: 'Violín 101' },
   { id: 'clase-2', nombre: 'Cello 201' },
 ]
 
-const ALUMNOS = [
-  { id: 'a1', nombre_completo: 'Ana Torres' },
-  { id: 'a2', nombre_completo: 'Bruno Vera' },
-  { id: 'a3', nombre_completo: 'Carlos Ruiz' },
-]
-
-function sesionBase(overrides) {
+function sesionResuelta(overrides) {
   return {
     id: 's1',
     fecha: '2026-08-20',
-    hora_inicio: '14:00:00',
-    hora_fin: '15:00:00',
-    clase_id: 'clase-1',
-    salon_id: null,
-    borrador: false,
+    horaInicio: '14:00:00',
+    horaFin: '15:00:00',
+    claseId: 'clase-1',
+    claseNombre: 'Violín 101',
+    salonNombre: null,
     contenido: '#Ana [Escalas] práctica de vibrato',
-    asistencia: [
-      { alumno_id: 'a1', estado: 'P' },
-      { alumno_id: 'a2', estado: 'A' },
-      { alumno_id: 'a3', estado: 'J' },
+    presentes: 1,
+    ausentes: 1,
+    justificados: 1,
+    totalRegistros: 3,
+    roster: [
+      { alumnoId: 'a1', nombre: 'Ana Torres', estado: 'P', motivo: null },
+      { alumnoId: 'a2', nombre: 'Bruno Vera', estado: 'A', motivo: null },
+      { alumnoId: 'a3', nombre: 'Carlos Ruiz', estado: 'J', motivo: 'Cita médica' },
     ],
     ...overrides,
   }
 }
 
-/** Setup por defecto: alumnos resuelve ALUMNOS, justificaciones vacío. */
-function setupSupabase({ alumnos = ALUMNOS, justificaciones = [] } = {}) {
-  supabase.from.mockImplementation((table) => {
-    if (table === 'alumnos') {
-      return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: alumnos, error: null }) }
-    }
-    if (table === 'justificaciones') {
-      return {
-        select: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({ data: justificaciones, error: null }),
-      }
-    }
-    return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: [], error: null }) }
-  })
-}
-
 describe('misClasesView', () => {
   let container
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules()
     vi.clearAllMocks()
-    mockGetMisClases.mockResolvedValue(CLASES)
-    mockGetSalones.mockResolvedValue([])
-    mockGetHorariosClases.mockResolvedValue([])
-    getMaestroLocal.mockReturnValue({ id: 'maestro-1' })
-    setupSupabase()
+    ;({ renderMisClasesView } = await import('../misClasesView.js'))
+    getMaestroLocal.mockReturnValue({ id: 'maestro-1', nombre_completo: 'Prof. Ana' })
+    mockCargarHistorialClases.mockResolvedValue({ clases: CLASES, sesiones: [sesionResuelta({})] })
     container = document.createElement('div')
     document.body.appendChild(container)
   })
@@ -122,17 +87,16 @@ describe('misClasesView', () => {
   })
 
   it('muestra el contenido de la sesión literal, sin reformatear', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
-
     await renderMisClasesView(container)
 
     expect(container.textContent).toContain('#Ana [Escalas] práctica de vibrato')
   })
 
   it('escapa HTML en el contenido para evitar inyección', async () => {
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ contenido: '<img src=x onerror=alert(1)>' }),
-    ])
+    mockCargarHistorialClases.mockResolvedValue({
+      clases: CLASES,
+      sesiones: [sesionResuelta({ contenido: '<img src=x onerror=alert(1)>' })],
+    })
 
     await renderMisClasesView(container)
 
@@ -140,38 +104,16 @@ describe('misClasesView', () => {
     expect(container.textContent).toContain('<img src=x onerror=alert(1)>')
   })
 
-  it('excluye las sesiones en borrador — no son "clases dadas" todavía', async () => {
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ id: 's1', borrador: false, contenido: 'confirmada' }),
-      sesionBase({ id: 's2', borrador: true, contenido: 'todavia-en-borrador' }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('confirmada')
-    expect(container.textContent).not.toContain('todavia-en-borrador')
-  })
-
-  it('calcula presentes/ausentes/justificados desde el JSONB de asistencia', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('1 P')
-    expect(container.textContent).toContain('1 A')
-    expect(container.textContent).toContain('1 J')
-  })
-
   it('muestra un aviso cuando la sesión no tiene contenido registrado', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({ contenido: null })])
+    mockCargarHistorialClases.mockResolvedValue({ clases: CLASES, sesiones: [sesionResuelta({ contenido: '' })] })
 
     await renderMisClasesView(container)
 
     expect(container.textContent).toContain('Sin contenido registrado')
   })
 
-  it('muestra estado vacío cuando no hay sesiones confirmadas en el rango', async () => {
-    mockGetSesiones.mockResolvedValue([])
+  it('muestra estado vacío cuando no hay sesiones en el rango', async () => {
+    mockCargarHistorialClases.mockResolvedValue({ clases: CLASES, sesiones: [] })
 
     await renderMisClasesView(container)
 
@@ -184,166 +126,47 @@ describe('misClasesView', () => {
     await renderMisClasesView(container)
 
     expect(container.textContent).toContain('No hay sesión activa')
-    expect(mockGetSesiones).not.toHaveBeenCalled()
+    expect(mockCargarHistorialClases).not.toHaveBeenCalled()
   })
 
-  it('filtra por clase cuando el maestro cambia el selector', async () => {
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ id: 's1', clase_id: 'clase-1', contenido: 'contenido-violin' }),
-      sesionBase({ id: 's2', clase_id: 'clase-2', contenido: 'contenido-cello' }),
-    ])
-
+  it('llama a cargarHistorialClases con el maestroId de la sesión local', async () => {
     await renderMisClasesView(container)
-    expect(container.textContent).toContain('contenido-violin')
-    expect(container.textContent).toContain('contenido-cello')
+
+    expect(mockCargarHistorialClases).toHaveBeenCalledWith(
+      expect.objectContaining({ maestroId: 'maestro-1', dias: 30, claseId: 'todas' }),
+    )
+  })
+
+  it('al cambiar el filtro de clase, recarga con el nuevo claseId', async () => {
+    await renderMisClasesView(container)
 
     const selectClase = container.querySelector('#pm-misclases-clase')
-    selectClase.value = 'clase-1'
+    selectClase.value = 'clase-2'
     selectClase.dispatchEvent(new Event('change'))
     await new Promise((resolve) => setTimeout(resolve, 0))
-    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(container.textContent).toContain('contenido-violin')
-    expect(container.textContent).not.toContain('contenido-cello')
+    expect(mockCargarHistorialClases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ claseId: 'clase-2' }),
+    )
   })
 
-  // ── Respaldo de hora/salón desde el horario recurrente de la clase ─────
-  // La mayoría de las sesiones reales (88 de 103) no guardan hora ni salón
-  // propios — el maestro nunca los captura al tomar asistencia. Deben
-  // resolverse desde clase_horarios, indexado por día de la semana.
-
-  it('usa el horario recurrente cuando la sesión no tiene hora propia', async () => {
-    mockGetHorariosClases.mockResolvedValue([
-      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: null },
-    ])
-    // 2026-08-20 es jueves
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ fecha: '2026-08-20', hora_inicio: null, hora_fin: null }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('15:30')
-    expect(container.textContent).toContain('17:00')
-  })
-
-  it('respeta la hora propia de la sesión si existe, sin usar el horario recurrente', async () => {
-    mockGetHorariosClases.mockResolvedValue([
-      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: null },
-    ])
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ fecha: '2026-08-20', hora_inicio: '09:00:00', hora_fin: '10:00:00' }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('09:00')
-    expect(container.textContent).not.toContain('15:30')
-  })
-
-  it('elige el horario del dia correcto cuando la clase se reune varios dias con horas distintas', async () => {
-    mockGetHorariosClases.mockResolvedValue([
-      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '14:00:00', hora_fin: '17:00:00', salon_id: null },
-      { clase_id: 'clase-1', dia: 'sábado', hora_inicio: '09:00:00', hora_fin: '13:00:00', salon_id: null },
-    ])
-    // 2026-08-22 es sábado
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ fecha: '2026-08-22', hora_inicio: null, hora_fin: null }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('09:00')
-    expect(container.textContent).not.toContain('14:00')
-  })
-
-  it('resuelve el salón desde el horario recurrente cuando la sesión no trae salon_id', async () => {
-    mockGetHorariosClases.mockResolvedValue([
-      { clase_id: 'clase-1', dia: 'jueves', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: 'salon-1' },
-    ])
-    mockGetSalones.mockResolvedValue([{ id: 'salon-1', nombre: 'Aula Magna' }])
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ fecha: '2026-08-20', salon_id: null }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('Aula Magna')
-  })
-
-  it('sin horario recurrente para ese día, no rompe y muestra el guion por defecto', async () => {
-    mockGetHorariosClases.mockResolvedValue([])
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ fecha: '2026-08-20', hora_inicio: null, hora_fin: null }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.querySelector('.pm-misclases-card-hora')?.textContent).toContain('—')
-  })
-
-  // ── Roster detallado: quién asistió, quién faltó, quién justificó ──────
-
-  it('resuelve los nombres de los alumnos en el roster, agrupados por estado', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
-
+  it('el roster agrupado muestra nombres y la causa de justificación', async () => {
     await renderMisClasesView(container)
 
     expect(container.textContent).toContain('Presentes (1)')
     expect(container.textContent).toContain('Ana Torres')
-    expect(container.textContent).toContain('Ausentes (1)')
-    expect(container.textContent).toContain('Bruno Vera')
-    expect(container.textContent).toContain('Justificados (1)')
-    expect(container.textContent).toContain('Carlos Ruiz')
-  })
-
-  it('muestra la causa de la justificación cuando existe', async () => {
-    setupSupabase({
-      justificaciones: [{ sesion_id: 's1', alumno_id: 'a3', motivo: 'Cita médica' }],
-    })
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
-
-    await renderMisClasesView(container)
-
     expect(container.textContent).toContain('Cita médica')
   })
 
-  it('un alumno ausente sin justificación no muestra motivo', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
-
-    await renderMisClasesView(container)
-
-    const listaAusentes = [...container.querySelectorAll('.pm-misclases-roster-grupo')].find((g) =>
-      g.textContent.includes('Ausentes'),
-    )
-    expect(listaAusentes?.querySelector('.pm-misclases-roster-motivo')).toBeFalsy()
-  })
-
-  it('un alumno que ya no aparece en alumnos activos igual se muestra por nombre resuelto por id', async () => {
-    setupSupabase({ alumnos: [{ id: 'a1', nombre_completo: 'Ana Torres' }] })
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ asistencia: [{ alumno_id: 'a1', estado: 'P' }] }),
-    ])
-
-    await renderMisClasesView(container)
-
-    expect(container.textContent).toContain('Ana Torres')
-  })
-
-  it('el botón de reporte por sesión es solo ícono (sin texto) para no saturar la lista', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
+  it('el botón de reporte por sesión es solo ícono (sin texto)', async () => {
     await renderMisClasesView(container)
 
     const btn = container.querySelector('.pm-misclases-btn-reporte')
-    expect(btn).toBeTruthy()
     expect(btn.dataset.sesionId).toBe('s1')
-    expect(btn.getAttribute('aria-label')).toMatch(/reporte/i)
-    // Sin texto visible — solo el ícono
     expect(btn.textContent.trim()).toBe('')
   })
 
   it('genera el reporte diario al hacer click en el botón por sesión', async () => {
-    mockGetSesiones.mockResolvedValue([sesionBase({})])
     await renderMisClasesView(container)
 
     container.querySelector('.pm-misclases-btn-reporte').click()
@@ -352,54 +175,23 @@ describe('misClasesView', () => {
     expect(generateDailyReport).toHaveBeenCalledWith('s1')
   })
 
-  // ── Reporte del rango completo (todas las clases visibles) ─────────────
+  it('el botón de reporte de rango está deshabilitado sin sesiones', async () => {
+    mockCargarHistorialClases.mockResolvedValue({ clases: CLASES, sesiones: [] })
 
-  it('el botón "Descargar reporte" del rango está deshabilitado si no hay sesiones', async () => {
-    mockGetSesiones.mockResolvedValue([])
     await renderMisClasesView(container)
 
-    const btn = container.querySelector('#pm-misclases-btn-reporte-rango')
-    expect(btn.disabled).toBe(true)
+    expect(container.querySelector('#pm-misclases-btn-reporte-rango').disabled).toBe(true)
   })
 
-  it('el reporte de rango incluye todas las sesiones visibles, con roster y motivo', async () => {
-    setupSupabase({
-      justificaciones: [{ sesion_id: 's1', alumno_id: 'a3', motivo: 'Cita médica' }],
-    })
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ id: 's1', fecha: '2026-08-20', contenido: 'contenido sesion 1' }),
-      sesionBase({ id: 's2', fecha: '2026-08-13', contenido: 'contenido sesion 2' }),
-    ])
-
+  it('el botón de reporte de rango arma el HTML y lo abre', async () => {
     await renderMisClasesView(container)
+
     container.querySelector('#pm-misclases-btn-reporte-rango').click()
 
+    expect(generateRangeReportHTML).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ maestroNombre: 'Prof. Ana', claseLabel: 'Todas mis clases' }),
+    )
     expect(openReport).toHaveBeenCalledOnce()
-    const [htmlArg, , opts] = openReport.mock.calls[0]
-    expect(htmlArg).toContain('contenido sesion 1')
-    expect(htmlArg).toContain('contenido sesion 2')
-    expect(htmlArg).toContain('Ana Torres')
-    expect(htmlArg).toContain('Cita médica')
-    expect(opts.title).toMatch(/Reporte de Clases/)
-  })
-
-  it('el reporte de rango respeta el filtro de clase activo', async () => {
-    mockGetSesiones.mockResolvedValue([
-      sesionBase({ id: 's1', clase_id: 'clase-1', contenido: 'contenido-violin' }),
-      sesionBase({ id: 's2', clase_id: 'clase-2', contenido: 'contenido-cello' }),
-    ])
-    await renderMisClasesView(container)
-
-    const selectClase = container.querySelector('#pm-misclases-clase')
-    selectClase.value = 'clase-1'
-    selectClase.dispatchEvent(new Event('change'))
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    container.querySelector('#pm-misclases-btn-reporte-rango').click()
-
-    const [htmlArg] = openReport.mock.calls.at(-1)
-    expect(htmlArg).toContain('contenido-violin')
-    expect(htmlArg).not.toContain('contenido-cello')
   })
 })

@@ -8,6 +8,7 @@
  *   generateDailyReport(sesionId)
  *   generateMonthlyAttendance(claseId, year, month)
  *   generateMonthlyPedagogical(claseId, year, month)
+ *   generateRangeReportHTML(sesiones, contexto) — pura, no consulta Supabase
  *
  * Also exports stat helpers for testing:
  *   calcAttendanceStats(asistenciaArray) → { P, A, J, total }
@@ -16,6 +17,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { AppToast } from '../../shared/components/AppToast.js'
+import { formatHora } from '../utils/portalUtils.js'
 import { generateMonthlyPatterns } from './groqService.js'
 import {
   header,
@@ -1337,4 +1339,118 @@ export async function generateAcademicClosureReport(payload = {}) {
     console.error('[reportService] generateAcademicClosureReport:', err)
     AppToast.error('Error al generar el cierre académico: ' + err.message)
   }
+}
+
+// ---------------------------------------------------------------------------
+// Doc 4 — Range Report (todas las sesiones de un rango/clase filtrado)
+// ---------------------------------------------------------------------------
+
+const ESTADO_LABEL_RPT = { P: 'Presente', A: 'Ausente', J: 'Justificado' }
+
+/**
+ * Arma (sin efectos secundarios) el HTML de un reporte con TODAS las
+ * sesiones ya cargadas en memoria — una página índice + una página por
+ * sesión con roster completo (nombre, estado, causa de justificación) y el
+ * contenido de clase literal. Usado tanto por "Mis Clases Dadas" del
+ * maestro como por su equivalente en el portal admin: en ambos casos los
+ * datos ya están en pantalla (vía historialClasesService.cargarHistorialClases),
+ * así que esto no vuelve a consultar Supabase — solo compone HTML.
+ *
+ * Quien llama es responsable de pasarle el HTML resultante a openReport().
+ *
+ * @param {Array} sesiones — shape de historialClasesService.cargarHistorialClases()
+ * @param {Object} contexto
+ * @param {string} contexto.maestroNombre
+ * @param {string} contexto.claseLabel — nombre de la clase o "Todas las clases"
+ * @param {string} contexto.rangoLabel — ej. "Últimos 30 días"
+ * @returns {string} documento HTML completo (wrapDocument ya aplicado)
+ */
+export function generateRangeReportHTML(sesiones, { maestroNombre, claseLabel, rangoLabel }) {
+  const totalP = sesiones.reduce((sum, s) => sum + s.presentes, 0)
+  const totalA = sesiones.reduce((sum, s) => sum + s.ausentes, 0)
+  const totalJ = sesiones.reduce((sum, s) => sum + s.justificados, 0)
+  const totalPaginas = sesiones.length + 1
+
+  const indiceRows = sesiones
+    .map(
+      (s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(formatDate(s.fecha))}</td>
+        <td>${esc(formatHora(s.horaInicio))}</td>
+        <td>${esc(s.claseNombre)}</td>
+        <td style="text-align:center">${s.presentes}</td>
+        <td style="text-align:center">${s.ausentes}</td>
+        <td style="text-align:center">${s.justificados}</td>
+      </tr>
+    `,
+    )
+    .join('')
+
+  const portada = `
+    <div class="page">
+      ${header({
+        docTag: 'REPORTE DE CLASES',
+        clase: claseLabel,
+        docente: maestroNombre,
+        periodo: rangoLabel,
+      })}
+      ${metricChips([
+        { label: 'Sesiones', value: sesiones.length, type: 'navy' },
+        { label: 'Presentes', value: totalP, type: 'ok' },
+        { label: 'Ausentes', value: totalA, type: 'bad' },
+        { label: 'Justificados', value: totalJ, type: 'warn' },
+      ])}
+      <p class="rpt-section-title">Índice de sesiones</p>
+      <table class="rpt-table">
+        <thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Clase</th><th>P</th><th>A</th><th>J</th></tr></thead>
+        <tbody>${indiceRows}</tbody>
+      </table>
+      ${footer(1, totalPaginas, rangoLabel)}
+    </div>
+  `
+
+  const paginasSesion = sesiones
+    .map((s, i) => {
+      const rosterRows = (s.roster || [])
+        .map(
+          (a, j) => `
+        <tr>
+          <td>${j + 1}</td>
+          <td>${esc(a.nombre)}</td>
+          <td style="text-align:center">${esc(ESTADO_LABEL_RPT[a.estado] || a.estado)}</td>
+          <td style="font-size:6.5pt;color:#6b7085">${esc(a.motivo || '')}</td>
+        </tr>
+      `,
+        )
+        .join('')
+
+      return `
+        <div class="page">
+          ${header({
+            docTag: `SESIÓN · ${formatDate(s.fecha)}`,
+            clase: s.claseNombre,
+            docente: maestroNombre,
+            periodo: `${formatHora(s.horaInicio)}–${formatHora(s.horaFin)}${s.salonNombre ? ' · ' + s.salonNombre : ''}`,
+          })}
+          ${metricChips([
+            { label: 'Presentes', value: s.presentes, type: 'ok' },
+            { label: 'Ausentes', value: s.ausentes, type: 'bad' },
+            { label: 'Justificados', value: s.justificados, type: 'warn' },
+            { label: 'Total', value: s.totalRegistros, type: 'navy' },
+          ])}
+          <p class="rpt-section-title">Asistencia detallada</p>
+          <table class="rpt-table">
+            <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
+            <tbody>${rosterRows || '<tr><td colspan="4">Sin registro de asistencia individual.</td></tr>'}</tbody>
+          </table>
+          <p class="rpt-section-title">Contenido de la sesión</p>
+          <p style="font-size:8pt;line-height:1.4;white-space:pre-wrap;">${esc(s.contenido) || 'Sin contenido registrado.'}</p>
+          ${footer(i + 2, totalPaginas, formatDate(s.fecha))}
+        </div>
+      `
+    })
+    .join('')
+
+  return wrapDocument(portada + paginasSesion)
 }

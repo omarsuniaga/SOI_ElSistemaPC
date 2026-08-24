@@ -1,5 +1,7 @@
-﻿import '../styles/maestros.css'
+import '../styles/maestros.css'
+import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+
 import {
   obtenerMaestros,
   crearMaestroConAuth,
@@ -209,47 +211,54 @@ function attachEspecialidadesEvents(modalBody, onChange) {
 }
 
 function renderContent(container) {
+  const actionsHtml = `
+    <button class="btn-help-trigger me-1" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+      <i class="bi bi-question"></i>
+    </button>
+    <button class="btn btn-outline-success btn-sm d-flex align-items-center gap-1" id="btnExportarCSV" title="Exportar listado a CSV">
+      <i class="bi bi-file-earmark-spreadsheet"></i> <span class="d-none d-sm-inline">CSV</span>
+    </button>
+    <button class="btn btn-premium-action" id="btnAgregarMaestro">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Maestro
+    </button>
+  `
+
+  const filtersHtml = `
+    <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
+      <i class="bi bi-search search-icon-muted"></i>
+      <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, cédula o instrumento..." id="buscar" autocomplete="off">
+    </div>
+
+    <div class="premium-select-container">
+      <i class="bi bi-funnel select-icon-muted"></i>
+      <select class="form-select premium-filter-select" id="filtroEstado">
+        <option value="todos">Todos los estados</option>
+        <option value="activo">Activos</option>
+        <option value="inactivo">Inactivos</option>
+      </select>
+    </div>
+
+    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnLimpiarFiltrosMaestros" type="button" title="Limpiar filtros">
+      <i class="bi bi-x-circle"></i> <span>Limpiar</span>
+    </button>
+  `
+
   container.innerHTML = `
     <div class="page-container">
-      <div class="maestros-header-premium mb-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-            <i class="bi bi-person-check fs-4"></i>
-          </div>
-          <div>
-            <h1 class="maestros-title-premium mb-0">Maestros</h1>
-            <p class="text-muted small mb-0">${state.maestros.length} maestros en total</p>
-          </div>
-        </div>
-        
-        <div class="maestros-header-actions">
-          <button class="btn-help-trigger" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
-            <i class="bi bi-question"></i>
-          </button>
-          <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
-            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-          </button>
-          <button class="btn btn-premium-action" id="btnAgregarMaestro">
-            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Maestro
-          </button>
-        </div>
-      </div>
+      ${renderPageHeader({
+        icon: 'bi-person-check',
+        title: 'Maestros',
+        subtitle: `${state.maestros.length} maestros registrados`,
+        actionsHtml,
+      })}
 
-      <div class="maestros-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1">
-          <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar maestro..." id="buscar" autocomplete="off">
-        </div>
-        
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroEstado">
-            <option value="todos">Todos los estados</option>
-            <option value="activo">Activos</option>
-            <option value="inactivo">Inactivos</option>
-          </select>
-        </div>
-      </div>
+      ${renderFilterPanel({
+        isOpen: true,
+        filtersHtml,
+        onToggleId: 'btnToggleFiltrosMaestros',
+        badgeId: 'filtrosBadgeCountMaestros',
+        subtitle: 'Busca y segmenta el plantel docente por instrumento y estado',
+      })}
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="maestrosTBody">
@@ -260,6 +269,7 @@ function renderContent(container) {
     </div>
   `
 }
+
 
 function renderTableRows(maestros) {
   if (!maestros.length) {
@@ -365,8 +375,28 @@ function attachEvents(container) {
 
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarMaestrosCSV())
 
-  container.querySelector('#buscar').addEventListener('input', () => applyFilters())
-  container.querySelector('#filtroEstado').addEventListener('change', () => applyFilters())
+  // Toggle Filtros Panel
+  const toggleBtn = container.querySelector('#btnToggleFiltrosMaestros')
+  const filterBody = container.querySelector('#btnToggleFiltrosMaestrosBody')
+  toggleBtn?.addEventListener('click', () => {
+    const isOpen = filterBody?.classList.toggle('is-open')
+    filterBody?.classList.toggle('is-collapsed', !isOpen)
+    toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+    const icon = toggleBtn.querySelector('i')
+    if (icon) icon.className = `bi ${isOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`
+  })
+
+  const searchInput = container.querySelector('#buscar')
+  searchInput?.addEventListener('input', () => applyFilters())
+  container.querySelector('#filtroEstado')?.addEventListener('change', () => applyFilters())
+
+  container.querySelector('#btnLimpiarFiltrosMaestros')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (searchInput) searchInput.value = ''
+    const estadoSelect = container.querySelector('#filtroEstado')
+    if (estadoSelect) estadoSelect.value = 'todos'
+    applyFilters()
+  })
 
   container.querySelector('#maestrosTBody').addEventListener('click', (e) => {
     const row = e.target.closest('.list-group-item[data-id]')
@@ -452,8 +482,8 @@ function openWhatsAppModal(id) {
 // ─── Filters ─────────────────────────────────────────────────────────────────
 
 function applyFilters() {
-  const searchTerm = currentContainer.querySelector('#buscar').value.trim().toLowerCase()
-  const filtroEstado = currentContainer.querySelector('#filtroEstado').value
+  const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
+  const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
 
   state.maestros = state.maestrosOriginales.filter((a) => {
     const nombre = (a.nombre || a.name || '').toLowerCase()
@@ -474,8 +504,22 @@ function applyFilters() {
     return matchSearch && matchEstado
   })
 
+  let activos = 0
+  if (filtroEstado !== 'todos') activos++
+
+  const badgeEl = currentContainer.querySelector('#filtrosBadgeCountMaestros')
+  if (badgeEl) {
+    badgeEl.textContent = activos
+    if (activos > 0) {
+      badgeEl.classList.remove('d-none')
+    } else {
+      badgeEl.classList.add('d-none')
+    }
+  }
+
   refreshTable()
 }
+
 
 // ─── Modal openers ───────────────────────────────────────────────────────────
 

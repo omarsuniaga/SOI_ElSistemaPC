@@ -1,5 +1,7 @@
 import '../styles/alumnos.css'
+import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
+
 import { formatPhone, normalizePhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -142,122 +144,91 @@ export async function renderAlumnosView(container) {
   // ─── Nested View Functions ──────────────────────────────────────────
 
   function renderContent(container) {
+    const actionsHtml = `
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 dropdown-toggle" type="button" id="btnDropdownAccionesAlumnos" data-bs-toggle="dropdown" aria-expanded="false" title="Acciones y reportes">
+          <i class="bi bi-three-dots"></i> <span class="d-none d-sm-inline">Acciones</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border p-1" aria-labelledby="btnDropdownAccionesAlumnos" style="min-width: 220px; border-radius: 12px; z-index: 1050;">
+          <li><h6 class="dropdown-header small text-muted text-uppercase fw-bold px-3 py-1">Herramientas</h6></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnConciliarPostulados"><i class="bi bi-arrow-repeat text-warning fs-6"></i> Conciliar Postulados</button></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnDetectarDuplicados"><i class="bi bi-copy text-primary fs-6"></i> Detectar Duplicados</button></li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li><h6 class="dropdown-header small text-muted text-uppercase fw-bold px-3 py-1">Exportar</h6></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnExportarCSV"><i class="bi bi-file-earmark-spreadsheet text-success fs-6"></i> Exportar CSV</button></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnDescargarPdfListado"><i class="bi bi-file-earmark-pdf text-danger fs-6"></i> PDF Listado</button></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnReporteMes"><i class="bi bi-bar-chart text-info fs-6"></i> Reporte por Mes</button></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnPdfDemo"><i class="bi bi-file-earmark-pdf text-secondary fs-6"></i> Vista Previa PDFs</button></li>
+        </ul>
+      </div>
+      <button class="btn btn-outline-success btn-sm d-flex align-items-center gap-1" id="btnInscribir" title="Inscribir nuevo alumno">
+        <i class="bi bi-person-plus"></i> <span class="d-none d-sm-inline">Inscribir</span>
+      </button>
+      <button class="btn btn-premium-action" id="btnAgregarAlumno">
+        <i class="bi bi-plus-lg me-1"></i>Nuevo Alumno
+      </button>
+    `
+
+    const filtersHtml = `
+      <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
+        <i class="bi bi-search search-icon-muted"></i>
+        <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, cédula o email..." id="buscar" autocomplete="off">
+      </div>
+
+      <div class="premium-select-container">
+        <i class="bi bi-whatsapp select-icon-muted"></i>
+        <select class="form-select premium-filter-select" id="filtroWhatsapp">
+          <option value="todos">WhatsApp (Todos)</option>
+          <option value="con_whatsapp">Con WhatsApp</option>
+          <option value="sin_whatsapp">Sin WhatsApp</option>
+        </select>
+      </div>
+
+      <div class="premium-select-container">
+        <i class="bi bi-shield-check select-icon-muted"></i>
+        <select class="form-select premium-filter-select" id="filtroCompletitud">
+          <option value="todos">Completitud (Todas)</option>
+          <option value="critico">Crítico (&lt; 40%)</option>
+          <option value="parcial">Parcial (40-79%)</option>
+          <option value="bueno">Bueno (80-99%)</option>
+          <option value="completo">Completo (100%)</option>
+        </select>
+      </div>
+
+      <div class="premium-select-container">
+        <i class="bi bi-music-note select-icon-muted"></i>
+        <select class="form-select premium-filter-select" id="filtroInstrumento">
+          <option value="todos">Instrumento (Todos)</option>
+          <option value="con_instrumento">Con Instrumento</option>
+          <option value="sin_instrumento">Sin Instrumento</option>
+        </select>
+      </div>
+
+      <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnLimpiarFiltros" type="button" title="Limpiar filtros">
+        <i class="bi bi-x-circle"></i> <span>Limpiar</span>
+      </button>
+    `
+
     container.innerHTML = `
       <div class="page-container">
-        <div class="alumnos-header-premium mb-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-              <i class="bi bi-people fs-4"></i>
-            </div>
-            <div>
-              <h1 class="alumnos-title-premium mb-0">Alumnos</h1>
-              <p class="text-muted small mb-0">${state.alumnos.length} alumnos en total</p>
-            </div>
-          </div>
-          
-          <div class="alumnos-header-actions flex-wrap">
-            <button class="btn btn-outline-warning btn-sm-compact" id="btnConciliarPostulados" title="Completar datos faltantes desde Postulados">
-              <i class="bi bi-arrow-repeat me-1"></i>Conciliar Postulados
-            </button>
-            <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV" title="Exportar CSV">
-              <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-            </button>
-            <button class="btn btn-outline-secondary btn-sm-compact" id="btnReporteMes" title="Inscritos por mes">
-              <i class="bi bi-bar-chart"></i> Reporte
-            </button>
-            <button class="btn btn-outline-danger btn-sm-compact" id="btnPdfDemo" title="Vista previa PDFs">
-              <i class="bi bi-file-earmark-pdf"></i> PDFs
-            </button>
-            <button class="btn btn-outline-danger btn-sm-compact" id="btnDescargarPdfListado" title="Descargar PDF del listado de alumnos">
-              <i class="bi bi-file-earmark-pdf"></i> PDF Listado
-            </button>
-            <button class="btn btn-outline-primary btn-sm-compact" id="btnDetectarDuplicados" title="Buscar y fusionar alumnos duplicados">
-              <i class="bi bi-copy me-1"></i>Duplicados
-            </button>
-            <button class="btn btn-success btn-sm-compact" id="btnInscribir">
-              <i class="bi bi-person-plus me-1"></i>Inscribir
-            </button>
-            <button class="btn btn-premium-action" id="btnAgregarAlumno">
-              <i class="bi bi-plus-lg me-1"></i>Nuevo Alumno
-            </button>
-          </div>
-        </div>
+        ${renderPageHeader({
+          icon: 'bi-people',
+          title: 'Alumnos',
+          subtitle: `${state.totalAlumnos || state.alumnos.length} alumnos registrados`,
+          actionsHtml,
+        })}
 
-        <div class="alumnos-filter-toolbar mb-4 flex-wrap">
-          <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
-            <i class="bi bi-search search-icon-muted"></i>
-            <input type="text" class="form-control premium-search-input" placeholder="Buscar alumno..." id="buscar" autocomplete="off">
-          </div>
-
-          <!-- Dropdown de Filtros Múltiples -->
-          <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm-compact d-flex align-items-center gap-2 dropdown-toggle position-relative" type="button" id="btnDropdownFiltros" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-height: 32px; border-radius: 8px;">
-              <i class="bi bi-funnel"></i> <span>Filtros</span>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary d-none" id="filtrosBadgeCount" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
-                0
-              </span>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg border" aria-labelledby="btnDropdownFiltros" style="min-width: 270px; border-radius: 12px; background: var(--bs-body-bg); z-index: 1050;">
-              <h6 class="dropdown-header px-0 mb-2 text-primary d-flex align-items-center gap-2" style="font-size: 0.85rem; font-weight: 700; background: transparent; border: none; color: var(--bs-primary) !important;">
-                <i class="bi bi-sliders"></i> Segmentar Alumnos
-              </h6>
-              
-              <!-- Filtro WhatsApp -->
-              <div class="mb-2">
-                <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">WhatsApp</label>
-                <div class="position-relative d-flex align-items-center w-100">
-                  <i class="bi bi-whatsapp select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
-                  <select class="form-select premium-filter-select" id="filtroWhatsapp" style="padding-left: 28px !important;">
-                    <option value="todos">Todos</option>
-                    <option value="con_whatsapp">Con WhatsApp</option>
-                    <option value="sin_whatsapp">Sin WhatsApp</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Filtro Completitud -->
-              <div class="mb-2">
-                <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">Completitud Perfil</label>
-                <div class="position-relative d-flex align-items-center w-100">
-                  <i class="bi bi-shield-check select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
-                  <select class="form-select premium-filter-select" id="filtroCompletitud" style="padding-left: 28px !important;">
-                    <option value="todos">Todos los rangos</option>
-                    <option value="critico">Crítico (Rojo)</option>
-                    <option value="parcial">Parcial (Amarillo)</option>
-                    <option value="bueno">Bueno (Turquesa)</option>
-                    <option value="completo">Completo (Sin badge)</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Filtro Instrumento -->
-              <div class="mb-3">
-                <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">Instrumento</label>
-                <div class="position-relative d-flex align-items-center w-100">
-                  <i class="bi bi-music-note select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
-                  <select class="form-select premium-filter-select" id="filtroInstrumento" style="padding-left: 28px !important;">
-                    <option value="todos">Todos</option>
-                    <option value="con_instrumento">Con Instrumento</option>
-                    <option value="sin_instrumento">Sin Instrumento</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
-                <button class="btn btn-link btn-sm text-decoration-none text-muted p-0" id="btnLimpiarFiltros" style="font-size: 0.75rem;">
-                  <i class="bi bi-trash3 me-0.5"></i> Limpiar
-                </button>
-                <span class="text-muted" id="filtrosActivosCount" style="font-size: 0.72rem; font-weight: 600; opacity: 0.8;">
-                  Filtros activos: 0
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${renderFilterPanel({
+          isOpen: true,
+          filtersHtml,
+          onToggleId: 'btnToggleFiltrosAlumnos',
+          badgeId: 'filtrosBadgeCount',
+          subtitle: 'Busca y segmenta alumnos por contacto, instrumento y perfil',
+        })}
 
         <!-- Sort controls -->
-        <div class="d-flex align-items-center gap-3 mb-2 px-1 small text-body-secondary">
-          <span>Ordenar por:</span>
+        <div class="d-flex align-items-center gap-3 mb-2 px-1 small text-body-secondary flex-wrap">
+          <span class="fw-semibold">Ordenar por:</span>
           <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === 'nombre' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="nombre">
             Nombre ${state.sortBy === 'nombre' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
           </button>
@@ -281,6 +252,7 @@ export async function renderAlumnosView(container) {
       </div>
     `
   }
+
 
   function renderTableRows(alumnos) {
     if (!alumnos.length) return ''
@@ -438,6 +410,17 @@ export async function renderAlumnosView(container) {
       }, { signal })
     })
 
+    // Toggle Filtros Panel
+    const toggleBtn = container.querySelector('#btnToggleFiltrosAlumnos')
+    const filterBody = container.querySelector('#btnToggleFiltrosAlumnosBody')
+    toggleBtn?.addEventListener('click', () => {
+      const isOpen = filterBody?.classList.toggle('is-open')
+      filterBody?.classList.toggle('is-collapsed', !isOpen)
+      toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+      const icon = toggleBtn.querySelector('i')
+      if (icon) icon.className = `bi ${isOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`
+    }, { signal })
+
     const searchInput = container.querySelector('#buscar')
     searchInput?.addEventListener('input', applyFilters, { signal })
 
@@ -447,6 +430,7 @@ export async function renderAlumnosView(container) {
 
     container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', (e) => {
       e.stopPropagation()
+      if (searchInput) searchInput.value = ''
       const wSelect = container.querySelector('#filtroWhatsapp')
       const cSelect = container.querySelector('#filtroCompletitud')
       const iSelect = container.querySelector('#filtroInstrumento')
@@ -455,6 +439,7 @@ export async function renderAlumnosView(container) {
       if (iSelect) iSelect.value = 'todos'
       applyFilters()
     }, { signal })
+
 
     const tbody = container.querySelector('#alumnosTBody')
     tbody?.addEventListener('click', async (e) => {

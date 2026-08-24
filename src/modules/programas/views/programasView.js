@@ -11,7 +11,7 @@ import {
   NIVELES,
   getNivelLabel,
 } from '../api/programasApi.js'
-import { renderFilterPanel } from '../../../shared/components/pageShell.js'
+import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { renderHeroCard, renderDetailGrid } from '../../../shared/components/profileModal.js'
 import { Programa } from '../models/programa.model.js'
 import { supabase } from '../../../lib/supabaseClient.js'
@@ -127,9 +127,9 @@ function renderError(container, mensaje) {
 
 function getFilterConfigHtml() {
   return `
-    <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
+    <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
       <i class="bi bi-search search-icon-muted"></i>
-      <input type="text" class="form-control premium-search-input" placeholder="Buscar programa..." id="buscarPrograma" autocomplete="off" value="${escapeHTML(state.filtroBuscar)}">
+      <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre o descripción..." id="buscarPrograma" autocomplete="off" value="${escapeHTML(state.filtroBuscar)}">
     </div>
     <div class="premium-select-container">
       <i class="bi bi-funnel select-icon-muted"></i>
@@ -139,39 +139,40 @@ function getFilterConfigHtml() {
         <option value="inactivo" ${state.filtroEstado === 'inactivo' ? 'selected' : ''}>Inactivos</option>
       </select>
     </div>
+    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnLimpiarFiltrosProgramas" type="button" title="Limpiar filtros">
+      <i class="bi bi-x-circle"></i> <span>Limpiar</span>
+    </button>
   `
 }
 
 function renderContent() {
   const container = state.container
+
+  const actionsHtml = `
+    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnExportarPDF" title="Exportar catálogo a PDF">
+      <i class="bi bi-file-earmark-pdf"></i> <span class="d-none d-sm-inline">PDF</span>
+    </button>
+    <button class="btn btn-premium-action" id="btnAgregarPrograma" title="Nuevo Programa">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Programa
+    </button>
+  `
+
   container.innerHTML = `
     <div class="page-container">
-      <div class="programas-header-premium mb-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-            <i class="bi bi-journal-bookmark fs-4"></i>
-          </div>
-          <div>
-            <h1 class="programas-title-premium mb-0">Programas</h1>
-            <p class="text-muted small mb-0"><span id="programasCount">${state.programas.length}</span> programas en total</p>
-          </div>
-        </div>
-
-        <div class="programas-header-actions">
-          <button class="btn btn-outline-secondary btn-sm me-2" id="btnExportarPDF" title="Exportar PDF">
-            <i class="bi bi-file-earmark-pdf"></i> PDF
-          </button>
-          <button class="btn btn-premium-action btn-icon-only" id="btnAgregarPrograma" title="Nuevo Programa" aria-label="Nuevo Programa">
-            <i class="bi bi-plus-lg"></i>
-          </button>
-        </div>
-      </div>
+      ${renderPageHeader({
+        icon: 'bi-journal-bookmark',
+        title: 'Programas',
+        subtitle: `<span id="programasCount">${state.programas.length}</span> programas académicos`,
+        actionsHtml,
+      })}
 
       ${renderFilterPanel({
-    isOpen: state.filtrosAbiertos,
-    filtersHtml: getFilterConfigHtml(),
-    onToggleId: 'btnToggleFiltros',
-  })}
+        isOpen: state.filtrosAbiertos,
+        filtersHtml: getFilterConfigHtml(),
+        onToggleId: 'btnToggleFiltrosProgramas',
+        badgeId: 'filtrosBadgeCountProgramas',
+        subtitle: 'Busca y segmenta los programas y niveles formativos',
+      })}
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="programasTBody">
@@ -196,9 +197,14 @@ function renderTableRows(programas) {
     return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${p.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+          <div class="position-relative flex-shrink-0">
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-3" style="width: 44px; height: 44px; font-size: 1.25rem;">
+              <i class="bi bi-journal-bookmark"></i>
+            </div>
+          </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(p.nombre)}</span>
-            <small class="text-muted text-truncate">${nivel} • ${descripcion.substring(0, 50)}${descripcion.length > 50 ? '...' : ''}</small>
+            <small class="text-muted text-truncate">${nivel} • ${descripcion.substring(0, 60)}${descripcion.length > 60 ? '...' : ''}</small>
           </div>
         </div>
         <div class="flex-shrink-0 text-muted ms-2 pe-1">
@@ -232,9 +238,24 @@ function attachEvents() {
     }
   })
 
-  container.querySelector('#btnToggleFiltros')?.addEventListener('click', () => {
-    state.filtrosAbiertos = !state.filtrosAbiertos
-    renderProgramasView(state.container)
+  // Toggle Filtros Panel
+  const toggleBtn = container.querySelector('#btnToggleFiltrosProgramas')
+  const filterBody = container.querySelector('#btnToggleFiltrosProgramasBody')
+  toggleBtn?.addEventListener('click', () => {
+    const isOpen = filterBody?.classList.toggle('is-open')
+    filterBody?.classList.toggle('is-collapsed', !isOpen)
+    toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+    const icon = toggleBtn.querySelector('i')
+    if (icon) icon.className = `bi ${isOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`
+  })
+
+  container.querySelector('#btnLimpiarFiltrosProgramas')?.addEventListener('click', () => {
+    const search = container.querySelector('#buscarPrograma')
+    const estado = container.querySelector('#filtroEstado')
+    if (search) search.value = ''
+    if (estado) estado.value = 'todos'
+    saveFilterState()
+    applyFilters()
   })
 
   let debounceTimer
@@ -282,8 +303,22 @@ function applyFilters() {
     return matchSearch && matchEstado
   })
 
+  let activos = 0
+  if (filtroEstado !== 'todos') activos++
+
+  const badgeEl = c.querySelector('#filtrosBadgeCountProgramas')
+  if (badgeEl) {
+    badgeEl.textContent = activos
+    if (activos > 0) {
+      badgeEl.classList.remove('d-none')
+    } else {
+      badgeEl.classList.add('d-none')
+    }
+  }
+
   refreshTable()
 }
+
 
 function refreshTable() {
   const c = state.container

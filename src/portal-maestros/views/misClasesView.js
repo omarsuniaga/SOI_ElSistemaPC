@@ -13,8 +13,8 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
-import { escHTML, formatHora, capitalize } from '../utils/portalUtils.js'
-import { getMisClases, getSesiones, getSalones } from '../services/maestroDataService.js'
+import { escHTML, formatHora, capitalize, DIAS_ES } from '../utils/portalUtils.js'
+import { getMisClases, getSesiones, getSalones, getHorariosClases } from '../services/maestroDataService.js'
 import { calcAttendanceStats, generateDailyReport } from '../services/reportService.js'
 import { header, footer, metricChips, wrapDocument, openReport, esc as escR } from '../services/reportTemplates.js'
 
@@ -84,8 +84,25 @@ async function _cargarJustificaciones(sesionIds) {
 }
 
 /**
+ * Nombre del día de la semana (formato de `clase_horarios.dia`: minúscula,
+ * con tilde — 'lunes', 'miércoles', 'sábado'...) a partir de una fecha
+ * 'YYYY-MM-DD'.
+ */
+function _diaSemana(fecha) {
+  const d = new Date(`${fecha}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  return DIAS_ES[d.getDay()]
+}
+
+/**
  * Carga clases + sesiones confirmadas del maestro en el rango, resuelve
  * nombres de salón, roster de alumnos y causas de justificación.
+ *
+ * La mayoría de las sesiones (88 de 103 medidas en producción) no guardan
+ * hora_inicio/hora_fin/salon_id propios — el maestro nunca los captura al
+ * tomar asistencia. El horario real vive en `clase_horarios`, indexado por
+ * día de la semana (una clase puede reunirse varios días con horarios
+ * distintos). Se usa como respaldo cuando la sesión no trae el dato.
  */
 async function _cargarDatos(maestroId, dias, claseId) {
   const { desde, hasta } = _rangoFechas(dias)
@@ -104,17 +121,29 @@ async function _cargarDatos(maestroId, dias, claseId) {
     confirmadas = confirmadas.filter((s) => s.clase_id === claseId)
   }
 
-  const salonIds = [...new Set(confirmadas.map((s) => s.salon_id).filter(Boolean))]
+  const claseIds = [...new Set(confirmadas.map((s) => s.clase_id).filter(Boolean))]
   const alumnoIds = [
     ...new Set(confirmadas.flatMap((s) => (s.asistencia || []).map((a) => a.alumno_id)).filter(Boolean)),
   ]
   const sesionIds = confirmadas.map((s) => s.id)
 
-  const [salones, alumnos, justificaciones] = await Promise.all([
-    salonIds.length > 0 ? getSalones(salonIds) : Promise.resolve([]),
+  const [horarios, alumnos, justificaciones] = await Promise.all([
+    claseIds.length > 0 ? getHorariosClases(claseIds) : Promise.resolve([]),
     alumnoIds.length > 0 ? _cargarNombresAlumnos(alumnoIds) : Promise.resolve([]),
     sesionIds.length > 0 ? _cargarJustificaciones(sesionIds) : Promise.resolve([]),
   ])
+
+  const horarioByKey = new Map(horarios.map((h) => [`${h.clase_id}_${h.dia}`, h]))
+
+  // Salones a resolver: los que trae la sesión directamente + los del
+  // horario recurrente usado como respaldo.
+  const salonIds = [
+    ...new Set([
+      ...confirmadas.map((s) => s.salon_id).filter(Boolean),
+      ...horarios.map((h) => h.salon_id).filter(Boolean),
+    ]),
+  ]
+  const salones = salonIds.length > 0 ? await getSalones(salonIds) : []
 
   const salonById = new Map(salones.map((s) => [s.id, s.nombre]))
   const nombreByAlumno = new Map(alumnos.map((a) => [a.id, a.nombre_completo]))
@@ -133,13 +162,18 @@ async function _cargarDatos(maestroId, dias, claseId) {
         }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre))
 
+      const horarioFallback = horarioByKey.get(`${s.clase_id}_${_diaSemana(s.fecha)}`)
+      const horaInicio = s.hora_inicio || horarioFallback?.hora_inicio || null
+      const horaFin = s.hora_fin || horarioFallback?.hora_fin || null
+      const salonId = s.salon_id || horarioFallback?.salon_id || null
+
       return {
         id: s.id,
         fecha: s.fecha,
-        horaInicio: s.hora_inicio,
-        horaFin: s.hora_fin,
+        horaInicio,
+        horaFin,
         claseNombre: claseById.get(s.clase_id)?.nombre || 'Clase sin nombre',
-        salonNombre: s.salon_id ? salonById.get(s.salon_id) || null : null,
+        salonNombre: salonId ? salonById.get(salonId) || null : null,
         contenido: (s.contenido || '').trim(),
         presentes: stats.P,
         ausentes: stats.A,

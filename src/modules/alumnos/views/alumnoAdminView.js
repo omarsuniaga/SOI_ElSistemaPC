@@ -15,7 +15,9 @@ import {
   obtenerResumenAcademico,
   obtenerAsistenciasAlumno,
   actualizarAlumno,
+  reactivarAlumno,
 } from '../api/alumnosApi.js'
+
 
 // ─── Multi-phone splitter ─────────────────────────────────────────────────────
 
@@ -332,11 +334,18 @@ export async function renderAlumnoAdminView(container, params = {}) {
                 <button class="btn btn-outline-success btn-sm" id="btn-constancia">
                   <i class="bi bi-file-earmark-text me-1"></i>Constancia
                 </button>
-                <button class="btn btn-outline-danger btn-sm" id="btn-eliminar-alumno">
-                  <i class="bi bi-trash me-1"></i>Eliminar alumno
-                </button>
+                ${alumno.activo !== false ? `
+                  <button class="btn btn-outline-danger btn-sm" id="btn-eliminar-alumno">
+                    <i class="bi bi-person-x me-1"></i>Inactivar alumno
+                  </button>
+                ` : `
+                  <button class="btn btn-outline-success btn-sm" id="btn-reactivar-alumno">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar alumno
+                  </button>
+                `}
               </div>
             </div>
+
           </div>
         </div>
 
@@ -637,7 +646,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
       })
     }
 
-    // Delete student
+    // Inactivar / Eliminar alumno
     const btnEliminar = document.getElementById('btn-eliminar-alumno')
     if (btnEliminar) {
       btnEliminar.addEventListener('click', () => {
@@ -654,6 +663,27 @@ export async function renderAlumnoAdminView(container, params = {}) {
         })
       })
     }
+
+    // Reactivar alumno
+    const btnReactivar = document.getElementById('btn-reactivar-alumno')
+    if (btnReactivar) {
+      btnReactivar.addEventListener('click', async () => {
+        try {
+          btnReactivar.disabled = true
+          await reactivarAlumno(alumno.id)
+          AppToast.success('Alumno reactivado exitosamente')
+          alumno.activo = true
+          renderView()
+          attachEvents()
+        } catch (err) {
+          console.error('Error reactivando alumno:', err)
+          AppToast.error(err.message || 'Error al reactivar el alumno')
+        } finally {
+          btnReactivar.disabled = false
+        }
+      })
+    }
+
 
     // Postulante lookup
     const btnPostulante = document.getElementById('btn-postulante')

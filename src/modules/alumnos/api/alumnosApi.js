@@ -29,7 +29,11 @@ export async function crearAlumno(draft) {
 
   return getApi().crearAlumno(payload)
 }
+
 export const actualizarAlumno = (...args) => getApi().actualizarAlumno(...args)
+export const inactivarAlumno = (...args) => getApi().inactivarAlumno(...args)
+export const reactivarAlumno = (...args) => getApi().reactivarAlumno(...args)
+export const obtenerAlumnosInactivos = (...args) => getApi().obtenerAlumnosInactivos(...args)
 export const eliminarAlumno = (...args) => getApi().eliminarAlumno(...args)
 export const validarEmail = (...args) => getApi().validarEmail(...args)
 export const validarCedula = (...args) => getApi().validarCedula(...args)

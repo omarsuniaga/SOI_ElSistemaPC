@@ -145,12 +145,17 @@ export async function renderAlumnosView(container) {
 
   function renderContent(container) {
     const actionsHtml = `
+      <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnIrInactivos" title="Ver alumnos inactivos / archivados">
+
+        <i class="bi bi-archive"></i> <span class="d-none d-sm-inline">Inactivos</span>
+      </button>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 dropdown-toggle" type="button" id="btnDropdownAccionesAlumnos" data-bs-toggle="dropdown" aria-expanded="false" title="Acciones y reportes">
           <i class="bi bi-three-dots"></i> <span class="d-none d-sm-inline">Acciones</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border p-1" aria-labelledby="btnDropdownAccionesAlumnos" style="min-width: 220px; border-radius: 12px; z-index: 1050;">
           <li><h6 class="dropdown-header small text-muted text-uppercase fw-bold px-3 py-1">Herramientas</h6></li>
+          <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnAlumnosInactivos"><i class="bi bi-person-x text-secondary fs-6"></i> Alumnos Inactivos</button></li>
           <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnConciliarPostulados"><i class="bi bi-arrow-repeat text-warning fs-6"></i> Conciliar Postulados</button></li>
           <li><button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" id="btnDetectarDuplicados"><i class="bi bi-copy text-primary fs-6"></i> Detectar Duplicados</button></li>
           <li><hr class="dropdown-divider my-1"></li>
@@ -168,6 +173,7 @@ export async function renderAlumnosView(container) {
         <i class="bi bi-plus-lg me-1"></i>Nuevo Alumno
       </button>
     `
+
 
     const filtersHtml = `
       <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
@@ -313,9 +319,9 @@ export async function renderAlumnosView(container) {
               ` : ''}
             </div>
             
-            <!-- Columna Botón Eliminar (36px de ancho fijo) -->
+            <!-- Columna Botón Inactivar (36px de ancho fijo) -->
             <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
-              <button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" data-action="delete" data-id="${a.id}" title="Eliminar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+              <button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" data-action="delete" data-id="${a.id}" title="Inactivar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -335,6 +341,9 @@ export async function renderAlumnosView(container) {
     container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
     container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
     container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })
+    container.querySelector('#btnIrInactivos')?.addEventListener('click', () => window.router?.navigate('alumnos-inactivos'), { signal })
+    container.querySelector('#btnAlumnosInactivos')?.addEventListener('click', () => window.router?.navigate('alumnos-inactivos'), { signal })
+
 
     container.querySelector('#btnDescargarPdfListado')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget

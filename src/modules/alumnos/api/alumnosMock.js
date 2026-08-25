@@ -62,9 +62,22 @@ function saveAlumnos(list) {
 
 let alumnos = getSavedAlumnos()
 
-export async function obtenerAlumnos({ page = 0, pageSize = 100 } = {}) {
+export async function obtenerAlumnos({ page = 0, pageSize = 100, soloActivos = true } = {}) {
   await delay()
-  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  let list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  if (soloActivos) {
+    list = list.filter(a => a.activo !== false && a.is_active !== false)
+  }
+  const from = page * pageSize
+  const to = from + pageSize
+  const paginated = list.slice(from, to)
+  return { alumnos: paginated.map(normalizeAlumno), total: list.length }
+}
+
+export async function obtenerAlumnosInactivos({ page = 0, pageSize = 100 } = {}) {
+  await delay()
+  const list = (Array.isArray(alumnos) ? alumnos : getSavedAlumnos())
+    .filter(a => a.activo === false || a.is_active === false)
   const from = page * pageSize
   const to = from + pageSize
   const paginated = list.slice(from, to)
@@ -104,12 +117,21 @@ export async function actualizarAlumno(id, actualizaciones) {
   return normalizeAlumno(alumnos[index])
 }
 
+export async function inactivarAlumno(id) {
+  await delay()
+  return actualizarAlumno(id, { activo: false, is_active: false })
+}
+
+export async function reactivarAlumno(id) {
+  await delay()
+  return actualizarAlumno(id, { activo: true, is_active: true })
+}
+
 export async function eliminarAlumno(id) {
   await delay()
-  if (!Array.isArray(alumnos)) alumnos = getSavedAlumnos()
-  alumnos = alumnos.filter(a => a.id !== id)
-  saveAlumnos(alumnos)
+  return inactivarAlumno(id)
 }
+
 
 export async function validarEmail(email) {
   await delay(100)

@@ -216,10 +216,21 @@ export class SupabaseTaskRepository implements TaskRepository {
           throw error;
         }
       } else {
-        // Insert new task (Supabase will auto-generate id)
+        // Insert new task (Supabase auto-generates id). `correlation_id` is also `uuid NOT
+        // NULL` in the real schema — presentation layers build human-readable placeholders
+        // like `SOI-TASK-MANUAL-<timestamp>` (fine for the mock, not a valid uuid for
+        // Postgres), so drop it here too and let the column default generate a real one.
+        const isRealCorrelationUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          task.correlationId
+        );
+        const insertRow = { ...row };
+        if (!isRealCorrelationUuid) {
+          delete insertRow.correlation_id;
+        }
+
         const { error } = await this.supabaseClient
           .from('tareas_institucionales')
-          .insert([row]);
+          .insert([insertRow]);
 
         if (error) {
           console.error('Error inserting task:', error);

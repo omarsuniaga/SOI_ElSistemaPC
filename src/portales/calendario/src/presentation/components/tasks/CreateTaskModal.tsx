@@ -16,7 +16,7 @@ export const CreateTaskModal: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState<DepartmentCode>('PRD');
+  const [department, setDepartment] = useState<DepartmentCode>('DIR');
   const [ownerRole, setOwnerRole] = useState('Director Técnico');
   const [priority, setPriority] = useState<PriorityLevel>('HIGH');
   const [dueDate, setDueDate] = useState(

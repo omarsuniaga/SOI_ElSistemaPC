@@ -373,13 +373,11 @@ export async function obtenerAlumnosInactivos({ page = 0, pageSize = 1000 } = {}
 }
 
 export async function eliminarAlumno(id) {
-  const { error } = await supabase.from('alumnos').delete().eq('id', id)
-  if (error) {
-    console.warn('Eliminación física bloqueada por integridad referencial, aplicando soft delete (inactivación):', error.message)
-    // Fallback a inactivar para proteger integridad referencial institucional
-    await inactivarAlumno(id)
-  }
+  // En la arquitectura institucional de SOI, eliminar a un alumno aplica Soft Delete (inactivación)
+  // para preservar la integridad de postulantes, comodatos_activos, asistencias y evaluaciones.
+  return inactivarAlumno(id)
 }
+
 
 
 export async function validarEmail(email) {

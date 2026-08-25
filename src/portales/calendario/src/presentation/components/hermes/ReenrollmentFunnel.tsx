@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, CheckCircle2, AlertCircle, PhoneCall, Sparkles } from 'lucide-react';
+import { Users, CheckCircle2, AlertCircle, PhoneCall, Sparkles, FlaskConical } from 'lucide-react';
 import { DepartmentBadge } from '../common/DepartmentBadge';
 import { AutomationBadge } from '../common/AutomationBadge';
 
@@ -11,9 +11,15 @@ export const ReenrollmentFunnel: React.FC<ReenrollmentFunnelProps> = ({
   onTriggerAssistedCalls,
 }) => {
   return (
-    <div className="rounded-xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/20 to-zinc-900/60 p-4 sm:p-5">
+    <div className="rounded-xl border-2 border-dashed border-fuchsia-500/40 bg-gradient-to-b from-indigo-950/20 to-zinc-900/60 p-4 sm:p-5 relative">
+      {/* Sample-data ribbon: this card illustrates the UX with fabricated numbers, not a live
+          Hermes process. Keep it visually distinct from cards backed by real Supabase data. */}
+      <div className="absolute -top-2.5 left-4 flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-500 text-zinc-950 text-[10px] font-mono font-bold uppercase tracking-wider shadow-sm shadow-fuchsia-900/40">
+        <FlaskConical className="w-3 h-3" /> Datos de muestra
+      </div>
+
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-indigo-500/20">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 pt-1.5 border-b border-indigo-500/20">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
             <Sparkles className="w-4 h-4" />
@@ -22,8 +28,8 @@ export const ReenrollmentFunnel: React.FC<ReenrollmentFunnelProps> = ({
             <h4 className="text-sm font-bold text-zinc-100 flex items-center gap-2 font-mono">
               Funnel Inteligente de Reinscripción (2026-S2)
             </h4>
-            <p className="text-xs text-zinc-400">
-              Escenario Demostrativo: Auditoría de 137 estudiantes regulares y seguimiento escalonado
+            <p className="text-xs text-fuchsia-300/90 font-medium">
+              Escenario demostrativo — cifras ilustrativas, no provienen de Supabase
             </p>
           </div>
         </div>

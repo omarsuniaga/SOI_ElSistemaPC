@@ -201,8 +201,11 @@ export class SupabaseTaskRepository implements TaskRepository {
     try {
       const row = InstitutionalTaskMapper.toRow(task);
 
-      // If id is already present, it's an update; otherwise insert
-      if (task.id) {
+      // See SupabaseCalendarRepository.save(): a client-side placeholder id (not a real
+      // uuid) means this is a brand-new task, not an existing row to update.
+      const isRealUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.id);
+
+      if (isRealUuid) {
         const { error } = await this.supabaseClient
           .from('tareas_institucionales')
           .update(row)

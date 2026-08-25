@@ -24,8 +24,8 @@ export const CreateCalendarItemModal: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [kind, setKind] = useState<CalendarItemKind>('EVENT');
-  const [category, setCategory] = useState<CategoryFamily>('ARTISTIC_PRODUCTION');
-  const [departmentOwner, setDepartmentOwner] = useState<DepartmentCode>('PRD');
+  const [category, setCategory] = useState<CategoryFamily>('ARTISTIC');
+  const [departmentOwner, setDepartmentOwner] = useState<DepartmentCode>('DIR');
   const [ownerRole, setOwnerRole] = useState('Coordinador de Eventos');
   const [startDate, setStartDate] = useState(defaultDate);
   const [startTime, setStartTime] = useState('10:00');
@@ -163,11 +163,13 @@ export const CreateCalendarItemModal: React.FC = () => {
                 onChange={e => setCategory(e.target.value as CategoryFamily)}
                 className="w-full h-9 px-3 text-xs rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-200 focus:outline-none focus:border-amber-500 font-mono"
               >
-                <option value="ARTISTIC_PRODUCTION">Producción Artística & Conciertos</option>
-                <option value="ACADEMIC_CYCLE">Ciclo Académico & Formativo</option>
-                <option value="INSTITUTIONAL_GOVERNANCE">Gobernanza Institucional & Asambleas</option>
-                <option value="ADMISSIONS_REENROLLMENT">Admisiones & Reinscripciones</option>
-                <option value="LOGISTICS_INFRASTRUCTURE">Logística & Mantenimiento</option>
+                <option value="ARTISTIC">Producción Artística & Conciertos</option>
+                <option value="ACADEMIC">Ciclo Académico & Formativo</option>
+                <option value="INSTITUTIONAL">Gobernanza Institucional & Asambleas</option>
+                <option value="ADMISSIONS">Admisiones & Reinscripciones</option>
+                <option value="OPERATIONS">Logística & Mantenimiento</option>
+                <option value="PARTNERSHIPS">Alianzas & Donantes</option>
+                <option value="FINANCE">Finanzas & Pagos</option>
               </select>
             </div>
           </div>

@@ -208,7 +208,11 @@ export class SupabaseProtocolRunRepository implements ProtocolRunRepository {
     try {
       const row = ProtocolRunMapper.toRow(run);
 
-      if (run.id) {
+      // See SupabaseCalendarRepository.save(): a client-side placeholder id (not a real
+      // uuid) means this is a brand-new case, not an existing row to update.
+      const isRealUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(run.id);
+
+      if (isRealUuid) {
         const { error } = await this.supabaseClient
           .from('hermes_process_cases')
           .update({ ...row, updated_at: new Date().toISOString() })

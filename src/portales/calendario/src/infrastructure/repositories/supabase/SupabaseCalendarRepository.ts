@@ -123,8 +123,14 @@ export class SupabaseCalendarRepository implements CalendarRepository {
     try {
       const row = CalendarItemMapper.toRow(item);
 
-      // If id is already present, it's an update; otherwise insert
-      if (item.id) {
+      // Presentation layers (e.g. CreateCalendarItemModal) generate a client-side
+      // placeholder id like `item-event-<timestamp>` for brand-new items — a convention
+      // that works fine against the mock repository but is not a valid `uuid` for the real
+      // `calendario_institucional.id` column. Only treat the item as an existing row (UPDATE)
+      // when its id is actually a UUID; otherwise let Postgres generate a real one on INSERT.
+      const isRealUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+
+      if (isRealUuid) {
         const { error } = await this.supabaseClient
           .from('calendario_institucional')
           .update(row)

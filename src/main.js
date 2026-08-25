@@ -432,14 +432,6 @@ const NAV_GROUPS = [
     ],
   },
   {
-    id: 'logistica',
-    label: 'Logística y Eventos',
-    icon: 'bi-geo-alt',
-    items: [
-      { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
-    ],
-  },
-  {
     id: 'academico',
     label: 'Académico',
     icon: 'bi-easel',
@@ -449,6 +441,7 @@ const NAV_GROUPS = [
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
       { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
+      { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
     ],
   },
   {

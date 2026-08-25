@@ -94,6 +94,7 @@ export const moduleCatalog = Object.freeze([
   module('simulador', 'src/modules/simulador/index.js', 'DIR', [
     ['simulador-sala-trabajo', 'workflow'], ['simulador-panel-control'], ['simulador-calendario', 'workflow'], ['simulador-log', 'workflow'], ['simulador-outbox', 'workflow'],
   ]),
+  module('horario-general', 'src/modules/horario-general/horario-general.router.js', 'DIR', [['horario-general']]),
 
   module('auth', 'src/modules/auth/index.js', 'shared', [
     ['login', 'auth'], ['register', 'auth'], ['perfil', 'auth'], ['pending-approval', 'auth'],

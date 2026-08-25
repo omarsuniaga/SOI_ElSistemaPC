@@ -110,7 +110,7 @@ export default defineConfig({
     // or Tailwind's CSS pipeline. @vitejs/plugin-react's default `include` is
     // /\.[tj]sx?$/, which matches every .js file in the project unless narrowed.
     react({
-      include: /[\\/]portales[\\/]soi-finanzas[\\/].*\.[tj]sx?$/,
+      include: /[\\/]portales[\\/](soi-finanzas|calendario)[\\/].*\.[tj]sx?$/,
     }),
     tailwindcss(),
     {

@@ -14,5 +14,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/portales/soi-finanzas/**/*"]
+  "include": ["src/portales/soi-finanzas/**/*", "src/portales/calendario/src/**/*"]
 }

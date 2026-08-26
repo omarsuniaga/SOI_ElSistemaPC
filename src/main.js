@@ -46,54 +46,6 @@ import './styles/breakpoints.css'
 import './styles/dark-mode.css'
 import './styles/utilities.css'
 import './styles/patterns.css'
-// ============================================================================
-// SISTEMA ACADÉMICO - Main Entry Point
-// ============================================================================
-
-// EARLY ERROR SUPPRESSION (Must be first!)
-import './early-error-suppression.js'
-
-// Desactivar gestos de recarga pull-to-refresh (Look and Feel nativo)
-import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
-disablePullToRefresh()
-
-// PWA: Registrar Service Worker
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  const registerSW = async () => {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js')
-      console.log('[PWA] Service Worker registered:', registration.scope)
-    } catch (error) {
-      console.log('[PWA] Service Worker registration failed:', error)
-    }
-  }
-
-  if (document.readyState === 'complete') {
-    registerSW()
-  } else {
-    window.addEventListener('load', registerSW)
-  }
-} else if ('serviceWorker' in navigator && import.meta.env.DEV) {
-  navigator.serviceWorker
-    .getRegistrations()
-    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
-    .catch((error) => console.log('[PWA] Service Worker cleanup failed:', error))
-}
-
-// PWA: Banner de instalación automática
-import { pwaInstaller } from './portal-maestros/components/pwaInstaller.js'
-
-// Estilos
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap-icons/font/bootstrap-icons.css'
-import * as bootstrapLib from 'bootstrap'
-window.bootstrap = bootstrapLib
-import './style.css'
-import './styles/design-tokens.css'
-import './styles/breakpoints.css'
-import './styles/dark-mode.css'
-import './styles/utilities.css'
-import './styles/patterns.css'
 import './styles/bootstrap-support.css'
 import './styles/sidebar.css'
 import './modules/academic-admin/styles/academic-admin.css'

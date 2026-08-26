@@ -720,11 +720,6 @@ function renderContenidoPreview(clase) {
   `
 }
 
-function formatTimelineDate(dateStr) {
-  const date = new Date(dateStr + 'T12:00:00')
-  return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-}
-
 function formatFechaLarga(fecha) {
   if (!fecha) return '—'
   const date = new Date(`${fecha}T12:00:00`)
@@ -805,7 +800,6 @@ function getPrioridadBadgeClass(prioridad) {
   }
 
   return classes[prioridad] || 'secondary'
->>>>>>> origin/feat/planificacion-clases-rediseño
 }
 
 function _attachEvents(container) {
@@ -1054,7 +1048,7 @@ async function openDetailModal(sesionId) {
 
     setTimeout(() => {
       document.querySelector('#btn-evaluar-modal-inner')?.addEventListener('click', () => {
-        const alumnosModal = detail.asistencias.map((a) => ({
+        const alumnosModal = (detail.asistencias || []).map((a) => ({
           id: a.alumnoId,
           nombre: a.alumnoNombre,
           presente: a.estado === 'presente' || a.estado === 'tardanza',
@@ -1064,9 +1058,10 @@ async function openDetailModal(sesionId) {
           nodo: { id: `nodo-${sesionId}`, titulo: detail.sesion.temaPrincipal || 'Contenido Didáctico' },
           alumnos: alumnosModal,
         })
->>>>>>> origin/feat/planificacion-clases-rediseño
       })
-      return
-    }
-  })
+    }, 100)
+  } catch (error) {
+    console.error('[asistenciasView] Error abriendo detalle:', error)
+    AppToast.error('No se pudo cargar el detalle de la sesión.')
+  }
 }

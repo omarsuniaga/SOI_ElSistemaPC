@@ -26,9 +26,9 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
   // Definición centralizada de herramientas DSL
   const DSL_TOOLS = [
     { token: 'alumno',    label: '#',    title: 'Etiquetar alumno',     text: '#',   offset: 1, icon: '👤', triggerAC: '#' },
-    { token: 'contenido', label: '[ ]',  title: 'Contenido de clase',   text: '[]',  offset: 1, icon: '📚', triggerAC: '[' },
-    { token: 'sugerencia',label: '( )',  title: 'Sugerencia pedagógica',text: '()',  offset: 1, icon: '💡', triggerAC: '(' },
-    { token: 'tarea',     label: '{ }',  title: 'Tarea / Asignación',   text: '{}',  offset: 1, icon: '📝', triggerAC: '{' },
+    { token: 'contenido', label: '[ ]',  title: 'Contenido de clase',   text: '[]',  offset: 1, icon: '📚', triggerAC: null },
+    { token: 'sugerencia',label: '( )',  title: 'Sugerencia pedagógica',text: '()',  offset: 1, icon: '💡', triggerAC: null },
+    { token: 'tarea',     label: '{ }',  title: 'Tarea / Asignación',   text: '{}',  offset: 1, icon: '📝', triggerAC: null },
     { token: 'medida',    label: '$',    title: 'Medida técnica',       text: '$',   offset: 1, icon: '🎯', triggerAC: '$' },
     { token: 'objetivo',  label: '>',    title: 'Objetivo curricular',  text: '>',   offset: 1, icon: '🎓', triggerAC: '>' },
   ];
@@ -152,6 +152,13 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
   // --- Lógica de inserción inteligente ---
   // El mapa de herramientas nos permite buscar por token rápidamente
   const toolMap = new Map(DSL_TOOLS.map(t => [t.token, t]));
+
+  container.querySelectorAll('.pm-dsl-tool-btn').forEach((btn) => {
+    btn.addEventListener('mousedown', (e) => {
+      // Prevenir pérdida de foco/selección en el editor contenteditable
+      e.preventDefault()
+    })
+  })
 
   container.querySelectorAll('.pm-dsl-tool-btn[data-token]').forEach(btn => {
     btn.onclick = () => {

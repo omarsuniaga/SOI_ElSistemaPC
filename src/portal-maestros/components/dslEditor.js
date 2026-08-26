@@ -156,30 +156,43 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     return null
   }
 
-  // Guardamos el offset del caret ANTES de que el popup robe el foco.
-  // Al hacer click en el popup el editor pierde el foco → getSelection() queda vacío.
   let _savedCaretOffset = null
-
-  editor.addEventListener('mousedown', () => {
-    // Al interactuar con el editor actualizamos la posición guardada
-    _savedCaretOffset = null
-  })
+  let _savedRange = null
 
   /**
-   * Guarda la posición actual del caret para recuperarla si el editor pierde el foco.
+   * Guarda la posición actual del caret/rango para preservarla ante clics en la barra de herramientas o popups.
    */
   function _saveCaretOffset() {
     const sel = window.getSelection()
     if (!sel || sel.rangeCount === 0) return
     const range = sel.getRangeAt(0)
+    if (!editor.contains(range.commonAncestorContainer) && range.commonAncestorContainer !== editor) return
+    _savedRange = range.cloneRange()
     _savedCaretOffset = _getCaretOffset(editor, range)
   }
+
+  editor.addEventListener('mouseup', _saveCaretOffset)
+  editor.addEventListener('keyup', _saveCaretOffset)
+  editor.addEventListener('touchend', _saveCaretOffset)
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === editor) {
+      _saveCaretOffset()
+    }
+  })
 
   /**
    * Restaura el foco y la posición del caret guardada.
    */
   function _restoreCaret() {
     editor.focus()
+    if (_savedRange && (editor.contains(_savedRange.commonAncestorContainer) || _savedRange.commonAncestorContainer === editor)) {
+      const sel = window.getSelection()
+      if (sel) {
+        sel.removeAllRanges()
+        sel.addRange(_savedRange.cloneRange())
+        return
+      }
+    }
     if (_savedCaretOffset !== null) {
       _setCaretOffset(editor, _savedCaretOffset)
     }
@@ -474,34 +487,73 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   function insertText(text, cursorOffset = 0, triggerAC = null) {
     editor.focus()
     const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
+    if (!sel) return
 
-    const range = sel.getRangeAt(0)
-    range.deleteContents()
+    let range = null
+    if (sel.rangeCount > 0 && (editor.contains(sel.getRangeAt(0).commonAncestorContainer) || sel.getRangeAt(0).commonAncestorContainer === editor)) {
+      range = sel.getRangeAt(0)
+    } else if (_savedRange && (editor.contains(_savedRange.commonAncestorContainer) || _savedRange.commonAncestorContainer === editor)) {
+      range = _savedRange.cloneRange()
+      sel.removeAllRanges()
+      sel.addRange(range)
+    } else if (_savedCaretOffset !== null) {
+      _setCaretOffset(editor, _savedCaretOffset)
+      if (sel.rangeCount > 0) range = sel.getRangeAt(0)
+    }
+
+    if (!range) {
+      const endRange = document.createRange()
+      endRange.selectNodeContents(editor)
+      endRange.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(endRange)
+      range = endRange
+    }
+
+    const selectedText = range.toString()
     const cleanText = _stripHtml(text)
+
+    // Si el usuario tenía texto seleccionado y presiona [], (), {}, envolver el texto!
+    if (selectedText.length > 0 && cleanText.length === 2 && ['[]', '()', '{}'].includes(cleanText)) {
+      const openChar = cleanText[0]
+      const closeChar = cleanText[1]
+      const wrapped = openChar + selectedText + closeChar
+      range.deleteContents()
+      const textNode = document.createTextNode(wrapped)
+      range.insertNode(textNode)
+      const afterRange = document.createRange()
+      afterRange.setStartAfter(textNode)
+      afterRange.collapse(true)
+      sel.removeAllRanges()
+      sel.addRange(afterRange)
+      _savedRange = afterRange.cloneRange()
+      _savedCaretOffset = _getCaretOffset(editor, afterRange)
+      _updateValue()
+      return
+    }
+
+    range.deleteContents()
     const textNode = document.createTextNode(cleanText)
     range.insertNode(textNode)
 
     // Posicionar cursor: cursorOffset = 1 pone el cursor DENTRO de [] () {}
-    if (cursorOffset > 0 && cursorOffset < text.length) {
-      const newRange = document.createRange()
+    const newRange = document.createRange()
+    if (cursorOffset > 0 && cursorOffset < cleanText.length) {
       newRange.setStart(textNode, cursorOffset)
       newRange.collapse(true)
-      sel.removeAllRanges()
-      sel.addRange(newRange)
     } else {
-      range.setStartAfter(textNode)
-      range.collapse(true)
-      sel.removeAllRanges()
-      sel.addRange(range)
+      newRange.setStartAfter(textNode)
+      newRange.collapse(true)
     }
+    sel.removeAllRanges()
+    sel.addRange(newRange)
+    _savedRange = newRange.cloneRange()
+    _savedCaretOffset = _getCaretOffset(editor, newRange)
 
     _updateValue()
-    _applyHighlight()
 
-    // Auto-disparar autocomplete si el toolbar lo solicita
+    // Auto-disparar autocomplete SOLO si triggerAC fue solicitado
     if (triggerAC) {
-      // Pequeño delay para que el cursor se estabilice después del highlight
       setTimeout(() => _showAutocomplete(triggerAC), 50)
     }
   }

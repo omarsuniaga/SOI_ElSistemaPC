@@ -83,11 +83,7 @@ import { createStudentList } from '../components/attendance/StudentList.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
 import { resolverPertenenciaClase } from '../services/suplenciaService.js'
-import {
-  generateDailyReport,
-  generateMonthlyAttendance,
-  generateMonthlyPedagogical,
-} from '../services/reportService.js'
+// reportService dynamically imported on demand for performance
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -1843,10 +1839,13 @@ function _renderVista(container, ctx) {
       delete justificaciones[alumnoId]
     },
     onJustifSaved: (alumnoId, savedRecord) => {
+      estado[alumnoId] = 'J'
       justificaciones[alumnoId] = savedRecord
+      studentList.render(alumnoId)
     },
     onJustifCancelled: (alumnoId, prevEstado) => {
-      estado[alumnoId] = prevEstado
+      estado[alumnoId] = prevEstado !== undefined ? prevEstado : null
+      studentList.render(alumnoId)
     },
     onRenderLista: (alumnoId) => studentList.render(alumnoId),
     onUpdateProgress: () => _updateProgress(),
@@ -2112,6 +2111,7 @@ function _renderVista(container, ctx) {
       if (!sesionId) return
       btnReporteD.disabled = true
       btnReporteD.innerHTML = '⏳...'
+      const { generateDailyReport } = await import('../services/reportService.js');
       await generateDailyReport(sesionId)
       btnReporteD.disabled = false
       btnReporteD.innerHTML = '📄 Reporte'
@@ -2132,6 +2132,7 @@ function _renderVista(container, ctx) {
       if (!claseId) return
       btnResumenM.disabled = true
       btnResumenM.innerHTML = '⏳...'
+      const { generateMonthlyAttendance } = await import('../services/reportService.js');
       await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1)
       btnResumenM.disabled = false
       btnResumenM.innerHTML = '📊 Resumen'
@@ -2692,6 +2693,7 @@ function _renderVista(container, ctx) {
               informePedBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…'
               try {
                 const now = new Date()
+                const { generateMonthlyPedagogical } = await import('../services/reportService.js');
                 await generateMonthlyPedagogical(claseId, now.getFullYear(), now.getMonth() + 1)
               } finally {
                 informePedBtn.disabled = false

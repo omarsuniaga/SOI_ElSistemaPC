@@ -56,28 +56,35 @@ export function createStudentList(container, {
     })
   }
 
+  function updateStudentRowState(id, newEstado) {
+    const itemEl = listEl.querySelector(`.pm-asist-item[data-id="${id}"]`)
+    if (!itemEl) {
+      renderLista()
+      return
+    }
+
+    itemEl.classList.remove('estado-p', 'estado-j', 'estado-a')
+    if (newEstado) {
+      itemEl.classList.add(`estado-${newEstado.toLowerCase()}`)
+    }
+
+    const btnP = itemEl.querySelector('.pm-asist-btn[data-action="P"]')
+    const btnJ = itemEl.querySelector('.pm-asist-btn[data-action="J"]')
+    const btnA = itemEl.querySelector('.pm-asist-btn[data-action="A"]')
+
+    if (btnP) btnP.classList.toggle('active-p', newEstado === 'P')
+    if (btnJ) btnJ.classList.toggle('active-j', newEstado === 'J')
+    if (btnA) btnA.classList.toggle('active-a', newEstado === 'A')
+  }
+
   function renderLista(animateId = null) {
+    if (animateId && listEl.children.length > 0) {
+      updateStudentRowState(animateId, estado[animateId])
+      return
+    }
+
     const sorted = _sortAlumnos(alumnos, estado)
-    let prevRect = null
-    if (animateId) {
-      const el = listEl.querySelector(`[data-id="${animateId}"]`)
-      if (el) prevRect = el.getBoundingClientRect()
-    }
-
     listEl.innerHTML = sorted.map((a) => _renderAlumnoItem(a, estado[a.id])).join('')
-
-    if (animateId && prevRect) {
-      const newEl = listEl.querySelector(`[data-id="${animateId}"]`)
-      const newRect = newEl.getBoundingClientRect()
-      const deltaY = prevRect.top - newRect.top
-      newEl.animate(
-        [
-          { transform: `translateY(${deltaY}px)`, opacity: 0.7 },
-          { transform: 'translateY(0)', opacity: 1 },
-        ],
-        { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
-      )
-    }
   }
 
   function _renderAlumnoItem(a, est) {
@@ -230,22 +237,23 @@ export function createStudentList(container, {
           delete justificaciones[id]
         }
         if (typeof onJustifDeleted === 'function') onJustifDeleted(id)
-        renderLista(id)
+        updateStudentRowState(id, null)
         if (onAutoSave) await onAutoSave(true)
         if (onAnnounce) onAnnounce(`Justificación desmarcada para ${alumno.nombre_completo}.`)
       } else {
-        if (onEstadoChange) onEstadoChange(id, 'J')
-        renderLista(id)
-        if (onAutoSave) await onAutoSave(true)
-        if (onOpenJustifModal) onOpenJustifModal(alumno, null, null)
-        if (onAnnounce) onAnnounce(`Justificación marcada para ${alumno.nombre_completo}.`)
+        // Abrir el modal de justificación. NO marcamos 'J' por adelantado;
+        // se marcará cuando el maestro confirme y guarde la justificación en el modal.
+        const prevEstado = estado[id] || null
+        const justifExistente = justificaciones?.[id] || null
+        if (onOpenJustifModal) onOpenJustifModal(alumno, justifExistente, prevEstado)
       }
       return
     }
 
-    // P/J/A toggle
-    if (onEstadoChange) onEstadoChange(id, estado[id] === action ? null : action)
-    renderLista(id)
+    // P/A toggle
+    const nextState = estado[id] === action ? null : action
+    if (onEstadoChange) onEstadoChange(id, nextState)
+    updateStudentRowState(id, nextState)
 
     if (onAnnounce) {
       const presentes = Object.values(estado).filter((v) => v === 'P').length

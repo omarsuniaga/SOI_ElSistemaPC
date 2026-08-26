@@ -449,8 +449,8 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   }
 
   function close(cancelled = false) {
-    if (cancelled && onCancel && _currentAlumno && _prevEstado !== null) {
-      onCancel(_currentAlumno.id, _prevEstado);
+    if (cancelled && onCancel && _currentAlumno) {
+      onCancel(_currentAlumno.id, _prevEstado !== undefined ? _prevEstado : null);
     }
     modalEl.classList.remove('open');
     _currentAlumno = null;
@@ -528,7 +528,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   // Escape key
   const escHandler = (e) => {
     if (e.key === 'Escape') {
-      close();
+      close(true);
       document.removeEventListener('keydown', escHandler);
     }
   };

@@ -91,7 +91,11 @@ export function createJustifModalManager(container, {
           savedRecord = result.data
         }
         if (savedRecord && onJustifSaved) onJustifSaved(alumnoId, savedRecord)
-        if (!destroyed) modal.close()
+        if (!destroyed) modal.close(false)
+        onRenderLista(alumnoId)
+        onUpdateProgress()
+        try { await onAutoSave(true) } catch (_e) { console.warn('[justif] autoSave error:', _e) }
+        if (onAnnounce) onAnnounce('Justificación guardada.')
       } catch (err) {
         console.error('[justificacion] Error guardando:', err)
         alert('Error al guardar la justificación: ' + err.message)

@@ -59,8 +59,10 @@ import { renderCatalogDiagnosticsView } from './core/catalogDiagnosticsView.js'
 import { governanceMatrixRoute } from './core/portalModuleMatrix.js'
 import { renderPortalModuleMatrixView } from './core/portalModuleMatrixView.js'
 import { abrirModalConmutadorPortales } from './portales/_shared/portalHubModal.js'
+
 // Módulos
 import { registerRoutesAuth } from './modules/auth/index.js'
+import { useAuth } from './modules/auth/hooks/useAuth.js'
 import { registerRoutesMaestros } from './modules/maestros/index.js'
 import { registerRoutesProgramas } from './modules/programas/index.js'
 import { registerRoutesAlumnos } from './modules/alumnos/index.js'

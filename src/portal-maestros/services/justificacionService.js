@@ -5,7 +5,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 
-const BUCKET_DOCUMENTOS = 'documentos' // TODO: change to private bucket + RLS policies (security)
+const BUCKET_DOCUMENTOS = 'documentos-private'
 
 /**
  * Sube un archivo al bucket 'documentos' de Supabase Storage

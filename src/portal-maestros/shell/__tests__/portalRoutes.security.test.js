@@ -12,6 +12,8 @@
  *   - gestionar-clases CON puede_inscribir_clases → renderiza la vista
  *   - crear-clase SIN puede_crear_clases → navega a 'hoy'
  *   - crear-clase CON puede_crear_clases → renderiza la vista
+ *   - asistencia SIN puede_asistir → navega a 'hoy'
+ *   - planificacion*, SIN puede_planificar → navega a 'hoy'
  *
  *   ACCESO LIBRE (vistas de maestro):
  *   - hoy, calendario, metricas, perfil → siempre accesibles para maestros autenticados
@@ -297,6 +299,48 @@ describe('crear-clase — docente autorizado puede crear clases', () => {
   })
 })
 
+describe('asistencia — docente autorizado puede registrar asistencia', () => {
+  let container
+  let router
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    router = { navigate: vi.fn() }
+    vi.clearAllMocks()
+  })
+
+  it('SIN permiso → navega a "hoy" y NO renderiza la vista', async () => {
+    const { renderAsistenciaView } = await import('../../../portal-maestros/views/asistenciaView.js')
+
+    await renderViewContent('asistencia', container, {}, new URLSearchParams('clase=clase-1'), {
+      router,
+      permisos: { puede_asistir: false },
+      maestroId: 'm1',
+      showLoginScreen: vi.fn(),
+      cleanupPushService: vi.fn(),
+      stopRealtime: vi.fn(),
+      logoutMaestro: vi.fn(),
+    })
+
+    expect(router.navigate).toHaveBeenCalledWith('hoy')
+    expect(renderAsistenciaView).not.toHaveBeenCalled()
+  })
+
+  it('SIN permisos (null) → navega a "hoy"', async () => {
+    await renderViewContent('asistencia', container, {}, new URLSearchParams('clase=clase-1'), {
+      router,
+      permisos: null,
+      maestroId: 'm1',
+      showLoginScreen: vi.fn(),
+      cleanupPushService: vi.fn(),
+      stopRealtime: vi.fn(),
+      logoutMaestro: vi.fn(),
+    })
+
+    expect(router.navigate).toHaveBeenCalledWith('hoy')
+  })
+})
+
 // ── Suite: vistas de maestro accesibles sin restricción ───────────────────────
 
 describe('Vistas de maestro — accesibles para cualquier maestro autenticado', () => {
@@ -307,7 +351,7 @@ describe('Vistas de maestro — accesibles para cualquier maestro autenticado', 
     vi.clearAllMocks()
   })
 
-  const vistasLibres = ['hoy', 'calendario', 'metricas', 'perfil', 'planificacion']
+  const vistasLibres = ['hoy', 'calendario', 'metricas', 'perfil']
 
   vistasLibres.forEach((vista) => {
     it(`"${vista}" no requiere permisos especiales`, async () => {
@@ -325,6 +369,44 @@ describe('Vistas de maestro — accesibles para cualquier maestro autenticado', 
 
       // La vista debe renderizarse (router.navigate a 'hoy' NO debe llamarse)
       expect(router.navigate).not.toHaveBeenCalledWith('hoy')
+    })
+  })
+})
+
+describe('Planificación — rutas de escritura protegidas por puede_planificar', () => {
+  let container
+  let router
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    router = { navigate: vi.fn() }
+    vi.clearAllMocks()
+  })
+
+  ;[
+    'planificacion',
+    'planificacion-disenador',
+    'planificacion-ruta',
+  ].forEach((route) => {
+    it(`${route} SIN puede_planificar → navega a "hoy" y NO renderiza`, async () => {
+      const { renderPlanificacionView } = await import('../../../portal-maestros/views/planificacionView.js')
+      const { renderDisenadorCurricularView } = await import('../../../modules/planificacion/views/DisenadorCurricularView.js')
+      const { renderRutaPedagogicaView } = await import('../../../modules/planificacion/views/RutaPedagogicaView.js')
+
+      await renderViewContent(route, container, { claseId: 'clase-123' }, new URLSearchParams('clase=clase-query'), {
+        router,
+        permisos: { puede_planificar: false },
+        maestroId: 'm1',
+        showLoginScreen: vi.fn(),
+        cleanupPushService: vi.fn(),
+        stopRealtime: vi.fn(),
+        logoutMaestro: vi.fn(),
+      })
+
+      expect(router.navigate).toHaveBeenCalledWith('hoy')
+      expect(renderPlanificacionView).not.toHaveBeenCalled()
+      expect(renderDisenadorCurricularView).not.toHaveBeenCalled()
+      expect(renderRutaPedagogicaView).not.toHaveBeenCalled()
     })
   })
 })

@@ -1,31 +1,34 @@
+/**
+ * clasesView.js — Gestión y Catálogo de Clases Académicas (Rediseño Premium).
+ *
+ * Características:
+ * 1. Ocupación >80% de la pantalla para el catálogo de clases desde el primer render.
+ * 2. Toolbar ultracompacta y aplanada con métricas inline y botón de filtros desplegable.
+ * 3. Selector rápido de Familias Instrumentales (Cuerdas, Maderas, Metales, etc.).
+ * 4. Fichas de Clase estructuradas con barra visual de ocupación/cupo, docente, salón y horario.
+ * 5. Motor de detección de solapamientos (salón, docente, alumnos, duplicados) con badges de advertencia.
+ * 6. Modal interactivo de Resolución y Bifurcación de Conflictos.
+ * 7. Modal interactivo de Nómina con gestión directa de inscripciones.
+ */
+
 import '../styles/clases.css'
-import { normalizeText } from '../../../core/utils/normalizeText.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
   obtenerClases,
   eliminarClase,
-  obtenerAlumnosInscritos,
-  obtenerAlumnosInscritosPorClases,
-  obtenerAlumnosSinClase,
   inscribirAlumno,
+  desinscribirAlumno,
 } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
-  formatDate,
   escapeHTML,
-  formatHora,
-  getEstadoLabel,
   getInstrumentoIcon,
-  getInitials,
-  getConsistentColor,
-  timeToMinutes,
-  normalizarInstrumento,
-  rendimientoBadgeHTML,
 } from '../utils/clasesUtils.js'
 import { openClaseModal } from '../components/claseModal.js'
 import { descargarPdfClase, descargarPdfListadoAlumnosPorClases } from '../domain/generarPdfClase.js'
-import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { detectarConflictosDeClases, consolidarBadgesFichaClase } from '../utils/claseConflictDetector.js'
+import { obtenerAcuerdosMaestros, guardarAcuerdoMaestro, eliminarAcuerdoMaestro } from '../api/acuerdosApi.js'
 
 const state = {
   clases: [],
@@ -33,1634 +36,2085 @@ const state = {
   maestros: [],
   salones: [],
   programas: [],
-  alumnos: [],
+  alumnosDisponibles: [],
+  acuerdos: [],
+  conflictosMap: new Map(),
   cargando: false,
+  filtrosAbiertos: false,
+  filtroFamilia: 'todas',
   filtroEstado: 'todos',
-  filtroInstrumento: '',
-  filtroNivel: '',
-  filtroTipo: '',
-  filtroSalon: '',
-  filtroDia: '',
-  filtroBuscar: '',
-  vista: 'tabla',
+  filtroCatedra: 'todas',
+  filtroMaestro: 'todos',
+  filtroSalon: 'todos',
+  filtroDia: 'todos',
+  filtroConflictos: 'todos',
+  ordenarPor: 'maestro',
+  searchQuery: '',
   container: null,
-  mostrarDiasVacios: true,
-  filtrosAbiertos: typeof window !== 'undefined' ? window.innerWidth >= 992 : true,
 }
 
-// Últimos filtros elegidos por el usuario: sobreviven a un refresh del
-// navegador (el `state` de arriba es solo memoria y se pierde con F5).
-const FILTROS_STORAGE_KEY = 'soi_clases_filtros_v1'
-const FILTRO_KEYS = ['filtroBuscar', 'filtroEstado', 'filtroInstrumento', 'filtroNivel', 'filtroTipo', 'filtroSalon', 'filtroDia']
-
-function _guardarFiltrosStorage() {
-  try {
-    const payload = Object.fromEntries(FILTRO_KEYS.map(k => [k, state[k]]))
-    localStorage.setItem(FILTROS_STORAGE_KEY, JSON.stringify(payload))
-  } catch { /* localStorage no disponible (modo privado, etc.) — no es crítico */ }
-}
-
-function _restaurarFiltrosStorage() {
-  try {
-    const raw = localStorage.getItem(FILTROS_STORAGE_KEY)
-    if (!raw) return
-    const guardado = JSON.parse(raw)
-    for (const k of FILTRO_KEYS) {
-      if (typeof guardado[k] === 'string') state[k] = guardado[k]
-    }
-  } catch { /* dato corrupto o localStorage no disponible — seguimos con los defaults */ }
+const FAMILIAS_MAP = {
+  cuerdas: ['violin', 'viola', 'violoncello', 'cello', 'contrabajo'],
+  maderas: ['flauta', 'oboe', 'clarinete', 'fagot', 'saxofon'],
+  metales: ['trompeta', 'trombon', 'corno', 'tuba', 'trombon y tuba'],
+  perc_teclado: ['percusion', 'bateria', 'piano', 'teclado', 'lutheria'],
+  coral_iniciacion: ['coro', 'coral', 'iniciacion', 'mixto', 'todos', 'general'],
 }
 
 /**
- * Vista de Clases Académicas (Simplified Refactor)
+ * Inicializa y renderiza la vista de Clases
  */
 export async function renderClasesView(container) {
   if (!container) return
 
   try {
     state.container = container
-    _restaurarFiltrosStorage()
-    injectClasesResponsiveStyles()
     state.cargando = true
     renderLoading(container)
 
-    const [clases, maestros, salones, programas, alumnos] = await Promise.all([
-          obtenerClases(),
-          supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
-          supabase.from('salones').select('*').order('nombre', { ascending: true }),
-          supabase.from('programas').select('*').order('nombre', { ascending: true }),
-          supabase.rpc('get_alumnos_disponibles_para_inscripcion'),
-        ])
+    const [clases, maestrosRes, salonesRes, programasRes, alumnosRes] = await Promise.all([
+      obtenerClases(),
+      supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
+      supabase.from('salones').select('*').order('nombre', { ascending: true }),
+      supabase.from('programas').select('*').order('nombre', { ascending: true }),
+      supabase.from('alumnos').select('*').order('nombre_completo', { ascending: true }),
+    ])
 
-        state.clases = clases
-        state.clasesOriginales = [...clases]
-        state.maestros = maestros.data || []
-        state.salones = salones.data || []
-        state.programas = programas.data || []
-        state.alumnos = alumnos.data || []
+    state.clases = clases || []
+    state.clasesOriginales = [...state.clases]
+    state.maestros = maestrosRes.data || []
+    state.salones = salonesRes.data || []
+    state.programas = programasRes.data || []
+    state.alumnosDisponibles = alumnosRes.data || []
+    state.acuerdos = obtenerAcuerdosMaestros()
+
+    // Ejecutar motor de detección de solapamientos con soporte de Acuerdos de Maestros
+    state.conflictosMap = detectarConflictosDeClases(
+      state.clasesOriginales,
+      state.maestros,
+      state.salones,
+      state.alumnosDisponibles,
+      state.acuerdos
+    )
+
     state.cargando = false
 
     renderContent(container)
-    attachGlobalEvents(container)
-    // Los <select>/<input> ya se pintaron con los valores restaurados de
-    // localStorage; hay que aplicar el filtrado real para que la lista de
-    // abajo coincida con lo que el usuario ve seleccionado arriba.
-    applyFilters()
+    attachEvents(container)
   } catch (error) {
-    console.error(error)
+    console.error('[clasesView] Error inicializando:', error)
     renderError(container, error.message)
   }
 }
 
 function renderLoading(container) {
   container.innerHTML = `
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
-      <div class="text-center">
-        <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="text-muted">Cargando clases...</p>
-      </div>
+    <div class="d-flex flex-column justify-content-center align-items-center py-5" style="min-height: 350px;">
+      <div class="spinner-border text-primary mb-2" role="status"></div>
+      <div class="text-muted small fw-semibold">Cargando catálogo de clases y evaluando solapes...</div>
     </div>
   `
 }
 
 function renderError(container, mensaje) {
   container.innerHTML = `
-    <div class="container mt-5 text-center">
-      <div class="alert alert-danger d-inline-block" role="alert">
-        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Error al cargar</h4>
-        <p>${escapeHTML(mensaje)}</p>
-        <button class="btn btn-primary btn-sm" id="retryBtn">Reintentar</button>
+    <div class="alert alert-danger m-3 rounded-4 shadow-sm p-3">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+        <div>
+          <h6 class="alert-heading mb-1 fw-bold">Error al cargar clases</h6>
+          <p class="mb-2 small text-danger-emphasis">${escapeHTML(mensaje)}</p>
+          <button class="btn btn-danger btn-sm" id="retryBtn">
+            <i class="bi bi-arrow-clockwise me-1"></i>Reintentar
+          </button>
+        </div>
       </div>
     </div>
   `
   container.querySelector('#retryBtn')?.addEventListener('click', () => renderClasesView(container))
 }
 
-function getInstrumentoOptions() {
-  const instruments = [...new Set(
-    state.clasesOriginales.map(c => c.instrumento).filter(Boolean).sort()
-  )]
-  return instruments.map(i =>
-    `<option value="${escapeHTML(i)}" ${state.filtroInstrumento === i ? 'selected' : ''}>${escapeHTML(i)}</option>`
-  ).join('')
+function normalizeStr(t) {
+  return (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 }
+const normalizeText = normalizeStr
 
-function getSalonOptions() {
-  const fromSalones = state.salones.map(s => s.nombre || s.name || s).filter(Boolean)
-  const fromClases  = state.clasesOriginales.map(c => c.salon).filter(Boolean)
-  const all = [...new Set([...fromSalones, ...fromClases])].sort()
-  return all.map(s =>
-    `<option value="${escapeHTML(s)}" ${state.filtroSalon === s ? 'selected' : ''}>${escapeHTML(s)}</option>`
-  ).join('')
-}
+function getFiltradosClases() {
+  const q = normalizeStr(state.searchQuery)
+  const fam = state.filtroFamilia
+  const catedra = state.filtroCatedra
+  const maestro = state.filtroMaestro
+  const salon = state.filtroSalon
+  const dia = state.filtroDia
+  const estado = state.filtroEstado
+  const conflictoFiltro = state.filtroConflictos
 
-function getClaseIssues(clase) {
-  const issues = []
-  const horarios = Array.isArray(clase?.horarios) ? clase.horarios : []
-  const maestros = Array.isArray(state.maestros) ? state.maestros : []
-  const allClases = Array.isArray(state.clasesOriginales) ? state.clasesOriginales : []
-  const seen = new Set()
-  const pushIssue = (issue) => {
-    if (!issue || !issue.key || seen.has(issue.key)) return
-    seen.add(issue.key)
-    issues.push(issue)
-  }
+  return state.clasesOriginales.filter((c) => {
+    const issues = state.conflictosMap.get(c.id) || []
 
-  const maestroPrincipal = maestros.find(m => m.id === clase?.maestro_principal_id)
-  const maestroSuplente = maestros.find(m => m.id === clase?.maestro_suplente_id)
+    // 0. Filtro por Conflictos
+    if (conflictoFiltro === 'con-conflictos' && issues.length === 0) return false
+    if (conflictoFiltro === 'en-revision' && !c.necesita_revision) return false
+    if (conflictoFiltro === 'sin-conflictos' && issues.length > 0) return false
 
-  if (!clase?.maestro_principal_id || !maestroPrincipal) {
-    pushIssue({ key: 'maestro-principal', label: 'Sin maestro', icon: 'bi-person-exclamation', tone: 'danger' })
-  }
-
-  if (clase?.necesita_revision) {
-    pushIssue({
-      key: 'revision-pendiente',
-      label: clase.revision_motivo || 'Marcada para revisión',
-      icon: 'bi-flag-fill',
-      tone: 'warning',
-    })
-  }
-
-
-
-  if (!horarios.length) {
-    pushIssue({ key: 'horario', label: 'Sin horario', icon: 'bi-calendar-x', tone: 'danger' })
-  }
-
-  const totalAlumnos = Number(clase?.total_alumnos ?? 0)
-  if (totalAlumnos <= 0) {
-    pushIssue({ key: 'alumnos', label: 'Sin alumnos', icon: 'bi-people', tone: 'warning' })
-  } else {
-    pushIssue({ key: 'alumnos', label: `${totalAlumnos} ${totalAlumnos === 1 ? 'alumno' : 'alumnos'}`, icon: 'bi-people-fill', tone: 'success' })
-  }
-
-  const overlaps = new Set()
-  const conflictingStudentsMap = new Map()
-  const claseAlumnos = new Set(clase?.alumnos_ids || [])
-
-  for (const horario of horarios) {
-    const currentStart = timeToMinutes(horario?.hora_inicio || '00:00')
-    const currentEnd = timeToMinutes(horario?.hora_fin || '00:00')
-    if (!horario?.dia || currentStart >= currentEnd) continue
-
-    for (const other of allClases) {
-      if (!other || other.id === clase?.id) continue
-      for (const otherHorario of (other.horarios || [])) {
-        if (!otherHorario?.dia || (otherHorario.dia || '').toLowerCase() !== (horario.dia || '').toLowerCase()) continue
-        const otherStart = timeToMinutes(otherHorario.hora_inicio || '00:00')
-        const otherEnd = timeToMinutes(otherHorario.hora_fin || '00:00')
-        if (currentStart < otherEnd && otherStart < currentEnd) {
-          const sameTeacher = clase?.maestro_principal_id && (
-            other.maestro_principal_id === clase.maestro_principal_id ||
-            other.maestro_suplente_id === clase.maestro_principal_id
-          )
-          const sameRoom = horario.salon_id && otherHorario.salon_id && horario.salon_id === otherHorario.salon_id
-
-          if (sameTeacher) overlaps.add('maestro')
-          if (sameRoom) overlaps.add('salon')
-
-          if (claseAlumnos.size > 0 && (other.alumnos_ids || []).length > 0) {
-            for (const studentId of (other.alumnos_ids || [])) {
-              if (claseAlumnos.has(studentId)) {
-                conflictingStudentsMap.set(studentId, {
-                  studentId,
-                  otherClaseId: other.id,
-                  otherClaseNombre: other.nombre,
-                  dia: horario.dia,
-                  horaInicio: horario.hora_inicio,
-                  horaFin: horario.hora_fin
-                })
-              }
-            }
-          }
-        }
-      }
+    // 1. Filtro por Familia Instrumental
+    if (fam !== 'todas') {
+      const instNorm = normalizeStr(c.instrumento || c.nombre || '')
+      const keywords = FAMILIAS_MAP[fam] || []
+      const matchFam = keywords.some(k => instNorm.includes(k))
+      if (!matchFam) return false
     }
-  }
 
-  if (overlaps.has('maestro')) {
-    pushIssue({ key: 'solape-maestro', label: 'Solape maestro (misma hora)', icon: 'bi-person-workspace', tone: 'danger' })
-  }
-  if (overlaps.has('salon')) {
-    pushIssue({ key: 'solape-salon', label: 'Solape salón (misma hora)', icon: 'bi-building-exclamation', tone: 'danger' })
-  }
-  if (conflictingStudentsMap.size > 0) {
-    const count = conflictingStudentsMap.size
-    pushIssue({
-      key: 'solape-alumnos',
-      label: `${count} ${count === 1 ? 'alumno' : 'alumnos'} en 2 clases a la misma hora`,
-      icon: 'bi-people-fill',
-      tone: 'warning',
-      conflictsMap: conflictingStudentsMap,
-      conflictsList: Array.from(conflictingStudentsMap.values())
-    })
-  }
+    // 2. Filtro por Cátedra
+    if (catedra !== 'todas' && normalizeStr(c.instrumento) !== normalizeStr(catedra)) {
+      return false
+    }
 
-  return issues
+    // 3. Filtro por Docente
+    if (maestro !== 'todos') {
+      const matchDocenteId = c.maestro_principal_id === maestro || c.maestro_id === maestro
+      const matchDocenteNombre = normalizeStr(c.maestro_nombre) === normalizeStr(maestro)
+      if (!matchDocenteId && !matchDocenteNombre) return false
+    }
+
+    // 4. Filtro por Salón
+    if (salon !== 'todos') {
+      const salonNombre = c.salon || (c.horarios || [])[0]?.salones?.nombre || ''
+      if (normalizeStr(salonNombre) !== normalizeStr(salon)) return false
+    }
+
+    // 5. Filtro por Día
+    if (dia !== 'todos') {
+      const tieneDia = (c.horarios || c.clase_horarios || []).some(h => normalizeStr(h.dia || h.dia_semana) === normalizeStr(dia))
+      if (!tieneDia) return false
+    }
+
+    // 6. Filtro por Estado
+    if (estado !== 'todos') {
+      const isActiva = c.activo !== false && c.estado !== 'inactiva'
+      if (estado === 'activa' && !isActiva) return false
+      if (estado === 'inactiva' && isActiva) return false
+    }
+
+    // 7. Buscador Universal
+    if (q) {
+      const matchNombre = normalizeStr(c.nombre).includes(q)
+      const matchInst = normalizeStr(c.instrumento).includes(q)
+      const matchMaestro = normalizeStr(c.maestro_nombre).includes(q)
+      const matchSalon = normalizeStr(c.salon).includes(q)
+      if (!matchNombre && !matchInst && !matchMaestro && !matchSalon) return false
+    }
+
+    return true
+  }).sort((a, b) => {
+    const orden = state.ordenarPor || 'maestro'
+    const maestrosMap = new Map(state.maestros.map(m => [m.id, m.nombre_completo || m.nombre || '']))
+    const maestroA = a.maestro_nombre || maestrosMap.get(a.maestro_principal_id) || maestrosMap.get(a.maestro_id) || 'Sin asignar'
+    const maestroB = b.maestro_nombre || maestrosMap.get(b.maestro_principal_id) || maestrosMap.get(b.maestro_id) || 'Sin asignar'
+    const nombreA = a.nombre || ''
+    const nombreB = b.nombre || ''
+    const instA = a.instrumento || ''
+    const instB = b.instrumento || ''
+
+    if (orden === 'maestro') {
+      const comp = maestroA.localeCompare(maestroB, 'es', { sensitivity: 'base' })
+      if (comp !== 0) return comp
+      return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base', numeric: true })
+    }
+
+    if (orden === 'familia') {
+      const getFam = (inst) => {
+        const norm = normalizeStr(inst)
+        for (const [fKey, list] of Object.entries(FAMILIAS_MAP)) {
+          if (list.some(k => norm.includes(k))) return fKey
+        }
+        return 'zzz'
+      }
+      const famA = getFam(instA)
+      const famB = getFam(instB)
+      const compFam = famA.localeCompare(famB, 'es')
+      if (compFam !== 0) return compFam
+      return instA.localeCompare(instB, 'es')
+    }
+
+    if (orden === 'catedra') {
+      const compInst = instA.localeCompare(instB, 'es')
+      if (compInst !== 0) return compInst
+      return nombreA.localeCompare(nombreB, 'es')
+    }
+
+    if (orden === 'dia') {
+      const diasOrder = { lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6, domingo: 7 }
+      const diaA = (a.horarios || a.clase_horarios || [])[0]?.dia || ''
+      const diaB = (b.horarios || b.clase_horarios || [])[0]?.dia || ''
+      const orderA = diasOrder[normalizeStr(diaA)] || 99
+      const orderB = diasOrder[normalizeStr(diaB)] || 99
+      if (orderA !== orderB) return orderA - orderB
+      const horaA = (a.horarios || a.clase_horarios || [])[0]?.hora_inicio || '23:59'
+      const horaB = (b.horarios || b.clase_horarios || [])[0]?.hora_inicio || '23:59'
+      return horaA.localeCompare(horaB)
+    }
+
+    if (orden === 'ocupacion_desc') {
+      const pctA = (a.total_alumnos || 0) / (a.capacidad_maxima || 20)
+      const pctB = (b.total_alumnos || 0) / (b.capacidad_maxima || 20)
+      return pctB - pctA
+    }
+
+    if (orden === 'ocupacion_asc') {
+      const pctA = (a.total_alumnos || 0) / (a.capacidad_maxima || 20)
+      const pctB = (b.total_alumnos || 0) / (b.capacidad_maxima || 20)
+      return pctA - pctB
+    }
+
+    if (orden === 'nombre') {
+      return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base', numeric: true })
+    }
+
+    return 0
+  })
 }
 
-function renderIssuesBadge(issues = []) {
-  const warnings = issues.filter(i => i.tone === 'danger' || i.tone === 'warning')
-  if (!warnings.length) return ''
-  const hasDanger = issues.some(i => i.tone === 'danger')
-  const toneClass = hasDanger ? 'text-bg-danger' : 'text-bg-warning'
-  const iconClass = hasDanger ? 'bi-exclamation-circle-fill' : 'bi-exclamation-triangle-fill'
-  const countLabel = issues.length === 1 ? '1 advertencia' : `${issues.length} advertencias`
-  return `
-    <span class="badge rounded-pill ${toneClass} clase-issue-badge" title="${escapeHTML(warnings.map(i => i.label).join(' · '))}" aria-label="${escapeHTML(countLabel)}">
-      <i class="bi ${iconClass} me-1"></i>${warnings.length}
-    </span>
-  `
-}
-
-function renderIssueChips(issues = []) {
-  if (!issues.length) return ''
-  return `
-    <div class="mt-2 d-flex flex-wrap gap-1">
-      ${issues.map(issue => `
-        <span class="badge rounded-pill ${issue.tone === 'danger' ? 'text-bg-danger' : issue.tone === 'success' ? 'text-bg-success-subtle text-success-emphasis border border-success-subtle' : 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle'} classes-warning-chip">
-          <i class="bi ${issue.icon} me-1"></i>${escapeHTML(issue.label)}
-        </span>
-      `).join('')}
-    </div>
-  `
+function contarFiltrosActivos() {
+  let count = 0
+  if (state.filtroFamilia !== 'todas') count++
+  if (state.filtroCatedra !== 'todas') count++
+  if (state.filtroMaestro !== 'todos') count++
+  if (state.filtroSalon !== 'todos') count++
+  if (state.filtroDia !== 'todos') count++
+  if (state.filtroEstado !== 'todos') count++
+  if (state.filtroConflictos !== 'todos') count++
+  if (state.searchQuery.trim().length > 0) count++
+  return count
 }
 
 function renderContent(container) {
-  if (typeof state.filtrosAbiertos !== 'boolean') {
-    state.filtrosAbiertos = window.innerWidth >= 992
-  }
+  const clasesFiltradas = getFiltradosClases()
+  const totalClases = state.clasesOriginales.length
+  const totalActivas = state.clasesOriginales.filter(c => c.activo !== false && c.estado !== 'inactiva').length
+  const totalMatriculas = state.clasesOriginales.reduce((s, c) => s + (c.total_alumnos || (c.alumnos_ids || []).length || 0), 0)
+  const totalCapacidad = state.clasesOriginales.reduce((s, c) => s + (c.capacidad_maxima || 20), 0)
+  const pctOcupacionGlobal = totalCapacidad > 0 ? Math.round((totalMatriculas / totalCapacidad) * 100) : 0
+  
+  // Calcular clases con conflictos/advertencias
+  let clasesConConflicto = 0
+  state.clasesOriginales.forEach(c => {
+    const issues = state.conflictosMap.get(c.id) || []
+    if (issues.length > 0) clasesConConflicto++
+  })
+
+  const filtrosActivosCount = contarFiltrosActivos()
+
+  // Calcular alumnos únicos inscritos y alumnos sin clase
+  const inscritosGeneralSet = new Set()
+  state.clasesOriginales.forEach(c => {
+    (c.alumnos_ids || []).forEach(aid => inscritosGeneralSet.add(aid))
+  })
+  const totalAlumnosPadron = state.alumnosDisponibles.length
+  const totalAlumnosUnicos = inscritosGeneralSet.size
+  const alumnosSinClaseCount = state.alumnosDisponibles.filter(a => !inscritosGeneralSet.has(a.id)).length
+
+  // Extraer opciones únicas para los selects
+  const catedrasList = [...new Set(state.clasesOriginales.map(c => c.instrumento).filter(Boolean))].sort()
+  const salonesList = [...new Set(state.salones.map(s => s.nombre).filter(Boolean))].sort()
+  const maestrosList = [...new Set(state.maestros.map(m => m.nombre_completo || m.nombre).filter(Boolean))].sort()
 
   container.innerHTML = `
-    <div class="page-container">
-      <div class="clases-header-premium mb-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-            <i class="bi bi-book fs-4"></i>
-          </div>
-          <div>
-            <h1 class="clases-title-premium mb-0">Clases</h1>
-            <p class="text-muted small mb-0">${state.clases.length} clases en total</p>
-          </div>
-        </div>
+    <div class="clases-view-container p-2 p-md-3">
+      
+      <!-- TOOLBAR COMPACTA PRINCIPAL -->
+      <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
         
-        <div class="clases-header-actions">
-          <button class="btn-help-trigger clases-ui-btn clases-ui-btn--icon" id="btn-help-clases" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
-            <i class="bi bi-question-lg"></i>
-          </button>
-          <div class="view-segmented-control">
-            <button class="view-segment-btn clases-ui-btn clases-ui-btn--icon ${state.vista === 'tabla' ? 'active' : ''}" id="btn-vista-tabla" title="Vista de lista" aria-label="Vista de lista">
-              <i class="bi bi-list-ul"></i>
-            </button>
-            <button class="view-segment-btn clases-ui-btn clases-ui-btn--icon ${state.vista === 'calendario' ? 'active' : ''}" id="btn-vista-calendario" title="Vista de agenda" aria-label="Vista de agenda">
-              <i class="bi bi-calendar-week"></i>
-            </button>
-          </div>
-          <button class="btn btn-outline-secondary btn-clases-pdf clases-ui-btn clases-ui-btn--icon" id="btnPdfListadoAlumnosClases" type="button" aria-label="Descargar PDF Listados Alumnos x Clase" title="Descargar PDF Listados Alumnos x Clase">
-            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
-          </button>
-          <button class="btn btn-outline-warning clases-ui-btn clases-ui-btn--icon" id="btnAlumnosSinClase" type="button" aria-label="Ver alumnos sin clase asignada" title="Ver alumnos sin clase asignada">
-            <i class="bi bi-person-exclamation" aria-hidden="true"></i>
-          </button>
-          <button class="btn btn-premium-action btn-icon-only clases-ui-btn clases-ui-btn--icon" id="btnAgregarClase" title="Nueva clase" aria-label="Nueva clase">
-            <i class="bi bi-plus-lg" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="clases-filters-panel mb-4">
-        <div class="clases-filters-panel__header">
-          <div class="d-flex align-items-center gap-2">
-            <div class="clases-filters-panel__icon">
-              <i class="bi bi-funnel"></i>
-            </div>
-            <div>
-              <div class="d-flex align-items-center gap-2">
-                <div class="clases-filters-panel__title">Filtros</div>
-                <span class="badge text-bg-primary rounded-pill d-none" id="filtrosBadgeCount" style="font-size: 0.7rem;">0</span>
-              </div>
-              <div class="clases-filters-panel__subtitle text-muted small" id="filtrosActivosCount">Busca y segmenta las clases visibles</div>
+        <!-- Fila 1: Título, Métricas Rápidas y Botones de Acción -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h5 class="fw-bold mb-0 text-body d-flex align-items-center">
+              <i class="bi bi-easel2 text-primary me-2"></i>Gestión de Clases
+            </h5>
+            
+            <!-- Badges Inline de Resumen Específicos (Clickeables para ver explicación) -->
+            <div class="d-flex align-items-center gap-1.5 ms-1 flex-wrap" id="contenedorBadgesHeader" title="Hacé clic en cualquier indicador para ver la explicación y desglose detallado">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2 cursor-pointer btn-info-metrica" style="font-size:0.75rem; cursor:pointer;" title="Ver explicación de Clases Activas">
+                <i class="bi bi-easel me-1"></i>${totalActivas}/${totalClases} Clases Activas
+              </span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 cursor-pointer btn-info-metrica" style="font-size:0.75rem; cursor:pointer;" title="Ver explicación de Alumnos Asignados">
+                <i class="bi bi-people-fill me-1"></i>${totalAlumnosUnicos}/${totalAlumnosPadron} Alumnos Asignados
+              </span>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle py-1 px-2 cursor-pointer btn-info-metrica" style="font-size:0.75rem; cursor:pointer;" title="Ver explicación de Matrículas Totales">
+                <i class="bi bi-journal-check me-1"></i>${totalMatriculas} Matrículas Totales
+              </span>
+              <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1 px-2 cursor-pointer btn-info-metrica" style="font-size:0.75rem; cursor:pointer;" title="Ver explicación de Ocupación Global">
+                <i class="bi bi-pie-chart-fill me-1"></i>${pctOcupacionGlobal}% Ocupación
+              </span>
+              <span class="badge bg-body-tertiary text-muted border py-1 px-1.5 cursor-pointer btn-info-metrica" style="font-size:0.75rem; cursor:pointer;" title="¿Qué significan estas métricas? Hacé clic para abrir la guía">
+                <i class="bi bi-question-circle-fill text-primary"></i>
+              </span>
+              ${clasesConConflicto > 0 ? `
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2 cursor-pointer" id="badgeFiltroConflictosHeader" style="font-size:0.75rem; cursor:pointer;" title="Ver clases con solapes o advertencias">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>${clasesConConflicto} con Advertencias
+                </span>
+              ` : ''}
             </div>
           </div>
-          <button class="btn btn-outline-secondary btn-sm clases-ui-btn clases-ui-btn--icon" id="btnToggleFiltros" type="button" aria-expanded="${state.filtrosAbiertos ? 'true' : 'false'}" title="${state.filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}" aria-label="${state.filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}">
-            <i class="bi ${state.filtrosAbiertos ? 'bi-chevron-up' : 'bi-chevron-down'}"></i>
-          </button>
-        </div>
-        <div class="clases-filters-panel__body ${state.filtrosAbiertos ? 'is-open' : 'is-collapsed'}" id="clasesFiltersPanelBody">
-          <div class="d-flex flex-column gap-2">
-            <!-- Barra Superior: Búsqueda + Estado + Limpiar -->
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <div class="premium-search-container flex-grow-1" style="min-width:200px;">
-                <i class="bi bi-search search-icon-muted"></i>
-                <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, maestro, instrumento..." id="buscar" value="${escapeHTML(state.filtroBuscar)}">
-              </div>
 
-              <div class="premium-select-container" style="min-width: 170px;">
-                <i class="bi bi-funnel select-icon-muted"></i>
-                <select class="form-select premium-filter-select" id="filtroEstado">
-                  <option value="todos"      ${state.filtroEstado === 'todos'      ? 'selected' : ''}>Todos los estados</option>
-                  <option value="activa"     ${state.filtroEstado === 'activa'     ? 'selected' : ''}>Activa</option>
-                  <option value="suspendida" ${state.filtroEstado === 'suspendida' ? 'selected' : ''}>Pausada</option>
-                  <option value="finalizada" ${state.filtroEstado === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-                  <option value="emergente"  ${state.filtroEstado === 'emergente'  ? 'selected' : ''}>Emergente</option>
-                  <option value="cancelada"  ${state.filtroEstado === 'cancelada'  ? 'selected' : ''}>Cancelada</option>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <!-- Botón Alumnos Sin Clase -->
+            <button class="btn btn-sm ${alumnosSinClaseCount > 0 ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-body-secondary text-secondary border border-secondary-subtle'} d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnAlumnosSinClase" title="Ver alumnos que no tienen ninguna clase asignada">
+              <i class="bi bi-person-exclamation"></i>
+              <span>Sin Clase (${alumnosSinClaseCount})</span>
+            </button>
+
+            <!-- Botón Desplegar/Contraer Filtros -->
+            <button class="btn btn-sm ${state.filtrosAbiertos ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnToggleFiltrosClases">
+              <i class="bi bi-funnel-fill"></i>
+              <span>Filtros</span>
+              ${filtrosActivosCount > 0 ? `<span class="badge bg-warning text-dark ms-1 rounded-pill" style="font-size:0.65rem;">${filtrosActivosCount}</span>` : ''}
+              <i class="bi bi-chevron-${state.filtrosAbiertos ? 'up' : 'down'} ms-1" style="font-size:0.75rem;"></i>
+            </button>
+
+            <!-- Botón PDF Listados -->
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnPdfListadosClases" title="Descargar Planilla General PDF">
+              <i class="bi bi-file-earmark-pdf-fill"></i>
+              <span>Listados PDF</span>
+            </button>
+
+            <!-- Botón Crear Clase -->
+            <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnNuevaClase">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>Nueva Clase</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel de Filtros Desplegable (Oculto por defecto para garantizar 80% pantalla útil) -->
+        <div class="collapse ${state.filtrosAbiertos ? 'show' : ''} pt-2 mt-2 border-top border-body-tertiary" id="panelFiltrosClases">
+          
+          <!-- Píldoras de Familia Instrumental -->
+          <div class="d-flex align-items-center gap-1.5 mb-2.5 flex-wrap">
+            <span class="small text-muted me-1 fw-bold" style="font-size:0.75rem;"><i class="bi bi-tag-fill me-1"></i>Familia:</span>
+            <button class="btn btn-sm ${state.filtroFamilia === 'todas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="todas" style="font-size:0.75rem;">Todas</button>
+            <button class="btn btn-sm ${state.filtroFamilia === 'cuerdas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="cuerdas" style="font-size:0.75rem;">🎻 Cuerdas</button>
+            <button class="btn btn-sm ${state.filtroFamilia === 'maderas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="maderas" style="font-size:0.75rem;">🎷 Maderas</button>
+            <button class="btn btn-sm ${state.filtroFamilia === 'metales' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="metales" style="font-size:0.75rem;">🎺 Metales</button>
+            <button class="btn btn-sm ${state.filtroFamilia === 'perc_teclado' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="perc_teclado" style="font-size:0.75rem;">🥁 Percusión & Piano</button>
+            <button class="btn btn-sm ${state.filtroFamilia === 'coral_iniciacion' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="coral_iniciacion" style="font-size:0.75rem;">🎶 Iniciación & Coro</button>
+          </div>
+
+          <!-- Selects de Filtro y Ordenamiento Estilizados -->
+          <div class="row g-2 align-items-center">
+            
+            <!-- Buscador -->
+            <div class="col-12 col-sm-6 col-lg-3">
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="inputBuscarClases" placeholder="Buscar por nombre, docente..." value="${escapeHTML(state.searchQuery)}" style="font-size:0.8rem;">
+              </div>
+            </div>
+
+            <!-- Cátedra -->
+            <div class="col-6 col-sm-3 col-lg-2">
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectCatedraClase" style="font-size:0.8rem;">
+                <option value="todas" ${state.filtroCatedra === 'todas' ? 'selected' : ''}>Todas Cátedras</option>
+                ${catedrasList.map(c => `<option value="${escapeHTML(c)}" ${state.filtroCatedra === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Docente -->
+            <div class="col-6 col-sm-3 col-lg-2">
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectMaestroClase" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroMaestro === 'todos' ? 'selected' : ''}>Todos Docentes</option>
+                ${maestrosList.map(m => `<option value="${escapeHTML(m)}" ${state.filtroMaestro === m ? 'selected' : ''}>${escapeHTML(m)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Salón -->
+            <div class="col-6 col-sm-3 col-lg-1">
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectSalonClase" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroSalon === 'todos' ? 'selected' : ''}>Salones</option>
+                ${salonesList.map(s => `<option value="${escapeHTML(s)}" ${state.filtroSalon === s ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Día -->
+            <div class="col-6 col-sm-3 col-lg-1">
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectDiaClase" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroDia === 'todos' ? 'selected' : ''}>Día</option>
+                <option value="lunes" ${state.filtroDia === 'lunes' ? 'selected' : ''}>Lun</option>
+                <option value="martes" ${state.filtroDia === 'martes' ? 'selected' : ''}>Mar</option>
+                <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Mié</option>
+                <option value="jueves" ${state.filtroDia === 'jueves' ? 'selected' : ''}>Jue</option>
+                <option value="viernes" ${state.filtroDia === 'viernes' ? 'selected' : ''}>Vie</option>
+                <option value="sabado" ${state.filtroDia === 'sabado' ? 'selected' : ''}>Sáb</option>
+              </select>
+            </div>
+
+            <!-- Conflictos / Estados -->
+            <div class="col-6 col-sm-3 col-lg-1">
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectConflictosFiltro" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroConflictos === 'todos' ? 'selected' : ''}>Estados</option>
+                <option value="con-conflictos" ${state.filtroConflictos === 'con-conflictos' ? 'selected' : ''}>⚠️ Advertencias</option>
+                <option value="en-revision" ${state.filtroConflictos === 'en-revision' ? 'selected' : ''}>🚩 Revisión</option>
+                <option value="sin-conflictos" ${state.filtroConflictos === 'sin-conflictos' ? 'selected' : ''}>✅ Sin Conflictos</option>
+              </select>
+            </div>
+
+            <!-- Ordenar Por -->
+            <div class="col-12 col-sm-6 col-lg-2">
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1.5 text-muted" style="font-size:0.75rem;"><i class="bi bi-sort-down"></i></span>
+                <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarClases" style="font-size:0.8rem;">
+                  <option value="maestro" ${state.ordenarPor === 'maestro' ? 'selected' : ''}>Maestro (A-Z)</option>
+                  <option value="familia" ${state.ordenarPor === 'familia' ? 'selected' : ''}>Familia Instrumental</option>
+                  <option value="catedra" ${state.ordenarPor === 'catedra' ? 'selected' : ''}>Cátedra (A-Z)</option>
+                  <option value="dia" ${state.ordenarPor === 'dia' ? 'selected' : ''}>Día y Horario</option>
+                  <option value="ocupacion_desc" ${state.ordenarPor === 'ocupacion_desc' ? 'selected' : ''}>Mayor Ocupación</option>
+                  <option value="ocupacion_asc" ${state.ordenarPor === 'ocupacion_asc' ? 'selected' : ''}>Menor Ocupación</option>
+                  <option value="nombre" ${state.ordenarPor === 'nombre' ? 'selected' : ''}>Nombre de Clase</option>
                 </select>
               </div>
+            </div>
 
-              <button class="btn btn-outline-secondary btn-sm clases-ui-btn clases-ui-btn--icon" id="btnLimpiarFiltros" type="button" title="Limpiar todos los filtros">
-                <i class="bi bi-x-lg"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- GRID DE TARJETAS DE CLASE (80% DEL ESPACIO VISUAL) -->
+      ${clasesFiltradas.length > 0 ? `
+        <div class="row g-3">
+          ${clasesFiltradas.map(c => _renderClaseCardV2(c)).join('')}
+        </div>
+      ` : `
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body text-muted">
+          <i class="bi bi-easel fs-1 d-block mb-3 opacity-50 text-secondary"></i>
+          <h5 class="fw-bold">No se encontraron clases</h5>
+          <p class="small text-muted mb-3">Probá cambiando los filtros o agregá una nueva clase al catálogo.</p>
+          <button class="btn btn-primary btn-sm mx-auto" id="btnCrearClaseEmpty">
+            <i class="bi bi-plus-lg me-1"></i>Crear Nueva Clase
+          </button>
+        </div>
+      `}
+
+    </div>
+  `
+}
+
+/**
+ * Calcula un tono HUE (0-360) determinista para el maestro para agrupar visualmente
+ */
+function getMaestroHue(idOrName = '') {
+  if (!idOrName || idOrName === 'Maestro no asignado') return 220
+  let hash = 0
+  for (let i = 0; i < idOrName.length; i++) {
+    hash = (hash << 5) - hash + idOrName.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash) % 360
+}
+
+/**
+ * Renderiza la ficha visual de una clase con detección de solapes y advertencias
+ */
+function _renderClaseCardV2(c) {
+  const isActiva = c.activo !== false && c.estado !== 'inactiva'
+  const totalAlumnos = c.total_alumnos || (c.alumnos_ids || []).length || 0
+  const capacidad = c.capacidad_maxima || 20
+  const pctOcupacion = Math.min(100, Math.round((totalAlumnos / capacidad) * 100))
+
+  let fillClass = 'bg-success'
+  if (pctOcupacion >= 85 && pctOcupacion < 100) fillClass = 'bg-warning'
+  if (pctOcupacion >= 100) fillClass = 'bg-danger'
+
+  // Resolver horario
+  const primerHorario = (c.horarios || c.clase_horarios || [])[0] || {}
+  const diaTexto = primerHorario.dia || primerHorario.dia_semana || 'Por definir'
+  const horaTexto = primerHorario.hora_inicio 
+    ? `${String(primerHorario.hora_inicio).slice(0, 5)} - ${String(primerHorario.hora_fin || '').slice(0, 5)}`
+    : (c.hora_inicio ? `${String(c.hora_inicio).slice(0, 5)} - ${String(c.hora_fin || '').slice(0, 5)}` : 'Horario flexible')
+
+  // Resolver salón
+  const salonTexto = c.salon || primerHorario.salones?.nombre || primerHorario.salon_nombre || 'Salón por asignar'
+
+  // Resolver maestro
+  const maestroObj = state.maestros.find(m => m.id === c.maestro_principal_id || m.id === c.maestro_id)
+  const maestroNombre = c.maestro_nombre || maestroObj?.nombre_completo || 'Maestro no asignado'
+  const maestroIdKey = c.maestro_principal_id || c.maestro_id || maestroNombre
+  const teacherHue = getMaestroHue(maestroIdKey)
+
+  // Conflictos detectados en esta clase
+  const issues = state.conflictosMap.get(c.id) || []
+  const badgesConsolidados = consolidarBadgesFichaClase(issues)
+  const hasDangerIssues = badgesConsolidados.some(i => i.nivel === 'danger')
+  const hasWarningIssues = badgesConsolidados.some(i => i.nivel === 'warning')
+
+  return `
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="clase-card-v2 h-100 ${hasDangerIssues ? 'border-danger' : hasWarningIssues ? 'border-warning' : ''}" style="--teacher-hue: ${teacherHue};">
+        
+        <div>
+          <!-- Header de Ficha -->
+          <div class="clase-card-v2-header">
+            <div>
+              <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
+                <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.68rem;">
+                  <i class="bi ${getInstrumentoIcon(c.instrumento)} me-1"></i>${escapeHTML(c.instrumento || 'General')}
+                </span>
+                ${c.tipo_clase ? `<span class="badge bg-body-tertiary text-muted border" style="font-size:0.68rem;">${escapeHTML(c.tipo_clase)}</span>` : ''}
+                ${c.necesita_revision ? `<span class="badge bg-warning text-dark" style="font-size:0.68rem;"><i class="bi bi-flag-fill me-1"></i>Revisión</span>` : ''}
+              </div>
+              <h6 class="clase-card-v2-title">${escapeHTML(c.nombre || 'Clase')}</h6>
+            </div>
+            
+            <span class="badge ${isActiva ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}" style="font-size:0.68rem;">
+              ${isActiva ? 'Activa' : 'Inactiva'}
+            </span>
+          </div>
+
+          <!-- Metadatos Operativos -->
+          <div class="clase-card-v2-meta">
+            <div class="clase-meta-row">
+              <i class="bi bi-clock text-primary"></i>
+              <span><strong>${escapeHTML(diaTexto)}</strong> · ${escapeHTML(horaTexto)}</span>
+            </div>
+            <div class="clase-meta-row">
+              <i class="bi bi-door-closed text-secondary"></i>
+              <span>${escapeHTML(salonTexto)}</span>
+            </div>
+            <div class="clase-meta-row">
+              <i class="bi bi-person-badge" style="color: hsl(var(--teacher-hue), 70%, 60%);"></i>
+              <span>Docente: <strong>${escapeHTML(maestroNombre)}</strong></span>
+            </div>
+          </div>
+
+          <!-- Chips de Advertencias/Solapes Consolidados si existen -->
+          ${badgesConsolidados.length > 0 ? `
+            <div class="d-flex flex-wrap gap-1 mb-2">
+              ${badgesConsolidados.map(b => `
+                <span class="badge ${b.nivel === 'danger' ? 'bg-danger-subtle text-danger border border-danger-subtle' : b.nivel === 'warning' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle'}" style="font-size:0.68rem;" title="${escapeHTML(b.tooltip)}">
+                  <i class="bi ${b.icon} me-1"></i>${escapeHTML(b.label)}
+                </span>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <!-- Ocupación / Capacidad -->
+          <div class="clase-occupancy-container">
+            <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem;">
+              <span class="text-muted fw-semibold">Capacidad: <strong>${totalAlumnos}/${capacidad}</strong> alumnos</span>
+              <span class="fw-bold ${pctOcupacion >= 100 ? 'text-danger' : 'text-success'}">${pctOcupacion}%</span>
+            </div>
+            <div class="clase-occupancy-bar">
+              <div class="clase-occupancy-fill ${fillClass}" style="width: ${pctOcupacion}%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer / Acciones Rápidas -->
+        <div class="clase-card-v2-footer">
+          <div class="d-flex gap-1 align-items-center">
+            <button class="btn btn-outline-primary btn-sm px-2 py-1 d-inline-flex align-items-center" 
+                    data-action="ver-nomina" 
+                    data-id="${c.id}"
+                    style="font-size:0.78rem;">
+              <i class="bi bi-people-fill me-1"></i>Nómina (${totalAlumnos})
+            </button>
+
+            ${issues.length > 0 ? `
+              <button class="btn btn-warning btn-sm px-2 py-1 d-inline-flex align-items-center"
+                      data-action="resolver-conflicto"
+                      data-id="${c.id}"
+                      style="font-size:0.78rem;"
+                      title="Evaluar y resolver conflictos de esta clase">
+                <i class="bi bi-shield-exclamation me-1"></i>Resolver (${issues.length})
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="d-flex gap-1">
+            <button class="btn btn-outline-secondary btn-sm px-2 py-1" 
+                    data-action="pdf-clase" 
+                    data-id="${c.id}" 
+                    title="Descargar Planilla PDF">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm px-2 py-1" 
+                    data-action="editar-clase" 
+                    data-id="${c.id}" 
+                    title="Editar Clase y Horario">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm px-2 py-1" 
+                    data-action="eliminar-clase" 
+                    data-id="${c.id}" 
+                    data-nombre="${escapeHTML(c.nombre)}" 
+                    title="Eliminar Clase">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `
+}
+
+/**
+ * Modal Interactivo de Resolución y Bifurcación de Conflictos (Vista Inmersiva 95%)
+ */
+function _mostrarModalResolucionConflictos(claseId) {
+  const clase = state.clasesOriginales.find(c => c.id === claseId)
+  if (!clase) return
+
+  const issues = state.conflictosMap.get(claseId) || []
+  const maestroObj = state.maestros.find(m => m.id === clase.maestro_principal_id || m.id === clase.maestro_id)
+  const primerHorario = (clase.horarios || clase.clase_horarios || [])[0] || {}
+
+  const modalHtml = `
+    <div class="container-fluid p-0">
+      <div class="row g-3">
+        
+        <!-- PANEL IZQUIERDO: Diagnóstico y Comparativa de Solapes (45%) -->
+        <div class="col-12 col-lg-5">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary">
+            
+            <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+              <div class="p-2 rounded-3 bg-warning-subtle text-warning-emphasis">
+                <i class="bi bi-shield-exclamation fs-4"></i>
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0 text-body">Diagnóstico de Conflictos</h6>
+                <small class="text-muted">${issues.length} advertencia(s) que requieren decisión</small>
+              </div>
+            </div>
+
+            <!-- Ficha Resumen de Esta Clase -->
+            <div class="p-3 rounded-3 mb-3 bg-body-tertiary border">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.7rem;">
+                  <i class="bi ${getInstrumentoIcon(clase.instrumento)} me-1"></i>${escapeHTML(clase.instrumento || 'General')}
+                </span>
+                <span class="badge ${clase.necesita_revision ? 'bg-warning text-dark' : 'bg-success-subtle text-success border border-success-subtle'}" style="font-size:0.7rem;">
+                  ${clase.necesita_revision ? 'En Revisión' : 'Activa'}
+                </span>
+              </div>
+              <h6 class="fw-bold text-body mb-2">${escapeHTML(clase.nombre)}</h6>
+              <div class="d-flex flex-column gap-1 small text-muted" style="font-size:0.8rem;">
+                <div><i class="bi bi-person-badge text-info me-2"></i>Docente: <strong>${escapeHTML(maestroObj?.nombre_completo || 'No asignado')}</strong></div>
+                <div><i class="bi bi-clock text-primary me-2"></i>Horario: <strong>${escapeHTML(primerHorario.dia || 'Por definir')} ${primerHorario.hora_inicio ? String(primerHorario.hora_inicio).slice(0, 5) + ' - ' + String(primerHorario.hora_fin || '').slice(0, 5) : ''}</strong></div>
+                <div><i class="bi bi-door-closed text-secondary me-2"></i>Salón: <strong>${escapeHTML(clase.salon || primerHorario.salon_nombre || 'Por asignar')}</strong></div>
+              </div>
+            </div>
+
+            <!-- Detalle de Solapes Enfrentados -->
+            <div class="small fw-bold text-muted text-uppercase mb-2" style="font-size:0.7rem;">Desglose Detallado de Advertencias</div>
+            <div class="d-flex flex-column gap-2" style="max-height: calc(92vh - 380px); overflow-y: auto;">
+              ${issues.map((issue, idx) => `
+                <div class="p-2.5 rounded-3 border ${issue.nivel === 'danger' ? 'border-danger-subtle bg-danger-subtle bg-opacity-10' : issue.nivel === 'warning' ? 'border-warning-subtle bg-warning-subtle bg-opacity-10' : 'border-info-subtle bg-body'}">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="bi ${issue.icon} ${issue.nivel === 'danger' ? 'text-danger' : issue.nivel === 'warning' ? 'text-warning-emphasis' : 'text-info'}"></i>
+                    <strong class="text-body" style="font-size:0.85rem;">${idx + 1}. ${escapeHTML(issue.titulo)}</strong>
+                  </div>
+                  <p class="small text-muted mb-0" style="font-size:0.78rem;">${escapeHTML(issue.detalle)}</p>
+                </div>
+              `).join('')}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- PANEL DERECHO: Matriz de Decisiones Pedagógicas & Operativas (55%) -->
+        <div class="col-12 col-lg-7">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column justify-content-between">
+            
+            <div>
+              <div class="d-flex align-items-center justify-content-between pb-2 mb-3 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="p-2 rounded-3 bg-primary-subtle text-primary">
+                    <i class="bi bi-diagram-3 fs-4"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold mb-0 text-body">Matriz de Resolución & Bifurcación</h6>
+                    <small class="text-muted">Elegí la acción que regulariza la situación académica u operativa</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acciones según cada conflicto -->
+              <div class="d-flex flex-column gap-3 mb-4" id="conflictosListContainer">
+                ${issues.map((issue, idx) => `
+                  <div class="p-3 rounded-4 border bg-body-tertiary shadow-xs">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5 flex-wrap gap-1">
+                      <div class="fw-bold text-body d-flex align-items-center gap-2" style="font-size:0.88rem;">
+                        <i class="bi ${issue.icon} fs-5 ${issue.nivel === 'danger' ? 'text-danger' : issue.nivel === 'warning' ? 'text-warning-emphasis' : 'text-info'}"></i>
+                        <span>${idx + 1}. ${escapeHTML(issue.titulo)}</span>
+                      </div>
+                      <span class="badge ${issue.nivel === 'danger' ? 'bg-danger-subtle text-danger border border-danger-subtle' : issue.nivel === 'warning' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle'}" style="font-size:0.68rem;">
+                        ${issue.nivel === 'danger' ? 'Crítico' : issue.nivel === 'warning' ? 'Advertencia' : 'Informativo'}
+                      </span>
+                    </div>
+
+                    <p class="small text-muted mb-3" style="font-size:0.78rem; line-height: 1.4;">${escapeHTML(issue.detalle)}</p>
+                    
+                    <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+                      ${issue.tipo === 'salon' ? `
+                        <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1.5 px-3.5 py-1.5 rounded-3 fw-semibold shadow-xs flex-grow-1" data-bifurcacion="liberar-salon" data-clase-id="${issue.otraClaseId || ''}" data-salon-id="${issue.salonId || ''}" title="Liberar salón en la otra clase">
+                          <i class="bi bi-door-open-fill"></i>
+                          <span>Liberar Salón en "${escapeHTML(issue.otraClaseNombre || 'otra clase')}"</span>
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 shadow-xs" data-bifurcacion="editar-horario-esta" data-clase-id="${clase.id}" title="Reasignar salón de esta clase">
+                          <i class="bi bi-pencil-square"></i>
+                          <span>Reasignar</span>
+                        </button>
+                      ` : ''}
+
+                      ${issue.tipo === 'maestro' ? `
+                        <button class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1.5 px-3.5 py-1.5 rounded-3 fw-semibold text-dark shadow-xs flex-grow-1" data-bifurcacion="editar-horario-esta" data-clase-id="${clase.id}" title="Asignar docente suplente">
+                          <i class="bi bi-person-plus-fill"></i>
+                          <span>Asignar Docente Suplente</span>
+                        </button>
+                      ` : ''}
+
+                      ${issue.tipo === 'alumnos' ? `
+                        <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 px-3.5 py-1.5 rounded-3 fw-semibold shadow-xs flex-grow-1" data-bifurcacion="acuerdo-maestros" data-otra-clase-id="${issue.otraClaseId || ''}" data-otra-clase-nombre="${escapeHTML(issue.otraClaseNombre || '')}" data-alumnos="${(issue.alumnosComunes || []).join(',')}" data-alumnos-nombres="${escapeHTML((issue.alumnosNombres || []).join(','))}" title="Pactar acuerdo de asistencia compartida entre docentes">
+                          <i class="bi bi-handshake-fill"></i>
+                          <span>Formalizar Acuerdo Docente</span>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 shadow-xs" data-bifurcacion="aceptar-solape-pedagogico" data-clase-id="${clase.id}" title="Validar como ensayo conjunto">
+                          <i class="bi bi-check2-circle"></i>
+                          <span>Ensayo Conjunto</span>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 shadow-xs" data-bifurcacion="desinscribir-solapados" data-clase-id="${issue.otraClaseId || ''}" data-alumnos="${(issue.alumnosComunes || []).join(',')}" title="Dar de baja de la otra clase">
+                          <i class="bi bi-person-x-fill"></i>
+                          <span>Desinscribir</span>
+                        </button>
+                      ` : ''}
+
+                      ${issue.tipo === 'acuerdo_maestros' ? `
+                        <div class="d-flex align-items-center justify-content-between w-100 p-2.5 rounded-3 bg-info-subtle bg-opacity-40 border border-info-subtle gap-2 flex-wrap">
+                          <div class="d-flex align-items-center gap-2 small text-info-emphasis fw-bold" style="font-size:0.8rem;">
+                            <i class="bi bi-handshake-fill fs-5 text-info"></i>
+                            <span>Acuerdo Activo · Transición pactada: <strong>${escapeHTML(issue.horaTransicion || '16:15')}</strong></span>
+                          </div>
+                          <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill" data-bifurcacion="eliminar-acuerdo" data-acuerdo-id="${issue.acuerdoId}" title="Revocar acuerdo">
+                            <i class="bi bi-x-circle"></i>
+                            <span>Revocar</span>
+                          </button>
+                        </div>
+                      ` : ''}
+
+                      ${issue.tipo === 'duplicados' ? `
+                        <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1.5 px-3.5 py-1.5 rounded-3 fw-semibold shadow-xs flex-grow-1" data-bifurcacion="limpiar-duplicados" data-clase-id="${clase.id}" title="Depurar inscripciones duplicadas">
+                          <i class="bi bi-trash3-fill"></i>
+                          <span>Depurar Inscripciones Duplicadas</span>
+                        </button>
+                      ` : ''}
+                    </div>
+
+                    <!-- Contenedor dinámico para el formulario de Acuerdo de Maestros -->
+                    <div class="form-acuerdo-container mt-2" style="display:none;"></div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Panel de Excepción / Revisión para Coordinación -->
+            <div class="p-3 bg-body-tertiary rounded-3 border">
+              <label class="small fw-bold text-muted text-uppercase mb-1" style="font-size:0.7rem;">Control de Revisión por Dirección / Coordinación</label>
+              <div class="input-group input-group-sm mb-2 rounded-3 overflow-hidden">
+                <input type="text" class="form-control" id="inputMotivoRevision" placeholder="Motivo o justificación de la excepción académica..." value="${escapeHTML(clase.revision_motivo || '')}">
+                <button class="btn btn-outline-warning px-3 fw-semibold text-dark shadow-xs" id="btnMarcarRevision">
+                  <i class="bi bi-flag-fill me-1"></i>Guardar en Revisión
+                </button>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted" style="font-size:0.75rem;">Permite operar la clase manteniendo una bandera de revisión visible.</small>
+                ${clase.necesita_revision ? `
+                  <button class="btn btn-outline-success btn-sm py-1.5 px-3 rounded-3 fw-semibold shadow-xs" id="btnMarcarResuelto" style="font-size:0.78rem;">
+                    <i class="bi bi-check2-circle me-1"></i>Marcar como Resuelto
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `
+
+  AppModal.open({
+    title: `Centro de Resolución de Conflictos · ${escapeHTML(clase.nombre)}`,
+    size: 'view',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: modalHtml,
+  })
+
+  // Vincular eventos interactivos
+  setTimeout(() => {
+    // 1. Guardar en Revisión
+    document.getElementById('btnMarcarRevision')?.addEventListener('click', async () => {
+      const motivo = document.getElementById('inputMotivoRevision')?.value.trim() || 'Pendiente de revisión por coordinación.'
+      try {
+        AppToast.info('Actualizando estado de revisión...')
+        await supabase
+          .from('clases')
+          .update({
+            necesita_revision: true,
+            revision_motivo: motivo,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', clase.id)
+
+        AppToast.success('Clase marcada en revisión con éxito.')
+        AppModal.close()
+        await renderClasesView(state.container)
+      } catch (err) {
+        console.error(err)
+        AppToast.error('No se pudo marcar en revisión.')
+      }
+    })
+
+    // 2. Marcar como Resuelto
+    document.getElementById('btnMarcarResuelto')?.addEventListener('click', async () => {
+      try {
+        AppToast.info('Marcando clase como resuelta...')
+        await supabase
+          .from('clases')
+          .update({
+            necesita_revision: false,
+            revision_motivo: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', clase.id)
+
+        AppToast.success('Advertencia resuelta y clase normalizada.')
+        AppModal.close()
+        await renderClasesView(state.container)
+      } catch (err) {
+        console.error(err)
+        AppToast.error('Error al actualizar el estado de la clase.')
+      }
+    })
+
+    // 3. Delegación de botones de bifurcación
+    document.getElementById('conflictosListContainer')?.addEventListener('click', async (e) => {
+      // 3.1 Abrir Formulario de Acuerdo de Maestros
+      const btnAcuerdo = e.target.closest('[data-bifurcacion="acuerdo-maestros"]')
+      if (btnAcuerdo) {
+        const cardParent = btnAcuerdo.closest('.p-3')
+        const formContainer = cardParent?.querySelector('.form-acuerdo-container')
+        if (formContainer) {
+          const otraClaseId = btnAcuerdo.dataset.otraClaseId
+          const otraClaseNombre = btnAcuerdo.dataset.otraClaseNombre
+          const alumnosIds = (btnAcuerdo.dataset.alumnos || '').split(',').filter(Boolean)
+          const alumnosNombres = (btnAcuerdo.dataset.alumnosNombres || '').split(',').filter(Boolean)
+          const otraClaseObj = state.clasesOriginales.find(x => x.id === otraClaseId)
+          const otraMaestroObj = state.maestros.find(m => m.id === otraClaseObj?.maestro_principal_id || m.id === otraClaseObj?.maestro_id)
+
+          formContainer.style.display = 'block'
+          formContainer.innerHTML = `
+            <div class="card border-primary border-opacity-50 bg-primary-subtle bg-opacity-10 p-3 rounded-3 mt-3">
+              <h6 class="fw-bold text-primary mb-2 d-flex align-items-center">
+                <i class="bi bi-handshake-fill me-2"></i>Formalizar Acuerdo Inter-Cátedra (Franja Compartida)
+              </h6>
+              <p class="small text-muted mb-2" style="font-size:0.78rem;">
+                Pacto entre <strong>${escapeHTML(maestroObj?.nombre_completo || 'Docente 1')}</strong> (${escapeHTML(clase.nombre)}) y <strong>${escapeHTML(otraMaestroObj?.nombre_completo || 'Docente 2')}</strong> (${escapeHTML(otraClaseNombre)}).
+              </p>
+
+              <div class="row g-2 mb-2">
+                <div class="col-12 col-md-6">
+                  <label class="form-label-compact" style="font-size:0.75rem;">Estudiante Beneficiario *</label>
+                  <select class="form-select form-select-sm" id="acuerdo-select-alumno">
+                    ${alumnosIds.map((id, i) => `<option value="${id}" data-nombre="${escapeHTML(alumnosNombres[i] || 'Estudiante')}">${escapeHTML(alumnosNombres[i] || 'Estudiante')}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label-compact" style="font-size:0.75rem;">Hora de Transición / Traspaso *</label>
+                  <input type="time" class="form-control form-control-sm" id="acuerdo-input-hora" value="16:15" required>
+                </div>
+                <div class="col-12">
+                  <label class="form-label-compact" style="font-size:0.75rem;">Motivo Pedagógico</label>
+                  <input type="text" class="form-control form-control-sm" id="acuerdo-input-motivo" value="Acuerdo inter-cátedra de asistencia compartida" placeholder="Justificación del acuerdo...">
+                </div>
+              </div>
+
+              <div class="form-check mb-3" style="font-size:0.8rem;">
+                <input class="form-check-input" type="checkbox" id="acuerdo-chk-aprobado" checked>
+                <label class="form-check-label fw-semibold text-body" for="acuerdo-chk-aprobado">
+                  Acuerdo validado y autorizado por ambos docentes
+                </label>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button class="btn btn-success btn-sm px-3" data-bifurcacion="confirmar-guardar-acuerdo" data-otra-clase-id="${otraClaseId}">
+                  <i class="bi bi-check-lg me-1"></i>Confirmar y Despejar Alerta
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" data-bifurcacion="cancelar-form-acuerdo">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          `
+        }
+        return
+      }
+
+      // 3.2 Cancelar Formulario de Acuerdo
+      const btnCancelarAcuerdo = e.target.closest('[data-bifurcacion="cancelar-form-acuerdo"]')
+      if (btnCancelarAcuerdo) {
+        const formContainer = btnCancelarAcuerdo.closest('.form-acuerdo-container')
+        if (formContainer) {
+          formContainer.style.display = 'none'
+          formContainer.innerHTML = ''
+        }
+        return
+      }
+
+      // 3.3 Confirmar y Guardar Acuerdo de Maestros
+      const btnConfirmarAcuerdo = e.target.closest('[data-bifurcacion="confirmar-guardar-acuerdo"]')
+      if (btnConfirmarAcuerdo) {
+        const formParent = btnConfirmarAcuerdo.closest('.form-acuerdo-container')
+        const selectAlumno = formParent.querySelector('#acuerdo-select-alumno')
+        const inputHora = formParent.querySelector('#acuerdo-input-hora')
+        const inputMotivo = formParent.querySelector('#acuerdo-input-motivo')
+        const chkAprobado = formParent.querySelector('#acuerdo-chk-aprobado')
+
+        if (!chkAprobado?.checked) {
+          AppToast.warning('Debes confirmar que ambos docentes autorizaron el acuerdo.')
+          return
+        }
+
+        const alumnoId = selectAlumno?.value
+        const selectedOption = selectAlumno?.options[selectAlumno.selectedIndex]
+        const alumnoNombre = selectedOption?.dataset.nombre || 'Estudiante'
+        const horaTransicion = inputHora?.value || '16:15'
+        const motivo = inputMotivo?.value.trim() || 'Acuerdo inter-cátedra de asistencia compartida'
+
+        const otraClaseId = btnConfirmarAcuerdo.dataset.otraClaseId
+        const otraClaseObj = state.clasesOriginales.find(x => x.id === otraClaseId)
+        const otraMaestroObj = state.maestros.find(m => m.id === otraClaseObj?.maestro_principal_id || m.id === otraClaseObj?.maestro_id)
+
+        try {
+          AppToast.info('Registrando acuerdo de maestros...')
+          await guardarAcuerdoMaestro({
+            alumno_id: alumnoId,
+            alumno_nombre: alumnoNombre,
+            clase_origen_id: clase.id,
+            clase_origen_nombre: clase.nombre,
+            maestro_origen_id: clase.maestro_principal_id || clase.maestro_id,
+            maestro_origen_nombre: maestroObj?.nombre_completo || 'Docente 1',
+            clase_destino_id: otraClaseObj?.id,
+            clase_destino_nombre: otraClaseObj?.nombre,
+            maestro_destino_id: otraClaseObj?.maestro_principal_id || otraClaseObj?.maestro_id,
+            maestro_destino_nombre: otraMaestroObj?.nombre_completo || 'Docente 2',
+            dia: primerHorario.dia || 'Lunes',
+            hora_transicion: horaTransicion,
+            motivo,
+          })
+
+          AppToast.success(`Acuerdo formalizado para ${alumnoNombre}. Advertencia despejada.`)
+          AppModal.close()
+          await renderClasesView(state.container)
+        } catch (acuerdoErr) {
+          console.error(acuerdoErr)
+          AppToast.error('Error al guardar el acuerdo de maestros.')
+        }
+        return
+      }
+
+      // 3.4 Revocar Acuerdo de Maestros
+      const btnEliminarAcuerdo = e.target.closest('[data-bifurcacion="eliminar-acuerdo"]')
+      if (btnEliminarAcuerdo) {
+        const acuerdoId = btnEliminarAcuerdo.dataset.acuerdoId
+        if (confirm('¿Deseas revocar este acuerdo de maestros? Volverá a aparecer la advertencia de solape.')) {
+          eliminarAcuerdoMaestro(acuerdoId)
+          AppToast.success('Acuerdo revocado.')
+          AppModal.close()
+          await renderClasesView(state.container)
+        }
+        return
+      }
+
+      // 3.5 Liberar Salón
+      const btnLiberar = e.target.closest('[data-bifurcacion="liberar-salon"]')
+      if (btnLiberar) {
+        const otraClaseId = btnLiberar.dataset.claseId
+        if (confirm('¿Desvincular el salón de la otra clase para que lo use exclusivamente esta?')) {
+          try {
+            await supabase.from('clases').update({ salon_id: null, salon: null }).eq('id', otraClaseId)
+            await supabase.from('clase_horarios').update({ salon_id: null }).eq('clase_id', otraClaseId)
+            AppToast.success('Salón liberado exitosamente.')
+            AppModal.close()
+            await renderClasesView(state.container)
+          } catch (err) {
+            console.error(err)
+            AppToast.error('No se pudo liberar el salón.')
+          }
+        }
+        return
+      }
+
+      // 3.6 Desinscribir Solapados de otra clase
+      const btnDesinscribir = e.target.closest('[data-bifurcacion="desinscribir-solapados"]')
+      if (btnDesinscribir) {
+        const otraClaseId = btnDesinscribir.dataset.claseId
+        const alumnosIds = (btnDesinscribir.dataset.alumnos || '').split(',').filter(Boolean)
+        if (confirm(`¿Dar de baja a ${alumnosIds.length} alumno(s) de la otra clase para evitar el solape?`)) {
+          try {
+            AppToast.info('Desinscribiendo alumnos de la otra clase...')
+            const { data: inscritos } = await supabase.from('alumnos_clases').select('id, alumno_id').eq('clase_id', otraClaseId)
+            for (const ins of inscritos || []) {
+              if (alumnosIds.includes(ins.alumno_id)) {
+                await desinscribirAlumno(ins.id)
+              }
+            }
+            AppToast.success('Alumnos desinscritos de la otra clase.')
+            AppModal.close()
+            await renderClasesView(state.container)
+          } catch (err) {
+            console.error(err)
+            AppToast.error('Error al desinscribir alumnos.')
+          }
+        }
+        return
+      }
+
+      const btnEditarEsta = e.target.closest('[data-bifurcacion="editar-horario-esta"]')
+      if (btnEditarEsta) {
+        AppModal.close()
+        openClaseModal(clase, {
+          onSuccess: () => renderClasesView(state.container),
+          onSaved: () => renderClasesView(state.container),
+          maestros: state.maestros,
+          salones: state.salones,
+          programas: state.programas,
+          alumnos: state.alumnosDisponibles,
+        })
+        return
+      }
+
+      const btnAceptarSolape = e.target.closest('[data-bifurcacion="aceptar-solape-pedagogico"]')
+      if (btnAceptarSolape) {
+        try {
+          await supabase
+            .from('clases')
+            .update({
+              necesita_revision: false,
+              revision_motivo: 'Solape pedagógico validado (Ensayo conjunto).',
+            })
+            .eq('id', clase.id)
+
+          AppToast.success('Solape aceptado como excepción pedagógica.')
+          AppModal.close()
+          await renderClasesView(state.container)
+        } catch (err) {
+          console.error(err)
+          AppToast.error('Error al registrar la excepción.')
+        }
+        return
+      }
+
+      const btnLimpiarDup = e.target.closest('[data-bifurcacion="limpiar-duplicados"]')
+      if (btnLimpiarDup) {
+        try {
+          AppToast.info('Limpiando inscripciones duplicadas...')
+          const { data: inscripciones } = await supabase
+            .from('alumnos_clases')
+            .select('id, alumno_id')
+            .eq('clase_id', clase.id)
+
+          const unicos = new Set()
+          for (const ins of inscripciones || []) {
+            if (unicos.has(ins.alumno_id)) {
+              await desinscribirAlumno(ins.id)
+            } else {
+              unicos.add(ins.alumno_id)
+            }
+          }
+
+          AppToast.success('Inscripciones duplicadas eliminadas.')
+          AppModal.close()
+          await renderClasesView(state.container)
+        } catch (err) {
+          console.error(err)
+          AppToast.error('Error al depurar duplicados.')
+        }
+        return
+      }
+    })
+  }, 100)
+}
+
+/**
+ * Modal interactivo y guiado para consultar y asignar alumnos sin clase (Paso 1 → Paso 2 → Paso 3)
+ */
+function _mostrarModalAlumnosSinClase() {
+  const getSinClaseList = () => {
+    const inscritosGeneralSet = new Set()
+    state.clasesOriginales.forEach(c => {
+      (c.alumnos_ids || []).forEach(aid => inscritosGeneralSet.add(aid))
+    })
+    return state.alumnosDisponibles.filter(a => !inscritosGeneralSet.has(a.id))
+  }
+
+  let selectedAlumno = null
+  let selectedClase = null
+  const modalContainerId = 'modal-sin-clase-wizard'
+
+  const _renderStep1 = () => {
+    const sinClaseList = getSinClaseList()
+    return `
+      <div id="step-1-alumnos" class="h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
+          <div>
+            <h6 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+              <i class="bi bi-person-x-fill text-warning fs-5"></i>
+              <span>Padrón de Alumnos Sin Clase Asignada</span>
+            </h6>
+            <small class="text-muted">Hay <strong>${sinClaseList.length}</strong> alumnos activos que no están asignados a ningún horario</small>
+          </div>
+
+          <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden" style="max-width: 320px;">
+            <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="inputBuscarSinClase" placeholder="Filtrar por nombre o instrumento..." style="font-size:0.82rem;">
+          </div>
+        </div>
+
+        <div class="overflow-auto flex-grow-1 pe-1" style="max-height: calc(92vh - 200px);" id="listaAlumnosSinClaseContainer">
+          ${sinClaseList.length === 0 ? `
+            <div class="p-5 text-center text-muted bg-body-tertiary rounded-4 border my-auto">
+              <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-3"></i>
+              <h5 class="fw-bold text-body">¡Excelente trabajo!</h5>
+              <p class="mb-0">Todos los alumnos del padrón tienen al menos una clase asignada.</p>
+            </div>
+          ` : `
+            <div class="row g-2.5" id="gridSinClaseItems">
+              ${sinClaseList.map(a => `
+                <div class="col-12 col-md-6 col-xl-4 item-sin-clase-card" data-nombre="${normalizeStr(a.nombre_completo)}" data-instrumento="${normalizeStr(a.instrumento_principal)}">
+                  <div class="p-3 rounded-3 border bg-body d-flex justify-content-between align-items-center shadow-xs h-100 hover-shadow transition-all">
+                    <div class="d-flex align-items-center gap-2.5 text-truncate me-2">
+                      <div class="p-2.5 rounded-circle bg-warning-subtle text-warning-emphasis flex-shrink-0">
+                        <i class="bi bi-person-fill fs-5"></i>
+                      </div>
+                      <div class="text-truncate">
+                        <strong class="text-body d-block text-truncate" style="font-size:0.88rem;">${escapeHTML(a.nombre_completo)}</strong>
+                        <small class="text-muted d-block text-truncate" style="font-size:0.78rem;">
+                          <i class="bi ${getInstrumentoIcon(a.instrumento_principal)} me-1 text-primary"></i>${escapeHTML(a.instrumento_principal || 'Sin instrumento')}
+                          ${a.telefono ? `· 📞 ${escapeHTML(a.telefono)}` : ''}
+                        </small>
+                      </div>
+                    </div>
+                    
+                    <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs flex-shrink-0 btn-elegir-alumno-inscribir" data-alumno-id="${a.id}" data-alumno-nombre="${escapeHTML(a.nombre_completo)}" data-instrumento="${escapeHTML(a.instrumento_principal || '')}" style="font-size:0.8rem;" title="Inscribir este alumno a una clase">
+                      <i class="bi bi-plus-circle-fill"></i>
+                      <span>Inscribir</span>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `
+  }
+
+  const _renderStep2 = () => {
+    const clases = state.clasesOriginales || []
+    return `
+      <div id="step-2-clases" class="h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 shadow-xs" id="btnVolverStep1" style="font-size:0.8rem;">
+            <i class="bi bi-arrow-left"></i>
+            <span>Volver a Alumnos Sin Clase</span>
+          </button>
+
+          <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden" style="max-width: 320px;">
+            <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="inputBuscarClaseDestino" placeholder="Buscar clase, horario, docente..." style="font-size:0.82rem;">
+          </div>
+        </div>
+
+        <div class="p-3 rounded-3 bg-primary-subtle bg-opacity-40 border border-primary-subtle d-flex align-items-center gap-3 mb-3 shadow-xs flex-shrink-0">
+          <div class="p-2.5 rounded-circle bg-primary text-white">
+            <i class="bi bi-person-fill fs-5"></i>
+          </div>
+          <div>
+            <span class="small text-muted d-block" style="font-size:0.75rem;">Alumno seleccionado para incorporar:</span>
+            <strong class="text-body" style="font-size:0.95rem;">${escapeHTML(selectedAlumno.nombre_completo)}</strong>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2" style="font-size:0.75rem;">
+              <i class="bi ${getInstrumentoIcon(selectedAlumno.instrumento)} me-1"></i>${escapeHTML(selectedAlumno.instrumento || 'General')}
+            </span>
+          </div>
+        </div>
+
+        <div class="small fw-bold text-muted text-uppercase mb-2 flex-shrink-0" style="font-size:0.75rem;">Elegí la clase de destino donde querés incorporarlo:</div>
+
+        <div class="table-responsive rounded-3 border bg-body shadow-xs overflow-auto flex-grow-1" style="max-height: calc(92vh - 270px);">
+          <table class="table table-hover align-middle mb-0" style="font-size:0.84rem;">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="font-size:0.78rem;">Clase & Cátedra</th>
+                <th style="font-size:0.78rem;">Docente</th>
+                <th style="font-size:0.78rem;">Horario & Salón</th>
+                <th style="font-size:0.78rem;" class="text-center">Capacidad</th>
+                <th style="font-size:0.78rem;" class="text-end pe-3">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyClasesDestino">
+              ${clases.map(c => {
+                const totalAlumnos = c.total_alumnos || (c.alumnos_ids || []).length || 0
+                const capacidad = c.capacidad_maxima || 20
+                const primerHorario = (c.horarios || c.clase_horarios || [])[0] || {}
+                const diaTexto = primerHorario.dia || primerHorario.dia_semana || 'Por definir'
+                const horaTexto = primerHorario.hora_inicio 
+                  ? `${String(primerHorario.hora_inicio).slice(0, 5)} - ${String(primerHorario.hora_fin || '').slice(0, 5)}`
+                  : (c.hora_inicio ? `${String(c.hora_inicio).slice(0, 5)} - ${String(c.hora_fin || '').slice(0, 5)}` : 'Flexible')
+                const salonTexto = c.salon || primerHorario.salones?.nombre || primerHorario.salon_nombre || 'Sin salón'
+                const maestroObj = state.maestros.find(m => m.id === c.maestro_principal_id || m.id === c.maestro_id)
+                const maestroNombre = c.maestro_nombre || maestroObj?.nombre_completo || 'No asignado'
+                const isFull = totalAlumnos >= capacidad
+
+                return `
+                  <tr class="item-clase-destino-row" data-search="${normalizeStr(c.nombre)} ${normalizeStr(c.instrumento)} ${normalizeStr(maestroNombre)} ${normalizeStr(diaTexto)}">
+                    <td>
+                      <strong class="text-body d-block" style="font-size:0.9rem;">${escapeHTML(c.nombre)}</strong>
+                      <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.7rem;">
+                        <i class="bi ${getInstrumentoIcon(c.instrumento)} me-1"></i>${escapeHTML(c.instrumento || 'General')}
+                      </span>
+                    </td>
+                    <td>
+                      <i class="bi bi-person-badge text-info me-1"></i>
+                      <span class="fw-semibold text-body">${escapeHTML(maestroNombre)}</span>
+                    </td>
+                    <td>
+                      <div class="small"><strong>${escapeHTML(diaTexto)}</strong> · ${escapeHTML(horaTexto)}</div>
+                      <small class="text-muted"><i class="bi bi-door-closed me-1"></i>${escapeHTML(salonTexto)}</small>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge ${isFull ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'} rounded-pill px-2.5 py-1" style="font-size:0.78rem;">
+                        ${totalAlumnos} / ${capacidad}
+                      </span>
+                    </td>
+                    <td class="text-end pe-3">
+                      <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs btn-seleccionar-clase-destino" data-clase-id="${c.id}" style="font-size:0.8rem;">
+                        <span>Seleccionar Clase</span>
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `
+  }
+
+  const _renderStep3 = async (claseId) => {
+    const clase = state.clasesOriginales.find(c => c.id === claseId)
+    if (!clase) return ''
+    selectedClase = clase
+
+    const { data: inscritosData } = await supabase
+      .from('alumnos_clases')
+      .select('id, alumno_id, activo, alumnos(*)')
+      .eq('clase_id', claseId)
+
+    const inscritos = (inscritosData || []).map(item => ({
+      inscripcionId: item.id,
+      alumnoId: item.alumno_id,
+      nombre: item.alumnos?.nombre_completo || 'Estudiante',
+      instrumento: item.alumnos?.instrumento_principal || '',
+      telefono: item.alumnos?.telefono || '',
+    }))
+
+    const primerHorario = (clase.horarios || clase.clase_horarios || [])[0] || {}
+    const diaTexto = primerHorario.dia || primerHorario.dia_semana || 'Por definir'
+    const horaTexto = primerHorario.hora_inicio 
+      ? `${String(primerHorario.hora_inicio).slice(0, 5)} - ${String(primerHorario.hora_fin || '').slice(0, 5)}`
+      : 'Flexible'
+    const maestroObj = state.maestros.find(m => m.id === clase.maestro_principal_id || m.id === clase.maestro_id)
+    const maestroNombre = clase.maestro_nombre || maestroObj?.nombre_completo || 'No asignado'
+    const isAlreadyIn = inscritos.some(i => i.alumnoId === selectedAlumno.id)
+
+    return `
+      <div id="step-3-nomina" class="h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 shadow-xs" id="btnVolverStep2" style="font-size:0.8rem;">
+            <i class="bi bi-arrow-left"></i>
+            <span>Elegir Otra Clase</span>
+          </button>
+
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-3 rounded-pill" style="font-size:0.8rem;">
+            <i class="bi bi-people-fill me-1"></i>${inscritos.length} / ${clase.capacidad_maxima || 20} alumnos inscritos
+          </span>
+        </div>
+
+        <div class="row g-3 flex-grow-1 overflow-hidden">
+          <!-- Columna Izquierda: Información de Clase y Acción de Incorporación -->
+          <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+            
+            <!-- Tarjeta de Clase Seleccionada -->
+            <div class="p-3.5 rounded-4 bg-body-tertiary border shadow-xs">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                <h6 class="fw-bold mb-0 text-body" style="font-size:1rem;">${escapeHTML(clase.nombre)}</h6>
+                <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.72rem;">
+                  <i class="bi ${getInstrumentoIcon(clase.instrumento)} me-1"></i>${escapeHTML(clase.instrumento || 'General')}
+                </span>
+              </div>
+              
+              <div class="d-flex flex-column gap-2 small text-muted mt-2" style="font-size:0.82rem;">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-person-badge text-info fs-5"></i>
+                  <span>Docente: <strong class="text-body">${escapeHTML(maestroNombre)}</strong></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-clock text-primary fs-5"></i>
+                  <span>Horario: <strong class="text-body">${escapeHTML(diaTexto)} · ${escapeHTML(horaTexto)}</strong></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-door-closed text-secondary fs-5"></i>
+                  <span>Salón: <strong class="text-body">${escapeHTML(clase.salon || primerHorario.salon_nombre || 'Sin salón asignado')}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel de Confirmación de Inscripción -->
+            <div class="p-3.5 rounded-4 bg-success-subtle bg-opacity-30 border border-success-subtle shadow-xs">
+              <div class="d-flex align-items-center gap-2.5 mb-3">
+                <div class="p-2.5 rounded-circle bg-success text-white">
+                  <i class="bi bi-person-plus-fill fs-5"></i>
+                </div>
+                <div>
+                  <span class="small text-muted d-block" style="font-size:0.75rem;">Alumno listo para ser asignado:</span>
+                  <strong class="text-body" style="font-size:0.95rem;">${escapeHTML(selectedAlumno.nombre_completo)}</strong>
+                  <span class="text-muted small d-block">Instrumento: ${escapeHTML(selectedAlumno.instrumento || 'General')}</span>
+                </div>
+              </div>
+
+              <button type="button" class="btn ${isAlreadyIn ? 'btn-success disabled' : 'btn-success'} w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2 rounded-3 fw-bold shadow-xs" id="btnConfirmarInscribirAqui" data-clase-id="${clase.id}" data-alumno-id="${selectedAlumno.id}" ${isAlreadyIn ? 'disabled' : ''}>
+                <i class="bi ${isAlreadyIn ? 'bi-check2-circle' : 'bi-plus-circle-fill'} fs-5"></i>
+                <span>${isAlreadyIn ? 'Ya está en la nómina' : '+ Agregar Aquí a Esta Clase'}</span>
               </button>
             </div>
 
-            <!-- Grilla Comprimida de Filtros Secundarios -->
-            <div class="clases-filter-grid mt-1">
-              <div class="premium-select-container">
-                <i class="bi bi-music-note select-icon-muted"></i>
-                <select class="form-select premium-filter-select" id="filtroInstrumento">
-                  <option value="">Instrumento (Todos)</option>
-                  ${getInstrumentoOptions()}
-                </select>
-              </div>
-
-              <div class="premium-select-container">
-                <i class="bi bi-bar-chart-steps select-icon-muted"></i>
-                <select class="form-select premium-filter-select" id="filtroNivel">
-                  <option value=""           ${state.filtroNivel === ''           ? 'selected' : ''}>Nivel (Todos)</option>
-                  <option value="iniciacion" ${state.filtroNivel === 'iniciacion' ? 'selected' : ''}>Iniciación</option>
-                  <option value="basico"     ${state.filtroNivel === 'basico'     ? 'selected' : ''}>Básico</option>
-                  <option value="intermedio" ${state.filtroNivel === 'intermedio' ? 'selected' : ''}>Intermedio</option>
-                  <option value="avanzado"   ${state.filtroNivel === 'avanzado'   ? 'selected' : ''}>Avanzado</option>
-                  <option value="preparatoria" ${state.filtroNivel === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
-                </select>
-              </div>
-
-              <div class="premium-select-container">
-                <i class="bi bi-tag select-icon-muted"></i>
-                <select class="form-select premium-filter-select" id="filtroTipo">
-                  <option value=""            ${state.filtroTipo === ''            ? 'selected' : ''}>Tipo (Todos)</option>
-                  <option value="regular"     ${state.filtroTipo === 'regular'     ? 'selected' : ''}>Regular</option>
-                  <option value="taller"      ${state.filtroTipo === 'taller'      ? 'selected' : ''}>Taller</option>
-                  <option value="seccional"   ${state.filtroTipo === 'seccional'   ? 'selected' : ''}>Seccional</option>
-                  <option value="orquesta"    ${state.filtroTipo === 'orquesta'    ? 'selected' : ''}>Orquesta</option>
-                  <option value="coro"        ${state.filtroTipo === 'coro'        ? 'selected' : ''}>Coro</option>
-                  <option value="preparatoria" ${state.filtroTipo === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
-                  <option value="iniciacion"  ${state.filtroTipo === 'iniciacion'  ? 'selected' : ''}>Iniciación</option>
-                  <option value="emergente"   ${state.filtroTipo === 'emergente'   ? 'selected' : ''}>Emergente</option>
-                  <option value="refuerzo"    ${state.filtroTipo === 'refuerzo'    ? 'selected' : ''}>Refuerzo</option>
-                </select>
-              </div>
-
-              <div class="premium-select-container">
-                <i class="bi bi-door-open select-icon-muted"></i>
-                <select class="form-select premium-filter-select" id="filtroSalon">
-                  <option value="">Salón (Todos)</option>
-                  ${getSalonOptions()}
-                </select>
-              </div>
-
-              <div class="premium-select-container">
-                <i class="bi bi-calendar-week select-icon-muted"></i>
-                <select class="form-select premium-filter-select" id="filtroDia">
-                  <option value=""         ${state.filtroDia === ''         ? 'selected' : ''}>Día (Todos)</option>
-                  <option value="lunes"    ${state.filtroDia === 'lunes'    ? 'selected' : ''}>Lunes</option>
-                  <option value="martes"   ${state.filtroDia === 'martes'   ? 'selected' : ''}>Martes</option>
-                  <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Miércoles</option>
-                  <option value="jueves"   ${state.filtroDia === 'jueves'   ? 'selected' : ''}>Jueves</option>
-                  <option value="viernes"  ${state.filtroDia === 'viernes'  ? 'selected' : ''}>Viernes</option>
-                  <option value="sabado"   ${state.filtroDia === 'sabado'   ? 'selected' : ''}>Sábado</option>
-                </select>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
 
-      <div id="view-content">
-        ${state.vista === 'tabla' ? renderTableView() : renderCalendarView()}
-      </div>
-    </div>
-  `
-}
-
-function renderTableView() {
-  if (state.clases.length === 0) {
-    return renderEmpty()
-  }
-
-  return `
-    <div class="page-glass rounded w-100">
-      <div class="list-group list-group-flush w-100" id="clasesListBody">
-        ${state.clases.map(c => renderClaseCard(c)).join('')}
-      </div>
-    </div>
-  `
-}
-
-function renderClaseCard(clase) {
-  const nombre = clase.nombre || 'Sin nombre'
-  const maestro = state.maestros.find(m => m.id === clase.maestro_principal_id)
-  const maestroNombre = maestro ? (maestro.nombre_completo || maestro.nombre) : 'Sin maestro'
-  const maestroSuplente = state.maestros.find(m => m.id === clase.maestro_suplente_id)
-  const maestroSuplenteNombre = maestroSuplente ? (maestroSuplente.nombre_completo || maestroSuplente.nombre) : null
-  const estado = clase.estado || 'activa'
-  const accentClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
-
-  // Construcción limpia de la línea de maestro y suplente
-  const docenteTexto = maestroSuplenteNombre
-    ? `${escapeHTML(maestroNombre)} <span class="text-secondary">(Suplente: ${escapeHTML(maestroSuplenteNombre)})</span>`
-    : escapeHTML(maestroNombre)
-
-  // Construcción detallada de vista previa de horarios con nombre de salón
-  const horarios = (clase.horarios || []).slice(0, 3)
-  const horariosTexto = horarios.length > 0
-    ? horarios.map(h => {
-        const diaStr = (h.dia || '').slice(0, 2).toUpperCase()
-        const horaStr = (h.hora_inicio || '').slice(0, 5)
-        const salonObj = state.salones ? state.salones.find(s => s.id === h.salon_id) : null
-        const salonStr = salonObj?.nombre ? ` (${escapeHTML(salonObj.nombre)})` : ''
-        return `${diaStr} ${horaStr}${salonStr}`
-      }).join(' • ')
-    : 'Sin horarios'
-
-  const warnings = getClaseIssues(clase, state.clasesOriginales || state.clases)
-  if (clase.capacidad_maxima && clase.total_alumnos != null && clase.total_alumnos / clase.capacidad_maxima >= 0.85) {
-    warnings.push({ key: 'cupo-alto', label: 'Cupo alto', icon: 'bi-people-fill', tone: 'warning' })
-  }
-
-  return `
-    <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent clase-card-item ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
-      <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden clase-card-main">
-        <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3 clase-card-copy">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
-            ${renderIssuesBadge(warnings)}
-          </div>
-          <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${docenteTexto} • ${escapeHTML(clase.instrumento || '-')}</small>
-          <small class="text-muted extra-small mt-1 clase-card-horarios" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${horariosTexto}</small>
-          ${renderIssueChips(warnings)}
-        </div>
-      </div>
-      <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1 clase-card-actions">
-        <button class="btn btn-outline-secondary btn-sm btn-class-pdf clases-ui-btn" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase" aria-label="Descargar PDF de listados de alumnos por clase">
-          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
-          <span class="btn-class-pdf__label">PDF Listado Alumnos x Clase</span>
-        </button>
-        <span class="text-muted">
-          <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
-        </span>
-      </div>
-    </div>
-  `
-}
-
-function renderEmpty() {
-  return `
-    <div class="text-center py-5 text-muted">
-      <i class="bi bi-funnel fs-1 d-block mb-2 opacity-50"></i>
-      <p class="mb-1">No se encontraron clases con los filtros seleccionados.</p>
-      <small>Probá ajustar o limpiar los filtros.</small>
-    </div>
-  `
-}
-
-function renderCalendarView() {
-  if (state.clases.length === 0) {
-    return renderEmpty()
-  }
-
-  const diasSemana = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
-  const diasLabels = {
-    lunes: 'Lunes',
-    martes: 'Martes',
-    miércoles: 'Miércoles',
-    jueves: 'Jueves',
-    viernes: 'Viernes',
-    sábado: 'Sábado'
-  }
-
-  // 1. Group class schedules by day
-  const agenda = {
-    lunes: [],
-    martes: [],
-    miércoles: [],
-    jueves: [],
-    viernes: [],
-    sábado: []
-  }
-
-  state.clases.forEach(clase => {
-    (clase.horarios || []).forEach(horario => {
-      const diaClean = (horario.dia || '').toLowerCase().trim()
-      if (agenda[diaClean]) {
-        agenda[diaClean].push({
-          ...horario,
-          clase: clase
-        })
-      }
-    })
-  })
-
-  // 2. Sort classes chronologically inside each day
-  Object.keys(agenda).forEach(dia => {
-    agenda[dia].sort((a, b) => {
-      const minA = timeToMinutes(a.hora_inicio)
-      const minB = timeToMinutes(b.hora_inicio)
-      return minA - minB
-    })
-  })
-
-  // 3. Render the grid
-  const hideEmptyClass = state.mostrarDiasVacios ? '' : 'hide-empty-days'
-  return `
-    <div class="weekly-schedule-container">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 px-1 weekly-schedule-toolbar">
-        <span class="small text-muted fw-semibold"><i class="bi bi-calendar-week me-1"></i>Agenda Semanal</span>
-        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
-          <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="toggle-empty-days" ${state.mostrarDiasVacios ? 'checked' : ''}>
-          <label class="form-check-label select-none small text-muted cursor-pointer" for="toggle-empty-days">Mostrar días vacíos</label>
-        </div>
-      </div>
-      <div class="weekly-schedule-grid ${hideEmptyClass}">
-        ${diasSemana.map(dia => {
-          const clasesDia = agenda[dia]
-          const label = diasLabels[dia]
-          const isEmptyClass = clasesDia.length === 0 ? 'is-empty' : ''
-          
-          return `
-            <div class="schedule-day-column ${isEmptyClass}" data-day="${dia}">
-              <div class="schedule-day-header">
-                <span class="day-label">${label}</span>
-                <span class="day-count-badge bg-primary bg-opacity-10 text-primary">${clasesDia.length}</span>
+          <!-- Columna Derecha: Nómina Completa de Alumnos con Quitar -->
+          <div class="col-12 col-lg-7 d-flex flex-column h-100">
+            <div class="p-3 rounded-4 border bg-body shadow-xs d-flex flex-column h-100">
+              <div class="small fw-bold text-muted text-uppercase mb-2.5 d-flex justify-content-between align-items-center pb-2 border-bottom flex-shrink-0" style="font-size:0.75rem;">
+                <span class="d-flex align-items-center gap-1.5 text-body">
+                  <i class="bi bi-people-fill text-primary"></i>
+                  <span>Nómina Actual de la Clase (${inscritos.length})</span>
+                </span>
+                <span class="text-muted fw-normal">Podés dar de baja a un alumno si te equivocaste</span>
               </div>
-              <div class="schedule-blocks-container">
-                ${clasesDia.length > 0 ? clasesDia.map(item => {
-                  const c = item.clase
-                  const estado = c.estado || 'activa'
-                  const start = formatHora(item.hora_inicio)
-                  const end = formatHora(item.hora_fin)
-                  const salon = state.salones.find(s => s.id === item.salon_id)
-                  const salonNombre = salon ? salon.nombre : 'Online/Otro'
-                  const borderClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
-                  const issues = getClaseIssues(c)
-                  
-                  return `
-                    <div class="time-block-card p-2 rounded mb-2 border-start-accent ${borderClass}" data-id="${c.id}" style="cursor: pointer;">
-                      <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="time-range small fw-bold text-primary"><i class="bi bi-clock me-1"></i>${start} - ${end}</span>
-                        <div class="d-flex align-items-center gap-1">
-                          ${issues.length > 0 ? `<span class="badge rounded-pill ${issues.some(i => i.tone === 'danger') ? 'text-bg-danger' : 'text-bg-warning'} clase-issue-badge--compact" title="${escapeHTML(issues.map(i => i.label).join(' · '))}"><i class="bi bi-exclamation-triangle-fill"></i></span>` : ''}
-                          <i class="bi ${getInstrumentoIcon(c.instrumento)} text-muted" style="font-size: 0.85rem;"></i>
+
+              <div class="overflow-auto flex-grow-1 pe-1" style="max-height: calc(92vh - 280px);" id="listaNominaClaseContainer">
+                ${inscritos.length === 0 ? `
+                  <div class="p-5 text-center text-muted small fst-italic">No hay alumnos inscritos en esta clase todavía.</div>
+                ` : `
+                  <div class="d-flex flex-column gap-2">
+                    ${inscritos.map(ins => `
+                      <div class="p-2.5 px-3 rounded-3 border bg-body-tertiary d-flex justify-content-between align-items-center shadow-xs">
+                        <div class="d-flex align-items-center gap-2.5 text-truncate me-2">
+                          <i class="bi bi-person-circle text-primary fs-5"></i>
+                          <div class="text-truncate">
+                            <strong class="text-body small d-block text-truncate">${escapeHTML(ins.nombre)}</strong>
+                            <span class="text-muted small text-truncate" style="font-size:0.75rem;">${ins.instrumento ? `${escapeHTML(ins.instrumento)}` : 'General'}</span>
+                          </div>
                         </div>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 rounded-3 shadow-xs d-inline-flex align-items-center gap-1 btn-quitar-alumno-nomina" data-inscripcion-id="${ins.inscripcionId}" data-nombre="${escapeHTML(ins.nombre)}" data-clase-id="${clase.id}" title="Quitar de esta clase">
+                          <i class="bi bi-trash3-fill"></i>
+                          <span>Quitar</span>
+                        </button>
                       </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <div class="fw-semibold text-truncate small class-name" style="font-size: 0.9rem;">${escapeHTML(c.nombre)}</div>
-                        ${renderIssuesBadge(issues)}
-                      </div>
-                      <div class="d-flex justify-content-between align-items-center mt-1 extra-small text-muted">
-                        <span class="text-truncate" style="max-width: 60%;"><i class="bi bi-person me-0.5"></i>${escapeHTML(state.maestros.find(m => m.id === c.maestro_principal_id)?.nombre_completo || 'Sin maestro')}</span>
-                        <span class="badge bg-body-secondary text-body-secondary-custom px-1.5 py-0.5 rounded" style="font-size: 0.7rem;"><i class="bi bi-geo-alt me-0.5"></i>${escapeHTML(salonNombre)}</span>
-                      </div>
-                    </div>
-                  `
-                }).join('') : `
-                  <div class="empty-day-block text-muted text-center py-4 small">
-                    <i class="bi bi-calendar-minus d-block mb-1 opacity-50"></i>
-                    Sin clases
+                    `).join('')}
                   </div>
                 `}
               </div>
             </div>
-          `
-        }).join('')}
-      </div>
-    </div>
-  `
-}
-
-function _telefonoAlumno(alumno = {}) {
-  return alumno.tlf_alumno || alumno.representante_tlf || alumno.familiar_telefono || null
-}
-
-/**
- * Modal con los alumnos activos que no están inscritos en ninguna clase,
- * agrupados por instrumento. Este módulo asume que asignar a todos los
- * alumnos a una clase es el flujo normal — esto muestra a quién se le
- * quedó pendiente, sin tener que revisar clase por clase. Cada alumno es
- * clickeable: abre las clases de su mismo instrumento para asignarlo ahí
- * mismo, sin salir del modal.
- */
-// Instrumento del último grupo que el usuario tuvo abierto en el modal de
-// "Alumnos sin clase" — para que reabrir el modal (p. ej. después de
-// asignar a un alumno) no vuelva siempre al primero de la lista.
-let _grupoSinClaseAbierto = null
-
-function _abrirModalAlumnosSinClase(grupos = []) {
-  const totalAlumnos = grupos.reduce((acc, g) => acc + g.total, 0)
-  const idxAbierto = Math.max(0, grupos.findIndex(g => g.instrumento === _grupoSinClaseAbierto))
-
-  const bodyHtml = totalAlumnos === 0
-    ? `
-      <div class="text-center text-muted py-4">
-        <i class="bi bi-check-circle-fill d-block mb-2" style="font-size: 2rem; color: var(--bs-success);"></i>
-        Todos los alumnos activos están inscritos en al menos una clase.
-      </div>
-    `
-    : `
-      <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
-        <i class="bi bi-person-exclamation fs-4 flex-shrink-0"></i>
-        <div>
-          <strong class="d-block">${totalAlumnos} ${totalAlumnos === 1 ? 'alumno' : 'alumnos'} sin clase asignada</strong>
-          <span class="small text-muted">Agrupados por instrumento principal. Tocá un alumno para asignarlo a una clase.</span>
-        </div>
-      </div>
-      <div class="accordion" id="acc-alumnos-sin-clase">
-        ${grupos.map((g, idx) => `
-          <div class="accordion-item">
-            <h2 class="accordion-header">
-              <button class="accordion-button ${idx === idxAbierto ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#grupo-sin-clase-${idx}" data-instrumento="${escapeHTML(g.instrumento)}">
-                <span class="fw-semibold">${escapeHTML(g.instrumento)}</span>
-                <span class="badge text-bg-warning ms-2">${g.total}</span>
-              </button>
-            </h2>
-            <div id="grupo-sin-clase-${idx}" class="accordion-collapse collapse ${idx === idxAbierto ? 'show' : ''}" data-bs-parent="#acc-alumnos-sin-clase">
-              <div class="accordion-body p-0">
-                <div class="list-group list-group-flush">
-                  ${g.alumnos.map(a => `
-                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2 btn-asignar-alumno" data-alumno-id="${a.id}">
-                      <div class="text-start">
-                        <div class="fw-semibold">${escapeHTML(a.nombre_completo)}</div>
-                        <small class="text-muted">${a.fecha_ingreso ? `Ingresó ${escapeHTML(formatDate(a.fecha_ingreso))}` : 'Sin fecha de ingreso'}</small>
-                      </div>
-                      <span class="small text-muted text-nowrap d-flex align-items-center gap-2">
-                        <i class="bi bi-telephone"></i>${escapeHTML(_telefonoAlumno(a) || 'Sin teléfono')}
-                        <i class="bi bi-chevron-right"></i>
-                      </span>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            </div>
           </div>
-        `).join('')}
-      </div>
-    `
 
-  AppModal.open({
-    title: '🎻 Alumnos sin clase asignada',
-    size: 'md',
-    hideSave: true,
-    cancelText: 'Cerrar',
-    body: bodyHtml,
-    onShow: (body) => {
-      if (totalAlumnos === 0) return
-      body.querySelectorAll('.accordion-button').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          _grupoSinClaseAbierto = btn.dataset.instrumento
-        })
-      })
-      body.querySelectorAll('.btn-asignar-alumno').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const alumnoId = btn.dataset.alumnoId
-          const grupo = grupos.find(g => g.alumnos.some(a => a.id === alumnoId))
-          const alumno = grupo?.alumnos.find(a => a.id === alumnoId)
-          if (grupo) _grupoSinClaseAbierto = grupo.instrumento
-          if (alumno) _abrirModalAsignarClaseAAlumno(alumno, grupos)
-        })
-      })
-    },
-  })
-}
-
-/**
- * Muestra las clases activas cuyo instrumento coincide con el del alumno
- * (comparando con normalizarInstrumento, porque en los datos reales
- * "Violín" y "Violines" — o "Viola"/"Violas" — conviven como valores
- * distintos) y permite inscribirlo ahí mismo.
- */
-// Nivel numérico aproximado a partir del NOMBRE de la clase — no hay un
-// nivel_id estructurado en `clases` hoy (está vacío en las 11 clases
-// activas), así que esto es una lectura del convenio de nombres ("0A-",
-// "1B", "N3", "Iniciación..."), no un dato confiable al 100%. Por eso solo
-// se usa para ORDENAR y para separar visualmente, nunca para ocultar de
-// forma permanente una clase.
-function _inferirNivelNumClase(nombre = '') {
-  const n = nombre.toLowerCase()
-  if (/ensayo|orquesta sinf/.test(n)) return null // ensambles: aceptan variedad de niveles
-  const lead = n.match(/^\s*(\d+)/)
-  if (lead) return parseInt(lead[1], 10)
-  const conN = n.match(/\bn\s*(\d+)/)
-  if (conN) return parseInt(conN[1], 10)
-  const trail = n.match(/(\d+)\s*$/)
-  if (trail) return parseInt(trail[1], 10)
-  if (/iniciaci[oó]n/.test(n)) return 0
-  return null
-}
-
-const RANGO_NIVEL_ALUMNO = {
-  basico: [0, 1],
-  'básico': [0, 1],
-  intermedio: [1, 2],
-  avanzado: [2, 99],
-}
-
-function _distanciaNivel(nivelAlumno, nivelClaseNum) {
-  if (nivelClaseNum === null || !nivelAlumno) return null // sin dato suficiente: neutral
-  const rango = RANGO_NIVEL_ALUMNO[String(nivelAlumno).toLowerCase()]
-  if (!rango) return null
-  const [min, max] = rango
-  if (nivelClaseNum < min) return min - nivelClaseNum
-  if (nivelClaseNum > max) return nivelClaseNum - max
-  return 0
-}
-
-function _abrirModalAsignarClaseAAlumno(alumno, grupos) {
-  const claseUniverso = state.clasesOriginales?.length ? state.clasesOriginales : state.clases
-  const clavAlumno = normalizarInstrumento(alumno.instrumento_principal)
-
-  const candidatas = clavAlumno
-    ? claseUniverso
-        .filter(c => c.activo !== false && normalizarInstrumento(c.instrumento) === clavAlumno)
-        .map(c => {
-          const nivelClaseNum = _inferirNivelNumClase(c.nombre)
-          return { ...c, _nivelClaseNum: nivelClaseNum, _distanciaNivel: _distanciaNivel(alumno.nivel, nivelClaseNum) }
-        })
-        .sort((a, b) => {
-          const da = a._distanciaNivel ?? 0.5 // "sin dato" queda entre las buenas y las descartadas
-          const db = b._distanciaNivel ?? 0.5
-          return da - db
-        })
-    : []
-
-  const buenEncaje = candidatas.filter(c => (c._distanciaNivel ?? 0) <= 1)
-  const otroNivel = candidatas.filter(c => (c._distanciaNivel ?? 0) > 1)
-
-  const renderClase = (c) => {
-    const ocupacion = c.capacidad_maxima ? Math.round((c.total_alumnos / c.capacidad_maxima) * 100) : 0
-    const cupoAlto = c.capacidad_maxima && ocupacion >= 90
-    return `
-      <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
-        <div>
-          <div class="fw-semibold">${escapeHTML(c.nombre)}</div>
-          <small class="text-muted">${c.total_alumnos ?? 0}${c.capacidad_maxima ? ` / ${c.capacidad_maxima}` : ''} alumnos${cupoAlto ? ' · <span class="text-warning">cupo alto</span>' : ''}</small>
         </div>
-        <button type="button" class="btn btn-sm btn-primary btn-confirmar-asignar" data-clase-id="${c.id}" data-clase-nombre="${escapeHTML(c.nombre)}">
-          Asignar
-        </button>
       </div>
     `
   }
 
-  const nivelLabel = alumno.nivel ? alumno.nivel.charAt(0).toUpperCase() + alumno.nivel.slice(1) : null
+  const _attachStepEvents = (containerEl) => {
+    // ── Paso 1: Filtro de búsqueda y selección de alumno ────────────────────
+    const inputBuscarSinClase = containerEl.querySelector('#inputBuscarSinClase')
+    if (inputBuscarSinClase) {
+      const items = containerEl.querySelectorAll('.item-sin-clase-card')
+      inputBuscarSinClase.addEventListener('input', (e) => {
+        const term = normalizeStr(e.target.value)
+        items.forEach(it => {
+          const n = it.dataset.nombre || ''
+          const inst = it.dataset.instrumento || ''
+          const match = !term || n.includes(term) || inst.includes(term)
+          it.classList.toggle('d-none', !match)
+        })
+      })
+    }
 
-  const bodyHtml = `
-    <button type="button" class="btn btn-link btn-sm text-decoration-none ps-0 mb-2 btn-volver-sin-clase">
-      <i class="bi bi-arrow-left me-1"></i>Volver al listado
-    </button>
-    <div class="d-flex align-items-center gap-2 mb-3">
-      <div class="avatar-compact text-white d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem; background-color: ${getConsistentColor(alumno.nombre_completo)}; font-weight:600;">
-        ${getInitials(alumno.nombre_completo)}
+    containerEl.querySelectorAll('.btn-elegir-alumno-inscribir').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedAlumno = {
+          id: btn.dataset.alumnoId,
+          nombre_completo: btn.dataset.alumnoNombre,
+          instrumento: btn.dataset.instrumento,
+        }
+        containerEl.innerHTML = _renderStep2()
+        _attachStepEvents(containerEl)
+      })
+    })
+
+    // ── Paso 2: Volver a Paso 1 o Elegir Clase Destino ──────────────────────
+    const btnVolverStep1 = containerEl.querySelector('#btnVolverStep1')
+    if (btnVolverStep1) {
+      btnVolverStep1.addEventListener('click', () => {
+        containerEl.innerHTML = _renderStep1()
+        _attachStepEvents(containerEl)
+      })
+    }
+
+    const inputBuscarClaseDestino = containerEl.querySelector('#inputBuscarClaseDestino')
+    if (inputBuscarClaseDestino) {
+      const rows = containerEl.querySelectorAll('.item-clase-destino-row')
+      inputBuscarClaseDestino.addEventListener('input', (e) => {
+        const term = normalizeStr(e.target.value)
+        rows.forEach(r => {
+          const text = r.dataset.search || ''
+          r.classList.toggle('d-none', !text.includes(term))
+        })
+      })
+    }
+
+    containerEl.querySelectorAll('.btn-seleccionar-clase-destino').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const claseId = btn.dataset.claseId
+        containerEl.innerHTML = `
+          <div class="d-flex flex-column align-items-center justify-content-center py-5">
+            <div class="spinner-border text-primary mb-2"></div>
+            <span class="small text-muted fw-semibold">Cargando nómina de la clase...</span>
+          </div>
+        `
+        containerEl.innerHTML = await _renderStep3(claseId)
+        _attachStepEvents(containerEl)
+      })
+    })
+
+    // ── Paso 3: Volver a Paso 2, Confirmar Agregar o Quitar ─────────────────
+    const btnVolverStep2 = containerEl.querySelector('#btnVolverStep2')
+    if (btnVolverStep2) {
+      btnVolverStep2.addEventListener('click', () => {
+        containerEl.innerHTML = _renderStep2()
+        _attachStepEvents(containerEl)
+      })
+    }
+
+    const btnConfirmarInscribirAqui = containerEl.querySelector('#btnConfirmarInscribirAqui')
+    if (btnConfirmarInscribirAqui) {
+      btnConfirmarInscribirAqui.addEventListener('click', async () => {
+        const claseId = btnConfirmarInscribirAqui.dataset.claseId
+        const alumnoId = btnConfirmarInscribirAqui.dataset.alumnoId
+        try {
+          btnConfirmarInscribirAqui.disabled = true
+          btnConfirmarInscribirAqui.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Inscribiendo...`
+          await inscribirAlumno(claseId, alumnoId)
+          AppToast.success(`¡${selectedAlumno.nombre_completo} fue incorporado a la clase exitosamente!`)
+          await renderClasesView(state.container)
+          containerEl.innerHTML = await _renderStep3(claseId)
+          _attachStepEvents(containerEl)
+        } catch (err) {
+          console.error(err)
+          AppToast.error('No se pudo inscribir al alumno: ' + (err.message || 'Error desconocido'))
+          btnConfirmarInscribirAqui.disabled = false
+          btnConfirmarInscribirAqui.innerHTML = `<i class="bi bi-plus-circle-fill me-1"></i>+ Agregar Aquí`
+        }
+      })
+    }
+
+    containerEl.querySelectorAll('.btn-quitar-alumno-nomina').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const inscripcionId = btn.dataset.inscripcionId
+        const nombre = btn.dataset.nombre
+        const claseId = btn.dataset.claseId
+        if (confirm(`¿Dar de baja a "${nombre}" de esta clase?`)) {
+          try {
+            await desinscribirAlumno(inscripcionId)
+            AppToast.success(`Alumno "${nombre}" removido de la clase.`)
+            await renderClasesView(state.container)
+            containerEl.innerHTML = await _renderStep3(claseId)
+            _attachStepEvents(containerEl)
+          } catch (err) {
+            console.error(err)
+            AppToast.error('Error al remover alumno.')
+          }
+        }
+      })
+    })
+  }
+
+  AppModal.open({
+    title: `Gestión de Alumnos Sin Clase Asignada`,
+    size: 'view',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: `<div id="${modalContainerId}">${_renderStep1()}</div>`,
+  })
+
+  setTimeout(() => {
+    const containerEl = document.getElementById(modalContainerId)
+    if (containerEl) _attachStepEvents(containerEl)
+  }, 100)
+}
+
+/**
+ * Modal pedagógico e informativo sobre el desglose de métricas académicas
+ */
+function _mostrarModalExplicacionMetricas() {
+  const totalClases = state.clasesOriginales.length
+  const totalActivas = state.clasesOriginales.filter(c => c.activo !== false && c.estado !== 'inactiva').length
+  const totalMatriculas = state.clasesOriginales.reduce((s, c) => s + (c.total_alumnos || (c.alumnos_ids || []).length || 0), 0)
+  const totalCapacidad = state.clasesOriginales.reduce((s, c) => s + (c.capacidad_maxima || 20), 0)
+  const pctOcupacionGlobal = totalCapacidad > 0 ? Math.round((totalMatriculas / totalCapacidad) * 100) : 0
+  
+  const inscritosGeneralSet = new Set()
+  state.clasesOriginales.forEach(c => {
+    (c.alumnos_ids || []).forEach(aid => inscritosGeneralSet.add(aid))
+  })
+  const totalAlumnosPadron = state.alumnosDisponibles.length
+  const totalAlumnosUnicos = inscritosGeneralSet.size
+  const alumnosSinClaseCount = totalAlumnosPadron - totalAlumnosUnicos
+  const promedioMaterias = totalAlumnosUnicos > 0 ? (totalMatriculas / totalAlumnosUnicos).toFixed(1) : '0.0'
+
+  const modalHtml = `
+    <div class="container-fluid p-0">
+      <div class="alert alert-info d-flex align-items-center gap-3 p-3 rounded-3 shadow-xs mb-3">
+        <i class="bi bi-info-circle-fill fs-3 text-info"></i>
+        <div>
+          <strong class="d-block text-body mb-0.5">Guía de Indicadores de Gestión Académica</strong>
+          <span class="small text-muted">Explicación técnica de cómo se calculan los alumnos, las matrículas y la capacidad de la academia.</span>
+        </div>
       </div>
-      <div>
-        <div class="fw-bold">${escapeHTML(alumno.nombre_completo)}</div>
-        <small class="text-muted">
-          ${escapeHTML(alumno.instrumento_principal || 'Sin instrumento definido')}
-          ${nivelLabel ? ` · ${escapeHTML(nivelLabel)}` : ''}
-          ${alumno.promedio_notas != null ? ` · Promedio ${escapeHTML(String(alumno.promedio_notas))}` : ''}
-        </small>
+
+      <div class="row g-3">
+        <!-- 1. Alumnos Asignados vs Padrón -->
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded-3 border bg-body h-100 shadow-xs">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <div class="p-2 rounded-circle bg-success-subtle text-success">
+                <i class="bi bi-people-fill fs-5"></i>
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0 text-body">Alumnos Asignados</h6>
+                <small class="text-success fw-semibold">${totalAlumnosUnicos} de ${totalAlumnosPadron} Alumnos Únicos</small>
+              </div>
+            </div>
+            <p class="small text-muted mb-2">
+              Representa la cantidad de <strong>personas físicas individuales</strong> que ya tienen al menos una clase asignada en el sistema.
+            </p>
+            <div class="p-2 rounded-2 bg-body-tertiary small border">
+              <strong>¿Para qué sirve?</strong> Permite evidenciar que actualmente faltan <strong>${alumnosSinClaseCount} alumnos</strong> por ser vinculados a un horario o cátedra.
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Matrículas Totales (Carga Pedagógica) -->
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded-3 border bg-body h-100 shadow-xs">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <div class="p-2 rounded-circle bg-secondary-subtle text-secondary-emphasis">
+                <i class="bi bi-journal-check fs-5"></i>
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0 text-body">Matrículas Totales</h6>
+                <small class="text-secondary-emphasis fw-semibold">${totalMatriculas} Plazas / Cupos Ocupados</small>
+              </div>
+            </div>
+            <p class="small text-muted mb-2">
+              Es la <strong>suma acumulada de asientos ocupados</strong> en todas las clases. Cada vez que un alumno se inscribe en una materia, genera 1 matrícula.
+            </p>
+            <div class="p-2 rounded-2 bg-body-tertiary small border">
+              <strong>¿Por qué difiere de los alumnos?</strong> Porque un estudiante cursa en promedio <strong>${promedioMaterias} materias</strong> (ej: <em>Violín + Orquesta + Solfeo</em>). Esta métrica dimensiona la carga de trabajo docente.
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Clases Activas -->
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded-3 border bg-body h-100 shadow-xs">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <div class="p-2 rounded-circle bg-primary-subtle text-primary">
+                <i class="bi bi-easel2-fill fs-5"></i>
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0 text-body">Clases Activas</h6>
+                <small class="text-primary fw-semibold">${totalActivas} activas de ${totalClases} registradas</small>
+              </div>
+            </div>
+            <p class="small text-muted mb-0">
+              Total de grupos, ensambles y cátedras individuales que se encuentran en estado operativo durante este período académico.
+            </p>
+          </div>
+        </div>
+
+        <!-- 4. Ocupación Global -->
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded-3 border bg-body h-100 shadow-xs">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <div class="p-2 rounded-circle bg-info-subtle text-info-emphasis">
+                <i class="bi bi-pie-chart-fill fs-5"></i>
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0 text-body">Ocupación Global</h6>
+                <small class="text-info-emphasis fw-semibold">${pctOcupacionGlobal}% de la Capacidad Instalada</small>
+              </div>
+            </div>
+            <p class="small text-muted mb-0">
+              Mide la relación entre las <strong>${totalMatriculas} matrículas</strong> y los <strong>${totalCapacidad} cupos máximos</strong> disponibles en todos los salones y horarios.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
-
-    ${!clavAlumno ? `
-      <div class="alert alert-secondary small mb-0">
-        Este alumno no tiene instrumento principal definido — no se puede sugerir una clase automáticamente. Editalo desde el módulo de Alumnos primero.
-      </div>
-    ` : candidatas.length === 0 ? `
-      <div class="alert alert-secondary small mb-0">
-        No hay clases activas de "${escapeHTML(alumno.instrumento_principal)}" todavía.
-      </div>
-    ` : `
-      ${buenEncaje.length > 0 ? `<div class="list-group mb-2">${buenEncaje.map(renderClase).join('')}</div>` : ''}
-      ${otroNivel.length > 0 ? `
-        <details class="small">
-          <summary class="text-muted mb-2" style="cursor:pointer;">
-            ${otroNivel.length} ${otroNivel.length === 1 ? 'clase más' : 'clases más'} de otro nivel
-          </summary>
-          <div class="list-group mt-2">${otroNivel.map(renderClase).join('')}</div>
-        </details>
-      ` : ''}
-      ${buenEncaje.length === 0 && otroNivel.length === 0 ? `
-        <div class="alert alert-secondary small mb-0">No hay clases activas de este instrumento todavía.</div>
-      ` : ''}
-    `}
   `
 
   AppModal.open({
-    title: 'Asignar clase',
-    size: 'md',
+    title: 'Explicación de Métricas & Indicadores Académicos',
+    size: 'lg',
     hideSave: true,
-    cancelText: 'Cerrar',
-    body: bodyHtml,
-    onShow: (body) => {
-      body.querySelector('.btn-volver-sin-clase')?.addEventListener('click', () => {
-        _abrirModalAlumnosSinClase(grupos)
-      })
-      body.querySelectorAll('.btn-confirmar-asignar').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const claseId = btn.dataset.claseId
-          const claseNombre = btn.dataset.claseNombre
-          btn.disabled = true
-          btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
-          try {
-            await inscribirAlumno(claseId, alumno.id)
-            AppToast.success(`${alumno.nombre_completo} asignado a "${claseNombre}"`)
-
-            // Sacar al alumno de los grupos en memoria para que el listado
-            // que vuelve a mostrarse ya refleje la asignación.
-            for (const g of grupos) {
-              g.alumnos = g.alumnos.filter(a => a.id !== alumno.id)
-              g.total = g.alumnos.length
-            }
-            _abrirModalAlumnosSinClase(grupos.filter(g => g.total > 0))
-          } catch (error) {
-            console.error(error)
-            AppToast.error(error.message || 'No se pudo asignar al alumno')
-            btn.disabled = false
-            btn.innerHTML = 'Asignar'
-          }
-        })
-      })
-    },
+    cancelText: 'Entendido',
+    body: modalHtml,
   })
 }
 
-async function openClasePerfilModal(clase) {
+/**
+ * Modal de Nómina e Inscripciones de Alumnos en tiempo real (Vista Inmersiva 95%)
+ */
+async function _mostrarModalNominaClase(claseId) {
+  const clase = state.clasesOriginales.find(c => c.id === claseId)
   if (!clase) return
 
-  AppModal.open({
-    title: 'Cargando...',
-    hideSave: true,
-    size: 'xl',
-    body: `
-      <div class="text-center py-5">
-        <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="text-muted">Cargando perfil de la clase...</p>
-      </div>
-    `
-  })
+  AppToast.info('Cargando nómina de la clase...')
 
   try {
-    // 1. Fetch enrolled students
-    const inscritos = await obtenerAlumnosInscritos(clase.id)
-    const alumnosInscritosCount = inscritos.length
-    
-    // 2. Fetch associated info
-    const maestro = state.maestros.find(m => m.id === clase.maestro_principal_id)
-    const maestroNombre = maestro ? (maestro.nombre_completo || maestro.nombre) : 'Sin maestro'
-    const suplente = clase.tiene_suplente || clase.maestro_suplente_id ? state.maestros.find(m => m.id === clase.maestro_suplente_id) : null
-    const suplenteNombre = suplente ? (suplente.nombre_completo || suplente.nombre) : null
-    const programa = state.programas.find(p => p.id === clase.programa_id)
-    const programaNombre = programa ? programa.nombre : 'Sin programa'
-    
-    // 3. Render Schedules
-    let horariosListHTML = ''
-    if (clase.horarios && clase.horarios.length > 0) {
-      horariosListHTML = clase.horarios.map(h => {
-        const diaLabel = h.dia.charAt(0).toUpperCase() + h.dia.slice(1)
-        const salon = state.salones.find(s => s.id === h.salon_id)
-        const salonNombre = salon ? salon.nombre : 'Online/Otro'
-        return `
-          <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge bg-secondary-subtle text-secondary-custom py-1" style="font-size: 0.75rem; min-width: 60px;">${diaLabel}</span>
-            <span class="small fw-semibold">${formatHora(h.hora_inicio)} - ${formatHora(h.hora_fin)}</span>
-            <span class="small text-muted">• <i class="bi bi-geo-alt me-0.5"></i>${escapeHTML(salonNombre)}</span>
-          </div>
-        `
-      }).join('')
-    } else {
-      horariosListHTML = '<div class="text-muted small">Sin horarios asignados</div>'
-    }
+    const { data: inscritosData, error } = await supabase
+      .from('alumnos_clases')
+      .select('id, alumno_id, activo, alumnos(*)')
+      .eq('clase_id', claseId)
+      .eq('activo', true)
 
-    // 4. Render Students con badges de conflicto si aplica
-    const modalIssues = getClaseIssues(clase, state.clasesOriginales || state.clases)
-    const solapeAlumnosIssue = modalIssues.find(i => i.key === 'solape-alumnos')
-    const conflictsMap = solapeAlumnosIssue?.conflictsMap || new Map()
+    if (error) throw error
 
-    let alumnosInscritosListHTML = ''
-    if (inscritos && inscritos.length > 0) {
-      alumnosInscritosListHTML = `
-        <div class="list-group list-group-flush border-top">
-          ${inscritos.map(ins => {
-            const a = ins.alumno
-            if (!a) return ''
-            const aInitials = getInitials(a.nombre_completo || a.nombre || '?')
-            const color = getConsistentColor(a.id)
-            const conf = conflictsMap.get(a.id)
-            const confBadge = conf
-              ? `<span class="badge text-bg-warning-subtle text-warning-emphasis border border-warning-subtle extra-small ms-auto flex-shrink-0" title="Choca a la misma hora con '${escapeHTML(conf.otherClaseNombre)}'"><i class="bi bi-exclamation-triangle-fill me-1"></i>Choca con "${escapeHTML(conf.otherClaseNombre)}"</span>`
-              : ''
-            return `
-              <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3 border-bottom-0 bg-transparent flex-wrap">
-                <div class="avatar-compact text-white d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 32px; height: 32px; font-size: 0.85rem; background-color: ${color}; font-weight:600;">
-                  ${aInitials}
+    let inscritos = (inscritosData || []).map(row => {
+      const a = row.alumnos || {}
+      return {
+        inscripcionId: row.id,
+        alumnoId: a.id || row.alumno_id,
+        nombre: a.nombre_completo || `${a.nombre || ''} ${a.apellido || ''}`.trim() || 'Estudiante',
+        instrumento: a.instrumento_principal || '—',
+        codigo: a.codigo_alumno || a.codigo || '—',
+        nivel: a.nivel || 'inicial',
+      }
+    })
+
+    const capacidad = clase.capacidad_maxima || 20
+    const pctOcupacion = Math.min(100, Math.round((inscritos.length / capacidad) * 100))
+    const maestroObj = state.maestros.find(m => m.id === clase.maestro_principal_id || m.id === clase.maestro_id)
+    const primerHorario = (clase.horarios || clase.clase_horarios || [])[0] || {}
+
+    const modalHtml = `
+      <div class="container-fluid p-0">
+        <div class="row g-3">
+          
+          <!-- PANEL IZQUIERDO: Ficha Resumen & Herramienta de Inscripción (35%) -->
+          <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column justify-content-between">
+              
+              <div>
+                <!-- Header de Clase -->
+                <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                  <div class="p-2 rounded-3 bg-primary-subtle text-primary">
+                    <i class="bi ${getInstrumentoIcon(clase.instrumento)} fs-4"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold mb-0 text-body">${escapeHTML(clase.nombre)}</h6>
+                    <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.68rem;">${escapeHTML(clase.instrumento || 'General')}</span>
+                  </div>
                 </div>
-                <div class="d-flex flex-column overflow-hidden flex-grow-1">
-                  <span class="fw-semibold text-truncate small" style="font-size: 0.9rem; color: var(--bs-body-color);">${escapeHTML(a.nombre_completo || a.nombre)}</span>
-                  <small class="text-muted extra-small">${escapeHTML(a.instrumento_principal || 'Sin instrumento')} ${rendimientoBadgeHTML(a)}</small>
+
+                <!-- Datos Operativos -->
+                <div class="d-flex flex-column gap-2 mb-3 small text-muted">
+                  <div><i class="bi bi-person-badge text-info me-2"></i>Docente: <strong>${escapeHTML(maestroObj?.nombre_completo || 'No asignado')}</strong></div>
+                  <div><i class="bi bi-clock text-primary me-2"></i>Horario: <strong>${escapeHTML(primerHorario.dia || 'Por definir')} ${primerHorario.hora_inicio ? String(primerHorario.hora_inicio).slice(0, 5) + ' - ' + String(primerHorario.hora_fin || '').slice(0, 5) : ''}</strong></div>
+                  <div><i class="bi bi-door-closed text-secondary me-2"></i>Salón: <strong>${escapeHTML(clase.salon || primerHorario.salon_nombre || 'Por asignar')}</strong></div>
                 </div>
-                ${confBadge}
-              </div>
-            `
-          }).join('')}
-        </div>
-      `
-    } else {
-      alumnosInscritosListHTML = `
-        <div class="text-muted text-center py-4 small bg-body-tertiary rounded">
-          <i class="bi bi-people d-block mb-1 opacity-50" style="font-size: 1.25rem;"></i>
-          No hay alumnos inscritos en esta clase
-        </div>
-      `
-    }
 
-    // Calculate occupancy percentage and color
-    const capacity = clase.capacidad_maxima || 20
-    const occupancyPercentage = Math.min(100, Math.round((alumnosInscritosCount / capacity) * 100))
-    let progressColorClass = 'bg-success'
-    if (occupancyPercentage >= 90) progressColorClass = 'bg-danger'
-    else if (occupancyPercentage >= 70) progressColorClass = 'bg-warning'
-    const warningItems = []
-    if (occupancyPercentage >= 90) warningItems.push({ icon: 'bi-exclamation-triangle-fill', text: 'Capacidad crítica: revisa cupos y reubicación' })
-    else if (occupancyPercentage >= 70) warningItems.push({ icon: 'bi-exclamation-circle-fill', text: 'Capacidad alta: conviene revisar cupos pronto' })
-    if (!suplenteNombre) warningItems.push({ icon: 'bi-person-dash-fill', text: 'No tiene maestro suplente asignado' })
-    if (!clase.horarios || clase.horarios.length === 0) warningItems.push({ icon: 'bi-calendar-x-fill', text: 'No tiene horarios definidos' })
-    if ((clase.horarios || []).length > 1) warningItems.push({ icon: 'bi-clock-history', text: 'La clase tiene múltiples horarios registrados' })
-    if (solapeAlumnosIssue && solapeAlumnosIssue.conflictsList) {
-      const detailsList = solapeAlumnosIssue.conflictsList.map(c => {
-        const al = (inscritos || []).find(i => i.alumno_id === c.studentId)?.alumno || (state.alumnos || []).find(a => a.id === c.studentId)
-        const alNombre = al ? (al.nombre_completo || al.nombre) : 'Alumno'
-        return `<strong>${escapeHTML(alNombre)}</strong> (choca con "${escapeHTML(c.otherClaseNombre)}")`
-      }).join(', ')
-      warningItems.push({
-        icon: 'bi-people-fill',
-        html: `Alumnos coincidentes en 2 clases a la misma hora: ${detailsList}`
-      })
-    }
-    if (occupancyPercentage >= 90) modalIssues.push({ key: 'ocupacion-critica', label: 'Capacidad crítica', icon: 'bi-exclamation-triangle-fill', tone: 'danger' })
-    else if (occupancyPercentage >= 70) modalIssues.push({ key: 'ocupacion-alta', label: 'Capacidad alta', icon: 'bi-exclamation-circle-fill', tone: 'warning' })
-
-    const headerActionsHTML = `
-      <div class="d-flex align-items-center gap-1">
-        <button class="btn btn-sm btn-profile-pdf text-white border-0 d-inline-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.18); width: 30px; height: 30px; border-radius: 8px;" data-id="${clase.id}" type="button" title="PDF listado alumnos" aria-label="PDF listado alumnos">
-          <i class="bi bi-file-earmark-pdf" style="font-size: 0.95rem;"></i>
-        </button>
-        <button class="btn btn-sm btn-profile-edit text-white border-0 d-inline-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.18); width: 30px; height: 30px; border-radius: 8px;" data-id="${clase.id}" type="button" title="Editar clase" aria-label="Editar clase">
-          <i class="bi bi-pencil" style="font-size: 0.95rem;"></i>
-        </button>
-        <button class="btn btn-sm btn-profile-delete text-white border-0 d-inline-flex align-items-center justify-content-center" style="background: rgba(220, 53, 69, 0.45); width: 30px; height: 30px; border-radius: 8px;" data-id="${clase.id}" type="button" title="Eliminar clase" aria-label="Eliminar clase">
-          <i class="bi bi-trash" style="font-size: 0.95rem;"></i>
-        </button>
-      </div>
-    `
-
-    const bodyHTML = `
-      <div class="class-profile-container">
-        <!-- Profile Header / Hero Card -->
-        <div class="class-hero-card d-flex align-items-start gap-3 p-3 rounded mb-4 flex-wrap" style="background: linear-gradient(135deg, rgba(13,110,253,0.08) 0%, rgba(88,86,214,0.08) 100%); border: 1px solid rgba(13,110,253,0.15);">
-          <div class="overflow-hidden flex-grow-1">
-            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-              <h4 class="mb-0 fw-bold text-truncate" style="letter-spacing: -0.02em; font-size: 1.2rem; color: var(--bs-body-color);">${escapeHTML(clase.nombre)}</h4>
-              ${renderIssuesBadge(modalIssues)}
-            </div>
-            <span class="badge rounded-pill bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} text-capitalize" style="font-size: 0.75rem;">${getEstadoLabel(clase.estado)}</span>
-            ${renderIssueChips(modalIssues)}
-          </div>
-        </div>
-
-        ${warningItems.length > 0 ? `
-          <div class="class-warning-banner p-3 rounded mb-4 border border-warning-subtle bg-warning-subtle">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <i class="bi bi-exclamation-triangle-fill text-warning"></i>
-              <strong class="small text-warning-emphasis">Advertencias de la clase</strong>
-            </div>
-            <div class="d-flex flex-column gap-2">
-              ${warningItems.map(item => `
-                <div class="class-warning-item d-flex align-items-start gap-2 small">
-                  <i class="bi ${item.icon} text-warning mt-1"></i>
-                  <span>${item.html ? item.html : escapeHTML(item.text)}</span>
+                <!-- Capacidad y Ocupación -->
+                <div class="p-3 rounded-3 bg-body-tertiary border mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-bold text-muted text-uppercase" style="font-size:0.7rem;">Ocupación del Cupo</span>
+                    <span class="fw-bold ${pctOcupacion >= 100 ? 'text-danger' : 'text-success'}">${pctOcupacion}%</span>
+                  </div>
+                  <div class="progress" style="height: 8px;">
+                    <div class="progress-bar ${pctOcupacion >= 100 ? 'bg-danger' : pctOcupacion >= 85 ? 'bg-warning' : 'bg-success'}" style="width: ${pctOcupacion}%;"></div>
+                  </div>
+                  <div class="text-center mt-2 small text-muted" style="font-size:0.75rem;">
+                    <strong>${inscritos.length}</strong> de <strong>${capacidad}</strong> cupos ocupados
+                  </div>
                 </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Details Grid -->
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <div class="detail-item-glass p-3 rounded h-100 border">
-              <small class="text-muted d-block mb-1"><i class="bi bi-person-badge me-1"></i>Maestro Principal</small>
-              <span class="fw-semibold text-body-color-custom" style="font-size: 0.95rem;">${escapeHTML(maestroNombre)}</span>
-              ${suplenteNombre ? `<small class="text-muted d-block extra-small mt-1"><i class="bi bi-person me-0.5"></i>Suplente: ${escapeHTML(suplenteNombre)}</small>` : ''}
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="detail-item-glass p-3 rounded h-100 border">
-              <small class="text-muted d-block mb-1"><i class="bi bi-music-note me-1"></i>Instrumento</small>
-              <span class="fw-semibold text-body-color-custom" style="font-size: 0.95rem;">${escapeHTML(clase.instrumento || 'Sin asignar')}</span>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="detail-item-glass p-3 rounded h-100 border">
-              <small class="text-muted d-block mb-1"><i class="bi bi-collection me-1"></i>Programa</small>
-              <span class="fw-semibold text-body-color-custom" style="font-size: 0.95rem;">${escapeHTML(programaNombre)}</span>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="detail-item-glass p-3 rounded h-100 border">
-              <small class="text-muted d-block mb-2"><i class="bi bi-calendar3 me-1"></i>Horarios y Salones</small>
-              <div class="horarios-list-container">
-                ${horariosListHTML}
               </div>
+
+              <!-- Inscribir Nuevo Alumno -->
+              <div class="p-3 bg-body-tertiary rounded-3 border">
+                <label class="small fw-bold text-muted text-uppercase mb-2 d-block" style="font-size:0.7rem;">
+                  <i class="bi bi-person-plus-fill me-1 text-primary"></i>Inscribir Alumno Disponible
+                </label>
+                <div class="d-flex flex-column gap-2">
+                  <select class="form-select form-select-sm" id="selectAlumnoParaInscribir">
+                    <option value="">Seleccionar del padrón...</option>
+                    ${state.alumnosDisponibles
+                      .filter(a => !inscritos.some(i => i.alumnoId === a.id))
+                      .map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo || 'Estudiante')} (${escapeHTML(a.instrumento_principal || 'General')})</option>`)
+                      .join('')}
+                  </select>
+                  <button class="btn btn-primary btn-sm w-100" id="btnConfirmarInscripcion">
+                    <i class="bi bi-plus-lg me-1"></i>Inscribir a la Clase
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
-        </div>
 
-        <!-- Enrollment Progress Bar -->
-        <div class="enrollment-occupancy-card p-3 rounded mb-4 border bg-body-tertiary">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-semibold small text-muted"><i class="bi bi-people me-1"></i>Ocupación e Inscripciones</span>
-            <span class="badge bg-secondary bg-opacity-10 text-secondary-custom small fw-semibold" style="font-size: 0.75rem;">${alumnosInscritosCount} / ${capacity} Alumnos</span>
-          </div>
-          <div class="progress bg-body-secondary" style="height: 10px; border-radius: 6px; overflow: hidden;">
-            <div class="progress-bar ${progressColorClass} progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${occupancyPercentage}%" aria-valuenow="${alumnosInscritosCount}" aria-valuemin="0" aria-valuemax="${capacity}"></div>
-          </div>
-        </div>
-
-        <!-- Description / Pedagogical Notes -->
-        <div class="description-card p-3 rounded mb-4 border bg-body-tertiary">
-          <small class="text-muted d-block mb-1"><i class="bi bi-file-earmark-text me-1"></i>Notas Pedagógicas</small>
-          <p class="mb-0 text-muted small" style="white-space: pre-line; line-height: 1.5;">${escapeHTML(clase.descripcion || 'Sin notas pedagógicas registradas.')}</p>
-        </div>
-
-        <!-- Alumnos Inscritos List con Buscador Integrado -->
-        <div class="alumnos-inscritos-section mb-4">
-          <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-              <i class="bi bi-person-check text-primary"></i> Alumnos Inscritos
-              <span class="badge text-bg-primary rounded-pill small" id="profile-alumnos-count" style="font-size: 0.75rem;">${alumnosInscritosCount}</span>
-            </h6>
-            ${inscritos && inscritos.length > 0 ? `
-              <div class="position-relative" style="min-width: 200px;">
-                <input type="text" class="form-control form-control-sm pe-4" id="search-profile-alumnos" placeholder="Buscar alumno..." style="font-size: 0.82rem; height: 32px;">
-                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="font-size: 0.75rem; pointer-events: none;"></i>
+          <!-- PANEL DERECHO: Lista Oficial de Estudiantes Inscritos (65%) -->
+          <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column">
+              
+              <!-- Toolbar Superior de la Nómina -->
+              <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom gap-2 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                  <h6 class="fw-bold mb-0 text-body">Estudiantes Inscritos</h6>
+                  <span class="badge bg-primary text-white rounded-pill px-2" id="badgeTotalInscritosModal">${inscritos.length}</span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                  <div class="input-group input-group-sm" style="max-width: 220px;">
+                    <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control" id="inputBuscarInscritoModal" placeholder="Buscar estudiante...">
+                  </div>
+                  <button class="btn btn-outline-secondary btn-sm" id="btnPdfNominaModal" title="Descargar Planilla Oficial PDF">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                  </button>
+                </div>
               </div>
-            ` : ''}
+
+              <!-- Lista / Grid de Estudiantes con Scroll Independiente -->
+              <div class="flex-grow-1 overflow-auto pe-1" style="max-height: calc(92vh - 220px);" id="listaInscritosContainer">
+                ${inscritos.length > 0 ? `
+                  <div class="d-flex flex-column gap-2" id="itemsInscritosList">
+                    ${inscritos.map((al, idx) => `
+                      <div class="d-flex justify-content-between align-items-center p-2.5 rounded-3 bg-body-tertiary border item-alumno-inscrito" data-nombre="${normalizeStr(al.nombre)}" data-codigo="${normalizeStr(al.codigo)}">
+                        <div class="d-flex align-items-center gap-3">
+                          <span class="badge rounded-circle bg-secondary-subtle text-secondary fw-bold" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">${idx + 1}</span>
+                          <div>
+                            <div class="fw-bold text-body" style="font-size:0.88rem;">${escapeHTML(al.nombre)}</div>
+                            <div class="d-flex align-items-center gap-2 small text-muted" style="font-size:0.72rem;">
+                              <span><i class="bi bi-qr-code me-1"></i>${escapeHTML(al.codigo)}</span>
+                              <span>•</span>
+                              <span><i class="bi bi-music-note me-1"></i>${escapeHTML(al.instrumento)}</span>
+                              <span>•</span>
+                              <span class="badge bg-secondary-subtle text-secondary py-0 px-1.5" style="font-size:0.65rem;">Nivel ${escapeHTML(al.nivel)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm py-1 px-2.5" data-action="desinscribir-alumno" data-id="${al.inscripcionId}" data-nombre="${escapeHTML(al.nombre)}" title="Dar de baja a este estudiante">
+                          <i class="bi bi-person-x me-1"></i>Dar de baja
+                        </button>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : `
+                  <div class="text-center py-5 text-muted">
+                    <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
+                    <h6 class="fw-bold">No hay alumnos inscritos</h6>
+                    <p class="small text-muted">Utilizá el panel izquierdo para seleccionar y asignar alumnos a esta clase.</p>
+                  </div>
+                `}
+              </div>
+
+            </div>
           </div>
-          <div class="alumnos-scroll-list border rounded" style="max-height: 200px; overflow-y: auto;" id="profile-alumnos-container">
-            ${alumnosInscritosListHTML}
-          </div>
+
         </div>
       </div>
     `
 
     AppModal.open({
-      title: `Perfil de Clase: ${clase.nombre}`,
-      headerActions: headerActionsHTML,
-      autoFocus: false,
+      title: `Nómina Oficial · ${escapeHTML(clase.nombre)}`,
+      size: 'view',
       hideSave: true,
-      size: 'lg',
-      body: bodyHTML,
-      onShow: (modalBody) => {
-        const dialog = modalBody.closest('.app-modal-dialog')
-
-        // Hide the default AppModal footer completely
-        const footer = dialog?.querySelector('.app-modal-footer')
-        if (footer) footer.style.setProperty('display', 'none', 'important')
-
-        // Wire PDF button
-        dialog?.querySelector('.btn-profile-pdf')?.addEventListener('click', () => {
-          try {
-            descargarPdfClase(clase, inscritos, {
-              maestros: state.maestros,
-              salones: state.salones,
-              programas: state.programas,
-            })
-            AppToast.success('PDF de la clase generado')
-          } catch (error) {
-            console.error(error)
-            AppToast.error('No se pudo generar el PDF de la clase')
-          }
-        })
-
-        // Wire edit button
-        dialog?.querySelector('.btn-profile-edit')?.addEventListener('click', () => {
-          AppModal.close()
-          setTimeout(() => {
-            openClaseModal(clase, {
-              maestros: state.maestros,
-              salones: state.salones,
-              programas: state.programas,
-              alumnos: state.alumnos,
-              onSuccess: () => renderClasesView(state.container)
-            })
-          }, 250)
-        })
-
-        // Wire delete button
-        dialog?.querySelector('.btn-profile-delete')?.addEventListener('click', () => {
-          AppModal.close()
-          setTimeout(() => {
-            openDeleteModal(clase.id)
-          }, 250)
-        })
-
-        // Wire live student search input
-        const searchInput = modalBody.querySelector('#search-profile-alumnos')
-        const container = modalBody.querySelector('#profile-alumnos-container')
-        const countBadge = modalBody.querySelector('#profile-alumnos-count')
-
-        if (searchInput && container) {
-          searchInput.addEventListener('input', (e) => {
-            const term = normalizeText(e.target.value)
-            const items = container.querySelectorAll('.list-group-item')
-            let visibleCount = 0
-
-            items.forEach(item => {
-              const text = normalizeText(item.textContent || '')
-              const matches = !term || text.includes(term)
-              item.style.display = matches ? 'flex' : 'none'
-              if (matches) visibleCount++
-            })
-
-            let noResultMsg = container.querySelector('.no-search-results')
-            if (visibleCount === 0) {
-              if (!noResultMsg) {
-                noResultMsg = document.createElement('div')
-                noResultMsg.className = 'no-search-results text-muted text-center py-4 small'
-                noResultMsg.innerHTML = '<i class="bi bi-search d-block mb-1 opacity-50" style="font-size: 1.25rem;"></i>No se encontraron alumnos'
-                const listGroup = container.querySelector('.list-group')
-                if (listGroup) listGroup.appendChild(noResultMsg)
-                else container.appendChild(noResultMsg)
-              } else {
-                noResultMsg.style.display = 'block'
-              }
-            } else if (noResultMsg) {
-              noResultMsg.style.display = 'none'
-            }
-
-            if (countBadge) {
-              countBadge.textContent = term ? `${visibleCount} de ${inscritos.length}` : `${inscritos.length}`
-            }
-          })
-        }
-      }
+      cancelText: 'Cerrar',
+      body: modalHtml,
     })
-  } catch (error) {
-    console.error(error)
-    AppToast.error('Error al cargar la información detallada de la clase')
-    AppModal.close()
+
+    // Eventos interactivos
+    setTimeout(() => {
+      // 1. Buscador dentro de los inscritos
+      document.getElementById('inputBuscarInscritoModal')?.addEventListener('input', (e) => {
+        const val = normalizeStr(e.target.value)
+        document.querySelectorAll('.item-alumno-inscrito').forEach(el => {
+          const match = el.dataset.nombre.includes(val) || el.dataset.codigo.includes(val)
+          el.style.display = match ? 'flex' : 'none'
+        })
+      })
+
+      // 2. Descargar PDF desde el modal
+      document.getElementById('btnPdfNominaModal')?.addEventListener('click', async () => {
+        AppToast.info(`Generando planilla PDF de ${clase.nombre}...`)
+        try {
+          await descargarPdfClase(clase)
+          AppToast.success('PDF descargado con éxito.')
+        } catch (err) {
+          console.error(err)
+          AppToast.error('Error generando PDF.')
+        }
+      })
+
+      // 3. Inscribir Alumno
+      document.getElementById('btnConfirmarInscripcion')?.addEventListener('click', async () => {
+        const select = document.getElementById('selectAlumnoParaInscribir')
+        const alumnoId = select?.value
+        if (!alumnoId) {
+          AppToast.warning('Seleccioná un alumno para inscribir.')
+          return
+        }
+
+        try {
+          AppToast.info('Inscribiendo alumno...')
+          await inscribirAlumno(claseId, alumnoId)
+          AppToast.success('Alumno inscrito exitosamente.')
+          AppModal.close()
+          await renderClasesView(state.container)
+          _mostrarModalNominaClase(claseId)
+        } catch (err) {
+          console.error(err)
+          AppToast.error('No se pudo inscribir al alumno.')
+        }
+      })
+
+      // 4. Desinscribir Alumno
+      document.getElementById('listaInscritosContainer')?.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action="desinscribir-alumno"]')
+        if (!btn) return
+
+        const inscripcionId = btn.dataset.id
+        const nombre = btn.dataset.nombre
+        if (confirm(`¿Dar de baja a "${nombre}" de esta clase?`)) {
+          try {
+            await desinscribirAlumno(inscripcionId)
+            AppToast.success(`Alumno ${nombre} dado de baja de la clase.`)
+            AppModal.close()
+            await renderClasesView(state.container)
+            _mostrarModalNominaClase(claseId)
+          } catch (err) {
+            console.error(err)
+            AppToast.error('Error al dar de baja al alumno.')
+          }
+        }
+      })
+    }, 100)
+
+  } catch (err) {
+    console.error(err)
+    AppToast.error('Error cargando nómina de alumnos.')
   }
 }
 
-function attachGlobalEvents(container) {
-  container.querySelector('#btn-help-clases')?.addEventListener('click', () => {
-    HelpPanel.open({
-      title: 'Clases',
-      intro: 'Gestión completa de clases: creación, horarios, asignación de maestros, inscripción de alumnos y control de capacidad.',
-      sections: [
-        { icon: 'bi-easel2',           title: 'Lista de clases',          description: 'Todas las clases del sistema. Filtrá por instrumento, nivel y estado. Las activas aparecen primero.',                                                          color: '#3b82f6' },
-        { icon: 'bi-clock',            title: 'Horarios',                 description: 'Cada clase puede tener múltiples horarios semanales. El sistema detecta conflictos de salón y de maestro automáticamente.',                                    color: '#6366f1' },
-        { icon: 'bi-people',           title: 'Inscripción de alumnos',   description: '"Grupal": todos comparten el horario. "Rotativa (Turnos)": cada alumno tiene su propio horario individual dentro de la clase.',                               color: '#10b981' },
-        { icon: 'bi-bar-chart',        title: 'Capacidad',                description: 'Barra de ocupación: inscriptos vs capacidad máxima. Rojo cuando supera el 90%.',                                                                               color: '#f59e0b' },
-        { icon: 'bi-person-workspace', title: 'Maestro titular y suplente', description: 'Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.',                            color: '#6b7280' },
-      ],
+function attachEvents(container) {
+  // 1. Toggle Filtros Desplegables
+  container.querySelector('#btnToggleFiltrosClases')?.addEventListener('click', () => {
+    state.filtrosAbiertos = !state.filtrosAbiertos
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  // 1.1 Badge de filtro de advertencias en cabecera
+  container.querySelector('#badgeFiltroConflictosHeader')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    state.filtroConflictos = state.filtroConflictos === 'con-conflictos' ? 'todos' : 'con-conflictos'
+    state.filtrosAbiertos = true
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  // 1.2 Abrir Guía de Explicación de Métricas
+  container.querySelectorAll('.btn-info-metrica').forEach(badge => {
+    badge.addEventListener('click', () => {
+      _mostrarModalExplicacionMetricas()
     })
   })
 
-  container.querySelector('#btnPdfListadoAlumnosClases')?.addEventListener('click', async () => {
-    const button = container.querySelector('#btnPdfListadoAlumnosClases')
-    const originalHTML = button?.innerHTML
-    if (button) {
-      button.disabled = true
-      button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Generando PDF...'
-    }
-
-    try {
-      const clasesParaReporte = state.clases.length ? state.clases : state.clasesOriginales
-      const inscritosPorClase = await obtenerAlumnosInscritosPorClases(
-        clasesParaReporte.map(clase => clase.id)
-      )
-      const report = clasesParaReporte.map((clase) => ({
-        clase,
-        inscritos: inscritosPorClase[clase.id] || [],
-      }))
-
-      descargarPdfListadoAlumnosPorClases(report, {
-        maestros: state.maestros,
-        salones: state.salones,
-        programas: state.programas,
-      })
-      AppToast.success('PDF de listados por clase generado')
-    } catch (error) {
-      console.error(error)
-      AppToast.error('No se pudo generar el PDF de listados por clase')
-    } finally {
-      if (button) {
-        button.disabled = false
-        button.innerHTML = originalHTML
-      }
-    }
+  // 2. Filtro por Píldoras de Familia
+  container.querySelectorAll('.family-pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.filtroFamilia = btn.dataset.familia
+      renderContent(container)
+      attachEvents(container)
+    })
   })
 
-  container.querySelector('#btnAlumnosSinClase')?.addEventListener('click', async () => {
-    const button = container.querySelector('#btnAlumnosSinClase')
-    const originalHTML = button?.innerHTML
-    if (button) {
-      button.disabled = true
-      button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Buscando...'
-    }
-
-    try {
-      const grupos = await obtenerAlumnosSinClase()
-      _abrirModalAlumnosSinClase(grupos)
-    } catch (error) {
-      console.error(error)
-      AppToast.error('No se pudo obtener el listado de alumnos sin clase')
-    } finally {
-      if (button) {
-        button.disabled = false
-        button.innerHTML = originalHTML
-      }
-    }
+  // 3. Buscador
+  const searchInput = container.querySelector('#inputBuscarClases')
+  searchInput?.addEventListener('input', (e) => {
+    state.searchQuery = e.target.value
+    renderContent(container)
+    attachEvents(container)
   })
 
-  container.querySelector('#btnAgregarClase')?.addEventListener('click', () => {
+  // 4. Selects de Filtros
+  container.querySelector('#selectCatedraClase')?.addEventListener('change', (e) => {
+    state.filtroCatedra = e.target.value
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  container.querySelector('#selectMaestroClase')?.addEventListener('change', (e) => {
+    state.filtroMaestro = e.target.value
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  container.querySelector('#selectSalonClase')?.addEventListener('change', (e) => {
+    state.filtroSalon = e.target.value
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  container.querySelector('#selectDiaClase')?.addEventListener('change', (e) => {
+    state.filtroDia = e.target.value
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  container.querySelector('#selectConflictosFiltro')?.addEventListener('change', (e) => {
+    state.filtroConflictos = e.target.value
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  container.querySelector('#selectOrdenarClases')?.addEventListener('change', (e) => {
+    state.ordenarPor = e.target.value
+    renderContent(container)
+    attachEvents(container)
+  })
+
+  // 4b. Botón Alumnos Sin Clase
+  container.querySelector('#btnAlumnosSinClase')?.addEventListener('click', () => {
+    _mostrarModalAlumnosSinClase()
+  })
+
+  // 5. Botones Crear Nueva Clase
+  const abrirModalCrear = () => {
     openClaseModal(null, {
+      onSuccess: () => renderClasesView(state.container),
+      onSaved: () => renderClasesView(state.container),
       maestros: state.maestros,
       salones: state.salones,
       programas: state.programas,
-      alumnos: state.alumnos,
-      onSuccess: () => renderClasesView(container)
+      alumnos: state.alumnosDisponibles,
     })
-  })
+  }
 
-  container.querySelector('#btn-vista-tabla')?.addEventListener('click', () => {
-    state.vista = 'tabla'
-    saveFilterState()
-    renderContent(container)
-    attachGlobalEvents(container)
-  })
+  container.querySelector('#btnNuevaClase')?.addEventListener('click', abrirModalCrear)
+  container.querySelector('#btnCrearClaseEmpty')?.addEventListener('click', abrirModalCrear)
 
-  container.querySelector('#btn-vista-calendario')?.addEventListener('click', () => {
-    state.vista = 'calendario'
-    saveFilterState()
-    renderContent(container)
-    attachGlobalEvents(container)
-  })
-
-  container.querySelector('#btnToggleFiltros')?.addEventListener('click', () => {
-    state.filtrosAbiertos = !state.filtrosAbiertos
-    renderContent(container)
-    attachGlobalEvents(container)
-  })
-
-  container.querySelector('#buscar')?.addEventListener('input', applyFilters)
-  container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroNivel')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroTipo')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroSalon')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroDia')?.addEventListener('change', applyFilters)
-
-  container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', () => {
-    const ids = ['buscar', 'filtroEstado', 'filtroInstrumento', 'filtroNivel', 'filtroTipo', 'filtroSalon', 'filtroDia']
-    ids.forEach(id => {
-      const el = container.querySelector(`#${id}`)
-      if (!el) return
-      if (el.tagName === 'SELECT') el.value = el.options[0]?.value || ''
-      else el.value = ''
-    })
-    state.filtroBuscar = ''
-    state.filtroEstado = 'todos'
-    state.filtroInstrumento = ''
-    state.filtroNivel = ''
-    state.filtroTipo = ''
-    state.filtroSalon = ''
-    state.filtroDia = ''
-    applyFilters()
-  })
-
-  const viewContent = container.querySelector('#view-content')
-
-  viewContent?.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'toggle-empty-days') {
-      state.mostrarDiasVacios = e.target.checked
-      const grid = container.querySelector('.weekly-schedule-grid')
-      if (grid) {
-        if (state.mostrarDiasVacios) {
-          grid.classList.remove('hide-empty-days')
-        } else {
-          grid.classList.add('hide-empty-days')
-        }
-      }
+  // 6. Botón Descargar PDF Listados Generales
+  container.querySelector('#btnPdfListadosClases')?.addEventListener('click', async () => {
+    AppToast.info('Generando planilla general de clases en PDF...')
+    try {
+      await descargarPdfListadoAlumnosPorClases({ clases: state.clasesOriginales })
+      AppToast.success('Planilla PDF generada exitosamente.')
+    } catch (err) {
+      console.error(err)
+      AppToast.error('No se pudo generar el PDF de clases.')
     }
   })
 
-  viewContent?.addEventListener('click', async (e) => {
-    const pdfButton = e.target.closest('.btn-class-pdf[data-id]')
-    if (pdfButton) {
-      e.preventDefault()
-      e.stopPropagation()
-      const id = pdfButton.dataset.id
-      const clase = state.clasesOriginales.find(c => c.id === id)
-      if (!clase) return
+  // 7. Delegación de Clics en Tarjetas de Clase
+  container.addEventListener('click', async (e) => {
+    // A. Ver Nómina
+    const btnNomina = e.target.closest('[data-action="ver-nomina"]')
+    if (btnNomina) {
+      _mostrarModalNominaClase(btnNomina.dataset.id)
+      return
+    }
 
-      pdfButton.disabled = true
-      const originalHTML = pdfButton.innerHTML
-      pdfButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Generando...'
+    // B. Resolver Conflicto
+    const btnResolver = e.target.closest('[data-action="resolver-conflicto"]')
+    if (btnResolver) {
+      _mostrarModalResolucionConflictos(btnResolver.dataset.id)
+      return
+    }
 
-      try {
-        const inscritos = await obtenerAlumnosInscritos(clase.id)
-        descargarPdfClase(clase, inscritos, {
-          maestros: state.maestros,
-          salones: state.salones,
-          programas: state.programas,
-        })
-        AppToast.success('PDF de la clase generado')
-      } catch (error) {
-        console.error(error)
-        AppToast.error('No se pudo generar el PDF de la clase')
-      } finally {
-        pdfButton.disabled = false
-        pdfButton.innerHTML = originalHTML
+    // C. PDF Individual de Clase
+    const btnPdf = e.target.closest('[data-action="pdf-clase"]')
+    if (btnPdf) {
+      const c = state.clasesOriginales.find(x => x.id === btnPdf.dataset.id)
+      if (c) {
+        AppToast.info(`Generando PDF de ${c.nombre}...`)
+        try {
+          await descargarPdfClase(c)
+          AppToast.success('PDF generado con éxito.')
+        } catch (err) {
+          console.error(err)
+          AppToast.error('Error generando PDF de la clase.')
+        }
       }
       return
     }
 
-    // Manejo de clicks en tarjetas de la lista o bloques horarios
-    const card = e.target.closest('.list-group-item[data-id], .time-block-card[data-id]')
-    if (card) {
-      const id = card.dataset.id
-      const clase = state.clasesOriginales.find(c => c.id === id)
-      if (clase) {
-        openClasePerfilModal(clase)
+    // D. Editar Clase
+    const btnEditar = e.target.closest('[data-action="editar-clase"]')
+    if (btnEditar) {
+      const c = state.clasesOriginales.find(x => x.id === btnEditar.dataset.id)
+      if (c) {
+        openClaseModal(c, {
+          onSuccess: () => renderClasesView(state.container),
+          onSaved: () => renderClasesView(state.container),
+          maestros: state.maestros,
+          salones: state.salones,
+          programas: state.programas,
+          alumnos: state.alumnosDisponibles,
+        })
       }
-    }
-  })
-}
-
-function injectClasesResponsiveStyles() {
-  const styleId = 'clases-responsive-polish'
-  if (document.getElementById(styleId)) return
-
-  const style = document.createElement('style')
-  style.id = styleId
-  style.textContent = `
-    .btn-clases-pdf {
-      display: inline-flex;
-      align-items: center;
-      gap: .5rem;
-      white-space: nowrap;
-    }
-    .btn-class-pdf {
-      display: inline-flex;
-      align-items: center;
-      gap: .45rem;
-      white-space: nowrap;
-    }
-    @media (max-width: 767.98px) {
-      .clases-header-premium {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-      }
-
-      .clases-header-actions {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-        width: 100%;
-      }
-
-      .clases-header-actions > * {
-        width: 100%;
-        min-width: 0;
-      }
-
-      .clases-filters-panel__header {
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-
-      .clases-filters-panel__header > :first-child {
-        min-width: 0;
-        flex: 1 1 auto;
-      }
-
-      .clases-filter-toolbar {
-        display: grid !important;
-        grid-template-columns: 1fr;
-        gap: 0.75rem !important;
-      }
-
-      .clases-filter-toolbar .premium-search-container,
-      .clases-filter-toolbar .premium-select-container {
-        width: 100%;
-        min-width: 0 !important;
-      }
-
-      .clases-filter-toolbar .btn {
-        width: 100%;
-      }
-
-      .clase-card-item {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.85rem;
-      }
-
-      .clase-card-main {
-        width: 100%;
-        min-width: 0;
-        padding-right: 0 !important;
-      }
-
-      .clase-card-copy {
-        padding-right: 0 !important;
-      }
-
-      .clase-card-suplente {
-        display: none;
-      }
-
-      .clase-card-horarios {
-        font-size: 0.78rem !important;
-      }
-
-      .clase-card-actions {
-        margin-left: 0 !important;
-        padding-right: 0 !important;
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-      }
-
-      .clase-card-actions .btn {
-        flex: 1 1 2.75rem;
-        min-width: 2.75rem;
-        padding-left: 0;
-        padding-right: 0;
-      }
-
-      .btn-clases-pdf {
-        width: 2.75rem;
-        justify-content: center;
-        padding-left: .7rem;
-        padding-right: .7rem;
-        flex-shrink: 0;
-      }
-      .btn-clases-pdf__label {
-        display: none !important;
-      }
-      .btn-class-pdf {
-        width: 2.75rem;
-        justify-content: center;
-        padding-left: .7rem;
-        padding-right: .7rem;
-        flex-shrink: 0;
-      }
-      .btn-class-pdf__label {
-        display: none !important;
-      }
-    }
-  `
-  document.head.appendChild(style)
-}
-
-function saveFilterState() {
-  const c = state.container
-  if (!c) return
-  state.filtroBuscar      = c.querySelector('#buscar')?.value              || ''
-  state.filtroEstado      = c.querySelector('#filtroEstado')?.value        || 'todos'
-  state.filtroInstrumento = c.querySelector('#filtroInstrumento')?.value   || ''
-  state.filtroNivel       = c.querySelector('#filtroNivel')?.value         || ''
-  state.filtroTipo        = c.querySelector('#filtroTipo')?.value          || ''
-  state.filtroSalon       = c.querySelector('#filtroSalon')?.value         || ''
-  state.filtroDia         = c.querySelector('#filtroDia')?.value           || ''
-}
-
-function applyFilters() {
-  const c = state.container
-  const rawSearch    = c.querySelector('#buscar')?.value           || ''
-  const filtroEstado = c.querySelector('#filtroEstado')?.value     || 'todos'
-  const filtroInstr  = c.querySelector('#filtroInstrumento')?.value || ''
-  const filtroNivel  = c.querySelector('#filtroNivel')?.value      || ''
-  const filtroTipo   = c.querySelector('#filtroTipo')?.value       || ''
-  const filtroSalon  = c.querySelector('#filtroSalon')?.value      || ''
-  const filtroDia    = c.querySelector('#filtroDia')?.value        || ''
-  const term         = normalizeText(rawSearch)
-
-  state.filtroBuscar = rawSearch
-  state.filtroEstado = filtroEstado
-  state.filtroInstrumento = filtroInstr
-  state.filtroNivel = filtroNivel
-  state.filtroTipo = filtroTipo
-  state.filtroSalon = filtroSalon
-  state.filtroDia = filtroDia
-  _guardarFiltrosStorage()
-
-  state.clases = state.clasesOriginales.filter(clase => {
-    // ── Search text ─────────────────────────────────────────────────────────
-    if (term) {
-      const maestroPrincipal = state.maestros.find(m => m.id === clase.maestro_principal_id)
-      const maestroSuplente  = state.maestros.find(m => m.id === clase.maestro_suplente_id)
-      const searchable = normalizeText([
-        clase.nombre,
-        clase.instrumento,
-        clase.descripcion,
-        clase.nivel,
-        clase.tipo,
-        clase.salon,
-        maestroPrincipal?.nombre_completo || maestroPrincipal?.nombre,
-        maestroSuplente?.nombre_completo  || maestroSuplente?.nombre,
-      ].filter(Boolean).join(' '))
-      if (!searchable.includes(term)) return false
+      return
     }
 
-    // ── Estado ───────────────────────────────────────────────────────────────
-    if (filtroEstado !== 'todos' && clase.estado !== filtroEstado) return false
-
-    // ── Instrumento ──────────────────────────────────────────────────────────
-    if (filtroInstr && clase.instrumento !== filtroInstr) return false
-
-    // ── Nivel ────────────────────────────────────────────────────────────────
-    if (filtroNivel && normalizeText(clase.nivel) !== filtroNivel) return false
-
-    // ── Tipo ─────────────────────────────────────────────────────────────────
-    if (filtroTipo && normalizeText(clase.tipo) !== filtroTipo) return false
-
-    // ── Salón ────────────────────────────────────────────────────────────────
-    if (filtroSalon && clase.salon !== filtroSalon) return false
-
-    // ── Día ──────────────────────────────────────────────────────────────────
-    if (filtroDia) {
-      const horarios = clase.horarios || []
-      const matchDia = horarios.some(h => normalizeText(h.dia) === filtroDia)
-      if (!matchDia) return false
-    }
-
-    return true
-  })
-
-  const activosCount = [
-    filtroEstado !== 'todos',
-    !!filtroInstr,
-    !!filtroNivel,
-    !!filtroTipo,
-    !!filtroSalon,
-    !!filtroDia,
-    !!term,
-  ].filter(Boolean).length
-
-  const badgeEl = c.querySelector('#filtrosBadgeCount')
-  if (badgeEl) {
-    badgeEl.textContent = activosCount
-    if (activosCount > 0) badgeEl.classList.remove('d-none')
-    else badgeEl.classList.add('d-none')
-  }
-
-  const labelEl = c.querySelector('#filtrosActivosCount')
-  if (labelEl) {
-    labelEl.textContent = activosCount > 0
-      ? `${activosCount} filtro(s) activo(s) aplicado(s)`
-      : 'Busca y segmenta las clases visibles'
-  }
-
-  const viewContent = c.querySelector('#view-content')
-  if (viewContent) {
-    viewContent.innerHTML = state.vista === 'tabla' ? renderTableView() : renderCalendarView()
-  }
-}
-
-function openDeleteModal(id) {
-  const clase = state.clasesOriginales.find(c => c.id === id)
-  if (!clase) return
-
-  AppModal.open({
-    title: '⚠️ Eliminar Clase',
-    saveText: 'Eliminar Definitivamente',
-    body: `<p>¿Estás seguro de eliminar la clase <strong>${escapeHTML(clase.nombre)}</strong>? Esta acción no se puede deshacer.</p>`,
-    onSave: async () => {
-      try {
-        await eliminarClase(id)
-        AppToast.success('Clase eliminada')
-        renderClasesView(state.container)
-        return true
-      } catch (err) {
-        AppToast.error(err.message)
-        return false
+    // E. Eliminar Clase
+    const btnEliminar = e.target.closest('[data-action="eliminar-clase"]')
+    if (btnEliminar) {
+      const claseId = btnEliminar.dataset.id
+      const nombre = btnEliminar.dataset.nombre
+      if (confirm(`¿Estás seguro de eliminar la clase "${nombre}"? Esta acción no se puede deshacer.`)) {
+        try {
+          await eliminarClase(claseId)
+          AppToast.success(`Clase "${nombre}" eliminada exitosamente.`)
+          await renderClasesView(state.container)
+        } catch (err) {
+          console.error(err)
+          AppToast.error('No se pudo eliminar la clase.')
+        }
       }
+      return
     }
   })
 }

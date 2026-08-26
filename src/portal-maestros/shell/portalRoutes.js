@@ -109,8 +109,19 @@ export function createViewRenderQueue() {
 
   return {
     run(key, render) {
-      const previous = pending.get(key) || Promise.resolve()
-      const current = previous.catch(() => {}).then(render)
+      const previous = pending.get(key)
+      // Start the first render immediately so callers can observe its loading
+      // state in the same turn. Later renders remain serialized per container.
+      let current
+      if (previous) {
+        current = previous.catch(() => {}).then(render)
+      } else {
+        try {
+          current = Promise.resolve(render())
+        } catch (error) {
+          current = Promise.reject(error)
+        }
+      }
       pending.set(key, current)
       return current.finally(() => {
         if (pending.get(key) === current) pending.delete(key)
@@ -156,6 +167,15 @@ export function initViewContainers() {
   return viewContainers
 }
 
+const ROUTE_PERMISSION_GUARDS = {
+  'gestionar-clases': (permisos) => permisos?.puede_inscribir_clases,
+  'crear-clase': (permisos) => permisos?.puede_crear_clases,
+  asistencia: (permisos) => permisos?.puede_asistir,
+  planificacion: (permisos) => permisos?.puede_planificar,
+  'planificacion-disenador': (permisos) => permisos?.puede_planificar,
+  'planificacion-ruta': (permisos) => permisos?.puede_planificar,
+}
+
 export async function renderViewContent(route, container, params, urlParams, context) {
   const { maestroId, permisos, router, showLoginScreen, cleanupPushService, stopRealtime, logoutMaestro } = context
 
@@ -167,12 +187,7 @@ export async function renderViewContent(route, container, params, urlParams, con
     return null
   }
 
-  if (route === 'gestionar-clases' && !permisos?.puede_inscribir_clases) {
-    router.navigate('hoy')
-    return
-  }
-
-  if (route === 'crear-clase' && !permisos?.puede_crear_clases) {
+  if (Object.hasOwn(ROUTE_PERMISSION_GUARDS, route) && !ROUTE_PERMISSION_GUARDS[route](permisos)) {
     router.navigate('hoy')
     return
   }

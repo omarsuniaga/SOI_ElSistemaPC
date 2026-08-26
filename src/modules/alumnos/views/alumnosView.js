@@ -28,6 +28,7 @@ import {
   getEstadoLabel,
   getInitials,
 } from '../utils/alumnosUtils.js'
+import { getInstrumentoIcon } from '../../clases/utils/clasesUtils.js'
 
 // D03: AbortController for SPA event-listener cleanup
 let _abortController = null
@@ -142,135 +143,167 @@ export async function renderAlumnosView(container) {
   // ─── Nested View Functions ──────────────────────────────────────────
 
   function renderContent(container) {
+    const totalAlumnos = state.alumnosOriginales.length
+    const totalActivos = state.alumnosOriginales.filter(a => a.is_active ?? true).length
+    const totalConInstrumento = state.alumnosOriginales.filter(a => !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado').length
+    const totalConWhatsapp = state.alumnosOriginales.filter(a => !!a.telefono && a.telefono.trim() !== '').length
+
     container.innerHTML = `
       <div class="page-container">
-        <div class="alumnos-header-premium mb-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-              <i class="bi bi-people fs-4"></i>
-            </div>
-            <div>
-              <h1 class="alumnos-title-premium mb-0">Alumnos</h1>
-              <p class="text-muted small mb-0">${state.alumnos.length} alumnos en total</p>
-            </div>
-          </div>
+        
+        <!-- Header & Toolbar Unificada V2 -->
+        <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
           
-          <div class="alumnos-header-actions flex-wrap">
-            <button class="btn btn-outline-warning btn-sm-compact" id="btnConciliarPostulados" title="Completar datos faltantes desde Postulados">
-              <i class="bi bi-arrow-repeat me-1"></i>Conciliar Postulados
-            </button>
-            <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV" title="Exportar CSV">
-              <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-            </button>
-            <button class="btn btn-outline-secondary btn-sm-compact" id="btnReporteMes" title="Inscritos por mes">
-              <i class="bi bi-bar-chart"></i> Reporte
-            </button>
-            <button class="btn btn-outline-danger btn-sm-compact" id="btnPdfDemo" title="Vista previa PDFs">
-              <i class="bi bi-file-earmark-pdf"></i> PDFs
-            </button>
-            <button class="btn btn-outline-danger btn-sm-compact" id="btnDescargarPdfListado" title="Descargar PDF del listado de alumnos">
-              <i class="bi bi-file-earmark-pdf"></i> PDF Listado
-            </button>
-            <button class="btn btn-outline-primary btn-sm-compact" id="btnDetectarDuplicados" title="Buscar y fusionar alumnos duplicados">
-              <i class="bi bi-copy me-1"></i>Duplicados
-            </button>
-            <button class="btn btn-success btn-sm-compact" id="btnInscribir">
-              <i class="bi bi-person-plus me-1"></i>Inscribir
-            </button>
-            <button class="btn btn-premium-action" id="btnAgregarAlumno">
-              <i class="bi bi-plus-lg me-1"></i>Nuevo Alumno
-            </button>
-          </div>
-        </div>
-
-        <div class="alumnos-filter-toolbar mb-4 flex-wrap">
-          <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
-            <i class="bi bi-search search-icon-muted"></i>
-            <input type="text" class="form-control premium-search-input" placeholder="Buscar alumno..." id="buscar" autocomplete="off">
-          </div>
-
-          <!-- Dropdown de Filtros Múltiples -->
-          <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm-compact d-flex align-items-center gap-2 dropdown-toggle position-relative" type="button" id="btnDropdownFiltros" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-height: 32px; border-radius: 8px;">
-              <i class="bi bi-funnel"></i> <span>Filtros</span>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary d-none" id="filtrosBadgeCount" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
-                0
-              </span>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg border" aria-labelledby="btnDropdownFiltros" style="min-width: 270px; border-radius: 12px; background: var(--bs-body-bg); z-index: 1050;">
-              <h6 class="dropdown-header px-0 mb-2 text-primary d-flex align-items-center gap-2" style="font-size: 0.85rem; font-weight: 700; background: transparent; border: none; color: var(--bs-primary) !important;">
-                <i class="bi bi-sliders"></i> Segmentar Alumnos
-              </h6>
+          <!-- Fila 1: Título, Badges Informativos y Botones de Acción -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-body-tertiary" style="gap: 0.85rem;">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="p-2 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
+                <i class="bi bi-people-fill fs-5"></i>
+              </div>
+              <div>
+                <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Padrón de Alumnos</h5>
+                <small class="text-muted d-block" style="font-size:0.75rem;">Directorio integral de estudiantes matriculados</small>
+              </div>
               
-              <!-- Filtro WhatsApp -->
-              <div class="mb-2">
-                <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">WhatsApp</label>
-                <div class="position-relative d-flex align-items-center w-100">
-                  <i class="bi bi-whatsapp select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
-                  <select class="form-select premium-filter-select" id="filtroWhatsapp" style="padding-left: 28px !important;">
-                    <option value="todos">Todos</option>
-                    <option value="con_whatsapp">Con WhatsApp</option>
-                    <option value="sin_whatsapp">Sin WhatsApp</option>
-                  </select>
-                </div>
+              <!-- Badges de Resumen en Tiempo Real -->
+              <div class="d-flex align-items-center gap-1.5 ms-md-2 flex-wrap">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Alumnos activos sobre total registrados">
+                  <i class="bi bi-person-check-fill me-1"></i>${totalActivos}/${totalAlumnos} Activos
+                </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Alumnos con instrumento asignado">
+                  <i class="bi bi-music-note-beamed me-1"></i>${totalConInstrumento} con Cátedra
+                </span>
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Alumnos con número de WhatsApp registrado">
+                  <i class="bi bi-whatsapp me-1"></i>${totalConWhatsapp} con WhatsApp
+                </span>
               </div>
+            </div>
 
-              <!-- Filtro Completitud -->
-              <div class="mb-2">
-                <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">Completitud Perfil</label>
-                <div class="position-relative d-flex align-items-center w-100">
-                  <i class="bi bi-shield-check select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
-                  <select class="form-select premium-filter-select" id="filtroCompletitud" style="padding-left: 28px !important;">
-                    <option value="todos">Todos los rangos</option>
-                    <option value="critico">Crítico (Rojo)</option>
-                    <option value="parcial">Parcial (Amarillo)</option>
-                    <option value="bueno">Bueno (Turquesa)</option>
-                    <option value="completo">Completo (Sin badge)</option>
-                  </select>
-                </div>
+            <!-- Toolbar de Botones de Acción con 0.85rem de separación -->
+            <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
+              <button class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnConciliarPostulados" title="Completar datos faltantes desde Postulados" style="font-size:0.78rem;">
+                <i class="bi bi-arrow-repeat"></i>
+                <span class="d-none d-sm-inline">Conciliar</span>
+              </button>
+              <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnDetectarDuplicados" title="Buscar y fusionar alumnos duplicados" style="font-size:0.78rem;">
+                <i class="bi bi-copy"></i>
+                <span class="d-none d-sm-inline">Duplicados</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnExportarCSV" title="Exportar CSV" style="font-size:0.78rem;">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <span class="d-none d-sm-inline">CSV</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnDescargarPdfListado" title="Descargar PDF del listado de alumnos" style="font-size:0.78rem;">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span class="d-none d-sm-inline">PDF</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnReporteMes" title="Inscritos por mes" style="font-size:0.78rem;">
+                <i class="bi bi-bar-chart"></i>
+                <span class="d-none d-sm-inline">Reporte</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnPdfDemo" title="Vista previa PDFs" style="font-size:0.78rem;">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span class="d-none d-sm-inline">Demo</span>
+              </button>
+              <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnInscribir" title="Inscribir Alumno" style="font-size:0.78rem;">
+                <i class="bi bi-person-plus-fill"></i>
+                <span>Inscribir</span>
+              </button>
+              <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnAgregarAlumno" style="font-size:0.78rem;">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>Nuevo Alumno</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fila 2: Búsqueda y Botón Desplegable de Filtros & Orden -->
+          <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
+            <div class="flex-grow-1" style="min-width: 260px;">
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="buscar" placeholder="Buscar alumno por nombre, cédula, teléfono o email..." autocomplete="off" style="font-size:0.8rem;">
               </div>
+            </div>
 
-              <!-- Filtro Instrumento -->
-              <div class="mb-3">
-                <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">Instrumento</label>
-                <div class="position-relative d-flex align-items-center w-100">
-                  <i class="bi bi-music-note select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
-                  <select class="form-select premium-filter-select" id="filtroInstrumento" style="padding-left: 28px !important;">
-                    <option value="todos">Todos</option>
+            <div class="d-flex align-items-center" style="gap: 0.85rem;">
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnToggleFiltros" type="button" aria-expanded="false" style="font-size:0.78rem;">
+                <i class="bi bi-funnel"></i>
+                <span>Filtros & Orden</span>
+                <span class="badge bg-primary text-white rounded-pill px-1.5 ms-1 d-none" id="filtrosBadgeCount" style="font-size:0.68rem;">0</span>
+              </button>
+
+              <button class="btn btn-sm btn-outline-secondary rounded-3 shadow-xs px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" id="btnLimpiarFiltros" title="Restablecer filtros y búsqueda" style="font-size:0.78rem;">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <span>Limpiar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fila 3: Panel Desplegable de Filtros y Ordenamiento -->
+          <div class="collapse pt-2.5" id="panelFiltrosAlumnos">
+            <div class="p-3 rounded-4 bg-body-tertiary border border-body-tertiary shadow-xs">
+              <div class="row g-2 align-items-center">
+                
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Cátedra / Instrumento</label>
+                  <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filtroInstrumento" style="font-size:0.8rem;">
+                    <option value="todos">Todos los Instrumentos</option>
                     <option value="con_instrumento">Con Instrumento</option>
                     <option value="sin_instrumento">Sin Instrumento</option>
                   </select>
                 </div>
-              </div>
 
-              <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
-                <button class="btn btn-link btn-sm text-decoration-none text-muted p-0" id="btnLimpiarFiltros" style="font-size: 0.75rem;">
-                  <i class="bi bi-trash3 me-0.5"></i> Limpiar
-                </button>
-                <span class="text-muted" id="filtrosActivosCount" style="font-size: 0.72rem; font-weight: 600; opacity: 0.8;">
-                  Filtros activos: 0
-                </span>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Completitud del Perfil</label>
+                  <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filtroCompletitud" style="font-size:0.8rem;">
+                    <option value="todos">Toda Completitud</option>
+                    <option value="critico">Crítico (&lt; 40%)</option>
+                    <option value="parcial">Parcial (40-69%)</option>
+                    <option value="bueno">Bueno (70-89%)</option>
+                    <option value="completo">Completo (90-100%)</option>
+                  </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Estado de Contacto</label>
+                  <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filtroWhatsapp" style="font-size:0.8rem;">
+                    <option value="todos">Todos los Contactos</option>
+                    <option value="con_whatsapp">Con WhatsApp</option>
+                    <option value="sin_whatsapp">Sin WhatsApp</option>
+                  </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Criterio de Orden</label>
+                  <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                    <span class="input-group-text bg-body border-end-0 py-1.5 text-muted" style="font-size:0.75rem;"><i class="bi bi-sort-down"></i></span>
+                    <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarAlumnos" style="font-size:0.8rem;">
+                      <option value="nombre_asc" ${state.sortBy === 'nombre' && state.sortDir === 'asc' ? 'selected' : ''}>Nombre (A-Z)</option>
+                      <option value="nombre_desc" ${state.sortBy === 'nombre' && state.sortDir === 'desc' ? 'selected' : ''}>Nombre (Z-A)</option>
+                      <option value="instrumento_asc" ${state.sortBy === 'instrumento' ? 'selected' : ''}>Instrumento (A-Z)</option>
+                      <option value="completitud_desc" ${state.sortBy === '_completitud' && state.sortDir === 'desc' ? 'selected' : ''}>Mayor Completitud</option>
+                      <option value="completitud_asc" ${state.sortBy === '_completitud' && state.sortDir === 'asc' ? 'selected' : ''}>Menor Completitud</option>
+                    </select>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
+
+          <!-- Sort controls accesibles -->
+          <div class="d-none" id="hiddenSortControls">
+            <button class="btn btn-link btn-sm" data-sort="nombre">Nombre</button>
+            <button class="btn btn-link btn-sm" data-sort="instrumento">Instrumento</button>
+            <button class="btn btn-link btn-sm" data-sort="_completitud">Completitud</button>
+            <span id="filtrosActivosCount">Filtros activos: 0</span>
+          </div>
+
         </div>
 
-        <!-- Sort controls -->
-        <div class="d-flex align-items-center gap-3 mb-2 px-1 small text-body-secondary">
-          <span>Ordenar por:</span>
-          <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === 'nombre' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="nombre">
-            Nombre ${state.sortBy === 'nombre' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
-          </button>
-          <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === 'instrumento' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="instrumento">
-            Instrumento ${state.sortBy === 'instrumento' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
-          </button>
-          <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === '_completitud' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="_completitud">
-            Completitud ${state.sortBy === '_completitud' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
-          </button>
-        </div>
-
-        <div class="page-glass rounded w-100">
-          <div class="list-group list-group-flush w-100" id="alumnosTBody">
+        <!-- Contenedor de Cuadrícula de Alumnos (Hasta 5 por fila responsive) -->
+        <div class="w-100">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0" id="alumnosTBody">
             ${renderTableRows(state.alumnos)}
           </div>
           <div id="emptyContainer">
@@ -287,69 +320,72 @@ export async function renderAlumnosView(container) {
 
     return alumnos.map(a => {
       const nombre = a.nombre || '-'
-      const isActive = a.is_active ?? true
-      const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
-      const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
+      const { porcentaje = 0 } = a._completitud || {}
       
-      const { porcentaje, nivel } = a._completitud || { porcentaje: 0, nivel: 'sin_datos' }
-      const tieneBadge = nivel !== 'completo'
-      const badgeColor = tieneBadge ? NIVEL_COLOR[nivel] : ''
+      let progresoColor = 'danger'
+      if (porcentaje >= 100) progresoColor = 'success'
+      else if (porcentaje >= 75) progresoColor = 'primary'
+      else if (porcentaje >= 50) progresoColor = 'info'
+      else if (porcentaje >= 25) progresoColor = 'warning'
 
       return `
-        <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
-          <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
-            <div class="position-relative flex-shrink-0">
-              <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
-                ${getInitials(nombre)}
-              </div>
-              <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
-            </div>
-            <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-              <div class="d-flex align-items-center gap-2">
-                <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
-              </div>
-              <small class="text-muted text-truncate">
-                ${escapeHTML(a.instrumento || 'Sin instrumento especificado')} ${a.familiar_nombre ? `• Rep: ${escapeHTML(a.familiar_nombre)}` : ''}
-              </small>
-            </div>
-          </div>
-          
-          <!-- Acciones y Estados perfectamente alineados a la derecha -->
-          <div class="d-flex align-items-center gap-3 flex-shrink-0">
-            <!-- Columna Badge Completitud (52px de ancho fijo) -->
-            <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 52px;">
-              ${tieneBadge ? `
-                <span class="badge badge-completitud badge-completitud-${badgeColor}" title="Perfil ${porcentaje}% completo — ${NIVEL_LABEL[nivel]}">
-                  ${porcentaje}%
+        <div class="col p-1">
+          <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer; padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+            
+            <!-- Parte Superior: Nombre, Instrumento y Contacto -->
+            <div class="mb-2">
+              
+              <!-- Nombre del Alumno -->
+              <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(nombre)}">
+                ${escapeHTML(nombre)}
+              </strong>
+
+              <!-- Instrumento / Cátedra -->
+              <div class="mb-2">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;">
+                  <i class="bi ${getInstrumentoIcon(a.instrumento)} me-1 text-primary"></i>${escapeHTML(a.instrumento || 'Sin cátedra')}
                 </span>
-              ` : ''}
+              </div>
+
+              <!-- Teléfono y Representante -->
+              <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
+                ${a.telefono ? `
+                  <div class="text-truncate" title="Teléfono">
+                    <i class="bi bi-whatsapp me-1 text-success"></i>${escapeHTML(a.telefono)}
+                  </div>
+                ` : '<div class="text-truncate text-muted fst-italic" style="font-size:0.72rem;"><i class="bi bi-telephone me-1"></i>Sin teléfono</div>'}
+
+                ${a.familiar_nombre ? `
+                  <div class="text-truncate" title="Representante">
+                    <i class="bi bi-person me-1 text-secondary"></i>Rep: ${escapeHTML(a.familiar_nombre)}
+                  </div>
+                ` : '<div class="text-truncate text-muted fst-italic" style="font-size:0.72rem;"><i class="bi bi-person me-1"></i>Sin representante</div>'}
+              </div>
             </div>
-            
-            <!-- Columna Botón Editar (36px de ancho fijo) -->
-            <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
-              <button class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" data-action="edit" data-id="${a.id}" title="Editar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
-                <i class="bi bi-pencil-square"></i>
+
+            <!-- Barra Inferior de Acciones Contextuales -->
+            <div class="pt-2 border-top d-flex align-items-center justify-content-between gap-1.5 mt-auto">
+              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2 fw-semibold" data-action="edit" data-id="${a.id}" title="Editar perfil de alumno" style="font-size:0.75rem;">
+                <i class="bi bi-pencil-square me-1"></i>
+                <span>Editar</span>
               </button>
-            </div>
-            
-            <!-- Columna Botón WhatsApp (36px de ancho fijo) -->
-            <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
+
               ${a.telefono ? `
-                <button class="btn btn-sm btn-success bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+                <button class="btn btn-xs btn-outline-success rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="font-size:0.75rem;">
                   <i class="bi bi-whatsapp"></i>
                 </button>
               ` : ''}
-            </div>
-            
-            <!-- Columna Botón Eliminar (36px de ancho fijo) -->
-            <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
-              <button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" data-action="delete" data-id="${a.id}" title="Eliminar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+
+              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="Eliminar alumno" style="font-size:0.75rem;">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
-            
-            <!-- Flecha de Navegación -->
-            <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
+
+            <!-- Borde Inferior Sutil como Barra de Progreso de Completitud -->
+            <div class="position-absolute bottom-0 start-0 end-0 bg-body-tertiary" style="height: 3.5px;" title="Perfil ${porcentaje}% completo">
+              <div class="h-100 bg-${progresoColor}" style="width: ${porcentaje}%; transition: width 0.3s ease;"></div>
+            </div>
+
           </div>
         </div>
       `
@@ -438,6 +474,20 @@ export async function renderAlumnosView(container) {
       }, { signal })
     })
 
+    const btnToggleFiltros = container.querySelector('#btnToggleFiltros')
+    const panelFiltros = container.querySelector('#panelFiltrosAlumnos')
+    btnToggleFiltros?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (panelFiltros) {
+        panelFiltros.classList.toggle('show')
+        const isOpen = panelFiltros.classList.contains('show')
+        btnToggleFiltros.setAttribute('aria-expanded', String(isOpen))
+        btnToggleFiltros.classList.toggle('btn-primary', isOpen)
+        btnToggleFiltros.classList.toggle('text-white', isOpen)
+        btnToggleFiltros.classList.toggle('btn-outline-secondary', !isOpen)
+      }
+    }, { signal })
+
     const searchInput = container.querySelector('#buscar')
     searchInput?.addEventListener('input', applyFilters, { signal })
 
@@ -445,14 +495,41 @@ export async function renderAlumnosView(container) {
     container.querySelector('#filtroCompletitud')?.addEventListener('change', applyFilters, { signal })
     container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters, { signal })
 
+    container.querySelector('#selectOrdenarAlumnos')?.addEventListener('change', (e) => {
+      const val = e.target.value
+      if (val === 'nombre_asc') {
+        state.sortBy = 'nombre'
+        state.sortDir = 'asc'
+      } else if (val === 'nombre_desc') {
+        state.sortBy = 'nombre'
+        state.sortDir = 'desc'
+      } else if (val === 'instrumento_asc') {
+        state.sortBy = 'instrumento'
+        state.sortDir = 'asc'
+      } else if (val === 'completitud_desc') {
+        state.sortBy = '_completitud'
+        state.sortDir = 'desc'
+      } else if (val === 'completitud_asc') {
+        state.sortBy = '_completitud'
+        state.sortDir = 'asc'
+      }
+      applyFilters()
+    }, { signal })
+
     container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', (e) => {
       e.stopPropagation()
+      const bInput = container.querySelector('#buscar')
       const wSelect = container.querySelector('#filtroWhatsapp')
       const cSelect = container.querySelector('#filtroCompletitud')
       const iSelect = container.querySelector('#filtroInstrumento')
+      const oSelect = container.querySelector('#selectOrdenarAlumnos')
+      if (bInput) bInput.value = ''
       if (wSelect) wSelect.value = 'todos'
       if (cSelect) cSelect.value = 'todos'
       if (iSelect) iSelect.value = 'todos'
+      if (oSelect) oSelect.value = 'nombre_asc'
+      state.sortBy = 'nombre'
+      state.sortDir = 'asc'
       applyFilters()
     }, { signal })
 

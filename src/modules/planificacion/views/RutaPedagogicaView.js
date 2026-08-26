@@ -122,6 +122,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
       ? nodosDelPlan
       : extraerNodosDeRutaCurricular(jerarquiaCurricular, targetClaseObj)
 
+
     // Métricas para la cabecera Premium
     const totalAlumnosCount = alumnosClase.length
     const evaluadosCount = alumnosClase.filter((a) => a.estrellas > 0).length
@@ -266,7 +267,6 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
 
   _loadAlumnosYRender()
 }
-
 
 function _renderEstrellasSVG(cant) {
   let html = ''

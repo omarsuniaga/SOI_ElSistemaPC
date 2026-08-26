@@ -46,6 +46,15 @@ function ensureDOM() {
         height: 86vh !important;
         max-height: 86vh !important;
       }
+
+      #${MODAL_ID} .app-modal-dialog.modal-size-view,
+      #${MODAL_ID} .app-modal-dialog.modal-size-95 {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        height: 92vh !important;
+        max-height: 92vh !important;
+        border-radius: 18px;
+      }
     }
 
     @media (max-width: 767.98px) {
@@ -173,7 +182,7 @@ function getEls() {
 }
 
 // Sizes
-const SIZES = { sm: '400px', md: '560px', lg: '78vw', xl: '86vw' }
+const SIZES = { sm: '400px', md: '560px', lg: '78vw', xl: '86vw', view: '95vw', '95': '95vw' }
 
 export const AppModal = {
   _saveHandler: null,

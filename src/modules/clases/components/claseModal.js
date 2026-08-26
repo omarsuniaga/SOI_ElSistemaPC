@@ -12,7 +12,7 @@ import {
   verificarSolapamientoCompleto,
   resolverConflictosClases,
 } from '../api/clasesApi.js'
-import { openClaseConflictModal } from './claseConflictModal.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import {
   escapeHTML,
   timeToMinutes,
@@ -56,17 +56,39 @@ export async function openClaseModal(clase = null, options = {}) {
 
   let inscritosSlots = []   // full records with hora_inicio/hora_fin per alumno
 
-  if (isEdicion) {
-    AppToast.info('Cargando datos de la clase...')
-    const inscritos = await obtenerAlumnosInscritos(clase.id)
-    const inscritosOrdenados = [...(inscritos || [])].sort((a, b) => {
-      const an = (a.alumno?.nombre_completo || a.alumno?.nombre || '').toString().toLocaleLowerCase('es')
-      const bn = (b.alumno?.nombre_completo || b.alumno?.nombre || '').toString().toLocaleLowerCase('es')
-      return an.localeCompare(bn, 'es')
-    })
-    inscritosIds   = inscritosOrdenados.map(i => i.alumno_id)
-    inscritosSlots = inscritosOrdenados
+  AppToast.info(isEdicion ? 'Cargando datos de la clase y alumnos...' : 'Cargando catálogo...')
+
+  const fetchPromises = []
+
+  // Si no se pasaron alumnos, cargarlos directamente de la base de datos
+  if (!_options.alumnos || _options.alumnos.length === 0) {
+    fetchPromises.push(
+      supabase
+        .from('alumnos')
+        .select('*')
+        .order('nombre_completo', { ascending: true })
+        .then(({ data }) => {
+          _options.alumnos = data || []
+        })
+    )
   }
+
+  // Si es edición, cargar los alumnos actualmente inscritos
+  if (isEdicion) {
+    fetchPromises.push(
+      obtenerAlumnosInscritos(clase.id).then((inscritos) => {
+        const inscritosOrdenados = [...(inscritos || [])].sort((a, b) => {
+          const an = (a.alumno?.nombre_completo || a.alumno?.nombre || '').toString().toLocaleLowerCase('es')
+          const bn = (b.alumno?.nombre_completo || b.alumno?.nombre || '').toString().toLocaleLowerCase('es')
+          return an.localeCompare(bn, 'es')
+        })
+        inscritosIds   = inscritosOrdenados.map(i => i.alumno_id)
+        inscritosSlots = inscritosOrdenados
+      })
+    )
+  }
+
+  await Promise.all(fetchPromises)
 
   const title = isEdicion ? `Editar Clase: ${clase.nombre}` : 'Nueva Clase'
   const saveText = isEdicion ? 'Guardar Cambios' : 'Crear Clase'
@@ -88,7 +110,7 @@ export async function openClaseModal(clase = null, options = {}) {
         return false
       }
     } : null,
-    size: 'xl',
+    size: 'view',
     body: _getClaseFormHTML(clase, inscritosIds, inscritosSlots),
     onShow: (modalBody) => {
       _attachModalEvents(modalBody, clase)
@@ -107,110 +129,152 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
     _options.maestros.find((maestro) => maestro.id === selectedPrincipalTeacherId)?.nombre ||
     'Maestro asignado'
 
+  const esRotativa = Boolean(
+    clase?.tipo_clase === 'rotativa' ||
+    clase?.tipo_clase === 'rotativo' ||
+    clase?.tipo_clase === 'individual' ||
+    (inscritosSlots && inscritosSlots.some(s => Boolean(s.hora_inicio || s.hora_fin)))
+  )
+
   return `
-    <form class="row g-3" id="formClase">
-      <div class="col-md-6">
-        <label class="form-label-compact">Nombre de la Clase *</label>
-        <input type="text" class="form-control input-dense" id="modal-nombre" required placeholder="Ej: Violín Básico A" value="${escapeHTML(clase?.nombre || '')}" maxlength="${VALIDATION.nombreMax}">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Instrumento *</label>
-        <input type="text" class="form-control input-dense" id="modal-instrumento" list="instrumentos-list" required placeholder="Seleccionar..." value="${escapeHTML(clase?.instrumento || '')}">
-        ${_getInstrumentosDatalist()}
-      </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Ruta de Contenido</label>
-        <div class="d-flex gap-2">
-          <input type="text" class="form-control input-dense" id="modal-ruta-display" readonly placeholder="Seleccionar ruta..." value="${clase?.ruta_id ? 'Ruta seleccionada' : ''}">
-          <button type="button" class="btn btn-outline-primary btn-sm" id="btn-seleccionar-ruta" style="white-space: nowrap;">
-            <i class="bi bi-diagram-3 me-1"></i>Elegir
-          </button>
-        </div>
-        <input type="hidden" id="modal-ruta_id" value="${clase?.ruta_id || ''}">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Programa *</label>
-        <select class="form-select input-dense" id="modal-programa_id" required>
-          ${_getProgramasOptions(clase?.programa_id)}
-        </select>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Maestro Titular *</label>
-        ${_options.allowPrincipalTeacherSelection
-          ? `<select class="form-select input-dense" id="modal-maestro_id" required>
-              ${_getMaestrosOptions(selectedPrincipalTeacherId)}
-            </select>`
-          : `<input type="text" class="form-control input-dense" value="${escapeHTML(principalTeacherLabel)}" readonly>
-             <input type="hidden" id="modal-maestro_id" value="${escapeHTML(selectedPrincipalTeacherId)}">`
-        }
-      </div>
-      <div class="col-md-6">
-        <div class="d-flex align-items-center gap-2">
-          <label class="form-label-compact mb-0">Maestro Suplente</label>
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="modal-tiene_suplente" ${clase?.tiene_suplente ? 'checked' : ''}>
+    <form class="container-fluid p-0" id="formClase">
+      <div class="row g-3">
+        
+        <!-- COLUMNA 1: Datos Académicos & Cátedra (25%) -->
+        <div class="col-12 col-lg-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column gap-2.5">
+            <h6 class="fw-bold mb-2 text-body d-flex align-items-center" style="font-size: 0.9rem;">
+              <i class="bi bi-info-circle text-primary me-2"></i>1. Cátedra & Docente
+            </h6>
+
+            <div>
+              <label class="form-label-compact">Nombre de la Clase *</label>
+              <input type="text" class="form-control input-dense" id="modal-nombre" required placeholder="Ej: Violín Básico A" value="${escapeHTML(clase?.nombre || '')}" maxlength="${VALIDATION.nombreMax}">
+            </div>
+
+            <div>
+              <label class="form-label-compact">Instrumento / Cátedra *</label>
+              <input type="text" class="form-control input-dense" id="modal-instrumento" list="instrumentos-list" required placeholder="Seleccionar..." value="${escapeHTML(clase?.instrumento || '')}">
+              ${_getInstrumentosDatalist()}
+            </div>
+
+            <div>
+              <label class="form-label-compact">Maestro Titular *</label>
+              ${_options.allowPrincipalTeacherSelection
+                ? `<select class="form-select input-dense" id="modal-maestro_id" required>
+                    ${_getMaestrosOptions(selectedPrincipalTeacherId)}
+                  </select>`
+                : `<input type="text" class="form-control input-dense" value="${escapeHTML(principalTeacherLabel)}" readonly>
+                   <input type="hidden" id="modal-maestro_id" value="${escapeHTML(selectedPrincipalTeacherId)}">`
+              }
+            </div>
+
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <label class="form-label-compact mb-0">Maestro Suplente</label>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="modal-tiene_suplente" ${clase?.tiene_suplente ? 'checked' : ''}>
+                </div>
+              </div>
+              <select class="form-select input-dense" id="modal-maestro_suplente_id" style="display: ${clase?.tiene_suplente ? 'block' : 'none'};">
+                ${_getMaestrosOptions(clase?.maestro_suplente_id)}
+              </select>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label-compact">Programa *</label>
+                <select class="form-select input-dense" id="modal-programa_id" required>
+                  ${_getProgramasOptions(clase?.programa_id)}
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label-compact">Estado</label>
+                <select class="form-select input-dense" id="modal-estado">
+                  ${_getEstadosOptions(clase?.estado || 'activa')}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label-compact">Ruta de Contenido</label>
+              <div class="d-flex gap-2">
+                <input type="text" class="form-control input-dense" id="modal-ruta-display" readonly placeholder="Seleccionar ruta..." value="${clase?.ruta_id ? 'Ruta seleccionada' : ''}">
+                <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2.5 py-1 rounded-3 shadow-xs" id="btn-seleccionar-ruta" style="white-space: nowrap; font-size: 0.78rem;">
+                  <i class="bi bi-diagram-3-fill"></i>
+                  <span>Elegir</span>
+                </button>
+              </div>
+              <input type="hidden" id="modal-ruta_id" value="${clase?.ruta_id || ''}">
+            </div>
+
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label-compact">Capacidad Máx.</label>
+                <input type="number" class="form-control input-dense" id="modal-max_alumnos" value="${clase?.capacidad_maxima || 20}" min="1" max="80">
+              </div>
+              <div class="col-6">
+                <label class="form-label-compact">Dinámica</label>
+                <select class="form-select input-dense" id="modal-tipo_clase_select">
+                  <option value="grupal" ${!esRotativa ? 'selected' : ''}>Grupal</option>
+                  <option value="rotativa" ${esRotativa ? 'selected' : ''}>Rotativa (Turnos)</option>
+                </select>
+                <input type="radio" name="modal-tipo_clase" id="tipo-grupal" value="grupal" ${!esRotativa ? 'checked' : ''} style="display:none;">
+                <input type="radio" name="modal-tipo_clase" id="tipo-rotativa" value="rotativa" ${esRotativa ? 'checked' : ''} style="display:none;">
+              </div>
+            </div>
+
           </div>
         </div>
-        <select class="form-select input-dense" id="modal-maestro_suplente_id" style="display: ${clase?.tiene_suplente ? 'block' : 'none'}; margin-top: 8px;">
-          ${_getMaestrosOptions(clase?.maestro_suplente_id)}
-        </select>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Máx. Alumnos</label>
-        <input type="number" class="form-control input-dense" id="modal-max_alumnos" value="${clase?.capacidad_maxima || 20}" min="1" max="50">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Estado</label>
-        <select class="form-select input-dense" id="modal-estado">
-          ${_getEstadosOptions(clase?.estado || 'activa')}
-        </select>
-      </div>
-      
-      <div class="col-12 mt-3 pt-2 border-top">
-        <label class="form-label-compact d-block mb-2"><i class="bi bi-gear me-1"></i> Dinámica de la Clase *</label>
-        <div class="d-flex align-items-center bg-body-tertiary p-2 rounded border">
-          <div class="form-check me-4">
-            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-grupal" value="grupal" ${!clase || clase.tipo_clase !== 'rotativa' ? 'checked' : ''}>
-            <label class="form-check-label small cursor-pointer lh-sm" for="tipo-grupal">
-              <strong>Grupal</strong><br>
-              <span class="text-muted" style="font-size: 0.75rem;">Asistencia global, todos los alumnos asisten en el mismo horario.</span>
-            </label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-rotativa" value="rotativa" ${clase?.tipo_clase === 'rotativa' ? 'checked' : ''}>
-            <label class="form-check-label small cursor-pointer lh-sm" for="tipo-rotativa">
-              <strong>Rotativa (Turnos)</strong><br>
-              <span class="text-muted" style="font-size: 0.75rem;">Clase individual o micro-grupos. Se asignan slots de tiempo a cada alumno.</span>
-            </label>
+
+        <!-- COLUMNA 2: Horarios Semanales & Salón (25%) -->
+        <div class="col-12 col-lg-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                <h6 class="fw-bold mb-0 text-body d-flex align-items-center" style="font-size: 0.9rem;">
+                  <i class="bi bi-clock text-primary me-2"></i>2. Horario & Salón
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2.5 py-1 rounded-3 fw-semibold shadow-xs" id="btn-add-horario" style="font-size:0.75rem;">
+                  <i class="bi bi-plus-circle-fill"></i>
+                  <span>Bloque</span>
+                </button>
+              </div>
+
+              <div id="modal-horarios-container" class="mb-3" style="max-height: calc(92vh - 380px); overflow-y: auto;">
+                ${_renderHorariosContainer(clase?.horarios || [])}
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label-compact">Notas Pedagógicas / Observaciones</label>
+              <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="3" placeholder="Observaciones sobre la metodología o dinámica..." maxlength="${VALIDATION.notasMax}">${escapeHTML(clase?.descripcion || '')}</textarea>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div class="col-12 mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <label class="form-label-compact mb-0">Horarios y Salones *</label>
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-horario">
-            <i class="bi bi-plus-circle me-1"></i> Agregar Horario
-          </button>
+
+        <!-- COLUMNA 3: Nómina & Asignación Rápida de Alumnos (50%) -->
+        <div class="col-12 col-lg-6">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column">
+            
+            <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+              <h6 class="fw-bold mb-0 text-body d-flex align-items-center" style="font-size: 0.9rem;">
+                <i class="bi bi-people text-primary me-2"></i>3. Nómina de Alumnos
+              </h6>
+              <span class="badge bg-primary text-white rounded-pill" id="badge-total-alumnos-modal">${inscritosIds.length}</span>
+            </div>
+
+            <div class="flex-grow-1 overflow-auto" id="seccion-alumnos-grupal" style="display:${esRotativa ? 'none' : 'block'}; max-height: calc(92vh - 240px);">
+              ${_getAlumnosSelectorHTML(inscritosIds)}
+            </div>
+
+            <div class="flex-grow-1 overflow-auto" id="seccion-alumnos-rotativa" style="display:${esRotativa ? 'block' : 'none'}; max-height: calc(92vh - 240px);">
+              ${_getSlotBuilderHTML(inscritosSlots)}
+            </div>
+
+          </div>
         </div>
-        <div id="modal-horarios-container" class="mb-3">
-          ${_renderHorariosContainer(clase?.horarios || [])}
-        </div>
-      </div>
 
-      <div class="col-12">
-        <label class="form-label-compact">Notas Pedagógicas</label>
-        <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="2" placeholder="Observaciones sobre el grupo o metodología..." maxlength="${VALIDATION.notasMax}">${escapeHTML(clase?.descripcion || '')}</textarea>
-      </div>
-
-      <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-grupal" style="display:${clase?.tipo_clase === 'rotativa' ? 'none' : 'block'}">
-        <label class="form-label-compact mb-2"><i class="bi bi-people me-1"></i>Inscribir Alumnos</label>
-        ${_getAlumnosSelectorHTML(inscritosIds)}
-      </div>
-
-      <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-rotativa" style="display:${clase?.tipo_clase === 'rotativa' ? 'block' : 'none'}">
-        <label class="form-label-compact mb-2"><i class="bi bi-person-lines-fill me-1"></i>Turnos individuales</label>
-        ${_getSlotBuilderHTML(inscritosSlots)}
       </div>
     </form>
   `
@@ -218,76 +282,150 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
 
 function _getSlotBuilderHTML(inscritosSlots = []) {
   const alumnos = _options.alumnos || []
+  const alumnosMap = new Map(alumnos.map(a => [a.id, a]))
 
-  const slotRow = (alumnoId = '', horaInicio = '', horaFin = '') => {
-    return `
-      <div class="slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary">
-        <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
-          <option value="">Seleccionar alumno…</option>
-          ${alumnos.map(a => `
-            <option value="${a.id}" data-alumno-id="${a.id}" ${a.id === alumnoId ? 'selected' : ''}>
-              ${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}
-            </option>`).join('')}
-        </select>
-        <div class="d-flex align-items-center gap-1 flex-shrink-0">
-          <input type="time" class="form-control form-control-sm slot-hora-inicio" value="${horaInicio}" style="width:110px;" required title="Hora inicio">
-          <span class="text-muted small">–</span>
-          <input type="time" class="form-control form-control-sm slot-hora-fin" value="${horaFin}" style="width:110px;" required title="Hora fin">
-        </div>
-        <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
-          <i class="bi bi-x-circle-fill fs-5"></i>
-        </button>
-      </div>`
-  }
+  // Agrupar alumnos inscritos por franja horaria (hora_inicio + hora_fin)
+  const slotsGroupMap = new Map()
 
-  const sortedSlots = [...inscritosSlots].sort((a, b) => {
-    const minA = timeToMinutes(a.hora_inicio || '23:59')
-    const minB = timeToMinutes(b.hora_inicio || '23:59')
-    return minA - minB
+  inscritosSlots.forEach(s => {
+    const key = `${(s.hora_inicio || '00:00').slice(0, 5)}-${(s.hora_fin || '00:00').slice(0, 5)}`
+    if (!slotsGroupMap.has(key)) {
+      slotsGroupMap.set(key, {
+        hora_inicio: (s.hora_inicio || '00:00').slice(0, 5),
+        hora_fin: (s.hora_fin || '00:00').slice(0, 5),
+        alumnosIds: [],
+      })
+    }
+    if (s.alumno_id) {
+      slotsGroupMap.get(key).alumnosIds.push(s.alumno_id)
+    }
   })
 
-  const existingRows = sortedSlots.length
-    ? sortedSlots.map(s => slotRow(
-        s.alumno_id,
-        (s.hora_inicio || '').slice(0, 5),
-        (s.hora_fin   || '').slice(0, 5)
-      )).join('')
-    : slotRow()   // Una fila vacía por defecto
+  const existingCards = Array.from(slotsGroupMap.values()).sort((a, b) => {
+    return timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59')
+  })
+
+  const cardsHtml = existingCards.length > 0
+    ? existingCards.map(s => _renderSlotCardHTML(s, alumnos, alumnosMap)).join('')
+    : _renderSlotCardHTML({ hora_inicio: '15:00', hora_fin: '15:30', alumnosIds: [] }, alumnos, alumnosMap)
 
   return `
-    <div id="slots-container" class="mb-2">
-      ${existingRows}
-    </div>
-    <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
-      <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-slot">
-        <i class="bi bi-plus-circle me-1"></i> Agregar turno
-      </button>
+    <div class="rotativa-container">
+      <!-- Barra Superior con Filtro y Acciones Rápidas -->
+      <div class="d-flex flex-wrap gap-2 mb-2.5 align-items-center justify-content-between pb-2 border-bottom">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1 rounded-3 fw-semibold shadow-xs" id="btn-add-slot" style="font-size:0.78rem;">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span>Nuevo Turno</span>
+          </button>
 
-      <div class="input-group input-group-sm flex-grow-1" style="min-width: 210px; max-width: 320px;">
-        <span class="input-group-text bg-body-tertiary"><i class="bi bi-clock me-1"></i> Duración</span>
-        <select class="form-select form-select-sm" id="slot-duration-select" title="Seleccionar duración del turno">
-          <option value="15">15 min</option>
-          <option value="20">20 min</option>
-          <option value="30" selected>30 min</option>
-          <option value="45">45 min</option>
-          <option value="60">60 min (1h)</option>
-          <option value="90">90 min (1.5h)</option>
-          <option value="custom">Personalizado…</option>
-        </select>
-        <button type="button" class="btn btn-outline-success" id="btn-auto-slots" title="Generar franjas según el horario global y la duración seleccionada">
-          <i class="bi bi-magic me-1"></i> Auto-generar
+          <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden" style="width: 215px;">
+            <span class="input-group-text bg-body-tertiary border-end-0 py-1 text-muted" style="font-size:0.75rem;"><i class="bi bi-clock me-1"></i> Franja</span>
+            <select class="form-select form-select-sm border-start-0 border-end-0 py-1" id="slot-duration-select" title="Duración para auto-generar" style="font-size:0.78rem;">
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="30" selected>30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min (1h)</option>
+              <option value="custom">Personalizado…</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 px-2.5 py-1" id="btn-auto-slots" title="Generar franjas según el horario global y la duración" style="font-size:0.78rem;">
+              <i class="bi bi-magic"></i>
+              <span>Auto</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 px-2.5 py-1 rounded-3 shadow-xs" id="btn-sort-slots" title="Ordenar turnos por hora" style="font-size:0.78rem;">
+          <i class="bi bi-sort-numeric-down"></i>
+          <span>Ordenar</span>
         </button>
       </div>
 
-      <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" id="btn-sort-slots" title="Ordenar los turnos en orden ascendente por horario">
-        <i class="bi bi-sort-numeric-down me-1"></i> Ordenar
-      </button>
+      <div id="slots-container" class="mb-2" style="max-height: calc(92vh - 350px); overflow-y: auto;">
+        ${cardsHtml}
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+        <small class="text-muted" style="font-size:0.75rem;">Podés asignar 1, 2 o más alumnos por cada turno (Micro-Grupos)</small>
+        <small class="fw-bold text-primary" id="slots-count">
+          ${inscritosSlots.length || 0} alumno(s) asignados
+        </small>
+      </div>
     </div>
-    <div class="text-end mt-1">
-      <small class="text-muted" id="slots-count">
-        ${inscritosSlots.length || 0} turno${inscritosSlots.length !== 1 ? 's' : ''} asignado${inscritosSlots.length !== 1 ? 's' : ''}
-      </small>
-    </div>`
+  `
+}
+
+function _renderSlotCardHTML(slot, alumnos = [], alumnosMap = new Map()) {
+  const startMin = timeToMinutes(slot.hora_inicio || '00:00')
+  const endMin = timeToMinutes(slot.hora_fin || '00:00')
+  const durMin = Math.max(0, endMin - startMin)
+
+  const alumnosDelTurno = (slot.alumnosIds || [])
+    .map(id => alumnosMap.get(id))
+    .filter(Boolean)
+
+  return `
+    <div class="slot-card p-3 rounded-3 border bg-body mb-2.5 shadow-xs">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:0.75rem;">
+            <i class="bi bi-clock me-1"></i>Turno
+          </span>
+          <div class="d-flex align-items-center gap-1">
+            <input type="time" class="form-control form-control-sm slot-hora-inicio input-dense" value="${slot.hora_inicio || ''}" style="width:105px;" required>
+            <span class="text-muted small">–</span>
+            <input type="time" class="form-control form-control-sm slot-hora-fin input-dense" value="${slot.hora_fin || ''}" style="width:105px;" required>
+          </div>
+          <span class="badge bg-body-tertiary text-muted border small slot-duracion-badge">${durMin > 0 ? `${durMin} min` : 'Turno'}</span>
+        </div>
+        
+        <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Eliminar este turno completo">
+          <i class="bi bi-trash3 fs-6"></i>
+        </button>
+      </div>
+
+      <!-- Alumnos Asignados a este Turno (Soporte Multi-Alumno / Micro-Grupo) -->
+      <div class="slot-alumnos-container d-flex flex-column gap-1.5 mb-2">
+        ${alumnosDelTurno.length > 0 ? alumnosDelTurno.map(a => `
+          <div class="slot-alumno-pill d-flex align-items-center justify-content-between p-1.5 px-2 rounded-2 bg-body-tertiary border" data-alumno-id="${a.id}">
+            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+              <i class="bi bi-person-fill text-primary"></i>
+              <strong class="text-body small text-truncate">${escapeHTML(a.nombre_completo)}</strong>
+              <span class="text-muted small text-truncate">${a.instrumento_principal ? `· ${escapeHTML(a.instrumento_principal)}` : ''}</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-alumno-from-slot" title="Quitar alumno de este turno">
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          </div>
+        `).join('') : `
+          <div class="slot-empty-notice small text-muted fst-italic p-1.5 px-2 bg-body-tertiary rounded-2 border border-dashed text-center">
+            Sin alumnos asignados a este turno todavía.
+          </div>
+        `}
+      </div>
+
+      <!-- Asignador Interactivo con Buscador en Tiempo Real -->
+      <div class="slot-add-alumno-wrapper">
+        <button type="button" class="btn btn-sm btn-outline-primary rounded-3 btn-toggle-add-alumno d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-semibold shadow-xs" style="font-size:0.78rem;">
+          <i class="bi bi-person-plus-fill"></i>
+          <span>+ Asignar Alumnos</span>
+        </button>
+
+        <div class="slot-add-alumno-panel p-2 rounded-3 border bg-body-tertiary shadow-xs mt-2" style="display:none;">
+          <div class="input-group input-group-sm mb-2">
+            <span class="input-group-text bg-body border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control input-dense slot-alumno-search-input border-start-0" placeholder="Escribir nombre o instrumento...">
+            <button type="button" class="btn btn-sm btn-outline-secondary btn-close-add-panel" title="Cerrar"><i class="bi bi-x"></i></button>
+          </div>
+
+          <div class="slot-alumno-search-results d-flex flex-column gap-1 overflow-auto" style="max-height: 160px;">
+            <!-- Resultados renderizados dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 }
 
 function _attachModalEvents(modalBody, _clase) {
@@ -324,7 +462,7 @@ function _attachModalEvents(modalBody, _clase) {
   }
 
   // Add schedule row
-  modalBody.querySelector('#btn-add-horario').addEventListener('click', () => {
+  modalBody.querySelector('#btn-add-horario')?.addEventListener('click', () => {
     const container = modalBody.querySelector('#modal-horarios-container')
     const index = container.children.length
     const tempDiv = document.createElement('div')
@@ -333,7 +471,7 @@ function _attachModalEvents(modalBody, _clase) {
   })
 
   // Remove schedule row
-  modalBody.querySelector('#modal-horarios-container').addEventListener('click', (e) => {
+  modalBody.querySelector('#modal-horarios-container')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-remove-horario')
     if (btn) {
       const container = modalBody.querySelector('#modal-horarios-container')
@@ -348,6 +486,18 @@ function _attachModalEvents(modalBody, _clase) {
   // ── Toggle grupal ↔ rotativa ─────────────────────────────────────────────
   const seccionGrupal   = modalBody.querySelector('#seccion-alumnos-grupal')
   const seccionRotativa = modalBody.querySelector('#seccion-alumnos-rotativa')
+  const selectTipoClase = modalBody.querySelector('#modal-tipo_clase_select')
+
+  if (selectTipoClase) {
+    selectTipoClase.addEventListener('change', (e) => {
+      const val = e.target.value
+      const radio = modalBody.querySelector(`input[name="modal-tipo_clase"][value="${val}"]`)
+      if (radio) {
+        radio.checked = true
+        radio.dispatchEvent(new Event('change'))
+      }
+    })
+  }
 
   modalBody.querySelectorAll('input[name="modal-tipo_clase"]').forEach(radio => {
     radio.addEventListener('change', () => {
@@ -362,43 +512,196 @@ function _attachModalEvents(modalBody, _clase) {
   const slotsCount     = modalBody.querySelector('#slots-count')
 
   const _updateSlotsCount = () => {
-    const n = slotsContainer.querySelectorAll('.slot-row').length
-    slotsCount.textContent = `${n} turno${n !== 1 ? 's' : ''} asignado${n !== 1 ? 's' : ''}`
+    if (!slotsContainer || !slotsCount) return
+    const totalPills = slotsContainer.querySelectorAll('.slot-alumno-pill').length
+    const totalCards = slotsContainer.querySelectorAll('.slot-card').length
+    slotsCount.textContent = `${totalPills} alumno(s) en ${totalCards} turno(s)`
   }
 
-  // Agregar turno
+  // 1. Agregar Turno Nuevo
   modalBody.querySelector('#btn-add-slot')?.addEventListener('click', () => {
     const alumnos = _options.alumnos || []
+    const alumnosMap = new Map(alumnos.map(a => [a.id, a]))
     const temp = document.createElement('div')
-    temp.innerHTML = _getSlotBuilderHTML([]).split('id="slots-container"')[1]
-      ? '' : ''
-    // Build a single empty row and append
-    const emptyRow = document.createElement('div')
-    emptyRow.className = 'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
-    emptyRow.innerHTML = `
-      <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
-        <option value="">Seleccionar alumno…</option>
-        ${alumnos.map(a => `<option value="${a.id}" data-alumno-id="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
-      </select>
-      <div class="d-flex align-items-center gap-1 flex-shrink-0">
-        <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
-        <span class="text-muted small">–</span>
-        <input type="time" class="form-control form-control-sm slot-hora-fin" style="width:110px;" required title="Hora fin">
-      </div>
-      <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
-        <i class="bi bi-x-circle-fill fs-5"></i>
-      </button>`
-    slotsContainer.appendChild(emptyRow)
+    temp.innerHTML = _renderSlotCardHTML({ hora_inicio: '15:00', hora_fin: '15:30', alumnosIds: [] }, alumnos, alumnosMap)
+    slotsContainer.appendChild(temp.firstElementChild)
     _updateSlotsCount()
   })
 
-  // Auto-generar turnos con duración personalizada según el horario global de la clase
+  // Helper para renderizar los resultados de búsqueda de alumnos en el panel
+  const _renderSearchResultsInPanel = (panel, term = '') => {
+    const resultsContainer = panel.querySelector('.slot-alumno-search-results')
+    if (!resultsContainer) return
+    const card = panel.closest('.slot-card')
+    const assignedIds = new Set(Array.from(card.querySelectorAll('.slot-alumno-pill')).map(p => p.dataset.alumnoId))
+    const alumnos = _options.alumnos || []
+    const normTerm = normalizeText(term)
+
+    const filtered = alumnos.filter(a => {
+      if (!normTerm) return true
+      const n = normalizeText(a.nombre_completo || '')
+      const inst = normalizeText(a.instrumento_principal || '')
+      return n.includes(normTerm) || inst.includes(normTerm)
+    }).slice(0, 30)
+
+    if (filtered.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="small text-muted p-2 text-center">
+          No se encontraron alumnos con "${escapeHTML(term)}"
+        </div>
+      `
+      return
+    }
+
+    resultsContainer.innerHTML = filtered.map(a => {
+      const isAlreadyAssigned = assignedIds.has(a.id)
+      return `
+        <div class="d-flex align-items-center justify-content-between p-1.5 px-2 rounded-2 bg-body border ${isAlreadyAssigned ? 'opacity-50' : ''}">
+          <div class="small text-truncate me-2">
+            <strong class="text-body">${escapeHTML(a.nombre_completo)}</strong>
+            <span class="text-muted small">· ${escapeHTML(a.instrumento_principal || 'General')}</span>
+          </div>
+          <button type="button" class="btn btn-xs ${isAlreadyAssigned ? 'btn-success disabled' : 'btn-primary'} py-0.5 px-2 rounded-pill btn-quick-assign-alumno" data-alumno-id="${a.id}" data-nombre="${escapeHTML(a.nombre_completo)}" data-instrumento="${escapeHTML(a.instrumento_principal || '')}" ${isAlreadyAssigned ? 'disabled' : ''}>
+            ${isAlreadyAssigned ? '<i class="bi bi-check me-1"></i>Asignado' : '<i class="bi bi-plus me-1"></i>Asignar'}
+          </button>
+        </div>
+      `
+    }).join('')
+  }
+
+  // 2. Delegación en slotsContainer
+  slotsContainer?.addEventListener('input', (e) => {
+    // A. Filtrar en el buscador de alumnos del turno
+    const searchInput = e.target.closest('.slot-alumno-search-input')
+    if (searchInput) {
+      const panel = searchInput.closest('.slot-add-alumno-panel')
+      _renderSearchResultsInPanel(panel, searchInput.value)
+    }
+  })
+
+  slotsContainer?.addEventListener('change', (e) => {
+    // B. Recalcular badge de duración al cambiar hora inicio o fin
+    const timeInput = e.target.closest('.slot-hora-inicio, .slot-hora-fin')
+    if (timeInput) {
+      const card = timeInput.closest('.slot-card')
+      const hInicio = card.querySelector('.slot-hora-inicio')?.value
+      const hFin = card.querySelector('.slot-hora-fin')?.value
+      const badge = card.querySelector('.slot-duracion-badge')
+      if (hInicio && hFin && badge) {
+        const dur = Math.max(0, timeToMinutes(hFin) - timeToMinutes(hInicio))
+        badge.textContent = dur > 0 ? `${dur} min` : 'Turno'
+      }
+    }
+  })
+
+  slotsContainer?.addEventListener('click', (e) => {
+    // A. Abrir/Cerrar panel de agregar alumnos
+    const btnToggle = e.target.closest('.btn-toggle-add-alumno')
+    if (btnToggle) {
+      const wrapper = btnToggle.closest('.slot-add-alumno-wrapper')
+      const panel = wrapper.querySelector('.slot-add-alumno-panel')
+      const isVisible = panel.style.display !== 'none'
+      panel.style.display = isVisible ? 'none' : 'block'
+      if (!isVisible) {
+        const searchInput = panel.querySelector('.slot-alumno-search-input')
+        searchInput.value = ''
+        _renderSearchResultsInPanel(panel, '')
+        setTimeout(() => searchInput.focus(), 50)
+      }
+      return
+    }
+
+    const btnClosePanel = e.target.closest('.btn-close-add-panel')
+    if (btnClosePanel) {
+      const panel = btnClosePanel.closest('.slot-add-alumno-panel')
+      panel.style.display = 'none'
+      return
+    }
+
+    // B. Asignar alumno desde el resultado rápido
+    const btnAssign = e.target.closest('.btn-quick-assign-alumno')
+    if (btnAssign) {
+      const alumnoId = btnAssign.dataset.alumnoId
+      const nombre = btnAssign.dataset.nombre || 'Estudiante'
+      const instrumento = btnAssign.dataset.instrumento || ''
+      const card = btnAssign.closest('.slot-card')
+      const alumnosContainer = card.querySelector('.slot-alumnos-container')
+
+      if (alumnosContainer.querySelector(`[data-alumno-id="${alumnoId}"]`)) {
+        AppToast.warning('El alumno ya está asignado a este turno')
+        return
+      }
+
+      const emptyNotice = alumnosContainer.querySelector('.slot-empty-notice')
+      if (emptyNotice) emptyNotice.remove()
+
+      const pill = document.createElement('div')
+      pill.className = 'slot-alumno-pill d-flex align-items-center justify-content-between p-1.5 px-2 rounded-2 bg-body-tertiary border'
+      pill.dataset.alumnoId = alumnoId
+      pill.innerHTML = `
+        <div class="d-flex align-items-center gap-2 text-truncate me-2">
+          <i class="bi bi-person-fill text-primary"></i>
+          <strong class="text-body small text-truncate">${escapeHTML(nombre)}</strong>
+          <span class="text-muted small text-truncate">${instrumento ? `· ${escapeHTML(instrumento)}` : ''}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-alumno-from-slot" title="Quitar alumno de este turno">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+      `
+      alumnosContainer.appendChild(pill)
+      btnAssign.className = 'btn btn-xs btn-success py-0.5 px-2 rounded-pill btn-quick-assign-alumno disabled'
+      btnAssign.disabled = true
+      btnAssign.innerHTML = '<i class="bi bi-check me-1"></i>Asignado'
+      _updateSlotsCount()
+      return
+    }
+
+    // C. Quitar alumno de un turno
+    const btnRemoveAlumno = e.target.closest('.btn-remove-alumno-from-slot')
+    if (btnRemoveAlumno) {
+      const card = btnRemoveAlumno.closest('.slot-card')
+      const alumnosContainer = card.querySelector('.slot-alumnos-container')
+      btnRemoveAlumno.closest('.slot-alumno-pill').remove()
+      
+      if (alumnosContainer.querySelectorAll('.slot-alumno-pill').length === 0) {
+        alumnosContainer.innerHTML = `
+          <div class="slot-empty-notice small text-muted fst-italic p-1.5 px-2 bg-body-tertiary rounded-2 border border-dashed text-center">
+            Sin alumnos asignados a este turno todavía.
+          </div>
+        `
+      }
+
+      const panel = card.querySelector('.slot-add-alumno-panel')
+      if (panel && panel.style.display !== 'none') {
+        const searchInput = panel.querySelector('.slot-alumno-search-input')
+        _renderSearchResultsInPanel(panel, searchInput?.value || '')
+      }
+
+      _updateSlotsCount()
+      return
+    }
+
+    // D. Eliminar turno completo
+    const btnRemoveSlot = e.target.closest('.btn-remove-slot')
+    if (btnRemoveSlot) {
+      const totalCards = slotsContainer.querySelectorAll('.slot-card').length
+      if (totalCards <= 1) {
+        AppToast.warning('Debe haber al menos un turno en una clase rotativa')
+        return
+      }
+      btnRemoveSlot.closest('.slot-card').remove()
+      _updateSlotsCount()
+      return
+    }
+  })
+
+  // 3. Auto-generar franjas de turnos según el horario global
   modalBody.querySelector('#btn-auto-slots')?.addEventListener('click', () => {
     const durationSelect = modalBody.querySelector('#slot-duration-select')
     let durationMin = parseInt(durationSelect?.value || '30', 10)
 
     if (durationSelect?.value === 'custom') {
-      const customVal = prompt('Ingresá la duración de cada turno en minutos (ej: 15, 25, 40, 50):', '30')
+      const customVal = prompt('Ingresá la duración de cada turno en minutos (ej: 15, 20, 30, 45):', '30')
       if (customVal === null) return
       const parsed = parseInt(customVal, 10)
       if (isNaN(parsed) || parsed <= 0) {
@@ -408,17 +711,12 @@ function _attachModalEvents(modalBody, _clase) {
       durationMin = parsed
     }
 
-    const horaFinInputs = modalBody.querySelectorAll('#modal-horarios-container input[type="time"]')
-    let startStr = ''
-    let endStr = ''
-
-    if (horaFinInputs.length >= 2) {
-      startStr = horaFinInputs[0].value
-      endStr   = horaFinInputs[1].value
-    }
+    const firstHorarioRow = modalBody.querySelector('#modal-horarios-container .horario-row')
+    const startStr = firstHorarioRow?.querySelector('[name="horario-hora_inicio"]')?.value
+    const endStr   = firstHorarioRow?.querySelector('[name="horario-hora_fin"]')?.value
 
     if (!startStr || !endStr) {
-      AppToast.warning('Por favor definí primero el horario de inicio y fin en "Horarios y Salones"')
+      AppToast.warning('Por favor definí primero el horario de inicio y fin en "2. Horario & Salón"')
       return
     }
 
@@ -439,74 +737,47 @@ function _attachModalEvents(modalBody, _clase) {
     }
 
     if (turnosGenerados.length === 0) {
-      AppToast.warning(`El horario global de la clase debe durar al menos ${durationMin} minutos`)
+      AppToast.warning(`El horario global debe durar al menos ${durationMin} minutos`)
       return
     }
 
-    const existingRows = Array.from(slotsContainer.querySelectorAll('.slot-row'))
+    const existingCards = Array.from(slotsContainer.querySelectorAll('.slot-card'))
     const alumnos = _options.alumnos || []
+    const alumnosMap = new Map(alumnos.map(a => [a.id, a]))
 
     turnosGenerados.forEach((t, idx) => {
-      let row = existingRows[idx]
-      if (!row) {
-        row = document.createElement('div')
-        row.className = 'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
-        row.innerHTML = `
-          <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
-            <option value="">Seleccionar alumno…</option>
-            ${alumnos.map(a => `<option value="${a.id}" data-alumno-id="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
-          </select>
-          <div class="d-flex align-items-center gap-1 flex-shrink-0">
-            <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
-            <span class="text-muted small">–</span>
-            <input type="time" class="form-control form-control-sm slot-hora-fin" style="width:110px;" required title="Hora fin">
-          </div>
-          <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
-            <i class="bi bi-x-circle-fill fs-5"></i>
-          </button>`
-        slotsContainer.appendChild(row)
+      let card = existingCards[idx]
+      if (!card) {
+        const temp = document.createElement('div')
+        temp.innerHTML = _renderSlotCardHTML({ hora_inicio: t.inicio, hora_fin: t.fin, alumnosIds: [] }, alumnos, alumnosMap)
+        card = temp.firstElementChild
+        slotsContainer.appendChild(card)
+      } else {
+        card.querySelector('.slot-hora-inicio').value = t.inicio
+        card.querySelector('.slot-hora-fin').value = t.fin
+        const badge = card.querySelector('.slot-duracion-badge')
+        if (badge) badge.textContent = `${durationMin} min`
       }
-      row.querySelector('.slot-hora-inicio').value = t.inicio
-      row.querySelector('.slot-hora-fin').value = t.fin
     })
 
     _updateSlotsCount()
-    _sortSlotRows()
     AppToast.success(`Se generaron ${turnosGenerados.length} franjas de ${durationMin} min (${startStr} a ${endStr})`)
   })
 
-  // Función para ordenar turnos en la UI por hora_inicio ascendente
-  const _sortSlotRows = () => {
+  // 4. Ordenar turnos por horario ascendente
+  modalBody.querySelector('#btn-sort-slots')?.addEventListener('click', () => {
     if (!slotsContainer) return
-    const rows = Array.from(slotsContainer.querySelectorAll('.slot-row'))
-    if (rows.length <= 1) return
+    const cards = Array.from(slotsContainer.querySelectorAll('.slot-card'))
+    if (cards.length <= 1) return
 
-    rows.sort((a, b) => {
+    cards.sort((a, b) => {
       const hA = a.querySelector('.slot-hora-inicio')?.value || '23:59'
       const hB = b.querySelector('.slot-hora-inicio')?.value || '23:59'
       return timeToMinutes(hA) - timeToMinutes(hB)
     })
 
-    rows.forEach(r => slotsContainer.appendChild(r))
-  }
-
-  // Evento botón Ordenar turnos
-  modalBody.querySelector('#btn-sort-slots')?.addEventListener('click', () => {
-    _sortSlotRows()
-    AppToast.success('Turnos ordenados por horario ascendente')
-  })
-
-  // Quitar turno (delegado)
-  slotsContainer?.addEventListener('click', e => {
-    if (e.target.closest('.btn-remove-slot')) {
-      const rows = slotsContainer.querySelectorAll('.slot-row')
-      if (rows.length <= 1) {
-        AppToast.warning('Debe haber al menos un turno en una clase rotativa')
-        return
-      }
-      e.target.closest('.slot-row').remove()
-      _updateSlotsCount()
-    }
+    cards.forEach(c => slotsContainer.appendChild(c))
+    AppToast.success('Turnos ordenados por horario')
   })
 
   // ── Alumnos grupal: filtro + contador + seleccionar todos ─────────────────
@@ -517,7 +788,7 @@ function _attachModalEvents(modalBody, _clase) {
   const countDisplay = modalBody.querySelector('#alumnos-selection-count')
 
   const getVisibleItems = () => {
-    return Array.from(listItems).filter(item => item.style.display !== 'none')
+    return Array.from(listItems).filter(item => !item.classList.contains('d-none'))
   }
 
   const updateSelectAllState = () => {
@@ -552,14 +823,29 @@ function _attachModalEvents(modalBody, _clase) {
   }
 
   const applyAlumnoFilters = () => {
-    const term = normalizeText(searchInput?.value || '')
+    const rawTerm = searchInput?.value || ''
+    const term = normalizeText(rawTerm)
+
+    let visibleInscritos = 0
+    let visibleDisponibles = 0
 
     listItems.forEach(item => {
       const nombre = item.dataset.nombre || ''
       const instrumento = item.dataset.instrumento || ''
-      const coincideBusqueda = alumnoCoincideBusqueda({ nombre, instrumento }, term)
-      item.style.display = coincideBusqueda ? '' : 'none'
+      const matches = !term || nombre.includes(term) || instrumento.includes(term)
+      
+      item.classList.toggle('d-none', !matches)
+      if (matches) {
+        if (item.dataset.section === 'inscritos') visibleInscritos++
+        else visibleDisponibles++
+      }
     })
+
+    const headerInscritos = modalBody.querySelector('#header-seccion-inscritos')
+    const headerDisponibles = modalBody.querySelector('#header-seccion-disponibles')
+    if (headerInscritos) headerInscritos.classList.toggle('d-none', visibleInscritos === 0)
+    if (headerDisponibles) headerDisponibles.classList.toggle('d-none', visibleDisponibles === 0)
+
     updateSelectAllState()
   }
 
@@ -570,8 +856,6 @@ function _attachModalEvents(modalBody, _clase) {
     const visibleItems = getVisibleItems()
     const visibleChecks = visibleItems.map(item => item.querySelector('input[type="checkbox"]')).filter(Boolean)
     
-    // Regla: Si hay AL MENOS 1 alumno marcado de los visibles -> desmarcar todos los visibles.
-    // Si NINGUNO está marcado -> marcar todos los visibles.
     const anyChecked = visibleChecks.some(c => c.checked)
     const shouldCheck = !anyChecked
 
@@ -591,27 +875,27 @@ async function _handleSave(modalBody, originalClase) {
   const isEdicion = !!originalClase
 
   const getFormData = () => {
-    const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id').value
-    const tieneSuplente = modalBody.querySelector('#modal-tiene_suplente').checked
+    const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id')?.value || ''
+    const tieneSuplente = modalBody.querySelector('#modal-tiene_suplente')?.checked || false
 
     const data = {
-      nombre: modalBody.querySelector('#modal-nombre').value.trim(),
-      programa_id: modalBody.querySelector('#modal-programa_id').value,
-      maestro_principal_id: modalBody.querySelector('#modal-maestro_id').value,
-      maestro_suplente_id: tieneSuplente ? maestroSuplenteValue : null,
+      nombre: modalBody.querySelector('#modal-nombre')?.value?.trim() || '',
+      programa_id: modalBody.querySelector('#modal-programa_id')?.value || null,
+      maestro_principal_id: modalBody.querySelector('#modal-maestro_id')?.value || null,
+      maestro_suplente_id: tieneSuplente && maestroSuplenteValue ? maestroSuplenteValue : null,
       tiene_suplente: tieneSuplente,
-      instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
-      capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
-      estado: modalBody.querySelector('#modal-estado').value,
+      instrumento: modalBody.querySelector('#modal-instrumento')?.value?.trim() || '',
+      capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos')?.value) || 20,
+      estado: modalBody.querySelector('#modal-estado')?.value || 'activa',
       tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
-      descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
+      descripcion: modalBody.querySelector('#modal-notas_pedagogicas')?.value?.trim() || '',
       ruta_id: modalBody.querySelector('#modal-ruta_id')?.value || null,
       horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
-        dia: row.querySelector('[name="horario-dia"]').value,
-        hora_inicio: row.querySelector('[name="horario-hora_inicio"]').value,
-        hora_fin: row.querySelector('[name="horario-hora_fin"]').value,
-        salon_id: row.querySelector('[name="horario-salon_id"]').value || null,
-      }))
+        dia: row.querySelector('[name="horario-dia"]')?.value,
+        hora_inicio: row.querySelector('[name="horario-hora_inicio"]')?.value,
+        hora_fin: row.querySelector('[name="horario-hora_fin"]')?.value,
+        salon_id: row.querySelector('[name="horario-salon_id"]')?.value || null,
+      })).filter(h => h.dia && h.hora_inicio && h.hora_fin)
     }
     return data
   }
@@ -626,20 +910,35 @@ async function _handleSave(modalBody, originalClase) {
   }
 
   // ── Helpers para leer slots del panel rotativa ───────────────────────────
-  const _readSlots = () =>
-    Array.from(modalBody.querySelectorAll('#slots-container .slot-row')).map(row => ({
-      alumno_id:   row.querySelector('.slot-alumno-select').value,
-      hora_inicio: row.querySelector('.slot-hora-inicio').value,
-      hora_fin:    row.querySelector('.slot-hora-fin').value,
-    })).filter(s => s.alumno_id)
-      .sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
+  const _readSlots = () => {
+    const slots = []
+    modalBody.querySelectorAll('#slots-container .slot-card').forEach(card => {
+      const horaInicio = card.querySelector('.slot-hora-inicio')?.value || ''
+      const horaFin = card.querySelector('.slot-hora-fin')?.value || ''
+      if (!horaInicio || !horaFin) return
+
+      const alumnoPills = card.querySelectorAll('.slot-alumno-pill')
+      alumnoPills.forEach(pill => {
+        const alumnoId = pill.dataset.alumnoId
+        if (alumnoId) {
+          slots.push({
+            alumno_id: alumnoId,
+            hora_inicio: horaInicio,
+            hora_fin: horaFin,
+          })
+        }
+      })
+    })
+    return slots.sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
+  }
 
   const _syncGrupal = async (claseId) => {
     const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
-    const currentIds = currentEnrolled.map(i => i.alumno_id)
+    const currentIds = (currentEnrolled || []).map(i => i.alumno_id)
     const toAdd    = newIds.filter(id => !currentIds.includes(id))
     const toRemove = currentIds.filter(id => !newIds.includes(id))
+    
     await Promise.all([
       ...toAdd.map(aid    => inscribirAlumno(claseId, aid)),
       ...toRemove.map(aid => desinscribirAlumno(claseId, aid)),
@@ -650,19 +949,16 @@ async function _handleSave(modalBody, originalClase) {
     const slots = _readSlots()
     if (slots.length === 0) { AppToast.warning('Agregá al menos un turno'); return false }
 
-    // Validate all slots have times
     const incomplete = slots.find(s => !s.hora_inicio || !s.hora_fin)
     if (incomplete) { AppToast.error('Todos los turnos deben tener hora de inicio y fin'); return false }
 
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
-    const currentIds = currentEnrolled.map(i => i.alumno_id)
+    const currentIds = (currentEnrolled || []).map(i => i.alumno_id)
     const newIds     = slots.map(s => s.alumno_id)
 
-    // Remove alumnos no longer in the list
     const toRemove = currentIds.filter(id => !newIds.includes(id))
     await Promise.all(toRemove.map(aid => desinscribirAlumno(claseId, aid)))
 
-    // Upsert each slot: update time if already enrolled, insert if new
     await Promise.all(slots.map(s =>
       currentIds.includes(s.alumno_id)
         ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
@@ -671,40 +967,10 @@ async function _handleSave(modalBody, originalClase) {
     return true
   }
 
-  // ── Verificación de Solapes/Conflictos ──────────────────────────────────
-  if (!modalBody.dataset.overrideConflicts) {
-    const selectedAlumnoIds = formData.tipo_clase === 'rotativa'
-      ? _readSlots().map(s => s.alumno_id)
-      : Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
-
-    const conflictos = await verificarSolapamientoCompleto({
-      claseId: isEdicion ? originalClase.id : null,
-      maestroId: formData.maestro_principal_id,
-      horarios: formData.horarios,
-      alumnosIds: selectedAlumnoIds
-    })
-
-    if (conflictos.length > 0) {
-      return new Promise((resolve) => {
-        openClaseConflictModal({
-          conflictos,
-          onConfirm: async () => {
-            modalBody.dataset.overrideConflicts = 'true'
-            const saved = await _handleSave(modalBody, originalClase)
-            if (saved) {
-              await resolverConflictosClases(conflictos, formData.nombre)
-            }
-            resolve(saved)
-          }
-        })
-      })
-    }
-  }
-
   try {
     let resultClase
     if (isEdicion) {
-      resultClase = await actualizarClase(originalClase.id, formData)
+      resultClase = await actualizarClase(originalClase.id, formData, true)
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
@@ -712,7 +978,7 @@ async function _handleSave(modalBody, originalClase) {
         await _syncGrupal(resultClase.id)
       }
     } else {
-      resultClase = await crearClase(formData)
+      resultClase = await crearClase(formData, true)
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
@@ -724,16 +990,13 @@ async function _handleSave(modalBody, originalClase) {
       }
     }
 
-    AppToast.success(isEdicion ? 'Clase actualizada' : 'Clase creada')
-    if (_options.onSuccess) _options.onSuccess()
+    AppToast.success(isEdicion ? 'Clase actualizada con éxito' : 'Clase creada con éxito')
+    if (_options.onSuccess) await _options.onSuccess()
+    if (_options.onSaved) await _options.onSaved()
     return true
   } catch (err) {
-    if (err.isConflict) {
-      AppToast.warning(`Conflicto detected: ${err.message}`)
-      // Here we could implement the "Force" or "Reubicar" UI if needed
-    } else {
-      AppToast.error(err.message)
-    }
+    console.error('[claseModal] Error al guardar clase:', err)
+    AppToast.error(err.message || 'Error al procesar el guardado de la clase')
     return false
   }
 }
@@ -803,44 +1066,67 @@ function _renderHorariosContainer(horarios = []) {
 
 function _getAlumnosSelectorHTML(selectedIds = []) {
   const selectedSet = new Set(selectedIds || [])
-  const alumnos = [...(_options.alumnos || [])].sort((a, b) => {
-    const aSelected = selectedSet.has(a.id)
-    const bSelected = selectedSet.has(b.id)
-    if (aSelected !== bSelected) return aSelected ? -1 : 1
+  const todosAlumnos = _options.alumnos || []
 
-    const an = (a.nombre_completo || '').toString().toLocaleLowerCase('es')
-    const bn = (b.nombre_completo || '').toString().toLocaleLowerCase('es')
-    const nameCmp = an.localeCompare(bn, 'es')
-    if (nameCmp !== 0) return nameCmp
+  const inscritos = todosAlumnos.filter(a => selectedSet.has(a.id))
+  const noInscritos = todosAlumnos.filter(a => !selectedSet.has(a.id))
 
-    return String(a.id).localeCompare(String(b.id), 'es')
-  })
   return `
     <div class="alumnos-selector-container">
       <div class="d-flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
-        <div class="input-group input-group-sm flex-grow-1" style="min-width: 200px;">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" class="form-control" id="search-modal-alumnos" placeholder="Filtrar por nombre o instrumento...">
+        <div class="input-group input-group-sm flex-grow-1" style="min-width: 180px;">
+          <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" class="form-control" id="search-modal-alumnos" placeholder="Buscar por nombre o instrumento...">
         </div>
-        <div class="form-check text-nowrap mb-0 flex-shrink-0" style="font-size: 0.85rem;">
+        <div class="form-check text-nowrap mb-0 flex-shrink-0" style="font-size: 0.8rem;">
           <input class="form-check-input cursor-pointer" type="checkbox" id="chk-select-all-alumnos" title="Marcar / Desmarcar alumnos visibles">
           <label class="form-check-label cursor-pointer user-select-none text-muted fw-semibold" for="chk-select-all-alumnos">
             Marcar visibles
           </label>
         </div>
       </div>
-      <div class="alumnos-list border rounded bg-body-tertiary" style="max-height: 200px; overflow-y: auto; padding: 8px;">
-        ${alumnos.map(a => `
-          <div class="form-check alumno-check-item" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}">
-            <input class="form-check-input" type="checkbox" value="${a.id}" id="chk-a-${a.id}" ${selectedIds.includes(a.id) ? 'checked' : ''}>
-            <label class="form-check-label small w-100 cursor-pointer" for="chk-a-${a.id}">
-              ${escapeHTML(a.nombre_completo)} <span class="text-muted">(${escapeHTML(a.instrumento_principal || 'N/A')})</span>
-              ${rendimientoBadgeHTML(a)}
-            </label>
-          </div>
-        `).join('')}
+
+      <!-- Resumen / Contador de Selección -->
+      <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+        <small class="fw-bold text-primary" id="alumnos-selection-count">${selectedSet.size} seleccionados</small>
+        <small class="text-muted">${todosAlumnos.length} en el padrón</small>
       </div>
-      <div class="text-end mt-1"><small class="text-muted" id="alumnos-selection-count">0 seleccionados</small></div>
+
+      <div class="alumnos-list border rounded-3 bg-body-tertiary p-2" style="max-height: calc(92vh - 310px); overflow-y: auto;">
+        
+        ${inscritos.length > 0 ? `
+          <div class="small fw-bold text-success text-uppercase mb-1.5 px-1 d-flex align-items-center gap-1" id="header-seccion-inscritos" style="font-size:0.68rem;">
+            <i class="bi bi-check-circle-fill"></i> Inscritos en esta Clase (${inscritos.length})
+          </div>
+          <div class="d-flex flex-column gap-1 mb-3">
+            ${inscritos.map(a => `
+              <div class="form-check alumno-check-item p-2 rounded-2 bg-success-subtle bg-opacity-25 border border-success-subtle d-flex align-items-center gap-2" data-section="inscritos" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}">
+                <input class="form-check-input ms-0 flex-shrink-0" type="checkbox" value="${a.id}" id="chk-a-${a.id}" checked>
+                <label class="form-check-label small w-100 cursor-pointer mb-0" for="chk-a-${a.id}">
+                  <strong class="text-body">${escapeHTML(a.nombre_completo)}</strong>
+                  <span class="text-muted small">· ${escapeHTML(a.instrumento_principal || 'General')}</span>
+                </label>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="small fw-bold text-muted text-uppercase mb-1.5 px-1 d-flex align-items-center gap-1" id="header-seccion-disponibles" style="font-size:0.68rem;">
+          <i class="bi bi-person-plus"></i> Alumnos Disponibles (${noInscritos.length})
+        </div>
+        <div class="d-flex flex-column gap-1">
+          ${noInscritos.map(a => `
+            <div class="form-check alumno-check-item p-2 rounded-2 bg-body border d-flex align-items-center gap-2" data-section="disponibles" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}">
+              <input class="form-check-input ms-0 flex-shrink-0" type="checkbox" value="${a.id}" id="chk-a-${a.id}">
+              <label class="form-check-label small w-100 cursor-pointer mb-0" for="chk-a-${a.id}">
+                <span class="text-body fw-semibold">${escapeHTML(a.nombre_completo)}</span>
+                <span class="text-muted small">· ${escapeHTML(a.instrumento_principal || 'General')}</span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+
+      </div>
     </div>
   `
 }

@@ -16,6 +16,7 @@ const navGroups = [
     label: 'Académico',
     icon: 'bi-easel',
     items: [
+      { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
       { id: 'programas', label: 'Programas', icon: 'bi-book' },
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
@@ -67,7 +68,7 @@ bootAdminPortal({
   navGroups,
   registrars: allRegistrars,
   allowedRoles: ['admin'],
-  defaultRoute: 'clases',
+  defaultRoute: 'clases-hoy',
   hermesDept: 'ACM',
 }).catch((err) => {
   console.error('[acm] boot falló:', err)

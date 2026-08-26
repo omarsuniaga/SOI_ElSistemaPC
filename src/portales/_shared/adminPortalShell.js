@@ -1,3 +1,4 @@
+import { abrirModalConmutadorPortales } from './portalHubModal.js'
 /**
  * adminPortalShell.js — Shell parametrizado para portales departamentales (ACM, ADM, ...).
  *
@@ -30,6 +31,7 @@ import { router } from '../../core/router/router.js'
 import { useAuth } from '../../modules/auth/hooks/useAuth.js'
 import { registerRoutesAuth } from '../../modules/auth/index.js'
 import { renderTareasView } from '../../modules/hermes/views/tareasView.js'
+import { renderSeguimientoTareasView } from '../../modules/hermes/views/seguimientoTareasView.js'
 import { renderProcedimientosView } from '../../modules/hermes/views/procedimientosView.js'
 import { renderCasoDetalleView } from '../../modules/hermes/views/casoDetalleView.js'
 import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirectorView.js'
@@ -88,6 +90,9 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon"><i class="bi ${profile.brandIcon}"></i></div>
       <span class="sidebar-brand-text">${profile.brandText}</span>
+      <button class="btn btn-sm btn-outline-light rounded-pill ms-auto me-1 py-0 px-2" id="sidebarBtnHub" title="Hub de Portales Departamentales">
+        <i class="bi bi-grid-3x3-gap"></i>
+      </button>
     </div>
     <nav class="sidebar-nav">
       ${profile.navGroups
@@ -189,6 +194,15 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     )
   })
 
+  sidebar.querySelector('#sidebarBtnHub')?.addEventListener(
+    'click',
+    (e) => {
+      e.stopPropagation()
+      abrirModalConmutadorPortales()
+    },
+    { signal },
+  )
+
   sidebar.querySelector('#sidebarBtnTheme').addEventListener(
     'click',
     () => {
@@ -264,7 +278,15 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
       const route = e.detail
       syncBottomNavState(route)
       sidebar.querySelectorAll('.nav-item-btn').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.route === route)
+        const isActive = btn.dataset.route === route
+        btn.classList.toggle('active', isActive)
+        if (isActive) {
+          const parentGroup = btn.closest('.nav-group')
+          if (parentGroup && !parentGroup.classList.contains('expanded')) {
+            sidebar.querySelectorAll('.nav-group').forEach((g) => g.classList.remove('expanded'))
+            parentGroup.classList.add('expanded')
+          }
+        }
       })
     },
     { signal },
@@ -340,6 +362,9 @@ export async function bootAdminPortal(profile) {
   )
   router.register('hermes-caso', (mount, params = {}) =>
     renderCasoDetalleView(mount, params),
+  )
+  router.register('seguimiento-tareas', (mount) =>
+    renderSeguimientoTareasView(mount, { departamento: profile.hermesDept }),
   )
   router.register('cierre-academico', (mount) => renderCierreAcademicoView(mount))
 

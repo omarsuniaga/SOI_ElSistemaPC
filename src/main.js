@@ -58,6 +58,7 @@ import { reportCatalogAudit } from './core/catalogAudit.js'
 import { renderCatalogDiagnosticsView } from './core/catalogDiagnosticsView.js'
 import { governanceMatrixRoute } from './core/portalModuleMatrix.js'
 import { renderPortalModuleMatrixView } from './core/portalModuleMatrixView.js'
+import { abrirModalConmutadorPortales } from './portales/_shared/portalHubModal.js'
 
 // Auth
 import { useAuth } from './modules/auth/hooks/useAuth.js'
@@ -367,6 +368,22 @@ function toggleTheme() {
 // ============================================================================
 const NAV_GROUPS = [
   {
+    id: 'portales',
+    label: 'Portales Departamentales',
+    icon: 'bi-grid-fill',
+    items: [
+      { id: 'portal-adm', label: 'Administración (ADM)', icon: 'bi-building-gear', href: '/adm.html' },
+      { id: 'portal-fin', label: 'Finanzas & Caja (FIN)', icon: 'bi-bank2', href: '/fin.html' },
+      { id: 'portal-acm', label: 'Academia & Malla (ACM)', icon: 'bi-mortarboard', href: '/acm.html' },
+      { id: 'portal-lut', label: 'Lutería & Taller (LUT)', icon: 'bi-tools', href: '/lut.html' },
+      { id: 'portal-inv', label: 'Inventario & Stock (INV)', icon: 'bi-box-seam', href: '/inventario.html' },
+      { id: 'portal-cal', label: 'Calendario & Citas (CAL)', icon: 'bi-calendar3', href: '/calendario.html' },
+      { id: 'portal-com', label: 'Comunicaciones (COM)', icon: 'bi-broadcast', href: '/com.html' },
+      { id: 'portal-mae', label: 'Portal Maestros (MAE)', icon: 'bi-person-video3', href: '/index.html' },
+      { id: 'portal-sim', label: 'Simulador de Reglas (SIM)', icon: 'bi-cpu', href: '/simulador.html' },
+    ],
+  },
+  {
     id: 'direccion',
     label: 'Dirección & Hermes',
     icon: 'bi-bullseye',
@@ -540,6 +557,7 @@ function renderNavbar(_container, isAuthenticated = false) {
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon"><i class="bi bi-mortarboard-fill"></i></div>
       <span class="sidebar-brand-text">SOI</span>
+      <button class="btn btn-sm btn-outline-light rounded-pill ms-auto me-1 py-0 px-2" id="sidebarBtnHub" title="Hub de Portales Departamentales"><i class="bi bi-grid-3x3-gap"></i></button>
       ${isDemo ? '<span class="badge bg-warning text-dark ms-2" style="font-size: 0.6rem;">DEMO</span>' : ''}
     </div>
     <nav class="sidebar-nav">
@@ -555,7 +573,7 @@ function renderNavbar(_container, isAuthenticated = false) {
             ${g.items
               .map(
                 (item) => `
-              <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}">
+              <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}" data-href="${item.href || ''}">
                 <i class="bi ${item.icon}"></i>
                 <span>${item.label}</span>
                 ${item.id === 'admin-notificaciones' ? '<span class="notif-badge" id="sidebar-notif-badge" style="display:none"></span>' : ''}
@@ -629,12 +647,19 @@ function renderNavbar(_container, isAuthenticated = false) {
 
   sidebar.querySelectorAll('.nav-item-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.route === 'audiciones') {
+      if (btn.dataset.href) {
+        window.location.href = btn.dataset.href
+      } else if (btn.dataset.route === 'audiciones') {
         window.location.href = '/audiciones'
       } else {
         router.navigate(btn.dataset.route)
       }
     })
+  })
+
+  sidebar.querySelector('#sidebarBtnHub')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    abrirModalConmutadorPortales()
   })
 
   sidebar.querySelector('#sidebarBtnHelp').addEventListener('click', () => {
@@ -663,7 +688,7 @@ function renderNavbar(_container, isAuthenticated = false) {
     document.getElementById('sheetItems').innerHTML = group.items
       .map(
         (item) => `
-      <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}">
+      <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}" data-href="${item.href || ''}">
         <span class="sheet-item-icon"><i class="bi ${item.icon}"></i></span>
         <span class="sheet-item-text">${item.label}</span>
       </button>

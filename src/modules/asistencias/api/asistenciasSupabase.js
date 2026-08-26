@@ -629,16 +629,71 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     }
 
     sesiones = sesiones.filter((s) => s.borrador === false)
+
+    // Cargar clases y horarios para resolución precisa de cátedra y horas
+    const [clasesMetaRes, horariosMetaRes] = await Promise.all([
+      supabase.from('clases').select('*'),
+      supabase.from('clase_horarios').select('*'),
+    ])
+
+    const clasesMetaMap = new Map()
+    for (const cm of clasesMetaRes.data || []) {
+      clasesMetaMap.set(cm.id, cm)
+    }
+
+    const normalizeDayText = (t) => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const DIAS_KEYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+    
+    const horariosMetaMap = new Map()
+    const horariosPorClaseListMap = new Map()
+
+    for (const h of horariosMetaRes.data || []) {
+      if (h.clase_id) {
+        const diaNorm = normalizeDayText(h.dia || h.dia_semana || '')
+        if (diaNorm) {
+          horariosMetaMap.set(`${h.clase_id}_${diaNorm}`, h)
+        }
+        
+        if (!horariosPorClaseListMap.has(h.clase_id)) {
+          horariosPorClaseListMap.set(h.clase_id, [])
+        }
+        horariosPorClaseListMap.get(h.clase_id).push(h)
+      }
+    }
+
     const timelineByDate = {}
 
     if (sesiones && sesiones.length > 0) {
       sesiones.forEach((row) => {
+        const metaClase = clasesMetaMap.get(row.clase_id) || {}
+        let horaIni = row.hora_inicio
+        let horaFin = row.hora_fin
+
+        if (!horaIni || horaIni === '--:--' || horaIni === 'null' || horaIni === 'undefined') {
+          const dObj = new Date(row.fecha + 'T12:00:00')
+          const diaKey = DIAS_KEYS[dObj.getDay()] || ''
+          
+          const fallbackHorario = 
+            horariosMetaMap.get(`${row.clase_id}_${diaKey}`) || 
+            (horariosPorClaseListMap.get(row.clase_id) || [])[0] || 
+            null
+
+          if (fallbackHorario) {
+            horaIni = fallbackHorario.hora_inicio || metaClase.hora_inicio || null
+            horaFin = fallbackHorario.hora_fin || fallbackHorario.hora_termino || metaClase.hora_fin || null
+          } else if (metaClase.hora_inicio) {
+            horaIni = metaClase.hora_inicio
+            horaFin = metaClase.hora_fin || null
+          }
+        }
+
         const clase = {
           clase_id: row.clase_id,
-          clase_nombre: row.nombre_clase,
+          clase_nombre: row.nombre_clase || metaClase.nombre || 'Clase',
+          instrumento: metaClase.instrumento || 'General',
           fecha: row.fecha,
-          hora_inicio: row.hora_inicio,
-          hora_fin: row.hora_fin,
+          hora_inicio: horaIni || null,
+          hora_fin: horaFin || null,
           maestro_nombre: row.maestro_principal || 'Sin asignar',
           maestro_auxiliar_nombre: row.maestro_auxiliar || null,
           observacion_clase: row.observacion_clase || null,

@@ -1,18 +1,7 @@
 -- ============================================================================
--- Migration: 20260805000000_fusionar_alumnos_duplicados
--- Objetivo: RPC transaccional que fusiona dos alumnos duplicados en uno solo.
---
--- Flujo atómico (dentro de una sola transacción, SECURITY DEFINER):
---   1. Valida que ambos ids existan y sean distintos.
---   2. Actualiza el registro principal con los datos fusionados.
---   3. Migra TODOS los datos hijos (inscripciones, asistencias, progresos,
---      evaluaciones, tareas, etc.) desde el obsoleto al principal, reasignando
---      la columna alumno_id/student_id de cada tabla hija de forma dinámica.
---   4. Adopta la familia del obsoleto si el principal no tiene una.
---   5. Elimina el registro obsoleto SOLO después de confirmar 2 y 3.
---
--- Si cualquier paso falla, la transacción entera se revierte: jamás queda el
--- principal a medias ni el obsoleto huérfano con datos sin migrar.
+-- Migration: 20260826000000_fix_fusionar_alumnos_views
+-- Objetivo: Actualizar fn_fusionar_alumnos_duplicados para excluir vistas (VIEW)
+--           del bucle de reasignación dinámica y solo operar sobre BASE TABLE.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.fn_fusionar_alumnos_duplicados(
@@ -57,8 +46,6 @@ BEGIN
   END IF;
 
   -- ── 1. Actualizar el principal con los datos fusionados ──────────────────
-  -- Solo se escriben las claves enviadas por el cliente (ya resueltas). Se
-  -- borran las claves reservadas que nunca deben escribirse directo.
   UPDATE public.alumnos
     SET
       nombre_completo      = COALESCE((p_datos_fusion->>'nombre_completo')::text,      v_principal.nombre_completo),
@@ -101,14 +88,6 @@ BEGIN
   END IF;
 
   -- ── 2. Migrar datos hijos: reasignar cada columna que apunta a alumnos ──
-  -- Migración dinámica: se descubren todas las tablas con una columna
-  -- `alumno_id` o `student_id` (excepto la tabla alumnos y las ya tratadas)
-  -- y se reasignan las filas del obsoleto hacia el principal. Esto cubre
-  -- inscripciones, asistencias, progresos, evaluaciones, tareas, etc. sin
-  -- hardcodear cada tabla (robusto ante tablas hijas nuevas).
-  --
-  -- Primero: inscripciones (alumnos_clases) — caso especial con posible
-  -- constraint único (alumno_id, clase_id).
   UPDATE public.alumnos_clases ac
     SET alumno_id = p_principal_id
     WHERE ac.alumno_id = p_obsoleto_id
@@ -117,12 +96,10 @@ BEGIN
         WHERE x.alumno_id = p_principal_id AND x.clase_id = ac.clase_id
       );
 
-  -- Las inscripciones del obsoleto que YA existen en el principal se descartan
   DELETE FROM public.alumnos_clases
     WHERE alumno_id = p_obsoleto_id;
 
-  -- Luego: resto de tablas hijas con columna alumno_id o student_id
-  -- Solo se procesan tablas base (BASE TABLE), excluyendo vistas como vw_alertas_activas
+  -- Bucle dinámico SOLO sobre BASE TABLE (excluyendo vistas como vw_alertas_activas)
   FOR v_rec IN
     SELECT c.table_name, c.column_name
     FROM information_schema.columns c
@@ -146,16 +123,11 @@ BEGIN
       CONTINUE;
     END IF;
 
-    -- Reasignación best-effort por tabla: si una tabla tiene un constraint
-    -- único que choca (ej. rachas cuyo PK es alumno_id), primero se descartan
-    -- las filas que ya tengan su par en el principal.
     EXECUTE format(
       'UPDATE public.%I SET %I = $1 WHERE %I = $2 AND NOT EXISTS (SELECT 1 FROM public.%I x WHERE x.%I = $1)',
       v_tabla, v_col, v_col, v_tabla, v_col
     ) USING p_principal_id, p_obsoleto_id;
 
-    -- Filas restantes del obsoleto: si aún quedan es porque ya existía su par
-    -- en el principal (duplicado de constraint) → se eliminan.
     EXECUTE format('SELECT count(*) FROM public.%I WHERE %I = $1', v_tabla, v_col)
       INTO v_despues USING p_obsoleto_id;
 

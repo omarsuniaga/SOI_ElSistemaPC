@@ -51,9 +51,9 @@ ln -s "$repo_root/node_modules" "$temp_repo/node_modules"
 # workers exit without a summary on this OneDrive mount. Keep it available for
 # inspection, but disable auto-loading in the isolated workspace. CLI options
 # remain authoritative; DOM suites should pass `--environment=jsdom`.
-if [[ -f "$temp_repo/vitest.config.js" ]]; then
-  mv "$temp_repo/vitest.config.js" "$temp_repo/vitest.config.repo.js"
-fi
+# Keep Vitest's project configuration available so suites retain their
+# jsdom/globals/setup/include contract. Only Vite's app config is disabled,
+# since importing it through the OneDrive-linked dependency tree is unstable.
 if [[ -f "$temp_repo/vite.config.js" ]]; then
   mv "$temp_repo/vite.config.js" "$temp_repo/vite.config.repo.js"
 fi
@@ -61,8 +61,17 @@ fi
 cd "$temp_repo"
 result_log="$temp_root/vitest-output.log"
 set -o pipefail
-"$temp_repo/node_modules/.bin/vitest" run \
-  --configLoader runner \
+vitest_args=(run --configLoader runner)
+if [[ " $* " != *" --config "* && " $* " != *"--config="* ]]; then
+  vitest_args+=(--config vitest.config.js)
+fi
+if [[ " $* " != *" --pool "* && " $* " != *"--pool="* ]]; then
+  vitest_args+=(--pool forks)
+fi
+if [[ " $* " != *" --maxWorkers "* && " $* " != *"--maxWorkers="* ]]; then
+  vitest_args+=(--maxWorkers 1)
+fi
+"$temp_repo/node_modules/.bin/vitest" "${vitest_args[@]}" \
   "$@" 2>&1 | tee "$result_log"
 status=$?
 

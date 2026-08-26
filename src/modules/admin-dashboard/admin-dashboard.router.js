@@ -69,4 +69,58 @@ export function registerRoutesAdminDashboard() {
       container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar tendencias: ${error.message}</p></div>`
     }
   })
+
+  // Resumen del Mes - Reporte ejecutivo mensual
+  router.register('reporte-mensual', async (container) => {
+    try {
+      container.innerHTML = `<div id="reporte-mensual-container"></div>`
+      const { default: ReporteMensualView } = await import('./views/reporteMensualView.js')
+      const view = new ReporteMensualView('reporte-mensual-container')
+      view.init()
+    } catch (error) {
+      console.error('[reporte-mensual] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar el resumen mensual: ${error.message}</p></div>`
+    }
+  })
+
+  // Informe del Período - Reporte ejecutivo semestral
+  router.register('reporte-semestral', async (container) => {
+    try {
+      container.innerHTML = `<div id="reporte-semestral-container"></div>`
+      const { default: ReporteSemestralView } = await import('./views/reporteSemestralView.js')
+      const view = new ReporteSemestralView('reporte-semestral-container')
+      view.init()
+    } catch (error) {
+      console.error('[reporte-semestral] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar el informe del período: ${error.message}</p></div>`
+    }
+  })
+
+  // Análisis Pedagógico y Contenido Curricular (Semanal / Mensual / Semestral)
+  router.register('analisis-contenido', async (container) => {
+    try {
+      container.innerHTML = `<div id="analisis-contenido-container"></div>`
+      const { default: AnalisisContenidoView } = await import('./views/analisisContenidoView.js')
+      const view = new AnalisisContenidoView('analisis-contenido-container')
+      view.init()
+    } catch (error) {
+      console.error('[analisis-contenido] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar el análisis pedagógico: ${error.message}</p></div>`
+    }
+  })
+
+  // Project Manager - Dashboard de macro-eventos WBS
+  router.register('proyecto-manager', async (container) => {
+    try {
+      container.innerHTML = `<div id="proyecto-manager-container" class="p-3"></div>`
+      const { renderProyectoManagerView } = await import('./views/proyectoManagerView.js')
+      renderProyectoManagerView('proyecto-manager-container')
+    } catch (error) {
+      console.error('[proyecto-manager] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder p-4 text-center text-muted">
+        <i class="bi bi-kanban fs-3 d-block mb-2"></i>
+        <p>Error al cargar el Project Manager: ${error.message}</p>
+      </div>`
+    }
+  })
 }

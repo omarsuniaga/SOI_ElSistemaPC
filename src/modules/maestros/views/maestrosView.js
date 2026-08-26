@@ -211,57 +211,137 @@ function attachEspecialidadesEvents(modalBody, onChange) {
 }
 
 function renderContent(container) {
-  const actionsHtml = `
-    <button class="btn-help-trigger me-1" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
-      <i class="bi bi-question"></i>
-    </button>
-    <button class="btn btn-outline-success btn-sm d-flex align-items-center gap-1" id="btnExportarCSV" title="Exportar listado a CSV">
-      <i class="bi bi-file-earmark-spreadsheet"></i> <span class="d-none d-sm-inline">CSV</span>
-    </button>
-    <button class="btn btn-premium-action" id="btnAgregarMaestro">
-      <i class="bi bi-plus-lg me-1"></i>Nuevo Maestro
-    </button>
-  `
+  const totalMaestros = state.maestrosOriginales.length
+  const totalActivos = state.maestrosOriginales.filter(a => a.is_active ?? true).length
+  const totalConInstrumento = state.maestrosOriginales.filter(a => !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado').length
+  const totalConWhatsapp = state.maestrosOriginales.filter(a => !!a.telefono && a.telefono.trim() !== '').length
 
-  const filtersHtml = `
-    <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
-      <i class="bi bi-search search-icon-muted"></i>
-      <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, cédula o instrumento..." id="buscar" autocomplete="off">
-    </div>
-
-    <div class="premium-select-container">
-      <i class="bi bi-funnel select-icon-muted"></i>
-      <select class="form-select premium-filter-select" id="filtroEstado">
-        <option value="todos">Todos los estados</option>
-        <option value="activo">Activos</option>
-        <option value="inactivo">Inactivos</option>
-      </select>
-    </div>
-
-    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnLimpiarFiltrosMaestros" type="button" title="Limpiar filtros">
-      <i class="bi bi-x-circle"></i> <span>Limpiar</span>
-    </button>
-  `
+  // Obtener lista única de instrumentos para el filtro
+  const instrumentosList = Array.from(new Set(
+    state.maestrosOriginales
+      .map(m => m.instrumento?.trim())
+      .filter(Boolean)
+  )).sort()
 
   container.innerHTML = `
     <div class="page-container">
-      ${renderPageHeader({
-        icon: 'bi-person-check',
-        title: 'Maestros',
-        subtitle: `${state.maestros.length} maestros registrados`,
-        actionsHtml,
-      })}
+      
+      <!-- Header & Toolbar Unificada V2 -->
+      <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
+        
+        <!-- Fila 1: Título, Badges Informativos y Botones de Acción -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-body-tertiary" style="gap: 0.85rem;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="p-2 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-badge-fill fs-5"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Plantel de Maestros</h5>
+              <small class="text-muted d-block" style="font-size:0.75rem;">Directorio docente y gestión de cátedras institucionales</small>
+            </div>
+            
+            <!-- Badges de Resumen en Tiempo Real -->
+            <div class="d-flex align-items-center gap-1.5 ms-md-2 flex-wrap">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Maestros en servicio">
+                <i class="bi bi-person-check-fill me-1"></i><span id="badgeActivosMaestros">${totalActivos}/${totalMaestros}</span> Activos
+              </span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Docentes con cátedra asignada">
+                <i class="bi bi-music-note-beamed me-1"></i><span id="badgeCatedraMaestros">${totalConInstrumento}</span> con Cátedra
+              </span>
+              <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Docentes con contacto WhatsApp">
+                <i class="bi bi-whatsapp me-1"></i><span id="badgeWhatsappMaestros">${totalConWhatsapp}</span> con WhatsApp
+              </span>
+            </div>
+          </div>
 
-      ${renderFilterPanel({
-        isOpen: true,
-        filtersHtml,
-        onToggleId: 'btnToggleFiltrosMaestros',
-        badgeId: 'filtrosBadgeCountMaestros',
-        subtitle: 'Busca y segmenta el plantel docente por instrumento y estado',
-      })}
+          <!-- Toolbar de Botones con 0.85rem de separación -->
+          <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnExportarCSV" title="Exportar listado a CSV" style="font-size:0.78rem;">
+              <i class="bi bi-file-earmark-spreadsheet"></i>
+              <span class="d-none d-sm-inline">CSV</span>
+            </button>
+            <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnAgregarMaestro" style="font-size:0.78rem;">
+              <i class="bi bi-person-plus-fill"></i>
+              <span>Nuevo Maestro</span>
+            </button>
+          </div>
+        </div>
 
-      <div class="page-glass rounded w-100">
-        <div class="list-group list-group-flush w-100" id="maestrosTBody">
+        <!-- Fila 2: Búsqueda y Botón Desplegable de Filtros & Orden -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
+          <div class="flex-grow-1" style="min-width: 260px;">
+            <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+              <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="buscar" placeholder="Buscar por nombre, email, cédula o cátedra..." autocomplete="off" style="font-size:0.8rem;">
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center" style="gap: 0.85rem;">
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnToggleFiltrosMaestros" type="button" aria-expanded="false" style="font-size:0.78rem;">
+              <i class="bi bi-funnel"></i>
+              <span>Filtros & Orden</span>
+              <span class="badge bg-primary text-white rounded-pill px-1.5 ms-1 d-none" id="filtrosBadgeCountMaestros" style="font-size:0.68rem;">0</span>
+            </button>
+
+            <button class="btn btn-sm btn-outline-secondary rounded-3 shadow-xs px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" id="btnLimpiarFiltrosMaestros" title="Restablecer filtros y búsqueda" style="font-size:0.78rem;">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              <span>Limpiar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fila 3: Panel Desplegable de Filtros y Ordenamiento -->
+        <div class="collapse pt-2.5" id="panelFiltrosMaestros">
+          <div class="p-3 rounded-4 bg-body-tertiary border border-body-tertiary shadow-xs">
+            <div class="row g-2 align-items-center">
+              
+              <div class="col-12 col-sm-6 col-lg-3">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Cátedra / Instrumento</label>
+                <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filtroInstrumentoMaestro" style="font-size:0.8rem;">
+                  <option value="todos">Todos los instrumentos</option>
+                  ${instrumentosList.map(inst => `<option value="${escapeHTML(inst)}">${escapeHTML(inst)}</option>`).join('')}
+                </select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-lg-3">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Estado Operativo</label>
+                <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filtroEstado" style="font-size:0.8rem;">
+                  <option value="todos">Todos los estados</option>
+                  <option value="activo">Solo Activos</option>
+                  <option value="inactivo">Solo Inactivos</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-lg-3">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Contacto WhatsApp</label>
+                <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filtroWhatsappMaestro" style="font-size:0.8rem;">
+                  <option value="todos">Todos</option>
+                  <option value="con_whatsapp">Con WhatsApp</option>
+                  <option value="sin_whatsapp">Sin WhatsApp</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-lg-3">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Criterio de Orden</label>
+                <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                  <span class="input-group-text bg-body border-end-0 py-1.5 text-muted" style="font-size:0.75rem;"><i class="bi bi-sort-down"></i></span>
+                  <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarMaestros" style="font-size:0.8rem;">
+                    <option value="nombre_asc">Nombre (A-Z)</option>
+                    <option value="nombre_desc">Nombre (Z-A)</option>
+                    <option value="instrumento_asc">Instrumento (A-Z)</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Contenedor de Cuadrícula de Maestros (Hasta 5 por fila responsive) -->
+      <div class="w-100">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0" id="maestrosTBody">
           ${renderTableRows(state.maestros)}
         </div>
       </div>
@@ -274,50 +354,80 @@ function renderContent(container) {
 function renderTableRows(maestros) {
   if (!maestros.length) {
     return `
-      <div class="text-center py-5 w-100 text-muted list-group-item" style="background: transparent; border: none;">
+      <div class="col-12 text-center py-5 w-100 text-muted">
         <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--bs-secondary);"></i>
-        No hay maestros registrados.
+        No se encontraron maestros con los criterios seleccionados.
       </div>`
   }
   return maestros
     .map((a) => {
       const nombre = a.nombre || a.name || '-'
       const isActive = a.is_active ?? true
-      const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
-      const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
+      const statusColor = isActive ? 'success' : 'secondary'
+
       return `
-      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
-        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
-          <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
-              ${getInitials(nombre)}
+        <div class="col p-1">
+          <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer; padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+            
+            <!-- Parte Superior: Nombre, Instrumento/Cátedra y Contacto -->
+            <div class="mb-2">
+              
+              <!-- Nombre del Maestro -->
+              <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(nombre)}">
+                ${escapeHTML(nombre)}
+              </strong>
+
+              <!-- Chip de Cátedra / Instrumento -->
+              <div class="mb-2">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;">
+                  <i class="bi bi-music-note-beamed me-1 text-primary"></i>${escapeHTML(a.instrumento || 'Sin cátedra')}
+                </span>
+              </div>
+
+              <!-- Datos de Contacto y Estado -->
+              <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
+                <div class="d-flex align-items-center justify-content-between">
+                  <span class="text-truncate"><i class="bi bi-whatsapp me-1 text-success"></i>Tel:</span>
+                  <span class="fw-semibold text-body text-truncate" style="max-width: 110px;">${escapeHTML(a.telefono || 'Sin número')}</span>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between">
+                  <span class="text-truncate"><i class="bi bi-envelope me-1 text-muted"></i>Email:</span>
+                  <span class="text-body text-truncate" style="max-width: 110px;" title="${escapeHTML(a.email || '')}">${escapeHTML(a.email || '-')}</span>
+                </div>
+              </div>
             </div>
-            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
-          </div>
-          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
-            <small class="text-muted text-truncate">
-              ${escapeHTML(a.instrumento || 'Sin instrumento especificado')}
-            </small>
+
+            <!-- Barra Inferior de Acciones Contextuales -->
+            <div class="pt-2 border-top d-flex align-items-center justify-content-between gap-1 mt-auto">
+              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-1.5 fw-semibold" data-action="edit" data-id="${a.id}" title="Editar maestro" style="font-size:0.75rem;">
+                <i class="bi bi-pencil-square me-1"></i>
+                <span>Editar</span>
+              </button>
+
+              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center btn-maestro-pdf py-1 px-2" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF" style="font-size:0.75rem;">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </button>
+
+              ${a.telefono ? `
+                <button class="btn btn-xs btn-outline-success rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="font-size:0.75rem;" ${!isActive ? 'disabled' : ''}>
+                  <i class="bi bi-whatsapp"></i>
+                </button>
+              ` : ''}
+
+              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="${isActive ? 'Inactivar maestro' : 'Eliminar'}" style="font-size:0.75rem;">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+
+            <!-- Borde Inferior Sutil como Barra de Estado Operativo -->
+            <div class="position-absolute bottom-0 start-0 end-0 bg-body-tertiary" style="height: 3.5px;" title="${isActive ? 'Maestro activo' : 'Maestro inactivo'}">
+              <div class="h-100 bg-${statusColor}" style="width: 100%;"></div>
+            </div>
+
           </div>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-          <button class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center btn-maestro-pdf" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF de Clases y Alumnos" style="width: 32px; height: 32px; padding: 0;">
-            <i class="bi bi-file-earmark-pdf"></i>
-          </button>
-          ${
-            a.telefono
-              ? `
-            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;" ${!isActive ? 'disabled' : ''}>
-              <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
-            </button>
-          `
-              : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'
-          }
-          <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
-        </div>
-      </div>
-    `
+      `
     })
     .join('')
 }
@@ -327,95 +437,78 @@ function renderTableRows(maestros) {
 function attachEvents(container) {
   currentContainer = container
 
-  container.querySelector('#btnAgregarMaestro').addEventListener('click', () => openCreateModal())
-
-  container.querySelector('#btn-help-maestros')?.addEventListener('click', () => {
-    HelpPanel.open({
-      title: 'Maestros',
-      intro:
-        'Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.',
-      sections: [
-        {
-          icon: 'bi-search',
-          title: 'Buscador y filtros',
-          description: 'Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.',
-          color: '#6b7280',
-        },
-        {
-          icon: 'bi-person-badge',
-          title: 'Tarjeta de maestro',
-          description:
-            'Nombre, instrumento principal, clases activas y estado. Badge verde = activo, gris = inactivo.',
-          color: '#3b82f6',
-        },
-        {
-          icon: 'bi-eye',
-          title: 'Ver perfil',
-          description:
-            'Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.',
-          color: '#10b981',
-        },
-        {
-          icon: 'bi-pencil',
-          title: 'Editar desde el perfil',
-          description:
-            'Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.',
-          color: '#f59e0b',
-        },
-        {
-          icon: 'bi-person-x',
-          title: 'Desactivar maestro',
-          description:
-            'Desactivar oculta al maestro de listas operativas pero conserva su historial. No elimina datos.',
-          color: '#ef4444',
-        },
-      ],
-    })
-  })
-
+  container.querySelector('#btnAgregarMaestro')?.addEventListener('click', () => openCreateModal())
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarMaestrosCSV())
 
   // Toggle Filtros Panel
   const toggleBtn = container.querySelector('#btnToggleFiltrosMaestros')
-  const filterBody = container.querySelector('#btnToggleFiltrosMaestrosBody')
-  toggleBtn?.addEventListener('click', () => {
-    const isOpen = filterBody?.classList.toggle('is-open')
-    filterBody?.classList.toggle('is-collapsed', !isOpen)
-    toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
-    const icon = toggleBtn.querySelector('i')
-    if (icon) icon.className = `bi ${isOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`
+  const filterPanel = container.querySelector('#panelFiltrosMaestros')
+  toggleBtn?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (filterPanel) {
+      filterPanel.classList.toggle('show')
+      const isOpen = filterPanel.classList.contains('show')
+      toggleBtn.setAttribute('aria-expanded', String(isOpen))
+      toggleBtn.classList.toggle('btn-primary', isOpen)
+      toggleBtn.classList.toggle('text-white', isOpen)
+      toggleBtn.classList.toggle('btn-outline-secondary', !isOpen)
+    }
   })
 
   const searchInput = container.querySelector('#buscar')
   searchInput?.addEventListener('input', () => applyFilters())
   container.querySelector('#filtroEstado')?.addEventListener('change', () => applyFilters())
+  container.querySelector('#filtroInstrumentoMaestro')?.addEventListener('change', () => applyFilters())
+  container.querySelector('#filtroWhatsappMaestro')?.addEventListener('change', () => applyFilters())
+  container.querySelector('#selectOrdenarMaestros')?.addEventListener('change', () => applyFilters())
 
   container.querySelector('#btnLimpiarFiltrosMaestros')?.addEventListener('click', (e) => {
     e.stopPropagation()
     if (searchInput) searchInput.value = ''
     const estadoSelect = container.querySelector('#filtroEstado')
+    const instSelect = container.querySelector('#filtroInstrumentoMaestro')
+    const wsSelect = container.querySelector('#filtroWhatsappMaestro')
+    const ordenSelect = container.querySelector('#selectOrdenarMaestros')
     if (estadoSelect) estadoSelect.value = 'todos'
+    if (instSelect) instSelect.value = 'todos'
+    if (wsSelect) wsSelect.value = 'todos'
+    if (ordenSelect) ordenSelect.value = 'nombre_asc'
     applyFilters()
   })
 
-  container.querySelector('#maestrosTBody').addEventListener('click', (e) => {
-    const row = e.target.closest('.list-group-item[data-id]')
-    if (row && !e.target.closest('[data-action]')) {
-      openViewModal(row.dataset.id)
+  container.querySelector('#maestrosTBody')?.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('[data-action="edit"]')
+    if (editBtn) {
+      e.stopPropagation()
+      openEditModal(editBtn.dataset.id)
       return
     }
 
-    const btn = e.target.closest('[data-action]')
-    if (!btn) return
-    const id = btn.dataset.id
-    const action = btn.dataset.action
-    if (action === 'edit') openEditModal(id)
-    else if (action === 'delete') openDeleteModal(id)
-    else if (action === 'whatsapp') openWhatsAppModal(id)
-    else if (action === 'pdf') {
-      const maestro = state.maestrosOriginales.find((m) => m.id === id)
-      if (!maestro) return
-      descargarReporteMaestroPdf(maestro, btn)
+    const deleteBtn = e.target.closest('[data-action="delete"]')
+    if (deleteBtn) {
+      e.stopPropagation()
+      openDeleteModal(deleteBtn.dataset.id)
+      return
+    }
+
+    const wsBtn = e.target.closest('[data-action="whatsapp"]')
+    if (wsBtn) {
+      e.stopPropagation()
+      openWhatsAppModal(wsBtn.dataset.id)
+      return
+    }
+
+    const pdfBtn = e.target.closest('[data-action="pdf"]')
+    if (pdfBtn) {
+      e.stopPropagation()
+      const maestro = state.maestrosOriginales.find((m) => m.id === pdfBtn.dataset.id)
+      if (maestro) descargarReporteMaestroPdf(maestro, pdfBtn)
+      return
+    }
+
+    const card = e.target.closest('.list-group-item[data-id]')
+    if (card) {
+      openViewModal(card.dataset.id)
     }
   })
 }
@@ -484,6 +577,9 @@ function openWhatsAppModal(id) {
 function applyFilters() {
   const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
   const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
+  const filtroInstrumento = currentContainer.querySelector('#filtroInstrumentoMaestro')?.value || 'todos'
+  const filtroWhatsapp = currentContainer.querySelector('#filtroWhatsappMaestro')?.value || 'todos'
+  const orden = currentContainer.querySelector('#selectOrdenarMaestros')?.value || 'nombre_asc'
 
   state.maestros = state.maestrosOriginales.filter((a) => {
     const nombre = (a.nombre || a.name || '').toLowerCase()
@@ -501,11 +597,32 @@ function applyFilters() {
       (filtroEstado === 'activo' && isActive) ||
       (filtroEstado === 'inactivo' && !isActive)
 
-    return matchSearch && matchEstado
+    const matchInstrumento =
+      filtroInstrumento === 'todos' ||
+      (a.instrumento || '').trim().toLowerCase() === filtroInstrumento.toLowerCase()
+
+    const matchWhatsapp =
+      filtroWhatsapp === 'todos' ||
+      (filtroWhatsapp === 'con_whatsapp' && !!a.telefono && a.telefono.trim() !== '') ||
+      (filtroWhatsapp === 'sin_whatsapp' && (!a.telefono || a.telefono.trim() === ''))
+
+    return matchSearch && matchEstado && matchInstrumento && matchWhatsapp
+  })
+
+  // Ordenamiento
+  state.maestros.sort((a, b) => {
+    const nomA = (a.nombre || a.name || '').toLowerCase()
+    const nomB = (b.nombre || b.name || '').toLowerCase()
+    if (orden === 'nombre_asc') return nomA.localeCompare(nomB)
+    if (orden === 'nombre_desc') return nomB.localeCompare(nomA)
+    if (orden === 'instrumento_asc') return (a.instrumento || '').localeCompare(b.instrumento || '')
+    return 0
   })
 
   let activos = 0
   if (filtroEstado !== 'todos') activos++
+  if (filtroInstrumento !== 'todos') activos++
+  if (filtroWhatsapp !== 'todos') activos++
 
   const badgeEl = currentContainer.querySelector('#filtrosBadgeCountMaestros')
   if (badgeEl) {
@@ -1366,14 +1483,22 @@ async function openRetirementReview(maestro) {
   })
 }
 
-// ─── Utils ───────────────────────────────────────────────────────────────────
-
 function refreshTable() {
-  const tbody = currentContainer.querySelector('#maestrosTBody')
+  const tbody = currentContainer?.querySelector('#maestrosTBody')
   if (!tbody) return
   tbody.innerHTML = renderTableRows(state.maestros)
-  const countEl = currentContainer.querySelector('.maestros-header-premium p.text-muted')
-  if (countEl) countEl.textContent = `${state.maestros.length} maestros en total`
+
+  const totalMaestros = state.maestrosOriginales.length
+  const totalActivos = state.maestrosOriginales.filter(a => a.is_active ?? true).length
+  const totalConInstrumento = state.maestrosOriginales.filter(a => !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado').length
+  const totalConWhatsapp = state.maestrosOriginales.filter(a => !!a.telefono && a.telefono.trim() !== '').length
+
+  const badgeActivos = currentContainer.querySelector('#badgeActivosMaestros')
+  const badgeCatedra = currentContainer.querySelector('#badgeCatedraMaestros')
+  const badgeWhatsapp = currentContainer.querySelector('#badgeWhatsappMaestros')
+  if (badgeActivos) badgeActivos.textContent = `${totalActivos}/${totalMaestros}`
+  if (badgeCatedra) badgeCatedra.textContent = `${totalConInstrumento}`
+  if (badgeWhatsapp) badgeWhatsapp.textContent = `${totalConWhatsapp}`
 }
 
 function isValidEmail(email) {

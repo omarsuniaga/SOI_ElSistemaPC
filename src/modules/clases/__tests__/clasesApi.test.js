@@ -432,4 +432,57 @@ describe('clasesApi Integration', () => {
       expect(grupos).toEqual([])
     })
   })
+
+  describe('obtenerClasesConHorarioYCupo', () => {
+    it('trae todas las clases con su horario embebido y cuenta solo inscritos activos', async () => {
+      supabase.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'c1',
+              nombre: 'Violín 101',
+              maestro_principal_id: 'm1',
+              capacidad_maxima: 15,
+              clase_horarios: [{ dia: 'lunes', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: 's1' }],
+              alumnos_clases: [{ id: 'a1', activo: true }, { id: 'a2', activo: true }, { id: 'a3', activo: false }],
+            },
+          ],
+          error: null,
+        }),
+      })
+
+      const clases = await clasesApi.obtenerClasesConHorarioYCupo()
+
+      expect(supabase.from).toHaveBeenCalledWith('clases')
+      expect(clases).toHaveLength(1)
+      expect(clases[0].horarios).toEqual([{ dia: 'lunes', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: 's1' }])
+      // Solo cuenta los 2 activos, el inactivo no suma al cupo ocupado
+      expect(clases[0].inscritos).toBe(2)
+    })
+
+    it('sin clase_horarios ni alumnos_clases, no rompe — arrays vacíos', async () => {
+      supabase.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({
+          data: [{ id: 'c1', nombre: 'Violín 101', clase_horarios: null, alumnos_clases: null }],
+          error: null,
+        }),
+      })
+
+      const clases = await clasesApi.obtenerClasesConHorarioYCupo()
+
+      expect(clases[0].horarios).toEqual([])
+      expect(clases[0].inscritos).toBe(0)
+    })
+
+    it('un error de Supabase se propaga (la vista decide cómo mostrarlo)', async () => {
+      supabase.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: null, error: { message: 'timeout' } }),
+      })
+
+      await expect(clasesApi.obtenerClasesConHorarioYCupo()).rejects.toBeTruthy()
+    })
+  })
 })

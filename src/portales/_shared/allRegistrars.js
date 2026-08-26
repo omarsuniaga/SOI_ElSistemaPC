@@ -21,6 +21,7 @@ import { registerRoutesAdminDashboard } from '../../modules/admin-dashboard/admi
 import { registerRoutesPermisos } from '../../modules/permisos/index.js'
 import { registerRoutesPedagogico } from '../../modules/pedagogico/index.js'
 import { registerRoutesHorarioBuilder } from '../../modules/horario-builder/index.js'
+import { registerRoutesHorarioGeneral } from '../../modules/horario-general/index.js'
 import { registerRoutesAdminNotificaciones } from '../../modules/admin-notificaciones/index.js'
 import { registerRoutesAdminAprobacion } from '../../modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from '../../modules/admin-usuarios/index.js'
@@ -43,6 +44,7 @@ export const allRegistrars = [
   registerRoutesClases,
   registerRoutesSalones,
   registerRoutesHorarioBuilder,
+  registerRoutesHorarioGeneral,
   registerRoutesPedagogico,
   registerRoutesPlanificacion,
   registerRoutesProgresos,

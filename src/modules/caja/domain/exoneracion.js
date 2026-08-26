@@ -1,6 +1,7 @@
 /**
  * Domain: exoneracion
  * Fee exemption logic — no Supabase imports.
+ * All monetary fields are integer centavos (RD$1.00 = 100 centavos). ADR-002.
  */
 
 export function validateExoneracion(data) {
@@ -31,6 +32,10 @@ export function buildExoneracion({ cuota_id, familia_id, tipo, porcentaje, motiv
   }
 }
 
+/**
+ * Rounds half-up to the nearest whole centavo so the exonerated amount
+ * is always an integer number of centavos.
+ */
 export function calcularMontoExonerado(cuota, exoneracion) {
-  return (cuota.monto_base * exoneracion.porcentaje) / 100
+  return Math.round((cuota.monto_base_centavos * exoneracion.porcentaje) / 100)
 }

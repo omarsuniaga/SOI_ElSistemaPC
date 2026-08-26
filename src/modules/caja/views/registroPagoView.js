@@ -7,8 +7,8 @@ import * as cajaApi from '../api/cajaApi.js'
 import { cuotaEsLiquidable, calcularMoraInfo } from '../domain/cuota.js'
 import { distribuirPago, METODOS_PAGO, buildPago } from '../domain/pago.js'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function estadoBadge(estado) {
@@ -30,7 +30,7 @@ export async function render(container, session) {
       '<button class="familia-btn" data-id="' + f.id + '"'
       + ' style="text-align:left;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:0.75rem 1rem;cursor:pointer;margin-bottom:0.375rem">'
       + '<div style="font-weight:600;color:#0f172a">' + f.nombre_familia + '</div>'
-      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + (f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente) + '</div>'
+      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + (f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente_centavos) + '</div>'
       + '</button>'
     ).join('')
 
@@ -72,12 +72,12 @@ export async function render(container, session) {
           const mora = calcularMoraInfo(c, today)
           const moraStr = mora.diasMora > 0 ? ' (+' + mora.diasMora + ' dias mora)' : ''
           return '<label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;margin-bottom:0.375rem">'
-            + '<input type="checkbox" class="cuota-check" data-id="' + c.id + '" data-monto="' + c.monto_final + '" style="width:16px;height:16px">'
+            + '<input type="checkbox" class="cuota-check" data-id="' + c.id + '" data-monto="' + c.monto_final_centavos + '" style="width:16px;height:16px">'
             + '<div style="flex:1">'
             + '<div style="font-size:0.875rem;font-weight:500;color:#0f172a">' + c.concepto + ' ' + c.ciclo_mes + '/' + c.ciclo_anio + '</div>'
             + '<div style="font-size:0.75rem;color:#64748b">Vence: ' + c.fecha_vencimiento + moraStr + '</div>'
             + '</div>' + estadoBadge(c.estado) + ' '
-            + '<span style="font-weight:700;color:#0f172a">' + fmtMoney(c.monto_final) + '</span>'
+            + '<span style="font-weight:700;color:#0f172a">' + fmtMoney(c.monto_final_centavos) + '</span>'
             + '</label>'
         }).join('')
 
@@ -116,7 +116,7 @@ export async function render(container, session) {
 
   function renderStep3() {
     const cuotasSel = cuotasDisp.filter(c => selectedCuotaIds.has(c.id))
-    const totalCuotas = cuotasSel.reduce((s, c) => s + c.monto_final, 0)
+    const totalCuotasCentavos = cuotasSel.reduce((s, c) => s + c.monto_final_centavos, 0)
 
     container.innerHTML =
       '<div style="padding:1.5rem;max-width:700px">'
@@ -127,14 +127,14 @@ export async function render(container, session) {
       + '<div style="background:#fff;border-radius:12px;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
       + '<div style="background:#f8fafc;border-radius:8px;padding:0.875rem;margin-bottom:1rem">'
       + '<p style="margin:0 0 0.25rem;font-size:0.75rem;color:#64748b">' + cuotasSel.length + ' cuota(s) seleccionada(s)</p>'
-      + '<p style="margin:0;font-size:1.25rem;font-weight:700;color:#059669">Total: ' + fmtMoney(totalCuotas) + '</p>'
+      + '<p style="margin:0;font-size:1.25rem;font-weight:700;color:#059669">Total: ' + fmtMoney(totalCuotasCentavos) + '</p>'
       + '</div>'
       + '<label style="display:block;font-size:0.8125rem;font-weight:500;color:#374151;margin-bottom:0.375rem">Metodo de pago</label>'
       + '<select id="sel-metodo" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:0.5rem 0.75rem;font-size:0.875rem;margin-bottom:0.875rem">'
       + METODOS_PAGO.map(m => '<option value="' + m + '">' + m + '</option>').join('')
       + '</select>'
       + '<label style="display:block;font-size:0.8125rem;font-weight:500;color:#374151;margin-bottom:0.375rem">Monto recibido</label>'
-      + '<input id="inp-monto" type="number" step="0.01" min="0" value="' + totalCuotas.toFixed(2) + '"'
+      + '<input id="inp-monto" type="number" step="0.01" min="0" value="' + (totalCuotasCentavos / 100).toFixed(2) + '"'
       + ' style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:0.5rem 0.75rem;font-size:0.875rem;margin-bottom:0.875rem">'
       + '<label style="display:block;font-size:0.8125rem;font-weight:500;color:#374151;margin-bottom:0.375rem">Referencia (opcional)</label>'
       + '<input id="inp-ref" type="text" placeholder="N de transferencia..."'
@@ -151,8 +151,8 @@ export async function render(container, session) {
 
     const montoEl = container.querySelector('#inp-monto')
     montoEl.addEventListener('input', () => {
-      const monto = parseFloat(montoEl.value) || 0
-      const { montoSobrante } = distribuirPago(cuotasSel, monto)
+      const monto_centavos = Math.round((parseFloat(montoEl.value) || 0) * 100)
+      const { montoSobrante } = distribuirPago(cuotasSel, monto_centavos)
       const sobranteEl = container.querySelector('#sobrante-info')
       if (montoSobrante > 0) {
         sobranteEl.style.display = ''
@@ -161,18 +161,18 @@ export async function render(container, session) {
     })
 
     container.querySelector('#btn-confirmar').addEventListener('click', async () => {
-      const monto = parseFloat(montoEl.value) || 0
+      const monto_centavos = Math.round((parseFloat(montoEl.value) || 0) * 100)
       const metodo_pago = container.querySelector('#sel-metodo').value
       const referencia = container.querySelector('#inp-ref').value
       const notas = container.querySelector('#inp-notas').value
       const errorEl = container.querySelector('#pago-error')
-      if (monto <= 0) { errorEl.style.display=''; errorEl.textContent='Ingresa un monto valido'; return }
+      if (monto_centavos <= 0) { errorEl.style.display=''; errorEl.textContent='Ingresa un monto valido'; return }
       const btn = container.querySelector('#btn-confirmar')
       btn.disabled = true; btn.textContent = 'Procesando...'
       const pagoData = buildPago({
         familia_id: selectedFamilia.id,
         cuota_ids: [...selectedCuotaIds],
-        monto, metodo_pago,
+        monto_centavos, metodo_pago,
         cajero_id: session?.user?.id,
         notas: [notas, referencia].filter(Boolean).join(' | '),
       })
@@ -182,18 +182,18 @@ export async function render(container, session) {
         errorEl.textContent = 'Error: ' + (error.message || 'Error desconocido')
         btn.disabled = false; btn.textContent = 'Confirmar Pago'; return
       }
-      renderConfirmacion(monto, metodo_pago)
+      renderConfirmacion(monto_centavos, metodo_pago)
     })
   }
 
-  function renderConfirmacion(monto, metodo) {
+  function renderConfirmacion(monto_centavos, metodo) {
     container.innerHTML =
       '<div style="padding:1.5rem;max-width:700px;text-align:center">'
       + '<div style="background:#fff;border-radius:12px;padding:2.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
       + '<div style="width:64px;height:64px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">'
       + '<i class="bi bi-check-lg" style="font-size:1.75rem;color:#059669"></i></div>'
       + '<h3 style="margin:0 0 0.5rem;font-size:1.25rem;font-weight:700;color:#0f172a">Pago registrado</h3>'
-      + '<p style="margin:0 0 1.5rem;color:#64748b">' + fmtMoney(monto) + ' via ' + metodo + ' - ' + selectedFamilia.nombre_familia + '</p>'
+      + '<p style="margin:0 0 1.5rem;color:#64748b">' + fmtMoney(monto_centavos) + ' via ' + metodo + ' - ' + selectedFamilia.nombre_familia + '</p>'
       + '<button id="btn-nuevo-pago" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:0.5rem 1.5rem;font-weight:600;cursor:pointer">Registrar otro pago</button>'
       + '</div></div>'
     container.querySelector('#btn-nuevo-pago').addEventListener('click', () => {

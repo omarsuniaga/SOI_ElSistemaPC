@@ -4,7 +4,7 @@
  * postulados, clases del día, gestión de clases, salones, calendario de citas,
  * control de asistencias, sistema/config y tareas Hermes del depto ADM.
  *
- * Gating: rol 'admin' por ahora (rol fino 'administrador' a futuro).
+ * Gating: 'admin', 'superadmin' y 'coordinacion_academica'.
  */
 
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
@@ -19,6 +19,7 @@ const navGroups = [
       { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
+      { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
     ],
   },
   {
@@ -27,20 +28,14 @@ const navGroups = [
     icon: 'bi-clipboard-data',
     items: [
       { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
-      { id: 'asistencias', label: 'Control de Asistencias', icon: 'bi-calendar-check' },
-      { id: 'clases', label: 'Gestión de Clases', icon: 'bi-easel2' },
-      { id: 'salones', label: 'Salones & Espacios', icon: 'bi-door-closed' },
-      { id: 'periodos', label: 'Período Académico', icon: 'bi-calendar-event' },
+      { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
+      { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
+      { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
+      { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
+      { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
+      { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
       { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
-    ],
-  },
-  {
-    id: 'bandeja',
-    label: 'Bandeja',
-    icon: 'bi-inbox',
-    items: [
-      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
-      { id: 'seguimiento-tareas', label: 'Seguimiento de Tareas', icon: 'bi-list-check' },
+      { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
     ],
   },
   {
@@ -67,7 +62,29 @@ const navGroups = [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
+      { id: 'departamentos', label: 'Correos Departamentos', icon: 'bi-envelope-at' },
+      { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
+    ],
+  },
+  {
+    id: 'direccion',
+    label: 'Dirección',
+    icon: 'bi-diagram-3',
+    items: [
+      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'dir-score', label: 'Score Departamentos', icon: 'bi-speedometer2' },
+    ],
+  },
+  {
+    id: 'hermes',
+    label: 'Hermes',
+    icon: 'bi-robot',
+    items: [
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'seguimiento-tareas', label: 'Seguimiento de Tareas', icon: 'bi-list-check' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
     ],
   },
 ]
@@ -77,7 +94,7 @@ bootAdminPortal({
   brandIcon: 'bi-clipboard-data',
   navGroups,
   registrars: allRegistrars,
-  allowedRoles: ['admin'],
+  allowedRoles: ['admin', 'superadmin', 'coordinacion_academica'],
   defaultRoute: 'clases-hoy',
   hermesDept: 'ADM',
 }).catch((err) => {

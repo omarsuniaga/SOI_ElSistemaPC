@@ -1,15 +1,15 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { verificarEliminacionAlumno, eliminarAlumno } from '../api/alumnosApi.js'
+import { inactivarAlumno, verificarEliminacionAlumno } from '../api/alumnosApi.js'
 import { escapeHTML } from '../utils/alumnosUtils.js'
 
 export class AlumnoDeleteModal {
   /**
-   * Opens the safe deletion confirmation modal.
-   * Checks for active classes and blocks deletion if found.
+   * Opens the inactivation (soft delete) confirmation modal.
+   * Preserves historical records, comodatos, and attendance logs.
    *
    * @param {Object} props
-   * @param {string} props.alumnoId - The ID of the student to delete
+   * @param {string} props.alumnoId - The ID of the student to inactivate
    * @param {string} props.alumnoNombre - The name of the student
    * @param {Function} props.onDeleted - Success callback function
    */
@@ -17,68 +17,69 @@ export class AlumnoDeleteModal {
     const { alumnoId, alumnoNombre, onDeleted } = props
     if (!alumnoId) return
 
-    AppModal.showLoading('Verificando inscripciones activas...')
-
-    AppModal.open({
-      title: 'Eliminar Alumno',
-      hideSave: true,
-      cancelText: 'Cerrar',
-      body: '<div class="p-3 text-center"><div class="spinner-border text-primary" role="status"></div></div>'
-    })
+    AppModal.showLoading('Verificando estado del alumno...')
 
     try {
-      const { canDelete, activeClasses } = await verificarEliminacionAlumno(alumnoId)
-
-      if (!canDelete) {
-        AppModal.open({
-          title: 'No se puede eliminar el alumno',
-          hideSave: true,
-          cancelText: 'Entendido',
-          body: `
-            <div class="p-2">
-              <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
-                <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
-                <div>
-                  <strong>Acción bloqueada:</strong> El alumno <strong>${escapeHTML(alumnoNombre)}</strong> tiene inscripciones activas en las siguientes clases:
-                </div>
-              </div>
-              <ul class="list-group list-group-flush mb-2">
-                ${activeClasses.map(c => `<li class="list-group-item py-1 small text-danger"><i class="bi bi-x-circle me-1"></i>${escapeHTML(c)}</li>`).join('')}
-              </ul>
-              <p class="text-muted small">Debés desvincular al alumno de estas clases antes de poder eliminar su registro de la base de datos.</p>
-            </div>
-          `
-        })
-        return
+      let activeClasses = []
+      try {
+        const check = await verificarEliminacionAlumno(alumnoId)
+        activeClasses = check?.activeClasses || []
+      } catch (e) {
+        console.warn('No se pudieron consultar inscripciones previas:', e)
       }
 
-      // Safe to delete, show confirmation modal
       AppModal.open({
-        title: 'Confirmar eliminación',
-        saveText: 'Eliminar definitivamente',
+        title: 'Inactivar Alumno',
+        saveText: 'Mover a Inactivos',
+        saveClass: 'btn-warning',
         cancelText: 'Cancelar',
         body: `
           <div class="p-2">
-            <p>¿Estás seguro de que querés eliminar a <strong>${escapeHTML(alumnoNombre)}</strong>?</p>
-            <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Esta acción es irreversible y removerá todo su historial personal de la base de datos.</p>
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="avatar-compact bg-warning bg-opacity-10 text-warning border border-warning-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                <i class="bi bi-person-x"></i>
+              </div>
+              <div>
+                <h6 class="mb-0 fw-bold">${escapeHTML(alumnoNombre)}</h6>
+                <small class="text-muted">ID: ${escapeHTML(alumnoId)}</small>
+              </div>
+            </div>
+
+            <p class="mb-2">¿Deseas mover a este alumno a la lista de <strong>Alumnos Inactivos</strong>?</p>
+
+            <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3">
+              <i class="bi bi-info-circle-fill fs-6 mt-1 flex-shrink-0"></i>
+              <div class="small">
+                <strong>Archivo seguro:</strong> Su historial de asistencias, notas, datos médicos y comodatos de instrumentos permanecerán resguardados en el archivo institucional y podrás <strong>reactivarlo en cualquier momento</strong>.
+              </div>
+            </div>
+
+            ${activeClasses.length > 0 ? `
+              <div class="border rounded p-2 bg-light bg-opacity-50 mb-2">
+                <span class="small fw-semibold text-muted d-block mb-1"><i class="bi bi-journal-bookmark me-1"></i>Clases asignadas actualmente:</span>
+                <div class="d-flex flex-wrap gap-1">
+                  ${activeClasses.map(c => `<span class="badge bg-secondary-subtle text-secondary-emphasis border">${escapeHTML(c)}</span>`).join('')}
+                </div>
+              </div>
+            ` : ''}
           </div>
         `,
         onSave: async () => {
           try {
-            await eliminarAlumno(alumnoId)
-            AppToast.success('Alumno eliminado correctamente')
+            await inactivarAlumno(alumnoId)
+            AppToast.success('Alumno movido a la lista de inactivos')
             if (typeof onDeleted === 'function') onDeleted()
             return true // Closes modal
           } catch (err) {
-            console.error('Error deleting student:', err)
-            AppToast.error(err.message || 'Error al eliminar el alumno')
+            console.error('Error inactivating student:', err)
+            AppToast.error(err.message || 'Error al inactivar el alumno')
             return false // Keeps modal open
           }
         }
       })
     } catch (err) {
-      console.error('Error verifying deletion safety:', err)
-      AppToast.error('No se pudo verificar la seguridad de la eliminación')
+      console.error('Error opening inactivate student modal:', err)
+      AppToast.error('No se pudo preparar la inactivación del alumno')
       AppModal.close()
     }
   }

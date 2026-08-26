@@ -1,0 +1,79 @@
+change_name: soi-event-spine
+status: tasks-ready
+created_at: 2026-08-18T09:52:00Z
+updated_at: 2026-08-18T09:52:00Z
+
+phase:
+  explore: complete
+  propose: complete
+  spec: complete
+  design: complete
+  tasks: complete
+  apply: pending
+  verify: pending
+  archive: pending
+
+task_summary:
+  total: 19
+  grouped_by_phase:
+    ddl_foundation:
+      count: 4
+      tasks: [T1, T2, T3, T4]
+    triggers:
+      count: 6
+      tasks: [T5, T6, T7, T8, T9, T10]
+    taxonomy:
+      count: 2
+      tasks: [T11, T12]
+    consumer_skeleton:
+      count: 2
+      tasks: [T13, T14]
+    integration_tests:
+      count: 5
+      tasks: [T15, T16, T17, T18, T19]
+
+workload_forecast:
+  total_lines_estimated: 930
+  migration_lines: 650
+  test_lines: 280
+  chained_prs_recommended: true
+  pr_strategy:
+    pr1:
+      name: "Foundation (DDL + RLS + Indices + Taxonomy + Base Tests)"
+      tasks: [T1, T2, T3, T4, T11, T12, T15, T16, T17, T18]
+      estimated_lines: 400
+      risk_level: medium
+    pr2:
+      name: "Triggers + Consumer Skeleton + Performance Test"
+      tasks: [T5, T6, T7, T8, T9, T10, T13, T14, T19]
+      estimated_lines: 300
+      risk_level: low
+
+parallelization:
+  sequential_prerequisite: T1
+  parallel_after_t1:
+    - [T2, T3, T4, T5, T6, T7, T8, T9, T10, T12, T13, T14]
+  sequential_test_dependencies:
+    - T15: [T1, T5]
+  parallel_tests: [T16, T17, T18, T19]
+
+spec_coverage:
+  ac_01: [T1, T15]
+  ac_02: [T5, T6, T7, T8, T9, T10, T11]
+  ac_03: [T5, T6, T7, T8, T9, T10, T12, T16]
+  ac_04: [T3, T17]
+  ac_05: [T7, T9]
+  ac_06: [T5, T6, T16, T19]
+  ac_07: [T2, T19]
+  ac_08: []  # Covered by all tests collectively
+  ac_09: [T16]
+  ac_10: [T4, T15, T18]
+
+next_phase: apply
+next_recommended_action: "Review chained PR strategy and confirm delivery preference (chained PRs vs size:exception). Then run `/sdd-apply soi-event-spine`."
+
+artifacts:
+  spec: "sdd/soi-event-spine/spec"
+  design: "sdd/soi-event-spine/design"
+  tasks: "sdd/soi-event-spine/tasks"
+  tasks_file: "openspec/changes/soi-event-spine/tasks.md"

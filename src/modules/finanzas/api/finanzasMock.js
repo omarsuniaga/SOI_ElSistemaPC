@@ -17,3 +17,10 @@ export async function registrarPagosLote(_pagos) {
 export async function obtenerCobradoHoy() {
   return { data: 0, error: null }
 }
+
+export async function obtenerPoliticaCobranza() {
+  return {
+    data: { dia_vencimiento: 10, dias_mora_amarilla: 30, dias_mora_critica: 60, bloqueo_requiere_aprobacion: true },
+    error: null,
+  }
+}

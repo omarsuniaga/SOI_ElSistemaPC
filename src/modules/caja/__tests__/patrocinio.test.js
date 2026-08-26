@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { buildPatrocinio, calcularAportePatrocinio, cubriendoCargo } from '../domain/patrocinio.js'
 
 describe('buildPatrocinio', () => {
-  const base = { patrocinante_id: 'pat-1', alumno_id: 'alu-1', familia_id: 'fam-1', cubre: 'cuota', monto_mensual: 150 }
+  const base = { patrocinante_id: 'pat-1', alumno_id: 'alu-1', familia_id: 'fam-1', cubre: 'cuota', monto_mensual_centavos: 150 }
 
   test('builds patrocinio with required fields', () => {
     const p = buildPatrocinio(base)
@@ -10,7 +10,7 @@ describe('buildPatrocinio', () => {
     expect(p.alumno_id).toBe('alu-1')
     expect(p.familia_id).toBe('fam-1')
     expect(p.cubre).toBe('cuota')
-    expect(p.monto_mensual).toBe(150)
+    expect(p.monto_mensual_centavos).toBe(150)
   })
 
   test('activo defaults to true', () => {
@@ -25,23 +25,23 @@ describe('buildPatrocinio', () => {
 })
 
 describe('calcularAportePatrocinio', () => {
-  test('cubre=cuota: returns min(monto_mensual, cuotaMonto)', () => {
-    const p = { cubre: 'cuota', monto_mensual: 150 }
+  test('cubre=cuota: returns min(monto_mensual_centavos, cuotaMonto)', () => {
+    const p = { cubre: 'cuota', monto_mensual_centavos: 150 }
     expect(calcularAportePatrocinio(p, 300)).toBe(150)
   })
 
-  test('cubre=cuota: when monto_mensual >= cuotaMonto returns cuotaMonto', () => {
-    const p = { cubre: 'cuota', monto_mensual: 400 }
+  test('cubre=cuota: when monto_mensual_centavos >= cuotaMonto returns cuotaMonto', () => {
+    const p = { cubre: 'cuota', monto_mensual_centavos: 400 }
     expect(calcularAportePatrocinio(p, 300)).toBe(300)
   })
 
-  test('cubre=wallet: returns monto_mensual (for wallet contribution)', () => {
-    const p = { cubre: 'wallet', monto_mensual: 100 }
+  test('cubre=wallet: returns monto_mensual_centavos (for wallet contribution)', () => {
+    const p = { cubre: 'wallet', monto_mensual_centavos: 100 }
     expect(calcularAportePatrocinio(p, 300)).toBe(100)
   })
 
-  test('cubre=accesorio: returns monto_mensual', () => {
-    const p = { cubre: 'accesorio', monto_mensual: 200 }
+  test('cubre=accesorio: returns monto_mensual_centavos', () => {
+    const p = { cubre: 'accesorio', monto_mensual_centavos: 200 }
     expect(calcularAportePatrocinio(p, 200)).toBe(200)
   })
 })

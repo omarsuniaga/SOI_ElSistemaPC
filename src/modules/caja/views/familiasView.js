@@ -6,8 +6,8 @@
 import * as cajaApi from '../api/cajaApi.js'
 import { clasificarNivel } from '../domain/score.js'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function nivelBadge(nivel) {
@@ -37,7 +37,7 @@ export async function renderList(container, session) {
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem;border-bottom:1px solid #f1f5f9;gap:0.75rem">'
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-weight:600;color:#0f172a;font-size:0.9375rem">' + f.nombre_familia + nivelBadge(f.nivel || 'C') + '</div>'
-      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + (f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente) + '</div>'
+      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + (f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente_centavos) + '</div>'
       + '</div>'
       + '<div style="display:flex;gap:0.375rem;flex-shrink:0">'
       + '<button class="btn-ver-familia" data-id="' + f.id + '" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.625rem;font-size:0.75rem;cursor:pointer">Ver</button>'
@@ -88,16 +88,17 @@ export async function renderDetail(container, session, familiaId) {
     return { teardown() {} }
   }
 
-  const { familia, representante, cuotas, pagos, wallet } = data
+  const familia = data
+  const { representante, cuotas, pagos, wallet } = data
   const nivel = familia.nivel || clasificarNivel(familia.score || 50)
 
   const cuotasRows = (cuotas || []).slice(0, 10).map(c =>
     '<tr style="border-bottom:1px solid #f1f5f9">'
     + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + c.concepto + ' ' + c.ciclo_mes + '/' + c.ciclo_anio + '</td>'
     + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + c.fecha_vencimiento + '</td>'
-    + '<td style="padding:0.5rem 0.75rem;text-align:right;font-size:0.8125rem;font-weight:600">' + fmtMoney(c.monto_final) + '</td>'
+    + '<td style="padding:0.5rem 0.75rem;text-align:right;font-size:0.8125rem;font-weight:600">' + fmtMoney(c.monto_final_centavos) + '</td>'
     + '<td style="padding:0.5rem 0.75rem">'
-    + '<span style="font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:6px;background:' + (c.estado === 'pagada' ? '#d1fae5' : c.estado === 'en_mora' ? '#fee2e2' : '#fef9c3') + '">' + c.estado + '</span>'
+    + '<span style="font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px;' + (c.estado === 'pagada' ? 'background:#d1fae5;color:#065f46' : c.estado === 'en_mora' ? 'background:#fee2e2;color:#7f1d1d' : 'background:#fef9c3;color:#713f12') + '">' + c.estado + '</span>'
     + '</td></tr>'
   ).join('')
 

@@ -32,7 +32,14 @@ vi.mock('../../utils/observationParser.js', () => ({
 
 import { supabase } from '../../../lib/supabaseClient.js'
 import { segmentObservation } from '../../utils/observationParser.js'
-import { generateMonthlyPatterns, analyzeObservation, enrichToDSL, improveText, structureTextToDSL } from '../groqService.js'
+import {
+  generateMonthlyPatterns,
+  analyzeObservation,
+  enrichToDSL,
+  improveText,
+  structureTextToDSL,
+  analyzeClassProgress,
+} from '../groqService.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -754,5 +761,77 @@ describe('analyzeObservation', () => {
     expect(systemPrompt).toContain('SECCIONES:')
     expect(systemPrompt).toContain('violines')
     expect(systemPrompt).toContain('Ana García')
+  })
+})
+
+// ── analyzeClassProgress — botón manual "Analizar con IA" del vistazo aéreo ─
+describe('analyzeClassProgress', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  const SESIONES = [
+    { fecha: '2026-08-06', contenido: 'Escalas de Do mayor, primera posición' },
+    { fecha: '2026-08-13', contenido: 'Escalas de Do mayor, primera posición (repaso)' },
+    { fecha: '2026-08-20', contenido: 'Escalas de Do mayor, primera posición (repaso otra vez)' },
+  ]
+  const PROGRESOS = [
+    { estado_cualitativo: 'EN_PROGRESO' },
+    { estado_cualitativo: 'EN_PROGRESO' },
+    { estado_cualitativo: 'INICIADO' },
+  ]
+  const CONTEXT = { clase: 'Violín 101', docente: 'Prof. Ana', totalAlumnos: 8 }
+
+  it('devuelve el veredicto completo cuando la API responde OK', async () => {
+    mockFetchSuccess(
+      JSON.stringify({
+        estado: 'estancada',
+        puntaje: 35,
+        resumen: 'La clase repite el mismo contenido hace tres sesiones sin avanzar.',
+        senalesPositivas: ['Asistencia estable'],
+        senalesAlerta: ['Mismo contenido repetido 3 sesiones seguidas'],
+      }),
+    )
+
+    const result = await analyzeClassProgress(SESIONES, PROGRESOS, CONTEXT)
+
+    expect(result.estado).toBe('estancada')
+    expect(result.puntaje).toBe(35)
+    expect(result.resumen).toContain('repite')
+    expect(result.senalesAlerta[0]).toContain('repetido')
+  })
+
+  it('arma el prompt con el contenido en orden cronológico y el contexto de la clase', async () => {
+    mockFetchSuccess(JSON.stringify({ estado: 'avanza', puntaje: 80, resumen: 'ok', senalesPositivas: [], senalesAlerta: [] }))
+
+    // Sesiones fuera de orden a propósito — debe reordenar por fecha antes de armar el prompt.
+    await analyzeClassProgress([SESIONES[2], SESIONES[0], SESIONES[1]], PROGRESOS, CONTEXT)
+
+    const [, { body }] = fetchMock.mock.calls[0]
+    const prompt = JSON.parse(body).messages[0].content
+    expect(prompt).toContain('Violín 101')
+    expect(prompt).toContain('Prof. Ana')
+    expect(prompt.indexOf('2026-08-06')).toBeLessThan(prompt.indexOf('2026-08-13'))
+    expect(prompt.indexOf('2026-08-13')).toBeLessThan(prompt.indexOf('2026-08-20'))
+  })
+
+  it('normaliza un estado inválido devuelto por la IA a "estancada"', async () => {
+    mockFetchSuccess(JSON.stringify({ estado: 'progresando-mucho', puntaje: 90, resumen: 'ok' }))
+
+    const result = await analyzeClassProgress(SESIONES, PROGRESOS, CONTEXT)
+
+    expect(result.estado).toBe('estancada')
+  })
+
+  it('acota el puntaje al rango 0-100', async () => {
+    mockFetchSuccess(JSON.stringify({ estado: 'avanza', puntaje: 150, resumen: 'ok' }))
+
+    const result = await analyzeClassProgress(SESIONES, PROGRESOS, CONTEXT)
+
+    expect(result.puntaje).toBe(100)
+  })
+
+  it('propaga el error cuando la API falla — no devuelve un veredicto falso en silencio', async () => {
+    mockFetchNetworkError()
+
+    await expect(analyzeClassProgress(SESIONES, PROGRESOS, CONTEXT)).rejects.toThrow()
   })
 })

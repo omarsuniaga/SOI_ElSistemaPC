@@ -10,7 +10,8 @@
  *   1. Carga contratos AGT del/los departamento(s) del batch (asset estático).
  *   2. Carga actores relevantes (ej. representantes morosos si hay evento de cobranza).
  *   3. UNA llamada a Groq (patrón `groq-proxy`: GROQ_API_KEY server-side,
- *      modelo llama-3.3-70b-versatile, proveedor conmutable groq|openrouter).
+ *      modelo configurable via SIMULADOR_LLM_MODEL (default openai/gpt-oss-120b),
+ *      proveedor conmutable groq|openrouter).
  *   4. Parse defensivo de la respuesta (fallback si mal formado -> no explota el tick).
  *   5. INSERT sim_tareas + sim_log (service_role).
  *   6. INSERT sim_outbox con destinatario SIEMPRE forzado a la whitelist
@@ -63,6 +64,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const SIM_RUN_TOKEN = Deno.env.get('SIM_RUN_TOKEN') ?? ''
+// llama-3.3-70b-versatile fue deprecado por Groq (shutdown 08/16/26); reemplazo
+// oficial recomendado: openai/gpt-oss-120b. Configurable via env var.
+const SIMULADOR_LLM_MODEL = Deno.env.get('SIMULADOR_LLM_MODEL')?.trim() || 'openai/gpt-oss-120b'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -290,7 +294,7 @@ async function llamarLlm(system: string, user: string, provider: string) {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', 'X-Title': 'SOI Simulador' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: SIMULADOR_LLM_MODEL,
         temperature: 0.3,
         max_tokens: 2048,
         messages: [
@@ -309,7 +313,7 @@ async function llamarLlm(system: string, user: string, provider: string) {
     method: 'POST',
     headers: { Authorization: `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: SIMULADOR_LLM_MODEL,
       temperature: 0.3,
       max_tokens: 2048,
       messages: [

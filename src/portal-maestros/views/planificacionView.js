@@ -18,10 +18,9 @@ import { resolveClassRouteStatus } from '../utils/planificacionRouteStatus.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import * as bootstrap from 'bootstrap'
 import { router as internalRouter } from '../../core/router/router.js'
-import { renderMapaContenidoSVG } from '../../modules/planificacion/components/MapaContenidoSVG.js'
-import { obtenerAlumnosRealesPorClase } from '../../modules/planificacion/services/realAlumnosService.js'
-import { OfflineSyncAdapter } from '../../modules/planificacion/api/offlineSyncAdapter.js'
-import { IndicadorLogro } from '../../modules/planificacion/domain/IndicadorLogro.js'
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { abrirMapaDeRutas } from '../components/teacherRouteMapPanel.js'
+import { openTeacherRoutePicker } from '../components/TeacherRouteBuilder.js'
 
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
@@ -671,12 +670,17 @@ export async function renderPlanificacionView(container, { maestroId, router: po
       announce(`${clasesConMetricas.length} clases cargadas.`)
 
       // Listeners en tarjetas — soporta clic y Enter/Space
+      // Antes esto navegaba directo a `planificacion-ruta` (el catálogo global
+      // viejo), sin pasar nunca por el modal de detalle ya construido acá abajo
+      // (Perfil/Mi Plan/Temas/Indicadores) — quedaba muerto. Ahora sí lo abre.
       contentDiv.querySelectorAll('.pm-class-card-interactive').forEach((card) => {
         const handler = async () => {
           const claseId  = card.dataset.claseId
           const selected = clasesConMetricas.find((c) => String(c.id) === String(claseId))
           if (!selected) return
-          activeRouter.navigate(`planificacion-ruta?clase=${selected.id}`)
+          currentClaseId = selected.id
+          await refreshData()
+          openClassDetail(selected)
         }
         card.addEventListener('click', handler)
         card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler() } })
@@ -860,10 +864,10 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                     </div>
                     <div style="display:flex; gap:0.5rem;">
                       <button type="button" class="btn btn-sm btn-primary fw-semibold rounded-3 btn-modal-disenador">
-                        ✏️ 1. Diseñar Malla / Contenidos
+                        ✏️ Editar Unidades, Objetivos e Indicadores
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-3 btn-modal-ruta-full">
-                        🗺️ 2. Mapa Alumno vs Contenido (SVG)
+                        🗺️ Ver Mapa de la Clase
                       </button>
                     </div>
                   </div>
@@ -1040,39 +1044,17 @@ export async function renderPlanificacionView(container, { maestroId, router: po
               `}
             </div>
 
-            <!-- ── Pestaña: Ruta Pedagógica SVG ── -->
+            <!-- ── Pestaña: Mapa de la clase (maestro_routes) ── -->
             <div class="pm-tab-pane ${initialTab === 'ruta_svg' ? '' : 'd-none'}" data-pane="ruta_svg">
-              <div style="padding:1rem; border:1px solid var(--pm-border); border-radius:14px; background:var(--pm-surface-2,rgba(0,0,0,0.015));">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-                  <div>
-                    <h5 style="margin:0; font-weight:800; color:var(--pm-text);">Grafo Vectorial SVG - ${escapeHtml(clase.nombre)}</h5>
-                    <div style="font-size:0.8rem; color:var(--pm-text-muted);">Tocá cualquier nodo para abrir la matriz de alumnos reales y evaluar con 1-Tap ★.</div>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-3 btn-modal-ruta-full" data-bs-dismiss="modal">
-                    <i class="bi bi-arrows-fullscreen me-1"></i>Ver en Pantalla Completa
-                  </button>
-                </div>
-
-                <div id="pm-svg-canvas-host-${clase.id}" style="min-height:260px; background:var(--pm-surface); border-radius:12px; padding:1rem; border:1px solid var(--pm-border);"></div>
-
-                <!-- Panel de Alumnos por Nodo -->
-                <div id="pm-nodo-alumnos-host-${clase.id}" style="display:none; margin-top:1.2rem; padding-top:1rem; border-top:1px dashed var(--pm-border);">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                    <h6 style="font-weight:700; color:var(--pm-text); margin:0;" id="pm-nodo-titulo-${clase.id}">Evaluación por Alumno</h6>
-                    <span class="badge bg-primary-subtle text-primary border px-2 py-1">1-Tap Star Rating</span>
-                  </div>
-                  <div class="table-responsive" style="max-height:260px;">
-                    <table class="table table-sm table-hover align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th>Alumno Real</th>
-                          <th class="text-center">Calificación (1-5★)</th>
-                        </tr>
-                      </thead>
-                      <tbody id="pm-nodo-alumnos-tbody-${clase.id}"></tbody>
-                    </table>
-                  </div>
-                </div>
+              <div style="padding:1.5rem; border:1px solid var(--pm-border); border-radius:14px; background:var(--pm-surface-2,rgba(0,0,0,0.015)); text-align:center;">
+                <div style="font-size:2.2rem; margin-bottom:0.5rem;">🗺️</div>
+                <h5 style="margin:0 0 0.4rem; font-weight:800; color:var(--pm-text);">Mapa de "${escapeHtml(clase.nombre)}"</h5>
+                <p style="font-size:0.85rem; color:var(--pm-text-muted); max-width:420px; margin:0 auto 1.1rem;">
+                  Unidad → Objetivo → Indicador, con el check de calificación de cada alumno presente.
+                </p>
+                <button type="button" class="btn btn-primary fw-semibold rounded-3 btn-modal-ruta-full" data-bs-dismiss="modal">
+                  <i class="bi bi-signpost-2-fill me-1"></i>Abrir mapa
+                </button>
               </div>
             </div>
 
@@ -1102,7 +1084,6 @@ export async function renderPlanificacionView(container, { maestroId, router: po
         allTabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === target))
         allTabPanes.forEach((p) => p.classList.toggle('d-none', p.dataset.pane !== target))
         if (target === 'plan') _montarPanelPlan()
-        if (target === 'ruta_svg') _montarPanelRutaSVG()
       })
     })
 
@@ -1128,7 +1109,10 @@ export async function renderPlanificacionView(container, { maestroId, router: po
       })
     }
 
-    const _closeModalAndNavigate = (targetRoute, params = {}) => {
+    // Cierra este modal y abre el mapa real de la clase (maestro_routes) — antes
+    // estos dos botones navegaban a `planificacion-disenador`/`planificacion-ruta`,
+    // el catálogo institucional global que se abandonó (ver decisión "Sistema A").
+    const _closeModalThen = (fn) => {
       if (document.activeElement) document.activeElement.blur()
       if (classDetailModal) {
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -1141,49 +1125,24 @@ export async function renderPlanificacionView(container, { maestroId, router: po
       document.body.classList.remove('modal-open')
       document.body.style.removeProperty('overflow')
       document.body.style.removeProperty('padding-right')
-      activeRouter.navigate(targetRoute, params)
+      fn()
     }
 
     classDetailModal.querySelectorAll('.btn-modal-disenador').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-disenador', { claseId: clase.id }))
+      b.addEventListener('click', () => _closeModalThen(() => {
+        // Picker (no builder directo): si la clase ya tiene ruta hay que
+        // editar ESA, nunca crear una segunda — maestro_routes tiene
+        // UNIQUE(maestro_id, clase_id).
+        openTeacherRoutePicker(maestroId, clase.id, () => updateClassCard(clase.id))
+      }))
     })
     classDetailModal.querySelectorAll('.btn-modal-ruta-full').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-ruta', { claseId: clase.id }))
-    })
-
-    let rutaSvgMontado = false
-    async function _montarPanelRutaSVG() {
-      if (rutaSvgMontado) return
-      rutaSvgMontado = true
-
-      const canvasHost = classDetailModal.querySelector(`#pm-svg-canvas-host-${clase.id}`)
-      if (!canvasHost) return
-
-      const alumnosReales = await obtenerAlumnosRealesPorClase(clase.id)
-
-      const nodosDemo = (weekItems || []).map((w, i) => ({
-        id: `w-node-${w.week_number || i + 1}`,
-        titulo: w.topic || `Clase ${w.week_number || i + 1}`,
-        estado: i === 0 ? 'logrado' : i === 1 ? 'en_proceso' : 'pendiente',
+      b.addEventListener('click', () => _closeModalThen(async () => {
+        const maestro = getMaestroLocal()
+        const fechaHoy = new Date().toISOString().slice(0, 10)
+        await abrirMapaDeRutas(clase.id, maestro, fechaHoy)
       }))
-
-      const nodosFinales = nodosDemo.length > 0 ? nodosDemo : [
-        { id: 'nd-1', titulo: 'Postura corporal y emisión sonora libre', estado: 'logrado' },
-        { id: 'nd-2', titulo: 'Escala de Do Mayor en cuerdas Re-Sol', estado: 'en_proceso' },
-        { id: 'nd-3', titulo: 'Estudio Nº 4: Control de pulso a 80 BPM', estado: 'pendiente' },
-      ]
-
-      renderMapaContenidoSVG({
-        container: canvasHost,
-        nodos: nodosFinales,
-        onNodeClick: (nodo) => {
-          _renderAlumnosModalNodo(classDetailModal, clase.id, nodo, alumnosReales)
-        },
-      })
-    }
-
-    if (initialTab === 'ruta_svg') _montarPanelRutaSVG()
-
+    })
 
     // ── Pestaña "Mi Plan" ────────────────────────────────────────────────────
     // Se monta al abrirla por primera vez y no antes: consulta la base, y la
@@ -1426,56 +1385,6 @@ export async function renderPlanificacionView(container, { maestroId, router: po
 
     bs.show()
     announce(`Panel de clase ${clase.nombre} abierto.`)
-  }
-
-  function _renderAlumnosModalNodo(modal, claseId, nodo, alumnosReales) {
-    const panel = modal.querySelector(`#pm-nodo-alumnos-host-${claseId}`)
-    const lblTitulo = modal.querySelector(`#pm-nodo-titulo-${claseId}`)
-    const tbody = modal.querySelector(`#pm-nodo-alumnos-tbody-${claseId}`)
-    if (!panel || !tbody) return
-
-    panel.style.display = 'block'
-    if (lblTitulo) lblTitulo.textContent = `Evaluación Alumnos: ${nodo.titulo}`
-
-    const _draw = () => {
-      tbody.innerHTML = (alumnosReales || [])
-        .map((a) => {
-          let starsHTML = ''
-          for (let i = 1; i <= 5; i++) {
-            starsHTML += i <= a.estrellas ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '<i class="bi bi-star text-secondary opacity-50 me-1"></i>'
-          }
-          return `
-          <tr class="pm-row-alumno-node" data-id="${a.id}" style="cursor:pointer;">
-            <td class="fw-bold" style="color:var(--pm-text);">${escapeHtml(a.nombre)}</td>
-            <td class="text-center">
-              <span class="fs-6">${starsHTML}</span>
-              <small style="color:var(--pm-text-muted);" class="ms-1">(${a.estrellas > 0 ? a.estrellas + '/5★' : 'Sin Registrar'})</small>
-            </td>
-          </tr>
-        `
-        })
-        .join('')
-
-      tbody.querySelectorAll('.pm-row-alumno-node').forEach((tr) => {
-        tr.addEventListener('click', () => {
-          const id = tr.dataset.id
-          const target = alumnosReales.find((al) => String(al.id) === String(id))
-          if (target) {
-            target.estrellas = IndicadorLogro.siguienteEstrella(target.estrellas)
-            OfflineSyncAdapter.guardarLocal({
-              alumnoId: target.id,
-              claseId,
-              nodoId: nodo.id,
-              estrellas: target.estrellas,
-            })
-            _draw()
-            AppToast.show(`${target.nombre}: ${target.estrellas}★ guardados`, 'info')
-          }
-        })
-      })
-    }
-
-    _draw()
   }
 
   // ── Iniciar la carga ────────────────────────────────────────────────────────

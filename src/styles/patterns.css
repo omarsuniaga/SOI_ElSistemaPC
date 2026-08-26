@@ -3,7 +3,73 @@
    Extracted from clases.css + salones.css to eliminate duplication.
    ============================================================================ */
 
+/* ── Universal Page Header ──────────────────────────────────────────────── */
+
+.page-header-premium,
+.alumnos-header-premium,
+.maestros-header-premium,
+.clases-header-premium,
+.salones-header-premium,
+.programas-header-premium {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.page-title-premium,
+.alumnos-title-premium,
+.maestros-title-premium,
+.clases-title-premium,
+.salones-title-premium,
+.programas-title-premium {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--bs-body-color);
+}
+
+.page-header-actions,
+.alumnos-header-actions,
+.maestros-header-actions,
+.clases-header-actions,
+.salones-header-actions,
+.programas-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .page-header-premium,
+  .alumnos-header-premium,
+  .maestros-header-premium,
+  .clases-header-premium,
+  .salones-header-premium,
+  .programas-header-premium {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .page-header-actions,
+  .alumnos-header-actions,
+  .maestros-header-actions,
+  .clases-header-actions,
+  .salones-header-actions,
+  .programas-header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
 /* ── List Group Items ───────────────────────────────────────────────────── */
+
 
 .list-group-item {
   border: none;

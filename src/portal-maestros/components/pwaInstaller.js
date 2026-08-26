@@ -14,6 +14,8 @@ import { getSesiones, getMisClases } from '../services/maestroDataService.js'
 let deferredPrompt = null
 let smartBannerEl = null
 let guideModalEl = null
+let lastInsightsEvaluation = 0
+const INSIGHTS_REVALIDATE_MS = 60 * 1000
 
 export const pwaInstaller = {
   init() {
@@ -37,6 +39,11 @@ export const pwaInstaller = {
   async evaluateInsights() {
     const maestro = getMaestroLocal()
     if (!maestro?.id) return
+
+    // Evita repetir consultas de siete días al navegar entre vistas. La
+    // evaluación inicial y la revalidación periódica siguen cubriendo alertas.
+    if (Date.now() - lastInsightsEvaluation < INSIGHTS_REVALIDATE_MS) return
+    lastInsightsEvaluation = Date.now()
 
     try {
       // 1. Obtener datos clave en paralelo (aprovechando la cache en memoria)

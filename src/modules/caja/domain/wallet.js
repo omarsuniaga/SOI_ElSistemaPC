@@ -1,46 +1,47 @@
 /**
  * Domain: wallet
  * Wallet / balance management — no Supabase imports.
+ * All monetary fields are integer centavos (RD$1.00 = 100 centavos). ADR-002.
  */
 
 /**
- * Returns saldo_resultante of the last movement (or 0 if empty).
+ * Returns saldo_resultante_centavos of the last movement (or 0 if empty).
  */
 export function calcularSaldoActual(movimientos) {
   if (!movimientos || movimientos.length === 0) return 0
-  return movimientos[movimientos.length - 1].saldo_resultante
+  return movimientos[movimientos.length - 1].saldo_resultante_centavos
 }
 
-export function buildMovimientoCredito({ familia_id, monto, origen, referencia_id, descripcion, saldoAnterior }) {
-  const saldo_resultante = saldoAnterior + monto
+export function buildMovimientoCredito({ familia_id, monto_centavos, origen, referencia_id, descripcion, saldoAnterior }) {
+  const saldo_resultante_centavos = saldoAnterior + monto_centavos
   return {
     familia_id,
     tipo: 'credito',
-    monto,
+    monto_centavos,
     origen,
     referencia_id,
     descripcion,
-    saldo_resultante,
+    saldo_resultante_centavos,
   }
 }
 
-export function buildMovimientoDebito({ familia_id, monto, origen, referencia_id, descripcion, saldoAnterior }) {
-  if (monto > saldoAnterior) {
-    throw new Error(`Saldo insuficiente: saldo ${saldoAnterior}, débito ${monto}`)
+export function buildMovimientoDebito({ familia_id, monto_centavos, origen, referencia_id, descripcion, saldoAnterior }) {
+  if (monto_centavos > saldoAnterior) {
+    throw new Error(`Saldo insuficiente: saldo ${saldoAnterior}, débito ${monto_centavos}`)
   }
-  const saldo_resultante = saldoAnterior - monto
+  const saldo_resultante_centavos = saldoAnterior - monto_centavos
   return {
     familia_id,
     tipo: 'debito',
-    monto,
+    monto_centavos,
     origen,
     referencia_id,
     descripcion,
-    saldo_resultante,
+    saldo_resultante_centavos,
   }
 }
 
-export function canDebitarWallet(walletConfig, monto, proposito) {
+export function canDebitarWallet(walletConfig, monto_centavos, proposito) {
   const { modo } = walletConfig
   if (modo === 'mixto') return true
   if (modo === 'solo_accesorios') return proposito === 'accesorio'
@@ -48,8 +49,8 @@ export function canDebitarWallet(walletConfig, monto, proposito) {
   return false
 }
 
-export function alertaSaldoBajo(walletConfig, saldoActual) {
-  return saldoActual < walletConfig.saldo_minimo_alerta
+export function alertaSaldoBajo(walletConfig, saldoActualCentavos) {
+  return saldoActualCentavos < walletConfig.saldo_minimo_alerta_centavos
 }
 
 // ---------------------------------------------------------------------------
@@ -82,11 +83,11 @@ export function buildRefundMovimiento({ familia_id, saldo, walletConfig }) {
   return {
     familia_id,
     tipo: 'debito',
-    monto: saldo,
+    monto_centavos: saldo,
     origen: 'ajuste',
     referencia_id: null,
     descripcion: 'Devolución de saldo — retiro de último alumno',
-    saldo_resultante: 0,
+    saldo_resultante_centavos: 0,
   }
 }
 

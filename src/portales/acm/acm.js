@@ -17,6 +17,7 @@ const navGroups = [
     icon: 'bi-easel',
     items: [
       { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
+      { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'programas', label: 'Programas', icon: 'bi-book' },
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
@@ -30,9 +31,9 @@ const navGroups = [
     items: [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
       { id: 'planificacion-acm', label: 'Planificación', icon: 'bi-journal-text' },
+      { id: 'planificacion-ruta', label: 'Rutas de Aprendizaje', icon: 'bi-signpost-2' },
       { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
-      { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
       { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
       { id: 'pedagogico-evaluaciones', label: 'Evaluaciones', icon: 'bi-clipboard2-check' },
       { id: 'pedagogico-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
@@ -58,7 +59,10 @@ const navGroups = [
     id: 'hermes',
     label: 'Hermes',
     icon: 'bi-robot',
-    items: [{ id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' }],
+    items: [
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+    ],
   },
 ]
 

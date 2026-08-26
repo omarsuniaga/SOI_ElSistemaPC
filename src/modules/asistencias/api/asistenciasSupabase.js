@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { logSubstituteActivity, isSubstituteAssignment } from '../../../portal-maestros/services/substituteAuditService.js'
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
@@ -162,8 +163,9 @@ export async function getDetalleSesion(sesionId) {
       `
       id, fecha, hora_inicio, hora_fin,
       tema_principal, observaciones_generales, estado,
+      contenido, salon_id,
       clases (
-        nombre, instrumento,
+        nombre, instrumento, salon,
         maestros!fk_clases_maestro_principal ( nombre_completo )
       )
     `,
@@ -230,9 +232,13 @@ export async function getDetalleSesion(sesionId) {
       horaFin: sc.hora_fin,
       temaPrincipal: sc.tema_principal,
       observacionesGenerales: sc.observaciones_generales,
+      // Contenido tal cual lo escribió el maestro. Es la columna viva:
+      // `tema_principal` y `observaciones_generales` quedaron casi sin uso.
+      contenido: sc.contenido ?? null,
       estado: sc.estado,
       claseNombre: sc.clases?.nombre ?? '—',
       instrumento: sc.clases?.instrumento ?? '—',
+      salon: sc.clases?.salon ?? null,
       maestroNombre: sc.clases?.maestros?.nombre_completo ?? '—',
     },
     asistencias: (asistencias || []).map((a) => ({
@@ -425,6 +431,100 @@ export async function obtenerEstadoCumplimientoMaestro(maestroId, periodoId = nu
   }
 }
 
+/**
+ * Fuente única de verdad para las clases programadas y su cumplimiento.
+ * El cálculo vive en PostgreSQL para que Portal Maestros, Admin y Hermes
+ * clasifiquen la misma clase/fecha de la misma forma.
+ */
+export async function obtenerEstadosAsistenciaMaestro(maestroId, desde, hasta) {
+  if (!maestroId || !desde || !hasta) return []
+
+  const { data, error } = await supabase.rpc('fn_estado_asistencia_maestro', {
+    p_maestro_id: maestroId,
+    p_desde: desde,
+    p_hasta: hasta,
+  })
+
+  if (error) throwError('No se pudo obtener el estado de asistencia del maestro', error)
+  return data || []
+}
+
+/**
+ * Resumen centralizado de solvencia. Con maestroId nulo solo puede ser usado
+ * por un administrador; un maestro solo puede consultar su propio resumen.
+ */
+export async function obtenerResumenCumplimientoAsistencia(desde, hasta, maestroId = null) {
+  if (!desde || !hasta) return []
+
+  const { data, error } = await supabase.rpc('fn_resumen_cumplimiento_asistencia', {
+    p_desde: desde,
+    p_hasta: hasta,
+    p_maestro_id: maestroId,
+  })
+
+  if (error) throwError('No se pudo obtener el resumen de cumplimiento', error)
+  return data || []
+}
+
+// ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
+
+/**
+ * Checks whether attendance has already been recorded for a class on a
+ * given date, and returns the roster of PRESENT students for that day.
+ * Used by `MapaClaseView.js` to gate the switch into "Dar Clase" (Modo
+ * Sesión MUST NOT be reachable for a date without recorded attendance,
+ * REQ-03) and by `calificacionIndicadorPanel.js` to scope grading to
+ * students actually present today (REQ-05 — not the full class roster).
+ *
+ * @param {{claseId: string, fecha: string}} params
+ * @returns {Promise<{tomada: boolean, presentes: Array<{id: string, nombre: string}>}>}
+ */
+export async function obtenerAsistenciaDelDia({ claseId, fecha } = {}) {
+  if (!claseId || !fecha) return { tomada: false, presentes: [] }
+
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('id, estado, alumno_id, alumnos ( id, nombre_completo )')
+    .eq('clase_id', claseId)
+    .eq('fecha', fecha)
+
+  if (error) throwError('No se pudo verificar la asistencia del día', error)
+
+  const registros = data || []
+  const presentes = registros
+    .filter((r) => r.estado === ESTADOS.PRESENTE)
+    .map((r) => ({ id: r.alumno_id, nombre: r.alumnos?.nombre_completo ?? '—' }))
+
+  return { tomada: registros.length > 0, presentes }
+}
+
+/**
+ * Todos los registros de asistencias (cualquier estado) de una o varias
+ * clases en una misma fecha, indexados por clase_id → alumno_id. Usado por
+ * el tablero "Clases de Hoy" para no hacer N queries (una por clase) al
+ * pintar el feed completo del día, y para saber qué alumnos ya tienen un
+ * estado precargado (ej. 'justificado') antes de que el maestro tome
+ * asistencia — así se evita duplicar el INSERT.
+ */
+export async function obtenerAsistenciasPorClasesFecha(claseIds = [], fecha) {
+  const ids = [...new Set((claseIds || []).filter(Boolean))]
+  if (ids.length === 0 || !fecha) return {}
+
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('clase_id, alumno_id, estado, justificacion_texto')
+    .in('clase_id', ids)
+    .eq('fecha', fecha)
+
+  if (error) throwError('No se pudo verificar la asistencia de las clases', error)
+
+  return (data || []).reduce((acc, r) => {
+    if (!acc[r.clase_id]) acc[r.clase_id] = {}
+    acc[r.clase_id][r.alumno_id] = { estado: r.estado, justificacion_texto: r.justificacion_texto }
+    return acc
+  }, {})
+}
+
 export async function getClases() {
   const { data, error } = await supabase
     .from('clases')
@@ -491,7 +591,7 @@ export async function crearAsistencia(asistencia) {
   return data[0]
 }
 
-export async function registrarAsistenciaBulk(asistencias) {
+export async function registrarAsistenciaBulk(asistencias, auditContext = {}) {
   if (!asistencias?.length) throwError('No hay asistencias para registrar')
 
   const alumnoIds = [...new Set(asistencias.map((a) => a.alumno_id))]
@@ -571,6 +671,23 @@ export async function registrarAsistenciaBulk(asistencias) {
   }
 
   if (error) throwError('No se pudieron registrar las asistencias', error)
+  if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, auditContext.maestroId || auditContext.maestro?.id)) {
+    await logSubstituteActivity({
+      action: 'SUBSTITUTE_ATTENDANCE',
+      clase: auditContext.clase,
+      maestroTitularId: auditContext.clase?.maestro_principal_id || null,
+      maestroSuplenteId: auditContext.maestroId || auditContext.maestro?.id || null,
+      fecha: auditContext.fecha || auditContext.fechaHoy || null,
+      sesionId: auditContext.sesionId || null,
+      userId: auditContext.userId || auditContext.maestroUserId || null,
+      summary: `Se registró asistencia como suplente en "${auditContext.clase?.nombre || auditContext.clase?.clase_nombre || 'Clase'}"`,
+      changes: {
+        total_presentes: records.filter((a) => a.estado === ESTADOS.PRESENTE).length,
+        total_ausentes: records.filter((a) => a.estado === ESTADOS.AUSENTE).length,
+        total_justificados: records.filter((a) => a.estado === ESTADOS.JUSTIFICADO).length,
+      },
+    })
+  }
   return data
 }
 
@@ -688,12 +805,15 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         }
 
         const clase = {
+          // Sin esto la fila del timeline renderiza data-id="undefined" y el
+          // modal de detalle nunca puede abrir.
+          sesion_clase_id: row.sesion_clase_id,
           clase_id: row.clase_id,
           clase_nombre: row.nombre_clase || metaClase.nombre || 'Clase',
           instrumento: metaClase.instrumento || 'General',
-          fecha: row.fecha,
-          hora_inicio: horaIni || null,
-          hora_fin: horaFin || null,
+          hora_inicio: row.hora_inicio || horaIni || null,
+          hora_fin: row.hora_fin || horaFin || null,
+          salon_id: row.salon_id || null,
           maestro_nombre: row.maestro_principal || 'Sin asignar',
           maestro_auxiliar_nombre: row.maestro_auxiliar || null,
           observacion_clase: row.observacion_clase || null,

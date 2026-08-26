@@ -11,7 +11,7 @@ services:
       # Configuración del Servidor Baileys
       - SERVER_PORT=8080
       - SERVER_URL=http://localhost:8080
-      - AUTHENTICATION_API_KEY=sk_live_soi_baileys_secure
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:?Define EVOLUTION_API_KEY en docker/whatsapp-gateway/.env}
       
       # Persistencia de Claves Multi-Device y Sesión WhatsApp
       - DATABASE_PROVIDER=local
@@ -20,7 +20,7 @@ services:
       
       # Webhook hacia Supabase Edge Functions
       - WEBHOOK_GLOBAL_ENABLED=true
-      - WEBHOOK_GLOBAL_URL=https://[TU-SUPABASE-PROJECT].supabase.co/functions/v1/whatsapp-webhook
+      - WEBHOOK_GLOBAL_URL=https://zmhmdvmyeyswunurcyow.supabase.co/functions/v1/whatsapp-webhook
       - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=true
       - WEBHOOK_EVENTS_MESSAGES_UPSERT=true
       - WEBHOOK_EVENTS_CONNECTION_UPDATE=true

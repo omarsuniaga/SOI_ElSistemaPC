@@ -54,7 +54,9 @@ export const moduleCatalog = Object.freeze([
   module('admin-notificaciones', 'src/modules/admin-notificaciones/admin-notificaciones.router.js', 'DIR', [['admin-notificaciones']]),
   module('admin-aprobacion', 'src/modules/admin-aprobacion/admin-aprobacion.router.js', 'DIR', [['admin-aprobacion'], ['admin-ausencias']]),
   module('gestion-usuarios', 'src/modules/admin-usuarios/admin-usuarios.router.js', 'DIR', [['gestion-usuarios']]),
-  module('maestros', 'src/modules/maestros/maestros.router.js', 'ADM', [['maestros']]),
+  module('maestros', 'src/modules/maestros/maestros.router.js', 'ADM', [
+    ['maestros'], ['clases-hoy'], ['bitacora-suplentes', 'workflow'],
+  ]),
   module('alumnos', 'src/modules/alumnos/alumnos.router.js', 'shared', [
     ['alumnos'], ['alumnos-reporte-mes', 'workflow'], ['alumnos-inscribir', 'workflow'], ['alumnos-pdf-demo', 'workflow'], ['alumno', 'internal-detail'], ['postulados'], ['postulado', 'internal-detail'], ['postulados-calendario'],
   ]),
@@ -71,7 +73,9 @@ export const moduleCatalog = Object.freeze([
   module('metricas', 'src/modules/metricas/metricas.router.js', 'shared', [
     ['metricas'], ['metricas-alertas', 'internal-detail'], ['metricas-riesgo', 'internal-detail'], ['metricas-maestros', 'internal-detail'], ['metricas-destacados', 'internal-detail'], ['cierre-academico'], ['cierre-academico-historico'], ['metricas-ia-reportes', 'workflow'],
   ]),
-  module('permisos', 'src/modules/permisos/permisos.router.js', 'DIR', [['permisos']]),
+  module('permisos', 'src/modules/permisos/permisos.router.js', 'DIR', [
+    ['permisos'], ['matriz-permisos-sombra', 'internal-detail'],
+  ]),
   module('pedagogico', 'src/modules/pedagogico/pedagogico.router.js', 'ACM', [
     ['pedagogico-dashboard'], ['pedagogico-seguimiento'], ['pedagogico-reportes'], ['pedagogico-solicitudes', 'workflow'], ['pedagogico-seguimiento-institucional', 'internal-detail'], ['pedagogico-caso', 'internal-detail'], ['pedagogico-seguimiento-reglas', 'internal-detail'], ['pedagogico-evaluaciones'],
   ]),
@@ -90,12 +94,14 @@ export const moduleCatalog = Object.freeze([
   module('simulador', 'src/modules/simulador/index.js', 'DIR', [
     ['simulador-sala-trabajo', 'workflow'], ['simulador-panel-control'], ['simulador-calendario', 'workflow'], ['simulador-log', 'workflow'], ['simulador-outbox', 'workflow'],
   ]),
+  module('horario-general', 'src/modules/horario-general/horario-general.router.js', 'DIR', [['horario-general']]),
 
   module('auth', 'src/modules/auth/index.js', 'shared', [
     ['login', 'auth'], ['register', 'auth'], ['perfil', 'auth'], ['pending-approval', 'auth'],
   ]),
   module('hermes-core', 'src/main.js', 'DIR', [
     ['dir-score'], ['hermes-tareas'], ['hermes-caso', 'internal-detail'], ['hermes-procedimientos'], ['hermes-consulta'],
+    ['hermes-evento'], ['hermes-pulso'], ['hermes-reglas'], ['hermes-conciertos'], ['hermes-orquestador'], ['dir-alianzas'],
   ]),
   module('help', 'src/modules/help/index.js', 'shared', [['ayuda', 'workflow']]),
   module('catalog-diagnostics', 'src/main.js', 'DIR', [['diagnostico-catalogo']]),

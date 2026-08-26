@@ -1,31 +1,22 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
+import './fin-theme.css'
 import { supabase } from '../../lib/supabaseClient.js'
 import { renderFinPortal } from './finDashboardView.js'
 
 async function hasPortalAccess(userId) {
-  const { data } = await supabase
-    .from('profiles')
-    .select('rol')
-    .eq('id', userId)
-    .maybeSingle()
-  return data?.rol === 'admin' || data?.rol === 'cajero'
+  const { data } = await supabase.from('profiles').select('rol').eq('id', userId).maybeSingle()
+  return data?.rol === 'admin' || data?.rol === 'finanzas'
 }
 
 function renderLogin(app, errorMsg = null) {
-  app.style.background = ''
   app.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;
-      background:linear-gradient(135deg,#059669 0%,#0d9488 100%)">
-      <div style="background:#fff;border-radius:16px;padding:2.5rem;width:100%;max-width:380px;
-        box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div class="fin-login-shell">
+      <div class="fin-login-card">
         <div style="text-align:center;margin-bottom:1.5rem">
-          <div style="width:56px;height:56px;background:#d1fae5;border-radius:50%;
-            display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
-            <i class="bi bi-cash-coin" style="font-size:1.5rem;color:#059669"></i>
-          </div>
-          <h4 style="color:#111;margin:0;font-weight:700">Portal FIN</h4>
-          <p style="color:#6b7280;font-size:0.875rem;margin-top:0.25rem">El Sistema Punta Cana</p>
+          <div class="fin-login-mark"><i class="bi bi-cash-coin"></i></div>
+          <h4 style="margin:0;font-weight:700">Portal FIN</h4>
+          <p style="color:var(--fin-text-muted);font-size:0.875rem;margin-top:0.25rem">El Sistema Punta Cana</p>
         </div>
         ${errorMsg ? `<div class="alert alert-danger py-2 small">${errorMsg}</div>` : ''}
         <form id="login-form">
@@ -79,8 +70,17 @@ function renderLogin(app, errorMsg = null) {
 
 async function init() {
   const app = document.querySelector('#app')
+  const savedTheme = localStorage.getItem('fin-theme')
+  const isDark =
+    savedTheme === 'dark' ||
+    (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.setAttribute('data-fin-theme', isDark ? 'dark' : 'light')
+  document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light')
 
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
 
   if (error || !session) {
     renderLogin(app)

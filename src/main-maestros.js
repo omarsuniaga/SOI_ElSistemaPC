@@ -169,10 +169,7 @@ import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAu
 import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
 import { supabase } from './lib/supabaseClient.js'
-import {
-  prefetchEssentialData,
-  prefetchMonthData,
-} from './portal-maestros/services/maestroDataService.js'
+import { prefetchMonthData } from './portal-maestros/services/maestroDataService.js'
 import { cleanupPushService } from './portal-maestros/services/pushService.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
@@ -357,7 +354,6 @@ async function _renderViewSerial(route, params = {}, { silent = false } = {}) {
       if (input) input.value = ''
     }
     setActiveTab(baseRoute)
-    window.pwaInstaller?.evaluateInsights()
   }
 
   const targetContainer = _viewContainers[baseRoute]
@@ -632,20 +628,11 @@ async function initPortal() {
   // 4. Contenedores de vista
   Object.assign(_viewContainers, initViewContainers())
 
-  // 5. Datos esenciales: llenar cache compartido antes de que la primera vista
-  // y las notificaciones intenten pedir las mismas tablas en paralelo.
+  // 5. Mostrar la primera vista antes de cualquier trabajo que no sea necesario
+  // para navegar. Cada vista solicita sus propios datos y comparte cache/single-flight.
   _updateSplashState('data')
-  try {
-    await Promise.race([
-      prefetchEssentialData(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout de precarga')), 8000)),
-    ])
-  } catch (err) {
-    // Entrada degradada: el portal sigue disponible y las vistas reintentan bajo demanda.
-    console.warn('[Init] Precarga esencial incompleta:', err.message)
-  }
 
-  // 6. Eventos globales (una sola vez). Notificaciones comienzan después del cache esencial.
+  // 6. Eventos globales (una sola vez).
   setupGlobalAppEvents({
     isAdmin: false,
     getMaestro: () => _maestro,
@@ -694,7 +681,8 @@ async function initPortal() {
     router.navigate('hoy')
   }
 
-  // 9. Datos secundarios en idle. Nunca renderiza vistas ocultas.
+  // 9. Datos secundarios sólo cuando el navegador quede libre. Nunca deben
+  // retrasar la pantalla inicial ni competir con la primera interacción.
   const prefetchSecondary = () => {
     prefetchMonthData()
       .then(() => window.pwaInstaller?.evaluateInsights())

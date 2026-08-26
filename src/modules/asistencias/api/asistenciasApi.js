@@ -56,10 +56,20 @@ export async function crearAsistencia(asistencia) {
   return impl.crearAsistencia(asistencia)
 }
 
-export async function registrarAsistenciaBulk(asistencias) {
-  return impl.registrarAsistenciaBulk(asistencias)
+export async function registrarAsistenciaBulk(asistencias, auditContext) {
+  return impl.registrarAsistenciaBulk(asistencias, auditContext)
 }
 
 export async function getReporteConsolidado(params) {
   return impl.getReporteConsolidado(params)
+}
+
+// ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
+
+export async function obtenerAsistenciaDelDia(params) {
+  return impl.obtenerAsistenciaDelDia(params)
+}
+
+export async function obtenerAsistenciasPorClasesFecha(claseIds, fecha) {
+  return impl.obtenerAsistenciasPorClasesFecha(claseIds, fecha)
 }

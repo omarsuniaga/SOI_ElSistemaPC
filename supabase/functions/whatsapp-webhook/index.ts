@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { analizarIntencion } from './intentParser.ts'
+import { analizarIntencion, analizarIntencionAusencia, AUSENCIA_INTENTS } from './intentParser.ts'
 import { decidirAccion, CONV_ESTADOS, REINTENTOS_MAX, conflictoToMensaje } from './stateMachine.ts'
 import { buscarFaq, MENSAJE_FUERA_DE_ALCANCE } from './kb.ts'
 
@@ -108,6 +108,12 @@ function maybeSingle<T>(result: { data: T | null; error: unknown }): T | null {
 
 function esNumeroPersonal(jid: string): boolean {
   return jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@g.us')
+}
+
+function telefonoComparable(value: unknown): string {
+  const digits = String(value || '').replace(/\D/g, '')
+  // Dominican numbers are commonly stored with or without country code 1.
+  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
 }
 
 // Anti-ban / consentimiento: detectar intención de baja sin gastar tokens del LLM.
@@ -257,6 +263,20 @@ Deno.serve(async (req: Request) => {
 
   const supabase = getClient(true)
 
+  // ── Kill switch global (lee de system_config) ────────────────────────────
+  const { data: killSwitch, error: killSwitchError } = await supabase
+    .from('system_config')
+    .select('value')
+    .eq('key', 'whatsapp_ingest_enabled')
+    .maybeSingle()
+
+  if (killSwitchError) {
+    console.error('[webhook] Error leyendo system_config:', killSwitchError.message)
+  } else if (killSwitch?.value === 'false') {
+    console.log('[webhook] whatsapp_ingest_enabled=false. Entrada bloqueada.')
+    return json({ ok: true, ignored: 'whatsapp_ingest_disabled' })
+  }
+
   // ── Opt-out (consentimiento / anti-ban) ─────────────────────────────────
   // Se evalúa ANTES del LLM: respeta la baja y ahorra tokens.
   if (esOptOut(texto)) {
@@ -298,6 +318,162 @@ Deno.serve(async (req: Request) => {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[webhook] Error buscando conversación:', msg)
     return errorResponse(`Error en DB: ${msg}`, 502)
+  }
+
+  // ── Reconocimiento de Representantes / Alumnos del SOI ───────────────────
+  // Si el remitente es un padre/madre de un alumno activo, procesar como respuesta/justificación
+  const cleanPhone = jid.replace('@s.whatsapp.net', '').replace(/\D/g, '')
+  const last8Digits = cleanPhone.slice(-8)
+
+  if (last8Digits.length >= 8) {
+    try {
+      const { data: alumnosEncontrados } = await supabase
+        .from('alumnos')
+        .select('id, nombre_completo, representante_nombre, familiar_telefono, contacto_emergencia_telefono, representante_tlf, tlf_alumno')
+        .eq('activo', true)
+        .or(`familiar_telefono.ilike.%${last8Digits}%,contacto_emergencia_telefono.ilike.%${last8Digits}%,representante_tlf.ilike.%${last8Digits}%,tlf_alumno.ilike.%${last8Digits}%`)
+        .limit(1)
+
+      const alumno = alumnosEncontrados?.find((candidato) => {
+        const telefonoRemitente = telefonoComparable(cleanPhone)
+        return [
+          candidato.familiar_telefono,
+          candidato.contacto_emergencia_telefono,
+          candidato.representante_tlf,
+          candidato.tlf_alumno,
+        ].some((telefono) => telefonoComparable(telefono) === telefonoRemitente)
+      })
+
+      if (alumno) {
+        const nombreAlumno = alumno.nombre_completo || 'el alumno'
+        const nombreRepresentante = alumno.representante_nombre || 'representante'
+        console.log(`[webhook] Remitente reconocido como representante de alumno ${alumno.id} (${nombreAlumno})`)
+
+        // Buscar última inasistencia registrada sin justificar
+        const { data: ultimaAsistencia } = await supabase
+          .from('asistencias')
+          .select('id, clase_id')
+          .eq('alumno_id', alumno.id)
+          .eq('estado', 'ausente')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (!ultimaAsistencia?.id) {
+          // No hay ausencia pendiente: reconocido, pero no hay nada que gestionar aquí.
+          // No interceptamos — dejamos caer al flujo general (FAQ / conversación de postulante).
+        } else {
+          // Plantillas configurables por HERMES (regla R6), no strings sueltos en el código.
+          const { data: reglaR6 } = await supabase
+            .from('hermes_reactive_rules')
+            .select('conditions_json')
+            .eq('rule_type', 'R6')
+            .eq('departamento', 'ACM')
+            .maybeSingle()
+          const cond = (reglaR6?.conditions_json || {}) as Record<string, string>
+
+          // Analizar si el mensaje realmente habla del motivo de la ausencia
+          // ANTES de tocar la base de datos — nunca se asume por defecto.
+          const intencionAusencia = await analizarIntencionAusencia(GROQ_API_KEY, texto)
+          const esJustificacion =
+            intencionAusencia.intencion === AUSENCIA_INTENTS.JUSTIFICACION_AUSENCIA &&
+            intencionAusencia.confianza >= 0.5
+
+          let mensajeRespuesta: string
+          let intencionLog: string
+
+          if (esJustificacion) {
+            // 1. Insertar en tabla de justificaciones — solo cuando el mensaje confirma un motivo
+            await supabase.from('justificaciones').insert({
+              asistencia_id: ultimaAsistencia.id,
+              alumno_id: alumno.id,
+              clase_id: ultimaAsistencia.clase_id,
+              motivo: intencionAusencia.resumen_motivo || 'Justificación vía WhatsApp',
+              descripcion: texto,
+              estado: 'pendiente',
+            })
+
+            // 2. Emitir evento en el Event Spine (soi_eventos)
+            await supabase.from('soi_eventos').insert({
+              tipo: 'justificacion.creada',
+              entidad_tipo: 'alumno',
+              entidad_id: alumno.id,
+              payload: {
+                alumno_id: alumno.id,
+                nombre_alumno: nombreAlumno,
+                motivo: intencionAusencia.resumen_motivo || texto,
+                telefono: cleanPhone,
+                origen: 'whatsapp_inbound',
+              },
+              procesado: false,
+            })
+
+            // 3. Crear tarea para Coordinación Académica — quien evalúa si aplica como justificada
+            await supabase.from('tareas_institucionales').insert({
+              titulo: `Revisar justificación de inasistencia: ${nombreAlumno}`,
+              descripcion: texto.slice(0, 500),
+              departamento: 'ACM',
+              prioridad: 'media',
+              estado: 'pendiente',
+            })
+
+            const cierreTemplate =
+              cond.template_cierre ||
+              'Gracias por contarnos, {representante}. Hemos registrado el motivo de la ausencia de {alumno} y la Coordinación Académica lo revisará. Le recordamos avisar con anticipación la próxima vez que {alumno} no pueda asistir, así evitamos alarmas innecesarias. ¡Gracias por su compromiso con El Sistema Punta Cana!'
+            mensajeRespuesta = cierreTemplate
+              .replace(/\{representante\}/g, nombreRepresentante)
+              .replace(/\{alumno\}/g, nombreAlumno)
+            intencionLog = 'justificacion_inasistencia_alumno'
+          } else {
+            // El mensaje NO confirma un motivo de ausencia: no se crea justificación,
+            // se explora amablemente en vez de asumir.
+            const exploracionTemplate =
+              cond.template_exploracion ||
+              'Hola {representante}, notamos que {alumno} tiene una ausencia reciente sin justificar. ¿Nos podría contar brevemente el motivo? Así la Coordinación Académica puede darle seguimiento. Gracias por su compromiso con El Sistema Punta Cana.'
+            mensajeRespuesta = exploracionTemplate
+              .replace(/\{representante\}/g, nombreRepresentante)
+              .replace(/\{alumno\}/g, nombreAlumno)
+            intencionLog = `ausencia_sin_motivo_claro:${intencionAusencia.intencion}`
+          }
+
+          // Respetar opt-out (SIS-COM-01: opt-in explícito antes de comunicación automatizada).
+          // Se compara por sufijo de dígitos porque el jid se ha guardado en formatos
+          // inconsistentes en distintos puntos del pipeline (con y sin "@s.whatsapp.net").
+          const { data: optOutRow } = await supabase
+            .from('whatsapp_optout')
+            .select('jid')
+            .ilike('jid', `%${last8Digits}%`)
+            .maybeSingle()
+
+          if (!optOutRow) {
+            await supabase.from('hermes_whatsapp_queue').insert({
+              jid,
+              mensaje: mensajeRespuesta,
+              estado: 'pendiente',
+            })
+          }
+
+          await supabase.from('whatsapp_webhook_log').insert({
+            message_id: messageId,
+            jid_remitente: jid,
+            mensaje_texto: texto,
+            push_name: pushName,
+            intencion_detectada: optOutRow ? `${intencionLog}:optout_no_enviado` : intencionLog,
+            confianza: intencionAusencia.confianza,
+            respuesta_enviada: optOutRow ? null : mensajeRespuesta,
+          })
+
+          return json({
+            ok: true,
+            handled: esJustificacion ? 'soi_alumno_justificacion' : 'soi_alumno_exploracion',
+            alumno_id: alumno.id,
+            nombre: nombreAlumno,
+          })
+        }
+      }
+    } catch (inboundErr) {
+      console.error('[webhook] Error verificando alumno/representante:', inboundErr)
+    }
   }
 
   if (!conversacion) {

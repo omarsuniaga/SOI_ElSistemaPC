@@ -24,7 +24,7 @@ describe('CUOTA_ESTADOS', () => {
 })
 
 describe('buildCuotaForCiclo', () => {
-  const base = { familia_id: 'fam-1', alumno_id: 'alu-1', ciclo_mes: 6, ciclo_anio: 2026, monto_base: 300, concepto: 'mensualidad' }
+  const base = { familia_id: 'fam-1', alumno_id: 'alu-1', ciclo_mes: 6, ciclo_anio: 2026, monto_base_centavos: 30000, concepto: 'mensualidad' }
 
   test('builds cuota with estado pendiente', () => {
     const c = buildCuotaForCiclo(base)
@@ -41,9 +41,9 @@ describe('buildCuotaForCiclo', () => {
     expect(c.fecha_vencimiento).toBe('2026-03-05')
   })
 
-  test('monto_final equals monto_base by default', () => {
+  test('monto_final_centavos equals monto_base_centavos by default', () => {
     const c = buildCuotaForCiclo(base)
-    expect(c.monto_final).toBe(300)
+    expect(c.monto_final_centavos).toBe(30000)
   })
 
   test('includes all required fields', () => {
@@ -73,26 +73,26 @@ describe('canTransitionTo', () => {
 })
 
 describe('applyPagoToCuota', () => {
-  const cuota = { id: 'c1', monto_final: 300, estado: 'pendiente' }
+  const cuota = { id: 'c1', monto_final_centavos: 30000, estado: 'pendiente' }
 
   test('full payment → pagada, montoRestante=0', () => {
-    const r = applyPagoToCuota(cuota, 300)
+    const r = applyPagoToCuota(cuota, 30000)
     expect(r.newEstado).toBe('pagada')
     expect(r.montoRestante).toBe(0)
-    expect(r.montoCubierto).toBe(300)
+    expect(r.montoCubierto).toBe(30000)
   })
 
   test('partial payment → pendiente state stays, montoRestante > 0', () => {
-    const r = applyPagoToCuota(cuota, 100)
+    const r = applyPagoToCuota(cuota, 10000)
     expect(r.newEstado).toBe('pendiente')
-    expect(r.montoRestante).toBe(200)
-    expect(r.montoCubierto).toBe(100)
+    expect(r.montoRestante).toBe(20000)
+    expect(r.montoCubierto).toBe(10000)
   })
 
   test('overpayment covers the cuota, sobrante not tracked here', () => {
-    const r = applyPagoToCuota(cuota, 400)
+    const r = applyPagoToCuota(cuota, 40000)
     expect(r.newEstado).toBe('pagada')
-    expect(r.montoCubierto).toBe(300)
+    expect(r.montoCubierto).toBe(30000)
     expect(r.montoRestante).toBe(0)
   })
 })

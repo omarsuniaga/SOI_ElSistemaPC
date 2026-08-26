@@ -96,3 +96,16 @@ export async function setDocumentosInstitucionales({ reglamento, horario, bienve
   if (bienvenida !== undefined) ops.push(setConfig(DOCS_KEYS.URL_BIENVENIDA, bienvenida))
   await Promise.all(ops)
 }
+
+// ── Configuraciones dinámicas de formularios ──────────────────────────────
+
+export async function getMethodologyFields() {
+  const value = await getConfig('methodology_fields')
+  if (!value) return null
+  try {
+    return JSON.parse(value)
+  } catch (e) {
+    console.warn('Error parsing methodology_fields from system_config', e)
+    return null
+  }
+}

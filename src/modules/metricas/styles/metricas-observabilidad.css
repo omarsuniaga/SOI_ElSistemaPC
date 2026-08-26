@@ -1,8 +1,111 @@
 /* ============================================================================
    MÉTRICAS — OBSERVABILIDAD HUB STYLES
-   External CSS extracted from inline styles for CSP compliance.
+   External CSS extracted from inline styles for CSP compliance & Dark Mode.
    Conventions: .obs-* prefix, uses --soi-* and Bootstrap 5.3 tokens.
    ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   Theme & Dark Mode Variables for Metricas Hub
+   --------------------------------------------------------------------------- */
+:root {
+  --obs-bg-card: rgba(15, 23, 42, 0.75);
+  --obs-bg-card-hover: rgba(30, 41, 59, 0.85);
+  --obs-border: rgba(255, 255, 255, 0.08);
+  --obs-border-hover: rgba(99, 102, 241, 0.3);
+  --obs-text-primary: #f8fafc;
+  --obs-text-secondary: #94a3b8;
+  --obs-text-muted: #64748b;
+}
+
+/* ---------------------------------------------------------------------------
+   Metric Cards & Page Glass Container
+   --------------------------------------------------------------------------- */
+.page-glass {
+  background: var(--obs-bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--obs-border);
+  border-radius: 16px;
+  color: var(--obs-text-primary);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.pm-metric-card {
+  background: var(--obs-bg-card) !important;
+  border: 1px solid var(--obs-border) !important;
+  border-radius: 16px !important;
+  color: var(--obs-text-primary) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pm-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--obs-border-hover) !important;
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.4) !important;
+}
+
+.pm-metric-card .text-muted {
+  color: var(--obs-text-secondary) !important;
+}
+
+.obs-panel-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--obs-border);
+  border-radius: 14px;
+  color: var(--obs-text-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Navigation Tabs
+   --------------------------------------------------------------------------- */
+.pm-tabs-container {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pm-tabs-container::-webkit-scrollbar {
+  display: none;
+}
+
+.obs-tab-group {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--obs-border);
+  border-radius: 14px;
+  width: 100%;
+}
+
+.obs-tab-btn {
+  flex: 1;
+  min-width: 130px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--obs-text-secondary);
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.obs-tab-btn:hover {
+  color: var(--obs-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.obs-tab-btn.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
 
 /* ---------------------------------------------------------------------------
    Terminal / Console — extracted from systemLogsWidget.js render()
@@ -144,8 +247,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Offline / Network Badge — extracted from dashboardMetricasView.js
-   _updateOfflineBadge() inline style: spinner-grow animation-duration
+   Offline / Network Badge
    --------------------------------------------------------------------------- */
 .obs-offline-badge {
   display: inline-flex;
@@ -154,30 +256,49 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Audit Trail Table Header — extracted from auditTrailWidget.js
+   Audit Trail Table Header & Styling
    --------------------------------------------------------------------------- */
 .obs-audit-header {
   font-size: 0.85rem;
   font-weight: 600;
+  color: var(--obs-text-secondary) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid var(--obs-border) !important;
+}
+
+.obs-table-dark {
+  color: var(--obs-text-primary);
+  background: transparent;
+}
+
+.obs-table-dark tr {
+  border-bottom: 1px solid var(--obs-border);
+  transition: background 0.15s ease;
+}
+
+.obs-table-dark tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.obs-table-dark td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+  color: var(--obs-text-primary);
 }
 
 /* ---------------------------------------------------------------------------
-   Guía Analítica Modal — extracted from dashboardMetricasView.js
-   _openGuiaAnaliticaModal() <style> block
+   Guía Analítica Modal
    --------------------------------------------------------------------------- */
 .obs-guia-modal-body {
-  font-family:
-    'Outfit',
-    'Inter',
-    -apple-system,
-    sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  color: var(--obs-text-primary);
 }
 
 .obs-guia-tab-btn {
   background: none;
   border: none;
   border-radius: 10px;
-   color: var(--soi-text-muted);
+  color: var(--obs-text-secondary);
   padding: 0.75rem 1rem;
   text-align: left;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -192,14 +313,14 @@
 }
 
 .obs-guia-tab-btn:hover {
-  background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.04);
-  color: var(--bs-primary, #0d6efd);
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
   padding-left: 1.15rem;
 }
 
 .obs-guia-tab-btn.active {
-  background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.08) !important;
-  color: var(--bs-primary, #0d6efd) !important;
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #818cf8 !important;
   font-weight: 600;
   padding-left: 1.15rem;
 }
@@ -211,23 +332,24 @@
   top: 20%;
   height: 60%;
   width: 3px;
-  background: var(--bs-primary, #0d6efd);
+  background: #6366f1;
   border-radius: 0 4px 4px 0;
 }
 
 .obs-guia-panel-card {
-  background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.5);
+  background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15);
+  border: 1px solid var(--obs-border);
   border-radius: 14px;
   padding: 1.25rem;
   transition: all 0.25s ease;
+  color: var(--obs-text-primary);
 }
 
 .obs-guia-panel-card:hover {
   transform: translateY(-1px);
-  border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
+  border-color: var(--obs-border-hover);
 }
 
 .obs-guia-icon-box {
@@ -242,30 +364,27 @@
 }
 
 .obs-guia-data-badge {
-  background: rgba(var(--bs-body-color-rgb, 33, 37, 41), 0.03);
-  border: 1px solid rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--obs-border);
   border-radius: 8px;
   padding: 0.4rem 0.65rem;
   font-size: 0.725rem;
   font-family: var(--bs-font-monospace, monospace);
-   color: var(--soi-text-muted);
+  color: var(--obs-text-secondary);
   display: inline-flex;
   align-items: center;
 }
 
 .obs-guia-formula-box {
-  background: linear-gradient(
-    135deg,
-    rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.8) 0%,
-    rgba(var(--bs-tertiary-bg-rgb, 248, 249, 250), 0.8) 100%
-  );
-  border: 1px dashed rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.7);
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   padding: 1.15rem;
+  color: var(--obs-text-primary);
 }
 
 /* ---------------------------------------------------------------------------
-   Network status badge on terminal — extracted from systemLogsWidget.js
+   Network status badge on terminal
    --------------------------------------------------------------------------- */
 .obs-net-status-badge {
   display: inline-flex;
@@ -274,33 +393,27 @@
 }
 
 /* ---------------------------------------------------------------------------
-   PR 2: CSP-compliant utility classes
+   CSP-compliant utility classes
    --------------------------------------------------------------------------- */
-
-/* Loading area for spinner */
 .obs-loading-area {
   min-height: 400px;
 }
 
-/* Slower spinner animation for offline badge */
 .obs-spinner-slow {
   animation-duration: 2s;
 }
 
-/* Small spinner for net status badge */
 .obs-net-spinner {
   width: 6px;
   height: 6px;
 }
 
-/* IA result box centering */
 .obs-ia-result-box {
-  max-width: 600px;
+  max-width: 650px;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Guía modal content area */
 .obs-guia-section-title {
   font-size: 1rem;
   letter-spacing: -0.01em;
@@ -311,7 +424,6 @@
   font-size: 0.825rem;
 }
 
-/* Audit trail badges */
 .obs-audit-action-label {
   font-size: 0.725rem;
 }
@@ -334,7 +446,6 @@
   font-size: 0.75rem;
 }
 
-/* IA report view */
 .obs-time-input {
   width: 100px;
 }
@@ -348,17 +459,15 @@
   line-height: 1.6;
 }
 
-/* Audit trail sortable header */
 .obs-audit-header-sortable {
   cursor: pointer;
   user-select: none;
 }
 
 .obs-audit-header-sortable:hover {
-  background-color: rgba(var(--bs-primary-rgb), 0.04);
+  background-color: rgba(99, 102, 241, 0.1);
 }
 
-/* 403 forbidden view */
 .obs-forbidden {
   min-height: 400px;
   display: flex;
@@ -366,7 +475,6 @@
   justify-content: center;
 }
 
-/* Scrollbar hide utility */
 .obs-scrollbar-none {
   scrollbar-width: none;
 }
@@ -374,15 +482,13 @@
   display: none;
 }
 
-/* Border color utility for guia modal */
 .obs-border-subtle {
-  border-color: rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15) !important;
+  border-color: var(--obs-border) !important;
 }
 
-/* ============================================================================
+/* ---------------------------------------------------------------------------
    RESPONSIVE — Mobile breakpoints for metricas views
-   ============================================================================ */
-
+   --------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   .obs-terminal-body {
     height: 220px;

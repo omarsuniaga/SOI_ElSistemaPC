@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const STORAGE_KEY = 'bitacora_demo'
@@ -78,6 +79,18 @@ describe('bitacoraAdapter routing', () => {
 
     const historial = await adapter.getHistorialContenido('clase_001', 'obj_001')
     expect(Array.isArray(historial)).toBe(true)
+  })
+
+  it('should return substitute audit logs via mock with expected shape', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+
+    const adapter = await import('../api/bitacoraAdapter.js')
+    await flushPromises()
+
+    const logs = await adapter.getAuditoriaSuplentes({ claseId: 'clase_001' })
+    expect(Array.isArray(logs)).toBe(true)
   })
 
   it('should fail when isDemoMode is false (no supabase in test)', async () => {

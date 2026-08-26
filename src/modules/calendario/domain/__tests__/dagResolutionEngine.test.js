@@ -9,28 +9,25 @@ import {
 
 describe('resolverEstadosIniciales', () => {
   it('raíz (dependeDeTMinusDias null) arranca como pendiente', () => {
-    const hitos = [{ tMinusDias: 90, dependeDeTMinusDias: null }]
-    const result = resolverEstadosIniciales(hitos)
+    const result = resolverEstadosIniciales([{ tMinusDias: 90, dependeDeTMinusDias: null }])
     expect(result[0].estadoInicial).toBe('pendiente')
   })
 
   it('hito con prerequisito arranca como bloqueada_por_dependencia', () => {
-    const hitos = [
+    const result = resolverEstadosIniciales([
       { tMinusDias: 90, dependeDeTMinusDias: null },
       { tMinusDias: 75, dependeDeTMinusDias: 90 },
-    ]
-    const result = resolverEstadosIniciales(hitos)
+    ])
     expect(result[0].estadoInicial).toBe('pendiente')
     expect(result[1].estadoInicial).toBe('bloqueada_por_dependencia')
   })
 
   it('cadena de 3: solo la raíz es pendiente', () => {
-    const hitos = [
+    const result = resolverEstadosIniciales([
       { tMinusDias: 90, dependeDeTMinusDias: null },
       { tMinusDias: 75, dependeDeTMinusDias: 90 },
       { tMinusDias: 60, dependeDeTMinusDias: 75 },
-    ]
-    const result = resolverEstadosIniciales(hitos)
+    ])
     expect(result.map(h => h.estadoInicial)).toEqual([
       'pendiente',
       'bloqueada_por_dependencia',
@@ -62,8 +59,7 @@ describe('construirArcosDag', () => {
   ]
 
   it('genera arcos solo para hitos con prerequisito', () => {
-    const arcos = construirArcosDag(hitos, insertadas)
-    expect(arcos).toHaveLength(2)
+    expect(construirArcosDag(hitos, insertadas)).toHaveLength(2)
   })
 
   it('mapea correctamente tMinusDias a IDs reales de BD', () => {
@@ -75,15 +71,17 @@ describe('construirArcosDag', () => {
   it('omite arcos con IDs no encontrados en las insertadas', () => {
     const hitosConHuerfano = [
       ...hitos,
-      { tMinusDias: 50, dependeDeTMinusDias: 999 }, // 999 no existe en insertadas
+      { tMinusDias: 50, dependeDeTMinusDias: 999 },
     ]
     const arcos = construirArcosDag(hitosConHuerfano, insertadas)
     expect(arcos.some(a => a.tareaId === null || a.dependeDeTareaId === null)).toBe(false)
   })
 
-  it('raíz (dependeDeTMinusDias null) no genera arco', () => {
-    const soloRaiz = [{ tMinusDias: 90, dependeDeTMinusDias: null }]
-    const arcos = construirArcosDag(soloRaiz, [{ id: 'uuid-90', t_minus_dias: 90 }])
+  it('raíz no genera arco', () => {
+    const arcos = construirArcosDag(
+      [{ tMinusDias: 90, dependeDeTMinusDias: null }],
+      [{ id: 'uuid-90', t_minus_dias: 90 }]
+    )
     expect(arcos).toHaveLength(0)
   })
 })
@@ -92,26 +90,25 @@ describe('construirArcosDag', () => {
 
 describe('validarSinCiclos', () => {
   it('protocolo válido no lanza error', () => {
-    const hitos = [
+    expect(() => validarSinCiclos([
       { tMinusDias: 90, dependeDeTMinusDias: null },
       { tMinusDias: 75, dependeDeTMinusDias: 90 },
       { tMinusDias: 70, dependeDeTMinusDias: 90 },
-    ]
-    expect(() => validarSinCiclos(hitos)).not.toThrow()
+    ])).not.toThrow()
   })
 
   it('auto-referencia lanza Error', () => {
-    const hitos = [{ tMinusDias: 90, dependeDeTMinusDias: 90 }]
-    expect(() => validarSinCiclos(hitos)).toThrow(/ciclo/i)
+    expect(() => validarSinCiclos([
+      { tMinusDias: 90, dependeDeTMinusDias: 90 },
+    ])).toThrow(/ciclo/i)
   })
 
   it('ciclo A→B→C→A lanza Error', () => {
-    const hitos = [
+    expect(() => validarSinCiclos([
       { tMinusDias: 10, dependeDeTMinusDias: 30 },
       { tMinusDias: 20, dependeDeTMinusDias: 10 },
       { tMinusDias: 30, dependeDeTMinusDias: 20 },
-    ]
-    expect(() => validarSinCiclos(hitos)).toThrow(/ciclo/i)
+    ])).toThrow(/ciclo/i)
   })
 
   it('cadena lineal larga sin ciclos no lanza error', () => {

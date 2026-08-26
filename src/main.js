@@ -46,6 +46,54 @@ import './styles/breakpoints.css'
 import './styles/dark-mode.css'
 import './styles/utilities.css'
 import './styles/patterns.css'
+// ============================================================================
+// SISTEMA ACADÉMICO - Main Entry Point
+// ============================================================================
+
+// EARLY ERROR SUPPRESSION (Must be first!)
+import './early-error-suppression.js'
+
+// Desactivar gestos de recarga pull-to-refresh (Look and Feel nativo)
+import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
+disablePullToRefresh()
+
+// PWA: Registrar Service Worker
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  const registerSW = async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      console.log('[PWA] Service Worker registered:', registration.scope)
+    } catch (error) {
+      console.log('[PWA] Service Worker registration failed:', error)
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    registerSW()
+  } else {
+    window.addEventListener('load', registerSW)
+  }
+} else if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+    .catch((error) => console.log('[PWA] Service Worker cleanup failed:', error))
+}
+
+// PWA: Banner de instalación automática
+import { pwaInstaller } from './portal-maestros/components/pwaInstaller.js'
+
+// Estilos
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap-icons/font/bootstrap-icons.css'
+import * as bootstrapLib from 'bootstrap'
+window.bootstrap = bootstrapLib
+import './style.css'
+import './styles/design-tokens.css'
+import './styles/breakpoints.css'
+import './styles/dark-mode.css'
+import './styles/utilities.css'
+import './styles/patterns.css'
 import './styles/bootstrap-support.css'
 import './styles/sidebar.css'
 import './modules/academic-admin/styles/academic-admin.css'
@@ -59,11 +107,6 @@ import { renderCatalogDiagnosticsView } from './core/catalogDiagnosticsView.js'
 import { governanceMatrixRoute } from './core/portalModuleMatrix.js'
 import { renderPortalModuleMatrixView } from './core/portalModuleMatrixView.js'
 import { abrirModalConmutadorPortales } from './portales/_shared/portalHubModal.js'
-
-// Auth
-import { useAuth } from './modules/auth/hooks/useAuth.js'
-import { renderLoginView } from './modules/auth/views/loginView.js'
-
 // Módulos
 import { registerRoutesAuth } from './modules/auth/index.js'
 import { registerRoutesMaestros } from './modules/maestros/index.js'
@@ -82,6 +125,7 @@ import { registerRoutesAdminDashboard } from './modules/admin-dashboard/admin-da
 import { registerRoutesPermisos } from './modules/permisos/index.js'
 import { registerRoutesPedagogico } from './modules/pedagogico/index.js'
 import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js'
+import { registerRoutesHorarioGeneral } from './modules/horario-general/index.js'
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js'
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
@@ -98,9 +142,15 @@ import { registerRoutesGatewayConfig } from './modules/gateway-config/index.js'
 import { registerRoutesSimulador } from './modules/simulador/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import { renderTareasView } from './modules/hermes/views/tareasView.js'
+import { renderEventoTrackingView } from './modules/hermes/views/eventoTrackingView.js'
+import { renderAlianzasView } from './modules/alianzas/views/alianzasView.js'
 import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
 import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
 import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
+import { renderPulsoView } from './modules/hermes/views/pulsoView.js'
+import { renderRulesView } from './modules/hermes/views/rulesView.js'
+import { renderHermesConcertOrchestratorView } from './modules/hermes/views/hermesConcertOrchestratorView.js'
+
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -207,6 +257,14 @@ const MODULES_REGISTRY = [
     register: registerRoutesHorarioBuilder,
   },
   {
+    id: 'horario-general',
+    label: 'Horario General',
+    icon: 'bi-calendar3-week',
+    description: 'Vista y diagnóstico del horario semanal de todas las clases activas',
+    enabled: true,
+    register: registerRoutesHorarioGeneral,
+  },
+  {
     id: 'asistencias',
     label: 'Asistencias',
     icon: 'bi-calendar-check',
@@ -227,6 +285,14 @@ const MODULES_REGISTRY = [
     label: 'Bitácora',
     icon: 'bi-journal-check',
     description: 'Bitácora de contenidos por clase',
+    enabled: true,
+    register: registerRoutesBitacora,
+  },
+  {
+    id: 'bitacora-suplentes',
+    label: 'Auditoría Suplentes',
+    icon: 'bi-clipboard2-data',
+    description: 'Seguimiento de actividad de suplentes',
     enabled: true,
     register: registerRoutesBitacora,
   },
@@ -391,7 +457,10 @@ const NAV_GROUPS = [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
       { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
       { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'hermes-reglas', label: 'Reglas Reactivas', icon: 'bi-sliders' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+      { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
   },
   {
@@ -427,10 +496,12 @@ const NAV_GROUPS = [
     label: 'Académico',
     icon: 'bi-easel',
     items: [
+      { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
       { id: 'programas', label: 'Programas', icon: 'bi-book' },
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
       { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
+      { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
     ],
   },
   {
@@ -441,6 +512,7 @@ const NAV_GROUPS = [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'bitacora-clase', label: 'Bitácora', icon: 'bi-journal-check' },
+      { id: 'bitacora-suplentes', label: 'Auditoría Suplentes', icon: 'bi-clipboard2-data' },
       { id: 'planificacion-maestros', label: 'Todos los Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
@@ -615,7 +687,10 @@ function renderNavbar(_container, isAuthenticated = false) {
   `,
   ).join('')
 
-  // ── Mobile sub-sheet ──────────────────────────────────────
+  // ── Mobile sub-sheet & Backdrop ──────────────────────────
+  const sheetBackdrop = document.createElement('div')
+  sheetBackdrop.className = 'mobile-sheet-backdrop'
+
   const subSheet = document.createElement('div')
   subSheet.className = 'mobile-sub-sheet'
   subSheet.innerHTML = `
@@ -627,13 +702,18 @@ function renderNavbar(_container, isAuthenticated = false) {
     <div class="sheet-items" id="sheetItems"></div>
   `
 
+  document.body.prepend(sheetBackdrop)
   document.body.prepend(subSheet)
   document.body.prepend(bottomNav)
   document.body.prepend(sidebar)
 
-  subSheet.querySelector('#sheetCloseBtn')?.addEventListener('click', () => {
+  const closeSheet = () => {
     subSheet.classList.remove('open')
-  })
+    sheetBackdrop.classList.remove('open')
+  }
+
+  subSheet.querySelector('#sheetCloseBtn')?.addEventListener('click', closeSheet)
+  sheetBackdrop.addEventListener('click', closeSheet, { signal })
 
   // ── Eventos sidebar ───────────────────────────────────────
   sidebar.querySelectorAll('.nav-group-header').forEach((btn) => {
@@ -697,10 +777,12 @@ function renderNavbar(_container, isAuthenticated = false) {
       .join('')
     subSheet.dataset.group = groupId
     subSheet.classList.add('open')
+    sheetBackdrop.classList.add('open')
+
     subSheet.querySelectorAll('.sheet-item').forEach((btn) => {
       btn.addEventListener('click', () => {
         router.navigate(btn.dataset.route)
-        subSheet.classList.remove('open')
+        closeSheet()
       })
     })
   }
@@ -709,7 +791,7 @@ function renderNavbar(_container, isAuthenticated = false) {
     tab.addEventListener('click', () => {
       const groupId = tab.dataset.group
       if (subSheet.classList.contains('open') && subSheet.dataset.group === groupId) {
-        subSheet.classList.remove('open')
+        closeSheet()
       } else {
         openSheet(groupId)
         bottomNav
@@ -728,11 +810,12 @@ function renderNavbar(_container, isAuthenticated = false) {
         !subSheet.contains(e.target) &&
         !bottomNav.contains(e.target)
       ) {
-        subSheet.classList.remove('open')
+        closeSheet()
       }
     },
     { signal },
   )
+
 
   // ── Sincronizar estado activo en route change ─────────────
   window.addEventListener(
@@ -782,6 +865,10 @@ function registerModules() {
     router.register('hermes-tareas', (mount, params = {}) =>
       renderTareasView(mount, { hideCalendarBtn: true, ...params }),
     )
+    router.register('hermes-evento', (mount, params = {}) =>
+      renderEventoTrackingView(mount, { ...params }),
+    )
+    router.register('dir-alianzas', (mount) => renderAlianzasView(mount))
     router.register('hermes-caso', (mount, params = {}) =>
       renderCasoDetalleView(mount, params),
     )
@@ -791,6 +878,19 @@ function registerModules() {
     router.register('hermes-consulta', (mount) =>
       renderHermesConsultaView(mount),
     )
+    router.register('hermes-pulso', (mount) =>
+      renderPulsoView(mount),
+    )
+    router.register('hermes-reglas', (mount) =>
+      renderRulesView(mount),
+    )
+    router.register('hermes-conciertos', (mount) =>
+      renderHermesConcertOrchestratorView(mount),
+    )
+    router.register('hermes-orquestador', (mount) =>
+      renderHermesConcertOrchestratorView(mount),
+    )
+
   } catch (error) {
     console.error('Error registering hermes routes:', error)
   }

@@ -15,8 +15,8 @@ const LABEL_COLOR = [100, 116, 139]
 const VALUE_COLOR = [15, 23, 42]
 const TEAL_COLOR = [13, 148, 136]
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {

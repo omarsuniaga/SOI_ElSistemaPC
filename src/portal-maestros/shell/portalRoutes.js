@@ -19,6 +19,7 @@ const VIEW_LOADERS = {
   calendario:        () => import('../views/calendarioView.js'),
   clases:            () => import('../views/calendarioView.js'),
   metricas:          () => import('../views/metricasView.js'),
+  'mis-clases':      () => import('../views/misClasesView.js'),
   asistencia:        () => import('../views/asistenciaView.js'),
   'clase-emergente': () => import('../views/claseEmergenteView.js'),
   perfil:            () => import('../views/perfilView.js'),
@@ -59,7 +60,7 @@ function resolveClaseId(params = {}, urlParams = new URLSearchParams()) {
 export const CACHEABLE_VIEWS = new Set([
   'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
-  'gestionar-horario',
+  'gestionar-horario', 'mis-clases',
 ])
 
 function viewRenderKey(route, params = {}, urlParams = new URLSearchParams()) {
@@ -138,7 +139,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
 
   ;[
     'login', 'logout', 'fechas', 'calendario', 'clases', 'hoy', 'asistencia',
-    'metricas', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
+    'metricas', 'mis-clases', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
     'register', 'pending-approval', 'gestionar-horario', 'proponer-contenido',
@@ -224,6 +225,8 @@ export async function renderViewContent(route, container, params, urlParams, con
       })
     case 'metricas':
       return mod.renderMetricasView(container)
+    case 'mis-clases':
+      return mod.renderMisClasesView(container)
     case 'perfil':
       return mod.renderPerfilView(container)
     case 'clase-emergente':

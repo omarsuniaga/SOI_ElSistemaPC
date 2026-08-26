@@ -1,6 +1,7 @@
 /**
  * Domain: beca
  * Scholarship management — no Supabase imports.
+ * All monetary fields are integer centavos (RD$1.00 = 100 centavos). ADR-002.
  */
 
 export function buildBeca({ alumno_id, familia_id, porcentaje, motivo, aprobado_por, indicador_progreso_minimo }) {
@@ -17,10 +18,17 @@ export function buildBeca({ alumno_id, familia_id, porcentaje, motivo, aprobado_
   }
 }
 
+/**
+ * Applies a scholarship discount to a cuota's monto_base_centavos.
+ * The discount (porcentaje% of monto_base_centavos) is rounded half-up to
+ * the nearest whole centavo before being subtracted, so monto_final_centavos
+ * always stays an integer.
+ */
 export function aplicarBecaACuota(cuota, beca) {
+  const descuentoCentavos = Math.round((cuota.monto_base_centavos * beca.porcentaje) / 100)
   return {
     newEstado: 'becada',
-    monto_final: cuota.monto_base * (1 - beca.porcentaje / 100),
+    monto_final_centavos: cuota.monto_base_centavos - descuentoCentavos,
   }
 }
 

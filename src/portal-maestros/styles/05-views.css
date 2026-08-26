@@ -609,12 +609,26 @@
   }
 }
 
+/* Cabecera de Asistencia: dos filas siempre (título arriba, acciones abajo)
+   en vez de una sola fila apretada — con muchos alumnos/salón/fecha en el
+   subtítulo y ahora también el botón del mapa de rutas, todo en una fila
+   sin flex-shrink protegido terminaba aplastando los círculos P/A o
+   partiendo el título en 3 líneas en pantallas angostas. */
 .pm-asist-header {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.6rem;
   margin-bottom: 1rem;
 }
+
+.pm-asist-header-row1 { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.pm-asist-header-titles { flex: 1; min-width: 0; }
+
+.pm-asist-header-row2 {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.6rem; flex-wrap: wrap;
+}
+.pm-asist-header-row2-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 
 [data-portal-theme='dark'] .pm-asist-header,
 [data-bs-theme='dark'] .pm-asist-header {
@@ -627,13 +641,41 @@
   font-size: 1.1rem;
   font-weight: 700;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pm-asist-subtitle {
   font-size: 0.8rem;
   color: var(--pm-text-muted);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.pm-asist-subtitle-fecha { color: var(--pm-primary); font-weight: 700; }
+
+.pm-icon-btn, .pm-help-btn, .pm-mapa-btn, .pm-bulk-circle { flex-shrink: 0; }
+
+.pm-help-btn {
+  background: var(--pm-surface-2); border: 1px solid var(--pm-border, #d1d5db);
+  color: var(--pm-text-muted); width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.95rem;
+}
+.pm-help-btn:hover { background: var(--pm-bg-hover); color: var(--pm-primary); }
+
+.pm-asist-bulk-circles { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+.pm-bulk-circle {
+  width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+  font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s ease;
+}
+.pm-bulk-circle:hover { transform: scale(1.08); }
+.pm-bulk-circle.p { background: rgba(16,185,129,0.15); color: #059669; }
+.pm-bulk-circle.a { background: rgba(239,68,68,0.15); color: #dc2626; }
+.pm-bulk-circle.clear { background: var(--pm-surface-2); color: var(--pm-text-muted); border: 1px solid var(--pm-border, #d1d5db); }
 
 .pm-asist-progress-wrap {
   display: flex;
@@ -754,6 +796,43 @@
   font-size: 0.75rem;
   color: var(--pm-text-muted);
 }
+
+/* ── Turno individual (clases rotativas: día+hora por alumno) ── */
+.pm-turno-edit-btn {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--pm-border, #d1d5db); background: var(--pm-surface-2, #f3f4f6);
+  color: var(--pm-text-muted, #6b7280); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.85rem; transition: all 0.15s;
+}
+.pm-turno-edit-btn:hover { background: var(--pm-primary, #3b82f6); color: #fff; border-color: var(--pm-primary, #3b82f6); }
+
+.pm-turno-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+  display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 1rem;
+}
+.pm-turno-dialog {
+  background: var(--pm-surface, #fff); color: var(--pm-text, #111827);
+  border-radius: 16px; width: min(360px, 100%); padding: 1.25rem;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+}
+.pm-turno-dialog h4 { margin: 0 0 0.4rem; font-size: 1rem; font-weight: 700; }
+.pm-turno-hint { font-size: 0.78rem; color: var(--pm-text-muted, #6b7280); margin: 0 0 1rem; }
+.pm-turno-field { display: block; margin-bottom: 0.85rem; }
+.pm-turno-field span { display: block; font-size: 0.78rem; font-weight: 600; color: var(--pm-text-muted, #6b7280); margin-bottom: 0.3rem; }
+.pm-turno-field select, .pm-turno-field input {
+  width: 100%; padding: 0.5rem 0.6rem; border-radius: 9px;
+  border: 1px solid var(--pm-border, #d1d5db); background: var(--pm-surface-2, #f9fafb);
+  color: var(--pm-text, #111827); font-size: 0.9rem;
+}
+.pm-turno-row { display: flex; gap: 0.6rem; }
+.pm-turno-row .pm-turno-field { flex: 1; }
+.pm-turno-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }
+.pm-turno-btn-ghost, .pm-turno-btn-primary {
+  border-radius: 9px; padding: 0.5rem 0.9rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid transparent;
+}
+.pm-turno-btn-ghost { background: none; color: var(--pm-text-muted, #6b7280); border-color: var(--pm-border, #d1d5db); }
+.pm-turno-btn-primary { background: var(--pm-primary, #3b82f6); color: #fff; }
+.pm-turno-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .pm-asist-btns {
   display: flex;
@@ -1905,10 +1984,10 @@
     padding-bottom: 2rem;
   }
 
+  /* La cabecera se mantiene en dos filas (título / acciones) también en
+     tablet+ — ver .pm-asist-header en 05-views.css — solo se agranda el
+     gap y el título acá. */
   .pm-asist-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     gap: var(--pm-space-4);
   }
 

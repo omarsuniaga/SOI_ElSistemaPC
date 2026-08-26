@@ -1,385 +1,244 @@
 import { supabase } from '../../../lib/supabaseClient.js'
-import { config } from '../../../core/config/config.js'
-import { normalizeText } from '../../../core/utils/normalizeText.js'
-import { formatHora, timeToMinutes } from '../utils/clasesUtils.js'
+import { timeToMinutes } from '../utils/clasesUtils.js'
+import { obtenerAsistenciasPorClasesFecha } from '../../asistencias/api/asistenciasApi.js'
 
+// Valores reales de clase_horarios.dia (text con CHECK, acentuados) —
+// ver supabase/migrations 20260622_hermes_core / schema_reference.sql:215-227.
 export const DIAS_SEMANA = [
-  { key: 'lunes', label: 'Lunes', short: 'Lun' },
-  { key: 'martes', label: 'Martes', short: 'Mar' },
-  { key: 'miercoles', label: 'Miércoles', short: 'Mié' },
-  { key: 'jueves', label: 'Jueves', short: 'Jue' },
-  { key: 'viernes', label: 'Viernes', short: 'Vie' },
-  { key: 'sabado', label: 'Sábado', short: 'Sáb' },
-  { key: 'domingo', label: 'Domingo', short: 'Dom' },
+  { value: 'lunes', label: 'Lun', labelLargo: 'Lunes' },
+  { value: 'martes', label: 'Mar', labelLargo: 'Martes' },
+  { value: 'miércoles', label: 'Mié', labelLargo: 'Miércoles' },
+  { value: 'jueves', label: 'Jue', labelLargo: 'Jueves' },
+  { value: 'viernes', label: 'Vie', labelLargo: 'Viernes' },
+  { value: 'sábado', label: 'Sáb', labelLargo: 'Sábado' },
+  { value: 'domingo', label: 'Dom', labelLargo: 'Domingo' },
 ]
 
 /**
- * Obtiene el nombre normalizado del día actual (ej: 'lunes', 'martes', etc.)
+ * Día actual normalizado contra los valores acentuados reales de
+ * clase_horarios.dia — Intl no basta solo, hay que mapear el índice
+ * de JS Date (0=domingo) al value de la tabla.
  */
-export function getDiaActualKey(date = new Date()) {
-  const dayIndex = date.getDay() // 0 = Domingo, 1 = Lunes, ...
-  const map = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
-  return map[dayIndex]
+export function obtenerDiaActual() {
+  const idx = new Date().getDay() // 0=domingo ... 6=sábado
+  const orden = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  return orden[idx]
 }
 
 /**
- * Calcula la fecha YYYY-MM-DD correspondiente al día de la semana objetivo en la semana en curso.
+ * Fecha real (YYYY-MM-DD) de la próxima ocurrencia de un día de la semana
+ * (incluye hoy si coincide). clase_horarios solo guarda el día de la semana,
+ * pero asistencias.fecha necesita una fecha concreta — esto resuelve cuál.
  */
-export function getFechaParaDiaKey(diaKey) {
-  const now = new Date()
-  const currentDay = now.getDay() // 0 = Domingo, 1 = Lunes, ...
-  const map = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 }
-  const targetDay = map[diaKey] !== undefined ? map[diaKey] : currentDay
+export function fechaParaDia(diaValue) {
+  const orden = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const idxObjetivo = orden.indexOf(diaValue)
+  if (idxObjetivo === -1) return new Date().toISOString().slice(0, 10)
 
-  const diff = targetDay - currentDay
-  const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff)
-  
-  const y = targetDate.getFullYear()
-  const m = String(targetDate.getMonth() + 1).padStart(2, '0')
-  const d = String(targetDate.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  const hoy = new Date()
+  const idxHoy = hoy.getDay()
+  const delta = (idxObjetivo - idxHoy + 7) % 7
+  const objetivo = new Date(hoy)
+  objetivo.setDate(hoy.getDate() + delta)
+  return objetivo.toISOString().slice(0, 10)
+}
+
+// Umbral real de escalamiento — ver supabase/functions/escalate-asistencias-notifications/index.ts:34-48
+// (AMARILLO 1-2 días, NARANJA 3-6 días "durante una semana", ROJO 7+ días).
+export const COMPLIANCE_META = {
+  VERDE: { color: '#10b981', label: 'Al día' },
+  AMARILLO: { color: '#f59e0b', label: 'Recordatorio' },
+  NARANJA: { color: '#f97316', label: 'Pendiente' },
+  ROJO: { color: '#dc2626', label: 'Urgente' },
 }
 
 /**
- * Determina el estado temporal de la clase (en-curso, proxima, pasada, futura)
+ * Registros de asistencia pendiente (tabla registros_pendientes, ya
+ * calculada/escalada por supabase/functions/escalate-asistencias-notifications)
+ * para las clases del día, indexados por clase_id. Solo existen registros
+ * para sesiones que efectivamente se abrieron y quedaron sin cerrar — una
+ * clase sin registro pendiente no implica necesariamente que ya se pasó
+ * asistencia, solo que no hay alerta de mora activa.
  */
-function calcularEstadoTemporal(horaInicio, horaFin) {
-  if (!horaInicio || !horaFin) return 'futura'
-  
-  const now = new Date()
-  const currentMin = now.getHours() * 60 + now.getMinutes()
-  
-  const startMin = timeToMinutes(horaInicio)
-  const endMin = timeToMinutes(horaFin)
-  
-  if (currentMin >= startMin && currentMin < endMin) {
-    return 'en-curso'
-  }
-  if (currentMin >= endMin) {
-    return 'pasada'
-  }
-  if (startMin - currentMin <= 30 && startMin - currentMin > 0) {
-    return 'proxima'
-  }
-  return 'futura'
-}
+async function obtenerPendientesAsistencia(claseIds, fecha) {
+  if (!claseIds || claseIds.length === 0) return {}
 
-/**
- * Normaliza y resuelve la identidad del maestro con fallbacks exhaustivos.
- */
-function resolverMaestro(maestroId, maestrosList, maestrosMap, maestrosUserMap) {
-  if (!maestroId) {
-    return {
-      id: null,
-      nombre_completo: 'Maestro no asignado',
-      email: '',
-      telefono: '',
-      especialidad: '',
+  const { data, error } = await supabase
+    .from('registros_pendientes')
+    .select('id, maestro_id, notification_state, created_at, sesiones_clase!inner ( clase_id, fecha )')
+    .eq('tipo', 'asistencia_pendiente')
+    .eq('estado', 'pendiente')
+    .in('sesiones_clase.clase_id', claseIds)
+    .eq('sesiones_clase.fecha', fecha)
+
+  if (error) {
+    console.error('Error cargando pendientes de asistencia:', error.message)
+    return {}
+  }
+
+  return (data || []).reduce((acc, r) => {
+    const claseId = r.sesiones_clase?.clase_id
+    if (!claseId) return acc
+    // dias_atraso no existe como columna real en la BD (la migración que la
+    // definía como GENERATED ALWAYS AS (NOW()...) STORED no es válida en
+    // Postgres — NOW() no es inmutable — así que nunca se aplicó). Se
+    // calcula igual que supabase/functions/escalate-asistencias-notifications.
+    const diasAtraso = Math.max(0, Math.ceil((Date.now() - new Date(r.created_at).getTime()) / 86400000))
+    acc[claseId] = {
+      registroId: r.id,
+      maestroId: r.maestro_id,
+      state: r.notification_state || 'VERDE',
+      diasAtraso,
     }
-  }
+    return acc
+  }, {})
+}
 
-  const m = maestrosMap.get(maestroId) || maestrosUserMap.get(maestroId) || maestrosList.find(x => x.id === maestroId || x.user_id === maestroId)
-  if (!m) {
-    return {
-      id: maestroId,
-      nombre_completo: 'Maestro no asignado',
-      email: '',
-      telefono: '',
-      especialidad: '',
-    }
-  }
-
-  const nombreCompleto = m.nombre_completo?.trim() || 
-    (`${m.nombre || ''} ${m.apellido || ''}`).trim() || 
-    m.full_name?.trim() || 
-    m.email?.split('@')[0] || 
-    'Maestro sin nombre'
-
-  return {
-    id: m.id,
-    nombre_completo: nombreCompleto,
-    email: m.email || m.correo || '',
-    telefono: m.telefono || m.tlf || '',
-    especialidad: m.especialidad_principal || m.instrumento_principal || m.especialidad || '',
-  }
+function estadoTemporal(horaInicio, horaFin, ahoraMin) {
+  const inicioMin = timeToMinutes(horaInicio)
+  const finMin = timeToMinutes(horaFin)
+  if (ahoraMin >= inicioMin && ahoraMin < finMin) return 'en-curso'
+  if (ahoraMin < inicioMin) return 'proxima'
+  return 'pasada'
 }
 
 /**
- * Obtiene las clases programadas para un día específico con maestros, salones, nómina de alumnos
- * y estados de asistencia registrados (presente / ausente / justificado).
- * @param {string|null} diaFiltro - 'lunes', 'martes', etc. Si es null usa el día de hoy.
+ * Trae el feed operativo del día: horarios de clase_horarios ⋈ clases ⋈
+ * salones ⋈ maestros, con nómina de alumnos matriculados por clase y KPIs
+ * agregados. `diaFiltro` debe ser uno de los values de DIAS_SEMANA
+ * (acentuado); si se omite usa el día real de hoy.
  */
 export async function obtenerClasesDelDia(diaFiltro = null) {
-  const diaTarget = (diaFiltro || getDiaActualKey()).toLowerCase()
-  const diaNormalized = normalizeText(diaTarget)
-  const fechaTarget = getFechaParaDiaKey(diaTarget)
+  const dia = diaFiltro || obtenerDiaActual()
 
-  // 1. Consultas paralelas a todas las fuentes de datos relacionales
-  const [
-    horariosRes,
-    clasesRes,
-    salonesRes,
-    maestrosRes,
-    alumnosClasesRes,
-    alumnosRes,
-    programasRes,
-    asistenciasRes,
-    justificacionesRes,
-    sesionesClaseRes,
-  ] = await Promise.all([
-    supabase.from('clase_horarios').select('*').order('hora_inicio', { ascending: true }),
-    supabase.from('clases').select('*'),
-    supabase.from('salones').select('*'),
-    supabase.from('maestros').select('*'),
-    supabase.from('alumnos_clases').select('*'),
-    supabase.from('alumnos').select('*'),
-    supabase.from('programas').select('id, nombre'),
-    supabase.from('asistencias').select('*').eq('fecha', fechaTarget),
-    supabase.from('justificaciones').select('*').eq('fecha', fechaTarget),
-    supabase.from('sesiones_clase').select('*').eq('fecha', fechaTarget),
-  ])
+  const { data: horarios, error } = await supabase
+    .from('clase_horarios')
+    .select(`
+      id,
+      clase_id,
+      dia,
+      hora_inicio,
+      hora_fin,
+      salon_id,
+      clases:clase_id (
+        id,
+        nombre,
+        instrumento,
+        nivel_id,
+        programa_id,
+        capacidad_maxima,
+        activo,
+        maestro_principal_id,
+        maestro_suplente_id,
+        niveles:nivel_id ( id, nombre ),
+        maestro_principal:maestro_principal_id ( id, nombre_completo, especialidad, tlf ),
+        maestro_suplente:maestro_suplente_id ( id, nombre_completo, especialidad, tlf )
+      ),
+      salones:salon_id ( id, nombre, capacidad, ubicacion )
+    `)
+    .eq('dia', dia)
+    .order('hora_inicio', { ascending: true })
 
-  if (horariosRes.error) console.warn('[clasesHoyApi] Warning al cargar clase_horarios:', horariosRes.error)
-  if (clasesRes.error) console.warn('[clasesHoyApi] Warning al cargar clases:', clasesRes.error)
-  if (alumnosClasesRes.error) console.warn('[clasesHoyApi] Warning al cargar alumnos_clases:', alumnosClasesRes.error)
-  if (alumnosRes.error) console.warn('[clasesHoyApi] Warning al cargar alumnos:', alumnosRes.error)
+  if (error) {
+    console.error('Error cargando clases del día:', error.message)
+    throw new Error('No se pudieron cargar las clases del día')
+  }
 
-  const rawHorarios = Array.isArray(horariosRes.data) ? horariosRes.data : []
-  const rawClases = Array.isArray(clasesRes.data) ? clasesRes.data : []
-  const rawSalones = Array.isArray(salonesRes.data) ? salonesRes.data : []
-  const rawMaestros = Array.isArray(maestrosRes.data) ? maestrosRes.data : []
-  const rawAlumnosClases = Array.isArray(alumnosClasesRes.data) ? alumnosClasesRes.data : []
-  const rawAlumnos = Array.isArray(alumnosRes.data) ? alumnosRes.data : []
-  const rawProgramas = Array.isArray(programasRes.data) ? programasRes.data : []
-  const rawAsistencias = Array.isArray(asistenciasRes.data) ? asistenciasRes.data : []
-  const rawJustificaciones = Array.isArray(justificacionesRes.data) ? justificacionesRes.data : []
-  const rawSesionesClase = Array.isArray(sesionesClaseRes.data) ? sesionesClaseRes.data : []
+  const filas = (horarios || []).filter(h => h.clases?.activo !== false)
+  const claseIds = [...new Set(filas.map(h => h.clase_id).filter(Boolean))]
 
-  // Mapas para joins en O(1)
-  const clasesMap = new Map(rawClases.map(c => [c.id, c]))
-  const salonesMap = new Map(rawSalones.map(s => [s.id, s]))
-  const maestrosMap = new Map(rawMaestros.map(m => [m.id, m]))
-  const maestrosUserMap = new Map(rawMaestros.filter(m => m.user_id).map(m => [m.user_id, m]))
-  const programasMap = new Map(rawProgramas.map(p => [p.id, p]))
-  const alumnosMap = new Map(rawAlumnos.map(a => [a.id, a]))
+  let alumnosPorClase = {}
+  if (claseIds.length > 0) {
+    const { data: inscripciones, error: errInsc } = await supabase
+      .from('alumnos_clases')
+      .select('clase_id, alumno_id, alumnos:alumno_id ( id, nombre_completo )')
+      .in('clase_id', claseIds)
+      .eq('activo', true)
 
-  // Indexar Asistencias y Justificaciones de la fecha
-  const asistenciasMap = new Map()
-  const clasesConAsistenciaSet = new Set()
-
-  for (const a of rawAsistencias) {
-    if (a.clase_id && a.alumno_id) {
-      asistenciasMap.set(`${a.clase_id}_${a.alumno_id}`, a)
-      clasesConAsistenciaSet.add(a.clase_id)
+    if (errInsc) {
+      console.error('Error cargando alumnos inscritos:', errInsc.message)
+    } else {
+      alumnosPorClase = (inscripciones || []).reduce((acc, row) => {
+        if (!acc[row.clase_id]) acc[row.clase_id] = []
+        if (row.alumnos) acc[row.clase_id].push(row.alumnos)
+        return acc
+      }, {})
     }
   }
 
-  for (const sc of rawSesionesClase) {
-    if (sc.clase_id && (sc.asistencia_tomada || sc.asistencia_registrada || sc.estado === 'realizada' || sc.estado === 'completada')) {
-      clasesConAsistenciaSet.add(sc.clase_id)
+  const ahoraMin = new Date().getHours() * 60 + new Date().getMinutes()
+  const esHoy = dia === obtenerDiaActual()
+  const fecha = fechaParaDia(dia)
+
+  let asistenciasPorClase = {}
+  let pendientesPorClase = {}
+  if (claseIds.length > 0) {
+    try {
+      asistenciasPorClase = await obtenerAsistenciasPorClasesFecha(claseIds, fecha)
+    } catch (err) {
+      console.error('Error cargando asistencias precargadas:', err.message)
     }
+    pendientesPorClase = await obtenerPendientesAsistencia(claseIds, fecha)
   }
 
-  const justificacionesMap = new Map()
-  for (const j of rawJustificaciones) {
-    if (j.alumno_id) {
-      if (j.clase_id) justificacionesMap.set(`${j.clase_id}_${j.alumno_id}`, j)
-      justificacionesMap.set(`alumno_${j.alumno_id}`, j)
-      if (j.clase_id) clasesConAsistenciaSet.add(j.clase_id)
+  const sesiones = filas.map(h => {
+    const asistenciasClase = asistenciasPorClase[h.clase_id] || {}
+    const alumnos = (alumnosPorClase[h.clase_id] || []).map(a => ({
+      ...a,
+      estadoAsistencia: asistenciasClase[a.id]?.estado || null,
+      justificacionTexto: asistenciasClase[a.id]?.justificacion_texto || null,
+    }))
+    return {
+      horarioId: h.id,
+      claseId: h.clase_id,
+      dia: h.dia,
+      fecha,
+      horaInicio: h.hora_inicio,
+      horaFin: h.hora_fin,
+      nombre: h.clases?.nombre || 'Clase sin nombre',
+      instrumento: h.clases?.instrumento || null,
+      nivel: h.clases?.niveles?.nombre || null,
+      capacidadMaxima: h.clases?.capacidad_maxima ?? null,
+      salon: h.salones ? { id: h.salones.id, nombre: h.salones.nombre, ubicacion: h.salones.ubicacion } : null,
+      maestroTitular: h.clases?.maestro_principal || null,
+      maestroSuplente: h.clases?.maestro_suplente || null,
+      alumnos,
+      totalAlumnos: alumnos.length,
+      justificadosCount: alumnos.filter(a => a.estadoAsistencia === 'justificado').length,
+      estado: esHoy ? estadoTemporal(h.hora_inicio, h.hora_fin, ahoraMin) : 'futura',
+      pendienteAsistencia: pendientesPorClase[h.clase_id] || null,
     }
+  }).sort((a, b) => timeToMinutes(a.horaInicio) - timeToMinutes(b.horaInicio))
+
+  const salonesOcupados = new Set(sesiones.filter(s => s.salon?.id).map(s => s.salon.id))
+
+  const kpis = {
+    totalClases: sesiones.length,
+    enCursoAhora: sesiones.filter(s => s.estado === 'en-curso').length,
+    totalAlumnos: sesiones.reduce((acc, s) => acc + s.totalAlumnos, 0),
+    salonesOcupados: salonesOcupados.size,
+    justificadosHoy: sesiones.reduce((acc, s) => acc + s.justificadosCount, 0),
+    asistenciaPendiente: sesiones.filter(s => s.pendienteAsistencia).length,
   }
 
-  // Agrupar alumnos inscritos por clase
-  const alumnosPorClaseMap = new Map()
+  return { dia, fecha, esHoy, sesiones, kpis }
+}
 
-  for (const ac of rawAlumnosClases) {
-    if (!ac.clase_id || !ac.alumno_id) continue
-    if (ac.activo === false) continue // Omitir solo si está explícitamente dado de baja
-
-    const alumno = alumnosMap.get(ac.alumno_id) || ac.alumno || ac.alumnos
-    const nombre = alumno?.nombre_completo?.trim() || 
-      (`${alumno?.nombre || ''} ${alumno?.apellido || ''}`).trim() || 
-      alumno?.full_name?.trim() || 
-      'Estudiante sin nombre'
-
-    if (!alumnosPorClaseMap.has(ac.clase_id)) {
-      alumnosPorClaseMap.set(ac.clase_id, [])
-    }
-    
-    alumnosPorClaseMap.get(ac.clase_id).push({
-      id: ac.alumno_id,
-      nombre,
-      codigo: alumno?.codigo_alumno || alumno?.codigo || '',
-      instrumento: alumno?.instrumento_principal || alumno?.instrumento || '',
-      nivel: alumno?.nivel || '',
-      hora_inicio: ac.hora_inicio || null,
-      hora_fin: ac.hora_fin || null,
-      is_active: alumno?.activo !== false,
-    })
-  }
-
-  // Fallback complementario: Si una clase contiene alumnos_ids directamente en el modelo
-  for (const c of rawClases) {
-    if (Array.isArray(c.alumnos_ids) && c.alumnos_ids.length > 0) {
-      if (!alumnosPorClaseMap.has(c.id)) {
-        alumnosPorClaseMap.set(c.id, [])
-      }
-      const existingSet = new Set((alumnosPorClaseMap.get(c.id) || []).map(a => a.id))
-      for (const alId of c.alumnos_ids) {
-        if (!existingSet.has(alId)) {
-          const alumno = alumnosMap.get(alId)
-          if (alumno) {
-            alumnosPorClaseMap.get(c.id).push({
-              id: alId,
-              nombre: alumno.nombre_completo || `${alumno.nombre || ''} ${alumno.apellido || ''}`.trim() || 'Estudiante',
-              codigo: alumno.codigo_alumno || '',
-              instrumento: alumno.instrumento_principal || '',
-              nivel: alumno.nivel || '',
-              is_active: alumno.activo !== false,
-            })
-          }
-        }
-      }
-    }
-  }
-
-  // Filtrar horarios que correspondan al día objetivo
-  const horariosDelDia = rawHorarios.filter(h => {
-    if (!h.dia) return false
-    const hDiaNorm = normalizeText(h.dia.toLowerCase().trim())
-    return hDiaNorm === diaNormalized || hDiaNorm.startsWith(diaNormalized.slice(0, 4))
+/**
+ * Justifica la ausencia de un alumno delegando la persistencia a la RPC canónica.
+ */
+export async function justificarAusencia({ claseId, alumnoId, fecha, motivo }) {
+  const { data, error } = await supabase.rpc('registrar_justificacion_asistencia', {
+    p_clase_id: claseId,
+    p_alumno_id: alumnoId,
+    p_fecha: fecha,
+    p_motivo: motivo,
   })
 
-  // Construir las entidades completas
-  const sesiones = []
-  const salonesOcupadosSet = new Set()
-  const maestrosActivosSet = new Set()
-  let totalAlumnosConvocados = 0
-
-  for (const h of horariosDelDia) {
-    const clase = clasesMap.get(h.clase_id)
-    if (!clase) continue
-    if (clase.activo === false) continue // Omitir clases inactivas
-
-    const salon = salonesMap.get(h.salon_id) || {
-      id: h.salon_id,
-      nombre: 'Salón no asignado',
-      capacidad: clase.capacidad_maxima ?? 20,
-      ubicacion: '',
-    }
-
-    // Resolver ID del maestro titular
-    const maestroId = clase.maestro_principal_id || clase.maestro_id || h.maestro_id || clase.profesor_id || clase.docente_id
-    const maestroPrincipal = resolverMaestro(maestroId, rawMaestros, maestrosMap, maestrosUserMap)
-
-    const suplenteId = clase.maestro_suplente_id || clase.maestro_auxiliar_id || h.maestro_suplente_id
-    const maestroSuplente = suplenteId ? resolverMaestro(suplenteId, rawMaestros, maestrosMap, maestrosUserMap) : null
-
-    const rawAlumnosList = [...(alumnosPorClaseMap.get(clase.id) || [])]
-    rawAlumnosList.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-
-    const isAsistenciaRegistrada = clasesConAsistenciaSet.has(clase.id)
-    let totalPresentes = 0
-    let totalAusentes = 0
-    let totalJustificados = 0
-
-    const alumnosInscritos = rawAlumnosList.map((al) => {
-      if (!isAsistenciaRegistrada) {
-        return {
-          ...al,
-          estado_asistencia: null,
-          asistencia_registrada: false,
-          justificacion: null,
-        }
-      }
-
-      const asisRecord = asistenciasMap.get(`${clase.id}_${al.id}`)
-      const justRecord = justificacionesMap.get(`${clase.id}_${al.id}`) || justificacionesMap.get(`alumno_${al.id}`)
-
-      let estadoAsis = 'ausente'
-      let motivoJust = null
-      let evidenciaJust = null
-
-      if (justRecord || asisRecord?.estado === 'justificado' || asisRecord?.estado === 'J') {
-        estadoAsis = 'justificado'
-        totalJustificados += 1
-        motivoJust = justRecord?.motivo || asisRecord?.justificacion_texto || asisRecord?.observaciones || asisRecord?.motivo || 'Justificación médica / académica asentada por el docente titular.'
-        evidenciaJust = justRecord?.evidencia_url || null
-      } else if (asisRecord?.estado === 'presente' || asisRecord?.estado === 'P' || asisRecord?.estado === 'tarde' || asisRecord?.estado === 'T') {
-        estadoAsis = 'presente'
-        totalPresentes += 1
-      } else if (asisRecord?.estado === 'ausente' || asisRecord?.estado === 'A') {
-        estadoAsis = 'ausente'
-        totalAusentes += 1
-      } else {
-        estadoAsis = 'ausente'
-        totalAusentes += 1
-      }
-
-      return {
-        ...al,
-        estado_asistencia: estadoAsis,
-        asistencia_registrada: true,
-        justificacion: estadoAsis === 'justificado' ? {
-          motivo: motivoJust,
-          evidencia_url: evidenciaJust,
-          fecha: fechaTarget,
-        } : null,
-      }
-    })
-
-    const estadoTemporal = calcularEstadoTemporal(h.hora_inicio, h.hora_fin)
-
-    if (salon.id) salonesOcupadosSet.add(salon.id)
-    if (maestroPrincipal.id) maestrosActivosSet.add(maestroPrincipal.id)
-    totalAlumnosConvocados += alumnosInscritos.length
-
-    const programaNombre = clase.programas?.nombre || (clase.programa_id ? programasMap.get(clase.programa_id)?.nombre : null) || 'General'
-
-    sesiones.push({
-      horario_id: h.id,
-      clase_id: clase.id,
-      clase_nombre: clase.nombre || 'Clase sin nombre',
-      programa_nombre: programaNombre,
-      instrumento: clase.instrumento || 'General',
-      nivel: clase.nivel_id || clase.nivel || 'Nivel 1',
-      dia: h.dia,
-      fecha: fechaTarget,
-      hora_inicio: h.hora_inicio,
-      hora_fin: h.hora_fin,
-      hora_inicio_formato: formatHora(h.hora_inicio),
-      hora_fin_formato: formatHora(h.hora_fin),
-      estado_temporal: estadoTemporal,
-      asistencia_registrada: isAsistenciaRegistrada,
-      total_presentes: totalPresentes,
-      total_ausentes: totalAusentes,
-      total_justificados: totalJustificados,
-      capacidad_maxima: clase.capacidad_maxima ?? salon.capacidad ?? 20,
-      salon,
-      maestro_principal: maestroPrincipal,
-      maestro_suplente: maestroSuplente,
-      alumnos: alumnosInscritos,
-      total_alumnos: alumnosInscritos.length,
-      porcentaje_ocupacion: Math.min(100, Math.round((alumnosInscritos.length / (clase.capacidad_maxima || 20)) * 100)),
-    })
+  if (error) {
+    throw new Error(`No se pudo justificar la ausencia: ${error.message}`)
   }
 
-  // Ordenar por hora de inicio cronológicamente
-  sesiones.sort((a, b) => timeToMinutes(a.hora_inicio) - timeToMinutes(b.hora_inicio))
-
-  const enCursoCount = sesiones.filter(s => s.estado_temporal === 'en-curso').length
-  const proximaCount = sesiones.filter(s => s.estado_temporal === 'proxima').length
-
-  return {
-    dia: diaTarget,
-    fecha: fechaTarget,
-    diaLabel: DIAS_SEMANA.find(d => d.key === diaTarget)?.label || diaTarget,
-    totalClases: sesiones.length,
-    enCursoCount,
-    proximaCount,
-    salonesOcupadosCount: salonesOcupadosSet.size,
-    maestrosActivosCount: maestrosActivosSet.size,
-    totalAlumnosConvocados,
-    sesiones,
-  }
+  return data
 }
+

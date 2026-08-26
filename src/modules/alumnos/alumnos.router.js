@@ -8,8 +8,11 @@ import { renderPostuladosView } from './views/postulados/postuladosView.js'
 import { renderPostuladoPerfilView } from './views/postulados/postuladoPerfilView.js'
 import { renderPostuladoCalendarioView } from './views/postulados/postuladoCalendarioView.js'
 
+import { renderAlumnosInactivosView } from './views/alumnosInactivosView.js'
+
 export function registerRoutesAlumnos() {
   router.register('alumnos', renderAlumnosView)
+  router.register('alumnos-inactivos', renderAlumnosInactivosView)
   router.register('alumnos-reporte-mes', renderReporteInscripcionesMes)
   router.register('alumnos-inscribir', renderWizardInscripcionAlumnoView)
   router.register('alumnos-pdf-demo', renderPdfDemoView)
@@ -18,4 +21,5 @@ export function registerRoutesAlumnos() {
   router.register('postulado', renderPostuladoPerfilView)
   router.register('postulados-calendario', renderPostuladoCalendarioView)
 }
+
 

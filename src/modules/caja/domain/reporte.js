@@ -1,6 +1,13 @@
 /**
  * Domain: reporte
  * Reporting and aggregation — no Supabase imports.
+ *
+ * All monetary inputs/outputs here are integer centavos (RD$1.00 = 100
+ * centavos, ADR-002). Result field names (totalGeneral, totalCuotas,
+ * totalPagado, saldoPendiente, walletBalance, valorRecuperado, ...) are
+ * computed/aggregate values, not raw DB columns — they hold centavos too.
+ * Callers (views/pdf) must convert to pesos only when formatting for
+ * display, e.g. (centavos / 100).toFixed(2).
  */
 
 export function aggregateCierreCaja(pagos, fecha) {
@@ -8,12 +15,12 @@ export function aggregateCierreCaja(pagos, fecha) {
   let totalGeneral = 0
 
   for (const pago of pagos) {
-    totalGeneral += pago.monto
+    totalGeneral += pago.monto_centavos
     if (!porMetodo[pago.metodo_pago]) {
       porMetodo[pago.metodo_pago] = { count: 0, total: 0 }
     }
     porMetodo[pago.metodo_pago].count++
-    porMetodo[pago.metodo_pago].total += pago.monto
+    porMetodo[pago.metodo_pago].total += pago.monto_centavos
   }
 
   return {
@@ -25,8 +32,8 @@ export function aggregateCierreCaja(pagos, fecha) {
 }
 
 export function buildEstadoCuentaFamiliar(familia, cuotas, pagos, wallet) {
-  const totalCuotas = cuotas.reduce((s, c) => s + (c.monto_base || 0), 0)
-  const totalPagado = pagos.reduce((s, p) => s + (p.monto || 0), 0)
+  const totalCuotas = cuotas.reduce((s, c) => s + (c.monto_base_centavos || 0), 0)
+  const totalPagado = pagos.reduce((s, p) => s + (p.monto_centavos || 0), 0)
   const saldoPendiente = totalCuotas - totalPagado
   const walletBalance = wallet ? (wallet.saldo || 0) : 0
 
@@ -64,7 +71,7 @@ export function buildMoraReport(cuotasMora, representantes, today) {
 }
 
 export function buildImpactoSocial(becas, patrocinios, exoneraciones) {
-  const valorRecuperado = patrocinios.reduce((s, p) => s + (p.monto_mensual || 0), 0)
+  const valorRecuperado = patrocinios.reduce((s, p) => s + (p.monto_mensual_centavos || 0), 0)
   const valorSubsidios = exoneraciones.reduce((s, e) => s + (e.porcentaje || 0), 0)
 
   return {

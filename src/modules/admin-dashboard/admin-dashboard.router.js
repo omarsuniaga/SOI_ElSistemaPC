@@ -49,12 +49,30 @@ export function registerRoutesAdminDashboard() {
   router.register('admin-maestro-detalle', async (container, params) => {
     try {
       container.innerHTML = `<div id="maestro-detalle-container" class="p-4"></div>`
-      const { default: MaestroDetalleView } = await import('./views/maestroDetalleView.js')
-      const view = new MaestroDetalleView('maestro-detalle-container', params.maestroId)
+      const { MaestroDetalleView } = await import('./views/maestroDetalleView.js')
+      const maestroId = params?.maestroId ?? params?.id
+      if (!maestroId) throw new Error('No se recibió el identificador del maestro')
+      const rango = params?.desde && params?.hasta ? { desde: params.desde, hasta: params.hasta } : null
+      const view = new MaestroDetalleView('maestro-detalle-container', maestroId, rango)
       view.init()
     } catch (error) {
       console.error('[admin-maestro-detalle] Error:', error)
       container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar detalle: ${error.message}</p></div>`
+    }
+  })
+
+  // Clases Dadas de un Maestro — contenido, roster y análisis IA de progreso
+  router.register('admin-maestro-clases', async (container, params) => {
+    try {
+      container.innerHTML = `<div id="maestro-clases-container" class="p-4"></div>`
+      const { MaestroClasesContenidoView } = await import('./views/maestroClasesContenidoView.js')
+      const maestroId = params?.maestroId ?? params?.id
+      if (!maestroId) throw new Error('No se recibió el identificador del maestro')
+      const view = new MaestroClasesContenidoView('maestro-clases-container', maestroId)
+      view.init()
+    } catch (error) {
+      console.error('[admin-maestro-clases] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar clases dadas: ${error.message}</p></div>`
     }
   })
 
@@ -109,7 +127,7 @@ export function registerRoutesAdminDashboard() {
     }
   })
 
-  // Project Manager - Dashboard de macro-eventos WBS
+  // Project Manager Institucional — Motor WBS y DAG
   router.register('proyecto-manager', async (container) => {
     try {
       container.innerHTML = `<div id="proyecto-manager-container" class="p-3"></div>`
@@ -118,7 +136,7 @@ export function registerRoutesAdminDashboard() {
     } catch (error) {
       console.error('[proyecto-manager] Error:', error)
       container.innerHTML = `<div class="pm-placeholder p-4 text-center text-muted">
-        <i class="bi bi-kanban fs-3 d-block mb-2"></i>
+        <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
         <p>Error al cargar el Project Manager: ${error.message}</p>
       </div>`
     }

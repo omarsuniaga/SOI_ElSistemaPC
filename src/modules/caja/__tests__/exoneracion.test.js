@@ -54,16 +54,16 @@ describe('buildExoneracion', () => {
 })
 
 describe('calcularMontoExonerado', () => {
-  const cuota = { monto_base: 300 }
+  const cuota = { monto_base_centavos: 30000 }
 
-  test('50% exoneracion = 150', () => {
+  test('50% exoneracion = 15000', () => {
     const e = { porcentaje: 50 }
-    expect(calcularMontoExonerado(cuota, e)).toBe(150)
+    expect(calcularMontoExonerado(cuota, e)).toBe(15000)
   })
 
   test('100% exoneracion = full amount', () => {
     const e = { porcentaje: 100 }
-    expect(calcularMontoExonerado(cuota, e)).toBe(300)
+    expect(calcularMontoExonerado(cuota, e)).toBe(30000)
   })
 
   test('0% exoneracion = 0', () => {

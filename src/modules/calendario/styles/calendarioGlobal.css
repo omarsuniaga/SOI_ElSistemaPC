@@ -1,0 +1,352 @@
+/* ============================================================================
+   SOI - CALENDARIO GLOBAL INSTITUCIONAL (FullCalendar v6 Enhanced)
+   Theme-aware (Light & Dark Mode) + 100% Fluid Responsive CSS
+   ============================================================================ */
+
+.cal-global-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  animation: calFadeIn 0.3s ease-out;
+  color: var(--soi-text, var(--bs-body-color, #1e293b));
+}
+
+@keyframes calFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 1. Barra Superior de Control y Filtros ─────────────────────────────────── */
+.cal-control-card {
+  background: var(--soi-surface, var(--bs-card-bg, #ffffff));
+  border: 1px solid var(--soi-border, var(--bs-border-color, #e2e8f0));
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.25s ease;
+}
+
+.cal-control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cal-title-section h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--soi-text, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cal-title-section p {
+  color: var(--soi-text-muted, #64748b);
+  margin: 0.2rem 0 0 0;
+  font-size: 0.85rem;
+}
+
+.cal-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Filtros Multidimensionales ─────────────────────────────────────────────── */
+.cal-filters-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.cal-search-box {
+  position: relative;
+}
+
+.cal-search-box i {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--soi-text-muted, #94a3b8);
+  font-size: 0.95rem;
+}
+
+.cal-search-input {
+  padding-left: 2.35rem !important;
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  background-color: var(--soi-bg, var(--bs-body-bg, #f8fafc)) !important;
+  color: var(--soi-text, inherit) !important;
+  border: 1px solid var(--soi-border, #cbd5e1) !important;
+}
+
+.cal-filter-select {
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  background-color: var(--soi-bg, var(--bs-body-bg, #f8fafc)) !important;
+  color: var(--soi-text, inherit) !important;
+  border: 1px solid var(--soi-border, #cbd5e1) !important;
+}
+
+.cal-toggle-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--soi-text, #334155);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  background: var(--soi-bg, #f1f5f9);
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--soi-border, #e2e8f0);
+}
+
+/* ── 2. Contenedor de la Cuadrícula del Calendario ──────────────────────────── */
+.cal-grid-card {
+  background: var(--soi-surface, var(--bs-card-bg, #ffffff));
+  border: 1px solid var(--soi-border, var(--bs-border-color, #e2e8f0));
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+  min-height: 700px;
+  transition: all 0.25s ease;
+}
+
+/* ── Overrides para FullCalendar v6 (Dark & Light Mode) ─────────────────────── */
+:root {
+  --fc-border-color: var(--soi-border, #e2e8f0);
+  --fc-page-bg-color: var(--soi-surface, #ffffff);
+  --fc-neutral-bg-color: var(--soi-bg, #f8fafc);
+  --fc-neutral-text-color: var(--soi-text-muted, #64748b);
+  --fc-today-bg-color: rgba(79, 70, 229, 0.08);
+  --fc-button-text-color: #ffffff;
+  --fc-button-bg-color: #4f46e5;
+  --fc-button-border-color: #4f46e5;
+  --fc-button-hover-bg-color: #4338ca;
+  --fc-button-hover-border-color: #4338ca;
+  --fc-button-active-bg-color: #3730a3;
+  --fc-button-active-border-color: #3730a3;
+  --fc-event-border-color: transparent;
+}
+
+[data-bs-theme="dark"] {
+  --fc-border-color: rgba(255, 255, 255, 0.12);
+  --fc-page-bg-color: #1e293b;
+  --fc-neutral-bg-color: #0f172a;
+  --fc-neutral-text-color: #94a3b8;
+  --fc-today-bg-color: rgba(99, 102, 241, 0.18);
+  --fc-button-bg-color: #6366f1;
+  --fc-button-border-color: #6366f1;
+}
+
+.fc {
+  font-family: inherit !important;
+  color: var(--soi-text, inherit);
+}
+
+.fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem !important;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: var(--soi-text, inherit);
+  text-transform: capitalize;
+}
+
+.fc .fc-button {
+  border-radius: 8px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  padding: 0.45rem 0.85rem !important;
+  box-shadow: none !important;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+}
+
+.fc .fc-button-group > .fc-button {
+  border-radius: 8px !important;
+  margin: 0 1px;
+}
+
+.fc .fc-col-header-cell {
+  background: var(--soi-bg, var(--bs-tertiary-bg, #f8fafc));
+  padding: 0.65rem 0;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soi-text-muted, #64748b);
+  border-color: var(--fc-border-color) !important;
+}
+
+.fc .fc-daygrid-day-number {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--soi-text, inherit);
+  padding: 6px 8px !important;
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+  background-color: var(--fc-today-bg-color) !important;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  color: #4f46e5;
+  font-weight: 800;
+}
+
+/* Eventos estilizados */
+.fc-event {
+  border-radius: 6px !important;
+  padding: 2px 5px !important;
+  font-size: 0.785rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  margin-bottom: 2px !important;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.fc-event-main {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fc-list-event:hover td {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* ── 3. Modales de Detalle y Creación ────────────────────────────────────────── */
+.cal-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: calModalFadeIn 0.2s ease-out;
+}
+
+@keyframes calModalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cal-modal-card {
+  background: var(--soi-surface, var(--bs-card-bg, #ffffff));
+  color: var(--soi-text, var(--bs-body-color, #1e293b));
+  border: 1px solid var(--soi-border, var(--bs-border-color, #e2e8f0));
+  border-radius: 20px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
+}
+
+.cal-modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--soi-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cal-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cal-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--soi-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.cal-badge-dept {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── 4. Responsive Breakpoints ──────────────────────────────────────────────── */
+@media (max-width: 992px) {
+  .cal-filters-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .cal-search-box {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 576px) {
+  .cal-control-card, .cal-grid-card {
+    padding: 0.875rem;
+    border-radius: 12px;
+  }
+
+  .cal-filters-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cal-search-box {
+    grid-column: span 1;
+  }
+
+  .fc .fc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fc .fc-toolbar-title {
+    text-align: center;
+    font-size: 1.1rem !important;
+  }
+
+  .fc .fc-button {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.75rem !important;
+  }
+}

@@ -88,23 +88,19 @@ function normalizeAlumnoWriteError(error) {
   return new Error(rawMessage || 'No se pudo crear el alumno')
 }
 
-export async function obtenerAlumnos({ page = 0, pageSize = 1000 } = {}) {
-  const from = page * pageSize
-  const to = from + pageSize - 1
-
-  const { data, error, count } = await supabase
-    .from('alumnos')
-    .select('*', { count: 'exact' })
-    .order('nombre_completo', { ascending: true })
-    .range(from, to)
-
+export async function obtenerAlumnos({ page = 0, pageSize = 1000, soloActivos = true } = {}) {
+  const from = page * pageSize, to = from + pageSize - 1
+  let q = supabase.from('alumnos').select('*', { count: 'exact' })
+  if (soloActivos) q = q.eq('activo', true)
+  const { data, error, count } = await q.order('nombre_completo', { ascending: true }).range(from, to)
   if (error) {
     console.error('Error cargando alumnos:', error.message)
     throw new Error('No se pudieron cargar los alumnos')
   }
-
   return { alumnos: (data || []).map(normalizeAlumno), total: count ?? 0 }
 }
+
+
 
 export async function obtenerAlumno(id) {
   const { data, error } = await supabase
@@ -319,13 +315,70 @@ export async function actualizarAlumno(id, actualizaciones) {
   return normalizeAlumno(data[0])
 }
 
-export async function eliminarAlumno(id) {
-  const { error } = await supabase.from('alumnos').delete().eq('id', id)
+export async function inactivarAlumno(id) {
+  const { data, error } = await supabase
+    .from('alumnos')
+    .update({ activo: false, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+
   if (error) {
-    console.error('Error eliminando alumno:', error.message)
-    throw new Error('No se pudo eliminar el alumno')
+    console.error('Error inactivando alumno:', error.message)
+    throw new Error('No se pudo mover el alumno a inactivos')
   }
+
+  if (!data || data.length === 0) {
+    throw new Error('Alumno no encontrado para inactivar')
+  }
+
+  return normalizeAlumno(data[0])
 }
+
+export async function reactivarAlumno(id) {
+  const { data, error } = await supabase
+    .from('alumnos')
+    .update({ activo: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+
+  if (error) {
+    console.error('Error reactivando alumno:', error.message)
+    throw new Error('No se pudo reactivar el alumno')
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Alumno no encontrado para reactivar')
+  }
+
+  return normalizeAlumno(data[0])
+}
+
+export async function obtenerAlumnosInactivos({ page = 0, pageSize = 1000 } = {}) {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from('alumnos')
+    .select('*', { count: 'exact' })
+    .eq('activo', false)
+    .order('nombre_completo', { ascending: true })
+    .range(from, to)
+
+  if (error) {
+    console.error('Error cargando alumnos inactivos:', error.message)
+    throw new Error('No se pudieron cargar los alumnos inactivos')
+  }
+
+  return { alumnos: (data || []).map(normalizeAlumno), total: count ?? 0 }
+}
+
+export async function eliminarAlumno(id) {
+  // En la arquitectura institucional de SOI, eliminar a un alumno aplica Soft Delete (inactivación)
+  // para preservar la integridad de postulantes, comodatos_activos, asistencias y evaluaciones.
+  return inactivarAlumno(id)
+}
+
+
 
 export async function validarEmail(email) {
   const { data, error } = await supabase

@@ -64,7 +64,7 @@ const FAMILIAS_MAP = {
 /**
  * Inicializa y renderiza la vista de Clases
  */
-export async function renderClasesView(container) {
+export async function renderClasesView(container, params = {}) {
   if (!container) return
 
   try {
@@ -101,6 +101,14 @@ export async function renderClasesView(container) {
 
     renderContent(container)
     attachEvents(container)
+    if (params?.selectedId) {
+      const clase = state.clasesOriginales.find(c => c.id === params.selectedId)
+      if (clase) {
+        openClasePerfilModal(clase)
+      } else {
+        AppToast.error('No se encontró la clase solicitada')
+      }
+    }
   } catch (error) {
     console.error('[clasesView] Error inicializando:', error)
     renderError(container, error.message)
@@ -319,6 +327,29 @@ function renderContent(container) {
   const salonesList = [...new Set(state.salones.map(s => s.nombre).filter(Boolean))].sort()
   const maestrosList = [...new Set(state.maestros.map(m => m.nombre_completo || m.nombre).filter(Boolean))].sort()
 
+  const actionsHtml = `
+    <button class="btn-help-trigger clases-ui-btn clases-ui-btn--icon" id="btn-help-clases" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+      <i class="bi bi-question-lg"></i>
+    </button>
+    <div class="view-segmented-control">
+      <button class="view-segment-btn clases-ui-btn clases-ui-btn--icon ${state.vista === 'tabla' ? 'active' : ''}" id="btn-vista-tabla" title="Vista de lista" aria-label="Vista de lista">
+        <i class="bi bi-list-ul"></i>
+      </button>
+      <button class="view-segment-btn clases-ui-btn clases-ui-btn--icon ${state.vista === 'calendario' ? 'active' : ''}" id="btn-vista-calendario" title="Vista de agenda" aria-label="Vista de agenda">
+        <i class="bi bi-calendar-week"></i>
+      </button>
+    </div>
+    <button class="btn btn-outline-secondary btn-clases-pdf clases-ui-btn clases-ui-btn--icon" id="btnPdfListadoAlumnosClases" type="button" aria-label="Descargar PDF Listados Alumnos x Clase" title="Descargar PDF Listados Alumnos x Clase">
+      <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+    </button>
+    <button class="btn btn-outline-warning clases-ui-btn clases-ui-btn--icon" id="btnAlumnosSinClase" type="button" aria-label="Ver alumnos sin clase asignada" title="Ver alumnos sin clase asignada">
+      <i class="bi bi-person-exclamation" aria-hidden="true"></i>
+    </button>
+    <button class="btn btn-premium-action" id="btnAgregarClase" title="Nueva clase">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Nueva Clase
+    </button>
+  `
+
   container.innerHTML = `
     <div class="clases-view-container p-2 p-md-3">
       
@@ -354,6 +385,8 @@ function renderContent(container) {
                   <i class="bi bi-exclamation-triangle-fill me-1"></i>${clasesConConflicto} con Advertencias
                 </span>
               ` : ''}
+            </div>
+          </div>
             </div>
           </div>
 

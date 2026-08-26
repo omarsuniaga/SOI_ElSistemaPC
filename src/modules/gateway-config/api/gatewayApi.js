@@ -13,7 +13,7 @@ import { config } from '../../../core/config/config.js'
 const DEFAULT_CONFIG = {
   id: '00000000-0000-0000-0000-000000000001',
   gateway_url: 'https://gateway.elsistema.local/api',
-  api_key: 'sk_live_soi_baileys_secure',
+  api_key: '***REDACTED-ROTATED***',
   instance_name: 'soi-main',
   numero_wid: '+1 (829) 555-0188',
   numero_nombre: 'El Sistema Punta Cana (Oficial)',
@@ -214,6 +214,42 @@ export async function obtenerGatewayStats() {
     jitterText: `${gwConfig.jitter_min_seg || 8}s – ${gwConfig.jitter_max_seg || 20}s`,
     rateLimitHora: gwConfig.cap_horario || 40,
   }
+}
+
+/**
+ * Ventana anti-spam "un mensaje por número cada X horas" — configurable desde
+ * el portal en vez de estar fija en el código (system_config.whatsapp_dedup_jid_horas).
+ * Bajarla solo para pruebas controladas; producción debe quedar en 24.
+ */
+export async function obtenerDedupHoras() {
+  if (config.isDemoMode || !supabase) return 24
+
+  try {
+    const { data, error } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'whatsapp_dedup_jid_horas')
+      .maybeSingle()
+
+    if (error) return 24
+    return Number(data?.value) || 24
+  } catch {
+    return 24
+  }
+}
+
+export async function actualizarDedupHoras(horas) {
+  const valor = String(Math.max(0, Number(horas) || 24))
+
+  if (config.isDemoMode || !supabase) return valor
+
+  const { error } = await supabase
+    .from('system_config')
+    .update({ value: valor, updated_at: new Date().toISOString() })
+    .eq('key', 'whatsapp_dedup_jid_horas')
+
+  if (error) throw error
+  return valor
 }
 
 export async function obtenerColaMensajes(limite = 20) {

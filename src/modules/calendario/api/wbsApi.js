@@ -7,13 +7,13 @@ import { construirArcosDag } from '../domain/dagResolutionEngine.js'
 
 /**
  * Activa el Plan WBS de un evento:
- *   1. Inserta los hitos como tareas_institucionales (con estado resuelto por DAG).
- *   2. Enlaza las dependencias (depende_de_tarea_id) entre las tareas insertadas.
+ *   1. Inserta los hitos como tareas_institucionales con estado resuelto por DAG.
+ *   2. Enlaza depende_de_tarea_id entre las tareas insertadas.
  *   3. Marca el evento como es_macro_evento = true en calendario_institucional.
  *
  * @param {string} eventId         UUID del evento en calendario_institucional
- * @param {string} eventoTitulo    Título del evento (para descripción de tareas)
- * @param {Date}   fechaEvento     Fecha del evento (para calcular fecha_vencimiento)
+ * @param {string} eventoTitulo    Título del evento
+ * @param {Date}   fechaEvento     Fecha del evento para calcular fecha_vencimiento
  * @param {Array}  hitos           Array de hitos con estadoInicial ya resuelto
  * @returns {{ count: number }}
  */
@@ -65,11 +65,11 @@ export async function activarPlanWBS(eventId, eventoTitulo, fechaEvento, hitos) 
 }
 
 /**
- * Desplaza el cronograma de un evento delta_dias días hacia el futuro (positivo)
- * o hacia el pasado (negativo). No afecta tareas completadas ni canceladas.
+ * Desplaza el cronograma del evento delta_dias días.
+ * No afecta tareas completadas ni canceladas.
  *
- * @param {string} eventId    UUID del evento
- * @param {number} deltaDias  Días a desplazar
+ * @param {string} eventId
+ * @param {number} deltaDias  Positivo = futuro, negativo = adelantar
  * @returns {{ updatedCount: number }}
  */
 export async function desplazarCronograma(eventId, deltaDias) {

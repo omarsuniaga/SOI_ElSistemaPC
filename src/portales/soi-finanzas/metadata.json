@@ -1,0 +1,6 @@
+{
+  "name": "SOI Finanzas",
+  "description": "Sistema Integral de Gestión Financiera Institucional para El Sistema Punta Cana (FUNEYCA-PC).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

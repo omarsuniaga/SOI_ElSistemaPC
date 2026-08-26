@@ -600,3 +600,205 @@ export async function rechazarToolCall(tareaId, motivo, actor) {
 
   if (error) throw error
 }
+
+// ─── Fase 3: aprobación humana de mensajes WhatsApp (Regla R6) ────────────────
+
+/**
+ * Lista los mensajes de hermes_whatsapp_queue esperando aprobación de ACM/DIR
+ * antes de encolarse para envío real.
+ */
+export async function getPendingWhatsappApprovals() {
+  const { data, error } = await supabase
+    .from('hermes_whatsapp_queue')
+    .select('id, jid, mensaje, created_at')
+    .eq('estado', 'pendiente_aprobacion')
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Aprueba un mensaje de WhatsApp pendiente: lo mueve a 'pendiente' para que
+ * el dispatcher lo tome en el próximo ciclo. Verificado server-side por rol
+ * (admin/superadmin/direccion/coordinacion_academica) en fn_hermes_aprobar_whatsapp.
+ * @param {string} queueId
+ */
+export async function aprobarWhatsapp(queueId) {
+  const { error } = await supabase.rpc('fn_hermes_aprobar_whatsapp', { p_queue_id: queueId })
+  if (error) throw error
+}
+
+/**
+ * Rechaza un mensaje de WhatsApp pendiente: lo cancela, nunca se envía.
+ * @param {string} queueId
+ * @param {string} [motivo]
+ */
+export async function rechazarWhatsapp(queueId, motivo) {
+  const { error } = await supabase.rpc('fn_hermes_rechazar_whatsapp', {
+    p_queue_id: queueId,
+    p_motivo: motivo || null,
+  })
+  if (error) throw error
+}
+
+// ─── Batch 2: Pulso Institucional ────────────────────────────────────────────
+
+/**
+ * Obtiene eventos procesados para el dashboard Pulso Institucional.
+ * RLS automático: DIR ve todos; ACM, ADM, LOG, etc. ven solo sus eventos.
+ *
+ * @param {number} [offset=0] — posición de inicio
+ * @param {number} [limit=100] — cantidad de registros
+ * @param {object} [filters={}] — { tipo?, entidad_tipo?, departamento?, searchText? }
+ * @returns {Promise<Array>}
+ */
+export async function getPulsoEventos(offset = 0, limit = 100, filters = {}) {
+  let query = supabase
+    .from('soi_eventos')
+    .select('id, tipo, entidad_tipo, entidad_id, payload, created_at')
+    .eq('procesado', true)
+
+  if (filters.tipo) query = query.eq('tipo', filters.tipo)
+  if (filters.entidad_tipo) query = query.eq('entidad_tipo', filters.entidad_tipo)
+  if (filters.departamento) query = query.eq('departamento', filters.departamento)
+  if (filters.searchText) {
+    // Búsqueda en payload como JSON (si la estructura lo permite)
+    query = query.ilike('payload::text', `%${filters.searchText}%`)
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Obtiene reglas reactivas (hermes_reactive_rules) para un departamento.
+ * RLS automático filtra por departamento del usuario.
+ *
+ * @param {string} [departamento=null] — si se proporciona, filtra por ese departamento
+ * @returns {Promise<Array>}
+ */
+export async function getRules(departamento = null) {
+  let query = supabase
+    .from('hermes_reactive_rules')
+    .select('id, rule_type, nombre, descripcion, enabled, departamento, conditions_json, created_at, updated_at')
+
+  if (departamento) {
+    query = query.eq('departamento', departamento)
+  }
+
+  const { data, error } = await query.order('rule_type', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Actualiza una regla reactiva (enabled, descripcion, etc.).
+ * RLS automático: solo se pueden actualizar reglas del departamento del usuario (o todas si DIR).
+ *
+ * @param {string} ruleId
+ * @param {object} updates — { enabled?, descripcion?, conditions_json? }
+ * @returns {Promise<object>}
+ */
+export async function updateRule(ruleId, updates = {}) {
+  const payload = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if (updates.enabled !== undefined) payload.enabled = updates.enabled
+  if (updates.descripcion !== undefined) payload.descripcion = updates.descripcion
+  if (updates.conditions_json !== undefined) payload.conditions_json = updates.conditions_json
+
+  const { data, error } = await supabase
+    .from('hermes_reactive_rules')
+    .update(payload)
+    .eq('id', ruleId)
+    .select('id, rule_type, nombre, descripcion, enabled, departamento, conditions_json, created_at, updated_at')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Calcula en tiempo real el Pulso Score institucional (0-100).
+ *
+ * @param {boolean} [persistir=false] — Si es true, guarda el snapshot en pulso_score_history
+ * @returns {Promise<object>} { score, nivel, componentes, conteos, calculado_at }
+ */
+export async function getPulsoScore(persistir = false) {
+  const { data, error } = await supabase.rpc('fn_calcular_pulso_score', {
+    p_persistir: persistir,
+  })
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Obtiene el historial de mediciones de Pulso Score para visualización de tendencias.
+ *
+ * @param {number} [limit=10]
+ * @returns {Promise<Array>}
+ */
+export async function getPulsoScoreHistory(limit = 10) {
+  const { data, error } = await supabase
+    .from('pulso_score_history')
+    .select('*')
+    .order('calculado_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Obtiene el análisis semanal de patrones más reciente generado por IA.
+ *
+ * @returns {Promise<object|null>}
+ */
+export async function getUltimoAnalisisSemanal() {
+  const { data, error } = await supabase
+    .from('soi_analisis_semanal')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data || null
+}
+
+/**
+ * Invoca la Edge Function soi-pattern-analyzer para generar un nuevo análisis de IA.
+ *
+ * @returns {Promise<object>}
+ */
+export async function ejecutarAnalisisPatrones() {
+  const { data, error } = await supabase.functions.invoke('soi-pattern-analyzer', {
+    method: 'POST',
+  })
+
+  if (error) throw error
+  return data?.analisis || data
+}
+
+/**
+ * Obtiene las métricas de efectividad de las reglas reactivas HERMES.
+ *
+ * @returns {Promise<Array>}
+ */
+export async function getRuleEffectiveness() {
+  const { data, error } = await supabase
+    .from('soi_rule_effectiveness')
+    .select('*')
+    .order('rule_type', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}

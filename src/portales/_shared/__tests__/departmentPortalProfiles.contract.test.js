@@ -31,7 +31,7 @@ describe('department portal profile contracts', () => {
       brandText: 'SOI · Académica',
       brandIcon: 'bi-easel',
       allowedRoles: ['admin'],
-      defaultRoute: 'clases',
+      defaultRoute: 'clases-hoy',
       hermesDept: 'ACM',
     })
     expect(profile.registrars).toBe(allRegistrars)
@@ -42,6 +42,7 @@ describe('department portal profile contracts', () => {
     const routes = flattenRoutes(profileForDepartment('ACM'))
 
     expect(routes).toEqual(expect.arrayContaining([
+      'maestros',
       'programas',
       'clases',
       'salones',
@@ -72,7 +73,7 @@ describe('department portal profile contracts', () => {
       brandText: 'SOI · Administración',
       brandIcon: 'bi-clipboard-data',
       allowedRoles: ['admin'],
-      defaultRoute: 'alumnos',
+      defaultRoute: 'clases-hoy',
       hermesDept: 'ADM',
     })
     expect(profile.registrars).toBe(allRegistrars)

@@ -1,11 +1,14 @@
-﻿import '../styles/maestros.css'
+import '../styles/maestros.css'
+import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+
 import {
   obtenerMaestros,
   crearMaestroConAuth,
   actualizarMaestro,
-  inactivarMaestro,
-  activarMaestro,
+  previsualizarRetiroMaestro,
+  retirarMaestroSeguro,
+  reactivarMaestroSeguro,
   validarEmail,
 } from '../api/maestrosApi.js'
 import {
@@ -208,47 +211,54 @@ function attachEspecialidadesEvents(modalBody, onChange) {
 }
 
 function renderContent(container) {
+  const actionsHtml = `
+    <button class="btn-help-trigger me-1" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+      <i class="bi bi-question"></i>
+    </button>
+    <button class="btn btn-outline-success btn-sm d-flex align-items-center gap-1" id="btnExportarCSV" title="Exportar listado a CSV">
+      <i class="bi bi-file-earmark-spreadsheet"></i> <span class="d-none d-sm-inline">CSV</span>
+    </button>
+    <button class="btn btn-premium-action" id="btnAgregarMaestro">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Maestro
+    </button>
+  `
+
+  const filtersHtml = `
+    <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
+      <i class="bi bi-search search-icon-muted"></i>
+      <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, cédula o instrumento..." id="buscar" autocomplete="off">
+    </div>
+
+    <div class="premium-select-container">
+      <i class="bi bi-funnel select-icon-muted"></i>
+      <select class="form-select premium-filter-select" id="filtroEstado">
+        <option value="todos">Todos los estados</option>
+        <option value="activo">Activos</option>
+        <option value="inactivo">Inactivos</option>
+      </select>
+    </div>
+
+    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnLimpiarFiltrosMaestros" type="button" title="Limpiar filtros">
+      <i class="bi bi-x-circle"></i> <span>Limpiar</span>
+    </button>
+  `
+
   container.innerHTML = `
     <div class="page-container">
-      <div class="maestros-header-premium mb-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-            <i class="bi bi-person-check fs-4"></i>
-          </div>
-          <div>
-            <h1 class="maestros-title-premium mb-0">Maestros</h1>
-            <p class="text-muted small mb-0">${state.maestros.length} maestros en total</p>
-          </div>
-        </div>
-        
-        <div class="maestros-header-actions">
-          <button class="btn-help-trigger" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
-            <i class="bi bi-question"></i>
-          </button>
-          <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
-            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-          </button>
-          <button class="btn btn-premium-action" id="btnAgregarMaestro">
-            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Maestro
-          </button>
-        </div>
-      </div>
+      ${renderPageHeader({
+        icon: 'bi-person-check',
+        title: 'Maestros',
+        subtitle: `${state.maestros.length} maestros registrados`,
+        actionsHtml,
+      })}
 
-      <div class="maestros-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1">
-          <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar maestro..." id="buscar" autocomplete="off">
-        </div>
-        
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroEstado">
-            <option value="todos">Todos los estados</option>
-            <option value="activo">Activos</option>
-            <option value="inactivo">Inactivos</option>
-          </select>
-        </div>
-      </div>
+      ${renderFilterPanel({
+        isOpen: true,
+        filtersHtml,
+        onToggleId: 'btnToggleFiltrosMaestros',
+        badgeId: 'filtrosBadgeCountMaestros',
+        subtitle: 'Busca y segmenta el plantel docente por instrumento y estado',
+      })}
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="maestrosTBody">
@@ -259,6 +269,7 @@ function renderContent(container) {
     </div>
   `
 }
+
 
 function renderTableRows(maestros) {
   if (!maestros.length) {
@@ -364,8 +375,28 @@ function attachEvents(container) {
 
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarMaestrosCSV())
 
-  container.querySelector('#buscar').addEventListener('input', () => applyFilters())
-  container.querySelector('#filtroEstado').addEventListener('change', () => applyFilters())
+  // Toggle Filtros Panel
+  const toggleBtn = container.querySelector('#btnToggleFiltrosMaestros')
+  const filterBody = container.querySelector('#btnToggleFiltrosMaestrosBody')
+  toggleBtn?.addEventListener('click', () => {
+    const isOpen = filterBody?.classList.toggle('is-open')
+    filterBody?.classList.toggle('is-collapsed', !isOpen)
+    toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+    const icon = toggleBtn.querySelector('i')
+    if (icon) icon.className = `bi ${isOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`
+  })
+
+  const searchInput = container.querySelector('#buscar')
+  searchInput?.addEventListener('input', () => applyFilters())
+  container.querySelector('#filtroEstado')?.addEventListener('change', () => applyFilters())
+
+  container.querySelector('#btnLimpiarFiltrosMaestros')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (searchInput) searchInput.value = ''
+    const estadoSelect = container.querySelector('#filtroEstado')
+    if (estadoSelect) estadoSelect.value = 'todos'
+    applyFilters()
+  })
 
   container.querySelector('#maestrosTBody').addEventListener('click', (e) => {
     const row = e.target.closest('.list-group-item[data-id]')
@@ -451,8 +482,8 @@ function openWhatsAppModal(id) {
 // ─── Filters ─────────────────────────────────────────────────────────────────
 
 function applyFilters() {
-  const searchTerm = currentContainer.querySelector('#buscar').value.trim().toLowerCase()
-  const filtroEstado = currentContainer.querySelector('#filtroEstado').value
+  const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
+  const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
 
   state.maestros = state.maestrosOriginales.filter((a) => {
     const nombre = (a.nombre || a.name || '').toLowerCase()
@@ -473,8 +504,22 @@ function applyFilters() {
     return matchSearch && matchEstado
   })
 
+  let activos = 0
+  if (filtroEstado !== 'todos') activos++
+
+  const badgeEl = currentContainer.querySelector('#filtrosBadgeCountMaestros')
+  if (badgeEl) {
+    badgeEl.textContent = activos
+    if (activos > 0) {
+      badgeEl.classList.remove('d-none')
+    } else {
+      badgeEl.classList.add('d-none')
+    }
+  }
+
   refreshTable()
 }
+
 
 // ─── Modal openers ───────────────────────────────────────────────────────────
 
@@ -682,8 +727,8 @@ function openViewModal(id) {
       <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-edit" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Editar Perfil">
         <i class="bi bi-pencil me-1"></i>Editar
       </button>
-      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-delete" style="background: rgba(220, 53, 69, 0.45); font-size: 0.8rem; border-radius: 6px;" type="button" title="Eliminar Maestro">
-        <i class="bi bi-trash me-1"></i>Eliminar
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-delete" style="background: rgba(220, 53, 69, 0.45); font-size: 0.8rem; border-radius: 6px;" type="button" title="Retirar maestro de forma segura">
+        <i class="bi bi-person-dash me-1"></i>Retirar
       </button>
     </div>
   `
@@ -1224,24 +1269,99 @@ function openDeleteModal(id) {
   const nombre = maestro.nombre || maestro.name || ''
   const isActive = maestro.is_active !== false
 
+  if (!isActive) {
+    AppModal.open({
+      title: '▶️ Reactivar Maestro',
+      size: 'sm',
+      saveText: 'Reactivar',
+      body: `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+        <p class="text-muted small mb-0">Se restaurará su acceso, pero las clases no se reasignarán automáticamente.</p>`,
+      onSave: async () => {
+        try {
+          await reactivarMaestroSeguro(id)
+          maestro.is_active = true
+          applyFilters()
+          showToast('Maestro reactivado correctamente', 'success')
+        } catch (error) {
+          showToast(error.message || 'No se pudo reactivar el maestro', 'error')
+          return false
+        }
+      },
+    })
+    return
+  }
+
+  void openRetirementReview(maestro)
+}
+
+async function openRetirementReview(maestro) {
+  let preview
+  try {
+    preview = await previsualizarRetiroMaestro(maestro.id)
+  } catch (error) {
+    showToast(error.message || 'No se pudieron revisar las relaciones del maestro', 'error')
+    return
+  }
+
+  const principales = Array.isArray(preview?.clases_principales) ? preview.clases_principales : []
+  const suplencias = Array.isArray(preview?.clases_suplente) ? preview.clases_suplente : []
+  const replacementOptions = state.maestrosOriginales
+    .filter((item) => item.id !== maestro.id && item.is_active !== false)
+    .map(
+      (item) =>
+        `<option value="${item.id}">${escapeHTML(item.nombre || item.nombre_completo || 'Maestro')}</option>`,
+    )
+    .join('')
+  const dependencies = Object.entries(preview?.dependencias || {})
+    .map(
+      ([key, value]) =>
+        `<li><strong>${escapeHTML(key)}</strong>: ${Number(value?.count || 0)} registro(s), ${escapeHTML(value?.on_delete || 'sin regla')}</li>`,
+    )
+    .join('')
+
   AppModal.open({
-    title: isActive ? '⏸️ Desactivar Maestro' : '▶️ Reactivar Maestro',
-    size: 'sm',
-    saveText: isActive ? 'Desactivar' : 'Reactivar',
-    body: isActive
-      ? `<p>¿Desactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro no aparecerá en las listas, pero sus datos se conservarán.</p>`
-      : `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro volverá a aparecer en las listas.</p>`,
-    onSave: async () => {
-      if (isActive) {
-        await inactivarMaestro(id)
-        showToast('Maestro desactivado correctamente', 'success')
-      } else {
-        await activarMaestro(id)
-        showToast('Maestro reactivado correctamente', 'success')
+    title: 'Retirar maestro de forma segura',
+    size: 'lg',
+    saveText: 'Confirmar retiro',
+    body: `
+      <div class="alert alert-warning">
+        <i class="bi bi-shield-exclamation me-1"></i>
+        Se retirará el acceso de <strong>${escapeHTML(maestro.nombre || maestro.nombre_completo || '')}</strong>.
+        El historial, sesiones y alumnos se conservarán.
+      </div>
+      <h6>Clases principales (${principales.length})</h6>
+      ${
+        principales.length
+          ? `<ul class="small mb-3">${principales.map((clase) => `<li>${escapeHTML(clase.nombre || 'Clase sin nombre')}</li>`).join('')}</ul>
+           <label class="form-label fw-semibold" for="retirement-replacement">Maestro de reemplazo <span class="text-danger">*</span></label>
+           <select class="form-select mb-3" id="retirement-replacement"><option value="">Selecciona un reemplazo…</option>${replacementOptions}</select>`
+          : '<p class="text-muted small">No tiene clases principales que transferir.</p>'
       }
-      applyFilters()
+      ${suplencias.length ? `<p class="small text-muted">${suplencias.length} suplencia(s) serán desvinculadas sin eliminar las clases.</p>` : ''}
+      <details class="mb-3">
+        <summary class="small fw-semibold">Ver todas las relaciones detectadas (${Object.keys(preview?.dependencias || {}).length})</summary>
+        <ul class="small text-muted mt-2 mb-0">${dependencies || '<li>Sin relaciones directas activas.</li>'}</ul>
+      </details>
+      <label class="form-label" for="retirement-reason">Motivo del retiro <span class="text-muted">(opcional)</span></label>
+      <textarea class="form-control" id="retirement-reason" rows="2" maxlength="500" placeholder="Ej.: cambio de institución, fin de contrato…"></textarea>
+    `,
+    onSave: async () => {
+      const replacementId = document.getElementById('retirement-replacement')?.value || null
+      const reason = document.getElementById('retirement-reason')?.value || ''
+      if (principales.length > 0 && !replacementId) {
+        showToast('Debes seleccionar un maestro de reemplazo para las clases principales.', 'error')
+        return false
+      }
+
+      try {
+        await retirarMaestroSeguro(maestro.id, replacementId, reason)
+        maestro.is_active = false
+        applyFilters()
+        showToast('Maestro retirado y relaciones operativas resueltas correctamente', 'success')
+      } catch (error) {
+        showToast(error.message || 'No se pudo retirar el maestro', 'error')
+        return false
+      }
     },
   })
 }

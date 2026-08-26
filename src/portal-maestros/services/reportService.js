@@ -8,6 +8,7 @@
  *   generateDailyReport(sesionId)
  *   generateMonthlyAttendance(claseId, year, month)
  *   generateMonthlyPedagogical(claseId, year, month)
+ *   generateRangeReportHTML(sesiones, contexto) — pura, no consulta Supabase
  *
  * Also exports stat helpers for testing:
  *   calcAttendanceStats(asistenciaArray) → { P, A, J, total }
@@ -16,6 +17,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { AppToast } from '../../shared/components/AppToast.js'
+import { formatHora } from '../utils/portalUtils.js'
 import { generateMonthlyPatterns } from './groqService.js'
 import {
   header,
@@ -188,6 +190,17 @@ export async function generateDailyReport(sesionId) {
       attByAlumno[a.alumno_id] = a
     })
 
+    // Causa de la justificación (tabla aparte — el JSONB de asistencia solo
+    // trae alumno_id + estado, nunca el motivo).
+    const { data: justificaciones } = await supabase
+      .from('justificaciones')
+      .select('alumno_id, motivo')
+      .eq('sesion_id', sesionId)
+    const motivoByAlumno = {}
+    ;(justificaciones || []).forEach((j) => {
+      motivoByAlumno[j.alumno_id] = j.motivo
+    })
+
     const landscape = alumnos.length > 20
 
     // Parse DSL content from sesiones_clase.contenido (Bug #3 fix)
@@ -234,7 +247,9 @@ export async function generateDailyReport(sesionId) {
         const a = attByAlumno[al.id]
         const estado = a?.estado ?? '—'
         const cell = ['P', 'A', 'J'].includes(estado) ? attendanceCell(estado) : esc(estado)
-        const obs_ = esc(a?.observacion || '')
+        // La observación puntual del maestro tiene prioridad; si no hay,
+        // se muestra la causa registrada en `justificaciones` (motivo).
+        const obs_ = esc(a?.observacion || motivoByAlumno[al.id] || '')
         return `<tr>
         <td>${i + 1}</td>
         <td>${esc(al.nombre_completo)}</td>
@@ -247,7 +262,7 @@ export async function generateDailyReport(sesionId) {
     const table = `
       <p class="rpt-section-title">Registro de asistencia</p>
       <table class="rpt-table">
-        <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación</th></tr></thead>
+        <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
     `
@@ -603,16 +618,19 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const [sesRes, obsRes, progRes, claseRes, alumnosRes, prevSesRes, justRes] = await Promise.all([
       supabase
         .from('sesiones_clase')
-        .select('id, fecha, asistencia')
+        // `contenido` es donde el maestro escribe realmente (95 de 142 sesiones).
+        .select('id, fecha, asistencia, contenido')
         .eq('clase_id', claseId)
         .gte('fecha', rangeStart)
         .lte('fecha', rangeEnd)
         .order('fecha'),
       supabase
         .from('observaciones_sesion')
-        .select('sesion_clase_id, contenido_ia_dsl, contenido_dsl')
+        // FIX: la tabla usa `sesion_id` y `contenido_raw`.
+        // `sesion_clase_id` y `contenido_dsl` no existen aquí y hacían fallar la query entera.
+        .select('sesion_id, contenido_ia_dsl, contenido_raw')
         .in(
-          'sesion_clase_id',
+          'sesion_id',
           // will be filtered after sesiones are loaded — fetch broad and filter
           (
             await supabase
@@ -626,7 +644,10 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
       supabase
         .from('progresos')
         .select(
-          `id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
+          // FIX: la columna es `evaluacion_tipo`, no `tipo`.
+          // Se suman estado_cualitativo y calificacion: son la señal de progreso real.
+          `id, alumno_id, objetivo_id, evaluacion_tipo, estado_cualitativo, calificacion,
+                 contenido_dsl, created_at,
                  alumnos(nombre_completo),
                  curriculo_objetivos(descripcion, categoria)`,
         )
@@ -697,8 +718,18 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
 
     const obsMap = {}
     obsData.forEach((o) => {
-      obsMap[o.sesion_clase_id] = o
+      obsMap[o.sesion_id] = o
     })
+
+    /**
+     * Texto de contenido de una sesión, por orden de confiabilidad:
+     * DSL generado por IA -> texto libre estructurado -> lo que escribió el maestro
+     * en sesiones_clase.contenido (la fuente con más cobertura).
+     */
+    const contenidoDeSesion = (sesion) => {
+      const obs = obsMap[sesion.id]
+      return obs?.contenido_ia_dsl || obs?.contenido_raw || sesion.contenido || ''
+    }
 
     // Aggregate totals
     let totalP = 0,
@@ -727,9 +758,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     // Collect unique content items across all sessions
     const contentSet = new Set()
     sesiones.forEach((s) => {
-      const obs = obsMap[s.id]
-      if (!obs) return
-      const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
+      const raw = contenidoDeSesion(s)
+      if (!raw) return
       raw.split(/[\n,]/).forEach((item) => {
         const clean = item.replace(/^\s*[-*\d.]+\s*/, '').trim()
         if (clean.length > 2 && clean.length < 60) contentSet.add(clean)
@@ -740,9 +770,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     // Collect obs blocks across sessions
     const allObs = []
     sesiones.forEach((s) => {
-      const obs = obsMap[s.id]
-      if (!obs) return
-      const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
+      const raw = contenidoDeSesion(s)
+      if (!raw) return
       raw.split('\n').forEach((line) => {
         if (/destacad|excelente/i.test(line))
           allObs.push({
@@ -777,8 +806,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const sessionCards = sesiones
       .map((s, i) => {
         const st = calcAttendanceStats(s.asistencia)
-        const obs = obsMap[s.id]
-        const rawContent = obs?.contenido_ia_dsl || obs?.contenido_dsl || ''
+        const rawContent = contenidoDeSesion(s)
         const firstContent =
           rawContent
             .split(/[\n,]/)[0]
@@ -869,7 +897,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
         // Badge
         const attPct = pct(aP, total)
         let badge, badgeClass
-        if (attPct >= 90 && progByAlumno[al.id]?.some((p) => p.tipo === 'LOGRADO')) {
+        if (attPct >= 90 && progByAlumno[al.id]?.some((p) => p.estado_cualitativo === 'LOGRADO')) {
           badge = 'Destacado'
           badgeClass = 'badge-destacado'
         } else if (attPct < 60) {
@@ -916,8 +944,10 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
             .slice(0, 3)
             .map((p) => {
               const label = p.curriculo_objetivos?.descripcion || p.contenido_dsl || 'Objetivo'
-              const pctVal = p.tipo === 'LOGRADO' ? 100 : p.tipo === 'EN_PROGRESO' ? 60 : 30
-              return progressBar(p.tipo, label.slice(0, 28), pctVal)
+              // El estado vive en `estado_cualitativo`; `evaluacion_tipo` siempre vale 'observacion'.
+              const estado = p.estado_cualitativo
+              const pctVal = estado === 'LOGRADO' ? 100 : estado === 'EN_PROGRESO' ? 60 : 30
+              return progressBar(estado, label.slice(0, 28), pctVal)
             })
             .join('')}
         </div>
@@ -1019,8 +1049,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
                     </td></tr>
                 <tr><td>Logros individuales</td>
                     <td>${prevSesiones.length > 0 ? '—' : '0'}</td>
-                    <td>${progresos.filter((p) => p.tipo === 'LOGRADO').length}</td>
-                    <td class="delta-up" style="font-weight:700">${progresos.filter((p) => p.tipo === 'LOGRADO').length}</td>
+                    <td>${progresos.filter((p) => p.estado_cualitativo === 'LOGRADO').length}</td>
+                    <td class="delta-up" style="font-weight:700">${progresos.filter((p) => p.estado_cualitativo === 'LOGRADO').length}</td>
                 </tr>
               </tbody>
             </table>
@@ -1309,4 +1339,228 @@ export async function generateAcademicClosureReport(payload = {}) {
     console.error('[reportService] generateAcademicClosureReport:', err)
     AppToast.error('Error al generar el cierre académico: ' + err.message)
   }
+}
+
+// ---------------------------------------------------------------------------
+// Doc 4 — Range Report (todas las sesiones de un rango/clase filtrado)
+// ---------------------------------------------------------------------------
+
+const ESTADO_LABEL_RPT = { P: 'Presente', A: 'Ausente', J: 'Justificado' }
+
+/**
+ * Arma (sin efectos secundarios) el HTML de un reporte con TODAS las
+ * sesiones ya cargadas en memoria — una página índice + una página por
+ * sesión con roster completo (nombre, estado, causa de justificación) y el
+ * contenido de clase literal. Usado tanto por "Mis Clases Dadas" del
+ * maestro como por su equivalente en el portal admin: en ambos casos los
+ * datos ya están en pantalla (vía historialClasesService.cargarHistorialClases),
+ * así que esto no vuelve a consultar Supabase — solo compone HTML.
+ *
+ * Quien llama es responsable de pasarle el HTML resultante a openReport().
+ *
+ * @param {Array} sesiones — shape de historialClasesService.cargarHistorialClases()
+ * @param {Object} contexto
+ * @param {string} contexto.maestroNombre
+ * @param {string} contexto.claseLabel — nombre de la clase o "Todas las clases"
+ * @param {string} contexto.rangoLabel — ej. "Últimos 30 días"
+ * @returns {string} documento HTML completo (wrapDocument ya aplicado)
+ */
+export function generateRangeReportHTML(sesiones, { maestroNombre, claseLabel, rangoLabel }) {
+  const totalP = sesiones.reduce((sum, s) => sum + s.presentes, 0)
+  const totalA = sesiones.reduce((sum, s) => sum + s.ausentes, 0)
+  const totalJ = sesiones.reduce((sum, s) => sum + s.justificados, 0)
+  const totalPaginas = sesiones.length + 1
+
+  const indiceRows = sesiones
+    .map(
+      (s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(formatDate(s.fecha))}</td>
+        <td>${esc(formatHora(s.horaInicio))}</td>
+        <td>${esc(s.claseNombre)}</td>
+        <td style="text-align:center">${s.presentes}</td>
+        <td style="text-align:center">${s.ausentes}</td>
+        <td style="text-align:center">${s.justificados}</td>
+      </tr>
+    `,
+    )
+    .join('')
+
+  const portada = `
+    <div class="page">
+      ${header({
+        docTag: 'REPORTE DE CLASES',
+        clase: claseLabel,
+        docente: maestroNombre,
+        periodo: rangoLabel,
+      })}
+      ${metricChips([
+        { label: 'Sesiones', value: sesiones.length, type: 'navy' },
+        { label: 'Presentes', value: totalP, type: 'ok' },
+        { label: 'Ausentes', value: totalA, type: 'bad' },
+        { label: 'Justificados', value: totalJ, type: 'warn' },
+      ])}
+      <p class="rpt-section-title">Índice de sesiones</p>
+      <table class="rpt-table">
+        <thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Clase</th><th>P</th><th>A</th><th>J</th></tr></thead>
+        <tbody>${indiceRows}</tbody>
+      </table>
+      ${footer(1, totalPaginas, rangoLabel)}
+    </div>
+  `
+
+  const paginasSesion = sesiones
+    .map((s, i) => {
+      const rosterRows = (s.roster || [])
+        .map(
+          (a, j) => `
+        <tr>
+          <td>${j + 1}</td>
+          <td>${esc(a.nombre)}</td>
+          <td style="text-align:center">${esc(ESTADO_LABEL_RPT[a.estado] || a.estado)}</td>
+          <td style="font-size:6.5pt;color:#6b7085">${esc(a.motivo || '')}</td>
+        </tr>
+      `,
+        )
+        .join('')
+
+      return `
+        <div class="page">
+          ${header({
+            docTag: `SESIÓN · ${formatDate(s.fecha)}`,
+            clase: s.claseNombre,
+            docente: maestroNombre,
+            periodo: `${formatHora(s.horaInicio)}–${formatHora(s.horaFin)}${s.salonNombre ? ' · ' + s.salonNombre : ''}`,
+          })}
+          ${metricChips([
+            { label: 'Presentes', value: s.presentes, type: 'ok' },
+            { label: 'Ausentes', value: s.ausentes, type: 'bad' },
+            { label: 'Justificados', value: s.justificados, type: 'warn' },
+            { label: 'Total', value: s.totalRegistros, type: 'navy' },
+          ])}
+          <p class="rpt-section-title">Asistencia detallada</p>
+          <table class="rpt-table">
+            <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
+            <tbody>${rosterRows || '<tr><td colspan="4">Sin registro de asistencia individual.</td></tr>'}</tbody>
+          </table>
+          <p class="rpt-section-title">Contenido de la sesión</p>
+          <p style="font-size:8pt;line-height:1.4;white-space:pre-wrap;">${esc(s.contenido) || 'Sin contenido registrado.'}</p>
+          ${footer(i + 2, totalPaginas, formatDate(s.fecha))}
+        </div>
+      `
+    })
+    .join('')
+
+  return wrapDocument(portada + paginasSesion)
+}
+
+// ---------------------------------------------------------------------------
+// Doc 5 — Institutional Report (todas las clases de TODOS los maestros)
+// ---------------------------------------------------------------------------
+
+/**
+ * Arma (sin efectos secundarios) el HTML del reporte institucional: una
+ * página índice con TODAS las sesiones de TODOS los maestros en el rango
+ * (fecha, maestro, clase, hora, P/A/J) más una página por sesión con roster
+ * y contenido, igual que generateRangeReportHTML pero cada página muestra
+ * el docente propio de esa sesión en vez de un único maestro fijo.
+ *
+ * @param {Array} sesiones — shape de historialClasesService.cargarHistorialInstitucional(),
+ *                           cada sesión trae su propio `maestroNombre`
+ * @param {Object} contexto
+ * @param {string} contexto.rangoLabel — ej. "01/08/2026 – 31/08/2026"
+ * @returns {string} documento HTML completo (wrapDocument ya aplicado)
+ */
+export function generateInstitutionalReportHTML(sesiones, { rangoLabel }) {
+  const totalP = sesiones.reduce((sum, s) => sum + s.presentes, 0)
+  const totalA = sesiones.reduce((sum, s) => sum + s.ausentes, 0)
+  const totalJ = sesiones.reduce((sum, s) => sum + s.justificados, 0)
+  const totalMaestros = new Set(sesiones.map((s) => s.maestroNombre).filter(Boolean)).size
+  const totalPaginas = sesiones.length + 1
+
+  const indiceRows = sesiones
+    .map(
+      (s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(formatDate(s.fecha))}</td>
+        <td>${esc(s.maestroNombre || 'Docente')}</td>
+        <td>${esc(s.claseNombre)}</td>
+        <td>${esc(formatHora(s.horaInicio))}</td>
+        <td style="text-align:center">${s.presentes}</td>
+        <td style="text-align:center">${s.ausentes}</td>
+        <td style="text-align:center">${s.justificados}</td>
+      </tr>
+    `,
+    )
+    .join('')
+
+  const portada = `
+    <div class="page land">
+      ${header({
+        docTag: 'REPORTE INSTITUCIONAL DE CLASES',
+        clase: 'Todos los maestros',
+        docente: 'Dirección / Coordinación Académica',
+        periodo: rangoLabel,
+      })}
+      ${metricChips([
+        { label: 'Maestros', value: totalMaestros, type: 'navy' },
+        { label: 'Sesiones', value: sesiones.length, type: 'navy' },
+        { label: 'Presentes', value: totalP, type: 'ok' },
+        { label: 'Ausentes', value: totalA, type: 'bad' },
+        { label: 'Justificados', value: totalJ, type: 'warn' },
+      ])}
+      <p class="rpt-section-title">Índice de sesiones</p>
+      <table class="rpt-table">
+        <thead><tr><th>#</th><th>Fecha</th><th>Maestro</th><th>Clase</th><th>Hora</th><th>P</th><th>A</th><th>J</th></tr></thead>
+        <tbody>${indiceRows}</tbody>
+      </table>
+      ${footer(1, totalPaginas, rangoLabel)}
+    </div>
+  `
+
+  const paginasSesion = sesiones
+    .map((s, i) => {
+      const rosterRows = (s.roster || [])
+        .map(
+          (a, j) => `
+        <tr>
+          <td>${j + 1}</td>
+          <td>${esc(a.nombre)}</td>
+          <td style="text-align:center">${esc(ESTADO_LABEL_RPT[a.estado] || a.estado)}</td>
+          <td style="font-size:6.5pt;color:#6b7085">${esc(a.motivo || '')}</td>
+        </tr>
+      `,
+        )
+        .join('')
+
+      return `
+        <div class="page">
+          ${header({
+            docTag: `SESIÓN · ${formatDate(s.fecha)}`,
+            clase: s.claseNombre,
+            docente: s.maestroNombre || 'Docente',
+            periodo: `${formatHora(s.horaInicio)}–${formatHora(s.horaFin)}${s.salonNombre ? ' · ' + s.salonNombre : ''}`,
+          })}
+          ${metricChips([
+            { label: 'Presentes', value: s.presentes, type: 'ok' },
+            { label: 'Ausentes', value: s.ausentes, type: 'bad' },
+            { label: 'Justificados', value: s.justificados, type: 'warn' },
+            { label: 'Total', value: s.totalRegistros, type: 'navy' },
+          ])}
+          <p class="rpt-section-title">Asistencia detallada</p>
+          <table class="rpt-table">
+            <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación / Justificación</th></tr></thead>
+            <tbody>${rosterRows || '<tr><td colspan="4">Sin registro de asistencia individual.</td></tr>'}</tbody>
+          </table>
+          <p class="rpt-section-title">Contenido de la sesión</p>
+          <p style="font-size:8pt;line-height:1.4;white-space:pre-wrap;">${esc(s.contenido) || 'Sin contenido registrado.'}</p>
+          ${footer(i + 2, totalPaginas, formatDate(s.fecha))}
+        </div>
+      `
+    })
+    .join('')
+
+  return wrapDocument(portada + paginasSesion)
 }

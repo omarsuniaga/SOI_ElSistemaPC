@@ -102,37 +102,20 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
   function _applyHighlight() {
     if (_isUpdating) return
-    // Skip highlight during IME composition (mobile keyboards) — prevents
-    // innerHTML replacement from dismissing the virtual keyboard and blanking the screen.
+    // Replacing innerHTML in a focused contenteditable changes the browser's
+    // line-break nodes. After Enter that can restore the caret on the prior
+    // line, so highlighting is intentionally deferred until blur.
     if (_isComposing) return
+    if (document.activeElement === editor) return
     _isUpdating = true
 
     try {
-      const selection = window.getSelection()
-      if (!selection || selection.rangeCount === 0) return
-
-      const range = selection.getRangeAt(0)
-      const offset = _getCaretOffset(editor, range)
-
-      // Don't highlight if the editor doesn't have focus — prevents keyboard
-      // dismissal on mobile when a background autosave triggers a re-render.
-      if (document.activeElement !== editor) return
-
-      // On mobile, skip innerHTML replacement when the editor has focus.
-      // Replacing innerHTML on a focused contenteditable in iOS WebKit/Safari
-      // can corrupt the editing state and clear the element's content entirely,
-      // causing the "blank screen" bug. The highlight runs on blur instead.
-      if (_isMobile) return
-
-      // Save scroll position before innerHTML replacement.
+      // The editor has no focus here, so there is no caret to preserve.
       const savedScrollY = window.scrollY
 
       _value = editor.innerText
       editor.innerHTML = highlightDSL(_value)
 
-      _setCaretOffset(editor, offset)
-
-      // Restore scroll position after the DOM replacement.
       if (window.scrollY !== savedScrollY) {
         window.scrollTo({ top: savedScrollY, behavior: 'instant' })
       }
@@ -223,22 +206,28 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       query = triggerData.query
     }
 
+    // Capturar la posición del cursor y del caret ANTES del await: la
+    // llamada a catalogService es async, y mientras está en vuelo el
+    // resaltado de sintaxis puede reemplazar el innerHTML (colapsando la
+    // selección) o el usuario puede mover el foco/scroll — leer la posición
+    // después del await hacía que el popup apareciera en la selección
+    // "de donde sea" en vez de en el cursor real donde se escribió el trigger.
+    const pos = getCursorPosition()
+    _saveCaretOffset()
+
+    if (!pos) return
+
     try {
       const options = await catalogService.getOptionsForTrigger(trigger, query, _context)
 
       if (options.length > 0) {
-        const pos = getCursorPosition()
-        if (pos) {
-          // Guardar posición del caret ANTES de mostrar el popup
-          _saveCaretOffset()
-          autocompletePopup.show(
-            options,
-            (selected) => {
-              _insertAutocomplete(selected, trigger, query)
-            },
-            { trigger, position: pos },
-          )
-        }
+        autocompletePopup.show(
+          options,
+          (selected) => {
+            _insertAutocomplete(selected, trigger, query)
+          },
+          { trigger, position: pos },
+        )
       } else {
         autocompletePopup.hide()
       }
@@ -418,48 +407,29 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     sel.addRange(range)
   }
 
-  // IME composition guards — prevent innerHTML replacement while the mobile
-  // keyboard is mid-composition (e.g. predictive text, accent pickers).
+  // IME composition guards for predictive text and accent pickers.
   editor.addEventListener('compositionstart', () => {
     _isComposing = true
   })
   editor.addEventListener('compositionend', () => {
     _isComposing = false
     clearTimeout(_debounceTimer)
-    if (!_isMobile) {
-      _debounceTimer = setTimeout(_applyHighlight, 300)
-    }
   })
 
-  // On mobile, only highlight on blur to prevent innerHTML replacement from
-  // dismissing the virtual keyboard during active typing.
-  const _isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent,
-  )
   let _lastHighlightedText = ''
   let _debounceTimer = null
 
-  if (_isMobile) {
-    editor.addEventListener('blur', () => {
-      if (_value === _lastHighlightedText) return
-      _lastHighlightedText = _value
-      _applyHighlight()
-    })
-  }
+  editor.addEventListener('blur', () => {
+    if (_value === _lastHighlightedText) return
+    _lastHighlightedText = _value
+    _applyHighlight()
+  })
 
   editor.oninput = () => {
     _updateValue()
 
-    // On desktop, highlight with debounce during typing.
-    // On mobile, skip entirely — highlight runs only on blur above.
-    if (!_isMobile) {
-      clearTimeout(_debounceTimer)
-      _debounceTimer = setTimeout(() => {
-        if (_value === _lastHighlightedText) return
-        _lastHighlightedText = _value
-        _applyHighlight()
-      }, 300)
-    }
+    // Keep the text node tree stable while typing. Highlighting occurs on blur.
+    clearTimeout(_debounceTimer)
 
     // Autocompletado con debounce
     clearTimeout(_autocompleteDebounce)
@@ -547,7 +517,9 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     insertText,
     getValue: () => _value,
     setValue: (newContent) => {
-      editor.innerText = newContent
+      const nextValue = String(newContent || '')
+      if (nextValue === _value) return
+      editor.innerText = nextValue
       _updateValue()
       _applyHighlight()
     },

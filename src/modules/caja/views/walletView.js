@@ -5,8 +5,8 @@
 
 import * as cajaApi from '../api/cajaApi.js'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {
@@ -47,8 +47,8 @@ export async function render(container, session, params) {
           + '</div>'
           + '<div style="text-align:right">'
           + '<p style="margin:0;font-weight:700;color:' + (m.tipo === 'credito' ? '#059669' : '#ef4444') + '">'
-          + (m.tipo === 'credito' ? '+' : '-') + fmtMoney(m.monto) + '</p>'
-          + '<p style="margin:0.125rem 0 0;font-size:0.75rem;color:#94a3b8">Saldo: ' + fmtMoney(m.saldo_resultante) + '</p>'
+          + (m.tipo === 'credito' ? '+' : '-') + fmtMoney(m.monto_centavos) + '</p>'
+          + '<p style="margin:0.125rem 0 0;font-size:0.75rem;color:#94a3b8">Saldo: ' + fmtMoney(m.saldo_resultante_centavos) + '</p>'
           + '</div>'
           + '</div>'
         ).join('')
@@ -76,7 +76,7 @@ export async function render(container, session, params) {
       + '<div style="background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border-radius:16px;padding:2rem;text-align:center;margin-bottom:1.5rem">'
       + '<p style="margin:0 0 0.25rem;font-size:0.875rem;opacity:0.85">Saldo disponible</p>'
       + '<p style="margin:0;font-size:2.5rem;font-weight:800">' + fmtMoney(wallet.saldo) + '</p>'
-      + '<p style="margin:0.5rem 0 0;font-size:0.75rem;opacity:0.7">Modo: ' + (wallet.config?.modo || '-') + ' &bull; Alerta min: ' + fmtMoney(wallet.config?.saldo_minimo_alerta || 0) + '</p>'
+      + '<p style="margin:0.5rem 0 0;font-size:0.75rem;opacity:0.7">Modo: ' + (wallet.config?.modo || '-') + ' &bull; Alerta min: ' + fmtMoney(wallet.config?.saldo_minimo_alerta_centavos || 0) + '</p>'
       + '</div>'
       + '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">'
@@ -92,11 +92,12 @@ export async function render(container, session, params) {
     container.querySelector('#btn-mov-cancel')?.addEventListener('click', () => { showForm = false; renderMain() })
     container.querySelector('#btn-mov-confirm')?.addEventListener('click', async () => {
       const tipo = container.querySelector('#mov-tipo').value
-      const monto = parseFloat(container.querySelector('#mov-monto').value) || 0
+      const montoPesos = parseFloat(container.querySelector('#mov-monto').value) || 0
+      const monto_centavos = Math.round(montoPesos * 100)
       const descripcion = container.querySelector('#mov-desc').value
       const errEl = container.querySelector('#mov-error')
-      if (monto <= 0) { errEl.style.display=''; errEl.textContent='Ingresa un monto valido'; return }
-      const { data, error } = await cajaApi.registrarMovimientoWallet({ familia_id: familiaId, tipo, monto, descripcion, cajero_id: session?.user?.id })
+      if (monto_centavos <= 0) { errEl.style.display=''; errEl.textContent='Ingresa un monto valido'; return }
+      const { data, error } = await cajaApi.registrarMovimientoWallet({ familia_id: familiaId, tipo, monto_centavos, descripcion, cajero_id: session?.user?.id })
       if (error) { errEl.style.display=''; errEl.textContent='Error: '+(error.message||'desconocido'); return }
       showForm = false
       // Refresh wallet data

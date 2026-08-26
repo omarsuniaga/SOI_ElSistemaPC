@@ -453,6 +453,10 @@ body {
   background: var(--pm-border);
   color: var(--pm-text-muted);
 }
+.pm-badge-info {
+  background: var(--pm-info-bg);
+  color: var(--pm-info-text);
+}
 
 /* ── Month Title ────────────────────────────────────────────── */
 .pm-month-title {

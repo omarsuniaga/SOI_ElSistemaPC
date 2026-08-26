@@ -920,3 +920,32 @@ export async function rechazarToolCall(tareaId, motivo, actor) {
 
   return delay(undefined)
 }
+
+// ─── Fase 3: aprobación humana de mensajes WhatsApp (Regla R6) ────────────────
+
+const _whatsappPendientesAprobacion = [
+  {
+    id: 'wa-mock-1',
+    jid: '18095551234',
+    mensaje: 'Estimado/a representante de Alumno Mock: ha acumulado 3 inasistencias injustificadas...',
+    created_at: new Date().toISOString(),
+  },
+]
+
+export async function getPendingWhatsappApprovals() {
+  return delay([..._whatsappPendientesAprobacion])
+}
+
+export async function aprobarWhatsapp(queueId) {
+  const idx = _whatsappPendientesAprobacion.findIndex((m) => m.id === queueId)
+  if (idx === -1) throw new Error('Mensaje no está pendiente de aprobación')
+  _whatsappPendientesAprobacion.splice(idx, 1)
+  return delay(undefined)
+}
+
+export async function rechazarWhatsapp(queueId, _motivo) {
+  const idx = _whatsappPendientesAprobacion.findIndex((m) => m.id === queueId)
+  if (idx === -1) throw new Error('Mensaje no está pendiente de aprobación')
+  _whatsappPendientesAprobacion.splice(idx, 1)
+  return delay(undefined)
+}

@@ -46,6 +46,11 @@ export const observarTarea = api.observarTarea
 export const aprobarToolCall = api.aprobarToolCall
 export const rechazarToolCall = api.rechazarToolCall
 
+// ─── Fase 3: aprobación humana de mensajes WhatsApp (Regla R6) ────────────────
+export const getPendingWhatsappApprovals = api.getPendingWhatsappApprovals
+export const aprobarWhatsapp = api.aprobarWhatsapp
+export const rechazarWhatsapp = api.rechazarWhatsapp
+
 // ─── SP-3: vista de procedimientos (Director) ──────────────────────────────────
 export const getProcedimientos = api.getProcedimientos
 
@@ -60,3 +65,13 @@ export const getProcessContracts = api.getProcessContracts
 export const startProcessCase = api.startProcessCase
 export const getProcessCaseDetail = api.getProcessCaseDetail
 export const closeProcessCase = api.closeProcessCase
+
+// ─── Batch 2: Pulso Institucional ────────────────────────────────────────────
+export const getPulsoEventos = api.getPulsoEventos
+export const getRules = api.getRules
+export const updateRule = api.updateRule
+export const getPulsoScore = api.getPulsoScore
+export const getPulsoScoreHistory = api.getPulsoScoreHistory
+export const getUltimoAnalisisSemanal = api.getUltimoAnalisisSemanal
+export const ejecutarAnalisisPatrones = api.ejecutarAnalisisPatrones
+export const getRuleEffectiveness = api.getRuleEffectiveness

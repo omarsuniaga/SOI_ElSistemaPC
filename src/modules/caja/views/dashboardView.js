@@ -6,8 +6,8 @@
 import * as cajaApi from '../api/cajaApi.js'
 import { isStockBajo } from '../domain/accesorio.js'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {
@@ -77,7 +77,7 @@ export async function render(container, session) {
     const hora = p.created_at ? new Date(p.created_at).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) : '-'
     return '<tr><td style="padding:0.625rem 0.75rem;font-weight:500">' + (p.familia_nombre || p.familia_id || '-') + '</td>'
       + '<td style="padding:0.625rem 0.75rem;color:#475569">' + (p.metodo_pago || '-') + '</td>'
-      + '<td style="padding:0.625rem 0.75rem;text-align:right;color:#059669;font-weight:700">' + fmtMoney(p.monto) + '</td>'
+      + '<td style="padding:0.625rem 0.75rem;text-align:right;color:#059669;font-weight:700">' + fmtMoney(p.monto_centavos) + '</td>'
       + '<td style="padding:0.625rem 0.75rem;color:#94a3b8">' + hora + '</td></tr>'
   }
   const pagosHtml = pagosHoy.length === 0

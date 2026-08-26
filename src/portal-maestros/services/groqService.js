@@ -10,7 +10,7 @@ import { segmentObservation, inferTipo, detectNote, detectTask } from '../utils/
 import { buildSeccionContext, expandSeccionItems } from '../data/seccionesOrquestales.js'
 
 const GROQ_CONFIG = {
-  model: 'llama-3.1-8b-instant',
+  model: 'openai/gpt-oss-20b',
   whisperModel: 'whisper-large-v3',
   temperature: 0.2,
 }
@@ -32,9 +32,8 @@ function proxyBase() {
  * Build auth headers using the current Supabase session JWT.
  */
 async function authHeaders() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const sessionResult = await supabase?.auth?.getSession?.()
+  const session = sessionResult?.data?.session
   const token = session?.access_token ?? ''
   return {
     Authorization: `Bearer ${token}`,
@@ -77,9 +76,8 @@ async function proxyChat(messages, temperature = GROQ_CONFIG.temperature) {
  * POST to /transcribe endpoint of the proxy.
  */
 async function proxyTranscribe(audioBlob) {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const sessionResult = await supabase?.auth?.getSession?.()
+  const session = sessionResult?.data?.session
   const token = session?.access_token ?? ''
 
   const formData = new FormData()
@@ -91,7 +89,6 @@ async function proxyTranscribe(audioBlob) {
     headers: {
       Authorization: `Bearer ${token}`,
       apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
-      // Do NOT set Content-Type — browser sets it with the boundary automatically
     },
     body: formData,
   })
@@ -102,7 +99,7 @@ async function proxyTranscribe(audioBlob) {
 }
 
 // ---------------------------------------------------------------------------
-// System prompts (unchanged from original)
+// System prompts
 // ---------------------------------------------------------------------------
 
 const SYSTEM_PROMPT = `
@@ -187,6 +184,7 @@ Usá esta rúbrica para inferir estado y nota según la evidencia del texto:
 LOGRO CONCRETO → LOGRADO, nota 5
   Disparadores: "logró perfectamente", "quedó resuelto", "con precisión", "dominaron", "sin errores"
   Ej: "los violines lograron la entrada con precisión"
+
 
 LOGRO PARCIAL → LOGRADO, nota 4
   Disparadores: "mejoró notablemente", "salió bien", "ya casi", "lograron mayormente"
@@ -1122,5 +1120,81 @@ Usa español neutro, tono formal-institucional, sin voseo.`
       recomendaciones: { academico: '', logistica: '', talentos: '', refuerzo: '' },
       notaDireccion: '',
     }
+  }
+}
+
+/**
+ * Pondera si una clase avanza, está estancada o retrocede, leyendo el
+ * contenido pedagógico en texto libre que el maestro registró sesión por
+ * sesión (en orden cronológico) más el trazo de `progresos` de esa clase.
+ *
+ * Es la contraparte de generateMonthlyPatterns() pero enfocada en UNA sola
+ * clase y en el contenido de texto libre (no en asistencia) — pensada para
+ * el botón manual "Analizar con IA" del vistazo aéreo de admin/coordinación
+ * académica, disparado por click, nunca automático.
+ *
+ * @param {Array} sesiones — sesiones de una sola clase, shape de
+ *   historialClasesService.cargarHistorialClases() (fecha, contenido, roster)
+ * @param {Array} progresos — filas de la tabla `progresos` de esa clase
+ *   (estado_cualitativo, calificacion, alumno nombre)
+ * @param {Object} context — { clase: string, docente: string, totalAlumnos: number }
+ * @returns {Promise<{
+ *   estado: 'avanza' | 'estancada' | 'retrocede',
+ *   puntaje: number,
+ *   resumen: string,
+ *   senalesPositivas: string[],
+ *   senalesAlerta: string[]
+ * }>}
+ */
+export async function analyzeClassProgress(sesiones, progresos, context) {
+  const sesionesOrdenadas = [...sesiones].sort((a, b) => a.fecha.localeCompare(b.fecha))
+
+  const contenidoResumen = sesionesOrdenadas
+    .map((s) => `${s.fecha}: ${(s.contenido || '(sin contenido registrado)').slice(0, 400)}`)
+    .join('\n---\n')
+
+  const conteoEstados = progresos.reduce((acc, p) => {
+    const key = p.estado_cualitativo || 'SIN_DATO'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+  const progresoResumen =
+    Object.entries(conteoEstados)
+      .map(([estado, n]) => `${estado}: ${n}`)
+      .join(', ') || 'Sin registros de progreso'
+
+  const prompt = `Eres el analista pedagógico del Departamento Académico de El Sistema Punta Cana.
+Vas a ponderar si la clase "${context.clase}" (docente: ${context.docente}, ${context.totalAlumnos} alumnos) avanza, está estancada, o retrocede, leyendo el contenido que el maestro registró sesión por sesión en orden cronológico.
+
+CONTENIDO REGISTRADO POR SESIÓN (más antigua primero):
+${contenidoResumen || '(sin sesiones con contenido en el rango analizado)'}
+
+DISTRIBUCIÓN DE PROGRESO INDIVIDUAL REGISTRADO (tabla progresos):
+${progresoResumen}
+
+Evaluá si el contenido muestra repertorio/técnica nueva sesión a sesión (avanza), repetición del mismo contenido sin progresión visible (estancada), o señales de retroceso (ausencias de contenido, quejas, vuelta atrás en el repertorio).
+
+Devuelve un JSON con esta estructura exacta (sin texto adicional, solo el JSON):
+{
+  "estado": "avanza" | "estancada" | "retrocede",
+  "puntaje": <número 0-100, 100 = progreso ejemplar>,
+  "resumen": "2-3 oraciones explicando el veredicto, en español neutro formal-institucional",
+  "senalesPositivas": ["máximo 3 señales concretas que sustentan progreso"],
+  "senalesAlerta": ["máximo 3 señales concretas de estancamiento o retroceso, vacío si no hay"]
+}`
+
+  try {
+    const raw = await proxyChat([{ role: 'user', content: prompt }], 0.2)
+    const parsed = parseGroqJSON(raw)
+    return {
+      estado: ['avanza', 'estancada', 'retrocede'].includes(parsed.estado) ? parsed.estado : 'estancada',
+      puntaje: Number.isFinite(parsed.puntaje) ? Math.max(0, Math.min(100, parsed.puntaje)) : 50,
+      resumen: parsed.resumen || '',
+      senalesPositivas: Array.isArray(parsed.senalesPositivas) ? parsed.senalesPositivas.slice(0, 3) : [],
+      senalesAlerta: Array.isArray(parsed.senalesAlerta) ? parsed.senalesAlerta.slice(0, 3) : [],
+    }
+  } catch (err) {
+    console.error('[groqService] analyzeClassProgress failed:', err)
+    throw err
   }
 }

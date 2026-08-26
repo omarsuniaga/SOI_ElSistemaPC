@@ -19,3 +19,6 @@ export const getHistorialEstadoAlumno = (...args) => getApi().getHistorialEstado
 export const getRachaAusencias = (...args) => getApi().getRachaAusencias(...args)
 export const getRiesgoAbandono = (...args) => getApi().getRiesgoAbandono(...args)
 export const getAlumnosDestacados = (...args) => getApi().getAlumnosDestacados(...args)
+export const getDestacadosYRiesgoAcademico = (...args) => getApi().getDestacadosYRiesgoAcademico(...args)
+export const getCierresAcademicos = (...args) => getApi().getCierresAcademicos(...args)
+export const getHistorialCierresPeriodos = (...args) => getApi().getHistorialCierresPeriodos(...args)

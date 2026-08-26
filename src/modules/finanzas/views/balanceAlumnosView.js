@@ -1,5 +1,5 @@
-import { obtenerBalanceAlumnos } from '../api/finanzasApi.js'
-import { calcularEstadoFinanciero, estadoBadgeClass } from '../domain/cobranza.js'
+import { obtenerBalanceAlumnos, obtenerPoliticaCobranza } from '../api/finanzasApi.js'
+import { calcularEstadoFinanciero, estadoBadgeClass, POLITICA_COBRANZA_DEFAULT } from '../domain/cobranza.js'
 import { obtenerTareas, actualizarTarea } from '../../hermes/api/hermesApi.js'
 
 export async function renderBalanceAlumnosView(container) {
@@ -7,9 +7,10 @@ export async function renderBalanceAlumnosView(container) {
 
   container.innerHTML = '<p class="p-4">Cargando balance...</p>'
 
-  const [balanceRes, tasksRes] = await Promise.all([
+  const [balanceRes, tasksRes, politicaRes] = await Promise.all([
     obtenerBalanceAlumnos(),
-    obtenerTareas({ departamento: 'FIN' })
+    obtenerTareas({ departamento: 'FIN' }),
+    obtenerPoliticaCobranza(),
   ])
 
   if (balanceRes.error) {
@@ -17,13 +18,17 @@ export async function renderBalanceAlumnosView(container) {
     return { teardown: () => _ac.abort() }
   }
 
+  // FIN-P13: siempre usar la política editable de finanzas_politica_cobranza;
+  // el default solo cubre el caso de que la fila no cargue (fallo de red, etc.).
+  const politica = politicaRes.data || POLITICA_COBRANZA_DEFAULT
+
   const { alumnos, pagos } = balanceRes.data
   const finTasks = tasksRes.data || []
   const today = new Date()
 
   const rows = alumnos.map(alumno => {
     const alumnosPagos = pagos.filter(p => p.alumno_id === alumno.id)
-    const est = calcularEstadoFinanciero(alumno, alumnosPagos, today)
+    const est = calcularEstadoFinanciero(alumno, alumnosPagos, today, politica)
     return { alumno, est }
   })
 
@@ -69,9 +74,18 @@ export async function renderBalanceAlumnosView(container) {
         </div></div>
         <div class="col-4"><div class="card border-danger text-center p-3">
           <div class="fs-3 fw-bold text-danger">${rojo}</div>
-          <div class="small text-muted">Bloqueados</div>
+          <div class="small text-muted">Mora crítica</div>
         </div></div>
       </div>
+
+      ${rojo > 0 ? `
+        <div class="alert alert-secondary small mb-4">
+          <i class="bi bi-shield-check me-1"></i>
+          Salvaguarda FIN-P13: esta clasificación es una alerta de seguimiento, no una orden de bloqueo.
+          Ningún alumno puede ser suspendido ni perder acceso sin una solicitud de Finanzas y aprobación
+          explícita de Dirección registrada en Supabase.
+        </div>
+      ` : ''}
 
       <div class="row g-3">
         <div class="col-md-8">

@@ -3,6 +3,7 @@ import { formatHora, timeToMinutes } from '../utils/clasesUtils.js'
 import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 import { Clase } from '../models/clase.model.js'
 import { config } from '../../../core/config/config.js'
+import { logSubstituteActivity } from '../../../portal-maestros/services/substituteAuditService.js'
 
 export const NIVELES = [
   { value: '1', label: '1° Año' },
@@ -364,6 +365,24 @@ export async function crearClase(claseData, force = false) {
 
   const claseCreada = data[0]
 
+  if (claseCreada?.maestro_suplente_id) {
+    logSubstituteActivity({
+      action: 'SUBSTITUTE_ASSIGN',
+      classId: claseCreada.id,
+      maestroTitularId: claseCreada.maestro_principal_id,
+      maestroSuplenteId: claseCreada.maestro_suplente_id,
+      fecha: new Date().toISOString().slice(0, 10),
+      summary: `Se asignó suplente a la clase "${claseCreada.nombre}"`,
+      changes: {
+        event: 'class_created_with_substitute',
+        class_name: claseCreada.nombre,
+      },
+      force: true,
+    }).catch((err) => {
+      console.warn('[clasesApi] No se pudo registrar auditoría de suplente en alta:', err)
+    })
+  }
+
   if (clase.horarios.length > 0) {
     const horariosData = clase.horarios.map(h => ({
       clase_id: claseCreada.id,
@@ -448,6 +467,34 @@ export async function actualizarClase(id, actualizaciones, force = false) {
     throw new Error('No se pudo actualizar la clase')
   }
 
+  const claseActualizada = data?.[0] || null
+  const suplenteAnterior = original?.maestro_suplente_id ?? null
+  const suplenteNuevo = claseActualizada?.maestro_suplente_id ?? updatePayload.maestro_suplente_id ?? null
+
+  if (suplenteAnterior !== suplenteNuevo) {
+    const action = suplenteNuevo ? 'SUBSTITUTE_ASSIGN' : 'SUBSTITUTE_REMOVE'
+    const summary = suplenteNuevo
+      ? `Se asignó suplente a la clase "${claseActualizada?.nombre || original?.nombre || id}"`
+      : `Se retiró el suplente de la clase "${claseActualizada?.nombre || original?.nombre || id}"`
+
+    logSubstituteActivity({
+      action,
+      classId: id,
+      maestroTitularId: claseActualizada?.maestro_principal_id || original?.maestro_principal_id,
+      maestroSuplenteId: suplenteNuevo,
+      fecha: new Date().toISOString().slice(0, 10),
+      summary,
+      changes: {
+        event: suplenteNuevo ? 'substitute_assigned_or_changed' : 'substitute_removed',
+        previous_substitute_id: suplenteAnterior,
+        next_substitute_id: suplenteNuevo,
+      },
+      force: true,
+    }).catch((err) => {
+      console.warn('[clasesApi] No se pudo registrar auditoría de suplente en edición:', err)
+    })
+  }
+
   if (actualizaciones.horarios) {
     const { error: errorDelete } = await supabase
       .from('clase_horarios')
@@ -514,16 +561,42 @@ export async function obtenerClasesPorMaestro(maestroId) {
   })
 }
 
-export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null) {
+/**
+ * Todas las clases activas con su horario semanal completo y ocupación
+ * (inscritos activos), sin filtrar por maestro. Fuente única para el
+ * módulo "Horario General": vista + diagnóstico de conflictos de salón,
+ * sobre-cupo y datos faltantes.
+ */
+export async function obtenerClasesConHorarioYCupo() {
+  const { data, error } = await supabase
+    .from('clases')
+    .select(`
+      *,
+      clase_horarios ( dia, hora_inicio, hora_fin, salon_id ),
+      alumnos_clases ( id, activo )
+    `)
+    .order('nombre', { ascending: true })
+
+  if (error) throw error
+
+  return (data || []).map(c => {
+    const clase = normalizeClase(c)
+    clase.horarios = c.clase_horarios || []
+    clase.inscritos = (c.alumnos_clases || []).filter(a => a.activo).length
+    return clase
+  })
+}
+export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null, dia = null) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .insert([{ 
-      clase_id: claseId, 
-      alumno_id: alumnoId, 
-      activo: true, 
+    .insert([{
+      clase_id: claseId,
+      alumno_id: alumnoId,
+      activo: true,
       fecha_inscripcion: new Date().toISOString().split('T')[0],
       hora_inicio: horaInicio,
-      hora_fin: horaFin
+      hora_fin: horaFin,
+      dia,
     }])
     .select()
 
@@ -544,10 +617,15 @@ export async function desinscribirAlumno(claseId, alumnoId) {
   if (error) throw error
 }
 
-export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin) {
+export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin, dia = undefined) {
+  const update = { hora_inicio: horaInicio, hora_fin: horaFin }
+  // `undefined` = no tocar el día actual (llamadas viejas que solo cambian hora);
+  // `null` explícito = volver a "usa el día de la clase".
+  if (dia !== undefined) update.dia = dia
+
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .update({ hora_inicio: horaInicio, hora_fin: horaFin })
+    .update(update)
     .eq('clase_id', claseId)
     .eq('alumno_id', alumnoId)
     .select()
@@ -733,55 +811,47 @@ export async function verificarSolapamientoCompleto({ claseId = null, maestroId,
 }
 
 /**
- * Marca las clases en conflicto como pendientes de revisión, en vez de
- * mutar sus datos en automático (desalojar salón, quitar alumnos): quien
- * coordina horarios decide cómo resolver el solape, no el sistema.
+ * Marca solo la clase no prioritaria como pendiente de revisión. Nunca mueve
+ * salón, maestro ni alumnos automáticamente: la prioridad es una decisión
+ * humana y la modificación posterior también.
  *
  * @param {Array} conflictos - conflictos devueltos por verificarSolapamientoCompleto
- * @param {string} nuevaClaseNombre - nombre de la clase que se guardó pese al solape
+ * @param {Object} decision - prioridad y datos de la clase recién guardada
  */
-export async function resolverConflictosClases(conflictos = [], nuevaClaseNombre = '') {
+export async function resolverConflictosClases(conflictos = [], {
+  prioridad = 'nueva',
+  nuevaClaseId = null,
+  nuevaClaseNombre = '',
+} = {}) {
   const porClase = new Map()
   for (const c of conflictos) {
     if (!c.clase_id) continue
     if (!porClase.has(c.clase_id)) porClase.set(c.clase_id, [])
     porClase.get(c.clase_id).push(c)
   }
-  if (porClase.size === 0) return
+  if (porClase.size === 0 || !nuevaClaseId) return
 
-  await Promise.all(Array.from(porClase.entries()).map(async ([claseId, confs]) => {
-    const acciones = []
-
-    // Salón: recurso físico, no hay ambigüedad pedagógica en liberarlo.
-    // La clase nueva pasa a usarlo; la vieja queda sin salón en ese
-    // horario hasta que alguien le asigne otro.
-    for (const c of confs.filter(c => c.tipo === 'salón' && c.dia && c.hora_inicio && c.hora_fin)) {
-      await supabase
-        .from('clase_horarios')
-        .update({ salon_id: null })
-        .eq('clase_id', claseId)
-        .eq('dia', c.dia)
-        .eq('hora_inicio', c.hora_inicio)
-        .eq('hora_fin', c.hora_fin)
-      acciones.push(
-        `Se liberó el salón del ${c.dia} ${formatHora(c.hora_inicio)}-${formatHora(c.hora_fin)} ` +
-        `(ahora lo usa "${nuevaClaseNombre}") — asignale uno nuevo a este horario.`
-      )
-    }
-
-    // Maestro y alumnos: no se mutan. Desasignar un maestro o desinscribir
-    // un alumno es una decisión pedagógica — y el solape de alumnos muchas
-    // veces es intencional (ensayos generales que se superponen con
-    // clases individuales). Quedan señalados para que alguien decida.
-    for (const c of confs.filter(c => c.tipo !== 'salón')) {
-      acciones.push(c.detalle)
-    }
-
+  if (prioridad === 'existentes') {
+    const detalles = Array.from(porClase.entries()).flatMap(([claseId, confs]) => {
+      const nombre = confs[0]?.clase_nombre || claseId
+      return confs.map(c => `Con "${nombre}": ${c.detalle}`)
+    })
     await supabase
       .from('clases')
       .update({
         necesita_revision: true,
-        revision_motivo: `Conflicto con "${nuevaClaseNombre}": ${acciones.join(' ')}`,
+        revision_motivo: `Las clases existentes tienen prioridad. ${detalles.join(' ')}`,
+      })
+      .eq('id', nuevaClaseId)
+    return
+  }
+
+  await Promise.all(Array.from(porClase.entries()).map(async ([claseId, confs]) => {
+    await supabase
+      .from('clases')
+      .update({
+        necesita_revision: true,
+        revision_motivo: `La clase "${nuevaClaseNombre}" tiene prioridad. ${confs.map(c => c.detalle).join(' ')}`,
       })
       .eq('id', claseId)
   }))

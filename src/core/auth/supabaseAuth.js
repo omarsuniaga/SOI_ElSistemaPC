@@ -15,6 +15,9 @@ import { supabase } from '../../lib/supabaseClient.js'
  * @returns {Promise<{data:Object,error:Object}>} Auth response with user session or error
  */
 export async function signUp(email, password, userData = {}) {
+  if (!supabase?.auth) {
+    return { data: { user: null, session: null }, error: { message: 'Cliente Supabase no configurado' } }
+  }
   try {
     const result = await supabase.auth.signUp({
       email,
@@ -39,6 +42,9 @@ export async function signUp(email, password, userData = {}) {
  * @returns {Promise<{data:Object,error:Object}>} Auth response with session or error
  */
 export async function signIn(email, password) {
+  if (!supabase?.auth) {
+    return { data: { user: null, session: null }, error: { message: 'Cliente Supabase no configurado' } }
+  }
   try {
     const result = await supabase.auth.signInWithPassword({
       email,
@@ -58,6 +64,9 @@ export async function signIn(email, password) {
  * @returns {Promise<{error:Object}>} Error object if failed
  */
 export async function signOut() {
+  if (!supabase?.auth) {
+    return { error: null }
+  }
   return await supabase.auth.signOut()
 }
 
@@ -68,11 +77,14 @@ export async function signOut() {
  * @returns {Promise<{data:Object,error:Object}>} User object or error
  */
 export async function getCurrentUser() {
+  if (!supabase?.auth) {
+    return { data: { user: null }, error: null }
+  }
   const {
-    data: { user },
+    data: { user } = {},
     error,
   } = await supabase.auth.getUser()
-  return { data: { user }, error }
+  return { data: { user: user || null }, error }
 }
 
 /**
@@ -82,11 +94,14 @@ export async function getCurrentUser() {
  * @returns {Promise<{data:Object,error:Object}>} Session object or error
  */
 export async function getSession() {
+  if (!supabase?.auth) {
+    return { data: { session: null }, error: null }
+  }
   const {
-    data: { session },
+    data: { session } = {},
     error,
   } = await supabase.auth.getSession()
-  return { data: { session }, error }
+  return { data: { session: session || null }, error }
 }
 
 /**
@@ -96,6 +111,10 @@ export async function getSession() {
  * @returns {Promise<{data:Object,error:Object}>} New session or error
  */
 export async function refreshToken() {
+  if (!supabase?.auth) {
+    return { data: null, error: null }
+  }
   const { data, error } = await supabase.auth.refreshSession()
   return { data, error }
 }
+

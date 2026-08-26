@@ -6,7 +6,7 @@
  * 3. Muestra las credenciales temporales recién creadas en una columna lateral.
  */
 
-import { ROLES_USUARIO, crearUsuario, listarUsuarios } from '../api/adminUsuariosApi.js'
+import { ROLES_USUARIO, crearUsuario, listarUsuarios, cargarRolesSistema } from '../api/adminUsuariosApi.js'
 import { obtenerMaestros } from '../../maestros/api/maestrosApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
@@ -20,6 +20,8 @@ const DEFAULT_ROLE_BY_SOURCE = {
 export async function renderGestionUsuariosView(container) {
   const state = _createState()
   container.__guState = state
+
+  await cargarRolesSistema()
 
   container.innerHTML = _renderLayout(state)
   _injectStyles()

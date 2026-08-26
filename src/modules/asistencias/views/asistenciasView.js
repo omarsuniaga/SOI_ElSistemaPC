@@ -701,6 +701,113 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
   })
 }
 
+/**
+ * Adelanto del contenido de clase en la fila del timeline.
+ * `observacion_clase` viene de sesiones_clase.contenido (lo que escribe el maestro);
+ * `observacion_sesion` de observaciones_sesion.contenido_raw. Se prefiere el primero.
+ */
+function renderContenidoPreview(clase) {
+  const texto = (clase.observacion_clase || clase.observacion_sesion || '').trim()
+  if (!texto) return ''
+
+  const LIMITE = 180
+  const resumen = texto.length > LIMITE ? `${texto.slice(0, LIMITE).trimEnd()}…` : texto
+
+  return `
+    <div class="mt-2 ps-1 border-start border-3 border-primary-subtle">
+      <div class="ps-2 small text-secondary" style="white-space: pre-wrap; word-break: break-word;">${escapeHTML(resumen)}</div>
+    </div>
+  `
+}
+
+function formatTimelineDate(dateStr) {
+  const date = new Date(dateStr + 'T12:00:00')
+  return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function formatFechaLarga(fecha) {
+  if (!fecha) return '—'
+  const date = new Date(`${fecha}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return fecha
+  return date.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+/**
+ * Muestra el contenido de clase tal cual lo escribió el maestro.
+ * Se preserva el texto literal (white-space: pre-wrap) porque es evidencia
+ * institucional: no se reformatea ni se interpreta al mostrarlo.
+ *
+ * `contenido` es la fuente viva; `temaPrincipal` / `observacionesGenerales`
+ * son columnas legacy que quedaron casi sin uso y sirven solo de respaldo.
+ */
+function renderContenidoMaestro(sesion) {
+  const contenido = (sesion.contenido || '').trim()
+
+  if (contenido) {
+    return `<div class="contenido-maestro border rounded-3 p-3 bg-body" style="white-space: pre-wrap; word-break: break-word;">${escapeHTML(contenido)}</div>`
+  }
+
+  const legacy = [
+    sesion.temaPrincipal && `<p class="fw-semibold mb-1">${escapeHTML(sesion.temaPrincipal)}</p>`,
+    sesion.observacionesGenerales &&
+      `<p class="text-secondary small mb-0">${escapeHTML(sesion.observacionesGenerales)}</p>`,
+  ]
+    .filter(Boolean)
+    .join('')
+
+  if (legacy) {
+    return `<div class="border rounded-3 p-3 bg-body">${legacy}</div>`
+  }
+
+  return `
+    <div class="alert alert-light border small mb-0">
+      El maestro no registró contenido para esta sesión.
+    </div>
+  `
+}
+
+function getObservacionTipoLabel(tipo) {
+  const labels = {
+    academico: 'Académica',
+    conducta: 'Conducta',
+    seguimiento: 'Seguimiento',
+    familiar: 'Familiar',
+    salud: 'Salud',
+  }
+
+  if (!tipo) return 'General'
+  return labels[tipo] || tipo.charAt(0).toUpperCase() + tipo.slice(1)
+}
+
+function getPrioridadLabel(prioridad) {
+  const labels = {
+    baja: 'Prioridad baja',
+    media: 'Prioridad media',
+    alta: 'Prioridad alta',
+    urgente: 'Prioridad urgente',
+  }
+
+  if (!prioridad) return 'Sin prioridad'
+  return labels[prioridad] || prioridad.charAt(0).toUpperCase() + prioridad.slice(1)
+}
+
+function getPrioridadBadgeClass(prioridad) {
+  const classes = {
+    baja: 'success',
+    media: 'warning',
+    alta: 'danger',
+    urgente: 'danger',
+  }
+
+  return classes[prioridad] || 'secondary'
+>>>>>>> origin/feat/planificacion-clases-rediseño
+}
+
 function _attachEvents(container) {
   // 1. Botón Toggle Filtros Desplegables
   container.querySelector('#btnToggleFiltros')?.addEventListener('click', () => {
@@ -821,6 +928,143 @@ function _attachEvents(container) {
         fecha: justifBtn.dataset.fecha,
         motivo: justifBtn.dataset.motivo,
         evidencia: justifBtn.dataset.evidencia,
+      })
+      return
+    }
+
+    const row = e.target.closest('[data-action="view-detail"]')
+    if (row) openDetailModal(row.dataset.id)
+  })
+}
+
+function openEvaluacionDirecta(sesionId) {
+  openEvaluacionEstrellasModal({
+    nodo: { id: `nodo-${sesionId}`, titulo: 'Contenido de la Sesión' },
+    alumnos: [
+      { id: 'al-1', nombre: 'Alumno 1', presente: true },
+      { id: 'al-2', nombre: 'Alumno 2', presente: true },
+      { id: 'al-3', nombre: 'Alumno 3', presente: false },
+    ],
+  })
+}
+
+async function _reloadView() {
+  const container = state.container
+  await _loadData()
+  renderContent(container)
+  _attachEvents(container)
+}
+
+async function openDetailModal(sesionId) {
+  AppToast.info('Cargando detalle...')
+  try {
+    const detail = await getDetalleSesion(sesionId)
+    AppModal.open({
+      title: `Sesión: ${detail.sesion.claseNombre}`,
+      size: 'lg',
+      hideSave: true,
+      cancelText: 'Cerrar',
+      body: `
+        <div class="row g-4">
+          <div class="col-md-8">
+            <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Contenido registrado por el maestro</label>
+            ${renderContenidoMaestro(detail.sesion)}
+          </div>
+          <div class="col-md-4 bg-body-tertiary p-3 rounded">
+            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${escapeHTML(formatFechaLarga(detail.sesion.fecha))}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${escapeHTML((detail.sesion.horaInicio || '--:--').slice(0, 5))} - ${escapeHTML((detail.sesion.horaFin || '--:--').slice(0, 5))}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Maestro:</span> <strong>${escapeHTML(detail.sesion.maestroNombre)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Clase:</span> <strong>${escapeHTML(detail.sesion.claseNombre || '—')}</strong></div>
+            ${detail.sesion.salon ? `<div class="d-flex justify-content-between mb-2"><span>Lugar:</span> <strong>${escapeHTML(detail.sesion.salon)}</strong></div>` : ''}
+            <button class="btn btn-sm btn-primary w-100 mt-2" id="btn-evaluar-modal-inner">
+              <i class="bi bi-star me-1"></i>Evaluar Contenido (1-5★)
+            </button>
+          </div>
+          <div class="col-12">
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Registro de Observaciones </h6>
+            ${
+              detail.observaciones?.length
+                ? `
+              <div class="observaciones-section">
+                <div class="d-flex flex-column gap-3">
+                  ${detail.observaciones
+                    .map(
+                      (o) => `
+                    <article class="border rounded-3 p-3 bg-body">
+                      <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                        <div>
+                          <div class="fw-semibold">${escapeHTML(o.titulo || 'Observación sin título')}</div>
+                          <div class="small text-muted">
+                            <i class="bi bi-person me-1"></i>${escapeHTML(o.alumnoNombre || '—')}
+                            <span class="mx-1">•</span>
+                            ${escapeHTML(getObservacionTipoLabel(o.tipo))}
+                          </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                          <span class="badge text-bg-${getPrioridadBadgeClass(o.prioridad)}">${escapeHTML(getPrioridadLabel(o.prioridad))}</span>
+                        </div>
+                      </div>
+                      <div class="observacion-content">${escapeHTML(o.descripcion || 'Sin descripción.')}</div>
+                    </article>
+                  `,
+                    )
+                    .join('')}
+                </div>
+              </div>
+            `
+                : `
+              <div class="alert alert-light border small mb-0">
+                No hay observaciones registradas para esta sesión.
+              </div>
+            `
+            }
+          </div>
+          <div class="col-12">
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Listado de Asistencia y Evaluación</h6>
+            <div class="table-responsive">
+              <table class="table table-compact">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    <th class="text-center">Estado Asistencia</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${detail.asistencias
+                    .map(
+                      (a) => `
+                    <tr>
+                      <td>${escapeHTML(a.alumnoNombre)}</td>
+                      <td class="text-center">
+                        <span class="badge bg-${ESTADO_LABEL[a.estado]?.css || 'secondary'}">${escapeHTML(ESTADO_LABEL[a.estado]?.label || a.estado)}</span>
+                      </td>
+                      <td class="small text-muted">${escapeHTML(a.observacion || a.justificacionTexto || '-')}</td>
+                    </tr>
+                  `,
+                    )
+                    .join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `,
+    })
+
+    setTimeout(() => {
+      document.querySelector('#btn-evaluar-modal-inner')?.addEventListener('click', () => {
+        const alumnosModal = detail.asistencias.map((a) => ({
+          id: a.alumnoId,
+          nombre: a.alumnoNombre,
+          presente: a.estado === 'presente' || a.estado === 'tardanza',
+        }))
+
+        openEvaluacionEstrellasModal({
+          nodo: { id: `nodo-${sesionId}`, titulo: detail.sesion.temaPrincipal || 'Contenido Didáctico' },
+          alumnos: alumnosModal,
+        })
+>>>>>>> origin/feat/planificacion-clases-rediseño
       })
       return
     }

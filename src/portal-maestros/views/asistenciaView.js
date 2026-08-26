@@ -4,6 +4,7 @@ import { escHTML } from '../utils/portalUtils.js'
 import { announce } from '../utils/a11yUtils.js'
 import { enqueue, getQueueCount } from '../services/offlineQueue.js'
 import { createSyncQueueBadge } from '../components/SyncQueueBadge.js'
+import { abrirMapaDeRutas } from '../components/teacherRouteMapPanel.js'
 
 import {
   improveText,
@@ -80,6 +81,8 @@ import { createAutoDraftManager } from '../components/attendance/AutoDraftManage
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
 import { createStudentList } from '../components/attendance/StudentList.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
+import { logSubstituteActivity } from '../services/substituteAuditService.js'
+import { resolverPertenenciaClase } from '../services/suplenciaService.js'
 import {
   generateDailyReport,
   generateMonthlyAttendance,
@@ -219,6 +222,11 @@ export async function renderAsistenciaView(
     const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
 
     // ── Batch 1: datos cacheados (instantáneos si hoyView ya cargó) + sesión en paralelo ──
+    // La query de sesión NO filtra por maestro_id: una clase con suplente debe
+    // resolver a la MISMA sesión del día sin importar quién la abra (titular o
+    // suplente) — de lo contrario cada actor crea su propia fila paralela.
+    // El filtro por dueño legítimo se aplica después, en JS, una vez que se
+    // conoce `clase` (ver maestroIdSesion más abajo).
     const [misClases, todosHorarios, todasInscripciones, sesionRes] = await Promise.all([
       getMisClases(), // cache: 1min
       getHorariosClases([claseId]), // cache: 5min
@@ -230,7 +238,6 @@ export async function renderAsistenciaView(
         .from('sesiones_clase')
         .select('*')
         .eq('clase_id', claseId)
-        .eq('maestro_id', maestro.id)
         .eq('fecha', fechaHoy)
         .order('borrador', { ascending: true })   // registradas primero
         .order('updated_at', { ascending: false }), // más reciente primero dentro de cada grupo
@@ -241,10 +248,38 @@ export async function renderAsistenciaView(
       return
     }
 
+    // Dueño de la sesión de HOY: siempre el titular cuando se conoce (regla
+    // 4.3 de SPEC_suplencias_auditoria.md — lo que registra el suplente se
+    // guarda en la clase del titular, nunca en una fila propia del suplente).
+    // idsRelevantes filtra las sesiones traídas (clase_id+fecha, sin
+    // maestro_id) a solo las que pertenecen a esta relación titular/suplente,
+    // para no mezclar por accidente sesiones de otro maestro que comparta
+    // clase_id por otra vía (ej. clase_horarios con maestro_id propio en otro
+    // horario del mismo día).
+    const { maestroIdSesion, esSuplente: esSuplenteDeEstaClase, idsRelevantes } =
+      resolverPertenenciaClase(clase, maestro.id)
+
+    // Bitácora: registra la simple entrada del suplente a la clase (SPEC
+    // §5.2). No bloquea el render — es trazabilidad, no autorización.
+    if (esSuplenteDeEstaClase) {
+      logSubstituteActivity({
+        action: 'SUBSTITUTE_ENTER',
+        clase,
+        fecha: fechaHoy,
+        maestroSuplenteId: maestro.id,
+        userId: maestro.user_id || maestro.id || null,
+        summary: `El suplente entró a "${clase.nombre || 'Clase'}"`,
+      }).catch((err) => console.warn('[asistencia] No se pudo auditar la entrada del suplente:', err))
+    }
+
     const horario = todosHorarios.find((h) => h.dia?.toLowerCase() === diaHoy)
 
+    // Bug real encontrado: antes esto descartaba hora_inicio/hora_fin/dia de
+    // cada inscripción, así que el turno individual de clases rotativas
+    // nunca llegaba al alumno — StudentList.js lo esperaba pero `tieneTurno`
+    // siempre daba falso.
     let alumnos = (todasInscripciones || [])
-      .map((i) => i.alumnos)
+      .map((i) => (i.alumnos ? { ...i.alumnos, hora_inicio: i.hora_inicio, hora_fin: i.hora_fin, dia: i.dia } : null))
       .filter(Boolean)
       .sort((a, b) => {
         const cmp1 = (a.instrumento_principal || '').localeCompare(b.instrumento_principal || '')
@@ -253,7 +288,7 @@ export async function renderAsistenciaView(
       })
 
     // Primary session: prefer registered (borrador=false), fallback to most-recent draft
-    const todasSesionesHoy = sesionRes.data || []
+    const todasSesionesHoy = (sesionRes.data || []).filter((s) => idsRelevantes.has(String(s.maestro_id)))
     const sesionExistenteData = todasSesionesHoy[0] || null
 
     // Merge asistencia from ALL sessions of the day — the registered session may have
@@ -430,6 +465,7 @@ export async function renderAsistenciaView(
       estado,
       justificaciones,
       maestro,
+      maestroIdSesion,
       fechaHoy,
       claseId,
       sesionId,
@@ -455,6 +491,7 @@ function _renderVista(container, ctx) {
     estado,
     justificaciones,
     maestro,
+    maestroIdSesion,
     fechaHoy,
     claseId,
     snapshots,
@@ -1503,6 +1540,18 @@ function _renderVista(container, ctx) {
   })
   _cleanups.push(() => headerComp.destroy())
 
+  // ── Mapa de rutas del maestro (mismo panel que en "Hoy") ──
+  const mapaBtnAnchor = headerContainer?.querySelector('#pm-sync-badge-container')?.parentElement
+  if (mapaBtnAnchor) {
+    const mapaBtn = document.createElement('button')
+    mapaBtn.className = 'pm-mapa-btn pm-asist-mapa-btn'
+    mapaBtn.title = 'Mapa de rutas'
+    mapaBtn.setAttribute('aria-label', 'Mapa de rutas de la clase')
+    mapaBtn.innerHTML = '<i class="bi bi-signpost-2-fill"></i>'
+    mapaBtn.addEventListener('click', () => abrirMapaDeRutas(claseId, maestro, fechaHoy))
+    mapaBtnAnchor.insertBefore(mapaBtn, mapaBtnAnchor.firstChild)
+  }
+
   // ── Sync queue badge ──
   const badgeContainer = container.querySelector('#pm-sync-badge-container')
   if (badgeContainer) {
@@ -1813,7 +1862,7 @@ function _renderVista(container, ctx) {
   // === Auto-Draft Manager ===
   const _draftMgr = createAutoDraftManager(container, {
     sesionId,
-    maestroId: maestro.id,
+    maestroId: maestroIdSesion,
     editor,
     sesionExistenteData,
     onDraftRecovered: (content) => {
@@ -1838,7 +1887,9 @@ function _renderVista(container, ctx) {
     rutaId,
     sesionId,
     claseId,
+    clase,
     maestro,
+    maestroIdSesion,
     fechaHoy,
     alumnos,
     estado,
@@ -1868,6 +1919,19 @@ function _renderVista(container, ctx) {
     justificaciones,
     obtenerJustificacion,
     eliminarJustificacion,
+    isRotativa: clase?.tipo_clase === 'rotativa',
+    // `turno` llega como {dia, hora_inicio, hora_fin} (mismo shape que el
+    // alumno en memoria) — se traduce a los nombres que espera el servicio.
+    onTurnoChange: async (alumnoId, turno) => {
+      const { actualizarTurnoAlumno } = await import('../services/maestroDataService.js')
+      await actualizarTurnoAlumno(claseId, alumnoId, {
+        dia: turno.dia,
+        horaInicio: turno.hora_inicio,
+        horaFin: turno.hora_fin,
+      })
+      const alumno = alumnos.find((a) => a.id === alumnoId)
+      if (alumno) Object.assign(alumno, turno)
+    },
     onJustifDeleted: (alumnoId) => {
       delete justificaciones[alumnoId]
     },
@@ -1940,7 +2004,10 @@ function _renderVista(container, ctx) {
 
       const payload = {
         ...(sesionId ? {} : { clase_id: claseId }),
-        maestro_id: maestro.id,
+        // Titular preferido (maestroIdSesion): si esto lo guarda el suplente,
+        // la fila sigue siendo la del titular — ver comentario junto a su
+        // declaración más arriba.
+        maestro_id: maestroIdSesion,
         fecha: fechaHoy,
         estado: 'pendiente',
         borrador: true,
@@ -2105,16 +2172,30 @@ function _renderVista(container, ctx) {
         await _autoSave(true, true)
 
         // 1.1 Si sesionId sigue siendo null (nueva sesión), intentar obtenerla de Supabase
-        // ya que _autoSave(true) acaba de encolar/insertar.
+        // ya que _autoSave(true) acaba de encolar/insertar. El INSERT directo (online)
+        // resuelve sesionId de inmediato dentro de _autoSave — este SELECT solo entra en
+        // juego cuando ese INSERT cayó al fallback de cola offline (ver _autoSave arriba),
+        // caso en el que la fila puede tardar un instante en quedar visible. Reintenta unas
+        // veces antes de rendirse: sin esto, un guardado que coincide con ese fallback
+        // dejaba sesionId en null silenciosamente y se saltaba el registro de asistencia
+        // individual y el marcado de la sesión como "registrada" (pasos 1.5 y 2 abajo).
         if (!sesionId) {
-          const { data: sData } = await supabase
-            .from('sesiones_clase')
-            .select('id')
-            .eq('clase_id', claseId)
-            .eq('maestro_id', maestro.id)
-            .eq('fecha', fechaHoy)
-            .maybeSingle()
-          if (sData) sesionId = sData.id
+          for (let intento = 0; intento < 3 && !sesionId; intento++) {
+            if (intento > 0) await new Promise((r) => setTimeout(r, 400))
+            const { data: sData } = await supabase
+              .from('sesiones_clase')
+              .select('id')
+              .eq('clase_id', claseId)
+              .eq('maestro_id', maestroIdSesion)
+              .eq('fecha', fechaHoy)
+              .maybeSingle()
+            if (sData) sesionId = sData.id
+          }
+          if (!sesionId && navigator.onLine) {
+            console.warn(
+              '[asistencia] No se pudo resolver sesionId tras 3 intentos — la asistencia individual y el cierre de sesión quedarán pendientes del próximo guardado.',
+            )
+          }
         }
 
         // 1.5 Registrar asistencias individuales en la tabla asistencias
@@ -2126,7 +2207,12 @@ function _renderVista(container, ctx) {
               ...a,
               ...(sesionId && { sesion_clase_id: sesionId }),
             }))
-            await registrarAsistenciaBulk(asistenciaConSesion)
+            await registrarAsistenciaBulk(asistenciaConSesion, {
+              clase,
+              maestroId: maestro.id || maestro.user_id || null,
+              fecha: fechaHoy,
+              sesionId: sesionId || null,
+            })
             console.log(
               '[asistencia] Registradas asistencias individuales:',
               asistenciaConSesion.length,
@@ -2205,7 +2291,7 @@ function _renderVista(container, ctx) {
                 'Fallback "cerrada" también falló, actualizando solo borrador:',
                 err2.message,
               )
-              await supabase
+              const { error: err3 } = await supabase
                 .from('sesiones_clase')
                 .update({
                   borrador: false,
@@ -2214,6 +2300,16 @@ function _renderVista(container, ctx) {
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', sesionId)
+
+              // Si los 3 intentos fallan, la sesión no quedó guardada de verdad —
+              // antes esto se tragaba en silencio y el botón igual mostraba
+              // "✓ Guardado", dejando al maestro creyendo que su registro se
+              // persistió cuando en realidad nada llegó a la base de datos.
+              if (err3) {
+                throw new Error(
+                  `No se pudo guardar la sesión: ${err3.message}`,
+                )
+              }
             }
           }
 
@@ -2231,32 +2327,12 @@ function _renderVista(container, ctx) {
           }
         }
 
-        // 3. Procesar cierre de sesión y recálculo de progreso
-        if (sesionId) {
-          const { academicService } =
-            await import('../../modules/academic-routes/services/academicService.js')
-          const { createAchievementsSummaryModal } =
-            await import('../components/AchievementsSummaryModal.js')
-
-          // Ejecutar recálculos (Motor de Reglas)
-          const achievements = await academicService.processSessionClosure(sesionId)
-
-          // 4. Mostrar feedback de logros si existen
-          if (achievements && achievements.length > 0) {
-            btn.textContent = '¡Logros detectados!'
-            btn.style.background = 'var(--pm-success)'
-            await createAchievementsSummaryModal(container, achievements)
-          } else {
-            // Caso esperado (no un error): el cierre de sesión devuelve 0
-            // logros cuando todavía no hay progresos aprobados. Se loguea en
-            // debug para no ensuciar la consola en cada guardado de asistencia.
-            console.debug(
-              '[asistencia] processSessionClosure devolvió 0 logros (puede que no haya progresos vinculados a esta sesión aún).',
-            )
-          }
-        } else {
-          console.warn('[asistencia] No se pudo obtener sesionId para procesar logros.')
-        }
+        // (Se quitó de acá el "3. Procesar cierre de sesión y recálculo de progreso" que
+        // llamaba a academicService.processSessionClosure(sesionId): ese motor lee de
+        // indicator_attempts, tabla que ningún flujo alcanzable desde esta vista escribe.
+        // Siempre devolvía 0 logros — aparentaba funcionar pero era código muerto. El
+        // registro real de avance por indicador vive en evaluacion_indicador, vía el
+        // Mapa de Rutas (teacherRouteMapPanel.js / IndicadorGradingModal.js).)
 
         btn.textContent = '✓ Guardado'
         btn.style.background = 'var(--apple-success)'

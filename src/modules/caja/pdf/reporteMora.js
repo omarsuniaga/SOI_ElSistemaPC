@@ -16,8 +16,8 @@ const RED_COLOR = [239, 68, 68]
 const ORANGE_COLOR = [245, 158, 11]
 const YELLOW_COLOR = [234, 179, 8]
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 function fmtDate(iso) {
@@ -100,7 +100,7 @@ export function generateReporteMora(moraData) {
       item.familia?.nombre || item.familia?.id || '-',
       item.representante?.nombre || item.representante?.email || '-',
       fmtDate(item.cuota?.fecha_vencimiento),
-      fmtMoney(item.cuota?.monto_base || item.cuota?.saldo_pendiente),
+      fmtMoney(item.cuota?.monto_base_centavos || item.cuota?.saldo_pendiente_centavos),
       String(item.diasMora || 0) + ' dias',
       nivelLabel(item.nivel),
     ])

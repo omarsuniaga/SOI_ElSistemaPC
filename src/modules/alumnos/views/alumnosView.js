@@ -1,5 +1,7 @@
 import '../styles/alumnos.css'
+import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
+
 import { formatPhone, normalizePhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -143,6 +145,7 @@ export async function renderAlumnosView(container) {
   // ─── Nested View Functions ──────────────────────────────────────────
 
   function renderContent(container) {
+<<<<<<< HEAD
     const totalAlumnos = state.alumnosOriginales.length
     const totalActivos = state.alumnosOriginales.filter(a => a.is_active ?? true).length
     const totalConInstrumento = state.alumnosOriginales.filter(a => !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado').length
@@ -315,6 +318,7 @@ export async function renderAlumnosView(container) {
     `
   }
 
+
   function renderTableRows(alumnos) {
     if (!alumnos.length) return ''
 
@@ -375,8 +379,16 @@ export async function renderAlumnosView(container) {
                   <i class="bi bi-whatsapp"></i>
                 </button>
               ` : ''}
+<<<<<<< HEAD
 
               <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="Eliminar alumno" style="font-size:0.75rem;">
+=======
+            </div>
+            
+            <!-- Columna Botón Inactivar (36px de ancho fijo) -->
+            <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
+              <button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" data-action="delete" data-id="${a.id}" title="Inactivar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+>>>>>>> origin/feat/planificacion-clases-rediseño
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -399,6 +411,9 @@ export async function renderAlumnosView(container) {
     container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
     container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
     container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })
+    container.querySelector('#btnIrInactivos')?.addEventListener('click', () => window.router?.navigate('alumnos-inactivos'), { signal })
+    container.querySelector('#btnAlumnosInactivos')?.addEventListener('click', () => window.router?.navigate('alumnos-inactivos'), { signal })
+
 
     container.querySelector('#btnDescargarPdfListado')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget
@@ -474,6 +489,7 @@ export async function renderAlumnosView(container) {
       }, { signal })
     })
 
+<<<<<<< HEAD
     const btnToggleFiltros = container.querySelector('#btnToggleFiltros')
     const panelFiltros = container.querySelector('#panelFiltrosAlumnos')
     btnToggleFiltros?.addEventListener('click', (e) => {
@@ -486,6 +502,17 @@ export async function renderAlumnosView(container) {
         btnToggleFiltros.classList.toggle('text-white', isOpen)
         btnToggleFiltros.classList.toggle('btn-outline-secondary', !isOpen)
       }
+=======
+    // Toggle Filtros Panel
+    const toggleBtn = container.querySelector('#btnToggleFiltrosAlumnos')
+    const filterBody = container.querySelector('#btnToggleFiltrosAlumnosBody')
+    toggleBtn?.addEventListener('click', () => {
+      const isOpen = filterBody?.classList.toggle('is-open')
+      filterBody?.classList.toggle('is-collapsed', !isOpen)
+      toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+      const icon = toggleBtn.querySelector('i')
+      if (icon) icon.className = `bi ${isOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`
+>>>>>>> origin/feat/planificacion-clases-rediseño
     }, { signal })
 
     const searchInput = container.querySelector('#buscar')
@@ -518,7 +545,11 @@ export async function renderAlumnosView(container) {
 
     container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', (e) => {
       e.stopPropagation()
+<<<<<<< HEAD
       const bInput = container.querySelector('#buscar')
+=======
+      if (searchInput) searchInput.value = ''
+>>>>>>> origin/feat/planificacion-clases-rediseño
       const wSelect = container.querySelector('#filtroWhatsapp')
       const cSelect = container.querySelector('#filtroCompletitud')
       const iSelect = container.querySelector('#filtroInstrumento')
@@ -532,6 +563,7 @@ export async function renderAlumnosView(container) {
       state.sortDir = 'asc'
       applyFilters()
     }, { signal })
+
 
     const tbody = container.querySelector('#alumnosTBody')
     tbody?.addEventListener('click', async (e) => {

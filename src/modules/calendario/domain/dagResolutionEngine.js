@@ -8,9 +8,8 @@
  * Dado un array de hitos con su campo dependeDeTMinusDias,
  * calcula qué estado inicial debe tener cada uno.
  *
- * Regla: si un hito tiene dependeDeTMinusDias !== null,
- * arranca como 'bloqueada_por_dependencia'.
- * Si dependeDeTMinusDias === null, arranca como 'pendiente'.
+ * Regla: si dependeDeTMinusDias !== null → 'bloqueada_por_dependencia'.
+ *        si dependeDeTMinusDias === null → 'pendiente'.
  *
  * @param {Array<{tMinusDias: number, dependeDeTMinusDias: number|null}>} hitos
  * @returns {Array<{...hito, estadoInicial: 'pendiente'|'bloqueada_por_dependencia'}>}
@@ -25,7 +24,7 @@ export function resolverEstadosIniciales(hitos) {
 /**
  * Dado el array de hitos (con dependeDeTMinusDias) y el array de tareas
  * ya insertadas en BD (con sus IDs reales y t_minus_dias),
- * construye la lista de actualizaciones necesarias para enlazar el DAG.
+ * construye la lista de actualizaciones para enlazar el DAG.
  *
  * El matching se hace por tMinusDias (valor único dentro de un protocolo).
  *
@@ -47,7 +46,6 @@ export function construirArcosDag(hitos, tareasInsertadas) {
 
 /**
  * Valida que el grafo de dependencias no tiene ciclos.
- * Usa detección de ciclos por seguimiento de ruta (path tracking).
  * Lanza Error si encuentra un ciclo, con el tMinusDias donde ocurre.
  *
  * @param {Array<{tMinusDias: number, dependeDeTMinusDias: number|null}>} hitos

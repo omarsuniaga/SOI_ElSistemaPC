@@ -4,6 +4,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { enqueue } from './offlineQueue.js'
+import { logSubstituteActivity, isSubstituteAssignment } from './substituteAuditService.js'
 
 /**
  * Factory that creates an auto-draft controller with debounced saving.
@@ -122,10 +123,14 @@ export async function discardDraft(draftId) {
 /**
  * Finalize an observation (delete draft, insert permanent record).
  * @param {string} sesionId
- * @param {string} maestroId
+ * @param {string} maestroId - Dueño de la fila (titular preferido — puede no
+ *   ser quien la escribió realmente; ver auditContext.actorMaestroId).
  * @param {string} contenidoRaw - Texto original del maestro (lenguaje natural o DSL)
  * @param {Object} contenidoParsed - Datos cuantificados extraídos del texto
  * @param {string|null} contenidoIaDsl - DSL generado por IA (null si el maestro escribió en DSL directo)
+ * @param {string|null} contenidoIaMejorado
+ * @param {Object} auditContext - `actorMaestroId` es quien realmente escribió
+ *   (puede ser el suplente); si no llega, se asume igual a `maestroId`.
  * @returns {Promise<Object>} saved row
  */
 export async function saveObservation(
@@ -135,7 +140,9 @@ export async function saveObservation(
   contenidoParsed,
   contenidoIaDsl = null,
   contenidoIaMejorado = null,
+  auditContext = {},
 ) {
+  const actorMaestroId = auditContext.actorMaestroId || maestroId
   try {
     // Delete any active draft first
     const { error: deleteError } = await supabase
@@ -162,6 +169,24 @@ export async function saveObservation(
       .single()
 
     if (error) throw error
+
+    if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, actorMaestroId)) {
+      await logSubstituteActivity({
+        action: 'SUBSTITUTE_CONTENT',
+        clase: auditContext.clase,
+        maestroTitularId: auditContext.clase?.maestro_principal_id,
+        maestroSuplenteId: actorMaestroId,
+        fecha: auditContext.fechaHoy || auditContext.fecha || null,
+        sesionId,
+        userId: auditContext.userId || auditContext.maestroUserId || null,
+        summary: `Se registró contenido de clase como suplente en "${auditContext.clase?.nombre || 'Clase'}"`,
+        changes: {
+          indicador_id: contenidoParsed?.indicador_id || null,
+          dsl_length: typeof contenidoRaw === 'string' ? contenidoRaw.length : null,
+          es_borrador: false,
+        },
+      })
+    }
     return data
   } catch (err) {
     // Fallback: encolar para sync offline

@@ -4,7 +4,7 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { useSalones } from '../hooks/useSalones.js'
 import * as salonesApi from '../api/salonesApi.js'
-import { renderFilterPanel } from '../../../shared/components/pageShell.js'
+import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { renderHeroCard, renderDetailGrid } from '../../../shared/components/profileModal.js'
 
 const state = {
@@ -32,7 +32,7 @@ function getCondicionBadge(condicion) {
 
 function getFilterConfigHtml() {
   return `
-    <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
+    <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
       <i class="bi bi-search search-icon-muted"></i>
       <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, código o ubicación..." id="searchSalon" autocomplete="off">
     </div>
@@ -57,8 +57,8 @@ function getFilterConfigHtml() {
         <option value="4">Piso 4</option>
       </select>
     </div>
-    <button class="btn btn-outline-secondary btn-sm" id="btnLimpiarFiltrosSalones" type="button" title="Limpiar filtros">
-      <i class="bi bi-x-circle me-1"></i>Limpiar
+    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnLimpiarFiltrosSalones" type="button" title="Limpiar filtros">
+      <i class="bi bi-x-circle"></i> <span>Limpiar</span>
     </button>
   `
 }
@@ -73,30 +73,27 @@ export function renderSalonesView(container) {
     state.filtrosAbiertos = window.innerWidth >= 992
   }
 
+  const actionsHtml = `
+    <button class="btn btn-premium-action" id="btnCrearSalon" title="Nuevo Salón">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Salón
+    </button>
+  `
+
   container.innerHTML = `
     <div class="page-container">
-      <div class="salones-header-premium mb-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-            <i class="bi bi-door-open fs-4"></i>
-          </div>
-          <div>
-            <h1 class="salones-title-premium mb-0">Salones</h1>
-            <p class="text-muted small mb-0"><span id="salonesCount">0</span> salones en total</p>
-          </div>
-        </div>
-
-        <div class="salones-header-actions">
-          <button class="btn btn-premium-action btn-icon-only" id="btnCrearSalon" title="Nuevo Salón" aria-label="Nuevo Salón">
-            <i class="bi bi-plus-lg"></i>
-          </button>
-        </div>
-      </div>
+      ${renderPageHeader({
+        icon: 'bi-door-open',
+        title: 'Salones',
+        subtitle: `<span id="salonesCount">0</span> salones e instalaciones`,
+        actionsHtml,
+      })}
 
       ${renderFilterPanel({
         isOpen: state.filtrosAbiertos,
         filtersHtml: getFilterConfigHtml(),
         onToggleId: 'btnToggleFiltrosSalones',
+        badgeId: 'filtrosBadgeCountSalones',
+        subtitle: 'Busca y segmenta espacios por piso y condición física',
       })}
 
       <div class="page-glass rounded w-100">
@@ -155,6 +152,11 @@ function renderTable() {
       return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${salon.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+          <div class="position-relative flex-shrink-0">
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-3" style="width: 44px; height: 44px; font-size: 1.25rem;">
+              <i class="bi bi-door-open"></i>
+            </div>
+          </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(salon.nombre || '-')}</span>
             <small class="text-muted text-truncate"><i class="bi bi-people me-1"></i>Capacidad: ${salon.capacidad || '-'} personas • Piso: ${salon.piso === 0 || salon.piso === '0' ? 'Planta Baja' : `Piso ${salon.piso}`}</small>
@@ -169,6 +171,7 @@ function renderTable() {
     })
     .join('')
 }
+
 
 function attachEvents(container) {
   const unsubscribe = useSalones.subscribe(renderTable)

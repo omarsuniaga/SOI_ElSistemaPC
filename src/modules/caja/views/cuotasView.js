@@ -6,8 +6,8 @@
 import * as cajaApi from '../api/cajaApi.js'
 import { calcularMoraInfo } from '../domain/cuota.js'
 
-function fmtMoney(val) {
-  return '$' + Number(val || 0).toFixed(2)
+function fmtMoney(centavos) {
+  return '$' + (Number(centavos || 0) / 100).toFixed(2)
 }
 
 const FILTROS = ['Todas', 'pendiente', 'en_mora', 'vencida', 'pagada']
@@ -38,7 +38,7 @@ export async function render(container, session) {
   }
 
   // Build cuotas aggregate from vw_estado_familiar data
-  // The view has saldo_pendiente, cuotas_pendientes per family
+  // The view has saldo_pendiente_centavos, cuotas_pendientes per family
   // For individual cuota detail, user navigates to family detail
 
   let filtroActivo = 'Todas'
@@ -50,7 +50,7 @@ export async function render(container, session) {
           if (filtroActivo === 'en_mora') return f.nivel === 'D' || f.nivel === 'E'
           if (filtroActivo === 'pendiente') return (f.cuotas_pendientes || 0) > 0 && f.nivel !== 'E'
           if (filtroActivo === 'pagada') return (f.cuotas_pendientes || 0) === 0
-          if (filtroActivo === 'vencida') return (f.saldo_pendiente || 0) > 0
+          if (filtroActivo === 'vencida') return (f.saldo_pendiente_centavos || 0) > 0
           return true
         })
 
@@ -72,8 +72,8 @@ export async function render(container, session) {
           + '<div style="font-size:0.75rem;color:#64748b">' + (f.rep_nombre || '') + '</div>'
           + '</td>'
           + '<td style="padding:0.75rem;text-align:center;font-size:0.8125rem">' + (f.cuotas_pendientes || 0) + '</td>'
-          + '<td style="padding:0.75rem;text-align:right;font-weight:600;color:#ef4444;font-size:0.875rem">' + fmtMoney(f.saldo_pendiente) + '</td>'
-          + '<td style="padding:0.75rem;text-align:right;color:#059669;font-size:0.875rem">' + fmtMoney(f.saldo_wallet || 0) + '</td>'
+          + '<td style="padding:0.75rem;text-align:right;font-weight:600;color:#ef4444;font-size:0.875rem">' + fmtMoney(f.saldo_pendiente_centavos) + '</td>'
+          + '<td style="padding:0.75rem;text-align:right;color:#059669;font-size:0.875rem">' + fmtMoney(f.saldo_wallet_centavos || 0) + '</td>'
           + '<td style="padding:0.75rem">'
           + '<span style="background:' + (f.nivel === 'A' || f.nivel === 'B' ? '#d1fae5' : f.nivel === 'E' ? '#fee2e2' : '#fef9c3') + ';color:#374151;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:9999px">' + (f.nivel || '?') + '</span>'
           + '</td>'

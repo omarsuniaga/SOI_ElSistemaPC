@@ -28,15 +28,20 @@ vi.mock('../../src/modules/academic-routes/services/academicService.js', () => (
   },
 }))
 
+vi.mock('../../src/modules/planificacion/api/weeklyPlanAdapter.js', () => ({
+  obtenerRutasActivas: vi.fn().mockResolvedValue([]),
+}))
+
 // Mock maestroDataService para los tests de renderHoyView
 // Los tests individuales setean .mockResolvedValue() según su escenario
 vi.mock('../../src/portal-maestros/services/maestroDataService.js', () => ({
-  getEmergentesHoy: vi.fn(),
-  getMisClases: vi.fn(),
-  getHorariosClases: vi.fn(),
-  getSesiones: vi.fn(),
-  getInscripcionesClases: vi.fn(),
-  getSalones: vi.fn(),
+  getEmergentesHoy: vi.fn().mockResolvedValue([]),
+  getMisClases: vi.fn().mockResolvedValue([]),
+  getHorariosClases: vi.fn().mockResolvedValue([]),
+  getSesiones: vi.fn().mockResolvedValue([]),
+  getSesionesResumen: vi.fn().mockResolvedValue([]),
+  getInscripcionesClases: vi.fn().mockResolvedValue([]),
+  getSalones: vi.fn().mockResolvedValue([]),
 }))
 
 // ── Datos mock ───────────────────────────────────────────────

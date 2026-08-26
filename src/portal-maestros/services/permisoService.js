@@ -48,10 +48,12 @@ export async function getPermisos(maestroId) {
         puede_registrar_alumnos: solicitudAprobada?.solicita_alumnos ?? false,
         puede_inscribir_clases: solicitudAprobada?.solicita_clases ?? false,
         puede_crear_clases: false,
-        total_clases_asignadas: permiso?.total_clases_asignadas ?? 0,
-        clases_titular: permiso?.clases_titular ?? 0,
-        clases_suplente: permiso?.clases_suplente ?? 0,
-        tiene_clases_asignadas: (permiso?.total_clases_asignadas ?? 0) > 0,
+        puede_planificar: true,
+        puede_asistir: true,
+        total_clases_asignadas: 0,
+        clases_titular: 0,
+        clases_suplente: 0,
+        tiene_clases_asignadas: false,
         solicitud_actual,
       }
     }
@@ -76,13 +78,19 @@ export async function getPermisos(maestroId) {
     const puedeCrearClases =
       permisosArray.includes('clases:create') ||
       (permiso.puede_crear_clases ?? false)
+    const puedePlanificar =
+      permisosArray.includes('planificacion:write') ||
+      (permiso.puede_planificar !== false)
+    const puedeAsistir =
+      permisosArray.includes('asistencias:write') ||
+      (permiso.puede_asistir !== false)
 
     return {
       puede_registrar_alumnos: puedeRegistrarAlumnos,
       puede_inscribir_clases: puedeInscribirClases,
       puede_crear_clases: puedeCrearClases,
-      puede_planificar: permisosArray.includes('planificacion:write') || false,
-      puede_asistir: permisosArray.includes('asistencias:write') || false,
+      puede_planificar: puedePlanificar,
+      puede_asistir: puedeAsistir,
       total_clases_asignadas: permiso.total_clases_asignadas ?? 0,
       clases_titular: permiso.clases_titular ?? 0,
       clases_suplente: permiso.clases_suplente ?? 0,

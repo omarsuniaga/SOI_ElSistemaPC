@@ -169,12 +169,12 @@ export function initViewContainers() {
 }
 
 const ROUTE_PERMISSION_GUARDS = {
-  'gestionar-clases': (permisos) => permisos?.puede_inscribir_clases,
-  'crear-clase': (permisos) => permisos?.puede_crear_clases,
-  asistencia: (permisos) => permisos?.puede_asistir,
-  planificacion: (permisos) => permisos?.puede_planificar,
-  'planificacion-disenador': (permisos) => permisos?.puede_planificar,
-  'planificacion-ruta': (permisos) => permisos?.puede_planificar,
+  'gestionar-clases': (permisos) => Boolean(permisos?.puede_inscribir_clases),
+  'crear-clase': (permisos) => Boolean(permisos?.puede_crear_clases),
+  asistencia: (permisos) => (permisos ? permisos.puede_asistir !== false : false),
+  planificacion: (permisos) => (permisos ? permisos.puede_planificar !== false : false),
+  'planificacion-disenador': (permisos) => (permisos ? permisos.puede_planificar !== false : false),
+  'planificacion-ruta': (permisos) => (permisos ? permisos.puede_planificar !== false : false),
 }
 
 export async function renderViewContent(route, container, params, urlParams, context) {
@@ -214,7 +214,8 @@ export async function renderViewContent(route, container, params, urlParams, con
       return await mod.renderCalendarioView(container)
     case 'hoy':
       return await mod.renderHoyView(container, {
-        onClaseClick: (id) => router.navigate(`asistencia?clase=${id}`),
+        onClaseClick: (id, fecha) =>
+          router.navigate(`asistencia?clase=${id}${fecha ? `&fecha=${fecha}` : ''}`),
       })
     case 'asistencia':
       return await mod.renderAsistenciaView(container, {

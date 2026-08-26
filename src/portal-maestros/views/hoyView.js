@@ -80,7 +80,11 @@ function _autoNavigateClaseEnCurso(claseId, fechaHoy, onClaseClick) {
       if (!cancelado) {
         // Generar snapshot y navegar (mismo flujo que el click manual)
         if (window.router) window.router.navigate(`asistencia?clase=${claseId}&fecha=${fechaHoy}`)
-        else onClaseClick?.(claseId)
+        else if (typeof onClaseClick === 'function') {
+          onClaseClick(claseId, fechaHoy)
+        } else if (window.router?.navigate) {
+          window.router.navigate('asistencia?clase=' + claseId + '&fecha=' + fechaHoy)
+        }
       }
     }
   }, 1000)
@@ -387,7 +391,7 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 
         try {
           // Generar snapshot de planificación antes de entrar
-          await academicService.createSnapshotFromPlan(claseId, fechaHoy, maestro.id)
+          void academicService.createSnapshotFromPlan(claseId, fechaHoy, maestro.id).catch(console.error)
         } catch (err) {
           console.error('Error generando snapshot:', err)
           // Continuamos aunque falle el snapshot para no bloquear el flujo
@@ -395,7 +399,11 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 
         // Reset loading state before navigating so cached view shows normal cards
         card.classList.remove('pm-card-loading')
-        onClaseClick?.(claseId)
+        if (typeof onClaseClick === 'function') {
+          onClaseClick(claseId, fechaHoy)
+        } else if (window.router?.navigate) {
+          window.router.navigate('asistencia?clase=' + claseId + '&fecha=' + fechaHoy)
+        }
       })
     })
     // 7. Scroll a clase en curso + auto-navegación si no está registrada

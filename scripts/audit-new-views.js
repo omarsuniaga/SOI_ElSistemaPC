@@ -60,7 +60,6 @@ const expectedRoutes = [
   { id: 'reporte-mensual', name: 'Resumen del Mes', source: routerContent },
   { id: 'analisis-contenido', name: 'Análisis Pedagógico', source: routerContent },
   { id: 'reporte-semestral', name: 'Informe del Período', source: routerContent },
-  { id: 'seguimiento-tareas', name: 'Seguimiento de Tareas', source: shellContent },
 ]
 
 expectedRoutes.forEach(({ id, name, source }) => {

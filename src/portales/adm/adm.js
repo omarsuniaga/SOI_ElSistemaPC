@@ -30,9 +30,6 @@ const navGroups = [
       { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
       { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
-      { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
-      { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
-      { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
       { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
       { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
       { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
@@ -65,26 +62,6 @@ const navGroups = [
       { id: 'departamentos', label: 'Correos Departamentos', icon: 'bi-envelope-at' },
       { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
-    ],
-  },
-  {
-    id: 'direccion',
-    label: 'Dirección',
-    icon: 'bi-diagram-3',
-    items: [
-      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
-      { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
-      { id: 'dir-score', label: 'Score Departamentos', icon: 'bi-speedometer2' },
-    ],
-  },
-  {
-    id: 'hermes',
-    label: 'Hermes',
-    icon: 'bi-robot',
-    items: [
-      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
-      { id: 'seguimiento-tareas', label: 'Seguimiento de Tareas', icon: 'bi-list-check' },
-      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
     ],
   },
 ]

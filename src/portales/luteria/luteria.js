@@ -13,13 +13,28 @@ import { allRegistrars } from '../_shared/allRegistrars.js'
 const navGroups = [
   {
     id: 'taller',
-    label: 'Taller',
+    label: 'Taller & Control',
     icon: 'bi-tools',
     items: [
-      { id: 'luteria-diagnosticos', label: 'Diagnósticos', icon: 'bi-wrench-adjustable' },
-      { id: 'luteria-ordenes', label: 'Órdenes de Reparación', icon: 'bi-clipboard-data' },
-      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
-      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+      { id: 'luteria-dashboard', label: 'Dashboard de Taller', icon: 'bi-grid-1x2' },
+      { id: 'luteria-diagnosticos', label: 'Diagnósticos & Triaje', icon: 'bi-wrench-adjustable' },
+      { id: 'luteria-ordenes', label: 'Tablero de Órdenes', icon: 'bi-kanban' },
+    ],
+  },
+  {
+    id: 'almacen',
+    label: 'Almacén & Repuestos',
+    icon: 'bi-box-seam',
+    items: [
+      { id: 'luteria-insumos', label: 'Insumos & Repuestos', icon: 'bi-boxes' },
+    ],
+  },
+  {
+    id: 'bandeja',
+    label: 'Bandeja',
+    icon: 'bi-inbox',
+    items: [
+      { id: 'hermes-tareas', label: 'Tareas de Taller', icon: 'bi-check2-square' },
     ],
   },
 ]
@@ -29,8 +44,8 @@ bootAdminPortal({
   brandIcon: 'bi-tools',
   navGroups,
   registrars: allRegistrars,
-  allowedRoles: ['admin'],
-  defaultRoute: 'luteria-diagnosticos',
+  allowedRoles: ['admin', 'superadmin'],
+  defaultRoute: 'luteria-dashboard',
   hermesDept: 'LUT',
 }).catch((err) => {
   console.error('[luteria] boot falló:', err)

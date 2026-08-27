@@ -42,21 +42,19 @@ describe('department portal profile contracts', () => {
     const routes = flattenRoutes(profileForDepartment('ACM'))
 
     expect(routes).toEqual(expect.arrayContaining([
+      'clases-hoy',
       'maestros',
       'programas',
       'clases',
       'salones',
-      'horario-builder',
       'pedagogico-dashboard',
       'planificacion-acm',
+      'planificacion-cobertura',
       'planificacion-ruta',
-      'progresos',
-      'observaciones',
+      'pedagogico-evaluaciones',
       'asistencias',
       'metricas',
       'periodos',
-      'cierre-academico',
-      'cierre-academico-historico',
       'hermes-tareas',
     ]))
   })
@@ -72,7 +70,7 @@ describe('department portal profile contracts', () => {
     expect(profile).toMatchObject({
       brandText: 'SOI · Administración',
       brandIcon: 'bi-clipboard-data',
-      allowedRoles: ['admin'],
+      allowedRoles: ['admin', 'superadmin', 'coordinacion_academica'],
       defaultRoute: 'clases-hoy',
       hermesDept: 'ADM',
     })
@@ -88,22 +86,20 @@ describe('department portal profile contracts', () => {
       'maestros',
       'postulados',
       'postulados-calendario',
+      'clases-hoy',
+      'clases',
+      'salones',
       'periodos',
-      'campanias',
-      'gateway-config',
       'asistencias',
       'admin-dashboard',
       'admin-ausencias',
+      'reporte-mensual',
+      'analisis-contenido',
+      'reporte-semestral',
       'admin-notificaciones',
       'admin-aprobacion',
       'gestion-usuarios',
-      'departamentos',
-      'configuracion',
       'permisos',
-      'hermes-procedimientos',
-      'hermes-consulta',
-      'dir-score',
-      'hermes-tareas',
     ]))
   })
 

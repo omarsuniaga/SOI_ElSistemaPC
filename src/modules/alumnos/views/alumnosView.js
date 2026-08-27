@@ -9,6 +9,7 @@ import { AlumnoForm } from '../components/AlumnoForm.js'
 import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
 import { PostuladosBackfillModal } from '../components/PostuladosBackfillModal.js'
 import { DuplicadosModal } from '../components/DuplicadosModal.js'
+import { Ficha360Modal } from '../components/Ficha360Modal.js'
 import {
   obtenerAlumnos,
   crearAlumno,
@@ -207,6 +208,10 @@ export async function renderAlumnosView(container) {
                 <i class="bi bi-file-earmark-pdf"></i>
                 <span class="d-none d-sm-inline">Demo</span>
               </button>
+              <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-bold shadow-sm" id="btnAbrirFicha360" title="Ver Ficha 360° Integral" style="font-size:0.78rem;">
+                <i class="bi bi-stars"></i>
+                <span>Ficha 360°</span>
+              </button>
               <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnInscribir" title="Inscribir Alumno" style="font-size:0.78rem;">
                 <i class="bi bi-person-plus-fill"></i>
                 <span>Inscribir</span>
@@ -368,7 +373,12 @@ export async function renderAlumnosView(container) {
 
             <!-- Barra Inferior de Acciones Contextuales -->
             <div class="pt-2 border-top d-flex align-items-center justify-content-between gap-1.5 mt-auto">
-              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2 fw-semibold" data-action="edit" data-id="${a.id}" title="Editar perfil de alumno" style="font-size:0.75rem;">
+              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2 fw-semibold" data-action="ficha360" data-id="${a.id}" title="Ver Ficha 360° Integral" style="font-size:0.75rem;">
+                <i class="bi bi-stars me-1 text-warning"></i>
+                <span>360°</span>
+              </button>
+
+              <button class="btn btn-xs btn-outline-secondary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2 fw-semibold" data-action="edit" data-id="${a.id}" title="Editar perfil de alumno" style="font-size:0.75rem;">
                 <i class="bi bi-pencil-square me-1"></i>
                 <span>Editar</span>
               </button>
@@ -399,6 +409,7 @@ export async function renderAlumnosView(container) {
     const signal = _abortController?.signal
 
     container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal(), { signal })
+    container.querySelector('#btnAbrirFicha360')?.addEventListener('click', () => Ficha360Modal.abrir('sofia'), { signal })
     container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
     container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
     container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })
@@ -551,7 +562,10 @@ export async function renderAlumnosView(container) {
       const btn = e.target.closest('[data-action]')
       if (!btn) return
       const id = btn.dataset.id
-      if (btn.dataset.action === 'edit') {
+      if (btn.dataset.action === 'ficha360') {
+        const alumno = state.alumnosOriginales.find(a => a.id === id)
+        Ficha360Modal.abrir(alumno || id)
+      } else if (btn.dataset.action === 'edit') {
         window.router?.navigate('alumno', { id })
       } else if (btn.dataset.action === 'delete') {
         openDeleteModal(id)

@@ -14,51 +14,51 @@
  */
 
 :root {
-  --lut-card-bg: #ffffff;
-  --lut-card-border: #e2e8f0;
-  --lut-card-shadow: rgba(0, 0, 0, 0.06);
-  --lut-text-primary: #111827;
-  --lut-text-secondary: #6b7280;
-  --lut-text-muted: #9ca3af;
-  --lut-bg-subtle: #f8fafc;
-  --lut-bg-soft: #f0f9ff;
-  --lut-border-subtle: #cbd5e1;
-  --lut-brand: #92400e;
-  --lut-brand-soft: #fef3c7;
+  --lut-card-bg: var(--bs-card-bg, #ffffff);
+  --lut-card-border: var(--bs-border-color, #e2e8f0);
+  --lut-card-shadow: rgba(0, 0, 0, 0.05);
+  --lut-text-primary: var(--bs-body-color, #111827);
+  --lut-text-secondary: var(--bs-secondary-color, #6b7280);
+  --lut-text-muted: var(--bs-tertiary-color, #9ca3af);
+  --lut-bg-subtle: var(--bs-tertiary-bg, #f8fafc);
+  --lut-bg-soft: var(--bs-secondary-bg, #f1f5f9);
+  --lut-border-subtle: var(--bs-border-color, #cbd5e1);
+  --lut-brand: #d97706;
+  --lut-brand-soft: rgba(217, 119, 6, 0.12);
   --lut-accent: #2563eb;
   --lut-accent-text: #ffffff;
   --lut-danger: #dc2626;
-  --lut-danger-bg: #fee2e2;
+  --lut-danger-bg: rgba(220, 38, 38, 0.12);
   --lut-warning: #d97706;
-  --lut-warning-bg: #fef3c7;
+  --lut-warning-bg: rgba(217, 119, 6, 0.12);
   --lut-success: #059669;
-  --lut-success-bg: #d1fae5;
-  --lut-neutral: #6b7280;
-  --lut-neutral-bg: #f3f4f6;
+  --lut-success-bg: rgba(5, 150, 105, 0.12);
+  --lut-neutral: var(--bs-secondary-color, #6b7280);
+  --lut-neutral-bg: var(--bs-secondary-bg, #f3f4f6);
 }
 
 [data-bs-theme="dark"] {
-  --lut-card-bg: #1f2937;
-  --lut-card-border: #374151;
-  --lut-card-shadow: rgba(0, 0, 0, 0.3);
-  --lut-text-primary: #f9fafb;
-  --lut-text-secondary: #d1d5db;
-  --lut-text-muted: #9ca3af;
-  --lut-bg-subtle: #111827;
-  --lut-bg-soft: #0c4a6e;
-  --lut-border-subtle: #4b5563;
+  --lut-card-bg: var(--bs-card-bg, #1e293b);
+  --lut-card-border: var(--bs-border-color, #334155);
+  --lut-card-shadow: rgba(0, 0, 0, 0.35);
+  --lut-text-primary: var(--bs-body-color, #f8fafc);
+  --lut-text-secondary: var(--bs-secondary-color, #94a3b8);
+  --lut-text-muted: var(--bs-tertiary-color, #64748b);
+  --lut-bg-subtle: var(--bs-tertiary-bg, #0f172a);
+  --lut-bg-soft: var(--bs-secondary-bg, #1e293b);
+  --lut-border-subtle: var(--bs-border-color, #334155);
   --lut-brand: #fbbf24;
-  --lut-brand-soft: #422006;
+  --lut-brand-soft: rgba(251, 191, 36, 0.15);
   --lut-accent: #60a5fa;
   --lut-accent-text: #ffffff;
   --lut-danger: #f87171;
-  --lut-danger-bg: #450a0a;
+  --lut-danger-bg: rgba(248, 113, 113, 0.15);
   --lut-warning: #fbbf24;
-  --lut-warning-bg: #422006;
+  --lut-warning-bg: rgba(251, 191, 36, 0.15);
   --lut-success: #34d399;
-  --lut-success-bg: #022c22;
-  --lut-neutral: #9ca3af;
-  --lut-neutral-bg: #374151;
+  --lut-success-bg: rgba(52, 211, 153, 0.15);
+  --lut-neutral: var(--bs-secondary-color, #94a3b8);
+  --lut-neutral-bg: var(--bs-secondary-bg, #334155);
 }
 
 /* ─── Card base ──────────────────────────────────────────────────── */
@@ -392,3 +392,152 @@
     border: 1px solid #ccc;
   }
 }
+
+/* ─── Premium Lutería Kanban System ────────────────────────────── */
+
+.lut-kanban-column {
+  background: var(--lut-bg-subtle);
+  border: 1px solid var(--lut-border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.lut-kanban-col-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--lut-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--lut-card-bg);
+}
+
+.lut-kanban-col-step {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--lut-text-secondary);
+  background: var(--lut-bg-subtle);
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
+
+.lut-kanban-card {
+  background: var(--lut-card-bg);
+  border: 1px solid var(--lut-card-border);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px var(--lut-card-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.lut-kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-color: var(--lut-brand);
+}
+
+.lut-kanban-card.prio-critica {
+  border-left: 4px solid #ef4444 !important;
+}
+
+.lut-kanban-card.prio-alta {
+  border-left: 4px solid #f59e0b !important;
+}
+
+.lut-kanban-card.prio-media {
+  border-left: 4px solid #3b82f6 !important;
+}
+
+.lut-kanban-card.prio-baja {
+  border-left: 4px solid #9ca3af !important;
+}
+
+/* Recessed Diagnosis Box */
+.lut-diag-box {
+  background: var(--lut-bg-subtle);
+  border: 1px solid var(--lut-border-subtle);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin: 0.65rem 0;
+}
+
+.lut-diag-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lut-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.lut-diag-desc {
+  font-size: 0.75rem;
+  color: var(--lut-text-secondary);
+  margin-top: 0.25rem;
+  line-height: 1.35;
+}
+
+/* Pipeline Progress Dots */
+.lut-pipeline-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0.5rem 0 0.75rem 0;
+}
+
+.lut-pipeline-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--lut-border-subtle);
+  transition: background 0.2s ease;
+}
+
+.lut-pipeline-dot.is-active {
+  background: #3b82f6;
+}
+
+.lut-pipeline-dot.is-done {
+  background: #10b981;
+}
+
+/* Priority Pulsing Dot */
+.lut-prio-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.lut-prio-dot.dot-critica {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+
+.lut-prio-dot.dot-alta {
+  background: #f59e0b;
+}
+
+.lut-prio-dot.dot-media {
+  background: #3b82f6;
+}
+
+.lut-prio-dot.dot-baja {
+  background: #9ca3af;
+}
+
+/* Stage Dropdown Selector */
+.lut-stage-select {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  background-color: var(--lut-bg-subtle);
+  border: 1px solid var(--lut-border-subtle);
+  color: var(--lut-text-primary);
+}
+

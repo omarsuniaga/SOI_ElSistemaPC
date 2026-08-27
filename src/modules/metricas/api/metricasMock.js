@@ -155,3 +155,59 @@ export async function getHistorialCierresPeriodos(limitOrOptions = 20) {
 }
 
 export const getCierresAcademicos = getHistorialCierresPeriodos
+
+export async function getAnalisisAsistenciasPeriodoActivo() {
+  return {
+    periodo: {
+      id: 'per-demo-1',
+      nombre: 'Semestre Demo 2026-I',
+      fecha_inicio: '2026-01-15',
+      fecha_fin: '2026-06-15',
+      activo: true,
+    },
+    resumen: {
+      totalAlumnosEvaluados: 12,
+      alumnosConFaltas: 4,
+      alumnosSinFaltas: 8,
+      porcentajeAlumnosConFaltas: 33.3,
+      totalRegistros: 120,
+      totalPresentes: 110,
+      totalAusentes: 8,
+      totalJustificados: 2,
+      tasaAusentismo: 6.7,
+      totalSesionesRegistradas: 24,
+      totalMaestrosConRegistros: 3,
+    },
+    alumnos: [
+      {
+        alumnoId: 'alum-demo-1',
+        alumnoNombre: 'Mateo Fernández',
+        instrumento: 'Violín',
+        programa: 'Cátedra',
+        totalPresentes: 10,
+        totalAusentes: 3,
+        totalJustificados: 1,
+        totalRegistros: 14,
+        tasaAsistencia: 71.4,
+        nivelRiesgo: 'critico',
+        ultimaFalta: '2026-03-10',
+        clasesAfectadas: ['Violín Práctica'],
+        maestrosReportaron: ['Prof. Carlos Méndez'],
+        detalleFaltas: [],
+      }
+    ],
+    maestros: [
+      {
+        maestroId: 'm-demo-1',
+        maestroNombre: 'Prof. Carlos Méndez',
+        totalSesiones: 12,
+        totalRegistros: 60,
+        totalPresentes: 55,
+        totalAusentes: 4,
+        totalJustificados: 1,
+        tasaAusentismo: 6.7,
+        clases: ['Violín Práctica'],
+      }
+    ],
+  }
+}

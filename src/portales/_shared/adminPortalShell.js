@@ -38,6 +38,7 @@ import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirecto
 import { renderHermesConsultaView } from '../../modules/hermes/views/hermesConsultaView.js'
 import { renderCierreAcademicoView } from '../../modules/metricas/views/cierreAcademicoView.js'
 import { reportCatalogAudit } from '../../core/catalogAudit.js'
+import { checkPortalAccess } from '../../core/auth/portalAccessService.js'
 
 window.router = router
 
@@ -111,6 +112,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
               <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}">
                 <i class="bi ${item.icon}"></i>
                 <span>${item.label}</span>
+                ${item.badge ? `<span class="${item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle'} ms-auto" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>` : ''}
               </button>`,
               )
               .join('')}
@@ -239,6 +241,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
       <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}">
         <i class="bi ${item.icon}"></i>
         <span>${item.label}</span>
+        ${item.badge ? `<span class="${item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle'} ms-auto" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>` : ''}
       </button>
     `,
       )
@@ -390,9 +393,12 @@ export async function bootAdminPortal(profile) {
   await useAuth.refreshAuth()
   router.setAuthGuard(() => useAuth.isAuthenticated(), ['login', 'register'])
 
+  const isValidRoute = (r) => Boolean(r && profile.navGroups.some((g) => g.items.some((i) => i.id === r)))
+
   // Persistencia de ruta por portal (evita colisión entre portales en el mismo origin)
   router.init = function init() {
-    const view = localStorage.getItem(storageKey) || profile.defaultRoute
+    const stored = localStorage.getItem(storageKey)
+    const view = isValidRoute(stored) && this.routes[stored] ? stored : profile.defaultRoute
     this.navigate(view)
   }
   const origNavigateTo = router._navigateTo.bind(router)
@@ -401,28 +407,40 @@ export async function bootAdminPortal(profile) {
     localStorage.setItem(storageKey, path)
   }
 
+  const dismissSplashScreen = () => {
+    const splash = document.querySelector('.pm-loading-splash, #pm-loading-splash')
+    if (!splash) return
+    splash.style.transition = 'opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+    splash.style.opacity = '0'
+    splash.style.transform = 'scale(0.98)'
+    splash.style.pointerEvents = 'none'
+    setTimeout(() => splash.remove(), 400)
+  }
+
   const gate = async () => {
     if (!useAuth.isAuthenticated()) {
       renderNavbar(profile, false, storageKey)
       router.navigate('login')
+      dismissSplashScreen()
       return
     }
     // getUser() lee del authManager; state.user es el fallback confiable tras refreshAuth.
     const user = useAuth.getUser() || useAuth.getState?.().user
-    if (!user?.id) {
-      console.warn('[portalShell] autenticado pero sin user.id; redirigiendo a login')
-      renderNavbar(profile, false, storageKey)
-      router.navigate('login')
-      return
-    }
     const role = await getUserRole(user.id)
-    if (!profile.allowedRoles.includes(role)) {
+    const hasAccess = await checkPortalAccess(profile.hermesDept, {
+      userId: user.id,
+      role
+    })
+
+    if (!hasAccess) {
       renderAccessDenied(app, profile.brandText)
+      dismissSplashScreen()
       return
     }
     renderNavbar(profile, true, storageKey)
     const stored = localStorage.getItem(storageKey)
-    router.navigate(stored && router.routes[stored] ? stored : profile.defaultRoute)
+    router.navigate(isValidRoute(stored) && router.routes[stored] ? stored : profile.defaultRoute)
+    dismissSplashScreen()
   }
 
   try {

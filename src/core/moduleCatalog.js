@@ -46,7 +46,7 @@ export const moduleCatalog = Object.freeze([
     ['gestion-curricular', 'legacy-candidate'], ['planificacion-curricular', 'legacy-candidate'], ['torre-de-control', 'legacy-candidate'],
   ]),
   module('admin-dashboard', 'src/modules/admin-dashboard/admin-dashboard.router.js', 'DIR', [
-    ['admin-dashboard'], ['admin-dashboard-reportes'], ['admin-dashboard-analitca-llenado'], ['admin-maestro-detalle', 'internal-detail'], ['admin-dashboard-tendencias'],
+    ['admin-dashboard'], ['admin-dashboard-reportes'], ['admin-dashboard-analitca-llenado'], ['admin-maestro-detalle', 'internal-detail'], ['admin-dashboard-tendencias'], ['reporte-mensual'], ['reporte-semestral'], ['analisis-contenido'],
   ]),
   module('proyecto-manager', 'src/modules/admin-dashboard/admin-dashboard.router.js', 'DIR', [
     ['proyecto-manager'],
@@ -83,7 +83,7 @@ export const moduleCatalog = Object.freeze([
     ['configuracion'], ['importar-datos'], ['exportar-datos'], ['documentos-historial', 'workflow'], ['inicio-periodo-seguro'],
   ]),
   module('finanzas', 'src/modules/finanzas/finanzas.router.js', 'DIR', [['finanzas-balance'], ['finanzas-registro']]),
-  module('luteria', 'src/modules/luteria/index.js', 'DIR', [['luteria-diagnosticos', 'workflow'], ['luteria-ordenes']]),
+  module('luteria', 'src/modules/luteria/index.js', 'DIR', [['luteria-diagnosticos', 'workflow'], ['luteria-ordenes'], ['luteria-dashboard'], ['luteria-insumos']]),
   module('inventario', 'src/modules/inventario/inventario.router.js', 'DIR', [
     ['inventario-stock'], ['inventario-comodatos'], ['inventario-alertas', 'workflow'], ['inventario-dashboard', 'workflow'], ['inventario-detalle', 'internal-detail'], ['inventario-historial', 'internal-detail'], ['inventario-reportes', 'workflow'], ['inventario-reparaciones'], ['inventario-reparacion', 'internal-detail'], ['inventario-facturas', 'workflow'], ['inventario-intercambio', 'workflow'],
   ]),
@@ -123,4 +123,4 @@ export const externalRouteIds = Object.freeze(routeCatalog
 export const findCataloguedRoute = routeId => routeCatalog.find(route => route.routeId === routeId) || null
 export const isCataloguedExternalRoute = routeId => externalRouteIds.includes(routeId)
 
-export const MODULE_REGISTRY_ROUTE_COUNT = 91
+export const MODULE_REGISTRY_ROUTE_COUNT = 95

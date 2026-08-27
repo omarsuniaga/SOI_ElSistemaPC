@@ -1,4 +1,4 @@
-﻿import { Modal, Toast } from 'bootstrap'
+import { Modal, Toast } from 'bootstrap'
 import { useAuth } from '../hooks/useAuth.js'
 import { router } from '../../../core/router/router.js'
 import { CompactUI } from '../../../shared/utils/compactUI.js'
@@ -224,7 +224,7 @@ async function handleLogin(email, password, remember, container) {
         const intendedParams = intendedParamsRaw ? JSON.parse(intendedParamsRaw) : {}
         localStorage.removeItem('intended-route')
         localStorage.removeItem('intended-route-params')
-        router.navigate(intended || 'programas', intendedParams)
+        router.navigate(intended || 'clases-hoy', intendedParams)
       }, 500)
     } else {
       showToast(result.error || 'Error al iniciar sesión', 'error', container)

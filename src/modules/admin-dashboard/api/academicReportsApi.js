@@ -108,18 +108,19 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
   const [{ data: sesiones = [] }, { data: clases = [] }, { data: maestros = [] }] = await Promise.all([
     sesQuery,
     supabase.from('clases').select('id, nombre, maestro_principal_id, maestro_id'),
-    supabase.from('maestros').select('id, nombre_completo, especialidad_principal'),
+    supabase.from('maestros').select('id, user_id, nombre_completo, especialidad').eq('activo', true),
   ])
 
   const clasesMap = new Map((clases || []).map((c) => [c.id, c]))
   const maestrosMap = new Map((maestros || []).map((m) => [m.id, m]))
+  const maestrosByUserId = new Map((maestros || []).filter((m) => m.user_id).map((m) => [m.user_id, m]))
 
   // 1. Resumen general
   const total = asistencias?.length || 0
-  const presentes = asistencias?.filter((a) => a.estado === 'presente').length || 0
-  const tardes = asistencias?.filter((a) => a.estado === 'tarde').length || 0
-  const ausentes = asistencias?.filter((a) => a.estado === 'ausente').length || 0
-  const justificados = asistencias?.filter((a) => a.estado === 'justificado').length || 0
+  const presentes = asistencias?.filter((a) => a.estado === 'presente' || a.estado === 'P').length || 0
+  const tardes = asistencias?.filter((a) => a.estado === 'tarde' || a.estado === 'T').length || 0
+  const ausentes = asistencias?.filter((a) => a.estado === 'ausente' || a.estado === 'A').length || 0
+  const justificados = asistencias?.filter((a) => a.estado === 'justificado' || a.estado === 'J').length || 0
 
   const tasaAsistencia = total > 0 ? Number((((presentes + tardes) / total) * 100).toFixed(2)) : 0
   const totalAusencias = ausentes + justificados
@@ -137,8 +138,8 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
     const dow = new Date(a.fecha + 'T00:00:00').getDay()
     if (diasMap[dow]) {
       diasMap[dow].total_dia += 1
-      if (a.estado === 'presente' || a.estado === 'tarde') diasMap[dow].presentes_dia += 1
-      if (a.estado === 'ausente') diasMap[dow].ausentes_dia += 1
+      if (a.estado === 'presente' || a.estado === 'P' || a.estado === 'tarde' || a.estado === 'T') diasMap[dow].presentes_dia += 1
+      if (a.estado === 'ausente' || a.estado === 'A') diasMap[dow].ausentes_dia += 1
     }
   })
 
@@ -165,10 +166,10 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
       ausencias_justificadas: 0,
     }
 
-    if (a.estado === 'ausente') {
+    if (a.estado === 'ausente' || a.estado === 'A') {
       current.total_inasistencias += 1
       current.ausencias_injustificadas += 1
-    } else if (a.estado === 'justificado') {
+    } else if (a.estado === 'justificado' || a.estado === 'J') {
       current.total_inasistencias += 1
       current.ausencias_justificadas += 1
     }
@@ -183,14 +184,14 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
   const docenteMap = new Map()
   sesiones?.forEach((s) => {
     const clase = clasesMap.get(s.clase_id)
-    const maestroId = clase?.maestro_principal_id || clase?.maestro_id
-    const maestro = maestroId ? maestrosMap.get(maestroId) : null
+    const maestroId = s.maestro_id || clase?.maestro_principal_id || clase?.maestro_id
+    const maestro = maestroId ? (maestrosMap.get(maestroId) || maestrosByUserId.get(maestroId)) : null
     if (!maestro) return
 
     const curr = docenteMap.get(maestro.id) || {
       maestro_id: maestro.id,
       maestro_nombre: maestro.nombre_completo || 'Maestro',
-      especialidad: maestro.especialidad_principal || 'Música',
+      especialidad: maestro.especialidad || 'Música',
       total_sesiones: 0,
       sesiones_cerradas: 0,
       sesiones_pendientes: 0,
@@ -200,12 +201,11 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
     curr.total_sesiones += 1
     if (['asistencia_registrada', 'cerrada', 'progreso_registrado', 'registrada'].includes(s.estado)) {
       curr.sesiones_cerradas += 1
-    } else if (['programada', 'abierta', 'pendiente', 'atrasada'].includes(s.estado)) {
+    } else if (['programada', 'abierta', 'pendiente', 'atrasada', 'borrador'].includes(s.estado)) {
       curr.sesiones_pendientes += 1
     }
     docenteMap.set(maestro.id, curr)
   })
-
 
   const cumplimientoDocente = Array.from(docenteMap.values()).map((d) => {
     d.cumplimiento_pct = d.total_sesiones > 0 ? Number(((d.sesiones_cerradas / d.total_sesiones) * 100).toFixed(2)) : 0
@@ -253,29 +253,42 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
 }
 
 async function calcularInformeSemestralCliente({ periodoId }) {
-  // Consultar período
+  // Consultar período activo
   let periodo = null
   if (periodoId) {
     const { data } = await supabase.from('periodos').select('*').eq('id', periodoId).single()
     periodo = data
   } else {
-    const { data } = await supabase.from('periodos').select('*').order('created_at', { ascending: false }).limit(1).single()
-    periodo = data
+    const { data } = await supabase.from('periodos').select('*').eq('activo', true).maybeSingle()
+    if (data) {
+      periodo = data
+    } else {
+      const { data: fallback } = await supabase.from('periodos').select('*').order('fecha_inicio', { ascending: false }).limit(1).single()
+      periodo = fallback
+    }
   }
 
-  // Consultar alumnos
-  const { data: alumnos = [] } = await supabase.from('alumnos').select('*')
-  
-  // Consultar maestros
-  const { data: maestros = [] } = await supabase.from('maestros').select('*')
+  const fechaInicio = periodo?.fecha_inicio || '2026-01-01'
+  const fechaFin = periodo?.fecha_fin || new Date().toISOString().split('T')[0]
 
-  // Consultar asistencias
-  const { data: asistencias = [] } = await supabase.from('asistencias').select(`
-    id, fecha, estado, alumno_id, clase_id
-  `)
-
-  // Consultar justificaciones
-  const { data: justificaciones = [] } = await supabase.from('justificaciones').select('*')
+  // Consultar alumnos, maestros, clases, sesiones, asistencias y justificaciones
+  const [
+    { data: alumnos = [] },
+    { data: maestros = [] },
+    { data: clases = [] },
+    { data: sesiones = [] },
+    { data: asistencias = [] },
+    { data: justificaciones = [] },
+    { data: observaciones = [] }
+  ] = await Promise.all([
+    supabase.from('alumnos').select('*'),
+    supabase.from('maestros').select('*').eq('activo', true),
+    supabase.from('clases').select('id, nombre, maestro_principal_id, maestro_id'),
+    supabase.from('sesiones_clase').select('id, clase_id, maestro_id, fecha, estado').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+    supabase.from('asistencias').select('id, fecha, estado, alumno_id, clase_id').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+    supabase.from('justificaciones').select('*'),
+    supabase.from('observaciones_alumnos').select('id, clase_id, created_at')
+  ])
 
   // 1. Evolución mensual
   const mesesMap = {}
@@ -288,8 +301,8 @@ async function calcularInformeSemestralCliente({ periodoId }) {
       mesesMap[key] = { anio: d.getFullYear(), mes: d.getMonth() + 1, mes_nombre: mesNombre, total_registros: 0, presentes_total: 0, ausentes_total: 0, tasa_asistencia_pct: 0 }
     }
     mesesMap[key].total_registros += 1
-    if (a.estado === 'presente' || a.estado === 'tarde') mesesMap[key].presentes_total += 1
-    if (a.estado === 'ausente') mesesMap[key].ausentes_total += 1
+    if (a.estado === 'presente' || a.estado === 'P' || a.estado === 'tarde' || a.estado === 'T') mesesMap[key].presentes_total += 1
+    if (a.estado === 'ausente' || a.estado === 'A') mesesMap[key].ausentes_total += 1
   })
 
   Object.values(mesesMap).forEach((m) => {
@@ -312,16 +325,21 @@ async function calcularInformeSemestralCliente({ periodoId }) {
     c.tasa_retencion_pct = c.total_matriculados > 0 ? Number(((c.activos_cierre / c.total_matriculados) * 100).toFixed(2)) : 0
   })
 
-  // 3. Cuadro de honor y ranking de ausencias
-  const alumnoStatsMap = new Map()
+  // 3. Cuadro de honor y ranking de ausencias por DÍAS
+  const alumnoDiasMap = new Map()
   asistencias?.forEach((a) => {
     if (!a.alumno_id) return
-    const curr = alumnoStatsMap.get(a.alumno_id) || { total: 0, presentes: 0, ausentes: 0, justificados: 0 }
-    curr.total += 1
-    if (a.estado === 'presente' || a.estado === 'tarde') curr.presentes += 1
-    if (a.estado === 'ausente') curr.ausentes += 1
-    if (a.estado === 'justificado') curr.justificados += 1
-    alumnoStatsMap.set(a.alumno_id, curr)
+    const fecha = a.fecha ? String(a.fecha).slice(0, 10) : 'sin-fecha'
+    if (!alumnoDiasMap.has(a.alumno_id)) {
+      alumnoDiasMap.set(a.alumno_id, new Map())
+    }
+    const diasDelAlumno = alumnoDiasMap.get(a.alumno_id)
+    const diaActual = diasDelAlumno.get(fecha) || { presentes: 0, ausentes: 0, justificados: 0, total_sesiones: 0 }
+    diaActual.total_sesiones += 1
+    if (a.estado === 'presente' || a.estado === 'P' || a.estado === 'tarde' || a.estado === 'T') diaActual.presentes += 1
+    if (a.estado === 'ausente' || a.estado === 'A') diaActual.ausentes += 1
+    if (a.estado === 'justificado' || a.estado === 'J') diaActual.justificados += 1
+    diasDelAlumno.set(fecha, diaActual)
   })
 
   const cuadroHonor = []
@@ -329,49 +347,73 @@ async function calcularInformeSemestralCliente({ periodoId }) {
   const alumnosDestacados = []
 
   alumnos?.forEach((al) => {
-    const stats = alumnoStatsMap.get(al.id) || { total: 0, presentes: 0, ausentes: 0, justificados: 0 }
-    const pctAsistencia = stats.total > 0 ? Number(((stats.presentes / stats.total) * 100).toFixed(2)) : 0
+    const diasMap = alumnoDiasMap.get(al.id) || new Map()
+    const totalDias = diasMap.size
+    let diasConAsistencia = 0
+    let diasConFalta = 0
+    let diasAusenciaTotal = 0
+    let diasJustificados = 0
+    let totalSesionesConvocadas = 0
+    let totalSesionesAusente = 0
 
-    if (stats.total >= 5 && pctAsistencia >= 95) {
+    diasMap.forEach((d) => {
+      totalSesionesConvocadas += d.total_sesiones
+      totalSesionesAusente += d.ausentes
+      if (d.presentes > 0) diasConAsistencia += 1
+      if (d.ausentes > 0) diasConFalta += 1
+      if (d.ausentes > 0 && d.presentes === 0) diasAusenciaTotal += 1
+      if (d.justificados > 0 && d.presentes === 0 && d.ausentes === 0) diasJustificados += 1
+    })
+
+    const pctAsistenciaDias = totalDias > 0 ? Number(((diasConAsistencia / totalDias) * 100).toFixed(2)) : 0
+    const pctInasistenciaDias = totalDias > 0 ? Number(((diasConFalta / totalDias) * 100).toFixed(2)) : 0
+
+    if (totalDias >= 3 && pctAsistenciaDias >= 95) {
       cuadroHonor.push({
         alumno_id: al.id,
         nombre_completo: al.nombre_completo,
         instrumento_principal: al.instrumento_principal,
         nivel_actual: al.nivel_actual || 1,
-        total_clases: stats.total,
-        asistencias: stats.presentes,
-        porcentaje_asistencia: pctAsistencia,
+        total_dias_convocados: totalDias,
+        dias_con_asistencia: diasConAsistencia,
+        porcentaje_asistencia: pctAsistenciaDias,
       })
     }
 
-    if (stats.ausentes > 0) {
+    if (diasConFalta > 0) {
       rankingAusencias.push({
         alumno_id: al.id,
         nombre_completo: al.nombre_completo,
         instrumento_principal: al.instrumento_principal,
         representante_nombre: al.representante_nombre,
         representante_tlf: al.representante_tlf,
-        total_clases: stats.total,
-        total_ausencias_injustificadas: stats.ausentes,
-        total_ausencias_justificadas: stats.justificados,
-        porcentaje_inasistencia: stats.total > 0 ? Number(((stats.ausentes / stats.total) * 100).toFixed(2)) : 0,
+        total_dias_convocados: totalDias,
+        dias_con_asistencia: diasConAsistencia,
+        dias_con_falta: diasConFalta,
+        dias_ausencia_total: diasAusenciaTotal,
+        dias_justificados: diasJustificados,
+        total_sesiones_convocadas: totalSesionesConvocadas,
+        total_sesiones_ausente: totalSesionesAusente,
+        porcentaje_dias_ausente: pctInasistenciaDias,
       })
     }
 
     if (al.activo !== false) {
-      const meritScore = Number((pctAsistencia * 0.4 + 20 + 20).toFixed(2))
+      const meritScore = Number((pctAsistenciaDias * 0.7 + 20).toFixed(2))
       alumnosDestacados.push({
         alumno_id: al.id,
         nombre_completo: al.nombre_completo,
         instrumento_principal: al.instrumento_principal,
         nivel_actual: al.nivel_actual || 1,
-        pct_asistencia: pctAsistencia,
+        pct_asistencia: pctAsistenciaDias,
         total_logros: 2,
         indicadores_aprobados: 2,
         merit_score: meritScore,
       })
     }
   })
+
+  rankingAusencias.sort((a, b) => (b.porcentaje_dias_ausente - a.porcentaje_dias_ausente) || (b.dias_con_falta - a.dias_con_falta) || (b.total_dias_convocados - a.total_dias_convocados))
 
   // 4. Causas de justificación
   const causasMap = {}
@@ -386,26 +428,56 @@ async function calcularInformeSemestralCliente({ periodoId }) {
     porcentaje: Number(((cant / totalCausas) * 100).toFixed(2)),
   }))
 
-  // 5. Evaluación docente
-  const evaluacionDocente = maestros?.map((m) => ({
-    maestro_id: m.id,
-    maestro_nombre: m.nombre_completo,
-    especialidad: m.especialidad_principal || 'Música',
-    total_sesiones_semestre: 24,
-    sesiones_cumplidas: 24,
-    observaciones_cargadas: 18,
-    solvencia_registro_pct: 100,
-    score_docente_global: 92,
-  }))
+  // 5. Evaluación y Solvencia Docente Real
+  const maestroClasesMap = new Map()
+  clases?.forEach((c) => {
+    const mId = c.maestro_principal_id || c.maestro_id
+    if (mId) {
+      if (!maestroClasesMap.has(mId)) maestroClasesMap.set(mId, new Set())
+      maestroClasesMap.get(mId).add(c.id)
+    }
+  })
+
+  const estadosCumplidos = new Set(['asistencia_registrada', 'cerrada', 'progreso_registrado', 'registrada'])
+
+  const evaluacionDocente = (maestros || [])
+    .map((m) => {
+      const misClaseIds = maestroClasesMap.get(m.id) || new Set()
+      const misSesiones = (sesiones || []).filter((s) => 
+        s.maestro_id === m.id || 
+        (m.user_id && s.maestro_id === m.user_id) || 
+        misClaseIds.has(s.clase_id)
+      )
+
+      const totalSesiones = misSesiones.length
+      const cumplidas = misSesiones.filter((s) => estadosCumplidos.has(s.estado)).length
+      const obsCount = (observaciones || []).filter((o) => misClaseIds.has(o.clase_id)).length
+
+      const solvenciaPct = totalSesiones > 0 ? Number(((cumplidas / totalSesiones) * 100).toFixed(2)) : 0
+      const scoreDocente = totalSesiones > 0 ? Number((solvenciaPct * 0.8 + Math.min(obsCount / totalSesiones * 100, 100) * 0.2).toFixed(2)) : 0
+
+      return {
+        maestro_id: m.id,
+        maestro_nombre: m.nombre_completo,
+        especialidad: m.especialidad || 'General',
+        total_sesiones_semestre: totalSesiones,
+        sesiones_cumplidas: cumplidas,
+        observaciones_cargadas: obsCount,
+        solvencia_registro_pct: solvenciaPct,
+        score_docente_global: Math.round(scoreDocente),
+      }
+    })
+    .filter((d) => d.total_sesiones_semestre > 0)
+    .sort((a, b) => b.score_docente_global - a.score_docente_global || b.total_sesiones_semestre - a.total_sesiones_semestre)
 
   return {
     status: 'success',
     tipo: 'semestral',
     periodo: {
       id: periodo?.id || 'periodo-activo',
-      nombre: periodo?.nombre || 'Período Académico 2026',
-      fecha_inicio: periodo?.fecha_inicio || '2026-01-15',
-      fecha_fin: periodo?.fecha_fin || '2026-06-30',
+      nombre: periodo?.nombre || 'Semestre Actual',
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin,
     },
     evolucion_mensual: Object.values(mesesMap),
     cuadro_honor: cuadroHonor.slice(0, 15),
@@ -416,3 +488,4 @@ async function calcularInformeSemestralCliente({ periodoId }) {
     evaluacion_docente: evaluacionDocente,
   }
 }
+

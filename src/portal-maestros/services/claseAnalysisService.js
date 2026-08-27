@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { callGroq, parseGroqJSON } from './groqService.js'
+import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js'
 
 /**
  * Genera análisis pedagógico de una clase usando Groq
@@ -72,13 +73,19 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
 }
 
 /**
- * Obtiene tracking de contenido: sesiones + asistencias + observaciones (últimas 4-6 semanas)
+ * Obtiene tracking de contenido: sesiones + asistencias + observaciones (acotadas al período activo)
  */
 export async function getContentTracking(claseId, fechaActual, semanas = 4) {
   try {
-    const hace_N_semanas = new Date(new Date(fechaActual).getTime() - semanas * 7 * 24 * 60 * 60 * 1000)
+    let hace_N_semanas = new Date(new Date(fechaActual).getTime() - semanas * 7 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split('T')[0]
+
+    // Acotar al inicio del período activo para no contaminar con semestres previos
+    const periodoActivo = await getPeriodoActivo().catch(() => null)
+    if (periodoActivo?.fecha_inicio && periodoActivo.fecha_inicio > hace_N_semanas) {
+      hace_N_semanas = periodoActivo.fecha_inicio
+    }
 
     // 1. Obtener todas las sesiones en el rango
     const { data: sesiones } = await supabase
@@ -172,9 +179,14 @@ export async function getClaseDataForAnalysis(claseId, fechaActual, semanas = 4)
     const totalAlumnos = inscripciones?.length || 0
 
     // Obtener última sesión del período especificado
-    const haceSemanas = new Date(new Date(fechaActual).getTime() - semanas * 7 * 24 * 60 * 60 * 1000)
+    let haceSemanas = new Date(new Date(fechaActual).getTime() - semanas * 7 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split('T')[0]
+
+    const periodoActivo = await getPeriodoActivo().catch(() => null)
+    if (periodoActivo?.fecha_inicio && periodoActivo.fecha_inicio > haceSemanas) {
+      haceSemanas = periodoActivo.fecha_inicio
+    }
 
     const { data: sesiones } = await supabase
       .from('sesiones_clase')
@@ -212,10 +224,14 @@ export async function getClaseDataForAnalysis(claseId, fechaActual, semanas = 4)
       ? Math.round((registrosCompletos / allSesiones.length) * 100)
       : 0
 
-    // Detectar alumnos en riesgo (asistencia <70% en últimas 4 semanas)
-    const hace4Semanas = new Date(new Date(fechaActual).getTime() - 28 * 24 * 60 * 60 * 1000)
+    // Detectar alumnos en riesgo (asistencia <70% en el período activo o últimas semanas)
+    let hace4Semanas = new Date(new Date(fechaActual).getTime() - 28 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split('T')[0]
+
+    if (periodoActivo?.fecha_inicio && periodoActivo.fecha_inicio > hace4Semanas) {
+      hace4Semanas = periodoActivo.fecha_inicio
+    }
 
     const { data: asistencias } = await supabase
       .from('asistencias')

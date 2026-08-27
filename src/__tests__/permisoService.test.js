@@ -20,22 +20,42 @@ describe('permisoService.getPermisos()', () => {
     obtenerSolicitudPorMaestro.mockResolvedValue(null)
   })
 
+  const failClosed = {
+    puede_registrar_alumnos: false,
+    puede_inscribir_clases: false,
+    puede_crear_clases: false,
+    puede_planificar: false,
+    puede_asistir: false,
+    total_clases_asignadas: 0,
+    clases_titular: 0,
+    clases_suplente: 0,
+    tiene_clases_asignadas: false,
+    solicitudes: [],
+    solicitud_actual: null,
+  }
+
   it('should return permissions when API succeeds', async () => {
     obtenerPermisoPorMaestro.mockResolvedValueOnce({
       puede_registrar_alumnos: true,
       puede_inscribir_clases: false,
+      puede_crear_clases: false,
+      puede_planificar: false,
+      puede_asistir: false,
+      total_clases_asignadas: 2,
+      clases_titular: 2,
+      clases_suplente: 0,
       permisos: [],
       solicitudes: [],
     })
 
     const result = await getPermisos('maestro_001')
     expect(result).toEqual({
+      ...failClosed,
       puede_registrar_alumnos: true,
       puede_inscribir_clases: false,
-      puede_planificar: false,
-      puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
+      total_clases_asignadas: 2,
+      clases_titular: 2,
+      tiene_clases_asignadas: true,
     })
     expect(obtenerPermisoPorMaestro).toHaveBeenCalledWith('maestro_001')
   })
@@ -43,57 +63,36 @@ describe('permisoService.getPermisos()', () => {
   it('should map permisos array to boolean flags', async () => {
     obtenerPermisoPorMaestro.mockResolvedValueOnce({
       permisos: ['alumnos:create', 'planificacion:write'],
+      puede_asistir: false,
       solicitudes: [],
     })
 
     const result = await getPermisos('maestro_001')
     expect(result).toEqual({
+      ...failClosed,
       puede_registrar_alumnos: true,
       puede_inscribir_clases: false,
       puede_planificar: true,
       puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
     })
   })
 
   it('should return fail-closed when maestroId is empty', async () => {
     const result = await getPermisos('')
-    expect(result).toEqual({
-      puede_registrar_alumnos: false,
-      puede_inscribir_clases: false,
-      puede_planificar: false,
-      puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
-    })
+    expect(result).toEqual(failClosed)
     expect(obtenerPermisoPorMaestro).not.toHaveBeenCalled()
   })
 
   it('should return fail-closed when maestroId is null', async () => {
     const result = await getPermisos(null)
-    expect(result).toEqual({
-      puede_registrar_alumnos: false,
-      puede_inscribir_clases: false,
-      puede_planificar: false,
-      puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
-    })
+    expect(result).toEqual(failClosed)
   })
 
   it('should return fail-closed when API throws (fail-closed)', async () => {
     obtenerPermisoPorMaestro.mockRejectedValueOnce(new Error('Network error'))
 
     const result = await getPermisos('maestro_001')
-    expect(result).toEqual({
-      puede_registrar_alumnos: false,
-      puede_inscribir_clases: false,
-      puede_planificar: false,
-      puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
-    })
+    expect(result).toEqual(failClosed)
   })
 
   it('should return fail-closed when API returns null', async () => {
@@ -101,12 +100,9 @@ describe('permisoService.getPermisos()', () => {
 
     const result = await getPermisos('maestro_001')
     expect(result).toEqual({
-      puede_registrar_alumnos: false,
-      puede_inscribir_clases: false,
-      puede_planificar: false,
-      puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
+      ...failClosed,
+      puede_planificar: true,
+      puede_asistir: true,
     })
   })
 
@@ -115,12 +111,9 @@ describe('permisoService.getPermisos()', () => {
 
     const result = await getPermisos('maestro_001')
     expect(result).toEqual({
-      puede_registrar_alumnos: false,
-      puede_inscribir_clases: false,
-      puede_planificar: false,
-      puede_asistir: false,
-      solicitudes: [],
-      solicitud_actual: null,
+      ...failClosed,
+      puede_planificar: true,
+      puede_asistir: true,
     })
   })
 })

@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
+import { getPeriodoActivo } from '../../periodos/api/periodosApi.js'
 
 /**
  * Obtiene el análisis y síntesis pedagógica de contenidos para un rango de fechas.
@@ -21,7 +22,7 @@ export async function getAnalisisContenidoPedagogico({
   fechaFin = null,
   catedra = null,
 } = {}) {
-  // 1. Resolver fechas por defecto según el tipo
+  // 1. Resolver fechas por defecto según el tipo y período activo
   const now = new Date()
   let inicio = fechaInicio
   let fin = fechaFin
@@ -35,10 +36,16 @@ export async function getAnalisisContenidoPedagogico({
       inicio = monday.toISOString().slice(0, 10)
       fin = saturday.toISOString().slice(0, 10)
     } else if (tipo === 'semestre') {
-      const currentMonth = now.getMonth() + 1
-      const isFirstSemester = currentMonth <= 6
-      inicio = `${now.getFullYear()}-${isFirstSemester ? '01-15' : '07-15'}`
-      fin = `${now.getFullYear()}-${isFirstSemester ? '06-30' : '12-15'}`
+      const periodoActivo = await getPeriodoActivo().catch(() => null)
+      if (periodoActivo?.fecha_inicio) {
+        inicio = periodoActivo.fecha_inicio
+        fin = periodoActivo.fecha_fin || now.toISOString().slice(0, 10)
+      } else {
+        const currentMonth = now.getMonth() + 1
+        const isFirstSemester = currentMonth <= 6
+        inicio = `${now.getFullYear()}-${isFirstSemester ? '01-15' : '07-15'}`
+        fin = `${now.getFullYear()}-${isFirstSemester ? '06-30' : '12-15'}`
+      }
     } else {
       // Mes por defecto
       const mes = now.getMonth() + 1
@@ -104,7 +111,7 @@ export async function getAnalisisContenidoPedagogico({
   try {
     const [resClases, resMaestros] = await Promise.all([
       supabase.from('clases').select('id, nombre, instrumento, maestro_principal_id, maestro_id'),
-      supabase.from('maestros').select('id, nombre_completo, especialidad_principal'),
+      supabase.from('maestros').select('id, user_id, nombre_completo, especialidad').eq('activo', true),
     ])
     if (Array.isArray(resClases.data)) clases = resClases.data
     if (Array.isArray(resMaestros.data)) maestros = resMaestros.data

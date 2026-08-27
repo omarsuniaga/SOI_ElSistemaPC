@@ -7,6 +7,7 @@ import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { CalculadorVelocidadCurricular } from '../domain/CalculadorVelocidadCurricular.js'
 import { openJustificacionDesfaseModal } from '../components/JustificacionDesfaseModal.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 import { router } from '../../../core/router/router.js'
 
 export async function renderAcmAprobacionView(container) {
@@ -227,7 +228,8 @@ function _renderUI(container, planes) {
           <h4 class="fw-bold mb-1"><i class="bi bi-shield-check text-primary me-2"></i>Portal ACM: Gobernanza y Aprobación Curricular</h4>
           <p class="text-muted small mb-0">Revisión de planificaciones, alertas de velocidad temporal y co-construcción pedagógica.</p>
         </div>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          ${renderViewInfoButton('planificacion-acm')}
           <button class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-crear-disenador-full">
             <i class="bi bi-journal-plus"></i>Diseñar Plan Completo (ACM)
           </button>
@@ -311,6 +313,7 @@ function _renderUI(container, planes) {
   })
 
   _renderList()
+  attachViewInfoEvents(container)
 }
 
 function _getEstadoBadge(estado) {

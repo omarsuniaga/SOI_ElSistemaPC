@@ -6,6 +6,7 @@ import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { getCaseKPIs } from '../services/studentCasesService.js'
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 
 export async function renderDashboardPedagogicoView(container) {
   if (!container) return
@@ -19,6 +20,7 @@ export async function renderDashboardPedagogicoView(container) {
     ])
     container.innerHTML = _renderContent(kpis, riesgo)
     _attachEvents(container)
+    attachViewInfoEvents(container)
     _loadEmergentes(container)
     _loadSeguimiento(container)
   } catch (err) {
@@ -31,17 +33,24 @@ export async function renderDashboardPedagogicoView(container) {
 }
 
 async function _fetchKPIs() {
-  const [alumnos, planes, clases, asistencias] = await Promise.all([
-    supabase.rpc('count_alumnos_activos'),
+  let alumnosActivos = 0
+  try {
+    const rpcRes = await supabase.rpc('count_alumnos_activos')
+    if (rpcRes.data) alumnosActivos = Number(rpcRes.data)
+  } catch (_) {}
+
+  const [alumnosTable, planes, clases, asistencias] = await Promise.all([
+    alumnosActivos ? Promise.resolve({ count: alumnosActivos }) : supabase.from('alumnos').select('id', { count: 'exact', head: true }).eq('estado', 'activo'),
     supabase.from('planificaciones').select('id, estado').gte(
       'fecha_inicio', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     ),
-    supabase.from('clases').select('id', { count: 'exact' }).eq('estado', 'activa'),
+    supabase.from('clases').select('id', { count: 'exact', head: true }).eq('estado', 'activa'),
     supabase.from('asistencias').select('estado').gte(
       'fecha', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     ),
   ])
 
+  alumnosActivos = alumnosActivos || (alumnosTable.count || 0)
   const totalAsistencias = asistencias.data?.length || 0
   const presentes = asistencias.data?.filter(a => a.estado === 'P').length || 0
   const tasaAsistencia = totalAsistencias > 0 ? Math.round((presentes / totalAsistencias) * 100) : null
@@ -50,8 +59,8 @@ async function _fetchKPIs() {
   const planesPlanificados = planes.data?.filter(p => p.estado === 'planificado').length || 0
 
   return {
-      alumnosActivos: Number(alumnos.data) || 0,
-      clasesActivas: clases.count || 0,
+    alumnosActivos,
+    clasesActivas: clases.count || 0,
     planesEstaSemana: planes.data?.length || 0,
     planesEjecutados,
     planesPlanificados,
@@ -132,9 +141,12 @@ function _renderContent(kpis, alumnosRiesgo) {
           <h1 class="page-title mb-0">Dashboard Pedagógico</h1>
           <p class="text-muted small mb-0">Resumen del estado académico</p>
         </div>
-        <button class="btn-help-trigger" id="btn-help-dashboard" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
-          <i class="bi bi-question"></i>
-        </button>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          ${renderViewInfoButton('pedagogico-dashboard')}
+          <button class="btn-help-trigger" id="btn-help-dashboard" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+            <i class="bi bi-question"></i>
+          </button>
+        </div>
       </div>
 
       <div class="row g-3 mb-4">

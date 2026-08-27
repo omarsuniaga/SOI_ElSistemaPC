@@ -1,8 +1,14 @@
+/**
+ * Gestión de Períodos Académicos
+ * Rediseñado con la estructura, metodología y estética unificada de la vista Salones.
+ */
+
 import * as PeriodosApi from '../api/periodosApi.js'
 import { Toast } from 'bootstrap'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { router } from '../../../core/router/router.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 import {
   obtenerReporteCierre,
   activarPeriodoAtomico,
@@ -14,35 +20,122 @@ import {
 import { generarInformePdfCierreSemestre } from '../services/pdfCierreSemestre.js'
 
 export async function renderPeriodosView(container) {
+  let periodosData = []
+  let filtrosAbiertos = false
+  let currentFilters = {
+    search: '',
+    estado: 'todos',
+    sort: 'inicio_desc',
+  }
+
   container.innerHTML = `
-    <div class="container-fluid py-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 class="fw-bold mb-0">Gestión de Períodos Académicos</h2>
-          <p class="text-muted mb-0">Administra los ciclos de estudio y el período activo del sistema.</p>
+    <div class="page-container">
+      
+      <!-- Header & Toolbar Unificada V2 (Estructura Salones) -->
+      <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
+        
+        <!-- Fila 1: Título, Badges Informativos y Botones de Acción -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-body-tertiary" style="gap: 0.85rem;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="p-2 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
+              <i class="bi bi-calendar-event-fill fs-5"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Gestión de Períodos Académicos</h5>
+              <small class="text-muted d-block" style="font-size:0.75rem;">Administra los ciclos de estudio, auditorías de cierre y el período activo del sistema</small>
+            </div>
+            
+            <!-- Badges de Resumen en Tiempo Real -->
+            <div class="d-flex align-items-center gap-1.5 ms-md-2 flex-wrap">
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Período académico activo">
+                <i class="bi bi-check-circle-fill me-1"></i><span id="badgePeriodoActivoNombre">Cargando...</span>
+              </span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Total de ciclos registrados">
+                <i class="bi bi-calendar-range me-1"></i><span id="badgeTotalPeriodos">0</span> Ciclos Totales
+              </span>
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Períodos cerrados con informe">
+                <i class="bi bi-archive-fill me-1"></i><span id="badgeCerrados">0</span> Cerrados
+              </span>
+            </div>
+          </div>
+
+          <!-- Toolbar de Botones con 0.85rem de separación -->
+          <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
+            ${renderViewInfoButton('periodos')}
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnExportarCSVPeriodos" title="Exportar CSV" style="font-size:0.78rem;">
+              <i class="bi bi-file-earmark-spreadsheet"></i>
+              <span class="d-none d-sm-inline">CSV</span>
+            </button>
+            <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btn-nuevo-periodo" style="font-size:0.78rem;">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>Nuevo Período</span>
+            </button>
+          </div>
         </div>
-        <button id="btn-nuevo-periodo" class="btn btn-primary d-flex align-items-center gap-2">
-          <i class="bi bi-plus-lg"></i> Nuevo Período
-        </button>
+
+        <!-- Fila 2: Búsqueda y Botón Desplegable de Filtros & Orden -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
+          <div class="flex-grow-1" style="min-width: 260px;">
+            <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+              <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="searchPeriodo" placeholder="Buscar período por nombre o año..." autocomplete="off" style="font-size:0.8rem;">
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center" style="gap: 0.85rem;">
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnToggleFiltrosPeriodos" type="button" aria-expanded="false" style="font-size:0.78rem;">
+              <i class="bi bi-funnel"></i>
+              <span>Filtros & Orden</span>
+              <span class="badge bg-primary text-white rounded-pill px-1.5 ms-1 d-none" id="filtrosBadgeCountPeriodos" style="font-size:0.68rem;">0</span>
+            </button>
+
+            <button class="btn btn-sm btn-outline-secondary rounded-3 shadow-xs px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" id="btnLimpiarFiltrosPeriodos" title="Restablecer filtros y búsqueda" style="font-size:0.78rem;">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              <span>Limpiar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fila 3: Panel Desplegable de Filtros y Ordenamiento -->
+        <div class="collapse pt-2.5" id="panelFiltrosPeriodos">
+          <div class="p-3 rounded-4 bg-body-tertiary border border-body-tertiary shadow-xs">
+            <div class="row g-2 align-items-center">
+              
+              <div class="col-12 col-sm-6 col-lg-6">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Estado del Período</label>
+                <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filterEstadoPeriodo" style="font-size:0.8rem;">
+                  <option value="todos">Todos los períodos</option>
+                  <option value="activo">Solo Período Activo</option>
+                  <option value="inactivos">Inactivos</option>
+                  <option value="cerrados">Cerrados</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-sm-6 col-lg-6">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Criterio de Orden</label>
+                <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                  <span class="input-group-text bg-body border-end-0 py-1.5 text-muted" style="font-size:0.75rem;"><i class="bi bi-sort-down"></i></span>
+                  <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarPeriodos" style="font-size:0.8rem;">
+                    <option value="inicio_desc">Fecha de Inicio (Más reciente primero)</option>
+                    <option value="inicio_asc">Fecha de Inicio (Más antiguo primero)</option>
+                    <option value="nombre_asc">Nombre (A-Z)</option>
+                    <option value="nombre_desc">Nombre (Z-A)</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th class="ps-4">Nombre del Período</th>
-                  <th>Fecha Inicio</th>
-                  <th>Fecha Fin</th>
-                  <th>Estado</th>
-                  <th class="text-end pe-4">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="periodos-table-body">
-                <tr><td colspan="5" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>
-              </tbody>
-            </table>
+      <!-- Contenedor de Cuadrícula de Períodos (Estructura Salones responsive) -->
+      <div class="w-100">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2.5 w-100 m-0" id="periodos-table-body">
+          <div class="col-12 text-center py-5 text-muted">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <br><small class="text-muted">Cargando períodos académicos...</small>
           </div>
         </div>
       </div>
@@ -51,70 +144,153 @@ export async function renderPeriodosView(container) {
     <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
   `
 
-  const tableBody = document.getElementById('periodos-table-body')
+  const gridBody = container.querySelector('#periodos-table-body')
 
   async function loadPeriodos() {
     try {
-      const periodos = await PeriodosApi.getPeriodos()
-      await renderTable(periodos)
+      periodosData = await PeriodosApi.getPeriodos()
+      await renderGrid()
     } catch (error) {
       showToast(error.message, 'danger')
     }
   }
 
-  async function renderTable(periodos) {
+  function getFilteredPeriodos() {
+    let list = [...periodosData]
+    const { search, estado, sort } = currentFilters
+
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter(p => (p.nombre || '').toLowerCase().includes(q))
+    }
+
+    if (estado === 'activo') {
+      list = list.filter(p => Boolean(p.activo))
+    } else if (estado === 'inactivos') {
+      list = list.filter(p => !p.activo)
+    } else if (estado === 'cerrados') {
+      list = list.filter(p => Boolean(p.cerrado))
+    }
+
+    list.sort((a, b) => {
+      if (sort === 'inicio_desc') return new Date(b.fecha_inicio || 0) - new Date(a.fecha_inicio || 0)
+      if (sort === 'inicio_asc') return new Date(a.fecha_inicio || 0) - new Date(b.fecha_inicio || 0)
+      if (sort === 'nombre_asc') return (a.nombre || '').localeCompare(b.nombre || '')
+      if (sort === 'nombre_desc') return (b.nombre || '').localeCompare(a.nombre || '')
+      return 0
+    })
+
+    return list
+  }
+
+  async function renderGrid() {
+    const totalPeriodos = periodosData.length
+    const activo = periodosData.find(p => p.activo)
+    const cerrados = periodosData.filter(p => p.cerrado).length
+
+    const badgeActivo = container.querySelector('#badgePeriodoActivoNombre')
+    const badgeTotal = container.querySelector('#badgeTotalPeriodos')
+    const badgeCerrados = container.querySelector('#badgeCerrados')
+
+    if (badgeActivo) badgeActivo.textContent = activo ? `Activo: ${activo.nombre}` : 'Sin período activo'
+    if (badgeTotal) badgeTotal.textContent = `${totalPeriodos}`
+    if (badgeCerrados) badgeCerrados.textContent = `${cerrados}`
+
+    const periodos = getFilteredPeriodos()
+
     if (periodos.length === 0) {
-      // RLS filtra devolviendo cero filas, sin error. Sin esta distinción la
-      // tabla afirma "no hay períodos" cuando la verdad puede ser "no podés
-      // verlos", y empuja al usuario a crear uno que ya existe.
-      const motivo = await explicarListaVacia()
-      tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-5">
-        <div class="text-muted mb-1">No hay períodos para mostrar</div>
-        <div class="small text-secondary">${escapeHTML(motivo)}</div>
-      </td></tr>`
+      if (periodosData.length === 0) {
+        const motivo = await explicarListaVacia()
+        gridBody.innerHTML = `
+          <div class="col-12 text-center py-5 w-100 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+            <div class="fw-semibold mb-1">No hay períodos para mostrar</div>
+            <div class="small text-secondary">${escapeHTML(motivo)}</div>
+          </div>`
+      } else {
+        gridBody.innerHTML = `
+          <div class="col-12 text-center py-5 w-100 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+            No se encontraron períodos con los criterios seleccionados.
+          </div>`
+      }
       return
     }
 
-    tableBody.innerHTML = periodos.map(p => {
-      // fecha_fin es nullable en el esquema: sin guardia, `new Date(null)` imprime
-      // "Invalid Date" en una tabla que la directiva puede llegar a ver.
+    gridBody.innerHTML = periodos.map(p => {
       const start = fmtFecha(p.fecha_inicio)
       const end = fmtFecha(p.fecha_fin)
 
       return `
-      <tr>
-        <td class="ps-4">
-          <span class="fw-bold text-body d-block">${escapeHTML(p.nombre)}</span>
-          ${p.activo ? '<span class="badge bg-success-subtle text-success border border-success-subtle small" style="font-size: 0.7rem;">PERÍODO ACTUAL</span>' : ''}
-          ${p.cerrado ? '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle small ms-1" style="font-size: 0.7rem;">CERRADO</span>' : ''}
-        </td>
-        <td class="text-muted">${start}</td>
-        <td class="text-muted">${end}</td>
-        <td>
-          <span class="badge ${p.activo ? 'bg-success' : 'bg-body-tertiary text-muted border'} rounded-pill">
-            ${p.activo ? 'Activo' : 'Inactivo'}
-          </span>
-        </td>
-        <td class="text-end pe-4">
-          <div class="btn-group shadow-sm">
-            <button class="btn btn-sm btn-outline-info px-2" data-action="auditar" data-id="${p.id}" title="Auditar Cierre de Semestre">
-              <i class="bi bi-clipboard-check"></i> Auditar
-            </button>
-            ${!p.activo ? `
-              <button class="btn btn-sm btn-outline-success px-3" data-action="activar" data-id="${p.id}">
-                Activar
-              </button>
-            ` : ''}
-            <button class="btn btn-sm btn-outline-secondary px-2" data-action="edit" data-id="${p.id}" title="Editar">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger px-2" data-action="delete" data-id="${p.id}" title="Eliminar">
-              <i class="bi bi-trash"></i>
-            </button>
+        <div class="col p-1">
+          <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${p.id}" style="padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+            
+            <!-- Parte Superior: Nombre, Badges de Estado y Fechas -->
+            <div class="mb-2">
+              
+              <!-- Nombre del Período -->
+              <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
+                <strong class="text-body text-truncate d-block" style="font-size: 0.92rem;" title="${escapeHTML(p.nombre)}">
+                  ${escapeHTML(p.nombre)}
+                </strong>
+              </div>
+
+              <!-- Badges de Estado -->
+              <div class="d-flex align-items-center gap-1 mb-2 flex-wrap">
+                ${p.activo ? '<span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2 rounded-2 fw-semibold" style="font-size: 0.68rem;"><i class="bi bi-check-circle-fill me-1"></i>PERÍODO ACTIVO</span>' : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-0.5 px-2 rounded-2" style="font-size: 0.68rem;">Inactivo</span>'}
+                ${p.cerrado ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle py-0.5 px-2 rounded-2 fw-semibold" style="font-size: 0.68rem;"><i class="bi bi-lock-fill me-1"></i>CERRADO</span>' : ''}
+              </div>
+
+              <!-- Rango de Fechas -->
+              <div class="mb-2">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;">
+                  <i class="bi bi-calendar-range me-1 text-primary"></i>${start} &mdash; ${end}
+                </span>
+              </div>
+
+              <!-- Información de Vigencia -->
+              <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
+                <div class="d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-calendar-play me-1 text-primary"></i>Fecha Inicio:</span>
+                  <span class="fw-semibold text-body">${start}</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-calendar-check me-1 text-secondary"></i>Fecha Fin:</span>
+                  <span class="fw-semibold text-body">${end}</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Footer con Acciones -->
+            <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-between mt-auto flex-wrap" style="gap: 0.35rem;">
+              <div class="d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-outline-info rounded-3 shadow-xs d-inline-flex align-items-center gap-1 py-1 px-2" data-action="auditar" data-id="${p.id}" title="Auditar Cierre de Semestre" style="font-size:0.75rem;">
+                  <i class="bi bi-clipboard-check"></i>
+                  <span>Auditar</span>
+                </button>
+                ${!p.activo ? `
+                  <button class="btn btn-sm btn-outline-success rounded-3 shadow-xs d-inline-flex align-items-center gap-1 py-1 px-2" data-action="activar" data-id="${p.id}" title="Activar este período" style="font-size:0.75rem;">
+                    <i class="bi bi-power"></i>
+                    <span>Activar</span>
+                  </button>
+                ` : ''}
+              </div>
+
+              <div class="d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-outline-secondary rounded-3 shadow-xs py-1 px-2" data-action="edit" data-id="${p.id}" title="Editar Período" style="font-size:0.75rem;">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger rounded-3 shadow-xs py-1 px-2" data-action="delete" data-id="${p.id}" title="Eliminar Período" style="font-size:0.75rem;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+
           </div>
-        </td>
-      </tr>
-    `}).join('')
+        </div>
+      `
+    }).join('')
   }
 
   function fmtFecha(valor) {
@@ -124,12 +300,10 @@ export async function renderPeriodosView(container) {
   }
 
   function showToast(message, type = 'success') {
-    const container = document.querySelector('.toast-container')
-    if (!container) return
+    const toastContainer = container.querySelector('.toast-container')
+    if (!toastContainer) return
     const toastId = 'toast-' + Date.now()
-    // insertAdjacentHTML en vez de `innerHTML +=`: la concatenación reconstruye
-    // todo el contenedor y mata los listeners de los toasts ya visibles.
-    container.insertAdjacentHTML('beforeend', `
+    toastContainer.insertAdjacentHTML('beforeend', `
       <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
           <div class="toast-body">${escapeHTML(message)}</div>
@@ -141,11 +315,96 @@ export async function renderPeriodosView(container) {
     if (toastEl) new Toast(toastEl).show()
   }
 
-  document.getElementById('btn-nuevo-periodo').addEventListener('click', () => {
+  // Event Listeners de Filtros & Toolbar
+  attachViewInfoEvents(container)
+  const searchInput = container.querySelector('#searchPeriodo')
+  const filterEstadoPeriodo = container.querySelector('#filterEstadoPeriodo')
+  const selectOrdenarPeriodos = container.querySelector('#selectOrdenarPeriodos')
+  const btnToggleFiltros = container.querySelector('#btnToggleFiltrosPeriodos')
+  const btnLimpiar = container.querySelector('#btnLimpiarFiltrosPeriodos')
+  const btnNuevo = container.querySelector('#btn-nuevo-periodo')
+  const btnExportarCSV = container.querySelector('#btnExportarCSVPeriodos')
+
+  searchInput?.addEventListener('input', (e) => {
+    currentFilters.search = e.target.value.trim()
+    renderGrid()
+  })
+
+  filterEstadoPeriodo?.addEventListener('change', (e) => {
+    currentFilters.estado = e.target.value
+    updateFiltrosBadge()
+    renderGrid()
+  })
+
+  selectOrdenarPeriodos?.addEventListener('change', (e) => {
+    currentFilters.sort = e.target.value
+    renderGrid()
+  })
+
+  btnToggleFiltros?.addEventListener('click', () => {
+    filtrosAbiertos = !filtrosAbiertos
+    const panel = container.querySelector('#panelFiltrosPeriodos')
+    if (panel) {
+      panel.classList.toggle('show', filtrosAbiertos)
+      btnToggleFiltros.setAttribute('aria-expanded', String(filtrosAbiertos))
+    }
+  })
+
+  btnLimpiar?.addEventListener('click', () => {
+    if (searchInput) searchInput.value = ''
+    if (filterEstadoPeriodo) filterEstadoPeriodo.value = 'todos'
+    if (selectOrdenarPeriodos) selectOrdenarPeriodos.value = 'inicio_desc'
+
+    currentFilters = {
+      search: '',
+      estado: 'todos',
+      sort: 'inicio_desc',
+    }
+    updateFiltrosBadge()
+    renderGrid()
+  })
+
+  function updateFiltrosBadge() {
+    const badge = container.querySelector('#filtrosBadgeCountPeriodos')
+    let count = 0
+    if (currentFilters.estado !== 'todos') count++
+    if (badge) {
+      badge.textContent = count
+      badge.classList.toggle('d-none', count === 0)
+    }
+  }
+
+  btnExportarCSV?.addEventListener('click', () => {
+    if (periodosData.length === 0) {
+      showToast('No hay períodos para exportar', 'warning')
+      return
+    }
+    const headers = ['ID', 'Nombre', 'Fecha Inicio', 'Fecha Fin', 'Activo', 'Cerrado']
+    const rows = periodosData.map(p => [
+      p.id,
+      `"${(p.nombre || '').replace(/"/g, '""')}"`,
+      p.fecha_inicio || '',
+      p.fecha_fin || '',
+      p.activo ? 'SI' : 'NO',
+      p.cerrado ? 'SI' : 'NO',
+    ])
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `periodos_academicos_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    showToast('Exportación CSV completada')
+  })
+
+  btnNuevo?.addEventListener('click', () => {
     openCreateModal()
   })
 
-  tableBody.addEventListener('click', async (e) => {
+  gridBody.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action]')
     if (!btn) return
     
@@ -165,11 +424,6 @@ export async function renderPeriodosView(container) {
 
   /**
    * Resumen del informe de cierre, con acceso al PDF y al informe completo.
-   *
-   * Consume `obtenerReporteCierre` (RPC) en lugar de la auditoría anterior, que
-   * agrupaba por `sesiones_clase.maestro_id` — el autor del registro, no el
-   * docente de la clase — y atribuía el trabajo de todo el cuerpo docente a una
-   * sola persona.
    */
   async function openAuditoriaModal(periodoId) {
     AppModal.open({
@@ -286,10 +540,6 @@ export async function renderPeriodosView(container) {
 
   /**
    * Corte de período académico.
-   *
-   * Este modal existía en el archivo pero nunca se abría: el listener enviaba a la
-   * auditoría, y aquella pasaba `onConfirm` a AppModal — que solo entiende `onSave`.
-   * El resultado era un botón que cerraba el diálogo sin activar nada.
    */
   async function openActivarModal(periodoId) {
     const periodos = await PeriodosApi.getPeriodos()
@@ -384,20 +634,6 @@ export async function renderPeriodosView(container) {
           return false
         }
 
-        // El período siempre se crea inactivo — si se marcó "Marcar como
-        // período activo", la activación pasa por `activarPeriodoAtomico`
-        // (la misma RPC transaccional que usa el botón "Activar" de un
-        // período existente), NUNCA por un INSERT directo con activo:true.
-        //
-        // Bug que esto corrige: `crearPeriodo({..., activo: true})` hacía
-        // un INSERT plano. No hay ningún índice único sobre
-        // `periodos.activo` que lo impida, así que si ya había OTRO período
-        // activo, la base quedaba con DOS filas activo=true a la vez.
-        // `getPeriodoActivo()` usa `.single()`, que lanza error apenas hay
-        // más de una fila — el error se traga silenciosamente (se trata
-        // como "sin período activo") y CUALQUIER pantalla que se apoye en
-        // el período activo (historial del alumno, notificaciones) deja de
-        // filtrar nada, sin ningún aviso visible.
         const nuevoPeriodo = await PeriodosApi.crearPeriodo({ nombre, fecha_inicio, fecha_fin, activo: false })
         if (activo) {
           await activarPeriodoAtomico(nuevoPeriodo.id)

@@ -95,6 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'Ingresos & Cartera 360°',
       items: [
+        { id: 'ficha_360', alias: 'ficha360', label: 'Ficha 360° Alumno (Directiva)', icon: Sparkles, badge: '360°', badgeClass: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold' },
         { id: 'registro_pago', alias: 'registro-pago', label: 'Cobranza & Registro', icon: CreditCard, highlight: true },
         { id: 'familias', label: 'Familias & Cuentas 360°', icon: Users },
         { id: 'cuotas', label: 'Cuotas & Aging Cartera', icon: FileText, badge: cuotasVencidasCount > 0 ? `${cuotasVencidasCount}` : undefined, badgeClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },

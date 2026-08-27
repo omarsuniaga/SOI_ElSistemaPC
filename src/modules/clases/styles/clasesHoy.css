@@ -1,5 +1,10 @@
+/* ============================================================================
+   CLASES DEL DÍA (HOY) VIEW STYLES - Grid Layout V2
+   ============================================================================ */
+
 .clases-hoy {
   padding: 1.5rem;
+  max-width: 100%;
 }
 
 .clases-hoy__header {
@@ -13,43 +18,56 @@
 
 .clases-hoy__title {
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
 }
 
 .clases-hoy__subtitle {
   color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.95rem;
   text-transform: capitalize;
+  margin-top: 0.15rem;
 }
 
 .clases-hoy__dias {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.45rem;
   margin-bottom: 1.25rem;
 }
 
 .clases-hoy__dia-pill {
   border: 1px solid var(--bs-border-color, #dee2e6);
   background: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color);
   border-radius: 999px;
-  padding: 0.35rem 0.9rem;
+  padding: 0.4rem 0.95rem;
   font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .clases-hoy__dia-pill:hover {
   background: var(--bs-tertiary-bg, #f1f3f5);
+  transform: translateY(-1px);
 }
 
 .clases-hoy__dia-pill.is-active {
-  background: var(--bs-primary, #007aff);
-  border-color: var(--bs-primary, #007aff);
+  background: var(--bs-primary, #0d6efd);
+  border-color: var(--bs-primary, #0d6efd);
   color: #fff;
+  box-shadow: 0 3px 8px rgba(13, 110, 253, 0.25);
 }
 
 .clases-hoy__dia-pill .badge-hoy {
-  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
 }
 
 .clases-hoy__kpis {
@@ -61,56 +79,64 @@
 
 .clases-hoy__kpi {
   border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 0.75rem;
-  padding: 0.9rem 1rem;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
   background: var(--bs-body-bg, #fff);
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.clases-hoy__kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .clases-hoy__kpi-icon {
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   color: var(--bs-secondary-color, #6c757d);
   flex-shrink: 0;
 }
 
 .clases-hoy__kpi-value {
-  font-size: 1.6rem;
+  font-size: 1.55rem;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .clases-hoy__kpi-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--bs-secondary-color, #6c757d);
+  font-weight: 500;
 }
 
 .clases-hoy__kpi--en-curso .clases-hoy__kpi-value,
 .clases-hoy__kpi--en-curso .clases-hoy__kpi-icon {
-  color: #34c759;
+  color: #198754;
 }
 
 .clases-hoy__kpi--justificados .clases-hoy__kpi-value,
 .clases-hoy__kpi--justificados .clases-hoy__kpi-icon {
-  color: #5ac8fa;
+  color: #0dcaf0;
 }
 
 .clases-hoy__kpi--pendiente .clases-hoy__kpi-value,
 .clases-hoy__kpi--pendiente .clases-hoy__kpi-icon {
-  color: #f97316;
-}
-
-.clases-hoy__card.has-pendiente {
-  background: rgba(249, 115, 22, 0.04);
+  color: #fd7e14;
 }
 
 .clases-hoy__filtros {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin-bottom: 1.25rem;
+  background: var(--bs-body-bg, #fff);
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .clases-hoy__filtros .form-select {
@@ -125,68 +151,157 @@
 
 .clases-hoy__buscar-wrap i {
   position: absolute;
-  left: 0.75rem;
+  left: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
 }
 
 .clases-hoy__buscar-wrap input {
-  padding-left: 2.2rem;
+  padding-left: 2.3rem;
+  border-radius: 0.5rem;
 }
 
-.clases-hoy__feed {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+/* ─── GRID DE FICHAS (V2 CUADRÍCULA) ────────────────────────────────────── */
+.clases-hoy__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 1400px) {
+  .clases-hoy__grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
 }
 
 .clases-hoy__card {
   border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 0.85rem;
-  padding: 1rem 1.15rem;
+  border-radius: 0.95rem;
+  padding: 1.15rem;
   background: var(--bs-body-bg, #fff);
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 1rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.clases-hoy__card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--bs-primary, #0d6efd);
 }
 
 .clases-hoy__card.is-en-curso {
-  border-color: #34c759;
-  box-shadow: 0 0 0 1px rgba(52, 199, 89, 0.25);
+  border-color: #198754;
+  box-shadow: 0 0 0 1px rgba(25, 135, 84, 0.3), 0 4px 16px rgba(25, 135, 84, 0.1);
 }
 
-.clases-hoy__card-hora {
-  font-weight: 600;
-  white-space: nowrap;
-  min-width: 90px;
+.clases-hoy__card.has-pendiente {
+  background: rgba(253, 126, 20, 0.03);
+}
+
+.clases-hoy__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.clases-hoy__card-hora-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--bs-primary, #0d6efd);
+  background: rgba(13, 110, 253, 0.08);
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.5rem;
 }
 
 .clases-hoy__card-titulo {
-  font-weight: 600;
-  margin-bottom: 0.15rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bs-body-color);
+  margin: 0 0 0.65rem 0;
+  line-height: 1.3;
 }
 
 .clases-hoy__card-meta {
-  font-size: 0.85rem;
-  color: var(--bs-secondary-color, #6c757d);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.clases-hoy__card-acciones {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  align-items: flex-end;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+}
+
+.clases-hoy__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clases-hoy__meta-row i {
+  font-size: 0.95rem;
+  width: 18px;
+  text-align: center;
+  color: var(--bs-primary, #0d6efd);
+  opacity: 0.85;
+}
+
+.clases-hoy__meta-row strong {
+  color: var(--bs-body-color);
+  font-weight: 600;
+}
+
+/* Ocupación Visual */
+.clases-hoy__occupancy {
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.clases-hoy__occupancy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.clases-hoy__occupancy-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+[data-bs-theme="dark"] .clases-hoy__occupancy-bar {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.clases-hoy__occupancy-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 .clases-hoy__nomina {
-  margin-top: 0.75rem;
+  margin-top: 0.65rem;
   border-top: 1px dashed var(--bs-border-color, #dee2e6);
-  padding-top: 0.6rem;
+  padding-top: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
   display: none;
 }
 
@@ -195,14 +310,32 @@
 }
 
 .clases-hoy__nomina-alumno {
-  font-size: 0.85rem;
-  padding: 0.2rem 0;
+  font-size: 0.82rem;
+  padding: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.clases-hoy__card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .clases-hoy__empty {
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 3.5rem 1rem;
   color: var(--bs-secondary-color, #6c757d);
+  background: var(--bs-body-bg, #fff);
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 1rem;
+  grid-column: 1 / -1;
 }
 
 .pulse-dot {
@@ -210,14 +343,14 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #34c759;
+  background: #198754;
   animation: pulse-green 1.5s infinite;
 }
 
 @keyframes pulse-green {
-  0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.6); }
-  70% { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(25, 135, 84, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
 }
 
 @media (max-width: 768px) {
@@ -228,8 +361,7 @@
   .clases-hoy__header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    gap: 0.65rem;
   }
 
   .clases-hoy__dias {
@@ -237,100 +369,21 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 0.35rem;
-    margin-bottom: 1rem;
-  }
-
-  .clases-hoy__dia-pill {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.8rem;
   }
 
   .clases-hoy__kpis {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
   }
 
-  .clases-hoy__kpi {
-    padding: 0.65rem 0.75rem;
-    gap: 0.5rem;
-  }
-
-  .clases-hoy__kpi-icon {
-    font-size: 1.15rem;
-  }
-
-  .clases-hoy__kpi-value {
-    font-size: 1.3rem;
-  }
-
-  .clases-hoy__kpi-label {
-    font-size: 0.72rem;
-  }
-
-  .clases-hoy__filtros {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .clases-hoy__filtros .form-select {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .clases-hoy__buscar-wrap {
-    width: 100%;
-    flex: 1 1 100%;
-  }
-
-  .clases-hoy__card {
-    display: flex;
-    flex-direction: column;
-    padding: 0.85rem;
-    gap: 0.75rem;
-  }
-
-  .clases-hoy__card-hora {
-    font-size: 0.85rem;
-    color: var(--bs-primary, #007aff);
-  }
-
-  .clases-hoy__card-acciones {
-    width: 100%;
-    flex-direction: row;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    border-top: 1px dashed var(--bs-border-color, #dee2e6);
-    padding-top: 0.6rem;
-  }
-
-  .clases-hoy__card-acciones .btn {
-    flex: 1 1 auto;
-    font-size: 0.82rem;
-    padding: 0.4rem 0.6rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .clases-hoy__kpis {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .clases-hoy__dia-pill,
-  .clases-hoy__kpi,
-  .clases-hoy__card {
-    background: var(--bs-body-bg, #1c1c1e);
+  .clases-hoy__grid {
+    grid-template-columns: 1fr;
   }
 }
 
 [data-bs-theme="dark"] .clases-hoy__dia-pill,
 [data-bs-theme="dark"] .clases-hoy__kpi,
-[data-bs-theme="dark"] .clases-hoy__card {
+[data-bs-theme="dark"] .clases-hoy__filtros,
+[data-bs-theme="dark"] .clases-hoy__card,
+[data-bs-theme="dark"] .clases-hoy__occupancy {
   background: var(--bs-body-bg, #1c1c1e);
 }
-
-

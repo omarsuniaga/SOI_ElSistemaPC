@@ -1,9 +1,10 @@
 import '../styles/clasesHoy.css'
 import { router } from '../../../core/router/router.js'
 import { obtenerClasesDelDia, DIAS_SEMANA, obtenerDiaActual, COMPLIANCE_META } from '../api/clasesHoyApi.js'
-import { formatHora, escapeHTML } from '../utils/clasesUtils.js'
+import { formatHora, escapeHTML, getInstrumentoIcon, timeToMinutes } from '../utils/clasesUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 import { crearAsistencia, ESTADOS } from '../../asistencias/api/asistenciasApi.js'
 import { whatsappLink } from '../../../shared/utils/phoneUtils.js'
 
@@ -13,7 +14,7 @@ const ESTADO_LABEL = {
   'en-curso': { label: 'En curso', badge: 'success' },
   proxima: { label: 'Próxima', badge: 'warning' },
   pasada: { label: 'Finalizada', badge: 'secondary' },
-  futura: { label: 'Programada', badge: 'secondary' },
+  futura: { label: 'Programada', badge: 'primary' },
 }
 
 function renderLoading(container) {
@@ -34,12 +35,12 @@ function renderError(container, mensaje, dia) {
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-6">
-          <div class="alert alert-danger" role="alert">
+          <div class="alert alert-danger shadow-sm rounded-4" role="alert">
             <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Error al cargar</h4>
             <p>${escapeHTML(mensaje)}</p>
             <hr>
-            <button class="btn btn-primary" id="clasesHoyRetryBtn">
-              <i class="bi bi-arrow-clockwise"></i> Reintentar
+            <button class="btn btn-primary btn-sm" id="clasesHoyRetryBtn">
+              <i class="bi bi-arrow-clockwise me-1"></i> Reintentar
             </button>
           </div>
         </div>
@@ -66,86 +67,14 @@ function pillsHTML(diaSeleccionado) {
     <button type="button"
       class="clases-hoy__dia-pill ${d.value === diaSeleccionado ? 'is-active' : ''}"
       data-dia="${d.value}">
+      <i class="bi bi-calendar-event"></i>
       ${d.label}
-      ${d.value === diaActual ? '<span class="badge bg-primary badge-hoy">HOY</span>' : ''}
+      ${d.value === diaActual ? '<span class="badge bg-danger badge-hoy ms-1">HOY</span>' : ''}
     </button>
   `).join('')
 }
 
-function kpisHTML(kpis) {
-  return `
-    <div class="clases-hoy__kpi">
-      <i class="bi bi-book clases-hoy__kpi-icon"></i>
-      <div>
-        <div class="clases-hoy__kpi-value">${kpis.totalClases}</div>
-        <div class="clases-hoy__kpi-label">Clases programadas</div>
-      </div>
-    </div>
-    <div class="clases-hoy__kpi clases-hoy__kpi--en-curso">
-      <i class="bi bi-play-circle-fill clases-hoy__kpi-icon"></i>
-      <div>
-        <div class="clases-hoy__kpi-value">${kpis.enCursoAhora}<span class="pulse-dot ms-1"></span></div>
-        <div class="clases-hoy__kpi-label">En curso ahora</div>
-      </div>
-    </div>
-    <div class="clases-hoy__kpi">
-      <i class="bi bi-people clases-hoy__kpi-icon"></i>
-      <div>
-        <div class="clases-hoy__kpi-value">${kpis.totalAlumnos}</div>
-        <div class="clases-hoy__kpi-label">Alumnos matriculados</div>
-      </div>
-    </div>
-    <div class="clases-hoy__kpi">
-      <i class="bi bi-door-open clases-hoy__kpi-icon"></i>
-      <div>
-        <div class="clases-hoy__kpi-value">${kpis.salonesOcupados}</div>
-        <div class="clases-hoy__kpi-label">Salones ocupados</div>
-      </div>
-    </div>
-    <div class="clases-hoy__kpi clases-hoy__kpi--justificados">
-      <i class="bi bi-shield-check clases-hoy__kpi-icon"></i>
-      <div>
-        <div class="clases-hoy__kpi-value">${kpis.justificadosHoy}</div>
-        <div class="clases-hoy__kpi-label">Ausencias justificadas</div>
-      </div>
-    </div>
-    <div class="clases-hoy__kpi clases-hoy__kpi--pendiente">
-      <i class="bi bi-exclamation-triangle-fill clases-hoy__kpi-icon"></i>
-      <div>
-        <div class="clases-hoy__kpi-value">${kpis.asistenciaPendiente}</div>
-        <div class="clases-hoy__kpi-label">Asistencia sin pasar</div>
-      </div>
-    </div>
-  `
-}
 
-function filtrosHTML(salones, maestros) {
-  const opcionesSalones = salones.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('')
-  const opcionesMaestros = maestros.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('')
-  return `
-    <div class="clases-hoy__buscar-wrap">
-      <i class="bi bi-search"></i>
-      <input type="search" class="form-control" id="clasesHoyBuscar" placeholder="Buscar clase, docente, salón, instrumento o alumno...">
-    </div>
-    <select class="form-select" id="clasesHoyEstado">
-      <option value="">Todos los estados</option>
-      <option value="en-curso">En curso</option>
-      <option value="proxima">Próximas</option>
-      <option value="pasada">Finalizadas</option>
-    </select>
-    <select class="form-select" id="clasesHoySalon">
-      <option value="">Todos los salones</option>
-      ${opcionesSalones}
-    </select>
-    <select class="form-select" id="clasesHoyMaestro">
-      <option value="">Todos los maestros</option>
-      ${opcionesMaestros}
-    </select>
-    <button type="button" class="btn btn-outline-secondary" id="clasesHoyRefrescar" title="Refrescar">
-      <i class="bi bi-arrow-clockwise"></i>
-    </button>
-  `
-}
 
 function alumnoRowHTML(alumno) {
   const yaJustificado = alumno.estadoAsistencia === 'justificado'
@@ -154,32 +83,44 @@ function alumnoRowHTML(alumno) {
          <i class="bi bi-shield-check"></i> Justificado
        </span>`
     : ''
-  return `<div class="clases-hoy__nomina-alumno"><i class="bi bi-person"></i> ${escapeHTML(alumno.nombre_completo || 'Alumno')}${badge}</div>`
+  return `
+    <div class="clases-hoy__nomina-alumno">
+      <span><i class="bi bi-person me-1 text-secondary"></i> ${escapeHTML(alumno.nombre_completo || 'Alumno')}</span>
+      ${badge}
+    </div>
+  `
 }
 
 function cardHTML(sesion) {
   const estadoMeta = ESTADO_LABEL[sesion.estado] || ESTADO_LABEL.futura
-  const capacidad = sesion.capacidadMaxima ?? '—'
+  const capacidad = sesion.capacidadMaxima ?? 20
+  const totalAlumnos = sesion.totalAlumnos || 0
+  const pctOcupacion = Math.min(100, Math.round((totalAlumnos / capacidad) * 100))
+
+  let fillClass = 'bg-success'
+  if (pctOcupacion >= 85 && pctOcupacion < 100) fillClass = 'bg-warning'
+  if (pctOcupacion >= 100) fillClass = 'bg-danger'
+
   const alumnosHTML = sesion.alumnos.length > 0
     ? sesion.alumnos.map(alumnoRowHTML).join('')
     : '<div class="clases-hoy__nomina-alumno text-muted">Sin alumnos matriculados</div>'
 
   const maestroNombre = sesion.maestroTitular?.nombre_completo || 'Sin asignar'
   const suplenteHTML = sesion.maestroSuplente
-    ? ` <span class="text-muted">(suplente: ${escapeHTML(sesion.maestroSuplente.nombre_completo)})</span>`
+    ? ` <span class="text-muted small">(Suplente: ${escapeHTML(sesion.maestroSuplente.nombre_completo)})</span>`
     : ''
 
   const justificadosBadge = sesion.justificadosCount > 0
-    ? `<span class="badge text-bg-info-subtle text-info-emphasis border border-info-subtle ms-2">
-         <i class="bi bi-shield-check"></i> ${sesion.justificadosCount} justificado${sesion.justificadosCount > 1 ? 's' : ''}
+    ? `<span class="badge text-bg-info-subtle text-info-emphasis border border-info-subtle">
+         <i class="bi bi-shield-check me-1"></i>${sesion.justificadosCount}
        </span>`
     : ''
 
   const pendiente = sesion.pendienteAsistencia
   const complianceMeta = pendiente ? (COMPLIANCE_META[pendiente.state] || COMPLIANCE_META.AMARILLO) : null
   const pendienteBadge = pendiente
-    ? `<span class="badge ms-2" style="background:${complianceMeta.color};color:#fff;" title="Sin pasar asistencia hace ${pendiente.diasAtraso} día${pendiente.diasAtraso === 1 ? '' : 's'}">
-         <i class="bi bi-exclamation-triangle-fill"></i> ${complianceMeta.label} · ${pendiente.diasAtraso}d
+    ? `<span class="badge ms-1" style="background:${complianceMeta.color};color:#fff;" title="Sin pasar asistencia hace ${pendiente.diasAtraso} día${pendiente.diasAtraso === 1 ? '' : 's'}">
+         <i class="bi bi-exclamation-triangle-fill me-1"></i>${pendiente.diasAtraso}d mora
        </span>`
     : ''
 
@@ -188,12 +129,10 @@ function cardHTML(sesion) {
   const waLink = pendiente && telefonoMaestro ? whatsappLink(telefonoMaestro, mensajeWhatsapp) : null
   const recordatorioBtn = pendiente
     ? (waLink
-        ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-warning">
-             <i class="bi bi-whatsapp"></i> Recordar por WhatsApp
+        ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-warning" title="Enviar recordatorio por WhatsApp">
+             <i class="bi bi-whatsapp"></i>
            </a>`
-        : `<button type="button" class="btn btn-sm btn-outline-secondary" disabled title="El maestro no tiene teléfono registrado">
-             <i class="bi bi-whatsapp"></i> Sin teléfono
-           </button>`)
+        : '')
     : ''
 
   return `
@@ -205,33 +144,74 @@ function cardHTML(sesion) {
       data-maestro="${escapeHTML(maestroNombre)}"
       ${pendiente ? `style="border-left: 4px solid ${complianceMeta.color};"` : ''}
     >
-      <div class="clases-hoy__card-hora">
-        ${formatHora(sesion.horaInicio)} - ${formatHora(sesion.horaFin)}
-        <div class="badge text-bg-${estadoMeta.badge} mt-1">
-          ${sesion.estado === 'en-curso' ? '<span class="pulse-dot"></span> ' : ''}${estadoMeta.label}
-        </div>
-      </div>
       <div>
-        <div class="clases-hoy__card-titulo">${escapeHTML(sesion.nombre)}${justificadosBadge}${pendienteBadge}</div>
-        <div class="clases-hoy__card-meta">
-          ${sesion.instrumento ? `<span><i class="bi bi-music-note"></i> ${escapeHTML(sesion.instrumento)}</span>` : ''}
-          ${sesion.nivel ? `<span><i class="bi bi-bar-chart-steps"></i> ${escapeHTML(String(sesion.nivel))}</span>` : ''}
-          <span><i class="bi bi-door-open"></i> ${escapeHTML(sesion.salon?.nombre || 'Sin salón')}</span>
-          <span><i class="bi bi-person-check"></i> ${escapeHTML(maestroNombre)}${suplenteHTML}</span>
+        <!-- Encabezado de Ficha: Horario + Estado + Badges -->
+        <div class="clases-hoy__card-header">
+          <div class="d-flex align-items-center gap-1 flex-wrap">
+            <span class="clases-hoy__card-hora-badge">
+              <i class="bi bi-clock"></i> ${formatHora(sesion.horaInicio)} - ${formatHora(sesion.horaFin)}
+            </span>
+            <span class="badge text-bg-${estadoMeta.badge}">
+              ${sesion.estado === 'en-curso' ? '<span class="pulse-dot me-1"></span>' : ''}${estadoMeta.label}
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            ${justificadosBadge}
+            ${pendienteBadge}
+          </div>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary mt-2 clases-hoy__toggle-nomina">
-          <i class="bi bi-people"></i> Nómina de Alumnos (${sesion.totalAlumnos}/${capacidad})
+
+        <!-- Título de la Clase e Instrumento -->
+        <div class="d-flex align-items-center gap-1 mb-1">
+          <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.68rem;">
+            <i class="bi ${getInstrumentoIcon(sesion.instrumento)} me-1"></i>${escapeHTML(sesion.instrumento || 'General')}
+          </span>
+          ${sesion.nivel ? `<span class="badge bg-body-tertiary text-muted border" style="font-size:0.68rem;">Nivel ${escapeHTML(String(sesion.nivel))}</span>` : ''}
+        </div>
+        <h5 class="clases-hoy__card-titulo">${escapeHTML(sesion.nombre)}</h5>
+
+        <!-- Metadatos: Docente y Salón -->
+        <div class="clases-hoy__card-meta">
+          <div class="clases-hoy__meta-row">
+            <i class="bi bi-person-check"></i>
+            <span><strong>Docente:</strong> ${escapeHTML(maestroNombre)}${suplenteHTML}</span>
+          </div>
+          <div class="clases-hoy__meta-row">
+            <i class="bi bi-door-open"></i>
+            <span><strong>Salón:</strong> ${escapeHTML(sesion.salon?.nombre || 'Sin salón asignado')}</span>
+          </div>
+        </div>
+
+        <!-- Barra de Ocupación Visual -->
+        <div class="clases-hoy__occupancy">
+          <div class="clases-hoy__occupancy-header">
+            <span><i class="bi bi-people me-1"></i>Matrícula: <strong>${totalAlumnos} / ${capacidad}</strong></span>
+            <span class="text-muted">${pctOcupacion}%</span>
+          </div>
+          <div class="clases-hoy__occupancy-bar">
+            <div class="clases-hoy__occupancy-fill ${fillClass}" style="width: ${pctOcupacion}%;"></div>
+          </div>
+        </div>
+
+        <!-- Nómina desplegable -->
+        <button type="button" class="btn btn-sm btn-light border w-100 clases-hoy__toggle-nomina mb-2 text-start d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-list-check me-1"></i> Ver Nómina (${totalAlumnos})</span>
+          <i class="bi bi-chevron-down text-muted" style="font-size:0.75rem;"></i>
         </button>
         <div class="clases-hoy__nomina">${alumnosHTML}</div>
       </div>
-      <div class="clases-hoy__card-acciones">
-        ${recordatorioBtn}
-        <button type="button" class="btn btn-sm btn-outline-info clases-hoy__justificar" data-clase-id="${sesion.claseId}">
-          <i class="bi bi-shield-check"></i> Justificar Ausencia
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-primary clases-hoy__ver-ficha" data-clase-id="${sesion.claseId}">
-          <i class="bi bi-eye"></i> Ver Ficha
-        </button>
+
+      <!-- Footer de Acciones -->
+      <div class="clases-hoy__card-footer">
+        <div class="d-flex align-items-center gap-1 flex-grow-1">
+          <button type="button" class="btn btn-sm btn-outline-info clases-hoy__justificar flex-grow-1" data-clase-id="${sesion.claseId}">
+            <i class="bi bi-shield-check me-1"></i>Justificar
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary clases-hoy__ver-ficha flex-grow-1" data-clase-id="${sesion.claseId}">
+            <i class="bi bi-eye me-1"></i>Ficha
+          </button>
+          ${recordatorioBtn}
+        </div>
       </div>
     </div>
   `
@@ -240,9 +220,9 @@ function cardHTML(sesion) {
 function emptyStateHTML() {
   return `
     <div class="clases-hoy__empty">
-      <i class="bi bi-calendar-x" style="font-size: 2.5rem;"></i>
-      <h5 class="mt-2">No hay clases para este día</h5>
-      <p class="mb-0">Probá con otro día o revisá los filtros aplicados.</p>
+      <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
+      <h5 class="fw-bold">No hay clases para este día</h5>
+      <p class="text-muted small mb-0">Probá seleccionando otro día o ajustando los filtros aplicados.</p>
     </div>
   `
 }
@@ -369,12 +349,6 @@ function abrirModalJustificar(container, sesion) {
   })
 }
 
-/**
- * Buscador global: el admin recibe por WhatsApp "Fulanito no viene hoy" del
- * padre y solo tiene el nombre del alumno, no sabe en qué clase está. Este
- * modal busca por nombre en TODAS las clases del día ya cargadas (sin ida y
- * vuelta a la BD), resuelve a qué clase(s) pertenece hoy y justifica desde ahí.
- */
 function abrirModalBuscarAlumnoGlobal(container, sesiones) {
   let alumnoSeleccionado = null
   let sesionSeleccionada = null
@@ -399,7 +373,6 @@ function abrirModalBuscarAlumnoGlobal(container, sesiones) {
     </div>
   `
 
-  // Índice: alumno_id -> [{alumno, sesion}] entre TODAS las sesiones del día
   const indice = new Map()
   sesiones.forEach(sesion => {
     sesion.alumnos.forEach(alumno => {
@@ -526,6 +499,11 @@ function attachEvents(container, sesiones) {
     btn.addEventListener('click', () => {
       const nomina = btn.nextElementSibling
       nomina?.classList.toggle('is-open')
+      const icon = btn.querySelector('.bi-chevron-down, .bi-chevron-up')
+      if (icon) {
+        icon.classList.toggle('bi-chevron-down')
+        icon.classList.toggle('bi-chevron-up')
+      }
     }, { signal })
   })
 
@@ -559,33 +537,107 @@ function renderContent(container, dia, kpis, sesiones) {
   const salones = [...new Set(sesiones.map(s => s.salon?.nombre).filter(Boolean))].sort()
   const maestros = [...new Set(sesiones.map(s => s.maestroTitular?.nombre_completo).filter(Boolean))].sort()
 
+  // Orden cronológico estricto por hora_inicio ascendente
+  const sesionesOrdenadas = [...sesiones].sort((a, b) => timeToMinutes(a.horaInicio) - timeToMinutes(b.horaInicio))
+
   container.innerHTML = `
-    <div class="clases-hoy">
-      <div class="clases-hoy__header">
-        <div>
-          <h2 class="clases-hoy__title">Clases del Día</h2>
-          <div class="clases-hoy__subtitle">${escapeHTML(formatFechaLarga(dia))}</div>
+    <div class="clases-hoy page-container">
+      
+      <!-- Header & Toolbar Unificada V2 (Estilo Alumnos) -->
+      <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
+        
+        <!-- Fila 1: Título, Subtítulo, Badges de Resumen y Acciones -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-body-tertiary" style="gap: 0.85rem;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="p-2 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
+              <i class="bi bi-calendar-day-fill fs-5"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Clases del Día</h5>
+              <small class="text-muted d-block" style="font-size:0.75rem;">Feed operativo · ${escapeHTML(formatFechaLarga(dia))}</small>
+            </div>
+            
+            <!-- Badges de Resumen en Tiempo Real -->
+            <div class="d-flex align-items-center gap-1.5 ms-md-2 flex-wrap">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Clases programadas y en curso">
+                <i class="bi bi-book-fill me-1"></i>${kpis.totalClases} Clases ${kpis.enCursoAhora > 0 ? `(${kpis.enCursoAhora} en curso)` : ''}
+              </span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Total de alumnos convocados">
+                <i class="bi bi-people-fill me-1"></i>${kpis.totalAlumnos} Alumnos
+              </span>
+              <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Salones ocupados hoy">
+                <i class="bi bi-door-open-fill me-1"></i>${kpis.salonesOcupados} Salones
+              </span>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Ausencias justificadas registradas">
+                <i class="bi bi-shield-check me-1"></i>${kpis.justificadosHoy} Justificados
+              </span>
+              ${kpis.asistenciaPendiente > 0 ? `
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Sesiones con asistencia pendiente">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>${kpis.asistenciaPendiente} Sin pasar
+                </span>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Toolbar de Botones de Acción -->
+          <div class="d-flex align-items-center flex-wrap" style="gap: 0.65rem;">
+            ${renderViewInfoButton('clases-hoy')}
+            <button class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="clasesHoyBuscarAlumno" title="Buscar alumno y registrar justificación" style="font-size:0.78rem;">
+              <i class="bi bi-search-heart"></i>
+              <span>Buscar Alumno y Justificar</span>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="clasesHoyRefrescar" title="Refrescar clases del día" style="font-size:0.78rem;">
+              <i class="bi bi-arrow-clockwise"></i>
+              <span class="d-none d-sm-inline">Refrescar</span>
+            </button>
+          </div>
         </div>
-        <button type="button" class="btn btn-info text-white" id="clasesHoyBuscarAlumno">
-          <i class="bi bi-search-heart"></i> Buscar Alumno y Justificar
-        </button>
+
+        <!-- Fila 2: Selector de Día de la Semana (Pills) -->
+        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1 mb-2 pt-1">
+          ${pillsHTML(dia)}
+        </div>
+
+        <!-- Fila 3: Filtros de Búsqueda, Estado, Salón y Docente -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.65rem;">
+          <div class="flex-grow-1" style="min-width: 240px;">
+            <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+              <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="clasesHoyBuscar" placeholder="Buscar por clase, docente, salón, instrumento o alumno..." autocomplete="off" style="font-size:0.8rem;">
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+            <select class="form-select form-select-sm rounded-3 shadow-xs" id="clasesHoyEstado" style="font-size:0.78rem; width: auto; min-width: 135px;">
+              <option value="">Todos los estados</option>
+              <option value="en-curso">En curso</option>
+              <option value="proxima">Próximas</option>
+              <option value="pasada">Finalizadas</option>
+            </select>
+            <select class="form-select form-select-sm rounded-3 shadow-xs" id="clasesHoySalon" style="font-size:0.78rem; width: auto; min-width: 140px;">
+              <option value="">Todos los salones</option>
+              ${salones.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('')}
+            </select>
+            <select class="form-select form-select-sm rounded-3 shadow-xs" id="clasesHoyMaestro" style="font-size:0.78rem; width: auto; min-width: 150px;">
+              <option value="">Todos los maestros</option>
+              ${maestros.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
       </div>
 
-      <div class="clases-hoy__dias">${pillsHTML(dia)}</div>
-
-      <div class="clases-hoy__kpis">${kpisHTML(kpis)}</div>
-
-      <div class="clases-hoy__filtros">${filtrosHTML(salones, maestros)}</div>
-
-      <div class="clases-hoy__feed">
-        ${sesiones.length > 0 ? sesiones.map(cardHTML).join('') : ''}
+      <!-- GRID DE TARJETAS DE CLASE DEL DÍA -->
+      <div class="clases-hoy__grid">
+        ${sesionesOrdenadas.length > 0 ? sesionesOrdenadas.map(cardHTML).join('') : ''}
         <div id="clasesHoyEmptyFiltro" style="display:none;">${emptyStateHTML()}</div>
       </div>
-      ${sesiones.length === 0 ? emptyStateHTML() : ''}
+      ${sesionesOrdenadas.length === 0 ? emptyStateHTML() : ''}
     </div>
   `
 
-  attachEvents(container, sesiones)
+  attachEvents(container, sesionesOrdenadas)
+  attachViewInfoEvents(container)
 }
 
 async function cargarYRenderizar(container, dia) {

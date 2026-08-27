@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { crearUsuario, listarUsuarios, listarUsuariosPorRol } from '../adminUsuariosApi.js'
+import { crearUsuario, listarUsuarios, listarUsuariosPorRol, actualizarRolUsuario, actualizarEstadoUsuario } from '../adminUsuariosApi.js'
 import { supabase } from '../../../../lib/supabaseClient.js'
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({
@@ -92,8 +92,8 @@ describe('adminUsuariosApi', () => {
   })
 
   describe('listarUsuariosPorRol', () => {
-    it('consulta profiles filtrando por rol y devuelve las filas', async () => {
-      const rows = [{ id: 'u1', email: 'a@b.com', nombre_completo: 'Ana', estado: 'activo' }]
+    it('consulta profiles filtrando por rol y devuelve las filas con portales', async () => {
+      const rows = [{ id: 'u1', email: 'a@b.com', nombre_completo: 'Ana', estado: 'activo', user_portal_access: [] }]
       const chain = createSelectChain({ data: rows, error: null })
       supabase.from.mockReturnValue(chain)
 
@@ -101,7 +101,8 @@ describe('adminUsuariosApi', () => {
 
       expect(supabase.from).toHaveBeenCalledWith('profiles')
       expect(chain.eq).toHaveBeenCalledWith('rol', 'admin')
-      expect(result).toEqual(rows)
+      expect(result[0].id).toBe('u1')
+      expect(result[0].portales_asignados).toEqual([])
     })
 
     it('lanza error si la query falla', async () => {
@@ -114,7 +115,7 @@ describe('adminUsuariosApi', () => {
 
   describe('listarUsuarios', () => {
     it('consulta todos los usuarios cuando no se filtra por rol', async () => {
-      const rows = [{ id: 'u1', email: 'a@b.com', nombre_completo: 'Ana', rol: 'admin', estado: 'activo' }]
+      const rows = [{ id: 'u1', email: 'a@b.com', nombre_completo: 'Ana', rol: 'admin', estado: 'activo', user_portal_access: [] }]
       const chain = createSelectChain({ data: rows, error: null })
       supabase.from.mockReturnValue(chain)
 
@@ -122,7 +123,38 @@ describe('adminUsuariosApi', () => {
 
       expect(supabase.from).toHaveBeenCalledWith('profiles')
       expect(chain.eq).not.toHaveBeenCalled()
-      expect(result).toEqual(rows)
+      expect(result[0].id).toBe('u1')
+      expect(result[0].portales_asignados).toEqual([])
+    })
+  })
+
+  describe('actualizarRolUsuario y actualizarEstadoUsuario', () => {
+    it('actualiza el rol correctamente', async () => {
+      const chain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'u1', rol: 'admin' }, error: null })
+      }
+      supabase.from.mockReturnValue(chain)
+
+      const res = await actualizarRolUsuario('u1', 'admin')
+      expect(res.rol).toBe('admin')
+      expect(chain.update).toHaveBeenCalledWith({ rol: 'admin' })
+    })
+
+    it('actualiza el estado correctamente', async () => {
+      const chain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'u1', estado: 'inactivo' }, error: null })
+      }
+      supabase.from.mockReturnValue(chain)
+
+      const res = await actualizarEstadoUsuario('u1', 'inactivo')
+      expect(res.estado).toBe('inactivo')
+      expect(chain.update).toHaveBeenCalledWith({ estado: 'inactivo' })
     })
   })
 })

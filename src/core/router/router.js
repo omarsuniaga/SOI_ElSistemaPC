@@ -36,9 +36,11 @@ export const router = {
 
     if (!this.routes[routePath]) {
       console.warn(`[Router] Route '${routePath}' not found in current context. Falling back to default.`)
-      const fallbackRoute = this.routes['dir-score']
-        ? 'dir-score'
-        : (this.routes['programas'] ? 'programas' : Object.keys(this.routes)[0])
+      const fallbackRoute = this.routes['clases-hoy']
+        ? 'clases-hoy'
+        : (this.routes['dir-score']
+          ? 'dir-score'
+          : (this.routes['programas'] ? 'programas' : Object.keys(this.routes)[0]))
       if (fallbackRoute && fallbackRoute !== routePath) {
         this.navigate(fallbackRoute, {})
         return
@@ -97,7 +99,7 @@ export const router = {
     return { routePath, queryParams }
   },
 
-  init(defaultRoute = 'programas') {
+  init(defaultRoute = 'clases-hoy') {
     const currentView = localStorage.getItem('current-view') || defaultRoute
     const { routePath } = this._splitRoutePath(currentView)
     const paramsRaw = localStorage.getItem('current-view-params')
@@ -106,7 +108,9 @@ export const router = {
     if (!this.routes[routePath]) {
       const fallback = this.routes[defaultRoute]
         ? defaultRoute
-        : (this.routes['dir-score'] ? 'dir-score' : Object.keys(this.routes)[0])
+        : (this.routes['clases-hoy']
+          ? 'clases-hoy'
+          : (this.routes['dir-score'] ? 'dir-score' : Object.keys(this.routes)[0]))
       if (fallback) {
         this.navigate(fallback, {})
         return

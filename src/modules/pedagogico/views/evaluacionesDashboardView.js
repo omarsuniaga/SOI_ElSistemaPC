@@ -7,6 +7,7 @@ import { router } from '../../../core/router/router.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 
 // ── Entry Point ────────────────────────────────────────────────────────────────
 export async function renderEvaluacionesDashboardView(container) {
@@ -17,6 +18,7 @@ export async function renderEvaluacionesDashboardView(container) {
     const clases = await _fetchClasesActivas()
     container.innerHTML = _renderContent(clases)
     _attachEvents(container)
+    attachViewInfoEvents(container)
     if (clases.length > 0) {
       await _loadEvaluaciones(container, clases[0].id)
     }
@@ -42,22 +44,37 @@ async function _fetchClasesActivas() {
 }
 
 async function _fetchEvaluaciones(claseId) {
-  const { data, error } = await supabase
-    .from('view_evaluaciones_pedagogicas')
-    .select('*')
-    .eq('clase_id', claseId)
-    .order('covered_date', { ascending: false })
+  try {
+    const { data, error } = await supabase
+      .from('view_evaluaciones_pedagogicas')
+      .select('*')
+      .eq('clase_id', claseId)
+      .order('covered_date', { ascending: false })
 
-  if (error) throw error
-  return data || []
+    if (!error && data) return data
+  } catch (_) {}
+
+  try {
+    const { data } = await supabase
+      .from('evaluaciones')
+      .select('*')
+      .eq('clase_id', claseId)
+    return data || []
+  } catch (_) {
+    return []
+  }
 }
 
 async function _fetchCobertura(claseId) {
-  const { data, error } = await supabase.rpc('fn_evaluacion_cobertura', {
-    p_clase_id: claseId,
-  })
-  if (error) throw error
-  return data || { total_indicators: 0, evaluated_indicators: 0, coverage_pct: 0, by_teacher: [] }
+  try {
+    const { data, error } = await supabase.rpc('fn_evaluacion_cobertura', {
+      p_clase_id: claseId,
+    })
+    if (!error && data) return data
+  } catch (e) {
+    console.warn('[EvaluacionesDashboard] fn_evaluacion_cobertura fallback:', e)
+  }
+  return { total_indicators: 0, evaluated_indicators: 0, coverage_pct: 0, by_teacher: [] }
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
@@ -94,9 +111,12 @@ function _renderContent(clases) {
           <h1 class="page-title mb-0">Evaluaciones</h1>
           <p class="text-muted small mb-0">Calificaciones por indicador, cobertura por maestro</p>
         </div>
-        <button class="btn-help-trigger" id="btn-help-eval" title="Ayuda" aria-label="Ayuda">
-          <i class="bi bi-question"></i>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+          ${renderViewInfoButton('pedagogico-evaluaciones')}
+          <button class="btn-help-trigger" id="btn-help-eval" title="Ayuda" aria-label="Ayuda">
+            <i class="bi bi-question"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Selector de clase -->

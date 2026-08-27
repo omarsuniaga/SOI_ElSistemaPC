@@ -48,11 +48,13 @@ function ensureDOM() {
       }
 
       #${MODAL_ID} .app-modal-dialog.modal-size-view,
+      #${MODAL_ID} .app-modal-dialog.modal-size-fullscreen,
+      #${MODAL_ID} .app-modal-dialog.modal-size-full,
       #${MODAL_ID} .app-modal-dialog.modal-size-95 {
-        width: 95vw !important;
-        max-width: 95vw !important;
-        height: 92vh !important;
-        max-height: 92vh !important;
+        width: 96vw !important;
+        max-width: 96vw !important;
+        height: 94vh !important;
+        max-height: 94vh !important;
         border-radius: 18px;
       }
     }
@@ -182,7 +184,7 @@ function getEls() {
 }
 
 // Sizes
-const SIZES = { sm: '400px', md: '560px', lg: '78vw', xl: '86vw', view: '95vw', '95': '95vw' }
+const SIZES = { sm: '400px', md: '560px', lg: '78vw', xl: '86vw', view: '96vw', '95': '96vw', fullscreen: '98vw', full: '98vw' }
 
 export const AppModal = {
   _saveHandler: null,
@@ -199,7 +201,7 @@ export const AppModal = {
     if (footer) footer.style.removeProperty('display')
 
     // Size class & maxWidth
-    els.dialog.classList.remove('modal-size-sm', 'modal-size-md', 'modal-size-lg', 'modal-size-xl')
+    els.dialog.classList.remove('modal-size-sm', 'modal-size-md', 'modal-size-lg', 'modal-size-xl', 'modal-size-view', 'modal-size-fullscreen', 'modal-size-full', 'modal-size-95')
     els.dialog.classList.add(`modal-size-${size}`)
     els.dialog.style.maxWidth = SIZES[size] || SIZES.md
     els.dialog.style.width = SIZES[size] || SIZES.md
@@ -207,6 +209,9 @@ export const AppModal = {
     if (size === 'xl') {
       els.dialog.style.height = '86vh'
       els.dialog.style.maxHeight = '86vh'
+    } else if (size === 'fullscreen' || size === 'full' || size === 'view' || size === '95') {
+      els.dialog.style.height = '94vh'
+      els.dialog.style.maxHeight = '94vh'
     } else {
       els.dialog.style.removeProperty('height')
       els.dialog.style.removeProperty('max-height')

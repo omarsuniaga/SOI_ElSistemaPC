@@ -10,6 +10,7 @@ import { MyDayView } from './views/MyDayView';
 import { DashboardView } from './views/DashboardView';
 import { RegistroPagoView } from './views/RegistroPagoView';
 import { FamiliasView } from './views/FamiliasView';
+import { Ficha360View } from './views/Ficha360View';
 import { CuotasView } from './views/CuotasView';
 import { MoraCobranzaView } from './views/MoraCobranzaView';
 import { BecasView } from './views/BecasView';
@@ -40,6 +41,10 @@ const MainLayout: React.FC = () => {
         return <RegistroPagoView />;
       case 'familias':
         return <FamiliasView setActiveView={setActiveView} />;
+      case 'ficha_360':
+      case 'ficha360':
+      case 'alumnos_360':
+        return <Ficha360View />;
       case 'cuotas':
         return <CuotasView setActiveView={setActiveView} />;
       case 'mora_cobranza':

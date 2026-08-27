@@ -273,3 +273,60 @@
     margin-top: 0.25rem;
   }
 }
+
+/* ============================================================================
+   HERMES GLOBAL KANBAN BOARD SYSTEM
+   ============================================================================ */
+.hermes-kanban-col {
+  background: var(--bs-tertiary-bg, #f8fafc);
+  border: 1px solid var(--bs-border-color, #e2e8f0);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.hermes-kanban-header {
+  padding: 0.85rem 1rem;
+  background: var(--bs-card-bg, #ffffff);
+  border-bottom: 1px solid var(--bs-border-color, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hermes-kanban-step {
+  font-family: monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--bs-secondary-color, #64748b);
+  background: var(--bs-tertiary-bg, #f1f5f9);
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
+
+.hermes-kanban-body {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 520px;
+  flex-grow: 1;
+}
+
+[data-bs-theme="dark"] .hermes-kanban-col {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .hermes-kanban-header {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .hermes-kanban-step {
+  background: #0f172a;
+  color: #94a3b8;
+}
+

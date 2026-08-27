@@ -1,23 +1,25 @@
 /**
  * Admin Dashboard Widget: Cumplimiento de Maestros (Canonical Attendance Solvency)
- * Uses canonical RPC fn_resumen_cumplimiento_asistencia from Supabase
+ * Rediseñado con la estructura, metodología y estética unificada de la vista Salones.
  */
 
 import {
   getMaestrosComplianceStatus,
   getSemanaActualSantoDomingo,
-} from '../api/adminMaestroApi.js'
-import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
-import { cargarHistorialInstitucional } from '../../../portal-maestros/services/historialClasesService.js'
-import { generateInstitutionalReportHTML } from '../../../portal-maestros/services/reportService.js'
-import { openReport } from '../../../portal-maestros/services/reportTemplates.js'
-import { AppToast } from '../../../shared/components/AppToast.js'
-import '../styles/admin-dashboard.css'
+} from "../api/adminMaestroApi.js"
+import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from "../../../shared/components/InfoTooltip.js"
+import { cargarHistorialInstitucional } from "../../../portal-maestros/services/historialClasesService.js"
+import { generateInstitutionalReportHTML } from "../../../portal-maestros/services/reportService.js"
+import { openReport } from "../../../portal-maestros/services/reportTemplates.js"
+import { AppToast } from "../../../shared/components/AppToast.js"
+import { escapeHTML } from "../../../shared/utils/sanitize.js"
+import { renderViewInfoButton, attachViewInfoEvents } from "../../../shared/components/ViewInfoModal.js"
+import "../styles/admin-dashboard.css"
 
 function hoyISO(offsetDias = 0) {
   const d = new Date()
   d.setDate(d.getDate() + offsetDias)
-  return d.toISOString().split('T')[0]
+  return d.toISOString().split("T")[0]
 }
 
 export class CumplimientoMaestrosWidget {
@@ -26,12 +28,16 @@ export class CumplimientoMaestrosWidget {
     this.container = document.getElementById(containerId)
     this.maestros = []
     this.filteredMaestros = []
-    this.currentRango = 'semana_actual'
+    this.currentRango = "semana_actual"
     this.customDates = getSemanaActualSantoDomingo()
     this.currentFilter = {
       estado: null,
+      especialidad: "",
+      search: "",
+      sort: "nombre_asc",
     }
     this.reportePanelOpen = false
+    this.filtrosAbiertos = false
     this.generandoReporte = false
     this.reporteRango = {
       desde: hoyISO(-30),
@@ -46,9 +52,9 @@ export class CumplimientoMaestrosWidget {
     try {
       injectInfoTooltipStyles()
       this.container.innerHTML = `
-        <div class="premium-loading">
-          <div class="premium-loading-spinner"></div>
-          <div>Cargando balance canónico de asistencia...</div>
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center text-muted bg-body">
+          <div class="spinner-border text-primary mb-3" role="status"></div>
+          <p class="mb-0 fw-medium">Cargando balance canónico de asistencia y cumplimiento docente...</p>
         </div>
       `
 
@@ -56,13 +62,13 @@ export class CumplimientoMaestrosWidget {
       this.render()
       this.attachEventListeners()
 
-      console.log('[CumplimientoMaestrosWidget] Canonical attendance loaded with', this.maestros.length, 'maestros')
+      console.log("[CumplimientoMaestrosWidget] Canonical attendance loaded with", this.maestros.length, "maestros")
     } catch (err) {
-      console.error('[CumplimientoMaestrosWidget] Init error:', err)
+      console.error("[CumplimientoMaestrosWidget] Init error:", err)
       this.container.innerHTML = `
-        <div class="premium-error-card">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-          <div>Error cargando datos: ${err.message}</div>
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center text-danger bg-body">
+          <i class="bi bi-exclamation-triangle-fill fs-3 d-block mb-2"></i>
+          <div class="fw-semibold">Error cargando datos: ${escapeHTML(err.message)}</div>
         </div>
       `
     }
@@ -72,34 +78,34 @@ export class CumplimientoMaestrosWidget {
    * Resolve active date range
    */
   getRangoFechas() {
-    if (this.currentRango === 'semana_actual') {
+    if (this.currentRango === "semana_actual") {
       return getSemanaActualSantoDomingo()
     }
     
     // Rango 14 días (2 semanas)
-    if (this.currentRango === 'ultimas_2_semanas') {
+    if (this.currentRango === "ultimas_2_semanas") {
       const sem = getSemanaActualSantoDomingo()
       const lunesSemana = new Date(`${sem.desde}T12:00:00Z`)
       lunesSemana.setUTCDate(lunesSemana.getUTCDate() - 7)
       return {
-        desde: lunesSemana.toISOString().split('T')[0],
+        desde: lunesSemana.toISOString().split("T")[0],
         hasta: sem.hasta,
       }
     }
 
     // Mes en curso AST
-    if (this.currentRango === 'mes_actual') {
+    if (this.currentRango === "mes_actual") {
       const ahora = new Date()
-      const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Santo_Domingo',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santo_Domingo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
       })
-      const [y, m] = formatter.format(ahora).split('-')
+      const [y, m] = formatter.format(ahora).split("-")
       const primerDia = `${y}-${m}-01`
       const ultimoDiaNum = new Date(Number(y), Number(m), 0).getDate()
-      const ultimoDia = `${y}-${m}-${String(ultimoDiaNum).padStart(2, '0')}`
+      const ultimoDia = `${y}-${m}-${String(ultimoDiaNum).padStart(2, "0")}`
       return { desde: primerDia, hasta: ultimoDia }
     }
 
@@ -119,11 +125,11 @@ export class CumplimientoMaestrosWidget {
       const pendientes = m.pending_count ?? 0
       const vencidas = m.vencidas_count ?? 0
 
-      let estado = 'solvente'
+      let estado = "solvente"
       if (vencidas > 0) {
-        estado = 'vencida' // Rojo (#ef4444)
+        estado = "vencida"
       } else if (pendientes > 0) {
-        estado = 'pendiente' // Naranja (#f97316)
+        estado = "pendiente"
       }
 
       return {
@@ -138,238 +144,402 @@ export class CumplimientoMaestrosWidget {
       }
     })
 
-    this.filteredMaestros = [...this.maestros]
+    this.applyFilter()
   }
 
   /**
-   * Get semantic label and icon for status
+   * Get semantic label and badge classes for status
    */
   getStatusConfig(estado) {
     const configs = {
       solvente: {
-        label: 'SOLVENTE',
-        icon: 'bi-check-circle-fill',
-        color: '#10b981', // Emerald Green
-        bg: 'rgba(16, 185, 129, 0.15)',
+        label: "SOLVENTE",
+        icon: "bi-check-circle-fill",
+        badgeClass: "bg-success-subtle text-success border border-success-subtle",
       },
       pendiente: {
-        label: 'CON PENDIENTES',
-        icon: 'bi-clock-fill',
-        color: '#f97316', // Orange
-        bg: 'rgba(249, 115, 22, 0.15)',
+        label: "CON PENDIENTES",
+        icon: "bi-clock-fill",
+        badgeClass: "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
       },
       vencida: {
-        label: 'CON VENCIDAS',
-        icon: 'bi-exclamation-triangle-fill',
-        color: '#ef4444', // Crimson Red
-        bg: 'rgba(239, 68, 68, 0.15)',
+        label: "CON VENCIDAS",
+        icon: "bi-exclamation-octagon-fill",
+        badgeClass: "bg-danger-subtle text-danger border border-danger-subtle",
       },
     }
-    return configs[estado] || configs.solvente
+    return configs[estado] || {
+      label: "DESCONOCIDO",
+      icon: "bi-question-circle",
+      badgeClass: "bg-secondary-subtle text-secondary border border-secondary-subtle",
+    }
   }
 
   /**
-   * Apply filters
+   * Filter and sort maestros list
    */
-  applyFilter(filterObj) {
-    this.currentFilter = { ...this.currentFilter, ...filterObj }
+  applyFilter(newFilters = {}) {
+    this.currentFilter = { ...this.currentFilter, ...newFilters }
+    const { estado, especialidad, search, sort } = this.currentFilter
 
-    this.filteredMaestros = this.maestros.filter((m) => {
-      if (this.currentFilter.estado && m.estado !== this.currentFilter.estado) {
-        return false
-      }
-      return true
+    let result = [...this.maestros]
+
+    if (estado) {
+      result = result.filter(m => m.estado === estado)
+    }
+
+    if (especialidad) {
+      result = result.filter(m => (m.maestros?.especialidad || "").toLowerCase() === especialidad.toLowerCase())
+    }
+
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter(m => {
+        const nombre = (m.maestros?.nombre_completo || "").toLowerCase()
+        const esp = (m.maestros?.especialidad || "").toLowerCase()
+        return nombre.includes(q) || esp.includes(q)
+      })
+    }
+
+    result.sort((a, b) => {
+      const nomA = a.maestros?.nombre_completo || ""
+      const nomB = b.maestros?.nombre_completo || ""
+      const pctA = a.totalSesiones > 0 ? (a.registradas / a.totalSesiones) : 0
+      const pctB = b.totalSesiones > 0 ? (b.registradas / b.totalSesiones) : 0
+
+      if (sort === "nombre_asc") return nomA.localeCompare(nomB)
+      if (sort === "nombre_desc") return nomB.localeCompare(nomA)
+      if (sort === "cumplimiento_desc") return pctB - pctA
+      if (sort === "cumplimiento_asc") return pctA - pctB
+      if (sort === "pendientes_desc") return (b.pendingCount || 0) - (a.pendingCount || 0)
+      if (sort === "vencidas_desc") return (b.vencidasCount || 0) - (a.vencidasCount || 0)
+      return 0
     })
 
-    this.render()
-    this.attachEventListeners()
+    this.filteredMaestros = result
+    this.renderGridOnly()
   }
 
   /**
-   * Render widget HTML
+   * Main Render Method (Salones Structure)
    */
   render() {
-    const countSolventes = this.maestros.filter((m) => m.esSolvente).length
-    const countPendientes = this.maestros.filter((m) => m.estado === 'pendiente').length
-    const countVencidas = this.maestros.filter((m) => m.estado === 'vencida').length
+    const totalMaestros = this.maestros.length
+    const countSolventes = this.maestros.filter(m => m.estado === "solvente").length
+    const countPendientes = this.maestros.filter(m => m.estado === "pendiente").length
+    const countVencidas = this.maestros.filter(m => m.estado === "vencida").length
     const totalClasesEnRango = this.maestros.reduce((acc, m) => acc + (m.totalSesiones || 0), 0)
 
+    const especialidades = Array.from(
+      new Set(this.maestros.map(m => m.maestros?.especialidad).filter(Boolean))
+    ).sort()
+
     const html = `
-      <div class="distribution-card">
-        <div class="admin-header-brand mb-4">
-          <div class="admin-header-icon-wrapper" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-            <i class="bi bi-person-check-fill"></i>
+      <div class="page-container">
+        
+        <!-- Header & Toolbar Unificada V2 (Estructura Salones) -->
+        <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
+          
+          <!-- Fila 1: Título, Badges Informativos y Botones de Acción -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-body-tertiary" style="gap: 0.85rem;">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="p-2 rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center">
+                <i class="bi bi-person-check-fill fs-5"></i>
+              </div>
+              <div>
+                <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Balance de Asistencia & Solvencia Docente ${InfoTooltip("cumplimiento_sesiones")}</h5>
+                <small class="text-muted d-block" style="font-size:0.75rem;">Fuente canónica de clases programadas vs asistencia registrada en el ciclo lectivo</small>
+              </div>
+              
+              <!-- Badges de Resumen en Tiempo Real -->
+              <div class="d-flex align-items-center gap-1.5 ms-md-2 flex-wrap">
+                <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Docentes solventes para nómina">
+                  <i class="bi bi-check-circle-fill me-1"></i><span>${countSolventes}/${totalMaestros}</span> Solventes
+                </span>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Docentes con clases pendientes (≤7 días)">
+                  <i class="bi bi-clock-fill me-1"></i><span>${countPendientes}</span> Pendientes
+                </span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Docentes con clases vencidas (>7 días)">
+                  <i class="bi bi-exclamation-octagon-fill me-1"></i><span>${countVencidas}</span> Vencidas
+                </span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Total de clases programadas en el rango activo">
+                  <i class="bi bi-calendar3 me-1"></i><span>${totalClasesEnRango}</span> Clases en Rango
+                </span>
+              </div>
+            </div>
+
+            <!-- Toolbar de Botones con 0.85rem de separación -->
+            <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
+              ${renderViewInfoButton('admin-dashboard')}
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnReporteInstitucional" title="Reporte Institucional en PDF" style="font-size:0.78rem;">
+                <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                <span class="d-none d-sm-inline">Reporte Institucional</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnRefresh" title="Actualizar datos" style="font-size:0.78rem;">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span class="d-none d-sm-inline">Actualizar</span>
+              </button>
+              <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnGotoNotificaciones" style="font-size:0.78rem;">
+                <i class="bi bi-bell-fill animate-bell"></i>
+                <span>Centro de Actividad</span>
+              </button>
+            </div>
           </div>
-          <div class="admin-header-title-section">
-            <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em;">Balance de Asistencia & Solvencia Docente ${InfoTooltip('cumplimiento_sesiones')}</h3>
-            <p class="subtitle" style="margin: 0.25rem 0 0; color: #6b7280; font-size: 0.85rem;">
-              Fuente canónica de clases programadas vs asistencia registrada en el ciclo lectivo
-            </p>
+
+          <!-- Fila 2: Búsqueda, Selector de Rango y Botón Desplegable de Filtros -->
+          <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
+            <div class="flex-grow-1" style="min-width: 240px;">
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="searchMaestro" placeholder="Buscar maestro por nombre o especialidad..." value="${escapeHTML(this.currentFilter.search || "")}" autocomplete="off" style="font-size:0.8rem;">
+              </div>
+            </div>
+
+            <!-- Selector de Período / Rango -->
+            <div style="min-width: 220px;">
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-calendar3 text-primary"></i></span>
+                <select id="selectRangoFechas" class="form-select border-start-0 py-1.5 fw-medium" style="font-size:0.8rem;">
+                  <option value="semana_actual" ${this.currentRango === "semana_actual" ? "selected" : ""}>Esta Semana (${this.customDates.desde} a ${this.customDates.hasta})</option>
+                  <option value="ultimas_2_semanas" ${this.currentRango === "ultimas_2_semanas" ? "selected" : ""}>Últimas 2 Semanas</option>
+                  <option value="mes_actual" ${this.currentRango === "mes_actual" ? "selected" : ""}>Mes en Curso</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center" style="gap: 0.85rem;">
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnToggleFiltrosMaestros" type="button" aria-expanded="${this.filtrosAbiertos}" style="font-size:0.78rem;">
+                <i class="bi bi-funnel"></i>
+                <span>Filtros & Orden</span>
+                <span class="badge bg-primary text-white rounded-pill px-1.5 ms-1 ${this.getActiveFiltersCount() === 0 ? "d-none" : ""}" id="filtrosBadgeCountMaestros" style="font-size:0.68rem;">${this.getActiveFiltersCount()}</span>
+              </button>
+
+              <button class="btn btn-sm btn-outline-secondary rounded-3 shadow-xs px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" id="btnLimpiarFiltrosMaestros" title="Restablecer filtros y búsqueda" style="font-size:0.78rem;">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <span>Limpiar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fila 3: Panel Desplegable de Filtros y Ordenamiento -->
+          <div class="collapse pt-2.5 ${this.filtrosAbiertos ? "show" : ""}" id="panelFiltrosMaestros">
+            <div class="p-3 rounded-4 bg-body-tertiary border border-body-tertiary shadow-xs">
+              <div class="row g-2 align-items-center">
+                
+                <div class="col-12 col-sm-6 col-lg-4">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Estado de Solvencia</label>
+                  <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filterEstado" style="font-size:0.8rem;">
+                    <option value="">Todos los Estados (${this.maestros.length})</option>
+                    <option value="solvente" ${this.currentFilter.estado === "solvente" ? "selected" : ""}>Solventes (${countSolventes})</option>
+                    <option value="pendiente" ${this.currentFilter.estado === "pendiente" ? "selected" : ""}>Con Pendientes (${countPendientes})</option>
+                    <option value="vencida" ${this.currentFilter.estado === "vencida" ? "selected" : ""}>Con Vencidas (${countVencidas})</option>
+                  </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-4">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Especialidad / Cátedra</label>
+                  <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="filterEspecialidad" style="font-size:0.8rem;">
+                    <option value="">Todas las cátedras</option>
+                    ${especialidades.map(esp => `<option value="${escapeHTML(esp)}" ${this.currentFilter.especialidad === esp ? "selected" : ""}>${escapeHTML(esp)}</option>`).join("")}
+                  </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-4">
+                  <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Criterio de Orden</label>
+                  <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
+                    <span class="input-group-text bg-body border-end-0 py-1.5 text-muted" style="font-size:0.75rem;"><i class="bi bi-sort-down"></i></span>
+                    <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarMaestros" style="font-size:0.8rem;">
+                      <option value="nombre_asc" ${this.currentFilter.sort === "nombre_asc" ? "selected" : ""}>Nombre (A-Z)</option>
+                      <option value="nombre_desc" ${this.currentFilter.sort === "nombre_desc" ? "selected" : ""}>Nombre (Z-A)</option>
+                      <option value="cumplimiento_desc" ${this.currentFilter.sort === "cumplimiento_desc" ? "selected" : ""}>Mayor % Cumplimiento</option>
+                      <option value="cumplimiento_asc" ${this.currentFilter.sort === "cumplimiento_asc" ? "selected" : ""}>Menor % Cumplimiento</option>
+                      <option value="vencidas_desc" ${this.currentFilter.sort === "vencidas_desc" ? "selected" : ""}>Más Vencidas</option>
+                      <option value="pendientes_desc" ${this.currentFilter.sort === "pendientes_desc" ? "selected" : ""}>Más Pendientes</option>
+                    </select>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        ${this.reportePanelOpen ? this.renderReportePanel() : ""}
+
+        <!-- Contenedor de Cuadrícula de Cumplimiento (Estructura Salones responsive) -->
+        <div class="w-100">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0" id="maestrosGridBody">
+            ${this.renderGridItemsHTML()}
           </div>
         </div>
 
-        <!-- Filter Toolbar -->
-        <div class="admin-toolbar-dense">
-          <div class="premium-select-container">
-            <i class="bi bi-calendar3"></i>
-            <select id="selectRangoFechas" class="premium-select">
-              <option value="semana_actual" ${this.currentRango === 'semana_actual' ? 'selected' : ''}>Esta Semana (${this.customDates.desde} a ${this.customDates.hasta})</option>
-              <option value="ultimas_2_semanas" ${this.currentRango === 'ultimas_2_semanas' ? 'selected' : ''}>Últimas 2 Semanas</option>
-              <option value="mes_actual" ${this.currentRango === 'mes_actual' ? 'selected' : ''}>Mes en Curso</option>
-            </select>
-          </div>
-
-          <div class="premium-select-container">
-            <i class="bi bi-funnel"></i>
-            <select id="filterEstado" class="premium-select">
-              <option value="">Todos los Estados (${this.maestros.length})</option>
-              <option value="solvente" ${this.currentFilter.estado === 'solvente' ? 'selected' : ''}>Solventes (${countSolventes})</option>
-              <option value="pendiente" ${this.currentFilter.estado === 'pendiente' ? 'selected' : ''}>Con Pendientes (${countPendientes})</option>
-              <option value="vencida" ${this.currentFilter.estado === 'vencida' ? 'selected' : ''}>Con Vencidas (${countVencidas})</option>
-            </select>
-          </div>
-
-          <button id="btnReporteInstitucional" class="btn-premium-action btn-premium-secondary ms-auto">
-            <i class="bi bi-file-earmark-pdf-fill"></i> Reporte Institucional
-          </button>
-          <button id="btnRefresh" class="btn-premium-action btn-premium-secondary ms-2">
-            <i class="bi bi-arrow-clockwise"></i> Actualizar
-          </button>
-          <button id="btnGotoNotificaciones" class="btn-premium-action btn-premium-primary ms-2" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; color: white;">
-            <i class="bi bi-bell-fill animate-bell"></i> Centro de Actividad
-          </button>
-        </div>
-
-        ${this.reportePanelOpen ? this.renderReportePanel() : ''}
-
-        <!-- Stats Overview Cards -->
-        <div class="metrics-grid mb-4">
-          <div class="stat-card success" style="padding: 1rem 1.25rem;">
-            <div class="stat-value" style="font-size: 1.75rem; color: #10b981;">${countSolventes}</div>
-            <div class="stat-label" style="font-size: 0.72rem; margin-bottom: 0;">SOLVENTES PARA NÓMINA ${InfoTooltip('cumplimiento')}</div>
-          </div>
-          <div class="stat-card warning" style="padding: 1rem 1.25rem; border-left-color: #f97316; background: linear-gradient(135deg, rgba(249, 115, 22, 0.03) 0%, rgba(245, 158, 11, 0.03) 100%);">
-            <div class="stat-value" style="font-size: 1.75rem; color: #f97316;">${countPendientes}</div>
-            <div class="stat-label" style="font-size: 0.72rem; margin-bottom: 0;">CON PENDIENTES (&le; 7 DÍAS) ${InfoTooltip('cumplimiento')}</div>
-          </div>
-          <div class="stat-card alert" style="padding: 1rem 1.25rem; border-left-color: #ef4444;">
-            <div class="stat-value" style="font-size: 1.75rem; color: #ef4444;">${countVencidas}</div>
-            <div class="stat-label" style="font-size: 0.72rem; margin-bottom: 0;">CON VENCIDAS (&gt; 7 DÍAS) ${InfoTooltip('cumplimiento')}</div>
-          </div>
-          <div class="stat-card" style="padding: 1rem 1.25rem; border-left-color: #3b82f6;">
-            <div class="stat-value" style="font-size: 1.75rem; color: #3b82f6;">${totalClasesEnRango}</div>
-            <div class="stat-label" style="font-size: 0.72rem; margin-bottom: 0;">CLASES PROGRAMADAS EN RANGO</div>
-          </div>
-        </div>
-
-        <!-- Data Table Container -->
-        <div class="premium-table-container">
-          <table class="premium-table">
-            <thead>
-              <tr>
-                <th style="width: 36%; min-width: 240px;">Maestro & Especialidad</th>
-                <th style="width: 15%; text-align: center;">Solvencia ${InfoTooltip('cumplimiento')}</th>
-                <th style="width: 13%; text-align: center;">Pendientes (&le;7d)</th>
-                <th style="width: 13%; text-align: center;">Vencidas (&gt;7d)</th>
-                <th style="width: 13%; text-align: center;">Registradas</th>
-                <th style="width: 10%; text-align: center;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                this.filteredMaestros.length === 0
-                  ? '<tr><td colspan="6" class="premium-no-data"><i class="bi bi-inbox fs-4 d-block mb-2 text-secondary"></i>No hay maestros que coincidan con los filtros</td></tr>'
-                  : this.filteredMaestros.map((m) => this.renderMaestroRow(m)).join('')
-              }
-            </tbody>
-          </table>
-        </div>
       </div>
     `
 
     this.container.innerHTML = html
   }
 
+  getActiveFiltersCount() {
+    let count = 0
+    if (this.currentFilter.estado) count++
+    if (this.currentFilter.especialidad) count++
+    return count
+  }
+
   /**
    * Render inline panel to pick a custom date range and trigger the
-   * institutional report (all teachers, all classes, in that range).
+   * institutional report.
    */
   renderReportePanel() {
     const { desde, hasta } = this.reporteRango
     return `
-      <div id="reportePanel" style="background: rgba(79,70,229,0.06); border: 1px solid rgba(79,70,229,0.25); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem;">
-        <div style="flex: 1 1 260px; min-width: 220px;">
-          <h5 style="margin:0 0 0.35rem; font-size:0.95rem; font-weight:700;"><i class="bi bi-file-earmark-pdf-fill" style="color:#7c3aed;"></i> Reporte Institucional de Clases Dadas</h5>
-          <p style="margin:0; font-size:0.78rem; color:#8b949e;">PDF con todas las clases de todos los maestros en el rango seleccionado: asistencia, roster y contenido registrado.</p>
+      <div id="reportePanel" class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-body-tertiary border border-primary-subtle">
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
+          <div style="flex: 1 1 260px; min-width: 220px;">
+            <h6 class="fw-bold mb-1 text-body d-flex align-items-center gap-1.5">
+              <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i> Reporte Institucional de Clases Dadas
+            </h6>
+            <small class="text-muted d-block" style="font-size:0.75rem;">Genera un informe PDF consolidado con todas las clases, asistencia y contenido registrado de los maestros en el rango seleccionado.</small>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div>
+              <label for="reporteDesde" class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Desde</label>
+              <input type="date" id="reporteDesde" class="form-control form-control-sm rounded-3 shadow-xs" value="${desde}" max="${hasta}" style="font-size:0.8rem;">
+            </div>
+            <div>
+              <label for="reporteHasta" class="form-label text-muted small fw-semibold mb-1" style="font-size:0.72rem;">Hasta</label>
+              <input type="date" id="reporteHasta" class="form-control form-control-sm rounded-3 shadow-xs" value="${hasta}" min="${desde}" style="font-size:0.8rem;">
+            </div>
+            <div class="pt-3">
+              <button id="btnGenerarReporteInstitucional" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" style="font-size:0.78rem;">
+                <i class="bi bi-download"></i> Generar PDF
+              </button>
+            </div>
+            <div class="pt-3">
+              <button id="btnCerrarReportePanel" class="btn btn-sm btn-outline-secondary rounded-3 shadow-xs px-2 py-1.5" title="Cerrar panel">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:0.25rem;">
-          <label for="reporteDesde" style="font-size:0.72rem; color:#8b949e;">Desde</label>
-          <input type="date" id="reporteDesde" class="premium-select" value="${desde}" max="${hasta}" style="padding:0.4rem 0.6rem;">
-        </div>
-        <div style="display:flex; flex-direction:column; gap:0.25rem;">
-          <label for="reporteHasta" style="font-size:0.72rem; color:#8b949e;">Hasta</label>
-          <input type="date" id="reporteHasta" class="premium-select" value="${hasta}" min="${desde}" style="padding:0.4rem 0.6rem;">
-        </div>
-        <button id="btnGenerarReporteInstitucional" class="btn-premium-action btn-premium-primary" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border:none; color:white;">
-          <i class="bi bi-download"></i> Generar PDF
-        </button>
-        <button id="btnCerrarReportePanel" class="btn-action-icon" title="Cerrar" style="margin-left:auto;">
-          <i class="bi bi-x-lg"></i>
-        </button>
       </div>
     `
   }
 
   /**
-   * Render single maestro row
+   * Render cards grid items HTML
    */
-  renderMaestroRow(maestro) {
+  renderGridItemsHTML() {
+    if (this.filteredMaestros.length === 0) {
+      return `
+        <div class="col-12 text-center py-5 w-100 text-muted">
+          <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+          No hay maestros que coincidan con los criterios de búsqueda o filtros.
+        </div>
+      `
+    }
+
+    return this.filteredMaestros.map(m => this.renderMaestroCard(m)).join("")
+  }
+
+  /**
+   * Render single maestro card matching Salones card anatomy
+   */
+  renderMaestroCard(maestro) {
     const config = maestro.statusConfig || this.getStatusConfig(maestro.estado)
-    const especialidad = maestro.maestros?.especialidad || 'Cátedra Instrumental'
-    const nombre = maestro.maestros?.nombre_completo || 'Maestro'
+    const especialidad = maestro.maestros?.especialidad || "Cátedra Instrumental"
+    const nombre = maestro.maestros?.nombre_completo || "Maestro"
     const totalClases = maestro.totalSesiones || 0
+    const registradas = maestro.registradas || 0
+    const pendientes = maestro.pendingCount || 0
+    const vencidas = maestro.vencidasCount || 0
+    const pct = totalClases > 0 ? Math.round((registradas / totalClases) * 100) : 100
+
+    let progressColor = "bg-success"
+    if (vencidas > 0) progressColor = "bg-danger"
+    else if (pendientes > 0) progressColor = "bg-warning"
 
     return `
-      <tr>
-        <td style="width: 36%;">
-          <div style="display: flex; flex-direction: column; gap: 0.15rem;">
-            <div style="font-weight: 750; font-size: 0.95rem; color: var(--bs-body-color);">${nombre}</div>
-            <div style="font-size: 0.78rem; color: #8b949e; display: flex; align-items: center; gap: 0.4rem;">
-              <span><i class="bi bi-music-note-beamed"></i> ${especialidad}</span>
-              ${totalClases > 0 ? `<span class="badge" style="background: rgba(255,255,255,0.06); font-size: 0.7rem; font-weight: normal;">${totalClases} programadas</span>` : ''}
+      <div class="col p-1">
+        <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" style="padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+          
+          <!-- Parte Superior: Nombre, Especialidad, Solvencia y Métricas -->
+          <div class="mb-2">
+            
+            <!-- Nombre del Maestro -->
+            <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(nombre)}">
+              ${escapeHTML(nombre)}
+            </strong>
+
+            <!-- Cátedra / Especialidad -->
+            <div class="mb-2">
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;" title="${escapeHTML(especialidad)}">
+                <i class="bi bi-music-note-beamed me-1 text-primary"></i>${escapeHTML(especialidad)}
+              </span>
             </div>
+
+            <!-- Solvencia Badge -->
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="text-muted small" style="font-size:0.75rem;"><i class="bi bi-shield-check me-1 text-secondary"></i>Solvencia:</span>
+              <span class="badge ${config.badgeClass} py-0.5 px-2 rounded-2" style="font-size: 0.7rem;">
+                <i class="bi ${config.icon} me-1"></i>${config.label}
+              </span>
+            </div>
+
+            <!-- Barra de Progreso de Asistencia -->
+            <div class="mb-2">
+              <div class="d-flex justify-content-between text-muted small mb-1" style="font-size: 0.72rem;">
+                <span>Cumplimiento:</span>
+                <span class="fw-semibold text-body">${pct}% (${registradas}/${totalClases})</span>
+              </div>
+              <div class="progress" style="height: 6px; border-radius: 4px; background-color: var(--bs-tertiary-bg);">
+                <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${pct}%;" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+
+            <!-- Métricas Clave -->
+            <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
+              <div class="d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-clock me-1 text-warning"></i>Pendientes (&le;7d):</span>
+                <span class="fw-semibold ${pendientes > 0 ? "text-warning-emphasis" : "text-body"}">${pendientes}</span>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-exclamation-circle me-1 text-danger"></i>Vencidas (&gt;7d):</span>
+                <span class="fw-bold ${vencidas > 0 ? "text-danger" : "text-body"}">${vencidas}</span>
+              </div>
+            </div>
+
           </div>
-        </td>
-        <td style="text-align: center; width: 15%;">
-          <span class="status-badge" style="background-color: ${config.color}; font-size: 0.72rem; padding: 0.35rem 0.75rem; letter-spacing: 0.04em;">
-            <i class="bi ${config.icon} me-1"></i> ${config.label}
-          </span>
-        </td>
-        <td style="text-align: center; width: 13%;">
-          ${maestro.pendingCount > 0 
-            ? `<span class="badge" style="background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.6rem;">${maestro.pendingCount} pendientes</span>` 
-            : '<span style="color: #6b7280; font-size: 0.85rem;">0</span>'}
-        </td>
-        <td style="text-align: center; width: 13%;">
-          ${maestro.vencidasCount > 0 
-            ? `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.6rem;">${maestro.vencidasCount} vencidas</span>` 
-            : '<span style="color: #6b7280; font-size: 0.85rem;">0</span>'}
-        </td>
-        <td style="text-align: center; width: 13%; color: #10b981; font-weight: 700; font-size: 0.9rem;">
-          ${maestro.registradas}
-        </td>
-        <td style="text-align: center; width: 10%; white-space: nowrap;">
-          <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
-            <button class="btn-action-icon btn-action-success-light btn-contactar" data-maestro-id="${maestro.maestro_id}" title="Enviar recordatorio por WhatsApp">
+
+          <!-- Footer con Acciones (WhatsApp y Ver Detalle) -->
+          <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-between mt-auto" style="gap: 0.4rem;">
+            <button class="btn btn-sm btn-outline-success rounded-3 shadow-xs d-inline-flex align-items-center gap-1 py-1 px-2 btn-contactar" data-maestro-id="${maestro.maestro_id}" title="Enviar recordatorio por WhatsApp" style="font-size:0.75rem;">
               <i class="bi bi-whatsapp"></i>
+              <span class="d-none d-sm-inline">Recordar</span>
             </button>
-            <button class="btn-action-icon btn-action-primary-light btn-detalle" data-maestro-id="${maestro.maestro_id}" title="Ver detalle por clase">
+            <button class="btn btn-sm btn-outline-primary rounded-3 shadow-xs d-inline-flex align-items-center gap-1 py-1 px-2.5 btn-detalle" data-maestro-id="${maestro.maestro_id}" title="Ver detalle por clase" style="font-size:0.75rem;">
               <i class="bi bi-eye-fill"></i>
+              <span>Ver Detalle</span>
             </button>
           </div>
-        </td>
-      </tr>
+
+        </div>
+      </div>
     `
+  }
+
+  /**
+   * Updates only the grid DOM without rebuilding entire header
+   */
+  renderGridOnly() {
+    const gridBody = this.container?.querySelector("#maestrosGridBody")
+    if (gridBody) {
+      gridBody.innerHTML = this.renderGridItemsHTML()
+      this.attachCardListeners()
+    }
   }
 
   /**
@@ -377,230 +547,200 @@ export class CumplimientoMaestrosWidget {
    */
   attachEventListeners() {
     attachInfoTooltipEvents(this.container)
+    attachViewInfoEvents(this.container)
 
-    const selectRangoFechas = document.getElementById('selectRangoFechas')
-    const filterEstado = document.getElementById('filterEstado')
-    const btnRefresh = document.getElementById('btnRefresh')
+    const searchInput = this.container.querySelector("#searchMaestro")
+    const selectRangoFechas = this.container.querySelector("#selectRangoFechas")
+    const filterEstado = this.container.querySelector("#filterEstado")
+    const filterEspecialidad = this.container.querySelector("#filterEspecialidad")
+    const selectOrdenarMaestros = this.container.querySelector("#selectOrdenarMaestros")
+    const btnToggleFiltros = this.container.querySelector("#btnToggleFiltrosMaestros")
+    const btnLimpiar = this.container.querySelector("#btnLimpiarFiltrosMaestros")
+    const btnRefresh = this.container.querySelector("#btnRefresh")
+    const btnGotoNotificaciones = this.container.querySelector("#btnGotoNotificaciones")
+    const btnReporteInstitucional = this.container.querySelector("#btnReporteInstitucional")
 
-    this._selectRangoHandler = async (e) => {
+    // Búsqueda en tiempo real
+    searchInput?.addEventListener("input", (e) => {
+      this.applyFilter({ search: e.target.value.trim() })
+    })
+
+    // Rango de fechas
+    selectRangoFechas?.addEventListener("change", async (e) => {
       this.currentRango = e.target.value
       await this.loadData()
       this.render()
       this.attachEventListeners()
-    }
+    })
 
-    this._filterEstadoHandler = (e) => {
-      this.applyFilter({ estado: e.target.value || null })
-    }
+    // Toggle Filtros
+    btnToggleFiltros?.addEventListener("click", () => {
+      this.filtrosAbiertos = !this.filtrosAbiertos
+      const panel = this.container.querySelector("#panelFiltrosMaestros")
+      if (panel) {
+        panel.classList.toggle("show", this.filtrosAbiertos)
+        btnToggleFiltros.setAttribute("aria-expanded", String(this.filtrosAbiertos))
+      }
+    })
 
-    this._btnRefreshHandler = () => {
-      this.init()
-    }
+    // Limpiar
+    btnLimpiar?.addEventListener("click", () => {
+      if (searchInput) searchInput.value = ""
+      if (filterEstado) filterEstado.value = ""
+      if (filterEspecialidad) filterEspecialidad.value = ""
+      if (selectOrdenarMaestros) selectOrdenarMaestros.value = "nombre_asc"
 
-    selectRangoFechas?.addEventListener('change', this._selectRangoHandler)
-    filterEstado?.addEventListener('change', this._filterEstadoHandler)
-    btnRefresh?.addEventListener('click', this._btnRefreshHandler)
+      const badgeCount = this.container.querySelector("#filtrosBadgeCountMaestros")
+      if (badgeCount) badgeCount.classList.add("d-none")
 
-    const btnGotoNotificaciones = document.getElementById('btnGotoNotificaciones')
-    this._btnGotoNotificacionesHandler = () => {
-      import('../../../core/router/router.js').then(({ router }) => {
-        router.navigate('admin-notificaciones')
+      this.applyFilter({
+        estado: null,
+        especialidad: "",
+        search: "",
+        sort: "nombre_asc",
       })
-    }
-    btnGotoNotificaciones?.addEventListener('click', this._btnGotoNotificacionesHandler)
+    })
 
-    const btnReporteInstitucional = document.getElementById('btnReporteInstitucional')
-    this._btnReporteInstitucionalHandler = () => {
+    // Filtros internos
+    filterEstado?.addEventListener("change", (e) => {
+      this.applyFilter({ estado: e.target.value || null })
+      this.updateFiltrosBadge()
+    })
+
+    filterEspecialidad?.addEventListener("change", (e) => {
+      this.applyFilter({ especialidad: e.target.value || "" })
+      this.updateFiltrosBadge()
+    })
+
+    selectOrdenarMaestros?.addEventListener("change", (e) => {
+      this.applyFilter({ sort: e.target.value || "nombre_asc" })
+    })
+
+    btnRefresh?.addEventListener("click", () => {
+      this.init()
+    })
+
+    btnGotoNotificaciones?.addEventListener("click", () => {
+      import("../../../core/router/router.js").then(({ router }) => {
+        router.navigate("admin-notificaciones")
+      })
+    })
+
+    btnReporteInstitucional?.addEventListener("click", () => {
       this.reportePanelOpen = !this.reportePanelOpen
       this.render()
       this.attachEventListeners()
-    }
-    btnReporteInstitucional?.addEventListener('click', this._btnReporteInstitucionalHandler)
+    })
 
     if (this.reportePanelOpen) {
-      const reporteDesde = document.getElementById('reporteDesde')
-      const reporteHasta = document.getElementById('reporteHasta')
-      const btnGenerarReporteInstitucional = document.getElementById('btnGenerarReporteInstitucional')
-      const btnCerrarReportePanel = document.getElementById('btnCerrarReportePanel')
+      const reporteDesde = this.container.querySelector("#reporteDesde")
+      const reporteHasta = this.container.querySelector("#reporteHasta")
+      const btnGenerarReporteInstitucional = this.container.querySelector("#btnGenerarReporteInstitucional")
+      const btnCerrarReportePanel = this.container.querySelector("#btnCerrarReportePanel")
 
-      this._reporteDesdeHandler = (e) => {
+      reporteDesde?.addEventListener("change", (e) => {
         this.reporteRango.desde = e.target.value
-      }
-      this._reporteHastaHandler = (e) => {
+      })
+      reporteHasta?.addEventListener("change", (e) => {
         this.reporteRango.hasta = e.target.value
-      }
-      this._btnCerrarReportePanelHandler = () => {
+      })
+      btnCerrarReportePanel?.addEventListener("click", () => {
         this.reportePanelOpen = false
         this.render()
         this.attachEventListeners()
-      }
-      this._btnGenerarReporteInstitucionalHandler = () =>
+      })
+      btnGenerarReporteInstitucional?.addEventListener("click", () => {
         this.onGenerarReporteInstitucional(btnGenerarReporteInstitucional)
-
-      reporteDesde?.addEventListener('change', this._reporteDesdeHandler)
-      reporteHasta?.addEventListener('change', this._reporteHastaHandler)
-      btnCerrarReportePanel?.addEventListener('click', this._btnCerrarReportePanelHandler)
-      btnGenerarReporteInstitucional?.addEventListener('click', this._btnGenerarReporteInstitucionalHandler)
+      })
     }
 
-    this._contactarHandlers = []
-    this._detalleHandlers = []
+    this.attachCardListeners()
+  }
 
+  updateFiltrosBadge() {
+    const badge = this.container.querySelector("#filtrosBadgeCountMaestros")
+    const count = this.getActiveFiltersCount()
+    if (badge) {
+      badge.textContent = count
+      badge.classList.toggle("d-none", count === 0)
+    }
+  }
+
+  /**
+   * Card Action Listeners (WhatsApp and Detalle)
+   */
+  attachCardListeners() {
     this.container.querySelectorAll('.btn-contactar').forEach((btn) => {
-      const handler = (e) => {
-        e.preventDefault()
+      btn.addEventListener('click', (e) => {
         e.stopPropagation()
-        const button = e.target.closest('.btn-contactar')
-        const maestroId = button.dataset.maestroId
-        this.onContactarMaestro(maestroId)
-      }
-      this._contactarHandlers.push({ btn, handler })
-      btn.addEventListener('click', handler)
+        const maestroId = btn.dataset.maestroId
+        import('../../../core/router/router.js').then(({ router }) => {
+          router.navigate('admin-maestro-detalle', {
+            id: maestroId,
+            autoOpenWhatsApp: true,
+            desde: this.customDates.desde,
+            hasta: this.customDates.hasta,
+          })
+        })
+      })
     })
 
     this.container.querySelectorAll('.btn-detalle').forEach((btn) => {
-      const handler = (e) => {
-        e.preventDefault()
+      btn.addEventListener('click', (e) => {
         e.stopPropagation()
-        const button = e.target.closest('.btn-detalle')
-        const maestroId = button.dataset.maestroId
-        this.onVerDetalle(maestroId)
-      }
-      this._detalleHandlers.push({ btn, handler })
-      btn.addEventListener('click', handler)
-    })
-  }
-
-  /**
-   * Open WhatsApp modal for a maestro
-   */
-  onContactarMaestro(maestroId) {
-    import('../../../core/router/router.js').then(({ router }) => {
-      router.navigate('admin-maestro-detalle', {
-        id: maestroId,
-        autoOpenWhatsApp: true,
-        desde: this.customDates.desde,
-        hasta: this.customDates.hasta,
+        const maestroId = btn.dataset.maestroId
+        import('../../../core/router/router.js').then(({ router }) => {
+          router.navigate('admin-maestro-detalle', {
+            id: maestroId,
+            desde: this.customDates.desde,
+            hasta: this.customDates.hasta,
+          })
+        })
       })
     })
   }
 
   /**
-   * Navigate to Maestro Detalle view, carrying the date range currently
-   * selected in this list so the detail's pendientes/vencidas count match
-   * what the admin just saw here instead of silently recomputing its own
-   * "semana actual" window.
+   * Institutional Report Generator
    */
-  onVerDetalle(maestroId) {
-    import('../../../core/router/router.js').then(({ router }) => {
-      router.navigate('admin-maestro-detalle', {
-        id: maestroId,
-        desde: this.customDates.desde,
-        hasta: this.customDates.hasta,
-      })
-    })
-  }
-
-  /**
-   * Build and download the institutional report: all teachers' classes in
-   * the custom date range picked in the panel.
-   */
-  async onGenerarReporteInstitucional(btn) {
+  async onGenerarReporteInstitucional(btnEl) {
     if (this.generandoReporte) return
-
     const { desde, hasta } = this.reporteRango
-    if (!desde || !hasta || desde > hasta) {
-      AppToast.error('Seleccioná un rango de fechas válido (desde no puede ser posterior a hasta).')
+
+    if (!desde || !hasta) {
+      AppToast.error("Debe seleccionar ambas fechas")
+      return
+    }
+    if (desde > hasta) {
+      AppToast.error("La fecha inicial no puede ser posterior a la fecha final")
       return
     }
 
-    this.generandoReporte = true
-    const originalHtml = btn?.innerHTML
-    if (btn) {
-      btn.disabled = true
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span>Generando...`
-    }
-
     try {
-      const { sesiones } = await cargarHistorialInstitucional({ desde, hasta })
+      this.generandoReporte = true
+      if (btnEl) {
+        btnEl.disabled = true
+        btnEl.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Generando...`
+      }
 
+      const { sesiones } = await cargarHistorialInstitucional({ desde, hasta })
       if (!sesiones || sesiones.length === 0) {
-        AppToast.info('No hay clases registradas en el rango seleccionado.')
+        AppToast.info("No se encontraron clases dadas en el rango seleccionado")
         return
       }
 
-      const rangoLabel = `${desde} a ${hasta}`
-      const html = generateInstitutionalReportHTML(sesiones, { rangoLabel })
-      const fechaArchivo = hoyISO(0)
-      openReport(html, `reporte-institucional-${fechaArchivo}`, {
-        title: `Reporte Institucional de Clases · ${rangoLabel}`,
-      })
+      const html = generateInstitutionalReportHTML(sesiones, { desde, hasta })
+      openReport(html)
+      AppToast.show("Reporte institucional generado exitosamente")
     } catch (err) {
-      console.error('[CumplimientoMaestrosWidget] Error generando reporte institucional:', err)
-      AppToast.error('Error al generar el reporte institucional: ' + err.message)
+      console.error("[CumplimientoMaestrosWidget] Error generando reporte:", err)
+      AppToast.error(`Error al generar reporte: ${err.message}`)
     } finally {
       this.generandoReporte = false
-      if (btn) {
-        btn.disabled = false
-        btn.innerHTML = originalHtml
+      if (btnEl) {
+        btnEl.disabled = false
+        btnEl.innerHTML = `<i class="bi bi-download"></i> Generar PDF`
       }
-    }
-  }
-
-  /**
-   * Cleanup event listeners
-   */
-  destroy() {
-    const selectRangoFechas = document.getElementById('selectRangoFechas')
-    const filterEstado = document.getElementById('filterEstado')
-    const btnRefresh = document.getElementById('btnRefresh')
-    const btnGotoNotificaciones = document.getElementById('btnGotoNotificaciones')
-    const btnReporteInstitucional = document.getElementById('btnReporteInstitucional')
-    const reporteDesde = document.getElementById('reporteDesde')
-    const reporteHasta = document.getElementById('reporteHasta')
-    const btnGenerarReporteInstitucional = document.getElementById('btnGenerarReporteInstitucional')
-    const btnCerrarReportePanel = document.getElementById('btnCerrarReportePanel')
-
-    if (selectRangoFechas && this._selectRangoHandler) {
-      selectRangoFechas.removeEventListener('change', this._selectRangoHandler)
-    }
-    if (filterEstado && this._filterEstadoHandler) {
-      filterEstado.removeEventListener('change', this._filterEstadoHandler)
-    }
-    if (btnRefresh && this._btnRefreshHandler) {
-      btnRefresh.removeEventListener('click', this._btnRefreshHandler)
-    }
-    if (btnGotoNotificaciones && this._btnGotoNotificacionesHandler) {
-      btnGotoNotificaciones.removeEventListener('click', this._btnGotoNotificacionesHandler)
-    }
-    if (btnReporteInstitucional && this._btnReporteInstitucionalHandler) {
-      btnReporteInstitucional.removeEventListener('click', this._btnReporteInstitucionalHandler)
-    }
-    if (reporteDesde && this._reporteDesdeHandler) {
-      reporteDesde.removeEventListener('change', this._reporteDesdeHandler)
-    }
-    if (reporteHasta && this._reporteHastaHandler) {
-      reporteHasta.removeEventListener('change', this._reporteHastaHandler)
-    }
-    if (btnGenerarReporteInstitucional && this._btnGenerarReporteInstitucionalHandler) {
-      btnGenerarReporteInstitucional.removeEventListener('click', this._btnGenerarReporteInstitucionalHandler)
-    }
-    if (btnCerrarReportePanel && this._btnCerrarReportePanelHandler) {
-      btnCerrarReportePanel.removeEventListener('click', this._btnCerrarReportePanelHandler)
-    }
-
-    if (this._contactarHandlers) {
-      this._contactarHandlers.forEach(({ btn, handler }) => {
-        btn.removeEventListener('click', handler)
-      })
-      this._contactarHandlers = []
-    }
-
-    if (this._detalleHandlers) {
-      this._detalleHandlers.forEach(({ btn, handler }) => {
-        btn.removeEventListener('click', handler)
-      })
-      this._detalleHandlers = []
     }
   }
 }

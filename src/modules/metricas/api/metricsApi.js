@@ -63,39 +63,267 @@ export async function getAlertasRojas() {
 }
 
 export async function getResumenAlertas() {
-  try {
-    const { data: alumnos } = await supabase
-      .from('alumnos')
-      .select('id, abandono_score, mora_flag, promedio_notas')
-      .eq('activo', true)
+  const { data, error } = await supabase
+    .from('vw_alertas_activas')
+    .select('*')
 
-    if (Array.isArray(alumnos) && alumnos.length > 0) {
-      const rojas = alumnos.filter(a => Number(a.abandono_score) >= 70 || (a.promedio_notas != null && Number(a.promedio_notas) < 60)).length
-      const naranjas = alumnos.filter(a => Number(a.abandono_score) >= 40 && Number(a.abandono_score) < 70).length
-      const amarillas = alumnos.filter(a => Boolean(a.mora_flag)).length
+  if (error) throw new Error('No se pudo obtener el resumen de alertas')
 
-      return {
-        total: rojas + naranjas + amarillas,
-        rojas,
-        naranjas,
-        amarillas,
-        porTipo: {
-          abandono: rojas,
-          calificacion: naranjas,
-          mora: amarillas
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('[getResumenAlertas] Exception:', err)
-  }
+  const alerts = Array.isArray(data) ? data : []
+  const rojas = alerts.filter(a => a.color === 'rojo').length
+  const naranjas = alerts.filter(a => a.color === 'naranja').length
+  const amarillas = alerts.filter(a => a.color === 'amarillo').length
+
+  const porTipo = {}
+  alerts.forEach(a => {
+    const tipo = a.tipo_alerta || 'otros'
+    porTipo[tipo] = (porTipo[tipo] || 0) + 1
+  })
 
   return {
-    total: 38,
-    rojas: 12,
-    naranjas: 16,
-    amarillas: 10,
-    porTipo: { abandono: 12, calificacion: 16, mora: 10 }
+    total: alerts.length,
+    rojas,
+    naranjas,
+    amarillas,
+    porTipo
+  }
+}
+
+// ─── ANÁLISIS DE ASISTENCIAS DEL PERÍODO ACTIVO ─────────────────────────────
+
+export async function getAnalisisAsistenciasPeriodoActivo({ fechaInicio = null, fechaFin = null } = {}) {
+  // 1. Obtener período activo
+  let periodo = null
+  try {
+    const { data: periodoData } = await supabase
+      .from('periodos')
+      .select('*')
+      .eq('activo', true)
+      .limit(1)
+
+    if (Array.isArray(periodoData) && periodoData.length > 0) {
+      periodo = periodoData[0]
+    } else {
+      const { data: fallbackPeriodo } = await supabase
+        .from('periodos')
+        .select('*')
+        .limit(1)
+      periodo = Array.isArray(fallbackPeriodo) ? fallbackPeriodo[0] : null
+    }
+  } catch (_e) {
+    // Safe fallback
+  }
+
+  const inicio = fechaInicio || periodo?.fecha_inicio || '2026-01-01'
+  const fin = fechaFin || periodo?.fecha_fin || new Date().toISOString().split('T')[0]
+
+  // 2. Consultar sesiones de clase con asistencias
+  const { data: sesionesData, error } = await supabase
+    .from('sesiones_clase')
+    .select(`
+      id,
+      fecha,
+      hora_inicio,
+      hora_fin,
+      clase_id,
+      maestro_id,
+      clases (
+        nombre,
+        instrumento,
+        maestro_principal_id,
+        maestros ( nombre_completo )
+      ),
+      asistencias (
+        id,
+        estado,
+        justificacion_texto,
+        alumno_id,
+        alumnos (
+          nombre_completo,
+          instrumento_principal,
+          programa
+        )
+      )
+    `)
+    .gte('fecha', inicio)
+    .lte('fecha', fin)
+    .order('fecha', { ascending: true })
+
+  if (error) throw new Error('No se pudo cargar el análisis de asistencias: ' + error.message)
+
+  const sesiones = sesionesData || []
+
+  // 3. Procesar alumnos y maestros
+  const alumnoMap = new Map()
+  const maestroMap = new Map()
+
+  let totalPresentes = 0
+  let totalAusentes = 0
+  let totalJustificados = 0
+  let totalRegistros = 0
+
+  for (const ses of sesiones) {
+    const claseNombre = ses.clases?.nombre || 'Clase'
+    const maestroNombre = ses.clases?.maestros?.nombre_completo || 'Docente'
+    const maestroId = ses.maestro_id || ses.clases?.maestro_principal_id || 'sin-maestro'
+
+    if (!maestroMap.has(maestroId)) {
+      maestroMap.set(maestroId, {
+        maestroId,
+        maestroNombre,
+        totalSesiones: 0,
+        totalRegistros: 0,
+        totalPresentes: 0,
+        totalAusentes: 0,
+        totalJustificados: 0,
+        tasaAusentismo: 0,
+        clases: new Set(),
+      })
+    }
+    const mStats = maestroMap.get(maestroId)
+    mStats.totalSesiones += 1
+    mStats.clases.add(claseNombre)
+
+    for (const a of ses.asistencias || []) {
+      if (!a.alumno_id) continue
+      totalRegistros += 1
+      mStats.totalRegistros += 1
+
+      const isPres = a.estado === 'presente' || a.estado === 'P' || a.estado === 'tarde' || a.estado === 'T'
+      const isAus = a.estado === 'ausente' || a.estado === 'A'
+      const isJust = a.estado === 'justificado' || a.estado === 'J'
+
+      if (isPres) {
+        totalPresentes += 1
+        mStats.totalPresentes += 1
+      } else if (isAus) {
+        totalAusentes += 1
+        mStats.totalAusentes += 1
+      } else if (isJust) {
+        totalJustificados += 1
+        mStats.totalJustificados += 1
+      }
+
+      if (!alumnoMap.has(a.alumno_id)) {
+        alumnoMap.set(a.alumno_id, {
+          alumnoId: a.alumno_id,
+          alumnoNombre: a.alumnos?.nombre_completo || 'Estudiante',
+          instrumento: a.alumnos?.instrumento_principal || '—',
+          programa: a.alumnos?.programa || 'Cátedra',
+          diasMap: new Map(),
+          totalPresentes: 0,
+          totalAusentes: 0,
+          totalJustificados: 0,
+          totalRegistros: 0,
+          tasaAsistencia: 100,
+          nivelRiesgo: 'normal',
+          ultimaFalta: null,
+          clasesAfectadas: new Set(),
+          maestrosReportaron: new Set(),
+          detalleFaltas: [],
+        })
+      }
+
+      const alStats = alumnoMap.get(a.alumno_id)
+      alStats.totalRegistros += 1
+
+      const fechaStr = ses.fecha ? String(ses.fecha).slice(0, 10) : 'sin-fecha'
+      if (!alStats.diasMap.has(fechaStr)) {
+        alStats.diasMap.set(fechaStr, { presentes: 0, ausentes: 0, justificados: 0 })
+      }
+      const diaAlumno = alStats.diasMap.get(fechaStr)
+
+      if (isPres) {
+        alStats.totalPresentes += 1
+        diaAlumno.presentes += 1
+      }
+      if (isAus) {
+        alStats.totalAusentes += 1
+        diaAlumno.ausentes += 1
+        alStats.clasesAfectadas.add(claseNombre)
+        alStats.maestrosReportaron.add(maestroNombre)
+        alStats.detalleFaltas.push({
+          fecha: ses.fecha,
+          claseNombre,
+          maestroNombre,
+          estado: a.estado,
+          justificacion: a.justificacion_texto,
+        })
+        if (!alStats.ultimaFalta || ses.fecha > alStats.ultimaFalta) {
+          alStats.ultimaFalta = ses.fecha
+        }
+      }
+      if (isJust) {
+        alStats.totalJustificados += 1
+        diaAlumno.justificados += 1
+      }
+    }
+  }
+
+  const alumnosList = Array.from(alumnoMap.values()).map((al) => {
+    const totalDiasConvocados = al.diasMap.size
+    let diasConAsistencia = 0
+    let diasAusente = 0
+
+    al.diasMap.forEach((d) => {
+      if (d.presentes > 0) diasConAsistencia += 1
+      if (d.ausentes > 0 && d.presentes === 0) diasAusente += 1
+    })
+
+    const tasaDias = totalDiasConvocados > 0 ? Number(((diasConAsistencia / totalDiasConvocados) * 100).toFixed(1)) : 100
+    const tasa = al.totalRegistros > 0 ? Number(((al.totalPresentes / al.totalRegistros) * 100).toFixed(1)) : 100
+
+    let nivelRiesgo = 'normal'
+    if (diasConAsistencia === 0 || diasAusente >= 3 || tasaDias <= 50) nivelRiesgo = 'critico'
+    else if (diasAusente >= 1 || tasaDias < 85) nivelRiesgo = 'alerta'
+
+    return {
+      ...al,
+      totalDiasConvocados,
+      diasConAsistencia,
+      diasAusente,
+      tasaAsistenciaDias: tasaDias,
+      tasaAsistencia: tasa,
+      nivelRiesgo,
+      clasesAfectadas: Array.from(al.clasesAfectadas),
+      maestrosReportaron: Array.from(al.maestrosReportaron),
+    }
+  })
+
+  const maestrosList = Array.from(maestroMap.values()).map((m) => ({
+    ...m,
+    clases: Array.from(m.clases),
+    tasaAusentismo: m.totalRegistros > 0 ? Number(((m.totalAusentes / m.totalRegistros) * 100).toFixed(1)) : 0,
+  }))
+
+  const totalAlumnosEvaluados = alumnosList.length
+  const alumnosConFaltas = alumnosList.filter((a) => (a.diasAusente || a.totalAusentes) > 0).length
+  const alumnosSinFaltas = totalAlumnosEvaluados - alumnosConFaltas
+  const tasaAusentismo = totalRegistros > 0 ? Number(((totalAusentes / totalRegistros) * 100).toFixed(1)) : 0
+
+  return {
+    periodo: {
+      id: periodo?.id || 'per-activo',
+      nombre: periodo?.nombre || 'Período Activo',
+      fecha_inicio: inicio,
+      fecha_fin: fin,
+      activo: periodo?.activo ?? true,
+    },
+    resumen: {
+      totalAlumnosEvaluados,
+      alumnosConFaltas,
+      alumnosSinFaltas,
+      porcentajeAlumnosConFaltas: totalAlumnosEvaluados > 0 ? Number(((alumnosConFaltas / totalAlumnosEvaluados) * 100).toFixed(1)) : 0,
+      totalRegistros,
+      totalPresentes,
+      totalAusentes,
+      totalJustificados,
+      tasaAusentismo,
+      totalSesionesRegistradas: sesiones.length,
+      totalMaestrosConRegistros: maestrosList.length,
+    },
+    alumnos: alumnosList,
+    maestros: maestrosList,
   }
 }
 

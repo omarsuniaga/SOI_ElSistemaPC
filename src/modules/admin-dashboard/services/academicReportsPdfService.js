@@ -262,29 +262,86 @@ export async function descargarPdfInformeSemestral(data) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...COLOR.tinta)
-  doc.text('2. Cuadro de Honor (Asistencia Sobresaliente ≥95%)', 14, y)
+  doc.text('2. Cuadro de Honor (Fase de Audiciones)', 14, y)
   y += 4
 
-  const honorRows = honor.map((h) => [
-    h.nombre_completo || '—',
-    h.instrumento_principal || '—',
-    `Nivel ${h.nivel_actual || 1}`,
-    String(h.total_clases || 0),
-    String(h.asistencias || 0),
-    `${h.porcentaje_asistencia ?? 0}%`,
-  ])
+  const audicionesRealizadas = Boolean(data?.audiciones_realizadas)
+
+  if (!audicionesRealizadas) {
+    autoTable(doc, {
+      startY: y,
+      body: [[
+        {
+          content: 'SECCIÓN BLOQUEADA: El Cuadro de Honor se habilitará tras la realización y validación de las audiciones semestrales.',
+          styles: { fontStyle: 'italic', textColor: COLOR.humo, halign: 'center', cellPadding: 4 }
+        }
+      ]],
+      theme: 'plain',
+      styles: { fontSize: 8.5, fillColor: COLOR.fondo },
+      margin: { left: 14, right: 14 },
+    })
+  } else {
+    const honorRows = honor.map((h) => [
+      h.nombre_completo || '—',
+      h.instrumento_principal || '—',
+      `Nivel ${h.nivel_actual || 1}`,
+      String(h.total_dias_convocados || h.total_clases || 0),
+      String(h.dias_con_asistencia || h.asistencias || 0),
+      `${h.porcentaje_asistencia ?? 0}%`,
+    ])
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Estudiante', 'Cátedra', 'Nivel', 'Días Convocados', 'Días Asistidos', '% Asistencia']],
+      body: honorRows.length > 0 ? honorRows : [['Sin estudiantes con ≥95%', '—', '—', '—', '—', '—']],
+      theme: 'striped',
+      headStyles: { fillColor: COLOR.exito, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center', fontStyle: 'bold', textColor: COLOR.exito },
+      },
+      margin: { left: 14, right: 14 },
+    })
+  }
+
+  y = doc.lastAutoTable.finalY + 8
+
+  // 3. Ranking de Absentismo por Días
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(...COLOR.tinta)
+  doc.text('3. Ranking de Absentismo Institucional (Días Lectivos con Falta)', 14, y)
+  y += 4
+
+  const ausenciasRows = ausencias.map((a) => {
+    const totalDias = a.total_dias_convocados ?? a.total_clases ?? 0
+    const diasFalta = a.dias_con_falta ?? a.total_ausencias_injustificadas ?? 0
+    const diasAsist = a.dias_con_asistencia ?? a.asistencias ?? Math.max(0, totalDias - diasFalta)
+    const pct = a.porcentaje_dias_ausente ?? a.porcentaje_inasistencia ?? (totalDias > 0 ? Math.round((diasFalta / totalDias) * 100) : 0)
+    return [
+      a.nombre_completo || '—',
+      a.instrumento_principal || '—',
+      `${diasAsist} / ${totalDias} días`,
+      `${diasFalta} días`,
+      `${pct}%`,
+      pct >= 85 || diasAsist === 0 ? 'Abandono Total' : pct >= 50 ? 'Riesgo Alto' : 'Parcial',
+    ]
+  })
 
   autoTable(doc, {
     startY: y,
-    head: [['Estudiante', 'Cátedra', 'Nivel', 'Clases', 'Asistencias', '% Asistencia']],
-    body: honorRows.length > 0 ? honorRows : [['Sin estudiantes con ≥95%', '—', '—', '—', '—', '—']],
+    head: [['Estudiante', 'Cátedra', 'Días Asistidos / Total', 'Días Ausente', '% Ausentismo', 'Diagnóstico']],
+    body: ausenciasRows.length > 0 ? ausenciasRows : [['Sin ausencias acumuladas', '—', '—', '—', '—', '—']],
     theme: 'striped',
-    headStyles: { fillColor: COLOR.exito, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+    headStyles: { fillColor: COLOR.peligro, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
     styles: { fontSize: 8, cellPadding: 2 },
     columnStyles: {
-      3: { halign: 'center' },
-      4: { halign: 'center' },
-      5: { halign: 'center', fontStyle: 'bold', textColor: COLOR.exito },
+      2: { halign: 'center' },
+      3: { halign: 'center', fontStyle: 'bold', textColor: COLOR.peligro },
+      4: { halign: 'center', fontStyle: 'bold' },
+      5: { halign: 'center' },
     },
     margin: { left: 14, right: 14 },
   })
@@ -295,11 +352,11 @@ export async function descargarPdfInformeSemestral(data) {
   doc.addPage()
   y = 20
 
-  // 3. Retención por Cátedra
+  // 4. Retención por Cátedra
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...COLOR.tinta)
-  doc.text('3. Retención de Matrícula por Cátedra / Instrumento', 14, y)
+  doc.text('4. Retención de Matrícula por Cátedra / Instrumento', 14, y)
   y += 4
 
   const retencionRows = retencion.map((r) => [
@@ -328,41 +385,56 @@ export async function descargarPdfInformeSemestral(data) {
 
   y = doc.lastAutoTable.finalY + 8
 
-  // 4. Alumnos Destacados (Merit Score)
+  // 5. Alumnos Destacados (Merit Score / Audiciones)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...COLOR.tinta)
-  doc.text('4. Estudiantes Destacados (Merit Score Curricular)', 14, y)
+  doc.text('5. Estudiantes Destacados y Cuadro de Honor (Fase de Audiciones)', 14, y)
   y += 4
 
-  const destacadosRows = destacados.map((a) => [
-    a.nombre_completo || '—',
-    a.instrumento_principal || '—',
-    `${a.pct_asistencia ?? 0}%`,
-    String(a.total_logros || 0),
-    String(a.indicadores_aprobados || 0),
-    `${a.merit_score ?? 0} pts`,
-  ])
+  if (!audicionesRealizadas) {
+    autoTable(doc, {
+      startY: y,
+      body: [[
+        {
+          content: 'SECCIÓN BLOQUEADA: El Cuadro de Honor y los Alumnos Destacados se consolidarán y publicarán oficialmente tras la realización y validación de las audiciones semestrales.',
+          styles: { fontStyle: 'italic', textColor: COLOR.humo, halign: 'center', cellPadding: 6 }
+        }
+      ]],
+      theme: 'plain',
+      styles: { fontSize: 8.5, fillColor: COLOR.fondo },
+      margin: { left: 14, right: 14 },
+    })
+  } else {
+    const destacadosRows = destacados.map((a) => [
+      a.nombre_completo || '—',
+      a.instrumento_principal || '—',
+      `${a.pct_asistencia ?? 0}%`,
+      String(a.total_logros || 0),
+      String(a.indicadores_aprobados || 0),
+      `${a.merit_score ?? 0} pts`,
+    ])
 
-  autoTable(doc, {
-    startY: y,
-    head: [['Estudiante', 'Cátedra', '% Asistencia', 'Logros', 'Indicadores', 'Merit Score']],
-    body: destacadosRows.length > 0 ? destacadosRows : [['Sin datos de mérito', '—', '—', '—', '—', '—']],
-    theme: 'striped',
-    headStyles: { fillColor: COLOR.primario, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-    styles: { fontSize: 8, cellPadding: 2 },
-    columnStyles: {
-      2: { halign: 'center' },
-      3: { halign: 'center' },
-      4: { halign: 'center' },
-      5: { halign: 'center', fontStyle: 'bold', textColor: COLOR.primario },
-    },
-    margin: { left: 14, right: 14 },
-  })
+    autoTable(doc, {
+      startY: y,
+      head: [['Estudiante', 'Cátedra', '% Asistencia', 'Logros', 'Indicadores', 'Merit Score']],
+      body: destacadosRows.length > 0 ? destacadosRows : [['Sin datos de mérito', '—', '—', '—', '—', '—']],
+      theme: 'striped',
+      headStyles: { fillColor: COLOR.primario, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center', fontStyle: 'bold', textColor: COLOR.primario },
+      },
+      margin: { left: 14, right: 14 },
+    })
+  }
 
   y = doc.lastAutoTable.finalY + 8
 
-  // 5. Evaluación Docente
+  // 6. Evaluación Docente
   if (y > 200) {
     doc.addPage()
     y = 20
@@ -371,7 +443,7 @@ export async function descargarPdfInformeSemestral(data) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...COLOR.tinta)
-  doc.text('5. Evaluación Consolidada del Cuerpo Docente', 14, y)
+  doc.text('6. Evaluación Consolidada del Cuerpo Docente', 14, y)
   y += 4
 
   const docenteRows = docentes.map((d) => [

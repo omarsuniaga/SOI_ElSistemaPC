@@ -121,13 +121,25 @@ export async function handleWhatsAppMaestroAsistenciaPendiente(
   }
 
   const nombreMaestro = (maestro.nombre_completo || 'Maestro/a').trim()
-  const customTemplate =
-    conditions.template ||
-    'Hola {nombre_maestro}, notamos que aún no se ha registrado la asistencia de la sesión del {fecha}. Por favor complétala cuando pueda. Gracias por su compromiso con El Sistema Punta Cana.'
+  const claseNombre = (evento.payload?.clase_nombre as string) || (evento.payload?.materia as string) || 'su clase programada'
+  const deepLink = (evento.payload?.deep_link as string) || `/asistencia/${evento.payload?.clase_id || sesionId}/${fecha}`
+  const fullLink = deepLink.startsWith('http') ? deepLink : `https://soi.app/#${deepLink.startsWith('/') ? '' : '/'}${deepLink}`
+
+  const defaultTemplate =
+    '🎻 *El Sistema Punta Cana* — Recordatorio de Asistencia\n\n' +
+    'Hola {nombre_maestro},\n' +
+    'Notamos que aún no se ha registrado la asistencia de la sesión de *{clase_nombre}* del *{fecha}*.\n\n' +
+    '👉 Completa la asistencia aquí: {link}\n\n' +
+    '¡Gracias por tu dedicación y compromiso!'
+
+  const customTemplate = conditions.template || defaultTemplate
 
   const messageText = customTemplate
     .replace(/\{nombre_maestro\}/g, nombreMaestro)
+    .replace(/\{clase_nombre\}/g, claseNombre)
     .replace(/\{fecha\}/g, fecha)
+    .replace(/\{link\}/g, fullLink)
+    .replace(/\{deep_link\}/g, fullLink)
 
   // Fase 3: por defecto requiere aprobación humana antes de encolarse para envío real.
   const requiereAprobacion = conditions.requiere_aprobacion !== false

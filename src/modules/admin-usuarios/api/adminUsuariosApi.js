@@ -5,6 +5,12 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
+import {
+  getPortalCatalog,
+  getAuthorizedPortales,
+  setUserPortales,
+  getAssignedPortalIds
+} from '../../../core/auth/portalAccessService.js'
 
 export let ROLES_USUARIO = []
 
@@ -28,22 +34,35 @@ export async function cargarRolesSistema() {
   
   if (ROLES_USUARIO.length === 0) {
     // Fallback in case of config missing
-    ROLES_USUARIO = ['maestro', 'user', 'admin']
+    ROLES_USUARIO = [
+      'superadmin',
+      'admin',
+      'direccion',
+      'coordinacion_academica',
+      'maestro',
+      'monitor',
+      'finanzas',
+      'operaciones',
+      'representante',
+      'alumno',
+      'jurado',
+      'user'
+    ]
   }
   return ROLES_USUARIO
 }
 
 /**
- * Crea un usuario vía Edge Function.
- * @param {{nombre:string, email:string, password:string, rol:string}} payload
+ * Crea un usuario vía Edge Function y opcionalmente asigna portales.
+ * @param {{nombre:string, email:string, password:string, rol:string, portales?:string[]}} payload
  * @returns {Promise<{id:string, email:string, rol:string, estado:string}>}
  */
-export async function crearUsuario({ nombre, email, password, rol } = {}) {
+export async function crearUsuario({ nombre, email, password, rol, portales = [] } = {}) {
   if (!nombre || !email || !password) {
     throw new Error('Nombre, email y contraseña son obligatorios')
   }
 
-  if (!ROLES_USUARIO.includes(rol)) {
+  if (ROLES_USUARIO.length > 0 && !ROLES_USUARIO.includes(rol)) {
     throw new Error(`Rol inválido. Debe ser uno de: ${ROLES_USUARIO.join(', ')}`)
   }
 
@@ -61,20 +80,44 @@ export async function crearUsuario({ nombre, email, password, rol } = {}) {
     throw new Error('Respuesta inesperada del servidor')
   }
 
-  return data.user
+  const user = data.user
+  let portalesResult = null
+
+  // Si se seleccionaron portales específicos, asignarlos
+  if (Array.isArray(portales) && portales.length > 0 && user.id) {
+    try {
+      portalesResult = await setUserPortales(user.id, portales)
+    } catch (assignErr) {
+      console.warn('Usuario creado pero hubo un error asignando portales iniciales:', assignErr)
+      portalesResult = { success: false, error: assignErr.message }
+    }
+  }
+
+  return {
+    ...user,
+    portalesResult
+  }
 }
 
 /**
- * Lista usuarios de profiles. Permite filtrar opcionalmente por rol.
+ * Lista usuarios de profiles con información de portales asignados.
  * @param {{rol?: string}} [options]
- * @returns {Promise<Array<{id:string, email:string, nombre_completo:string, rol:string, estado:string}>>}
+ * @returns {Promise<Array<{id:string, email:string, nombre_completo:string, rol:string, estado:string, portales_asignados?:string[]}>>}
  */
 export async function listarUsuarios(options = {}) {
   const { rol } = options
 
   let query = supabase
     .from('profiles')
-    .select('id, email, nombre_completo, rol, estado, created_at')
+    .select(`
+      id, 
+      email, 
+      nombre_completo, 
+      rol, 
+      estado, 
+      created_at,
+      user_portal_access!user_id ( portal_id )
+    `)
     .order('created_at', { ascending: false })
 
   if (rol) {
@@ -87,7 +130,48 @@ export async function listarUsuarios(options = {}) {
     throw new Error(error.message || 'Error al listar usuarios')
   }
 
-  return data || []
+  return (data || []).map(u => ({
+    ...u,
+    portales_asignados: (u.user_portal_access || []).map(p => p.portal_id)
+  }))
+}
+
+/**
+ * Actualiza el rol asignado a un usuario en profiles.
+ * @param {string} userId
+ * @param {string} rol
+ * @returns {Promise<Object>}
+ */
+export async function actualizarRolUsuario(userId, rol) {
+  if (!userId || !rol) throw new Error('ID de usuario y rol son requeridos')
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ rol })
+    .eq('id', userId)
+    .select('id, email, rol, estado')
+    .single()
+
+  if (error) throw new Error(error.message || 'Error al actualizar rol del usuario')
+  return data
+}
+
+/**
+ * Actualiza el estado (activo/inactivo/suspendido) de un usuario en profiles.
+ * @param {string} userId
+ * @param {string} estado
+ * @returns {Promise<Object>}
+ */
+export async function actualizarEstadoUsuario(userId, estado) {
+  if (!userId || !estado) throw new Error('ID de usuario y estado son requeridos')
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ estado })
+    .eq('id', userId)
+    .select('id, email, rol, estado')
+    .single()
+
+  if (error) throw new Error(error.message || 'Error al actualizar estado del usuario')
+  return data
 }
 
 /**
@@ -97,4 +181,11 @@ export async function listarUsuarios(options = {}) {
  */
 export async function listarUsuariosPorRol(rol) {
   return listarUsuarios({ rol })
+}
+
+export {
+  getPortalCatalog,
+  getAuthorizedPortales,
+  setUserPortales,
+  getAssignedPortalIds
 }

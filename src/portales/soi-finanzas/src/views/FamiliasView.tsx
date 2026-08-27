@@ -576,7 +576,11 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
       )}
 
       {selectedAlumno && (
-        <AlumnoFichaModal alumno={selectedAlumno} onClose={() => setSelectedAlumno(null)} />
+        <AlumnoFichaModal
+          alumno={selectedAlumno}
+          onClose={() => setSelectedAlumno(null)}
+          onSelectOtroAlumno={(a) => setSelectedAlumno(a)}
+        />
       )}
 
     </div>

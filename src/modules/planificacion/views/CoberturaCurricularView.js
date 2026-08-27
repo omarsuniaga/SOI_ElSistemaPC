@@ -1,5 +1,6 @@
 import { obtenerCoberturaCurricular } from '../api/planificacionAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 
 export async function renderCoberturaCurricularView(container) {
   if (!container) return
@@ -15,6 +16,7 @@ export async function renderCoberturaCurricularView(container) {
   try {
     const coberturaData = await obtenerCoberturaCurricular(null)
     _renderUI(container, coberturaData)
+    attachViewInfoEvents(container)
   } catch (err) {
     console.error('[CoberturaCurricularView] Error:', err)
     container.innerHTML = `
@@ -37,6 +39,9 @@ function _renderUI(container, data) {
         <div>
           <h4 class="fw-bold mb-1"><i class="bi bi-grid-3x3-gap text-primary me-2"></i>Cobertura Curricular e Indicadores</h4>
           <p class="text-muted small mb-0">Auditoría del avance pedagógico y cumplimiento del currículo institucional por clase.</p>
+        </div>
+        <div>
+          ${renderViewInfoButton('planificacion-cobertura')}
         </div>
       </div>
 

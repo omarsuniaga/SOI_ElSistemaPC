@@ -412,7 +412,7 @@ const NAV_GROUPS = [
       { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
       { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
       { id: 'hermes-reglas', label: 'Reglas Reactivas', icon: 'bi-sliders' },
-      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
       { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
       { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
@@ -422,13 +422,30 @@ const NAV_GROUPS = [
     label: 'Operación',
     icon: 'bi-clipboard-data',
     items: [
-      { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
-      { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
+      {
+        id: 'periodos',
+        label: 'Períodos Académicos',
+        icon: 'bi-calendar-event',
+        badge: '5',
+        badgeClass: 'badge bg-primary-subtle text-primary border border-primary-subtle rounded-circle px-1.5 py-0.5',
+      },
       { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
       { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
       { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
-      { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
-      { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
+      {
+        id: 'asistencias',
+        label: 'Resumen Asistencias',
+        icon: 'bi-calendar-check',
+        badge: '3',
+        badgeClass: 'badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-circle px-1.5 py-0.5',
+      },
+      {
+        id: 'admin-dashboard',
+        label: 'Cumplimiento Maestros',
+        icon: 'bi-clipboard-check',
+        badge: '2',
+        badgeClass: 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-circle px-1.5 py-0.5',
+      },
       { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
       { id: 'inicio-periodo-seguro', label: 'Inicio seguro de período', icon: 'bi-shield-check' },
       { id: 'simulador-panel-control', label: 'Simulador Operaciones', icon: 'bi-cpu' },
@@ -450,10 +467,22 @@ const NAV_GROUPS = [
     label: 'Académico',
     icon: 'bi-easel',
     items: [
-      { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
+      {
+        id: 'clases-hoy',
+        label: 'Clases de Hoy',
+        icon: 'bi-calendar-day',
+        badge: '1',
+        badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
+      },
       { id: 'programas', label: 'Programas', icon: 'bi-book' },
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
-      { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
+      {
+        id: 'salones',
+        label: 'Salones',
+        icon: 'bi-door-open',
+        badge: '4',
+        badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
+      },
       { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
       { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
     ],
@@ -571,7 +600,7 @@ function renderNavbar(_container, isAuthenticated = false) {
 
   const auth = useAuth.getUser()
   const userDisplay = auth ? auth.email || auth.full_name || 'Usuario' : ''
-  const currentRoute = localStorage.getItem('current-view') || 'programas'
+  const currentRoute = localStorage.getItem('current-view') || 'clases-hoy'
   const activeGroup = _getGroupForRoute(currentRoute)
   const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark'
 
@@ -602,6 +631,7 @@ function renderNavbar(_container, isAuthenticated = false) {
               <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}" data-href="${item.href || ''}">
                 <i class="bi ${item.icon}"></i>
                 <span>${item.label}</span>
+                ${item.badge ? `<span class="${item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle'} ms-auto" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>` : ''}
                 ${item.id === 'admin-notificaciones' ? '<span class="notif-badge" id="sidebar-notif-badge" style="display:none"></span>' : ''}
               </button>
             `,
@@ -725,6 +755,7 @@ function renderNavbar(_container, isAuthenticated = false) {
       <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}" data-href="${item.href || ''}">
         <span class="sheet-item-icon"><i class="bi ${item.icon}"></i></span>
         <span class="sheet-item-text">${item.label}</span>
+        ${item.badge ? `<span class="${item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle'} ms-auto" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>` : ''}
       </button>
     `,
       )
@@ -882,7 +913,7 @@ async function startApp() {
   router.initCustomEvents()
   reportCatalogAudit({
     portalId: 'admin',
-    defaultRoute: 'dir-score',
+    defaultRoute: 'clases-hoy',
     navGroups: NAV_GROUPS,
     registeredRoutes: Object.keys(router.routes),
   })
@@ -900,7 +931,7 @@ async function startApp() {
   }, authRoutes)
 
   // 5. Verificar autenticación Y rol
-  const currentRoute = localStorage.getItem('current-view') || 'programas'
+  const currentRoute = localStorage.getItem('current-view') || 'clases-hoy'
   let isAuthenticated = useAuth.isAuthenticated()
 
   if (isAuthenticated) {
@@ -912,6 +943,16 @@ async function startApp() {
     }
   }
 
+  const dismissSplashScreen = () => {
+    const splash = document.querySelector('.pm-loading-splash, #pm-loading-splash, .admin-loader-container')
+    if (!splash) return
+    splash.style.transition = 'opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+    splash.style.opacity = '0'
+    splash.style.transform = 'scale(0.98)'
+    splash.style.pointerEvents = 'none'
+    setTimeout(() => splash.remove(), 400)
+  }
+
   // 5. Lógica de enrutamiento inicial
   if (!isAuthenticated && !authRoutes.includes(currentRoute)) {
     // Redirigir a login si intenta acceder a ruta protegida
@@ -919,16 +960,17 @@ async function startApp() {
     router.navigate('login')
   } else if (isAuthenticated && authRoutes.includes(currentRoute)) {
     // Tras login, el admin aterriza en el Score del Director (vista DIR)
-    localStorage.setItem('current-view', 'dir-score')
+    localStorage.setItem('current-view', 'clases-hoy')
     renderNavbar(app, true)
-    router.navigate('dir-score')
+    router.navigate('clases-hoy')
   } else {
     // Navegación normal
     if (isAuthenticated) {
       renderNavbar(app, true)
     }
-    router.init()
+    router.init('clases-hoy')
   }
+  dismissSplashScreen()
 
   // 6. Suscribir a cambios de auth globalmente
   useAuth.subscribe((state) => {
@@ -962,13 +1004,13 @@ if (document.readyState === 'loading') {
 // PORTAL SWITCH BUTTON VISIBILITY (only on main page)
 // ============================================================================
 function updatePortalButtonVisibility() {
-  const currentRoute = localStorage.getItem('current-view') || 'programas'
+  const currentRoute = localStorage.getItem('current-view') || 'clases-hoy'
   const teacherBridge = document.querySelector('.teacher-bridge')
 
   if (!teacherBridge) return
 
   // Show button only on main page (programas)
-  if (currentRoute === 'programas') {
+  if (currentRoute === 'clases-hoy') {
     teacherBridge.classList.add('visible')
   } else {
     teacherBridge.classList.remove('visible')

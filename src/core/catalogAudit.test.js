@@ -15,12 +15,12 @@ describe('shadow catalog', () => {
     const registryModules = moduleCatalog.slice(0, 29)
     expect(registryModules).toHaveLength(29)
     expect(registryModules.flatMap(module => module.routeIds)).toHaveLength(MODULE_REGISTRY_ROUTE_COUNT)
-    expect(MODULE_REGISTRY_ROUTE_COUNT).toBe(91)
+    expect(MODULE_REGISTRY_ROUTE_COUNT).toBe(95)
   })
 
   it('freezes critical defaults without becoming runtime authority', () => {
     expect(Object.fromEntries(portalCatalog.map(portal => [portal.portalId, portal.defaultRoute])))
-      .toMatchObject({ admin: 'dir-score', ADM: 'alumnos', ACM: 'clases', MAESTROS: 'hoy' })
+      .toMatchObject({ admin: 'dir-score', ADM: 'clases-hoy', ACM: 'clases', MAESTROS: 'hoy' })
     expect(Object.isFrozen(portalCatalog)).toBe(true)
     expect(Object.isFrozen(moduleCatalog[0].routeIds)).toBe(true)
   })

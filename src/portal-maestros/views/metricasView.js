@@ -6,27 +6,10 @@ import { announce } from '../utils/a11yUtils.js'
 import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
 import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js'
 
-// ── Mini gráfico de barras (SVG interno con labels) ──────────────
-function barChartContent(data, maxVal, width = 160, height = 36) {
-  if (!data || data.length === 0) {
-    return `<text x="${width / 2}" y="${height / 2 + 4}" text-anchor="middle" font-size="9" fill="var(--pm-text-muted)">Sin datos</text>`
-  }
-  const barW = Math.max(10, Math.min(24, (width - (data.length - 1) * 4) / data.length))
-  const gap = (width - barW * data.length) / (data.length + 1)
-  const max = Math.max(...data, 1)
-  return data.map((v, i) => {
-    const barH = Math.max(4, (v / max) * (height - 10))
-    const x = gap + i * (barW + gap)
-    const y = height - barH - 6
-    const color = v >= 70 ? 'var(--pm-success)' : v >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'
-    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="${color}" aria-label="${v}%"/>
-      <text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" font-size="7" fill="var(--pm-text-muted)">${v}%</text>`
-  }).join('')
-}
-
 // ── Estado de la vista (para persistencia entre eventos) ───────
-let estadoActual = {
-  periodo: 4,
+const estadoActual = {
+  periodo: 'periodo',
+  periodoNombre: 'Período actual',
   maestroId: null,
   clasesData: [],
   todasSesiones: [],
@@ -35,32 +18,43 @@ let estadoActual = {
 }
 
 // ── Carga datos según período ───────────────────────────────────
-async function cargarDatos(semanas, maestroId) {
+async function cargarDatos(rango, maestroId) {
   const clases = await getMisClases()
   clases.sort((a, b) => a.nombre.localeCompare(b.nombre))
 
-  const fechaInicio = new Date()
-  fechaInicio.setDate(fechaInicio.getDate() - semanas * 7)
-  let fechaStr = fechaInicio.toISOString().split('T')[0]
-  const hoyStr = new Date().toISOString().split('T')[0]
-
-  // La ventana de semanas (4/8/12) es relativa a HOY, no al período
-  // académico — con "12 semanas" alcanzaba a cruzar hacia atrás del inicio
-  // del período activo y volvía a mostrar "Pendientes" de un semestre ya
-  // cerrado (mismo síntoma que en las notificaciones). Se acota la ventana
-  // para que nunca cruce el inicio del período activo — sin período
-  // configurado, no se acota nada (fail-open).
+  const hoy = new Date()
+  const hoyStr = hoy.toISOString().split('T')[0]
   const periodoActivo = await getPeriodoActivo().catch(() => null)
-  if (periodoActivo?.fecha_inicio && periodoActivo.fecha_inicio > fechaStr) {
-    fechaStr = periodoActivo.fecha_inicio
+  let fechaInicioStr
+  let fechaFinStr = hoyStr
+
+  if (rango === 'periodo' || rango === undefined || rango === null) {
+    fechaInicioStr = periodoActivo?.fecha_inicio || new Date(hoy.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    if (periodoActivo?.fecha_fin && periodoActivo.fecha_fin < hoyStr) {
+      fechaFinStr = periodoActivo.fecha_fin
+    }
+  } else if (rango === 'todo') {
+    fechaInicioStr = '2020-01-01'
+    fechaFinStr = hoyStr
+  } else {
+    const semanas = parseInt(rango, 10) || 4
+    const fechaInicio = new Date()
+    fechaInicio.setDate(fechaInicio.getDate() - semanas * 7)
+    fechaInicioStr = fechaInicio.toISOString().split('T')[0]
+
+    // Acotar siempre para no cruzar el inicio del período activo a menos que se pida todo
+    if (periodoActivo?.fecha_inicio && periodoActivo.fecha_inicio > fechaInicioStr) {
+      fechaInicioStr = periodoActivo.fecha_inicio
+    }
   }
 
-  const sesiones = await getSesiones(maestroId, fechaStr, hoyStr)
-  const sesionesValidas = sesiones || []
+  const sesiones = await getSesiones(maestroId, fechaInicioStr, fechaFinStr)
+  // Filtrar estrictamente por el rango de fechas pedido para evitar fugas de cache
+  const sesionesValidas = (sesiones || []).filter(s => s.fecha >= fechaInicioStr && s.fecha <= fechaFinStr)
 
   const claseIds = clases.map(c => c.id)
   if (claseIds.length === 0) {
-    return { clases, sesiones: sesionesValidas, inscripcionesPorClase: {} }
+    return { clases, sesiones: sesionesValidas, inscripcionesPorClase: {}, periodoNombre: periodoActivo?.nombre || 'Período actual' }
   }
 
   const { data: todasInscripciones } = await supabase
@@ -78,45 +72,73 @@ async function cargarDatos(semanas, maestroId) {
     inscripcionesPorClase[ins.clase_id].push(ins.alumno)
   }
 
-  return { clases, sesiones: sesionesValidas, inscripcionesPorClase }
+  return { clases, sesiones: sesionesValidas, inscripcionesPorClase, periodoNombre: periodoActivo?.nombre || 'Período actual' }
 }
 
 // ── Procesa datos y construye modelo para la vista ──────────────
-function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
+function procesarDatos({ clases, sesiones, inscripcionesPorClase, periodoNombre }) {
   const sesionesCompletadas = sesiones.filter(s => s.estado === 'registrada').length
   const sesionesPendientes = sesiones.filter(s => s.estado === 'pendiente').length
   const sesionesBorrador = sesiones.filter(s => s.borrador === true).length
 
-  let totalPresentes = 0, totalAusentes = 0, totalJustificados = 0, totalRegistros = 0
+  // Granularidad por Días / Jornadas
+  const diasMapGlobal = new Map()
   sesiones.forEach(s => {
-    (s.asistencia || []).forEach(a => {
-      totalRegistros++
-      if (a.estado === 'P') totalPresentes++
-      else if (a.estado === 'A') totalAusentes++
-      else if (a.estado === 'J') totalJustificados++
+    const fecha = s.fecha ? String(s.fecha).slice(0, 10) : 'sin-fecha'
+    if (!diasMapGlobal.has(fecha)) {
+      diasMapGlobal.set(fecha, { presentes: 0, ausentes: 0, justificados: 0, total: 0 })
+    }
+    const diaStat = diasMapGlobal.get(fecha)
+    ;(s.asistencia || []).forEach(a => {
+      diaStat.total++
+      if (a.estado === 'P' || a.estado === 'presente' || a.estado === 'T' || a.estado === 'tarde') diaStat.presentes++
+      else if (a.estado === 'A' || a.estado === 'ausente') diaStat.ausentes++
+      else if (a.estado === 'J' || a.estado === 'justificado') diaStat.justificados++
     })
   })
-  const asistenciaPromedio = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
 
-  // Indexar una vez evita volver a recorrer todas las sesiones por cada clase
-  // y por cada alumno cuando se amplía el período de análisis.
+  let totalPresentes = 0, totalAusentes = 0, totalJustificados = 0, totalRegistros = 0
+  const totalDiasConvocados = diasMapGlobal.size
+  let totalDiasAsistidos = 0
+
+  diasMapGlobal.forEach(d => {
+    totalRegistros += d.total
+    totalPresentes += d.presentes
+    totalAusentes += d.ausentes
+    totalJustificados += d.justificados
+    if (d.presentes > 0) totalDiasAsistidos++
+  })
+
+  const asistenciaPromedio = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
+  const asistenciaDiasPct = totalDiasConvocados > 0 ? Math.round((totalDiasAsistidos / totalDiasConvocados) * 100) : 0
+
+  // Indexar por clase y alumno agrupando por DÍA calendario
   const sesionesPorClase = new Map()
-  const asistenciaPorClaseAlumno = new Map()
+  const asistenciaDiasPorClaseAlumno = new Map()
+
   for (const sesion of sesiones) {
     const sesionesClase = sesionesPorClase.get(sesion.clase_id) || []
     sesionesClase.push(sesion)
     sesionesPorClase.set(sesion.clase_id, sesionesClase)
 
     if (!Array.isArray(sesion.asistencia)) continue
-    const asistenciaAlumnos = asistenciaPorClaseAlumno.get(sesion.clase_id) || new Map()
+    const fecha = sesion.fecha ? String(sesion.fecha).slice(0, 10) : 'sin-fecha'
+    const asistenciaAlumnos = asistenciaDiasPorClaseAlumno.get(sesion.clase_id) || new Map()
+
     for (const asistencia of sesion.asistencia) {
       if (!asistencia?.alumno_id) continue
-      const acumulado = asistenciaAlumnos.get(asistencia.alumno_id) || { presentes: 0, total: 0 }
-      acumulado.total++
-      if (asistencia.estado === 'P') acumulado.presentes++
-      asistenciaAlumnos.set(asistencia.alumno_id, acumulado)
+      const alumnoDias = asistenciaAlumnos.get(asistencia.alumno_id) || new Map()
+      const diaAlumno = alumnoDias.get(fecha) || { presentes: 0, ausentes: 0, total: 0 }
+      diaAlumno.total++
+      if (asistencia.estado === 'P' || asistencia.estado === 'presente' || asistencia.estado === 'T' || asistencia.estado === 'tarde') {
+        diaAlumno.presentes++
+      } else if (asistencia.estado === 'A' || asistencia.estado === 'ausente') {
+        diaAlumno.ausentes++
+      }
+      alumnoDias.set(fecha, diaAlumno)
+      asistenciaAlumnos.set(asistencia.alumno_id, alumnoDias)
     }
-    asistenciaPorClaseAlumno.set(sesion.clase_id, asistenciaAlumnos)
+    asistenciaDiasPorClaseAlumno.set(sesion.clase_id, asistenciaAlumnos)
   }
 
   const clasesDataMap = clases.map(clase => {
@@ -130,7 +152,7 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
       .filter(s => s.estado === 'registrada')
       .slice(-8)
       .map(s => {
-        const pres = (s.asistencia || []).filter(a => a.estado === 'P').length
+        const pres = (s.asistencia || []).filter(a => a.estado === 'P' || a.estado === 'presente' || a.estado === 'T' || a.estado === 'tarde').length
         const tot = (s.asistencia || []).length
         return tot > 0 ? Math.round((pres / tot) * 100) : 0
       })
@@ -139,7 +161,7 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
     sesionesClase.forEach(s => {
       (s.asistencia || []).forEach(a => {
         totAsist++
-        if (a.estado === 'P') presTotal++
+        if (a.estado === 'P' || a.estado === 'presente' || a.estado === 'T' || a.estado === 'tarde') presTotal++
       })
     })
     const avgAttendance = totAsist > 0 ? Math.round((presTotal / totAsist) * 100) : 0
@@ -150,14 +172,32 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
       : 0
 
     const riskStudents = []
-    const asistenciaAlumnos = asistenciaPorClaseAlumno.get(clase.id) || new Map()
+    const asistenciaAlumnos = asistenciaDiasPorClaseAlumno.get(clase.id) || new Map()
+
     for (const alum of alumnos) {
-      const asistenciaAlumno = asistenciaAlumnos.get(alum.id)
-      const pct = asistenciaAlumno?.total > 0
-        ? Math.round((asistenciaAlumno.presentes / asistenciaAlumno.total) * 100)
+      const alumnoDias = asistenciaAlumnos.get(alum.id) || new Map()
+      const totalDiasAlumno = alumnoDias.size
+      let diasConPresencia = 0
+      let diasConFalta = 0
+
+      alumnoDias.forEach(d => {
+        if (d.presentes > 0) diasConPresencia++
+        if (d.ausentes > 0 && d.presentes === 0) diasConFalta++
+      })
+
+      const pctDias = totalDiasAlumno > 0
+        ? Math.round((diasConPresencia / totalDiasAlumno) * 100)
         : 0
-      if (pct > 0 && pct < 70) {
-        riskStudents.push({ id: alum.id, nombre: alum.nombre_completo, pct })
+
+      if (totalDiasAlumno > 0 && (pctDias < 70 || diasConPresencia === 0)) {
+        riskStudents.push({
+          id: alum.id,
+          nombre: alum.nombre_completo,
+          pct: pctDias,
+          diasConPresencia,
+          diasConFalta,
+          totalDias: totalDiasAlumno,
+        })
       }
     }
 
@@ -174,22 +214,86 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
     }
   })
 
-  const alertas = []
+  // Consolidar riesgo a nivel global del docente para no emitir falsos "0%" cuando asisten a otras de sus cátedras
+  const alumnoRiesgoGlobalMap = new Map()
+
   for (const clase of clasesDataMap) {
-    for (const alum of clase.riskStudents) {
+    const asistenciaAlumnos = asistenciaDiasPorClaseAlumno.get(clase.id) || new Map()
+    for (const alum of clase.alumnos) {
+      const alumnoDias = asistenciaAlumnos.get(alum.id) || new Map()
+      if (!alumnoRiesgoGlobalMap.has(alum.id)) {
+        alumnoRiesgoGlobalMap.set(alum.id, {
+          id: alum.id,
+          nombre: alum.nombre_completo,
+          diasGlobales: new Map(),
+          clasesDesglose: [],
+        })
+      }
+      const alGlobal = alumnoRiesgoGlobalMap.get(alum.id)
+      let diasPresClase = 0
+      const diasTotClase = alumnoDias.size
+
+      alumnoDias.forEach((d, fecha) => {
+        if (!alGlobal.diasGlobales.has(fecha)) {
+          alGlobal.diasGlobales.set(fecha, { presentes: 0, ausentes: 0 })
+        }
+        const gDia = alGlobal.diasGlobales.get(fecha)
+        if (d.presentes > 0) {
+          gDia.presentes += d.presentes
+          diasPresClase++
+        }
+        if (d.ausentes > 0) gDia.ausentes += d.ausentes
+      })
+
+      if (diasTotClase > 0) {
+        alGlobal.clasesDesglose.push({
+          claseNombre: clase.nombre,
+          diasPresClase,
+          diasTotClase,
+          pct: Math.round((diasPresClase / diasTotClase) * 100),
+        })
+      }
+    }
+  }
+
+  const alertas = []
+  alumnoRiesgoGlobalMap.forEach(alum => {
+    const totalDiasDocente = alum.diasGlobales.size
+    if (totalDiasDocente === 0) return
+
+    let diasAsistidosDocente = 0
+    let diasAusenteDocente = 0
+    alum.diasGlobales.forEach(d => {
+      if (d.presentes > 0) diasAsistidosDocente++
+      else if (d.ausentes > 0) diasAusenteDocente++
+    })
+
+    const pctGlobalDocente = Math.round((diasAsistidosDocente / totalDiasDocente) * 100)
+
+    if (pctGlobalDocente < 70 || diasAsistidosDocente === 0) {
+      const claseCritica = alum.clasesDesglose.sort((a, b) => a.pct - b.pct)[0]?.claseNombre || 'Clases'
       alertas.push({
         tipo: 'baja_asistencia',
         alumnoId: alum.id,
         nombre: alum.nombre,
-        clase: clase.nombre,
-        valor: alum.pct,
-        mensaje: `${alum.pct}%`
+        clase: alum.clasesDesglose.length > 1 ? `${claseCritica} (+${alum.clasesDesglose.length - 1} cátedras)` : claseCritica,
+        valor: pctGlobalDocente,
+        diasConPresencia: diasAsistidosDocente,
+        diasConFalta: diasAusenteDocente,
+        totalDias: totalDiasDocente,
+        mensaje: diasAsistidosDocente === 0
+          ? `0% (${diasAusenteDocente}/${totalDiasDocente} días ausente)`
+          : `${pctGlobalDocente}% (${diasAsistidosDocente}/${totalDiasDocente} días)`
       })
     }
-  }
+  })
+
+  alertas.sort((a, b) => a.valor - b.valor || b.diasConFalta - a.diasConFalta)
 
   return {
     totalClases: clases.length,
+    totalDiasConvocados,
+    totalDiasAsistidos,
     sesionesCompletadas,
     sesionesPendientes: sesionesPendientes + sesionesBorrador,
     totalPresentes,
@@ -197,26 +301,27 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
     totalJustificados,
     totalRegistros,
     asistenciaPromedio,
+    asistenciaDiasPct,
     clasesData: clasesDataMap,
     alertasRiesgo: alertas,
-    inscripcionesPorClase
+    inscripcionesPorClase,
+    periodoNombre
   }
 }
 
 // ── Genera el HTML del dashboard ────────────────────────────────
 function generarHTML(datos) {
   const {
-    totalClases, sesionesCompletadas, sesionesPendientes,
+    totalClases, totalDiasConvocados, totalDiasAsistidos, sesionesCompletadas, sesionesPendientes,
     totalPresentes, totalAusentes, totalJustificados, totalRegistros,
-    asistenciaPromedio, clasesData, alertasRiesgo
+    asistenciaPromedio, asistenciaDiasPct, clasesData, alertasRiesgo, periodoNombre
   } = datos
 
   const pctPresentes = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
   const pctAusentes = totalRegistros > 0 ? Math.round((totalAusentes / totalRegistros) * 100) : 0
   const pctJustificados = totalRegistros > 0 ? Math.round((totalJustificados / totalRegistros) * 100) : 0
 
-  // Build announcement text for screen readers
-  const announceText = `Dashboard: ${asistenciaPromedio}% asistencia general, ${totalClases} clases, ${sesionesCompletadas} sesiones registradas, ${sesionesPendientes} pendientes.`
+  const announceText = `Dashboard: ${asistenciaPromedio}% asistencia general, ${totalClases} clases, ${sesionesCompletadas} sesiones registradas, ${totalDiasConvocados || 0} días lectivos evaluados.`
 
   return `
     <div class="pm-dashboard" role="main" aria-label="Panel de métricas">
@@ -224,12 +329,14 @@ function generarHTML(datos) {
       <header class="pm-dashboard-header">
         <div>
           <h1 class="pm-dashboard-title">Dashboard</h1>
-          <p class="pm-dashboard-subtitle">Resumen académico</p>
+          <p class="pm-dashboard-subtitle">Resumen académico · ${escHTML(periodoNombre || 'Período actual')}</p>
         </div>
         <select id="pm-filter-periodo" class="pm-dashboard-select" aria-label="Período de análisis">
-          <option value="4" ${estadoActual.periodo === 4 ? 'selected' : ''}>4 semanas</option>
-          <option value="8" ${estadoActual.periodo === 8 ? 'selected' : ''}>8 semanas</option>
-          <option value="12" ${estadoActual.periodo === 12 ? 'selected' : ''}>12 semanas</option>
+          <option value="periodo" ${String(estadoActual.periodo) === 'periodo' ? 'selected' : ''}>Período actual (${escHTML(periodoNombre || 'Activo')})</option>
+          <option value="4" ${String(estadoActual.periodo) === '4' ? 'selected' : ''}>Últimas 4 semanas</option>
+          <option value="8" ${String(estadoActual.periodo) === '8' ? 'selected' : ''}>Últimas 8 semanas</option>
+          <option value="12" ${String(estadoActual.periodo) === '12' ? 'selected' : ''}>Últimas 12 semanas</option>
+          <option value="todo" ${String(estadoActual.periodo) === 'todo' ? 'selected' : ''}>Todo el historial</option>
         </select>
       </header>
 
@@ -248,7 +355,7 @@ function generarHTML(datos) {
           </div>
           <div class="pm-overview-info">
             <span class="pm-overview-label">Asistencia</span>
-            <span class="pm-overview-detail">${totalPresentes} de ${totalRegistros} registros</span>
+            <span class="pm-overview-detail">${totalPresentes} asistencias · ${totalDiasConvocados || 0} días lectivos</span>
           </div>
         </div>
         <div class="pm-overview-stat"><span class="pm-overview-number">${totalClases}</span><span class="pm-overview-text">Clases</span></div>
@@ -285,334 +392,179 @@ function generarHTML(datos) {
 
       ${alertasRiesgo.length > 0 ? `
       <section class="pm-dashboard-section" aria-label="Alumnos en riesgo">
-        <h2 class="pm-section-title">Alumnos en Riesgo <span class="pm-section-badge">${alertasRiesgo.length}</span></h2>
+        <h2 class="pm-section-title">Alumnos en Riesgo por Ausentismo <span class="pm-section-badge">${alertasRiesgo.length}</span></h2>
         <div class="pm-risk-list" role="list">
-          ${alertasRiesgo.slice(0, 5).map(a => `
+          ${alertasRiesgo.slice(0, 8).map(a => `
             <div class="pm-risk-item" role="listitem" tabindex="0" data-alumno="${a.alumnoId}" aria-label="Ver perfil de ${escHTML(a.nombre)}">
               <div class="pm-risk-avatar" aria-hidden="true">${(a.nombre || 'A')[0].toUpperCase()}</div>
               <div class="pm-risk-info">
                 <span class="pm-risk-name">${escHTML(a.nombre)}</span>
                 <span class="pm-risk-class">${escHTML(a.clase)}</span>
               </div>
-              <span class="pm-risk-pct">${a.mensaje}</span>
+              <span class="pm-risk-pct ${a.valor === 0 || a.diasConPresencia === 0 ? 'bg-danger text-white px-2 py-1 rounded' : ''}">${escHTML(a.mensaje)}</span>
             </div>
           `).join('')}
         </div>
-      </section>` : ''}
+      </section>
+      ` : ''}
 
-      <section class="pm-dashboard-section" aria-label="Resumen por clase">
-        <h2 class="pm-section-title">Clases</h2>
-        <div class="pm-classes-list" id="pm-clases-grid">
-          ${clasesData.map(clase => {
-            const att = clase.avgAttendance
-            const attColor = att < 70 ? 'danger' : att < 85 ? 'warning' : 'success'
-            const attGradient = att < 70
-              ? 'linear-gradient(135deg,#ff3b30,#ff6b6b)'
-              : att < 85
-                ? 'linear-gradient(135deg,#ff9500,#ffcc00)'
-                : 'linear-gradient(135deg,#30d158,#34c759)'
-            const sparkHTML = clase.sessionAttendance.length > 0
-              ? clase.sessionAttendance.map((v, i, arr) => {
-                  const pct = Math.max(8, v)
-                  const col = v < 70 ? '#ff3b30' : v < 85 ? '#ff9500' : '#30d158'
-                  const isLast = i === arr.length - 1
-                  return `<div class="pm-spark-bar ${isLast ? 'pm-spark-last' : ''}" style="height:${pct}%;background:${col};" title="${v}%"></div>`
-                }).join('')
-              : '<span class="pm-spark-empty">—</span>'
+      <section class="pm-dashboard-section" aria-label="Rendimiento por clase">
+        <h2 class="pm-section-title">Mis Clases</h2>
+        <div class="pm-search-wrapper">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" id="pm-search-input" placeholder="Buscar alumno..." aria-label="Buscar alumno">
+        </div>
+        <div id="pm-search-results" class="pm-search-results"></div>
 
+        <div class="pm-classes-list">
+          ${clasesData.map(c => {
+            const avgColor = c.avgAttendance >= 70 ? 'success' : c.avgAttendance >= 50 ? 'warning' : 'danger'
+            const sparkData = c.sessionAttendance || []
             return `
-            <div class="pm-class-card2" data-clase-id="${clase.id}" role="article" aria-label="Clase ${escHTML(clase.nombre)}">
-              <div class="pm-class-card2__accent" style="background:${attGradient}"></div>
-              <div class="pm-class-card2__body">
-                <div class="pm-class-card2__top">
-                  <div class="pm-class-card2__info">
-                    <span class="pm-class-card2__name">${escHTML(clase.nombre)}</span>
-                    ${clase.instrumento ? `<span class="pm-class-card2__inst"><i class="bi bi-music-note-beamed"></i> ${escHTML(clase.instrumento)}</span>` : ''}
+              <div class="pm-class-card2" data-clase-id="${c.id}">
+                <div class="pm-class-card2__header">
+                  <div class="pm-class-card2__title-group">
+                    <span class="pm-class-card2__name">${escHTML(c.nombre)}</span>
+                    <span class="pm-class-card2__inst">${escHTML(c.instrumento || 'Sin instrumento')}</span>
                   </div>
-                  <div class="pm-class-card2__badge-wrap">
-                    <span class="pm-class-card2__pct ${attColor}" aria-label="Asistencia ${att}%">${att}%</span>
-                    <button class="pm-analisis-btn-metrics" data-clase-id="${clase.id}" aria-label="Analizar clase" title="Ver análisis">
-                      <i class="bi bi-graph-up"></i>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="pm-class-card2__pct ${avgColor}">${c.avgAttendance}%</span>
+                    <button class="pm-analisis-btn-metrics" data-clase-id="${c.id}" title="Análisis de IA de la clase">
+                      <i class="bi bi-robot"></i>
                     </button>
-                    <button class="pm-class-btn2" data-clase-id="${clase.id}" aria-label="Ver alumnos" title="Ver alumnos">
+                    <button class="pm-class-btn2" data-clase-id="${c.id}" aria-label="Ver alumnos de ${escHTML(c.nombre)}">
                       <i class="bi bi-people-fill"></i>
                     </button>
                   </div>
                 </div>
 
-                <div class="pm-class-card2__spark" aria-label="Tendencia de asistencia últimas sesiones">
-                  ${sparkHTML}
+                <div class="pm-class-card2__spark" aria-hidden="true">
+                  ${sparkData.length > 0
+                    ? sparkData.map((v, idx) => {
+                        const h = Math.max(4, Math.round((v / 100) * 28))
+                        const col = v >= 70 ? 'var(--pm-success)' : v >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'
+                        const isLast = idx === sparkData.length - 1
+                        return `<div class="pm-spark-bar ${isLast ? 'pm-spark-last' : ''}" style="height:${h}px;background:${col}" title="${v}%"></div>`
+                      }).join('')
+                    : `<span class="pm-spark-empty">Sin sesiones</span>`
+                  }
                 </div>
 
                 <div class="pm-class-card2__stats">
+                  <div class="pm-cs2">
+                    <i class="bi bi-people"></i>
+                    <span class="pm-cs2__val">${c.totalAlumnos}</span>
+                    <span class="pm-cs2__lbl">Alumnos</span>
+                  </div>
                   <div class="pm-cs2 pm-cs2--success">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span class="pm-cs2__val">${clase.sesionesCompletadas}</span>
-                    <span class="pm-cs2__lbl">REG.</span>
+                    <i class="bi bi-check2-circle"></i>
+                    <span class="pm-cs2__val">${c.sesionesCompletadas}</span>
+                    <span class="pm-cs2__lbl">Registradas</span>
                   </div>
                   <div class="pm-cs2 pm-cs2--warning">
-                    <i class="bi bi-clock-fill"></i>
-                    <span class="pm-cs2__val">${clase.sesionesPendientes}</span>
-                    <span class="pm-cs2__lbl">PEN.</span>
+                    <i class="bi bi-clock-history"></i>
+                    <span class="pm-cs2__val">${c.sesionesPendientes}</span>
+                    <span class="pm-cs2__lbl">Pendientes</span>
                   </div>
                   <div class="pm-cs2 pm-cs2--blue">
-                    <i class="bi bi-people-fill"></i>
-                    <span class="pm-cs2__val">${clase.totalAlumnos}</span>
-                    <span class="pm-cs2__lbl">ALUM.</span>
-                  </div>
-                  <div class="pm-cs2 pm-cs2--purple">
-                    <i class="bi bi-journal-check"></i>
-                    <span class="pm-cs2__val">${clase.progress}%</span>
-                    <span class="pm-cs2__lbl">CONT.</span>
+                    <i class="bi bi-book"></i>
+                    <span class="pm-cs2__val">${c.progress}%</span>
+                    <span class="pm-cs2__lbl">Contenido</span>
                   </div>
                 </div>
 
-                ${clase.riskStudents.length > 0 ? `
-                <div class="pm-class-card2__risk">
-                  <i class="bi bi-exclamation-triangle-fill"></i>
-                  ${clase.riskStudents.length} alumno${clase.riskStudents.length > 1 ? 's' : ''} con asistencia &lt;70%
-                </div>` : ''}
+                ${c.riskStudents.length > 0 ? `
+                  <div class="pm-class-card2__risk">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>${c.riskStudents.length} alumno(s) con asistencia &lt;70%</span>
+                  </div>
+                ` : ''}
               </div>
-            </div>`
+            `
           }).join('')}
         </div>
       </section>
-
     </div>
 
     <style>
-      .pm-dashboard { padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-      .pm-dashboard-header { background: linear-gradient(135deg, var(--pm-primary) 0%, #5856d6 100%); padding: 1.25rem 1rem; color: white; display: flex; justify-content: space-between; align-items: center; }
-      .pm-dashboard-title { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
-      .pm-dashboard-subtitle { margin: 0.125rem 0 0; font-size: 0.8125rem; opacity: 0.75; }
-      .pm-dashboard-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; cursor: pointer; }
-      .pm-dashboard-select option { color: #000; }
+      .pm-dashboard { padding: 1rem; max-width: 900px; margin: 0 auto; }
+      .pm-dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+      .pm-dashboard-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+      .pm-dashboard-subtitle { font-size: 0.875rem; color: var(--pm-text-muted); margin: 0; }
+      .pm-dashboard-select { padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--pm-border); background: var(--pm-surface); color: var(--pm-text); font-size: 0.875rem; }
 
-      .pm-dashboard-overview { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; padding: 0.75rem; background: var(--pm-surface); margin: -0.5rem 0.75rem 0.75rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-      .pm-overview-card { display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem; border-radius: 10px; background: var(--pm-surface-2); }
-      .pm-overview-card.primary { background: linear-gradient(135deg, rgba(52,199,89,0.1) 0%, rgba(52,199,89,0.05) 100%); border: 1px solid rgba(52,199,89,0.2); }
-      .pm-overview-ring { width: 48px; height: 48px; flex-shrink: 0; }
-      .pm-circular-chart { display: block; width: 100%; height: 100%; }
+      .pm-dashboard-overview { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+      .pm-overview-card { background: var(--pm-surface); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 1rem; }
+      .pm-overview-card.primary { background: var(--pm-surface); border: 1px solid var(--pm-border); }
+      .pm-overview-ring { width: 56px; height: 56px; flex-shrink: 0; }
+      .pm-circular-chart { width: 100%; height: 100%; }
       .pm-circle-bg { fill: none; stroke: var(--pm-border); stroke-width: 3; }
-      .pm-circle { fill: none; stroke: var(--pm-success); stroke-width: 3; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dasharray 0.5s ease; }
-      .pm-percentage { fill: var(--pm-text); font-size: 0.5em; text-anchor: middle; font-weight: 600; }
+      .pm-circle { fill: none; stroke: var(--pm-primary); stroke-width: 3; stroke-linecap: round; }
+      .pm-percentage { fill: var(--pm-text); font-size: 0.6rem; font-weight: 700; text-anchor: middle; }
       .pm-overview-info { display: flex; flex-direction: column; }
-      .pm-overview-label { font-size: 0.75rem; font-weight: 600; color: var(--pm-text); }
-      .pm-overview-detail { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-overview-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem; border-radius: 10px; background: var(--pm-surface-2); }
-      .pm-overview-number { font-size: 1.25rem; font-weight: 700; color: var(--pm-text); line-height: 1; }
-      .pm-overview-text { font-size: 0.625rem; color: var(--pm-text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.125rem; }
+      .pm-overview-label { font-size: 0.75rem; color: var(--pm-text-muted); text-transform: uppercase; font-weight: 600; }
+      .pm-overview-detail { font-size: 0.875rem; font-weight: 600; }
+      .pm-overview-stat { background: var(--pm-surface); border: 1px solid var(--pm-border); border-radius: 12px; padding: 0.75rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+      .pm-overview-stat.warning { border-color: var(--pm-warning); }
       .pm-overview-stat.warning .pm-overview-number { color: var(--pm-warning); }
+      .pm-overview-number { font-size: 1.5rem; font-weight: 700; }
+      .pm-overview-text { font-size: 0.6875rem; color: var(--pm-text-muted); text-transform: uppercase; font-weight: 600; }
 
-      .pm-dashboard-section { padding: 0.75rem 1rem; }
-      .pm-section-title { font-size: 0.9375rem; font-weight: 600; color: var(--pm-text); margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
-      .pm-section-badge { background: var(--pm-danger); color: white; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 6px; margin-left: auto; }
+      .pm-dashboard-section { margin-bottom: 1.5rem; }
+      .pm-section-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+      .pm-section-badge { font-size: 0.75rem; background: var(--pm-danger); color: white; padding: 2px 6px; border-radius: 10px; }
 
-      .pm-attendance-bars { display: flex; flex-direction: column; gap: 0.75rem; }
-      .pm-attendance-bar-item { display: flex; flex-direction: column; gap: 0.375rem; }
-      .pm-attendance-bar-label { display: flex; justify-content: space-between; align-items: center; }
-      .pm-attendance-bar-label span:first-child { font-size: 0.8125rem; font-weight: 500; color: var(--pm-text); display: flex; align-items: center; gap: 0.375rem; }
-      .pm-attendance-bar-label span:last-child { font-size: 0.75rem; font-weight: 600; color: var(--pm-text-muted); }
+      .pm-attendance-bars { background: var(--pm-surface); border: 1px solid var(--pm-border); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+      .pm-attendance-bar-item { display: flex; flex-direction: column; gap: 0.25rem; }
+      .pm-attendance-bar-label { display: flex; justify-content: space-between; font-size: 0.8125rem; font-weight: 500; }
       .pm-attendance-bar-track { height: 8px; background: var(--pm-border); border-radius: 4px; overflow: hidden; }
-      .pm-attendance-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.22,.61,.36,1); }
-      .pm-attendance-bar-fill.success { background: linear-gradient(90deg,#30d158,#34c759); }
-      .pm-attendance-bar-fill.danger  { background: linear-gradient(90deg,#ff3b30,#ff6b6b); }
-      .pm-attendance-bar-fill.warning { background: linear-gradient(90deg,#ff9500,#ffcc00); }
+      .pm-attendance-bar-fill { height: 100%; border-radius: 4px; }
+      .pm-attendance-bar-fill.success { background: #30d158; }
+      .pm-attendance-bar-fill.danger { background: #ff3b30; }
+      .pm-attendance-bar-fill.warning { background: #ff9500; }
 
       .pm-risk-list { display: flex; flex-direction: column; gap: 0.5rem; }
-      .pm-risk-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.75rem; background: var(--pm-surface); border-radius: 10px; cursor: pointer; transition: transform 0.15s ease; }
-      .pm-risk-item:active { transform: scale(0.99); }
-      .pm-risk-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--pm-danger) 0%, #ff6b6b 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
-      .pm-risk-info { flex: 1; min-width: 0; }
-      .pm-risk-name { display: block; font-size: 0.875rem; font-weight: 600; color: var(--pm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .pm-risk-class { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-risk-pct { font-size: 0.8125rem; font-weight: 700; color: var(--pm-danger); background: var(--pm-danger-bg); padding: 0.25rem 0.5rem; border-radius: 6px; }
+      .pm-risk-item { display: flex; align-items: center; gap: 0.75rem; background: var(--pm-surface); border: 1px solid var(--pm-border); border-radius: 10px; padding: 0.625rem 0.875rem; cursor: pointer; transition: transform 0.15s; }
+      .pm-risk-item:hover { transform: translateX(4px); }
+      .pm-risk-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ff3b30; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+      .pm-risk-info { flex: 1; display: flex; flex-direction: column; }
+      .pm-risk-name { font-size: 0.875rem; font-weight: 600; }
+      .pm-risk-class { font-size: 0.75rem; color: var(--pm-text-muted); }
+      .pm-risk-pct { font-size: 0.875rem; font-weight: 700; color: #ff3b30; }
 
-      /* ── Class card v2 ─────────────────────────────────────── */
-      .pm-classes-list { display: flex; flex-direction: column; gap: 0.75rem; }
+      .pm-classes-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+      .pm-class-card2 { background: var(--pm-surface); border: 1px solid var(--pm-border); border-radius: 12px; padding: 1rem; }
+      .pm-class-card2__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+      .pm-class-card2__title-group { display: flex; flex-direction: column; }
+      .pm-class-card2__name { font-size: 0.9375rem; font-weight: 600; }
+      .pm-class-card2__inst { font-size: 0.75rem; color: var(--pm-text-muted); }
+      .pm-class-card2__pct { font-size: 0.875rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+      .pm-class-card2__pct.success { background: rgba(48,209,88,0.15); color: #30d158; }
+      .pm-class-card2__pct.warning { background: rgba(255,149,0,0.15); color: #ff9500; }
+      .pm-class-card2__pct.danger  { background: rgba(255,59,48,0.15); color: #ff3b30; }
 
-      .pm-class-card2 {
-        display: flex;
-        background: var(--pm-surface);
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.04);
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-      }
-      .pm-class-card2:active { transform: scale(0.99); }
-
-      .pm-class-card2__accent {
-        width: 4px;
-        flex-shrink: 0;
-        border-radius: 0;
-      }
-      .pm-class-card2__body {
-        flex: 1;
-        padding: 0.875rem 0.875rem 0.875rem 0.75rem;
-        min-width: 0;
-      }
-
-      .pm-class-card2__top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 0.5rem;
-        margin-bottom: 0.625rem;
-      }
-      .pm-class-card2__info { flex: 1; min-width: 0; }
-      .pm-class-card2__name {
-        display: block;
-        font-size: 0.9375rem;
-        font-weight: 700;
-        color: var(--pm-text);
-        line-height: 1.25;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-      .pm-class-card2__inst {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.6875rem;
-        color: var(--pm-text-muted);
-        margin-top: 0.125rem;
-      }
-      .pm-class-card2__badge-wrap {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        flex-shrink: 0;
-      }
-      .pm-class-card2__pct {
-        font-size: 1rem;
-        font-weight: 800;
-        padding: 0.25rem 0.625rem;
-        border-radius: 10px;
-        line-height: 1;
-      }
-      .pm-class-card2__pct.success {
-        background: rgba(52,199,89,0.15);
-        color: #30d158;
-      }
-      .pm-class-card2__pct.warning {
-        background: rgba(255,149,0,0.15);
-        color: #ff9500;
-      }
-      .pm-class-card2__pct.danger  {
-        background: rgba(255,59,48,0.15);
-        color: #ff3b30;
-      }
-
-      /* Spark chart */
-      .pm-class-card2__spark {
-        display: flex;
-        align-items: flex-end;
-        gap: 3px;
-        height: 32px;
-        margin: 0 0 0.625rem;
-        padding: 4px 0 0;
-      }
-      .pm-spark-bar {
-        flex: 1;
-        border-radius: 3px 3px 0 0;
-        min-height: 4px;
-        opacity: 0.75;
-        transition: opacity 0.2s;
-      }
+      .pm-class-card2__spark { display: flex; align-items: flex-end; gap: 3px; height: 32px; margin: 0 0 0.625rem; padding: 4px 0 0; }
+      .pm-spark-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; opacity: 0.75; transition: opacity 0.2s; }
       .pm-spark-bar.pm-spark-last { opacity: 1; }
-      .pm-spark-empty {
-        font-size: 0.75rem;
-        color: var(--pm-text-muted);
-        align-self: center;
-      }
+      .pm-spark-empty { font-size: 0.75rem; color: var(--pm-text-muted); align-self: center; }
 
-      /* Stats row */
-      .pm-class-card2__stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        border-top: 1px solid var(--pm-border);
-        padding-top: 0.5rem;
-        gap: 0;
-      }
-      .pm-cs2 {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0.25rem 0.125rem;
-        gap: 0.0625rem;
-      }
-      .pm-cs2 i {
-        font-size: 0.6875rem;
-        margin-bottom: 0.125rem;
-        opacity: 0.7;
-      }
-      .pm-cs2__val {
-        font-size: 1rem;
-        font-weight: 800;
-        color: var(--pm-text);
-        line-height: 1;
-      }
-      .pm-cs2__lbl {
-        font-size: 0.5rem;
-        color: var(--pm-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-weight: 600;
-      }
+      .pm-class-card2__stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--pm-border); padding-top: 0.5rem; gap: 0; }
+      .pm-cs2 { display: flex; flex-direction: column; align-items: center; padding: 0.25rem 0.125rem; gap: 0.0625rem; }
+      .pm-cs2 i { font-size: 0.6875rem; margin-bottom: 0.125rem; opacity: 0.7; }
+      .pm-cs2__val { font-size: 1rem; font-weight: 800; color: var(--pm-text); line-height: 1; }
+      .pm-cs2__lbl { font-size: 0.5rem; color: var(--pm-text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
       .pm-cs2--success { color: #30d158; }
       .pm-cs2--success .pm-cs2__val { color: #30d158; }
       .pm-cs2--warning { color: #ff9500; }
       .pm-cs2--warning .pm-cs2__val { color: #ff9500; }
       .pm-cs2--blue { color: #0a84ff; }
       .pm-cs2--blue .pm-cs2__val { color: var(--pm-text); }
-      .pm-cs2--purple { color: #bf5af2; }
-      .pm-cs2--purple .pm-cs2__val { color: var(--pm-text); }
 
-      .pm-class-card2__risk {
-        margin-top: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.625rem;
-        background: rgba(255,59,48,0.1);
-        border-radius: 8px;
-        font-size: 0.6875rem;
-        color: #ff3b30;
-        font-weight: 500;
-      }
-      .pm-analisis-btn-metrics {
-        background: transparent;
-        border: 1px solid var(--pm-border);
-        padding: 0.375rem 0.5rem;
-        border-radius: 8px;
-        color: var(--pm-text-muted);
-        cursor: pointer;
-        font-size: 0.9rem;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 32px;
-        height: 32px;
-      }
-      .pm-analisis-btn-metrics:hover {
-        background: var(--pm-primary);
-        color: white;
-        border-color: var(--pm-primary);
-      }
-      .pm-class-btn2 {
-        background: var(--pm-surface-2);
-        border: none;
-        padding: 0.375rem 0.5rem;
-        border-radius: 8px;
-        color: var(--pm-text-muted);
-        cursor: pointer;
-        font-size: 0.75rem;
-        transition: background 0.15s, color 0.15s;
-      }
+      .pm-class-card2__risk { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.625rem; background: rgba(255,59,48,0.1); border-radius: 8px; font-size: 0.6875rem; color: #ff3b30; font-weight: 500; }
+      .pm-analisis-btn-metrics { background: transparent; border: 1px solid var(--pm-border); padding: 0.375rem 0.5rem; border-radius: 8px; color: var(--pm-text-muted); cursor: pointer; font-size: 0.9rem; transition: all 0.2s; display: flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; }
+      .pm-analisis-btn-metrics:hover { background: var(--pm-primary); color: white; border-color: var(--pm-primary); }
+      .pm-class-btn2 { background: var(--pm-surface-2); border: none; padding: 0.375rem 0.5rem; border-radius: 8px; color: var(--pm-text-muted); cursor: pointer; font-size: 0.75rem; transition: background 0.15s, color 0.15s; }
       .pm-class-btn2:hover { background: var(--pm-border); color: var(--pm-text); }
-      /* Legacy .pm-class-card kept for compatibility */
-      .pm-class-card { background: var(--pm-surface); border-radius: 12px; padding: 0.875rem; position: relative; }
-      .pm-class-btn { position: absolute; top: 0.625rem; right: 0.625rem; background: none; border: none; padding: 0.25rem; color: var(--pm-text-muted); cursor: pointer; font-size: 1.25rem; }
 
       .pm-search-wrapper { position: relative; margin-bottom: 0.5rem; }
       .pm-search-wrapper i { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--pm-text-muted); font-size: 0.875rem; }
@@ -621,8 +573,7 @@ function generarHTML(datos) {
       .pm-search-wrapper input::placeholder { color: var(--pm-text-muted); }
       .pm-search-results { display: none; background: var(--pm-surface); border-radius: 10px; overflow: hidden; }
       .pm-search-results.show { display: block; }
-      
-      /* Panel de estudiantes por clase */
+
       .pm-clase-students-panel { margin-top: 0.75rem; border-top: 1px solid var(--pm-border); padding-top: 0.75rem; }
       .pm-clase-students-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.8125rem; font-weight: 600; }
       .pm-clase-students-close { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--pm-text-muted); }
@@ -643,16 +594,6 @@ function generarHTML(datos) {
       .pm-student-attendance.warning .pm-student-att-fill { background: var(--pm-warning); }
       .pm-student-attendance.success .pm-student-att-fill { background: var(--pm-success); }
 
-      /* Search results */
-      .pm-search-result-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; cursor: pointer; border-bottom: 1px solid var(--pm-border); }
-      .pm-search-result-item:last-child { border-bottom: none; }
-      .pm-search-result-item:hover { background: var(--pm-surface-2); }
-      .pm-search-result-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--pm-primary); color: white; display: flex; align-items: center; justify-content: center; }
-      .pm-search-result-info { flex: 1; }
-      .pm-search-result-name { display: block; font-size: 0.875rem; font-weight: 500; color: var(--pm-text); }
-      .pm-search-result-meta { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-search-result-arrow { color: var(--pm-text-muted); }
-
       @media (max-width: 600px) {
         .pm-dashboard-overview { grid-template-columns: 1fr 1fr; }
         .pm-overview-card.primary { grid-column: span 2; }
@@ -663,8 +604,6 @@ function generarHTML(datos) {
 
 // ── Asocia eventos ──────────────────────────────────────────────
 function bindEvents(container) {
-  console.log('[MetricasView.bindEvents] Iniciando bind, container:', container)
-  console.log('[MetricasView.bindEvents] HTML length:', container?.innerHTML?.length || 0)
   container.querySelector('#pm-btn-ver-misclases')?.addEventListener('click', () => {
     window.router?.navigate('mis-clases')
   })
@@ -672,7 +611,7 @@ function bindEvents(container) {
   // Filtro de período SIN reload
   const selectPeriodo = container.querySelector('#pm-filter-periodo')
   selectPeriodo?.addEventListener('change', async (e) => {
-    const nuevoPeriodo = parseInt(e.target.value, 10)
+    const nuevoPeriodo = e.target.value
     estadoActual.periodo = nuevoPeriodo
 
     container.innerHTML = `<div class="pm-loading" style="padding:2rem;"><div class="pm-spinner"></div></div>`
@@ -685,10 +624,11 @@ function bindEvents(container) {
       estadoActual.todasSesiones = nuevosDatos.sesiones
       estadoActual.inscripcionesPorClase = nuevosDatos.inscripcionesPorClase
       estadoActual.alertasRiesgo = procesados.alertasRiesgo
+      estadoActual.periodoNombre = nuevosDatos.periodoNombre
 
       container.innerHTML = generarHTML(procesados)
       bindEvents(container)
-      announce(`Período actualizado a ${nuevoPeriodo} semanas. ${procesados.asistenciaPromedio}% de asistencia general.`)
+      announce(`Período actualizado. ${procesados.asistenciaPromedio}% de asistencia general.`)
     } catch (err) {
       container.innerHTML = `<p class="pm-empty">Error al cargar datos: ${escHTML(err.message)}</p>`
     }
@@ -705,7 +645,7 @@ function bindEvents(container) {
   // Botón de análisis de clase
   const hoy = new Date()
   const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-  const periodo = estadoActual.periodo || 4
+  const periodo = estadoActual.periodo === 'periodo' ? 4 : (parseInt(estadoActual.periodo, 10) || 4)
   const botonesAnalisis = container.querySelectorAll('.pm-analisis-btn-metrics')
   botonesAnalisis.forEach((btn) => {
     btn.addEventListener('click', (e) => {
@@ -783,15 +723,9 @@ function bindEvents(container) {
       })
     })
   })
-
 }
 
 // ── Render principal ───────────────────────────────────────────
-/**
- * Returns a deduplicated student index from the currently loaded metricas data.
- * Used by the header search to avoid a Supabase round-trip when on this view.
- * Returns null when metricas data hasn't been loaded yet.
- */
 export function getAlumnoIndexFromMetricas() {
   if (!estadoActual.clasesData.length && !Object.keys(estadoActual.inscripcionesPorClase).length) return null
   const map = new Map()
@@ -806,17 +740,14 @@ export function getAlumnoIndexFromMetricas() {
 }
 
 export async function renderMetricasView(container) {
-  console.log('[renderMetricasView] INICIANDO', container)
   container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
 
   const maestro = getMaestroLocal()
-  console.log('[renderMetricasView] Maestro:', maestro?.id)
   if (!maestro) {
     container.innerHTML = `<p class="pm-empty">No hay sesión activa.</p>`
     return
   }
 
-  // Guardar maestroId en estado
   estadoActual.maestroId = maestro.id
 
   try {
@@ -827,6 +758,7 @@ export async function renderMetricasView(container) {
     estadoActual.todasSesiones = datosIniciales.sesiones
     estadoActual.inscripcionesPorClase = datosIniciales.inscripcionesPorClase
     estadoActual.alertasRiesgo = procesados.alertasRiesgo
+    estadoActual.periodoNombre = datosIniciales.periodoNombre
 
     container.innerHTML = generarHTML(procesados)
     bindEvents(container)

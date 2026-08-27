@@ -2,6 +2,7 @@ import '../styles/salones.css'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/components/ViewInfoModal.js'
 import { useSalones } from '../hooks/useSalones.js'
 import * as salonesApi from '../api/salonesApi.js'
 
@@ -82,6 +83,7 @@ function renderContent(container) {
 
           <!-- Toolbar de Botones con 0.85rem de separación -->
           <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
+            ${renderViewInfoButton('salones')}
             <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnExportarCSVSalones" title="Exportar CSV" style="font-size:0.78rem;">
               <i class="bi bi-file-earmark-spreadsheet"></i>
               <span class="d-none d-sm-inline">CSV</span>
@@ -359,6 +361,7 @@ function exportarSalonesCSV() {
 }
 
 function attachEvents(container) {
+  attachViewInfoEvents(container)
   const unsubscribe = useSalones.subscribe(renderTable)
 
   let debounceTimer

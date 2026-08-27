@@ -22,3 +22,4 @@ export const getAlumnosDestacados = (...args) => getApi().getAlumnosDestacados(.
 export const getDestacadosYRiesgoAcademico = (...args) => getApi().getDestacadosYRiesgoAcademico(...args)
 export const getCierresAcademicos = (...args) => getApi().getCierresAcademicos(...args)
 export const getHistorialCierresPeriodos = (...args) => getApi().getHistorialCierresPeriodos(...args)
+export const getAnalisisAsistenciasPeriodoActivo = (...args) => getApi().getAnalisisAsistenciasPeriodoActivo(...args)

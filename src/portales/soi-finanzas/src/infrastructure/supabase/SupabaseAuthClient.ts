@@ -109,9 +109,30 @@ export async function signInAndAuthorize(
   const rows = await profileRes.json();
   const profileRow = Array.isArray(rows) ? rows[0] : null;
 
-  if (!profileRow || !['admin', 'finanzas'].includes(profileRow.rol)) {
+  let isAuthorized = ['superadmin', 'admin', 'finanzas'].includes(profileRow.rol);
+  if (!isAuthorized) {
+    try {
+      const accessRes = await fetch(`${config.url}/rest/v1/rpc/has_portal_access`, {
+        method: 'POST',
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${session.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ p_portal_id: 'FIN' })
+      });
+      if (accessRes.ok) {
+        const allowed = await accessRes.json();
+        if (allowed === true) isAuthorized = true;
+      }
+    } catch {
+      // Ignore network error and rely on role
+    }
+  }
+
+  if (!isAuthorized) {
     setStoredSession(null);
-    return { success: false, error: 'No autorizado: su cuenta no tiene rol de administrador o finanzas en el portal FIN.' };
+    return { success: false, error: 'No autorizado: su cuenta no tiene acceso asignado al portal FIN.' };
   }
 
   return {
@@ -173,14 +194,35 @@ export async function restoreSession(): Promise<AuthorizedProfile | null> {
     `${config.url}/rest/v1/profiles?id=eq.${session.userId}&select=id,nombre_completo,rol`,
     { headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` } }
   );
-  if (!profileRes.ok) {
+  const rows = await profileRes.json();
+  const profileRow = Array.isArray(rows) ? rows[0] : null;
+  if (!profileRow) {
     setStoredSession(null);
     return null;
   }
 
-  const rows = await profileRes.json();
-  const profileRow = Array.isArray(rows) ? rows[0] : null;
-  if (!profileRow || !['admin', 'finanzas'].includes(profileRow.rol)) {
+  let isAuthorized = ['superadmin', 'admin', 'finanzas'].includes(profileRow.rol);
+  if (!isAuthorized) {
+    try {
+      const accessRes = await fetch(`${config.url}/rest/v1/rpc/has_portal_access`, {
+        method: 'POST',
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ p_portal_id: 'FIN' })
+      });
+      if (accessRes.ok) {
+        const allowed = await accessRes.json();
+        if (allowed === true) isAuthorized = true;
+      }
+    } catch {
+      // Ignore network error
+    }
+  }
+
+  if (!isAuthorized) {
     setStoredSession(null);
     return null;
   }

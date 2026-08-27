@@ -3,12 +3,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 /**
  * metricasView.periodo.test.js
  *
- * El selector "Pendientes"/semanas (4/8/12) de Métricas usaba una ventana
- * relativa a HOY, sin relación con el período académico — con "12 semanas"
- * la ventana cruzaba hacia atrás del inicio del período activo y volvía a
- * traer sesiones "pendiente" de un semestre ya cerrado en la tarjeta de
- * resumen (mismo síntoma que el de las notificaciones de mayo). La ventana
- * ahora nunca cruza el inicio del período activo.
+ * El selector de período de Métricas acota la ventana al inicio del período
+ * académico activo por defecto para evitar contaminar métricas con datos
+ * de semestres ya cerrados.
  */
 
 vi.mock('../../auth/maestroAuth.js', () => ({
@@ -48,7 +45,7 @@ function setupSupabase(periodoActivo) {
   })
 }
 
-describe('metricasView — la ventana de "Pendientes" no cruza el inicio del período activo', () => {
+describe('metricasView — la ventana de métricas se acota al período activo', () => {
   let container
 
   beforeEach(() => {
@@ -62,6 +59,21 @@ describe('metricasView — la ventana de "Pendientes" no cruza el inicio del per
     container?.remove()
   })
 
+  it('por defecto (período actual) usa la fecha_inicio del período activo', async () => {
+    const hoy = new Date('2026-08-27T12:00:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(hoy)
+
+    setupSupabase({ id: 'per-2', nombre: 'Semestre 2026-II', fecha_inicio: '2026-08-10', fecha_fin: '2026-12-20', activo: true })
+
+    const { renderMetricasView } = await import('../metricasView.js')
+    await renderMetricasView(container)
+
+    expect(getSesiones).toHaveBeenCalledWith('maestro-1', '2026-08-10', '2026-08-27')
+
+    vi.useRealTimers()
+  })
+
   it('con "12 semanas" y un período activo reciente, la fecha usada es el inicio del período (no 12 semanas atrás)', async () => {
     const hoy = new Date('2026-08-09T12:00:00Z')
     vi.useFakeTimers()
@@ -72,8 +84,6 @@ describe('metricasView — la ventana de "Pendientes" no cruza el inicio del per
     const { renderMetricasView } = await import('../metricasView.js')
     await renderMetricasView(container)
 
-    // Simular selección de "12 semanas" si el selector existe; si no,
-    // igual se valida la carga inicial (4 semanas por defecto) más abajo.
     const select = container.querySelector('#pm-filter-periodo, select')
     if (select) {
       select.value = '12'
@@ -82,13 +92,12 @@ describe('metricasView — la ventana de "Pendientes" no cruza el inicio del per
     }
 
     const fechasUsadas = getSesiones.mock.calls.map(call => call[1])
-    // 12 semanas atrás de 2026-08-09 sería ~2026-05-17 — no debe aparecer.
     expect(fechasUsadas.some(f => f < '2026-07-06')).toBe(false)
 
     vi.useRealTimers()
   })
 
-  it('sin período activo configurado, no acota nada (fail-open) — usa la ventana de semanas tal cual', async () => {
+  it('sin período activo configurado, usa 4 semanas atrás como fallback seguro', async () => {
     const hoy = new Date('2026-08-09T12:00:00Z')
     vi.useFakeTimers()
     vi.setSystemTime(hoy)
@@ -100,7 +109,6 @@ describe('metricasView — la ventana de "Pendientes" no cruza el inicio del per
 
     expect(getSesiones).toHaveBeenCalled()
     const [, fechaUsada] = getSesiones.mock.calls[0]
-    // 4 semanas (default) atrás de 2026-08-09 = 2026-07-12
     expect(fechaUsada).toBe('2026-07-12')
 
     vi.useRealTimers()

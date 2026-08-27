@@ -581,3 +581,5 @@ export class AnalisisContenidoView {
     })
   }
 }
+
+export default AnalisisContenidoView

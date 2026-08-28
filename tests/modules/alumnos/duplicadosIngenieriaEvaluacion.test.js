@@ -255,4 +255,31 @@ describe('Evaluación de Ingeniería de Duplicados', () => {
       expect(onSuccess).toHaveBeenCalled()
     })
   })
+
+  // ── 6. Validación Multi-Vector: Dirección, Cédula, Correo, Instrumento ───────────
+  describe('Validación Multi-Vector de Identidad', () => {
+    it('detecta coincidencia por dirección residencial y teléfono', () => {
+      const a = { id: '1', nombre_completo: 'Sofia Ramirez', direccion: 'Av. Barceló km 5, Edif A', representante_tlf: '8095551234' }
+      const b = { id: '2', nombre_completo: 'Sophia Ramírez', direccion: 'Av. Barceló km 5, Edif A', representante_tlf: '8095551234' }
+      const matches = camposCompartidos(a, b)
+      expect(matches.some(m => m.key === 'direccion')).toBe(true)
+      expect(matches.some(m => m.key === 'telefono')).toBe(true)
+      const sim = similitudEntre(a, b)
+      expect(sim.puntaje).toBeGreaterThanOrEqual(0.85)
+    })
+
+    it('detecta duplicado exacto al coincidir la cédula propia del alumno', () => {
+      const a = { id: '1', nombre_completo: 'Carlos Gomez', cedula: '402-1234567-8' }
+      const b = { id: '2', nombre_completo: 'Carlos Gomez Perez', cedula: '402-1234567-8' }
+      const sim = similitudEntre(a, b)
+      expect(sim.puntaje).toBe(1.0)
+    })
+
+    it('discrimina hermanos que comparten familia pero tienen instrumentos distintos', () => {
+      const h1 = { id: '1', nombre_completo: 'Emmanuel De Los Santos', instrumento_principal: 'Violín', madre_nombre: 'Carmen Tavarez' }
+      const h2 = { id: '2', nombre_completo: 'Feder de los Santos', instrumento_principal: 'Trompeta', madre_nombre: 'Carmen Tavarez' }
+      const dupes = detectarPosiblesDuplicados([h1, h2])
+      expect(dupes.length).toBe(0)
+    })
+  })
 })

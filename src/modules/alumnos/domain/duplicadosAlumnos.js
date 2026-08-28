@@ -272,6 +272,27 @@ function matchCedula(a, b) {
   return false
 }
 
+function matchCedulaAlumno(a, b) {
+  const ca = normalizeText(a?.cedula)
+  const cb = normalizeText(b?.cedula)
+  if (ca && cb && ca === cb && ca.length >= 5) return true
+  return false
+}
+
+function matchEmail(a, b) {
+  const ea = normalizeText(a?.correo_representante || a?.email)
+  const eb = normalizeText(b?.correo_representante || b?.email)
+  if (ea && eb && ea === eb && ea.length >= 5) return true
+  return false
+}
+
+function matchDireccion(a, b) {
+  const normA = normalizeText(a?.direccion || a?.sector_calle_numero)
+  const normB = normalizeText(b?.direccion || b?.sector_calle_numero)
+  if (!normA || !normB || normA.length < 5 || normB.length < 5) return false
+  return normA === normB || tokenSimilarity(normA, normB) >= 0.82
+}
+
 function samePersonName(nameA, nameB) {
   if (!nameA || !nameB) return false
   const score = compareNombres(nameA, nameB)
@@ -282,13 +303,16 @@ function samePersonName(nameA, nameB) {
  * Campos de identidad evaluados para la coincidencia cruzada.
  */
 export const MATCH_KEYS = [
-  { key: 'fecha_nacimiento', peso: 3.5, label: 'Fecha de nacimiento' },
-  { key: 'padre_nombre',     peso: 3.0, label: 'Padre' },
-  { key: 'madre_nombre',     peso: 3.0, label: 'Madre' },
-  { key: 'representante_cedula', peso: 3.0, label: 'Cédula' },
-  { key: 'telefono',         peso: 3.0, label: 'Teléfono de contacto' },
+  { key: 'cedula_alumno',        peso: 4.5, label: 'Cédula del alumno' },
+  { key: 'fecha_nacimiento',     peso: 3.5, label: 'Fecha de nacimiento' },
+  { key: 'padre_nombre',         peso: 3.0, label: 'Padre' },
+  { key: 'madre_nombre',         peso: 3.0, label: 'Madre' },
+  { key: 'representante_cedula', peso: 3.0, label: 'Cédula familiar' },
+  { key: 'telefono',             peso: 3.0, label: 'Teléfono de contacto' },
+  { key: 'correo_representante', peso: 2.5, label: 'Correo electrónico' },
+  { key: 'direccion',            peso: 2.5, label: 'Dirección residencial' },
   { key: 'representante_nombre', peso: 2.0, label: 'Representante' },
-  { key: 'instrumento_principal', peso: 1.0, label: 'Instrumento' },
+  { key: 'instrumento_principal',peso: 2.0, label: 'Instrumento' },
 ]
 
 /**
@@ -297,34 +321,49 @@ export const MATCH_KEYS = [
 export function camposCompartidos(a, b) {
   const matches = []
 
-  // 1. Fecha de nacimiento
+  // 1. Cédula del propio alumno
+  if (matchCedulaAlumno(a, b)) {
+    matches.push({ key: 'cedula_alumno', label: 'Cédula del alumno', peso: 4.5 })
+  }
+
+  // 2. Fecha de nacimiento
   if (sameVal(a?.fecha_nacimiento, b?.fecha_nacimiento) === true) {
     matches.push({ key: 'fecha_nacimiento', label: 'Fecha de nacimiento', peso: 3.5 })
   }
 
-  // 2. Padre
+  // 3. Padre
   if (samePersonName(a?.padre_nombre, b?.padre_nombre) || samePersonName(a?.padre_nombre, b?.representante_nombre) || samePersonName(a?.representante_nombre, b?.padre_nombre)) {
     matches.push({ key: 'padre_nombre', label: 'Padre / Representante', peso: 3.0 })
   }
 
-  // 3. Madre
+  // 4. Madre
   if (samePersonName(a?.madre_nombre, b?.madre_nombre) || samePersonName(a?.madre_nombre, b?.representante_nombre) || samePersonName(a?.representante_nombre, b?.madre_nombre)) {
     matches.push({ key: 'madre_nombre', label: 'Madre / Representante', peso: 3.0 })
   }
 
-  // 4. Cédula
+  // 5. Cédula familiar / representantes
   if (matchCedula(a, b)) {
     matches.push({ key: 'representante_cedula', label: 'Cédula familiar', peso: 3.0 })
   }
 
-  // 5. Teléfono
+  // 6. Teléfono de contacto
   if (matchPhones(a, b)) {
     matches.push({ key: 'telefono', label: 'Teléfono', peso: 3.0 })
   }
 
-  // 6. Instrumento
-  if (sameVal(a?.instrumento_principal, b?.instrumento_principal) === true) {
-    matches.push({ key: 'instrumento_principal', label: 'Instrumento', peso: 1.0 })
+  // 7. Correo electrónico
+  if (matchEmail(a, b)) {
+    matches.push({ key: 'correo_representante', label: 'Correo', peso: 2.5 })
+  }
+
+  // 8. Dirección residencial
+  if (matchDireccion(a, b)) {
+    matches.push({ key: 'direccion', label: 'Dirección', peso: 2.5 })
+  }
+
+  // 9. Instrumento / Cátedra
+  if (sameVal(a?.instrumento_principal, b?.instrumento_principal) === true || sameVal(a?.instrumento, b?.instrumento) === true) {
+    matches.push({ key: 'instrumento_principal', label: 'Instrumento', peso: 2.0 })
   }
 
   return matches
@@ -431,6 +470,21 @@ export function similitudEntre(a, b) {
   const compartidos = camposCompartidos(a, b)
   const pesoCompartido = compartidos.reduce((s, c) => s + c.peso, 0)
   const identityRatio = Math.min(1.0, pesoCompartido / 5.5)
+
+  // Si coincide la cédula propia del alumno, es 100% la misma persona
+  const hasCedulaAlumno = compartidos.some((c) => c.key === 'cedula_alumno')
+  if (hasCedulaAlumno) {
+    return {
+      puntaje: 1.0,
+      nombreScore: Number(nombreScore.toFixed(4)),
+      coincidencias: {
+        compartidos: compartidos.length,
+        peso: pesoCompartido,
+        ...Object.fromEntries(compartidos.map((c) => [c.key, true])),
+      },
+      esSubsetNombre: true,
+    }
+  }
 
   // Si los nombres son completamente disjuntos (nombreScore < 0.25) y NO comparten teléfono, cédula ni padres:
   // coincidir únicamente en fecha de nacimiento o instrumento es una coincidencia de cohorte/aula, NO un duplicado.

@@ -1,14 +1,19 @@
 /**
  * teacherRouteMapPanel.js — Panel del Mapa de Rutas Vertical estilo Duolingo
  *
- * Modal a pantalla completa (100vw / 100vh) con camino sinuoso vertical (S-curve),
- * nodos táctiles en 3D (Dominado 🌟, En Progreso 🎯, Con Deuda 🔒) y banderas de unidad.
+ * Incluye:
+ * - Modal a pantalla completa (100vw / 100vh) con ambient backdrop y shimmer.
+ * - S-Curve trail vertical con nodos 3D estilo Duolingo.
+ * - Popover de Misión flotante e interactivo al tocar un nodo.
+ * - Soporte para candados de prerrequisitos 🔒.
+ * - Auto-scroll inteligente al nodo activo.
  */
 
 import { escHTML } from "../utils/portalUtils.js"
 import { openTeacherRoutePicker, openTeacherRouteBuilder } from "./TeacherRouteBuilder.js"
 import { openIndicadorGradingModal } from "./IndicadorGradingModal.js"
 import { getPersonalRoutes, getIndicadorCheckStates } from "../services/maestroDataService.js"
+import { supabase } from "../../lib/supabaseClient.js"
 
 export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
   const routes = await getPersonalRoutes(maestro.id, claseId, true)
@@ -28,6 +33,22 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
   const checkStates = await getIndicadorCheckStates(route.id, claseId)
   const checkByIndicador = Object.fromEntries((checkStates || []).map((c) => [c.indicador_id, c.check_state]))
 
+  // Fetch all prerequisites in parallel
+  let prereqMap = {}
+  try {
+    const { data: prereqs } = await supabase
+      .from("indicador_prerequisito")
+      .select("indicador_id, prerequisito_indicador_id")
+
+    if (prereqs) {
+      prereqs.forEach((p) => {
+        prereqMap[p.indicador_id] = p.prerequisito_indicador_id
+      })
+    }
+  } catch (_e) {
+    prereqMap = {}
+  }
+
   _injectDuolingoStyles()
 
   // Calculate stats
@@ -36,10 +57,13 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
   let enProgresoCount = 0
 
   const unidades = route.unidades || []
+  const allIndicatorsMap = {}
+
   unidades.forEach((u) => {
     (u.objetivos || []).forEach((o) => {
       (o.indicadores || []).forEach((ind) => {
         totalIndicadores += 1
+        allIndicatorsMap[ind.id] = { ind, obj: o, u }
         const st = checkByIndicador[ind.id] || "none"
         if (st === "double") dominadosCount += 1
         else if (st === "single") enProgresoCount += 1
@@ -112,13 +136,15 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
   // Render Vertical Duolingo Trail
   if (unidades.length > 0) {
     const trailContainer = backdrop.querySelector("#pmr-duolingo-trail")
+    const canvas = backdrop.querySelector("#pmr-scroll-canvas")
+
     const refrescar = () => {
       closeModal()
       abrirMapaDeRutas(claseId, maestro, fechaHoy)
     }
 
-    _renderDuolingoVerticalTrail(trailContainer, route, checkByIndicador, {
-      onIndicadorClick: async (indicador, breadcrumb) => {
+    _renderDuolingoVerticalTrail(trailContainer, route, checkByIndicador, prereqMap, allIndicatorsMap, {
+      onEvaluateIndicador: async (indicador, breadcrumb) => {
         await openIndicadorGradingModal({
           claseId,
           fecha: fechaHoy,
@@ -130,13 +156,30 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
         })
       },
     })
+
+    // Smart Auto-Scroll to Active / Next in progress node
+    setTimeout(() => {
+      const activeNode =
+        trailContainer.querySelector(".pmr-duo-node-wrap.node-active") ||
+        trailContainer.querySelector(".pmr-duo-node-wrap:not(.node-completed)")
+      if (activeNode) {
+        activeNode.scrollIntoView({ behavior: "smooth", block: "center" })
+      }
+    }, 200)
   }
 }
 
 /**
- * Renderiza el camino vertical serpenteante (S-Curve) estilo Duolingo
+ * Renderiza el camino vertical serpenteante (S-Curve) estilo Duolingo con Popover interactivo
  */
-function _renderDuolingoVerticalTrail(container, route, checkByIndicador, { onIndicadorClick }) {
+function _renderDuolingoVerticalTrail(
+  container,
+  route,
+  checkByIndicador,
+  prereqMap,
+  allIndicatorsMap,
+  { onEvaluateIndicador }
+) {
   const unidades = route.unidades || []
   let globalStepIndex = 0
 
@@ -149,15 +192,22 @@ function _renderDuolingoVerticalTrail(container, route, checkByIndicador, { onIn
     const objetivos = unidad.objetivos || []
     const unitNumber = uIdx + 1
 
-    // Flatten all indicators for this unit to make a seamless vertical trail
+    // Flatten all indicators for this unit
     const unitIndicators = []
     objetivos.forEach((obj) => {
       (obj.indicadores || []).forEach((ind) => {
+        const prereqId = prereqMap[ind.id] || null
+        const prereqItem = prereqId ? allIndicatorsMap[prereqId] : null
+        const prereqState = prereqId ? checkByIndicador[prereqId] || "none" : null
+        const isLocked = prereqId && prereqState !== "double"
+
         unitIndicators.push({
           indicador: ind,
           objetivo: obj,
           unidad: unidad,
           checkState: checkByIndicador[ind.id] || "none",
+          isLocked,
+          prereqItem,
         })
       })
     })
@@ -183,7 +233,7 @@ function _renderDuolingoVerticalTrail(container, route, checkByIndicador, { onIn
 
     // Generate nodes and connecting SVG path
     const nodeCoords = []
-    const nodeYStep = 100 // vertical pixels between nodes
+    const nodeYStep = 100
     const trailHeight = Math.max(120, unitIndicators.length * nodeYStep + 40)
 
     unitIndicators.forEach((item, itemIdx) => {
@@ -221,20 +271,24 @@ function _renderDuolingoVerticalTrail(container, route, checkByIndicador, { onIn
             const st = item.checkState
             const isCompleted = st === "double"
             const isInProgress = st === "single"
+            const isLocked = item.isLocked
 
             let nodeClass = "node-unstarted"
             let iconHTML = `<span class="pmr-node-num">${idx + 1}</span>`
 
-            if (isCompleted) {
+            if (isLocked) {
+              nodeClass = "node-locked"
+              iconHTML = `<i class="bi bi-lock-fill"></i>`
+            } else if (isCompleted) {
               nodeClass = "node-completed"
               iconHTML = `<i class="bi bi-star-fill"></i>`
             } else if (isInProgress) {
-              nodeClass = "node-in-progress"
+              nodeClass = "node-in-progress node-active"
               iconHTML = `<i class="bi bi-play-fill"></i>`
             }
 
             return `
-              <div class="pmr-duo-node-wrap" style="left: ${xPct}%; top: ${yPx}px;" data-ind-id="${ind.id}">
+              <div class="pmr-duo-node-wrap ${nodeClass}" style="left: ${xPct}%; top: ${yPx}px;" data-ind-id="${ind.id}">
                 <button type="button" class="pmr-duo-button ${nodeClass}" aria-label="${escHTML(ind.nombre)}">
                   <div class="pmr-duo-button-inner">
                     ${iconHTML}
@@ -263,30 +317,110 @@ function _renderDuolingoVerticalTrail(container, route, checkByIndicador, { onIn
 
   container.innerHTML = fullHTML
 
-  // Wire node click events
+  // Wire node tap to show Interactive Mission Popover
   container.querySelectorAll(".pmr-duo-node-wrap").forEach((nodeEl) => {
-    nodeEl.addEventListener("click", () => {
+    nodeEl.addEventListener("click", (e) => {
+      e.stopPropagation()
       const indId = nodeEl.dataset.indId
-      let targetItem = null
+      const target = allIndicatorsMap[indId]
+      if (!target) return
 
-      unidades.forEach((u) => {
-        (u.objetivos || []).forEach((o) => {
-          (o.indicadores || []).forEach((ind) => {
-            if (ind.id === indId) {
-              targetItem = { ind, obj: o, u }
-            }
-          })
-        })
-      })
+      const checkSt = checkByIndicador[indId] || "none"
+      const prereqId = prereqMap[indId]
+      const prereqTarget = prereqId ? allIndicatorsMap[prereqId] : null
+      const isLocked = prereqId && (checkByIndicador[prereqId] || "none") !== "double"
 
-      if (targetItem) {
-        onIndicadorClick(targetItem.ind, `${targetItem.u.nombre} > ${targetItem.obj.nombre}`)
-      }
+      _showMissionPopover(nodeEl, target, checkSt, isLocked, prereqTarget, onEvaluateIndicador)
     })
+  })
+
+  // Dismiss popover on canvas click
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".pmr-mission-popover") && !e.target.closest(".pmr-duo-node-wrap")) {
+      _closeMissionPopover()
+    }
   })
 }
 
-// ─── Estilos CSS Duolingo Fullscreen ──────────────────────────────────────────
+/**
+ * Muestra el Popover de Misión táctil estilo Duolingo
+ */
+function _showMissionPopover(anchorEl, target, checkSt, isLocked, prereqTarget, onEvaluateIndicador) {
+  _closeMissionPopover()
+
+  const { ind, obj, u } = target
+  const isCompleted = checkSt === "double"
+  const isInProgress = checkSt === "single"
+
+  let statusBadge = ""
+  if (isLocked) {
+    statusBadge = `<span class="pmr-popover-badge badge-locked"><i class="bi bi-lock-fill"></i> Bloqueado por Prerrequisito</span>`
+  } else if (isCompleted) {
+    statusBadge = `<span class="pmr-popover-badge badge-success"><i class="bi bi-star-fill"></i> Malla Dominada (5★)</span>`
+  } else if (isInProgress) {
+    statusBadge = `<span class="pmr-popover-badge badge-active"><i class="bi bi-play-circle-fill"></i> En Evaluación</span>`
+  } else {
+    statusBadge = `<span class="pmr-popover-badge badge-neutral"><i class="bi bi-circle"></i> Sin Calificar</span>`
+  }
+
+  const popover = document.createElement("div")
+  popover.className = "pmr-mission-popover"
+  popover.id = "pmr-active-mission-popover"
+
+  popover.innerHTML = `
+    <div class="pmr-popover-arrow"></div>
+    <div class="pmr-popover-header">
+      <span class="pmr-popover-breadcrumb">${escHTML(u.nombre)} › ${escHTML(obj.nombre)}</span>
+      <button type="button" class="pmr-popover-close-btn" aria-label="Cerrar"><i class="bi bi-x"></i></button>
+    </div>
+
+    <div class="pmr-popover-body">
+      <h4 class="pmr-popover-title">${escHTML(ind.nombre)}</h4>
+      ${statusBadge}
+
+      ${
+        isLocked && prereqTarget
+          ? `
+        <div class="pmr-popover-debt-warning">
+          <i class="bi bi-exclamation-octagon-fill"></i>
+          <div>
+            <strong>Deuda Pedagógica:</strong>
+            <span>Requiere dominar primero <em>"${escHTML(prereqTarget.ind.nombre)}"</em>.</span>
+          </div>
+        </div>
+      `
+          : ""
+      }
+    </div>
+
+    <div class="pmr-popover-footer">
+      <button type="button" class="pmr-popover-action-btn ${isLocked ? "btn-disabled" : "btn-start"}" id="pmr-btn-start-eval">
+        <i class="bi bi-star-fill"></i>
+        <span>${isCompleted ? "Ver / Modificar Calificación" : "Evaluar Sesión (5★)"}</span>
+      </button>
+    </div>
+  `
+
+  anchorEl.appendChild(popover)
+
+  popover.querySelector(".pmr-popover-close-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation()
+    _closeMissionPopover()
+  })
+
+  popover.querySelector("#pmr-btn-start-eval")?.addEventListener("click", async (e) => {
+    e.stopPropagation()
+    _closeMissionPopover()
+    await onEvaluateIndicador(ind, `${u.nombre} > ${obj.nombre}`)
+  })
+}
+
+function _closeMissionPopover() {
+  const existing = document.getElementById("pmr-active-mission-popover")
+  if (existing) existing.remove()
+}
+
+// ─── Estilos CSS Duolingo Fullscreen con Popover ──────────────────────────────
 
 function _injectDuolingoStyles() {
   if (document.getElementById("pmr-duolingo-fullscreen-styles")) return
@@ -320,7 +454,7 @@ function _injectDuolingoStyles() {
       position: sticky;
       top: 0;
       z-index: 50;
-      background: rgba(11, 15, 25, 0.85);
+      background: rgba(11, 15, 25, 0.88);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -565,43 +699,33 @@ function _injectDuolingoStyles() {
     }
 
     /* States */
-    .node-completed {
+    .node-completed .pmr-duo-button {
       background: #10b981;
       box-shadow: 0 7px 0 #047857, 0 10px 20px rgba(16, 185, 129, 0.4);
     }
-    .node-completed:hover {
+    .node-completed .pmr-duo-button:hover {
       transform: translateY(-2px);
       box-shadow: 0 9px 0 #047857, 0 14px 26px rgba(16, 185, 129, 0.5);
     }
-    .node-completed:active {
-      transform: translateY(4px);
-      box-shadow: 0 3px 0 #047857;
-    }
 
-    .node-in-progress {
+    .node-in-progress .pmr-duo-button {
       background: #4f46e5;
       box-shadow: 0 7px 0 #3730a3, 0 10px 20px rgba(79, 70, 229, 0.4);
     }
-    .node-in-progress:hover {
+    .node-in-progress .pmr-duo-button:hover {
       transform: translateY(-2px);
       box-shadow: 0 9px 0 #3730a3, 0 14px 26px rgba(79, 70, 229, 0.5);
     }
-    .node-in-progress:active {
-      transform: translateY(4px);
-      box-shadow: 0 3px 0 #3730a3;
+
+    .node-locked .pmr-duo-button {
+      background: #475569;
+      box-shadow: 0 7px 0 #334155;
+      color: #cbd5e1;
     }
 
-    .node-unstarted {
+    .node-unstarted .pmr-duo-button {
       background: #334155;
       box-shadow: 0 7px 0 #1e293b;
-    }
-    .node-unstarted:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 9px 0 #1e293b;
-    }
-    .node-unstarted:active {
-      transform: translateY(4px);
-      box-shadow: 0 3px 0 #1e293b;
     }
 
     .pmr-node-num {
@@ -662,6 +786,123 @@ function _injectDuolingoStyles() {
 
     .pmr-label-sub {
       font-size: 0.68rem;
+      color: #94a3b8;
+    }
+
+    /* ── Interactive Mission Popover ── */
+    .pmr-mission-popover {
+      position: absolute;
+      top: calc(100% + 14px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 290px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      z-index: 100;
+      padding: 1rem;
+      animation: pmr-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pmr-popover-in {
+      from { transform: translateX(-50%) translateY(8px) scale(0.95); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+    }
+
+    .pmr-popover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .pmr-popover-breadcrumb {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #818cf8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pmr-popover-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .pmr-popover-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin: 0 0 0.4rem;
+      line-height: 1.3;
+      color: #fff;
+    }
+
+    .pmr-popover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      margin-bottom: 0.6rem;
+    }
+
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .badge-active { background: rgba(79, 70, 229, 0.2); color: #a5b4fc; }
+    .badge-locked { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .badge-neutral { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+    .pmr-popover-debt-warning {
+      display: flex;
+      gap: 6px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 9px;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.74rem;
+      color: #fca5a5;
+      margin-bottom: 0.65rem;
+      line-height: 1.35;
+    }
+
+    .pmr-popover-footer {
+      margin-top: 0.6rem;
+    }
+
+    .pmr-popover-action-btn {
+      width: 100%;
+      border: none;
+      padding: 0.6rem 0.8rem;
+      border-radius: 11px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-start:hover {
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-disabled {
+      background: #334155;
       color: #94a3b8;
     }
 

@@ -313,7 +313,17 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       </div>
     `
 
-    // Wire action buttons
+    // Wire entire card click to open map directly
+    gridHost.querySelectorAll(".pm-compact-card").forEach((card) => {
+      card.style.cursor = "pointer"
+      card.addEventListener("click", async () => {
+        const cid = card.dataset.claseId
+        const fechaHoy = new Date().toISOString().slice(0, 10)
+        await abrirMapaDeRutas(cid, maestro, fechaHoy)
+      })
+    })
+
+    // Wire action buttons with stopPropagation
     gridHost.querySelectorAll(".pm-btn-designer").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation()

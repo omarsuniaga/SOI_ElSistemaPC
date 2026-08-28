@@ -239,9 +239,9 @@ export async function renderDuplicadosWorkbenchView(container) {
       if (item.esSubsetNombre) motivos.push('Nombre similar')
 
       return `
-        <div class="p-2.5 mb-2 rounded-3 border cursor-pointer item-cola-duplicado d-flex flex-column gap-1.5 transition ${
+        <div class="p-2 mb-2 rounded-3 border cursor-pointer item-cola-duplicado d-flex flex-column gap-1 transition ${
           isSelected ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-body border-secondary-subtle'
-        }" data-dupe-index="${idx}" role="button" style="cursor:pointer;">
+        }" data-dupe-index="${idx}" role="button" style="cursor:pointer; padding: 0.5rem;">
           <div class="d-flex align-items-center justify-content-between gap-1">
             <span class="fw-bold text-truncate text-body-emphasis small">${escapeHTML(item.a.nombre_completo || item.a.nombre || 'Alumno A')}</span>
             <span class="badge ${pct >= 80 ? 'bg-success text-white' : 'bg-warning text-dark'} flex-shrink-0" style="font-size:0.68rem;">${pct}%</span>

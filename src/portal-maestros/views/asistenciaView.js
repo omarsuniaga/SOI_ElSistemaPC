@@ -1514,6 +1514,18 @@ function _renderVista(container, ctx) {
     <!-- Modales... -->
   `
 
+  // ── Attendance Counts Helper ──
+  const _getAttendanceCounts = () => {
+    let p = 0, j = 0, a = 0
+    for (const al of alumnos) {
+      const val = estado[al.id]
+      if (val === 'P') p++
+      else if (val === 'J') j++
+      else if (val === 'A') a++
+    }
+    return { P: p, J: j, A: a }
+  }
+
   // ── Attendance Header ──
   const headerContainer = container.querySelector('#pm-attendance-header')
   const headerComp = createAttendanceHeader(headerContainer, {
@@ -1522,6 +1534,7 @@ function _renderVista(container, ctx) {
     salonNombre,
     fechaHoy,
     totalAlumnos: alumnos.length,
+    counts: _getAttendanceCounts(),
     hasConflict,
     onBack: () => {
       tour.destroy()
@@ -1933,9 +1946,11 @@ function _renderVista(container, ctx) {
     },
     onJustifDeleted: (alumnoId) => {
       delete justificaciones[alumnoId]
+      _updateProgress()
     },
     onEstadoChange: (id, newEstado) => {
       estado[id] = newEstado
+      _updateProgress()
     },
     onOpenProgressPanel: (alumno) => {
       if (_activeStudentPanel) _activeStudentPanel.destroy()
@@ -1975,11 +1990,18 @@ function _renderVista(container, ctx) {
 
   // === Sync & Helpers ===
   function _updateProgress() {
+    const counts = _getAttendanceCounts()
+    if (headerComp?.updateCounts) {
+      headerComp.updateCounts(counts)
+    }
+
     const total = alumnos.length
-    const marcados = Object.values(estado).filter((v) => v !== null).length
+    const marcados = counts.P + counts.J + counts.A
     const wrap = container.querySelector('#pm-progress-wrap')
     const fill = container.querySelector('#pm-progress-fill')
     const label = container.querySelector('#pm-progress-label')
+
+    if (!wrap || !fill || !label) return
 
     if (marcados === 0) {
       wrap.style.display = 'none'
@@ -2734,6 +2756,7 @@ function _renderVista(container, ctx) {
   })
   _cleanups.push(() => _bulkActions.destroy())
   studentList.render()
+  _updateProgress()
 
   // === TOUR INTERACTIVO (delegado a AsistenciaTour) ===
   const tour = new AsistenciaTour(container)

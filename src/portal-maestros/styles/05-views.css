@@ -666,6 +666,54 @@
 }
 .pm-help-btn:hover { background: var(--pm-bg-hover); color: var(--pm-primary); }
 
+.pm-asist-counts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: var(--pm-surface-2, #1e293b);
+  border: 1px solid var(--pm-border, rgba(255, 255, 255, 0.15));
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--pm-text, #f8fafc);
+  letter-spacing: 0.02em;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .pm-asist-counts-badge {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.pm-count-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.pm-count-item.count-p { color: #10b981; }
+.pm-count-item.count-j { color: #f59e0b; }
+.pm-count-item.count-a { color: #ef4444; }
+
+.pm-count-sep {
+  opacity: 0.35;
+  font-size: 0.7rem;
+  margin: 0 0.1rem;
+}
+
+.pm-count-tag {
+  font-weight: 800;
+}
+
+.pm-count-num {
+  font-weight: 700;
+  min-width: 0.8rem;
+  text-align: center;
+}
+
 .pm-asist-bulk-circles { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }
 .pm-bulk-circle {
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;

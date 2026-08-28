@@ -13,7 +13,7 @@ import { AppToast } from "../../shared/components/AppToast.js"
 import { router as internalRouter } from "../../core/router/router.js"
 import { getMaestroLocal, detectarRolMaestro } from "../auth/maestroAuth.js"
 import { abrirMapaDeRutas } from "../components/teacherRouteMapPanel.js"
-import { openTeacherRoutePicker } from "../components/TeacherRouteBuilder.js"
+import { openTeacherRoutePicker, openTeacherRouteBuilder } from "../components/TeacherRouteBuilder.js"
 import { supabase } from "../../lib/supabaseClient.js"
 
 function escapeHtml(value) {
@@ -366,19 +366,27 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       card.style.cursor = "pointer"
       card.addEventListener("click", async () => {
         const cid = card.dataset.claseId
+        const activeMaestro = maestro || getMaestroLocal() || (await detectarRolMaestro().catch(() => null))
         const fechaHoy = new Date().toISOString().slice(0, 10)
-        await abrirMapaDeRutas(cid, maestro, fechaHoy)
+        await abrirMapaDeRutas(cid, activeMaestro, fechaHoy)
       })
     })
 
-    // Wire action buttons with stopPropagation and robust fallback
+    // Wire action buttons with stopPropagation and direct modal opening
     gridHost.querySelectorAll(".pm-btn-designer").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation()
         const cid = btn.dataset.claseId
+        const targetClase = loadedClases.find((c) => c.id === cid)
         const activeMaestro = maestro || getMaestroLocal() || (await detectarRolMaestro().catch(() => null))
         const activeMaestroId = maestroId || activeMaestro?.id || null
-        await openTeacherRoutePicker(activeMaestroId, cid, () => loadData())
+        
+        await openTeacherRouteBuilder({
+          maestroId: activeMaestroId,
+          claseId: cid,
+          route: targetClase?.route || null,
+          onSaved: () => loadData(),
+        })
       })
     })
 

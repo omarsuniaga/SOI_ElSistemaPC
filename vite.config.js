@@ -121,30 +121,32 @@ export default defineConfig({
           const pathname = parsedUrl.pathname
           const search = parsedUrl.search
 
-          if (pathname === '/admin' || pathname === '/admin/' || pathname === '/adm' || pathname === '/adm/') {
-            req.url = '/adm.html' + search
-          } else if (pathname === '/fin' || pathname === '/fin/') {
-            req.url = '/fin.html' + search
-          } else if (pathname === '/soi-finanzas' || pathname === '/soi-finanzas/') {
-            req.url = '/soi-finanzas.html' + search
-          } else if (pathname === '/acm' || pathname === '/acm/') {
-            req.url = '/acm.html' + search
-          } else if (pathname === '/adm' || pathname === '/adm/') {
-            req.url = '/adm.html' + search
-          } else if (pathname === '/com' || pathname === '/com/') {
-            req.url = '/com.html' + search
-          } else if (pathname === '/tecnico' || pathname === '/tecnico/') {
-            req.url = '/tecnico.html' + search
-          } else if (pathname === '/inventario' || pathname === '/inventario/') {
-            req.url = '/inventario.html' + search
-          } else if (pathname === '/calendario' || pathname === '/calendario/') {
-            req.url = '/calendario.html' + search
-          } else if (pathname === '/audiciones' || pathname === '/audiciones/') {
-            req.url = '/audiciones.html' + search
-          } else if (pathname === '/luteria' || pathname === '/luteria/') {
-            req.url = '/luteria.html' + search
-          } else if (pathname === '/simulador' || pathname === '/simulador/') {
-            req.url = '/simulador.html' + search
+          // Ignorar archivos estáticos (.js, .css, .svg, .png, etc.)
+          if (pathname.includes('.') && !pathname.endsWith('.html')) {
+            return next()
+          }
+
+          const portalPrefixes = [
+            { prefix: '/admin', file: '/adm.html' },
+            { prefix: '/adm', file: '/adm.html' },
+            { prefix: '/fin', file: '/fin.html' },
+            { prefix: '/soi-finanzas', file: '/soi-finanzas.html' },
+            { prefix: '/acm', file: '/acm.html' },
+            { prefix: '/com', file: '/com.html' },
+            { prefix: '/tecnico', file: '/tecnico.html' },
+            { prefix: '/inventario', file: '/inventario.html' },
+            { prefix: '/calendario', file: '/calendario.html' },
+            { prefix: '/audiciones', file: '/audiciones.html' },
+            { prefix: '/luteria', file: '/luteria.html' },
+            { prefix: '/lut', file: '/lut.html' },
+            { prefix: '/simulador', file: '/simulador.html' },
+          ]
+
+          for (const p of portalPrefixes) {
+            if (pathname === p.prefix || pathname.startsWith(p.prefix + '/')) {
+              req.url = p.file + search
+              break
+            }
           }
           next()
         })

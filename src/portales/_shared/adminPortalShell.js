@@ -340,6 +340,7 @@ export async function bootAdminPortal(profile) {
   }
 
   initializeTheme()
+  router.setPortalPrefix(profile.hermesDept.toLowerCase())
 
   // Registrar auth + módulos del perfil
   try {
@@ -438,11 +439,20 @@ export async function bootAdminPortal(profile) {
       return
     }
     renderNavbar(profile, true, storageKey)
-    const hashRoute = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
+    const deptPrefix = `/${profile.hermesDept.toLowerCase()}`
+    let pathFromUrl = ''
+    const pathname = window.location?.pathname || ''
+    if (pathname === deptPrefix || pathname.startsWith(deptPrefix + '/')) {
+      pathFromUrl = pathname.slice(deptPrefix.length).replace(/^\/+/, '')
+    }
+
+    const hashRoute = window.location?.hash ? window.location.hash.replace(/^#\/?/, '') : ''
     const stored = localStorage.getItem(storageKey)
-    const targetRoute = (hashRoute && router.routes[hashRoute])
-      ? hashRoute
-      : (isValidRoute(stored) && router.routes[stored] ? stored : profile.defaultRoute)
+    const targetRoute = (pathFromUrl && router._matchRoute(pathFromUrl))
+      ? pathFromUrl
+      : ((hashRoute && router._matchRoute(hashRoute))
+        ? hashRoute
+        : (isValidRoute(stored) && router._matchRoute(stored) ? stored : profile.defaultRoute))
     router.navigate(targetRoute)
     dismissSplashScreen()
   }

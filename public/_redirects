@@ -1,0 +1,14 @@
+/adm/*         /adm.html         200
+/admin/*       /adm.html         200
+/acm/*         /acm.html         200
+/fin/*         /fin.html         200
+/soi-finanzas/* /soi-finanzas.html 200
+/com/*         /com.html         200
+/tecnico/*     /tecnico.html     200
+/inventario/*  /inventario.html  200
+/calendario/*  /calendario.html  200
+/audiciones/*  /audiciones.html  200
+/luteria/*     /luteria.html     200
+/lut/*         /lut.html         200
+/simulador/*   /simulador.html   200
+/*             /index.html       200

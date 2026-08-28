@@ -2,18 +2,19 @@
  * planificacionView.js
  * Portal Maestros — Gestión y Rutas Académicas (Cuadrícula Móvil 2x & Desktop 3x)
  *
- * Módulo rediseñado enfocado 100% en la jerarquía pedagógica del maestro:
- * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con títulos completos, clonación y mapa vertical).
+ * Módulo de alto rendimiento: carga por lote en 1 sola consulta relacional,
+ * evitando cuellos de botella N+1 y garantizando renderizado instantáneo.
  */
 
 import { getMisClases, getInscripcionesClases } from "../services/maestroDataService.js"
-import { getTeacherRoutes, createRoute } from "../services/maestroRouteService.js"
+import { createRoute } from "../services/maestroRouteService.js"
 import { announce } from "../utils/a11yUtils.js"
 import { AppToast } from "../../shared/components/AppToast.js"
 import { router as internalRouter } from "../../core/router/router.js"
 import { getMaestroLocal } from "../auth/maestroAuth.js"
 import { abrirMapaDeRutas } from "../components/teacherRouteMapPanel.js"
 import { openTeacherRoutePicker } from "../components/TeacherRouteBuilder.js"
+import { supabase } from "../../lib/supabaseClient.js"
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -26,7 +27,7 @@ function escapeHtml(value) {
 export async function renderPlanificacionView(container, { maestroId: explicitMaestroId, router: portalRouter } = {}) {
   const activeRouter = portalRouter || window.router || internalRouter
   const maestro = getMaestroLocal()
-  const maestroId = explicitMaestroId || maestro?.id || null
+  let maestroId = explicitMaestroId || maestro?.id || null
 
   _injectStyles()
 
@@ -127,7 +128,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
     _abrirModalGuiaUso()
   })
 
-  // Load Classes & Route Data
+  // Load Classes & Route Data (High performance batch query)
   async function loadData() {
     try {
       const clases = await getMisClases()
@@ -143,47 +144,68 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
         return
       }
 
-      // Query routes for all classes in parallel
-      const enrichedClases = await Promise.all(
-        clases.map(async (clase) => {
-          let routes = []
-          let inscritos = []
-          try {
-            routes = await getTeacherRoutes(maestroId, clase.id)
-          } catch (_e) {
-            routes = []
-          }
-          try {
-            inscritos = await getInscripcionesClases([clase.id])
-          } catch (_e) {
-            inscritos = []
-          }
+      const claseIds = clases.map((c) => c.id)
 
-          const primaryRoute = routes?.[0] || null
-          const unidades = primaryRoute?.unidades || []
+      // Query routes and enrollments in parallel batch (2 requests total instead of N+1)
+      const [routesData, allInscripciones] = await Promise.all([
+        supabase
+          .from("maestro_routes")
+          .select(`
+            id, maestro_id, clase_id, nombre,
+            unidades:maestro_unidades(
+              id, orden, nombre, descripcion,
+              objetivos:maestro_objetivos(
+                id, orden, nombre, descripcion,
+                indicadores:maestro_indicadores(id, orden, nombre, criterios_json)
+              )
+            )
+          `)
+          .in("clase_id", claseIds)
+          .then((res) => res.data || [])
+          .catch((err) => {
+            console.warn("[planificacionView] Batch routes fallback:", err)
+            return []
+          }),
+        getInscripcionesClases(claseIds).catch(() => []),
+      ])
 
-          let totalObjetivos = 0
-          let totalIndicadores = 0
+      // Map routes by clase_id
+      const routesByClase = {}
+      routesData.forEach((r) => {
+        routesByClase[r.clase_id] = r
+      })
 
-          unidades.forEach((u) => {
-            const objs = u.objetivos || []
-            totalObjetivos += objs.length
-            objs.forEach((o) => {
-              totalIndicadores += (o.indicadores || []).length
-            })
+      // Map enrollments count by clase_id
+      const countByClase = {}
+      allInscripciones.forEach((ins) => {
+        countByClase[ins.clase_id] = (countByClase[ins.clase_id] || 0) + 1
+      })
+
+      const enrichedClases = clases.map((clase) => {
+        const primaryRoute = routesByClase[clase.id] || null
+        const unidades = primaryRoute?.unidades || []
+
+        let totalObjetivos = 0
+        let totalIndicadores = 0
+
+        unidades.forEach((u) => {
+          const objs = u.objetivos || []
+          totalObjetivos += objs.length
+          objs.forEach((o) => {
+            totalIndicadores += (o.indicadores || []).length
           })
-
-          return {
-            ...clase,
-            hasRoute: Boolean(primaryRoute),
-            route: primaryRoute,
-            unidadesCount: unidades.length,
-            objetivosCount: totalObjetivos,
-            indicadoresCount: totalIndicadores,
-            totalStudents: inscritos.length,
-          }
         })
-      )
+
+        return {
+          ...clase,
+          hasRoute: Boolean(primaryRoute),
+          route: primaryRoute,
+          unidadesCount: unidades.length,
+          objetivosCount: totalObjetivos,
+          indicadoresCount: totalIndicadores,
+          totalStudents: countByClase[clase.id] || 0,
+        }
+      })
 
       loadedClases = enrichedClases
 

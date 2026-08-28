@@ -192,29 +192,21 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   const horaFinPorDia = new Map() // Map<"lunes"|"martes"|..., max_hora_fin>
   ;(horarios || []).forEach((h) => {
     const dia = h.dia?.toLowerCase()
-    const horaFin = h.hora_fin || '23:59'
+    const horaFin = h.hora_fin || "23:59"
     if ((dia && !horaFinPorDia.has(dia)) || horaFin > horaFinPorDia.get(dia)) {
       horaFinPorDia.set(dia, horaFin)
     }
   })
 
-  // Sesión registrada/completada solo si NO es un borrador pendiente
+  // Sesión registrada/completada si tiene asistencia o estado registrada/cerrada
   const esSesionRegistrada = (s) => {
     if (!s) return false
-    if (s.borrador === true || s.estado === 'pendiente') return false
     const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
-    const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
-    return (
-      s.estado === 'registrada' ||
-      s.estado === 'cerrada' ||
-      (s.borrador === false && (tieneAsistencia || tieneContenido))
-    )
+    return s.estado === 'registrada' || s.estado === 'cerrada' || tieneAsistencia
   }
   const sesiones = todasSesiones.filter(esSesionRegistrada)
-
   const fechasRegistradas = new Set(sesiones.map((s) => s.fecha))
 
-  // Dates where a scheduled class was auto-justified due to an emergent session
   const fechasCubiertasEmergente = new Set(
     todasSesiones
       .filter((s) => s.clase_id && s.emergente_id)
@@ -712,14 +704,15 @@ async function _openActionDrawer(fecha, container) {
   // depende de los ids de `clasesDelMaestro` y `cumplimiento` depende del
   // id de `periodoActivo`, así que van en una segunda tanda paralela una
   // vez resuelta la primera — 2 idas y vueltas en total en vez de 6.
-  const [emeRes, sesRes, clasesRes, periodoActivoRes] = await Promise.allSettled([
+  const [emeRes, sesRes, asistRes, clasesRes, periodoActivoRes] = await Promise.allSettled([
     supabase
       .from('clases_emergentes')
       .select('*')
       .eq('maestro_id', maestro.id)
       .eq('fecha', fecha)
       .order('hora_inicio', { ascending: true, nullsFirst: false }),
-    supabase.from('sesiones_clase').select('*').eq('maestro_id', maestro.id).eq('fecha', fecha),
+    supabase.from('sesiones_clase').select('*').eq('fecha', fecha),
+    supabase.from('asistencias').select('clase_id, id, estado').eq('fecha', fecha),
     supabase
       .from('clases')
       .select('id, nombre, instrumento')
@@ -731,6 +724,7 @@ async function _openActionDrawer(fecha, container) {
 
   const emergentes = (emeRes.status === 'fulfilled' ? emeRes.value.data : null) || []
   const sesiones = (sesRes.status === 'fulfilled' ? sesRes.value.data : null) || []
+  const asistencias = (asistRes.status === 'fulfilled' ? asistRes.value.data : null) || []
   const clasesDelMaestro = (clasesRes.status === 'fulfilled' ? clasesRes.value.data : null) || []
   const periodoActivo = periodoActivoRes.status === 'fulfilled' ? periodoActivoRes.value : null
   const sesionesAutoJustificadas = sesiones.filter((s) => s.clase_id && s.emergente_id)
@@ -782,7 +776,8 @@ async function _openActionDrawer(fecha, container) {
     .map((c) => {
       const h = horarios.find((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana)
       const s = sesiones.find((s) => s.clase_id === c.id)
-      return { ...c, hora_inicio: h?.hora_inicio, hora_fin: h?.hora_fin, sesion: s }
+      const asistenciasClase = asistencias.filter((a) => a.clase_id === c.id)
+      return { ...c, hora_inicio: h?.hora_inicio, hora_fin: h?.hora_fin, sesion: s, asistencias: asistenciasClase }
     })
     .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
 
@@ -821,23 +816,20 @@ async function _openActionDrawer(fecha, container) {
   } else if (clasesProgramadas.length > 0) {
     clasesHTML = clasesProgramadas
       .map((c) => {
+        const tieneAsistenciaEnTabla = Array.isArray(c.asistencias) && c.asistencias.length > 0
+        const tieneAsistenciaEnSesion = Array.isArray(c.sesion?.asistencia) && c.sesion.asistencia.length > 0
+        const tieneContenidoConfirmado =
+          c.sesion && c.sesion.borrador === false && typeof c.sesion.contenido === 'string' && c.sesion.contenido.trim().length > 0
         const tieneSesion =
-          c.sesion &&
-          (() => {
-            const tieneAsistencia =
-              Array.isArray(c.sesion.asistencia) && c.sesion.asistencia.length > 0
-            const tieneContenido =
-              typeof c.sesion.contenido === 'string' && c.sesion.contenido.trim().length > 0
-            return (
-              c.sesion.estado === 'registrada' ||
-              c.sesion.estado === 'cerrada' ||
-              tieneAsistencia ||
-              (c.sesion.borrador === false && tieneContenido)
-            )
-          })()
+          c.sesion?.estado === 'registrada' ||
+          c.sesion?.estado === 'cerrada' ||
+          tieneAsistenciaEnTabla ||
+          tieneAsistenciaEnSesion ||
+          tieneContenidoConfirmado
+
         const esPendiente =
-          c.sesion &&
           !tieneSesion &&
+          c.sesion &&
           (c.sesion.estado === 'pendiente' || c.sesion.borrador === true)
 
         return `

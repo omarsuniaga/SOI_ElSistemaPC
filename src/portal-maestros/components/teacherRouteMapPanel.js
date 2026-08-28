@@ -245,21 +245,24 @@ function _renderDuolingoVerticalTrail(
       nodeCoords.push({ xPct, yPx, item })
     })
 
-    // Build SVG curved road path
+    // Build SVG curved road path using numerical coordinates (1000 units reference width in viewBox)
     let svgPathD = ""
     if (nodeCoords.length > 1) {
-      svgPathD = `M ${nodeCoords[0].xPct}% ${nodeCoords[0].yPx}`
+      const getXVal = (pct) => (pct / 100) * 1000
+      svgPathD = `M ${getXVal(nodeCoords[0].xPct)} ${nodeCoords[0].yPx}`
       for (let i = 1; i < nodeCoords.length; i++) {
-        const prev = nodeCoords[i - 1]
-        const curr = nodeCoords[i]
-        const midY = (prev.yPx + curr.yPx) / 2
-        svgPathD += ` C ${prev.xPct}% ${midY}, ${curr.xPct}% ${midY}, ${curr.xPct}% ${curr.yPx}`
+        const prevX = getXVal(nodeCoords[i - 1].xPct)
+        const currX = getXVal(nodeCoords[i].xPct)
+        const prevY = nodeCoords[i - 1].yPx
+        const currY = nodeCoords[i].yPx
+        const midY = (prevY + currY) / 2
+        svgPathD += ` C ${prevX} ${midY}, ${currX} ${midY}, ${currX} ${currY}`
       }
     }
 
     fullHTML += `
       <div class="pmr-trail-stage" style="height: ${trailHeight}px;">
-        <svg class="pmr-trail-svg" width="100%" height="${trailHeight}" preserveAspectRatio="none">
+        <svg class="pmr-trail-svg" viewBox="0 0 1000 ${trailHeight}" width="100%" height="${trailHeight}" preserveAspectRatio="none">
           ${svgPathD ? `<path class="pmr-trail-road-back" d="${svgPathD}" />` : ""}
           ${svgPathD ? `<path class="pmr-trail-road-front" d="${svgPathD}" />` : ""}
         </svg>

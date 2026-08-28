@@ -45,14 +45,22 @@ export function createStudentList(container, {
 
   function _sortAlumnos(alumnos, estado) {
     return [...alumnos].sort((a, b) => {
-      const aM = estado[a.id] !== null
-      const bM = estado[b.id] !== null
+      // 1. Alumnos sin registrar van primero; al registrarse (P, J, A) pasan al final de la fila
+      const aM = estado[a.id] !== null && estado[a.id] !== undefined
+      const bM = estado[b.id] !== null && estado[b.id] !== undefined
       if (!aM && bM) return -1
       if (aM && !bM) return 1
-      if (a.hora_inicio && b.hora_inicio) {
-        return a.hora_inicio.localeCompare(b.hora_inicio)
-      }
-      return 0
+
+      // 2. Ordenar por instrumento principal
+      const instA = (a.instrumento_principal || '').trim().toLowerCase()
+      const instB = (b.instrumento_principal || '').trim().toLowerCase()
+      const cmpInst = instA.localeCompare(instB, 'es', { sensitivity: 'base' })
+      if (cmpInst !== 0) return cmpInst
+
+      // 3. Si tocan el mismo instrumento (ej. todos violín): orden alfabético por nombre completo
+      const nomA = (a.nombre_completo || '').trim().toLowerCase()
+      const nomB = (b.nombre_completo || '').trim().toLowerCase()
+      return nomA.localeCompare(nomB, 'es', { sensitivity: 'base' })
     })
   }
 
@@ -77,12 +85,7 @@ export function createStudentList(container, {
     if (btnA) btnA.classList.toggle('active-a', newEstado === 'A')
   }
 
-  function renderLista(animateId = null) {
-    if (animateId && listEl.children.length > 0) {
-      updateStudentRowState(animateId, estado[animateId])
-      return
-    }
-
+  function renderLista(_animateId = null) {
     const sorted = _sortAlumnos(alumnos, estado)
     listEl.innerHTML = sorted.map((a) => _renderAlumnoItem(a, estado[a.id])).join('')
   }
@@ -237,7 +240,7 @@ export function createStudentList(container, {
           delete justificaciones[id]
         }
         if (typeof onJustifDeleted === 'function') onJustifDeleted(id)
-        updateStudentRowState(id, null)
+        renderLista()
         if (onAutoSave) await onAutoSave(true)
         if (onAnnounce) onAnnounce(`Justificación desmarcada para ${alumno.nombre_completo}.`)
       } else {
@@ -252,8 +255,9 @@ export function createStudentList(container, {
 
     // P/A toggle
     const nextState = estado[id] === action ? null : action
+    estado[id] = nextState
     if (onEstadoChange) onEstadoChange(id, nextState)
-    updateStudentRowState(id, nextState)
+    renderLista()
 
     if (onAnnounce) {
       const presentes = Object.values(estado).filter((v) => v === 'P').length

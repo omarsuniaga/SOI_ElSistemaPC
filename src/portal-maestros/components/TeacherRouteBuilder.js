@@ -28,9 +28,25 @@ function _uid(prefix = 'tmp') {
  * @param {Object} [opts.route] - Ruta existente a editar (con jerarquía completa). Si se omite, crea una nueva.
  * @param {(route: Object) => void} [opts.onSaved]
  */
-export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSaved } = {}) {
-  if (!maestroId || !claseId) {
-    AppToast.error('Falta identificar al maestro o la clase')
+import { getMaestroLocal, detectarRolMaestro } from "../auth/maestroAuth.js"
+import { supabase } from "../../lib/supabaseClient.js"
+
+export async function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSaved } = {}) {
+  let effectiveMaestroId = maestroId || getMaestroLocal()?.id || null
+  if (!effectiveMaestroId) {
+    try {
+      const m = await detectarRolMaestro()
+      effectiveMaestroId = m?.id || null
+    } catch (_e) {}
+  }
+  if (!effectiveMaestroId) {
+    try {
+      const { data: s } = await supabase.auth.getSession()
+      effectiveMaestroId = s?.session?.user?.id || null
+    } catch (_e) {}
+  }
+  if (!claseId) {
+    AppToast.error('Falta identificar la clase')
     return
   }
 
@@ -494,10 +510,40 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
  * @param {(route: Object) => void} [onSaved]
  */
 export async function openTeacherRoutePicker(maestroId, claseId, onSaved) {
-  const routes = await getTeacherRoutes(maestroId, claseId)
+  let effectiveMaestroId = maestroId || getMaestroLocal()?.id || null
+  if (!effectiveMaestroId) {
+    try {
+      const m = await detectarRolMaestro()
+      effectiveMaestroId = m?.id || null
+    } catch (_e) {}
+  }
+
+  let routes = []
+  if (effectiveMaestroId) {
+    try {
+      routes = await getTeacherRoutes(effectiveMaestroId, claseId)
+    } catch (_e) {
+      routes = []
+    }
+  }
 
   if (!routes || routes.length === 0) {
-    openTeacherRouteBuilder({ maestroId, claseId, onSaved })
+    try {
+      const { data: dbRoutes } = await supabase
+        .from("maestro_routes")
+        .select("id, maestro_id, clase_id, nombre, descripcion")
+        .eq("clase_id", claseId)
+      if (dbRoutes && dbRoutes.length > 0) {
+        routes = dbRoutes
+        if (!effectiveMaestroId && dbRoutes[0].maestro_id) {
+          effectiveMaestroId = dbRoutes[0].maestro_id
+        }
+      }
+    } catch (_e) {}
+  }
+
+  if (!routes || routes.length === 0) {
+    await openTeacherRouteBuilder({ maestroId: effectiveMaestroId, claseId, onSaved })
     return
   }
 

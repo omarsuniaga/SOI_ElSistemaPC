@@ -11,7 +11,7 @@ import { createRoute } from "../services/maestroRouteService.js"
 import { announce } from "../utils/a11yUtils.js"
 import { AppToast } from "../../shared/components/AppToast.js"
 import { router as internalRouter } from "../../core/router/router.js"
-import { getMaestroLocal } from "../auth/maestroAuth.js"
+import { getMaestroLocal, detectarRolMaestro } from "../auth/maestroAuth.js"
 import { abrirMapaDeRutas } from "../components/teacherRouteMapPanel.js"
 import { openTeacherRoutePicker } from "../components/TeacherRouteBuilder.js"
 import { supabase } from "../../lib/supabaseClient.js"
@@ -26,7 +26,12 @@ function escapeHtml(value) {
 
 export async function renderPlanificacionView(container, { maestroId: explicitMaestroId, router: portalRouter } = {}) {
   const activeRouter = portalRouter || window.router || internalRouter
-  const maestro = getMaestroLocal()
+  let maestro = getMaestroLocal()
+  if (!maestro) {
+    try {
+      maestro = await detectarRolMaestro()
+    } catch (_e) {}
+  }
   let maestroId = explicitMaestroId || maestro?.id || null
 
   _injectStyles()
@@ -366,12 +371,14 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       })
     })
 
-    // Wire action buttons with stopPropagation
+    // Wire action buttons with stopPropagation and robust fallback
     gridHost.querySelectorAll(".pm-btn-designer").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation()
         const cid = btn.dataset.claseId
-        openTeacherRoutePicker(maestroId, cid, () => loadData())
+        const activeMaestro = maestro || getMaestroLocal() || (await detectarRolMaestro().catch(() => null))
+        const activeMaestroId = maestroId || activeMaestro?.id || null
+        await openTeacherRoutePicker(activeMaestroId, cid, () => loadData())
       })
     })
 
@@ -379,8 +386,9 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       btn.addEventListener("click", async (e) => {
         e.stopPropagation()
         const cid = btn.dataset.claseId
+        const activeMaestro = maestro || getMaestroLocal() || (await detectarRolMaestro().catch(() => null))
         const fechaHoy = new Date().toISOString().slice(0, 10)
-        await abrirMapaDeRutas(cid, maestro, fechaHoy)
+        await abrirMapaDeRutas(cid, activeMaestro, fechaHoy)
       })
     })
 

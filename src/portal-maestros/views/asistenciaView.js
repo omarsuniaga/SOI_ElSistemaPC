@@ -78,6 +78,7 @@ import { createBulkActions } from '../components/attendance/BulkActions.js'
 import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
 import { createStudentList } from '../components/attendance/StudentList.js'
+import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
 import { resolverPertenenciaClase } from '../services/suplenciaService.js'
@@ -1710,6 +1711,22 @@ function _renderVista(container, ctx) {
     },
   })
 
+  // === Grade Panel (Calificación con Estrellas y Deuda Pedagógica) ===
+  const gradePanel = createGradePanel(container, {
+    alumnos,
+    estado,
+    claseId,
+    sesionId,
+    rutaId,
+    onGraded: () => {
+      _updateProgress()
+      if (typeof AppToast !== 'undefined' && AppToast) {
+        AppToast.success('Calificaciones pedagógicas actualizadas.')
+      }
+    },
+  })
+  _cleanups.push(() => gradePanel.destroy())
+
   // === Planification Card ===
   const toolbar = dslSection.getToolbar()
   planificationCard = createPlanificationCard(container, {
@@ -1724,6 +1741,13 @@ function _renderVista(container, ctx) {
       if (toolbar) toolbar.setContext({ indicadorActivo: ind.nombre })
       const obsBtn = container.querySelector('#btn-guardar-obs')
       if (obsBtn) obsBtn.style.display = ''
+      // Open grade modal with 1-5 stars for present students
+      gradePanel.open({
+        id: ind.id,
+        indicator_id: ind.id,
+        topic: ind.nombre,
+        clase_id: claseId,
+      })
     },
     getSessionState: () => ({
       isRegistered: isSessionRegistered,

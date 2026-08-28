@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabaseClient.js'
  * Catálogo estático de respaldo en caso de que la red falle.
  */
 export const DEFAULT_PORTAL_CATALOG = [
-  { portal_id: 'SUPERADMIN', nombre: 'SuperAdmin Master', ruta: '/admin.html', roles_default: ['superadmin'], icono: 'bi-shield-lock-fill' },
+  { portal_id: 'SUPERADMIN', nombre: 'SuperAdmin Master', ruta: '/adm.html', roles_default: ['superadmin'], icono: 'bi-shield-lock-fill' },
   { portal_id: 'ADM', nombre: 'Portal Administración', ruta: '/adm.html', roles_default: ['superadmin', 'admin', 'coordinacion_academica'], icono: 'bi-briefcase-fill' },
   { portal_id: 'ACM', nombre: 'Portal Académico', ruta: '/acm.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-mortarboard-fill' },
   { portal_id: 'FIN', nombre: 'Portal Finanzas SOI', ruta: '/soi-finanzas.html', roles_default: ['superadmin', 'admin', 'finanzas'], icono: 'bi-cash-coin' },

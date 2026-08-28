@@ -121,8 +121,8 @@ export default defineConfig({
           const pathname = parsedUrl.pathname
           const search = parsedUrl.search
 
-          if (pathname === '/admin' || pathname === '/admin/') {
-            req.url = '/admin.html' + search
+          if (pathname === '/admin' || pathname === '/admin/' || pathname === '/adm' || pathname === '/adm/') {
+            req.url = '/adm.html' + search
           } else if (pathname === '/fin' || pathname === '/fin/') {
             req.url = '/fin.html' + search
           } else if (pathname === '/soi-finanzas' || pathname === '/soi-finanzas/') {

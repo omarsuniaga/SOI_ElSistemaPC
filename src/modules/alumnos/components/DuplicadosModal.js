@@ -1,14 +1,14 @@
 /**
  * DuplicadosModal — revisión, selección y fusión inteligente de alumnos duplicados.
  *
- * Flujo optimizado (Zero-Friction UX):
- *  1. Al abrir, ejecuta el análisis automático de forma inmediata (sin pasos intermedios).
- *  2. Muestra directamente el listado de parejas con nivel de certeza, motivos y opción de:
- *     - "Revisar": abre la vista detallada de comparación y resolución de campos/clases.
- *     - "Fusión rápida": unifica en 1 click la pareja conservando al más completo.
- *  3. Flujo Continuo: al fusionar un alumno, el modal NO se cierra; actualiza la lista
- *     en memoria y regresa a los duplicados restantes hasta resolver todos.
- *  4. Ejecuta la fusión transaccional atómica en backend (RPC) y refresca la vista padre.
+ * Flujo optimizado y diseño gráfico V2 de alta claridad:
+ *  1. Análisis inmediato con detección fonética y correlación de identidad.
+ *  2. Header con tarjeta de coincidencia visual: quiénes son los 2 alumnos, % similitud y motivos exactos.
+ *  3. Selección de registro Principal mediante tarjetas interactivas "Radio Card".
+ *  4. Fusión de clases transparente con desglose antes/después.
+ *  5. Tabla de resolución de campos codificada por colores (Coincidencia / Completado / Conflicto).
+ *  6. Botón informativo contextual "¿Cómo funciona la fusión?".
+ *  7. Flujo continuo sin cierres abruptos.
  */
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -27,8 +27,8 @@ import { getInstrumentoIcon } from '../../clases/utils/clasesUtils.js'
 import { formatDate } from '../utils/alumnosUtils.js'
 
 const NIVEL_BADGE = {
-  alta: { clase: 'bg-success-subtle text-success border-success-subtle', icono: 'bi-check-circle-fill' },
-  media: { clase: 'bg-warning-subtle text-warning-emphasis border-warning-subtle', icono: 'bi-exclamation-triangle-fill' },
+  alta: { clase: 'bg-success-subtle text-success border border-success-subtle', icono: 'bi-shield-check' },
+  media: { clase: 'bg-warning-subtle text-warning-emphasis border border-warning-subtle', icono: 'bi-exclamation-triangle-fill' },
 }
 
 function formatearValor(v) {
@@ -38,23 +38,23 @@ function formatearValor(v) {
 
 function formatearTipo(tipo) {
   const badges = {
-    completa: '<span class="badge rounded-pill border border-success-subtle bg-success-subtle text-success py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-plus-circle me-1"></i>completa</span>',
-    coincide: '<span class="badge rounded-pill border border-secondary-subtle bg-body-secondary text-body-secondary py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-check2 me-1"></i>coincide</span>',
-    conflicto: '<span class="badge rounded-pill border border-danger-subtle bg-danger-subtle text-danger py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-exclamation-circle me-1"></i>conflicto</span>',
-    vacia: '<span class="badge rounded-pill border border-secondary-subtle bg-body-secondary text-muted py-1 px-2" style="font-size:0.7rem;">vacío</span>',
+    completa: '<span class="badge rounded-pill border border-primary-subtle bg-primary-subtle text-primary py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-plus-circle me-1"></i>Completa datos</span>',
+    coincide: '<span class="badge rounded-pill border border-success-subtle bg-success-subtle text-success py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-check2-circle me-1"></i>Idéntico</span>',
+    conflicto: '<span class="badge rounded-pill border border-danger-subtle bg-danger-subtle text-danger py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-exclamation-octagon-fill me-1"></i>Conflicto (elegir)</span>',
+    vacia: '<span class="badge rounded-pill border border-secondary-subtle bg-body-secondary text-muted py-1 px-2" style="font-size:0.7rem;">Sin datos</span>',
   }
   return badges[tipo] || badges.vacia
 }
 
 function renderBadgesClases(clases, theme = 'primary') {
-  if (!clases || !clases.length) return '<span class="text-muted fst-italic small">— Sin clases asignadas —</span>'
+  if (!clases || !clases.length) return '<span class="text-muted fst-italic small">— Sin clases registradas —</span>'
   return clases
     .map((c) => {
       const nombre = escapeHTML(c.nombre || 'Clase')
       const horario = c.clase_horarios?.[0]
         ? ` (${escapeHTML(c.clase_horarios[0].dia || '')} ${escapeHTML(String(c.clase_horarios[0].hora_inicio || '').slice(0, 5))})`
         : ''
-      return `<span class="badge bg-${theme}-subtle text-${theme}-emphasis border border-${theme}-subtle text-wrap text-start py-1.5 px-2.5 rounded-3 shadow-xs fw-medium"><i class="bi bi-music-note-beamed me-1"></i>${nombre}${horario}</span>`
+      return `<span class="badge bg-${theme}-subtle text-${theme}-emphasis border border-${theme}-subtle py-1.5 px-2.5 rounded-3 shadow-xs fw-medium text-start"><i class="bi bi-music-note-beamed me-1"></i>${nombre}${horario}</span>`
     })
     .join(' ')
 }
@@ -66,11 +66,11 @@ export const DuplicadosModal = {
 
     // ── Paso 1: análisis automático inmediato ────────────────────────────────
     try {
-      AppModal.showLoading('Analizando alumnos y detectando posibles duplicados...')
+      AppModal.showLoading('Analizando base de datos en busca de posibles duplicados...')
       if (!listaAlumnos.length) {
         listaAlumnos = await obtenerTodosLosAlumnosParaAnalisis()
       }
-      let duplicadosPendientes = detectarPosiblesDuplicados(listaAlumnos)
+      const duplicadosPendientes = detectarPosiblesDuplicados(listaAlumnos)
       AppModal.hideLoading()
       
       ejecutarFlujoLista(duplicadosPendientes)
@@ -78,6 +78,61 @@ export const DuplicadosModal = {
       AppModal.hideLoading()
       console.error('[DuplicadosModal] Error en análisis inicial:', error)
       AppToast.error(error.message || 'No se pudieron analizar los alumnos duplicados')
+    }
+
+    // ── Modal Informativo / Guía de Fusión ───────────────────────────────────
+    function mostrarGuiaInformativa() {
+      AppModal.open({
+        title: '¿Cómo funciona la fusión de duplicados?',
+        size: 'md',
+        hideSave: true,
+        cancelText: 'Entendido',
+        body: `
+          <div class="p-2">
+            <div class="d-flex align-items-center gap-3 p-3 rounded-4 bg-primary-subtle text-primary border border-primary-subtle mb-3">
+              <i class="bi bi-shield-shaded fs-1 flex-shrink-0"></i>
+              <div>
+                <h6 class="fw-bold mb-1">Unificación Inteligente y Segura</h6>
+                <p class="small mb-0 text-body">El proceso consolida dos registros de un mismo estudiante en uno solo sin perder ningún dato histórico.</p>
+              </div>
+            </div>
+
+            <div class="d-flex flex-column gap-2.5">
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+                <span class="badge bg-primary rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">1</span>
+                <div>
+                  <strong class="d-block small text-body">Registro Principal vs Secundario</strong>
+                  <span class="text-muted small">El alumno que elijas como <strong>Principal</strong> mantendrá su ID en el sistema. El <strong>Secundario</strong> será absorbido y eliminado.</span>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+                <span class="badge bg-success rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">2</span>
+                <div>
+                  <strong class="d-block small text-body">Migración Total de Clases</strong>
+                  <span class="text-muted small">Todas las clases, asistencias y evaluaciones inscritas en ambos alumnos se unifican bajo el registro principal sin duplicarse.</span>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+                <span class="badge bg-info text-white rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">3</span>
+                <div>
+                  <strong class="d-block small text-body">Resolución de Datos Faltantes</strong>
+                  <span class="text-muted small">Los datos vacíos del principal (como teléfono, cédula o representante) se completan automáticamente con los del secundario.</span>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+                <span class="badge bg-warning text-dark rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">4</span>
+                <div>
+                  <strong class="d-block small text-body">Operación Atómica en Base de Datos</strong>
+                  <span class="text-muted small">La fusión se ejecuta en una sola transacción en Supabase/PostgreSQL. Si algo falla, ningún dato se modifica.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
     }
 
     // ── Paso 2: listado interactivo con retención de estado ──────────────────
@@ -93,8 +148,8 @@ export const DuplicadosModal = {
               <div class="p-3 rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3">
                 <i class="bi bi-check-circle-fill fs-1"></i>
               </div>
-              <h5 class="fw-bold mb-1">Base de datos optimizada</h5>
-              <p class="text-muted mb-0 small">No se encontraron alumnos duplicados pendientes de revisión.</p>
+              <h5 class="fw-bold mb-1">¡Base de datos limpia y unificada!</h5>
+              <p class="text-muted mb-0 small">No se encontraron más alumnos duplicados pendientes de revisión.</p>
             </div>
           `,
         })
@@ -107,37 +162,37 @@ export const DuplicadosModal = {
           const pct = Math.round(d.puntaje * 100)
 
           const motivos = []
-          if (d.coincidencias?.padre_nombre) motivos.push('Mismo Padre')
-          if (d.coincidencias?.madre_nombre) motivos.push('Misma Madre')
-          if (d.coincidencias?.telefono) motivos.push('Mismo Teléfono')
-          if (d.coincidencias?.fecha_nacimiento) motivos.push('Misma Fecha Nac.')
-          if (d.esSubsetNombre) motivos.push('Nombre similar')
+          if (d.coincidencias?.padre_nombre) motivos.push('Padre idéntico')
+          if (d.coincidencias?.madre_nombre) motivos.push('Madre idéntica')
+          if (d.coincidencias?.telefono) motivos.push('Mismo teléfono')
+          if (d.coincidencias?.fecha_nacimiento) motivos.push('Misma fecha nac.')
+          if (d.esSubsetNombre) motivos.push('Nombre fonético similar')
 
-          const motivosHTML = motivos.length
-            ? `<div class="text-muted small mt-1"><i class="bi bi-info-circle me-1 text-primary"></i>${escapeHTML(motivos.join(' · '))}</div>`
-            : ''
+          const motivosBadges = motivos
+            .map((m) => `<span class="badge bg-body-secondary text-body-secondary border rounded-pill px-2 py-0.5" style="font-size:0.68rem;"><i class="bi bi-check2 text-success me-0.5"></i>${escapeHTML(m)}</span>`)
+            .join(' ')
 
           return `
             <div class="col-12 col-lg-6" id="duplicado-card-${idx}">
-              <div class="d-flex align-items-start gap-3 border rounded-3 p-3 bg-body shadow-xs hover-shadow transition-all h-100">
-                <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:44px;height:44px;font-size:1.05rem;font-weight:700;">
+              <div class="d-flex align-items-start gap-3 border rounded-4 p-3 bg-body shadow-xs hover-shadow transition-all h-100 position-relative">
+                <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:46px;height:46px;font-size:1.1rem;font-weight:700;">
                   ${escapeHTML((d.a.nombre_completo || d.a.nombre || '?').slice(0, 1).toUpperCase())}
                 </div>
                 <div class="flex-grow-1 min-w-0">
                   <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                     <strong class="text-body text-truncate" style="font-size:0.92rem;">${escapeHTML(d.a.nombre_completo || d.a.nombre || 'Sin nombre')}</strong>
-                    <span class="badge rounded-pill ${badge.clase} flex-shrink-0 py-1 px-2" style="font-size:0.72rem;"><i class="bi ${badge.icono} me-1"></i>${pct}%</span>
+                    <span class="badge rounded-pill ${badge.clase} flex-shrink-0 py-1 px-2.5" style="font-size:0.72rem;"><i class="bi ${badge.icono} me-1"></i>${pct}% similitud</span>
                   </div>
-                  <div class="text-muted small text-truncate"><i class="bi bi-arrow-repeat me-1 text-secondary"></i>${escapeHTML(d.b.nombre_completo || d.b.nombre || 'Sin nombre')}</div>
-                  ${motivosHTML}
+                  <div class="text-muted small text-truncate mb-1.5"><i class="bi bi-arrow-left-right me-1 text-secondary"></i>${escapeHTML(d.b.nombre_completo || d.b.nombre || 'Sin nombre')}</div>
+                  <div class="d-flex flex-wrap gap-1">${motivosBadges}</div>
                 </div>
                 <div class="d-flex flex-column gap-1.5 flex-shrink-0 align-self-center">
-                  <button type="button" class="btn btn-sm btn-primary rounded-3 shadow-xs px-2.5 py-1" data-action="revisar" data-duplicado-idx="${idx}" style="font-size:0.78rem;">
+                  <button type="button" class="btn btn-sm btn-primary rounded-3 shadow-xs px-3 py-1.5 fw-semibold" data-action="revisar" data-duplicado-idx="${idx}" style="font-size:0.8rem;">
                     <span>Revisar</span>
                     <i class="bi bi-chevron-right ms-1"></i>
                   </button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 px-2 py-0.5" data-action="rapida" data-duplicado-idx="${idx}" title="Fusión automática inteligente conservando al más completo" style="font-size:0.72rem;">
-                    <i class="bi bi-lightning-charge me-0.5 text-warning"></i>Rápida
+                  <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 px-2 py-1" data-action="rapida" data-duplicado-idx="${idx}" title="Fusión automática inteligente conservando al más completo" style="font-size:0.72rem;">
+                    <i class="bi bi-lightning-charge-fill text-warning me-0.5"></i>Rápida
                   </button>
                 </div>
               </div>
@@ -153,20 +208,29 @@ export const DuplicadosModal = {
         cancelText: 'Cerrar',
         body: `
           <div class="p-2">
-            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 bg-body-tertiary border mb-3 shadow-xs flex-wrap gap-2">
-              <p class="text-muted small mb-0">
-                Se detectaron <strong>${duplicados.length}</strong> parejas con alta probabilidad de duplicidad. 
-                Podes revisar los datos en detalle o aplicar la fusión rápida.
-              </p>
-              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5">
-                <i class="bi bi-collection me-1"></i>${duplicados.length} pendientes
-              </span>
+            <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-body-tertiary border mb-3 shadow-xs flex-wrap gap-2">
+              <div>
+                <h6 class="fw-bold mb-0.5 text-body d-flex align-items-center gap-2">
+                  <i class="bi bi-people text-primary"></i>
+                  <span>Posibles coincidencias en la base de datos</span>
+                </h6>
+                <small class="text-muted">Se encontraron <strong>${duplicados.length}</strong> parejas que corresponden a la misma persona.</small>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1.5 shadow-xs fw-semibold" id="btnInfoGuiaLista">
+                  <i class="bi bi-info-circle-fill me-1"></i>¿Cómo funciona?
+                </button>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5">
+                  ${duplicados.length} pendientes
+                </span>
+              </div>
             </div>
             <div class="row g-2.5 overflow-auto pe-1" style="max-height: calc(92vh - 220px);">${items}</div>
           </div>
         `,
         onShow: (body) => {
-          // Acción: Revisar en detalle
+          body.querySelector('#btnInfoGuiaLista')?.addEventListener('click', () => mostrarGuiaInformativa())
+
           body.querySelectorAll('[data-action="revisar"]').forEach((btn) => {
             btn.addEventListener('click', () => {
               const idx = Number(btn.dataset.duplicadoIdx)
@@ -174,12 +238,10 @@ export const DuplicadosModal = {
             })
           })
 
-          // Acción: Fusión rápida 1-Click
           body.querySelectorAll('[data-action="rapida"]').forEach((btn) => {
             btn.addEventListener('click', async () => {
               const idx = Number(btn.dataset.duplicadoIdx)
-              const d = duplicados[idx]
-              await ejecutarFusionRapida(d, duplicados)
+              await ejecutarFusionRapida(duplicados[idx], duplicados)
             })
           })
         },
@@ -189,7 +251,7 @@ export const DuplicadosModal = {
     // ── Fusión Rápida Inteligente ────────────────────────────────────────────
     async function ejecutarFusionRapida(duplicado, listaActual) {
       try {
-        AppModal.showLoading('Ejecutando fusión rápida...')
+        AppModal.showLoading('Ejecutando fusión rápida en base de datos...')
         const principal = quienEsMasCompleto(duplicado.a, duplicado.b)
         const obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
         const fusion = construirFusion(principal, obsoleto)
@@ -208,7 +270,6 @@ export const DuplicadosModal = {
 
         if (typeof onSuccess === 'function') onSuccess()
 
-        // Filtrar pareja procesada y refrescar lista restante
         const filtrados = listaActual.filter(
           (d) => d.a.id !== principal.id && d.a.id !== obsoleto.id && d.b.id !== principal.id && d.b.id !== obsoleto.id
         )
@@ -222,7 +283,7 @@ export const DuplicadosModal = {
 
     // ── Paso 3: detalle de fusión con clases y selector de principal ──────────
     async function abrirDetalle(duplicado, listaCompletaDuplicados, currentIndex = 0) {
-      AppModal.showLoading('Cargando clases e historial...')
+      AppModal.showLoading('Cargando clases e historial de ambos alumnos...')
 
       let clasesA = []
       let clasesB = []
@@ -256,27 +317,43 @@ export const DuplicadosModal = {
 
         const fusion = construirFusion(principal, obsoleto)
 
+        // Motivos de coincidencia destacados
+        const motivos = []
+        if (duplicado.coincidencias?.padre_nombre) motivos.push(`Padre idéntico (${escapeHTML(duplicado.a.padre_nombre || '')})`)
+        if (duplicado.coincidencias?.madre_nombre) motivos.push(`Madre idéntica (${escapeHTML(duplicado.a.madre_nombre || '')})`)
+        if (duplicado.coincidencias?.telefono) motivos.push(`Mismo teléfono (${escapeHTML(duplicado.a.telefono || '')})`)
+        if (duplicado.coincidencias?.fecha_nacimiento) motivos.push(`Misma fecha nac. (${formatDate(duplicado.a.fecha_nacimiento)})`)
+        if (duplicado.esSubsetNombre) motivos.push(`Nombre fonéticamente coincidente`)
+
+        const motivosHTML = motivos
+          .map((m) => `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size:0.75rem;"><i class="bi bi-check-circle-fill me-1"></i>${m}</span>`)
+          .join(' ')
+
         const renderFila = (campo) => {
           const badge = formatearTipo(campo.tipo)
           const principalValor = formatearValor(campo.valorPrincipal)
           const obsoletoValor = formatearValor(campo.valorObsoleto)
           const resultante = formatearValor(campo.valorFusionado)
 
+          let filaClase = ''
+          if (campo.tipo === 'conflicto') filaClase = 'table-danger bg-danger-subtle bg-opacity-10'
+          else if (campo.tipo === 'completa') filaClase = 'table-primary bg-primary-subtle bg-opacity-10'
+
           const celdaResultante = campo.puedeElegir
-            ? `<select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1" data-fusion-key="${campo.key}" data-fusion-label="${escapeHTML(campo.label)}" style="font-size:0.8rem;">
-                <option value="__principal__" ${campo.valorFusionado === campo.valorPrincipal ? 'selected' : ''}>${escapeHTML(campo.valorPrincipal)} (Principal)</option>
-                <option value="__obsoleto__" ${campo.valorFusionado === campo.valorObsoleto ? 'selected' : ''}>${escapeHTML(campo.valorObsoleto)} (Secundario)</option>
+            ? `<select class="form-select form-select-sm rounded-3 shadow-xs border-primary fw-semibold py-1 bg-white" data-fusion-key="${campo.key}" data-fusion-label="${escapeHTML(campo.label)}" style="font-size:0.8rem;">
+                <option value="__principal__" ${campo.valorFusionado === campo.valorPrincipal ? 'selected' : ''}>${escapeHTML(campo.valorPrincipal)} (de Principal)</option>
+                <option value="__obsoleto__" ${campo.valorFusionado === campo.valorObsoleto ? 'selected' : ''}>${escapeHTML(campo.valorObsoleto)} (de Secundario)</option>
               </select>`
             : `<span style="font-weight:600;" class="text-body">${resultante}</span>`
 
           return `
-            <tr data-fusion-row="${campo.key}" data-fusion-tipo="${campo.tipo}">
+            <tr data-fusion-row="${campo.key}" data-fusion-tipo="${campo.tipo}" class="${filaClase}">
               <td class="py-2.5 align-middle">
                 <div class="fw-semibold text-body" style="font-size:0.85rem;">${escapeHTML(campo.label)}</div>
                 <div class="mt-0.5">${badge}</div>
               </td>
-              <td class="py-2.5 align-middle small">${principalValor}</td>
-              <td class="py-2.5 align-middle small">${obsoletoValor}</td>
+              <td class="py-2.5 align-middle small text-body">${principalValor}</td>
+              <td class="py-2.5 align-middle small text-muted">${obsoletoValor}</td>
               <td class="py-2.5 align-middle">${celdaResultante}</td>
             </tr>
           `
@@ -299,151 +376,190 @@ export const DuplicadosModal = {
           .join('')
 
         const resumenCompletados = fusion.completadosLabels.length
-          ? `<div class="p-2.5 rounded-3 bg-success-subtle bg-opacity-30 border border-success-subtle small text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>Completados: <strong>${escapeHTML(fusion.completadosLabels.join(', '))}</strong></div>`
+          ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1"><i class="bi bi-plus-circle me-1"></i>${fusion.completadosLabels.length} datos completados</span>`
           : ''
 
         const resumenConflictos = fusion.conflictosLabels.length
-          ? `<div class="p-2.5 rounded-3 bg-danger-subtle bg-opacity-30 border border-danger-subtle small text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Conflictos: <strong>${escapeHTML(fusion.conflictosLabels.join(', '))}</strong></div>`
-          : `<div class="p-2.5 rounded-3 bg-body-tertiary border small text-muted mb-2"><i class="bi bi-check2-circle text-success me-1"></i>Sin conflictos de datos.</div>`
+          ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1"><i class="bi bi-exclamation-circle-fill me-1"></i>${fusion.conflictosLabels.length} conflictos a elegir</span>`
+          : `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1"><i class="bi bi-check2-circle me-1"></i>Sin conflictos</span>`
 
         return `
           <div class="d-flex flex-column gap-3 pb-2">
             
+            <!-- Barra Superior de Navegación e Información -->
             <div class="d-flex justify-content-between align-items-center pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
               <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 shadow-xs" id="btnVolverALista">
-                  <i class="bi bi-arrow-left me-1"></i>Volver a lista
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 shadow-xs fw-semibold" id="btnVolverALista">
+                  <i class="bi bi-arrow-left me-1"></i>Volver a la lista
                 </button>
                 <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1">
                   Pareja ${currentIndex + 1} de ${listaCompletaDuplicados.length}
                 </span>
               </div>
 
-              <div class="btn-group btn-group-sm rounded-3 shadow-xs overflow-hidden" role="group" id="btn-group-choose-principal">
-                <button type="button" class="btn ${principal.id === duplicado.a.id ? 'btn-primary fw-bold' : 'btn-outline-secondary'} px-3 py-1.5" data-principal-id="${duplicado.a.id}">
-                  <i class="bi ${principal.id === duplicado.a.id ? 'bi-check2-circle' : 'bi-circle'} me-1"></i>Conservar: ${escapeHTML(duplicado.a.nombre_completo || duplicado.a.nombre || 'Alumno A')}
-                </button>
-                <button type="button" class="btn ${principal.id === duplicado.b.id ? 'btn-primary fw-bold' : 'btn-outline-secondary'} px-3 py-1.5" data-principal-id="${duplicado.b.id}">
-                  <i class="bi ${principal.id === duplicado.b.id ? 'bi-check2-circle' : 'bi-circle'} me-1"></i>Conservar: ${escapeHTML(duplicado.b.nombre_completo || duplicado.b.nombre || 'Alumno B')}
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 shadow-xs fw-semibold" id="btnInfoGuiaDetalle">
+                  <i class="bi bi-info-circle-fill me-1"></i>¿Cómo funciona?
                 </button>
               </div>
             </div>
 
-            <div class="row g-3 align-items-start">
+            <!-- BANNER PRINCIPAL DE COINCIDENCIA: ¿Quiénes coinciden y por qué? -->
+            <div class="p-3 rounded-4 bg-body-tertiary border shadow-xs">
+              <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-primary text-white rounded-circle p-2" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-link-45deg"></i>
+                  </span>
+                  <div>
+                    <strong class="text-body d-block" style="font-size:0.95rem;">Coincidencia detectada entre 2 expedientes</strong>
+                    <small class="text-muted">Selecciona abajo cuál de los dos deseas conservar como registro principal.</small>
+                  </div>
+                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-bold" style="font-size:0.82rem;">
+                  <i class="bi bi-shield-check me-1"></i>${Math.round(duplicado.puntaje * 100)}% de Similitud
+                </span>
+              </div>
+
+              <!-- Motivos exactos de coincidencia -->
+              <div class="d-flex align-items-center gap-1.5 flex-wrap pt-1">
+                <span class="small fw-semibold text-secondary me-1"><i class="bi bi-fingerprint text-primary me-1"></i>Motivos detectados:</span>
+                ${motivosHTML}
+              </div>
+            </div>
+
+            <!-- COMPARATIVA EN DOS TARJETAS SELECCIONABLES (RADIO CARDS) -->
+            <div class="row g-3">
               
-              <div class="col-12 col-xl-5 d-flex flex-column gap-2.5">
-                
-                <div class="p-3 border border-primary-subtle rounded-4 bg-body shadow-xs">
-                  <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom border-primary-subtle">
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="p-2 rounded-circle bg-primary text-white flex-shrink-0">
-                        <i class="bi bi-person-check-fill"></i>
+              <!-- Tarjeta Alumno A -->
+              <div class="col-12 col-md-6">
+                <div class="p-3 rounded-4 border transition-all h-100 ${principal.id === duplicado.a.id ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary-subtle bg-body opacity-75'} position-relative" style="cursor:pointer;" id="card-select-alumno-a">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2.5">
+                      <div class="avatar-compact ${principal.id === duplicado.a.id ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'} d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:42px;height:42px;font-weight:700;">
+                        ${escapeHTML((duplicado.a.nombre_completo || duplicado.a.nombre || 'A').slice(0, 1).toUpperCase())}
                       </div>
-                      <div class="text-truncate">
-                        <strong class="text-primary d-block text-truncate" style="font-size:0.92rem;">${escapeHTML(principal.nombre_completo || principal.nombre || 'Principal')}</strong>
-                        <small class="text-muted" style="font-size:0.72rem;">ID: ${principal.id}</small>
-                      </div>
-                    </div>
-                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 shadow-xs flex-shrink-0" style="font-size:0.7rem;">
-                      <i class="bi bi-shield-lock-fill me-1"></i>Principal
-                    </span>
-                  </div>
-
-                  <div class="d-flex flex-column gap-1 small text-muted mb-2" style="font-size:0.78rem;">
-                    <div><i class="bi ${getInstrumentoIcon(principal.instrumento_principal || principal.instrumento)} text-primary me-1.5"></i>Cátedra: <strong class="text-body">${escapeHTML(principal.instrumento_principal || principal.instrumento || 'Sin instrumento')}</strong></div>
-                    <div><i class="bi bi-card-heading text-secondary me-1.5"></i>Cédula: <strong class="text-body">${escapeHTML(principal.cedula || 'No registrada')}</strong></div>
-                    <div><i class="bi bi-calendar-event text-secondary me-1.5"></i>Fecha Nac: <strong class="text-body">${formatDate(principal.fecha_nacimiento)}</strong></div>
-                    <div><i class="bi bi-whatsapp text-success me-1.5"></i>Teléfono: <strong class="text-body">${escapeHTML(principal.telefono || 'Sin teléfono')}</strong></div>
-                    <div><i class="bi bi-person-heart text-danger me-1.5"></i>Representante: <strong class="text-body">${escapeHTML(principal.padre_nombre || principal.madre_nombre || principal.familiar_nombre || 'No registrado')}</strong></div>
-                  </div>
-
-                  <div class="pt-1.5 border-top">
-                    <small class="text-muted fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases actualmente asignadas (${clasesPrincipal.length}):</small>
-                    <div class="d-flex flex-wrap gap-1">
-                      ${renderBadgesClases(clasesPrincipal, 'primary')}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="p-3 border border-warning-subtle rounded-4 bg-body shadow-xs">
-                  <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom border-warning-subtle">
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="p-2 rounded-circle bg-warning-subtle text-warning-emphasis flex-shrink-0">
-                        <i class="bi bi-person-dash-fill"></i>
-                      </div>
-                      <div class="text-truncate">
-                        <strong class="text-body d-block text-truncate" style="font-size:0.92rem;">${escapeHTML(obsoleto.nombre_completo || obsoleto.nombre || 'Secundario')}</strong>
-                        <small class="text-muted" style="font-size:0.72rem;">ID: ${obsoleto.id}</small>
+                      <div>
+                        <strong class="text-body d-block" style="font-size:0.95rem;">${escapeHTML(duplicado.a.nombre_completo || duplicado.a.nombre || 'Alumno A')}</strong>
+                        <small class="text-muted">ID: ${duplicado.a.id}</small>
                       </div>
                     </div>
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 shadow-xs flex-shrink-0" style="font-size:0.7rem;">
-                      <i class="bi bi-trash3-fill me-1"></i>A absorber
-                    </span>
+
+                    ${principal.id === duplicado.a.id
+                      ? `<span class="badge bg-primary text-white rounded-pill px-2.5 py-1 shadow-xs"><i class="bi bi-check-circle-fill me-1"></i>PRINCIPAL (Conservado)</span>`
+                      : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1"><i class="bi bi-arrow-down-circle me-1"></i>Secundario (A absorber)</span>`
+                    }
                   </div>
 
-                  <div class="d-flex flex-column gap-1 small text-muted mb-2" style="font-size:0.78rem;">
-                    <div><i class="bi ${getInstrumentoIcon(obsoleto.instrumento_principal || obsoleto.instrumento)} text-primary me-1.5"></i>Cátedra: <strong class="text-body">${escapeHTML(obsoleto.instrumento_principal || obsoleto.instrumento || 'Sin instrumento')}</strong></div>
-                    <div><i class="bi bi-card-heading text-secondary me-1.5"></i>Cédula: <strong class="text-body">${escapeHTML(obsoleto.cedula || 'No registrada')}</strong></div>
-                    <div><i class="bi bi-calendar-event text-secondary me-1.5"></i>Fecha Nac: <strong class="text-body">${formatDate(obsoleto.fecha_nacimiento)}</strong></div>
-                    <div><i class="bi bi-whatsapp text-success me-1.5"></i>Teléfono: <strong class="text-body">${escapeHTML(obsoleto.telefono || 'Sin teléfono')}</strong></div>
-                    <div><i class="bi bi-person-heart text-danger me-1.5"></i>Representante: <strong class="text-body">${escapeHTML(obsoleto.padre_nombre || obsoleto.madre_nombre || obsoleto.familiar_nombre || 'No registrado')}</strong></div>
+                  <div class="d-flex flex-column gap-1 small text-muted my-2.5" style="font-size:0.78rem;">
+                    <div><i class="bi ${getInstrumentoIcon(duplicado.a.instrumento_principal || duplicado.a.instrumento)} text-primary me-1.5"></i>Cátedra: <strong class="text-body">${escapeHTML(duplicado.a.instrumento_principal || duplicado.a.instrumento || 'No especificada')}</strong></div>
+                    <div><i class="bi bi-card-heading text-secondary me-1.5"></i>Cédula: <strong class="text-body">${escapeHTML(duplicado.a.cedula || 'No registrada')}</strong></div>
+                    <div><i class="bi bi-calendar-event text-secondary me-1.5"></i>Nacimiento: <strong class="text-body">${formatDate(duplicado.a.fecha_nacimiento)}</strong></div>
+                    <div><i class="bi bi-whatsapp text-success me-1.5"></i>Teléfono: <strong class="text-body">${escapeHTML(duplicado.a.telefono || 'Sin teléfono')}</strong></div>
+                    <div><i class="bi bi-person-heart text-danger me-1.5"></i>Representante: <strong class="text-body">${escapeHTML(duplicado.a.padre_nombre || duplicado.a.madre_nombre || duplicado.a.familiar_nombre || 'No registrado')}</strong></div>
                   </div>
 
-                  <div class="pt-1.5 border-top">
-                    <small class="text-muted fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases que se transferirán (${clasesObsoleto.length}):</small>
-                    <div class="d-flex flex-wrap gap-1">
-                      ${renderBadgesClases(clasesObsoleto, 'warning')}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="p-3 rounded-4 bg-success-subtle bg-opacity-30 border border-success-subtle shadow-xs">
-                  <div class="d-flex align-items-center gap-2 mb-1.5">
-                    <i class="bi bi-diagram-3-fill text-success fs-5 flex-shrink-0"></i>
-                    <strong class="text-success-emphasis small">Fusión de clases (${clasesUnificadas.length} total):</strong>
-                  </div>
-                  <div class="d-flex flex-wrap gap-1">
-                    ${renderBadgesClases(clasesUnificadas, 'success')}
-                  </div>
-                </div>
-
-              </div>
-
-              <div class="col-12 col-xl-7 d-flex flex-column gap-3">
-                <div class="p-3 rounded-4 border bg-body shadow-xs">
-                  
-                  <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-shrink-0 flex-wrap gap-1">
-                    <span class="small fw-bold text-uppercase text-body d-flex align-items-center gap-1.5" style="font-size:0.78rem;">
-                      <i class="bi bi-table text-primary"></i>
-                      <span>Resolución de Campos</span>
-                    </span>
-                    <div class="d-flex gap-1.5 flex-wrap">
-                      ${resumenConflictos}
-                      ${resumenCompletados}
-                    </div>
+                  <div class="pt-2 border-top">
+                    <small class="text-muted fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases inscritas (${clasesA.length}):</small>
+                    <div class="d-flex flex-wrap gap-1">${renderBadgesClases(clasesA, 'primary')}</div>
                   </div>
 
-                  <div class="table-responsive rounded-3 border" style="max-height: 520px; overflow-y: auto;">
-                    <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
-                      <thead class="table-light sticky-top">
-                        <tr>
-                          <th style="width:25%; font-size:0.75rem;">Campo</th>
-                          <th style="width:25%; font-size:0.75rem;">Principal</th>
-                          <th style="width:25%; font-size:0.75rem;">Secundario</th>
-                          <th style="width:25%; font-size:0.75rem;">Definitivo</th>
-                        </tr>
-                      </thead>
-                      <tbody>${filasPorGrupo}</tbody>
-                    </table>
+                  <div class="mt-3 text-center">
+                    <button type="button" class="btn btn-sm w-100 rounded-3 fw-bold ${principal.id === duplicado.a.id ? 'btn-primary' : 'btn-outline-secondary'}" data-principal-id="${duplicado.a.id}">
+                      <i class="bi ${principal.id === duplicado.a.id ? 'bi-check2-circle' : 'bi-circle'} me-1.5"></i>${principal.id === duplicado.a.id ? '✓ Conservando este alumno como Principal' : 'Elegir este como Principal'}
+                    </button>
                   </div>
-
-                  <div class="text-muted small mt-2 pt-2 border-top" style="font-size:0.74rem;">
-                    <i class="bi bi-shield-fill-check text-success me-1"></i>Al confirmar, la unificación es atómica: se actualiza el principal, se migra el historial y se da de baja el registro secundario.
-                  </div>
-
                 </div>
               </div>
 
+              <!-- Tarjeta Alumno B -->
+              <div class="col-12 col-md-6">
+                <div class="p-3 rounded-4 border transition-all h-100 ${principal.id === duplicado.b.id ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary-subtle bg-body opacity-75'} position-relative" style="cursor:pointer;" id="card-select-alumno-b">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2.5">
+                      <div class="avatar-compact ${principal.id === duplicado.b.id ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'} d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:42px;height:42px;font-weight:700;">
+                        ${escapeHTML((duplicado.b.nombre_completo || duplicado.b.nombre || 'B').slice(0, 1).toUpperCase())}
+                      </div>
+                      <div>
+                        <strong class="text-body d-block" style="font-size:0.95rem;">${escapeHTML(duplicado.b.nombre_completo || duplicado.b.nombre || 'Alumno B')}</strong>
+                        <small class="text-muted">ID: ${duplicado.b.id}</small>
+                      </div>
+                    </div>
+
+                    ${principal.id === duplicado.b.id
+                      ? `<span class="badge bg-primary text-white rounded-pill px-2.5 py-1 shadow-xs"><i class="bi bi-check-circle-fill me-1"></i>PRINCIPAL (Conservado)</span>`
+                      : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1"><i class="bi bi-arrow-down-circle me-1"></i>Secundario (A absorber)</span>`
+                    }
+                  </div>
+
+                  <div class="d-flex flex-column gap-1 small text-muted my-2.5" style="font-size:0.78rem;">
+                    <div><i class="bi ${getInstrumentoIcon(duplicado.b.instrumento_principal || duplicado.b.instrumento)} text-primary me-1.5"></i>Cátedra: <strong class="text-body">${escapeHTML(duplicado.b.instrumento_principal || duplicado.b.instrumento || 'No especificada')}</strong></div>
+                    <div><i class="bi bi-card-heading text-secondary me-1.5"></i>Cédula: <strong class="text-body">${escapeHTML(duplicado.b.cedula || 'No registrada')}</strong></div>
+                    <div><i class="bi bi-calendar-event text-secondary me-1.5"></i>Nacimiento: <strong class="text-body">${formatDate(duplicado.b.fecha_nacimiento)}</strong></div>
+                    <div><i class="bi bi-whatsapp text-success me-1.5"></i>Teléfono: <strong class="text-body">${escapeHTML(duplicado.b.telefono || 'Sin teléfono')}</strong></div>
+                    <div><i class="bi bi-person-heart text-danger me-1.5"></i>Representante: <strong class="text-body">${escapeHTML(duplicado.b.padre_nombre || duplicado.b.madre_nombre || duplicado.b.familiar_nombre || 'No registrado')}</strong></div>
+                  </div>
+
+                  <div class="pt-2 border-top">
+                    <small class="text-muted fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases inscritas (${clasesB.length}):</small>
+                    <div class="d-flex flex-wrap gap-1">${renderBadgesClases(clasesB, 'warning')}</div>
+                  </div>
+
+                  <div class="mt-3 text-center">
+                    <button type="button" class="btn btn-sm w-100 rounded-3 fw-bold ${principal.id === duplicado.b.id ? 'btn-primary' : 'btn-outline-secondary'}" data-principal-id="${duplicado.b.id}">
+                      <i class="bi ${principal.id === duplicado.b.id ? 'bi-check2-circle' : 'bi-circle'} me-1.5"></i>${principal.id === duplicado.b.id ? '✓ Conservando este alumno como Principal' : 'Elegir este como Principal'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- BANNER DE UNIFICACIÓN DE CLASES -->
+            <div class="p-3 rounded-4 bg-success-subtle bg-opacity-30 border border-success-subtle shadow-xs">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-diagram-3-fill text-success fs-5"></i>
+                  <strong class="text-success-emphasis small">Resultado de Fusión de Clases (${clasesUnificadas.length} en total):</strong>
+                </div>
+                <small class="text-success fw-medium">Ambos horarios se combinan sin duplicados</small>
+              </div>
+              <div class="d-flex flex-wrap gap-1">
+                ${renderBadgesClases(clasesUnificadas, 'success')}
+              </div>
+            </div>
+
+            <!-- TABLA DE RESOLUCIÓN CAMPO A CAMPO -->
+            <div class="p-3 rounded-4 border bg-body shadow-xs">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-table text-primary"></i>
+                  <strong class="small text-uppercase text-body" style="font-size:0.8rem;">Resolución de Datos Campo a Campo</strong>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                  ${resumenConflictos}
+                  ${resumenCompletados}
+                </div>
+              </div>
+
+              <div class="table-responsive rounded-3 border" style="max-height: 480px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
+                  <thead class="table-light sticky-top">
+                    <tr>
+                      <th style="width:25%; font-size:0.75rem;">Campo</th>
+                      <th style="width:25%; font-size:0.75rem;">En Alumno Principal (${escapeHTML(principal.nombre_completo || principal.nombre)})</th>
+                      <th style="width:25%; font-size:0.75rem;">En Alumno Secundario (${escapeHTML(obsoleto.nombre_completo || obsoleto.nombre)})</th>
+                      <th style="width:25%; font-size:0.75rem;">Valor Definitivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>${filasPorGrupo}</tbody>
+                </table>
+              </div>
+
+              <div class="text-muted small mt-2.5 pt-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-1" style="font-size:0.75rem;">
+                <span><i class="bi bi-shield-fill-check text-success me-1"></i>La fusión es atómica y transaccional en base de datos.</span>
+                <span class="text-secondary"><i class="bi bi-info-circle me-1"></i>Puedes cambiar cualquier valor en caso de conflicto antes de confirmar.</span>
+              </div>
             </div>
 
           </div>
@@ -457,7 +573,7 @@ export const DuplicadosModal = {
         size: 'view',
         saveText: 'Confirmar y fusionar',
         cancelText: 'Volver a la lista',
-        body: `<div id="modal-detalle-duplicado-container" class="h-100">${renderModalContent()}</div>`,
+        body: `<div id="modal-detalle-duplicado-container">${renderModalContent()}</div>`,
         onCancel: () => {
           if (listaCompletaDuplicados?.length) {
             ejecutarFlujoLista(listaCompletaDuplicados)
@@ -470,21 +586,34 @@ export const DuplicadosModal = {
               ejecutarFlujoLista(listaCompletaDuplicados)
             })
 
-            modalBody.querySelectorAll('#btn-group-choose-principal button').forEach((btn) => {
-              btn.addEventListener('click', () => {
-                const targetId = btn.dataset.principalId
-                if (targetId === principal.id) return
-                principal = targetId === duplicado.a.id ? duplicado.a : duplicado.b
-                obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
-                fusionActual = construirFusion(principal, obsoleto)
-                const container = modalBody.querySelector('#modal-detalle-duplicado-container')
-                if (container) {
-                  container.innerHTML = renderModalContent()
-                  bindEvents()
-                }
+            modalBody.querySelector('#btnInfoGuiaDetalle')?.addEventListener('click', () => {
+              mostrarGuiaInformativa()
+            })
+
+            // Click en Tarjetas o Botones para seleccionar Principal
+            const setPrincipal = (targetId) => {
+              if (targetId === principal.id) return
+              principal = targetId === duplicado.a.id ? duplicado.a : duplicado.b
+              obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
+              fusionActual = construirFusion(principal, obsoleto)
+              const container = modalBody.querySelector('#modal-detalle-duplicado-container')
+              if (container) {
+                container.innerHTML = renderModalContent()
+                bindEvents()
+              }
+            }
+
+            modalBody.querySelectorAll('[data-principal-id]').forEach((btn) => {
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                setPrincipal(btn.dataset.principalId)
               })
             })
 
+            modalBody.querySelector('#card-select-alumno-a')?.addEventListener('click', () => setPrincipal(duplicado.a.id))
+            modalBody.querySelector('#card-select-alumno-b')?.addEventListener('click', () => setPrincipal(duplicado.b.id))
+
+            // Selectores de resolución de conflicto
             modalBody.querySelectorAll('[data-fusion-key]').forEach((select) => {
               select.addEventListener('change', () => {
                 const key = select.dataset.fusionKey
@@ -507,7 +636,7 @@ export const DuplicadosModal = {
         },
         onSave: async () => {
           try {
-            AppModal.showLoading('Fusionando alumnos y migrando inscripciones...')
+            AppModal.showLoading('Fusionando expedientes y unificando clases en Supabase...')
             const datosFusion = { ...fusionActual.resultante }
             delete datosFusion.id
 
@@ -519,18 +648,17 @@ export const DuplicadosModal = {
 
             AppModal.hideLoading()
             AppToast.success(
-              `Alumnos fusionados con éxito: se conservó a "${principal.nombre_completo || principal.nombre}" y se migraron sus clases.`,
+              `Fusión exitosa: se conservó a "${principal.nombre_completo || principal.nombre}" y se transfirieron sus clases.`,
             )
 
             if (typeof onSuccess === 'function') onSuccess()
 
-            // Filtramos la pareja resuelta de la lista y volvemos a mostrar la lista restante
             const filtrados = listaCompletaDuplicados.filter(
               (d) => d.a.id !== principal.id && d.a.id !== obsoleto.id && d.b.id !== principal.id && d.b.id !== obsoleto.id
             )
             
             ejecutarFlujoLista(filtrados)
-            return false // Mantiene la navegación controlada por ejecutarFlujoLista
+            return false
           } catch (error) {
             AppModal.hideLoading()
             console.error('[DuplicadosModal] Error fusionando:', error)

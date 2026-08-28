@@ -25,7 +25,7 @@ vi.mock('../../../src/modules/alumnos/api/alumnosApi.js', () => ({
   fusionarAlumnos: vi.fn(),
 }))
 
-describe('DuplicadosModal (Zero-Friction Flow)', () => {
+describe('DuplicadosModal (Zero-Friction Flow & High Visual Clarity)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -38,13 +38,12 @@ describe('DuplicadosModal (Zero-Friction Flow)', () => {
 
     await DuplicadosModal.abrir({ alumnos })
 
-    // Se salta el modal previo de bienvenida y abre directo la lista de resultados
     expect(AppModal.open).toHaveBeenCalledTimes(1)
     const listArgs = AppModal.open.mock.calls[0][0]
     expect(listArgs.title).toContain('Alumnos duplicados detectados (1)')
   })
 
-  it('permite abrir el detalle de una pareja, cargando clases de ambos', async () => {
+  it('permite abrir el detalle de una pareja, cargando clases de ambos y mostrando la comparativa visual', async () => {
     const alumnos = [
       { id: '1', nombre_completo: 'Matias Paredes', padre_nombre: 'Carlos Paredes' },
       { id: '2', nombre_completo: 'Mathias Alejandro Paredes Masuoka', padre_nombre: 'Carlos Paredes' },
@@ -58,7 +57,6 @@ describe('DuplicadosModal (Zero-Friction Flow)', () => {
 
     await DuplicadosModal.abrir({ alumnos })
 
-    // Inspect list modal onShow
     const listModal = AppModal.open.mock.calls[0][0]
     const dummyContainer = document.createElement('div')
     dummyContainer.innerHTML = listModal.body
@@ -68,18 +66,17 @@ describe('DuplicadosModal (Zero-Friction Flow)', () => {
     expect(btnRevisar).not.toBeNull()
     btnRevisar.click()
 
-    // Wait for microtasks (detail loading)
     await new Promise((r) => setTimeout(r, 20))
 
     expect(alumnosApi.obtenerInscripcionesDetalladasAlumno).toHaveBeenCalledWith('1')
     expect(alumnosApi.obtenerInscripcionesDetalladasAlumno).toHaveBeenCalledWith('2')
 
-    // Detail modal opened
     const detailModal = AppModal.open.mock.calls[1][0]
     expect(detailModal.title).toBe('Revisar y fusionar alumnos')
     expect(detailModal.body).toContain('Iniciación Musical')
     expect(detailModal.body).toContain('Coro Infantil')
-    expect(detailModal.body).toContain('Fusión de clases')
+    expect(detailModal.body).toContain('Fusión de Clases')
+    expect(detailModal.body).toContain('Motivos detectados')
   })
 
   it('ejecuta fusionarAlumnos al confirmar y mantiene el flujo de duplicados pendientes', async () => {
@@ -111,10 +108,9 @@ describe('DuplicadosModal (Zero-Friction Flow)', () => {
     }))
     expect(onSuccess).toHaveBeenCalled()
 
-    // Final screen when all are resolved
     expect(AppModal.open).toHaveBeenCalledTimes(3)
     const finalModal = AppModal.open.mock.calls[2][0]
     expect(finalModal.title).toBe('Alumnos duplicados')
-    expect(finalModal.body).toContain('Base de datos optimizada')
+    expect(finalModal.body).toContain('Base de datos limpia y unificada')
   })
 })

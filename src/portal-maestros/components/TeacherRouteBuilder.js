@@ -861,6 +861,60 @@ if (!document.getElementById('trb-styles')) {
     .trb-route-item:hover { border-color: var(--pm-primary, #3b82f6); background: rgba(59,130,246,0.08); }
     .trb-route-nombre { font-weight: 600; font-size: 0.88rem; }
     .trb-route-meta { font-size: 0.75rem; color: var(--pm-text-muted, #6b7280); }
+
+    /* ── Mobile Responsive Optimization (Touch & Full Screen Sheet) ── */
+    @media (max-width: 640px) {
+      .trb-backdrop {
+        padding: 0;
+      }
+      .trb-modal {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        border: none !important;
+      }
+      .trb-header {
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--pm-surface, #fff);
+      }
+      .trb-footer {
+        padding: 1rem;
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        background: var(--pm-surface, #fff);
+      }
+      .trb-footer .trb-btn {
+        flex: 1;
+        padding: 0.75rem;
+        font-size: 0.92rem;
+        justify-content: center;
+      }
+      .trb-body {
+        padding: 1rem;
+      }
+      .trb-card-header {
+        padding: 0.85rem 0.6rem;
+      }
+      .trb-input, .trb-textarea {
+        font-size: 16px !important; /* Prevents iOS Safari zoom */
+      }
+      .trb-icon-btn {
+        min-width: 38px;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .trb-btn-add-unidad {
+        padding: 0.85rem;
+        font-size: 0.95rem;
+      }
+    }
   `
   document.head.appendChild(s)
 }

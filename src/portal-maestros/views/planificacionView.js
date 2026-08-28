@@ -773,16 +773,100 @@ function _injectStyles() {
 
     @media (max-width: 768px) {
       .pm-planning-container {
-        padding: 1rem;
+        padding: 0.85rem;
       }
       .pm-planning-hero {
-        padding: 1.4rem;
+        padding: 1.25rem;
+        border-radius: 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.2rem;
+      }
+      .pm-hero-content {
+        gap: 0.9rem;
+      }
+      .pm-hero-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 2.2rem;
+        border-radius: 12px;
+      }
+      .pm-hero-title {
+        font-size: 1.35rem;
+      }
+      .pm-hero-subtitle {
+        font-size: 0.84rem;
+      }
+      .pm-hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        width: 100%;
+      }
+      .pm-stat-box {
+        min-width: 0;
+        padding: 0.65rem 0.4rem;
+        border-radius: 12px;
+      }
+      .pm-stat-num {
+        font-size: 1.3rem;
+      }
+      .pm-stat-label {
+        font-size: 0.65rem;
+        text-align: center;
+      }
+      .pm-planning-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+      }
+      .pm-filter-pills {
+        overflow-x: auto;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+      }
+      .pm-filter-pills::-webkit-scrollbar {
+        display: none;
+      }
+      .pm-pill {
+        white-space: nowrap;
+        padding: 0.5rem 0.95rem;
+        font-size: 0.82rem;
+        flex-shrink: 0;
+      }
+      .pm-toolbar-search {
+        width: 100%;
+      }
+      .pm-toolbar-search input {
+        font-size: 16px; /* Prevents auto-zoom on mobile */
+        padding: 0.65rem 1rem 0.65rem 38px;
       }
       .pm-routes-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      .pm-route-card {
+        padding: 1.1rem;
+        border-radius: 16px;
+      }
+      .pm-rc-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 1.6rem;
+      }
+      .pm-rc-title {
+        font-size: 1rem;
       }
       .pm-rc-actions {
         grid-template-columns: 1fr;
+        gap: 0.6rem;
+      }
+      .pm-btn-action {
+        min-height: 44px;
+        font-size: 0.88rem;
+        padding: 0.75rem 1rem;
       }
     }
   `

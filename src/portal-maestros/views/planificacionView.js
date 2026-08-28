@@ -867,38 +867,100 @@ function _injectStyles() {
       color: #fde68a;
     }
 
-    /* ── Mobile Viewport ── */
+    /* ── Mobile Viewport (Ultra-Dense 2-Column / Compact Cards) ── */
     @media (max-width: 768px) {
-      .pm-planning-container { padding: 0.75rem; }
+      .pm-planning-container { padding: 0.6rem; }
       .pm-planning-hero {
-        padding: 1.1rem;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 1rem;
-      }
-      .pm-hero-content { gap: 0.85rem; }
-      .pm-hero-icon-wrap { width: 44px; height: 44px; font-size: 1.6rem; border-radius: 12px; }
-      .pm-hero-title { font-size: 1.3rem; }
-      .pm-hero-subtitle { font-size: 0.8rem; }
-      .pm-hero-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.4rem;
-      }
-      .pm-stat-card { padding: 0.5rem 0.3rem; min-width: 0; border-radius: 10px; }
-      .pm-stat-num { font-size: 1.15rem; }
-      .pm-stat-label { font-size: 0.58rem; text-align: center; }
-      .pm-planning-toolbar {
+        padding: 0.9rem 1rem;
+        border-radius: 14px;
         flex-direction: column;
         align-items: stretch;
         gap: 0.75rem;
+        margin-bottom: 0.9rem;
       }
-      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
-      .pm-seg-btn { justify-content: center; padding: 0.5rem 0.3rem; font-size: 0.76rem; }
+      .pm-hero-content { gap: 0.7rem; }
+      .pm-hero-icon-wrap { width: 38px; height: 38px; font-size: 1.3rem; border-radius: 10px; }
+      .pm-hero-title { font-size: 1.15rem; }
+      .pm-hero-subtitle { font-size: 0.76rem; line-height: 1.3; }
+      .pm-hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.35rem;
+      }
+      .pm-stat-card { padding: 0.4rem 0.2rem; min-width: 0; border-radius: 9px; }
+      .pm-stat-num { font-size: 1.05rem; }
+      .pm-stat-label { font-size: 0.55rem; text-align: center; }
+      .pm-planning-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+        margin-bottom: 0.9rem;
+      }
+      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; }
+      .pm-seg-btn { justify-content: center; padding: 0.42rem 0.2rem; font-size: 0.72rem; }
       .pm-search-box { width: 100%; }
+      .pm-search-box input { padding: 0.45rem 0.8rem 0.45rem 32px; font-size: 16px; }
+
+      /* Cuadrícula móvil de 2 columnas densa para ver múltiples clases en pantalla */
+      .pm-compact-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.55rem;
+      }
+      .pm-compact-card {
+        padding: 0.7rem 0.65rem;
+        border-radius: 12px;
+        gap: 0.5rem;
+      }
+      .pm-compact-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 1.15rem;
+        border-radius: 8px;
+      }
+      .pm-compact-title {
+        font-size: 0.82rem;
+        margin-bottom: 1px;
+      }
+      .pm-compact-subtitle {
+        font-size: 0.68rem;
+      }
+      .pm-compact-badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.4rem;
+      }
+      .pm-micro-hierarchy {
+        padding: 0.35rem 0.45rem;
+        border-radius: 8px;
+      }
+      .pm-micro-val {
+        font-size: 0.85rem;
+      }
+      .pm-micro-lbl {
+        font-size: 0.55rem;
+      }
+      .pm-micro-arrow {
+        font-size: 0.6rem;
+      }
+      .pm-micro-warning {
+        padding: 0.35rem 0.45rem;
+        font-size: 0.68rem;
+        gap: 4px;
+      }
+      .pm-compact-actions {
+        gap: 0.35rem;
+      }
+      .pm-btn-compact-primary, .pm-btn-compact-secondary {
+        min-height: 36px;
+        font-size: 0.74rem;
+        padding: 0.35rem 0.4rem;
+        border-radius: 8px;
+        gap: 3px;
+      }
+    }
+
+    @media (max-width: 360px) {
       .pm-compact-grid {
         grid-template-columns: 1fr;
-        gap: 0.85rem;
       }
     }
   `

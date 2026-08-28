@@ -1,9 +1,9 @@
 /**
  * planificacionView.js
- * Portal Maestros — Gestión y Rutas Académicas (Cuadrícula Compacta 3x)
+ * Portal Maestros — Gestión y Rutas Académicas
  *
  * Módulo rediseñado enfocado 100% en la jerarquía pedagógica del maestro:
- * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con prelaciones y deudas pedagógicas).
+ * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con títulos completos sin truncar).
  */
 
 import { getMisClases, getInscripcionesClases } from "../services/maestroDataService.js"
@@ -272,22 +272,23 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                 <!-- Top Accent Line -->
                 <div class="pm-compact-card-accent ${hasRoute ? "accent-emerald" : "accent-amber"}"></div>
 
-                <!-- Card Header -->
+                <!-- Top Metadata Row: Avatar + Tags + Status Badge -->
                 <div class="pm-card-top-row">
                   <div class="pm-compact-avatar">
                     <span>${icon}</span>
                   </div>
-                  <div class="pm-compact-title-wrap">
-                    <h3 class="pm-compact-title" title="${escapeHtml(clase.nombre)}">${escapeHtml(clase.nombre)}</h3>
-                    <div class="pm-compact-subtitle">
-                      <span>${escapeHtml(clase.instrumento || "General")}</span>
-                      <span class="pm-dot-separator">·</span>
-                      <span><i class="bi bi-people-fill"></i> ${clase.totalStudents}</span>
-                    </div>
+                  <div class="pm-card-tags">
+                    <span class="pm-meta-tag">${escapeHtml(clase.instrumento || "General")}</span>
+                    <span class="pm-meta-tag"><i class="bi bi-people-fill"></i> ${clase.totalStudents}</span>
                   </div>
-                  <div class="pm-compact-badge ${hasRoute ? "badge-active" : "badge-pending"}" title="${hasRoute ? "Ruta Activa" : "Sin Ruta"}">
-                    ${hasRoute ? "● Lista" : "○ Pendiente"}
+                  <div class="pm-compact-badge ${hasRoute ? "badge-active" : "badge-pending"}">
+                    ${hasRoute ? "● Malla Lista" : "○ Sin Malla"}
                   </div>
+                </div>
+
+                <!-- Título Completo de la Clase (Sin truncar, wrap natural) -->
+                <div class="pm-card-title-container">
+                  <h3 class="pm-compact-title">${escapeHtml(clase.nombre)}</h3>
                 </div>
 
                 <!-- Compact Structure Bar -->
@@ -315,7 +316,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                       : `
                     <div class="pm-micro-warning">
                       <i class="bi bi-exclamation-triangle-fill text-warning"></i>
-                      <span>Malla sin definir</span>
+                      <span>Malla pendiente de diseño</span>
                     </div>
                   `
                   }
@@ -325,12 +326,12 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                 <div class="pm-compact-actions">
                   <button type="button" class="pm-btn-compact-primary pm-btn-designer" data-clase-id="${clase.id}">
                     <i class="bi bi-pencil-square"></i>
-                    <span>${hasRoute ? "Editar" : "Diseñar"}</span>
+                    <span>${hasRoute ? "Editar Malla" : "Diseñar Malla"}</span>
                   </button>
 
                   <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}">
                     <i class="bi bi-diagram-3-fill"></i>
-                    <span>Mapa</span>
+                    <span>Mapa & Deudas</span>
                   </button>
                 </div>
               </div>
@@ -585,7 +586,7 @@ function _injectStyles() {
     /* ── Cuadrícula Compacta: 3 Clases por Fila ── */
     .pm-compact-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1rem;
     }
 
@@ -597,7 +598,7 @@ function _injectStyles() {
 
     @media (min-width: 1360px) {
       .pm-compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       }
     }
 
@@ -606,7 +607,7 @@ function _injectStyles() {
       background: var(--pm-surface, #ffffff);
       border: 1px solid var(--pm-border, #e2e8f0);
       border-radius: 16px;
-      padding: 1rem 1.1rem;
+      padding: 1.1rem;
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
@@ -635,48 +636,43 @@ function _injectStyles() {
     .pm-card-top-row {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
     .pm-compact-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
       border: 1px solid rgba(79, 70, 229, 0.14);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       flex-shrink: 0;
     }
 
-    .pm-compact-title-wrap {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .pm-compact-title {
-      font-size: 0.95rem;
-      font-weight: 800;
-      margin: 0 0 0.15rem;
-      letter-spacing: -0.01em;
-      color: var(--pm-text, #0f172a);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pm-compact-subtitle {
-      font-size: 0.74rem;
-      font-weight: 600;
-      color: var(--pm-text-muted, #64748b);
+    .pm-card-tags {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
+      flex: 1;
+      min-width: 0;
+      flex-wrap: wrap;
     }
 
-    .pm-dot-separator { opacity: 0.5; }
+    .pm-meta-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pm-text-muted, #64748b);
+      background: var(--pm-surface-2, #f1f5f9);
+      padding: 0.18rem 0.5rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
 
     .pm-compact-badge {
       font-size: 0.68rem;
@@ -684,6 +680,7 @@ function _injectStyles() {
       padding: 0.22rem 0.55rem;
       border-radius: 999px;
       white-space: nowrap;
+      margin-left: auto;
     }
 
     .badge-active {
@@ -696,6 +693,23 @@ function _injectStyles() {
       background: rgba(245, 158, 11, 0.12);
       color: #d97706;
       border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    /* ── Título Completo de la Clase (100% visible, wrap natural) ── */
+    .pm-card-title-container {
+      width: 100%;
+    }
+
+    .pm-compact-title {
+      font-size: 1rem;
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.35;
+      letter-spacing: -0.015em;
+      color: var(--pm-text, #0f172a);
+      white-space: normal; /* Ensures full multiline visibility without ellipsis clipping */
+      word-break: break-word;
+      overflow: visible;
     }
 
     .pm-compact-body {
@@ -764,9 +778,9 @@ function _injectStyles() {
       border: none;
       background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
       color: #fff;
-      padding: 0.52rem 0.75rem;
+      padding: 0.55rem 0.75rem;
       border-radius: 11px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 800;
       cursor: pointer;
       display: inline-flex;
@@ -786,9 +800,9 @@ function _injectStyles() {
       border: 1px solid var(--pm-border, #cbd5e1);
       background: var(--pm-surface-2, #f8fafc);
       color: var(--pm-text, #334155);
-      padding: 0.52rem 0.75rem;
+      padding: 0.55rem 0.75rem;
       border-radius: 11px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -845,6 +859,11 @@ function _injectStyles() {
 
     [data-theme="dark"] .pm-compact-title { color: #fff; }
 
+    [data-theme="dark"] .pm-meta-tag {
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+    }
+
     [data-theme="dark"] .pm-micro-hierarchy {
       background: rgba(15, 23, 42, 0.7);
       border-color: rgba(255, 255, 255, 0.06);
@@ -867,100 +886,44 @@ function _injectStyles() {
       color: #fde68a;
     }
 
-    /* ── Mobile Viewport (Ultra-Dense 2-Column / Compact Cards) ── */
+    /* ── Mobile Viewport ── */
     @media (max-width: 768px) {
-      .pm-planning-container { padding: 0.6rem; }
+      .pm-planning-container { padding: 0.75rem; }
       .pm-planning-hero {
-        padding: 0.9rem 1rem;
-        border-radius: 14px;
+        padding: 1.1rem;
         flex-direction: column;
         align-items: stretch;
-        gap: 0.75rem;
-        margin-bottom: 0.9rem;
+        gap: 1rem;
       }
-      .pm-hero-content { gap: 0.7rem; }
-      .pm-hero-icon-wrap { width: 38px; height: 38px; font-size: 1.3rem; border-radius: 10px; }
-      .pm-hero-title { font-size: 1.15rem; }
-      .pm-hero-subtitle { font-size: 0.76rem; line-height: 1.3; }
+      .pm-hero-content { gap: 0.85rem; }
+      .pm-hero-icon-wrap { width: 44px; height: 44px; font-size: 1.6rem; border-radius: 12px; }
+      .pm-hero-title { font-size: 1.3rem; }
+      .pm-hero-subtitle { font-size: 0.8rem; }
       .pm-hero-stats {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 0.35rem;
+        gap: 0.4rem;
       }
-      .pm-stat-card { padding: 0.4rem 0.2rem; min-width: 0; border-radius: 9px; }
-      .pm-stat-num { font-size: 1.05rem; }
-      .pm-stat-label { font-size: 0.55rem; text-align: center; }
+      .pm-stat-card { padding: 0.5rem 0.3rem; min-width: 0; border-radius: 10px; }
+      .pm-stat-num { font-size: 1.15rem; }
+      .pm-stat-label { font-size: 0.58rem; text-align: center; }
       .pm-planning-toolbar {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.6rem;
-        margin-bottom: 0.9rem;
+        gap: 0.75rem;
       }
-      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; }
-      .pm-seg-btn { justify-content: center; padding: 0.42rem 0.2rem; font-size: 0.72rem; }
+      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
+      .pm-seg-btn { justify-content: center; padding: 0.5rem 0.3rem; font-size: 0.76rem; }
       .pm-search-box { width: 100%; }
-      .pm-search-box input { padding: 0.45rem 0.8rem 0.45rem 32px; font-size: 16px; }
-
-      /* Cuadrícula móvil de 2 columnas densa para ver múltiples clases en pantalla */
-      .pm-compact-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.55rem;
-      }
-      .pm-compact-card {
-        padding: 0.7rem 0.65rem;
-        border-radius: 12px;
-        gap: 0.5rem;
-      }
-      .pm-compact-avatar {
-        width: 30px;
-        height: 30px;
-        font-size: 1.15rem;
-        border-radius: 8px;
-      }
-      .pm-compact-title {
-        font-size: 0.82rem;
-        margin-bottom: 1px;
-      }
-      .pm-compact-subtitle {
-        font-size: 0.68rem;
-      }
-      .pm-compact-badge {
-        font-size: 0.6rem;
-        padding: 0.15rem 0.4rem;
-      }
-      .pm-micro-hierarchy {
-        padding: 0.35rem 0.45rem;
-        border-radius: 8px;
-      }
-      .pm-micro-val {
-        font-size: 0.85rem;
-      }
-      .pm-micro-lbl {
-        font-size: 0.55rem;
-      }
-      .pm-micro-arrow {
-        font-size: 0.6rem;
-      }
-      .pm-micro-warning {
-        padding: 0.35rem 0.45rem;
-        font-size: 0.68rem;
-        gap: 4px;
-      }
-      .pm-compact-actions {
-        gap: 0.35rem;
-      }
-      .pm-btn-compact-primary, .pm-btn-compact-secondary {
-        min-height: 36px;
-        font-size: 0.74rem;
-        padding: 0.35rem 0.4rem;
-        border-radius: 8px;
-        gap: 3px;
-      }
-    }
-
-    @media (max-width: 360px) {
       .pm-compact-grid {
         grid-template-columns: 1fr;
+        gap: 0.85rem;
+      }
+      .pm-compact-card {
+        padding: 1rem;
+      }
+      .pm-compact-title {
+        font-size: 0.98rem;
       }
     }
   `

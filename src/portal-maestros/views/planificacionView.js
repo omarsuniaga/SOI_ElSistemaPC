@@ -1,10 +1,16 @@
 /**
- * planificacionView.js
+ * planificacionView.js  (portal-maestros)
  * Portal Maestros — PLAN alineado con ACM como fuente de verdad.
  *
  * ACM define la guía base.
  * El maestro puede registrar AJUSTES CONTROLADOS por clase/semana.
  * Estos ajustes NO modifican la planificación canónica de ACM.
+ *
+ * OJO: existe otro archivo homónimo en
+ * `src/modules/planificacion/views/planificacionView.js` que es un delegate del
+ * módulo ACM con firma distinta (`{ viewMode }`). Éste es la vista de la ruta
+ * `planificacion` del portal del maestro, firma `{ maestroId, router }`, y
+ * devuelve una función de limpieza que el shell invoca al salir de la vista.
  */
 
 import { getMisClases, getInscripcionesClases } from '../services/maestroDataService.js'
@@ -15,7 +21,7 @@ import { announce } from '../utils/a11yUtils.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { createPlanClasePanel } from '../components/planning/PlanClasePanel.js'
 import { resolveClassRouteStatus } from '../utils/planificacionRouteStatus.js'
-import { supabase } from '../../lib/supabaseClient.js'
+import { obtenerPeriodoActivo } from '../api/planClaseApi.js'
 import * as bootstrap from 'bootstrap'
 import { router as internalRouter } from '../../core/router/router.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
@@ -88,10 +94,19 @@ function uniqueWeeklyIndicators(plan) {
   })
 }
 
+/**
+ * Indicadores únicos que además tienen `indicator_id`. El progreso (lectura y
+ * escritura) SIEMPRE se indexa por `indicator_id`: un item sin ese id no se
+ * puede evaluar ni contabilizar sin corromper la clave `${alumno}_${indicador}`.
+ */
+function trackableWeeklyIndicators(plan) {
+  return uniqueWeeklyIndicators(plan).filter((item) => item.indicator_id)
+}
+
 function buildIndicatorCards(plan, progressMap, studentIds) {
   const totalStudents = studentIds.length
 
-  return uniqueWeeklyIndicators(plan).map((item) => {
+  return trackableWeeklyIndicators(plan).map((item) => {
     const statuses = studentIds
       .map((sid) => progressMap[`${sid}_${item.indicator_id}`]?.status || 'not_started')
 
@@ -105,7 +120,7 @@ function buildIndicatorCards(plan, progressMap, studentIds) {
     const meta = getStatusMeta(overallStatus)
 
     return {
-      id: item.indicator_id || item.node_id || item.id,
+      id: item.indicator_id,
       weekNumber: item.week_number,
       topic: item.topic,
       objective: item.objective,
@@ -123,7 +138,7 @@ function buildIndicatorCards(plan, progressMap, studentIds) {
 
 function calcProgressForClase(guide, progressMap, ins) {
   const studentIds = ins.map((i) => i.alumno_id).filter(Boolean)
-  const uniqueIndicatorsList = uniqueWeeklyIndicators(guide?.plan)
+  const uniqueIndicatorsList = trackableWeeklyIndicators(guide?.plan)
   const totalIndicators = uniqueIndicatorsList.length
   let progressPercentage = 0
 
@@ -169,6 +184,7 @@ function renderEmptyState(container, message) {
 // ─── Vista principal ───────────────────────────────────────────────────────────
 
 export async function renderPlanificacionView(container, { maestroId, router: portalRouter } = {}) {
+  if (!container) return () => {}
   const activeRouter = portalRouter || window.router || internalRouter
   let currentClaseId    = null
   let currentGuide      = null
@@ -176,6 +192,11 @@ export async function renderPlanificacionView(container, { maestroId, router: po
   let currentAdjustmentsMap   = {}
   let currentGuideProgressMap = {}
   let inscripciones           = []
+
+  // Tareas de limpieza que el shell ejecuta al abandonar la vista (ver
+  // `_activeViewCleanup` en main-maestros.js). Sin esto, timers y modales
+  // sobreviven a la navegación.
+  const teardowns = []
 
   // Inyectar estilos solo si aún no existen en el documento
   if (!document.getElementById('pm-planning-styles')) {
@@ -440,7 +461,6 @@ export async function renderPlanificacionView(container, { maestroId, router: po
               Estructura tus planificaciones o realiza el seguimiento interactivo del progreso de tus alumnos.
             </p>
           </div>
-          </div>
         </div>
       </div>
 
@@ -487,7 +507,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
         <button class="pm-stepper-nav" id="pm-step-next" aria-label="Paso siguiente" type="button">›</button>
       </div>
 
-      <div id="pm-planning-content" aria-live="polite">
+      <div id="pm-planning-content">
         ${renderSkeletonGrid(3)}
       </div>
     </div>
@@ -495,6 +515,56 @@ export async function renderPlanificacionView(container, { maestroId, router: po
 
   const contentDiv   = container.querySelector('#pm-planning-content')
   let classDetailModal = null
+  let openSeq = 0
+
+  // Con `import * as bootstrap` el namespace siempre existe; basta con proteger
+  // `Modal`. Centralizado acá para no repetir el patrón en cada punto de cierre.
+  function disposeClassDetailModal() {
+    if (!classDetailModal) return
+    bootstrap?.Modal?.getInstance(classDetailModal)?.dispose()
+    classDetailModal.remove()
+    classDetailModal = null
+  }
+
+  /**
+   * Recalcula y pinta la barra/porcentaje/contador de UNA tarjeta de indicador
+   * a partir de `currentGuideProgressMap` (ya refrescado). Evita reconstruir el
+   * modal entero tras cada calificación — antes se llamaba `openClassDetail` de
+   * nuevo y se perdía scroll, acordeones y foco.
+   */
+  function refreshIndicatorCardUI(clase, indicatorId) {
+    if (!classDetailModal || !indicatorId) return
+    const map = currentGuideProgressMap || {}
+    const studentIds = inscripciones
+      .filter((ins) => String(ins.clase_id) === String(clase.id))
+      .map((ins) => ins.alumno_id).filter(Boolean)
+    const total = studentIds.length
+    const statuses = studentIds.map((sid) => map[`${sid}_${indicatorId}`]?.status || 'not_started')
+    const achieved = statuses.filter((s) => ['achieved', 'exceeded'].includes(s)).length
+    const inProcess = statuses.filter((s) => ['in_process', 'needs_reinforcement'].includes(s)).length
+    const pct = total > 0 ? Math.round((achieved / total) * 100) : 0
+    const color = getProgressColor(pct)
+
+    let overallStatus = 'not_started'
+    if (achieved > 0 && achieved === total && total > 0) overallStatus = 'achieved'
+    else if (achieved > 0 || inProcess > 0) overallStatus = 'in_process'
+    const meta = getStatusMeta(overallStatus)
+
+    const card = classDetailModal.querySelector(`[data-indicator-card="${indicatorId}"]`)
+    if (!card) return
+    const bar = card.querySelector('.ind-progress-bar')
+    if (bar) { bar.style.width = `${pct}%`; bar.style.background = color }
+    const pctEl = card.querySelector('.pm-ind-pct')
+    if (pctEl) { pctEl.textContent = `${pct}%`; pctEl.style.color = color }
+    const metaEl = card.querySelector('.pm-ind-meta')
+    if (metaEl) metaEl.textContent = `${meta.icon} ${meta.label}`
+    const countBtn = card.querySelector('.btn-toggle-individual')
+    if (countBtn) countBtn.textContent = `👥 ${achieved}/${total}`
+    card.querySelectorAll('.select-student-indicator').forEach((sel) => {
+      const status = map[`${sel.dataset.studentId}_${indicatorId}`]?.status || 'not_started'
+      if (sel.value !== status && document.activeElement !== sel) sel.value = status
+    })
+  }
 
   // ─── Stepper de instrucciones ────────────────────────────────────────────────
   ;(function initStepper() {
@@ -523,10 +593,11 @@ export async function renderPlanificacionView(container, { maestroId, router: po
     dots.forEach((dot) => dot.addEventListener('click', () => goTo(Number(dot.dataset.step))))
 
     // Auto-avance cada 5s — se detiene en la última slide
-    let autoTimer = setInterval(() => {
+    const autoTimer = setInterval(() => {
       if (current < total - 1) goTo(current + 1)
       else clearInterval(autoTimer)
     }, 5000)
+    teardowns.push(() => clearInterval(autoTimer))
 
     // Detener auto-avance si el usuario interactúa
     container.querySelector('#pm-guide-stepper')?.addEventListener('pointerdown', () => clearInterval(autoTimer))
@@ -572,16 +643,28 @@ export async function renderPlanificacionView(container, { maestroId, router: po
         return
       }
 
-      const planificaciones = await obtenerPlanificacionesConDetalles(maestroId || null).catch(() => [])
+      // Las inscripciones de TODAS las clases se traen en una sola consulta
+      // (`getInscripcionesClases` acepta un array y filtra con `.in(...)`);
+      // antes era 1 request por clase.
+      const [planificaciones, inscripcionesTodas] = await Promise.all([
+        obtenerPlanificacionesConDetalles(maestroId || null).catch(() => []),
+        getInscripcionesClases(clases.map((c) => c.id)).catch(() => []),
+      ])
+      const inscripcionesPorClase = inscripcionesTodas.reduce((acc, row) => {
+        const key = String(row.clase_id)
+        if (!acc[key]) acc[key] = []
+        acc[key].push(row)
+        return acc
+      }, {})
 
       // FIX C-4: Promise.allSettled — tolerante a fallos individuales
       const results = await Promise.allSettled(clases.map(async (clase) => {
-        const [guide, progressMap, ins, hierarchy] = await Promise.all([
+        const [guide, progressMap, hierarchy] = await Promise.all([
           weeklyPlanAdapter.obtenerGuiaHeredadaPorClase(clase.id, maestroId).catch(() => null),
           weeklyPlanAdapter.obtenerProgresoGrupo(clase.id).catch(() => ({})),
-          getInscripcionesClases([clase.id]).catch(() => []),
           getFullHierarchy(clase.id).catch(() => []),
         ])
+        const ins = inscripcionesPorClase[String(clase.id)] || []
         const { progressPercentage, totalStudents } = calcProgressForClase(guide, progressMap, ins)
         const routeStatus = resolveClassRouteStatus({
           planificaciones,
@@ -678,8 +761,13 @@ export async function renderPlanificacionView(container, { maestroId, router: po
           const claseId  = card.dataset.claseId
           const selected = clasesConMetricas.find((c) => String(c.id) === String(claseId))
           if (!selected) return
+          // Guarda de secuencia: si el maestro hace clic en otra tarjeta antes
+          // de que termine `refreshData`, la carga vieja no debe abrir su modal
+          // con los datos de la nueva.
+          const seq = ++openSeq
           currentClaseId = selected.id
           await refreshData()
+          if (seq !== openSeq) return
           openClassDetail(selected)
         }
         card.addEventListener('click', handler)
@@ -737,13 +825,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
   // ─── Modal detallado ────────────────────────────────────────────────────────
   function openClassDetail(clase, initialTab = 'general') {
     // FIX C-3: Dispose de la instancia Bootstrap antes de remover el modal
-    if (classDetailModal) {
-      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        bootstrap.Modal.getInstance(classDetailModal)?.dispose()
-      }
-      classDetailModal.remove()
-      classDetailModal = null
-    }
+    disposeClassDetailModal()
 
     const route     = currentGuide?.route
     const plan      = currentGuide?.plan
@@ -909,7 +991,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                           <span class="pm-week-status-dot ${dotClass}"></span>
                           <span style="font-size:0.72rem; font-weight:600; color:var(--pm-text-muted); min-width:80px;">${weekLabel}</span>
                           <span style="font-weight:700; font-size:0.92rem; flex:1; color:var(--pm-text);">${escapeHtml(item.topic)}</span>
-                          ${resolved.hasTeacherAdjustment ? `<span style="font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:6px; background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); font-weight:600;">✍ Ajustado</span>` : ''}
+                          <span class="pm-week-adj-badge" style="font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:6px; background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); font-weight:600; ${resolved.hasTeacherAdjustment ? '' : 'display:none;'}">✍ Ajustado</span>
                           <span class="pm-week-chevron ${isCurrent ? 'open' : ''}">▾</span>
                         </button>
                         <div class="pm-week-body ${isCurrent ? 'open' : ''}" id="pm-week-body-${item.week_number}">
@@ -998,12 +1080,12 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                 ${currentIndicators.map((ind) => {
                   const color = getProgressColor(ind.progressPercentage)
                   return `
-                    <div class="pm-indicator-card">
+                    <div class="pm-indicator-card" data-indicator-card="${ind.id}">
                       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap; margin-bottom:0.65rem;">
                         <div style="flex:1; min-width:220px;">
                           <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem; flex-wrap:wrap;">
                             <span style="font-size:0.7rem; font-weight:700; padding:0.2rem 0.55rem; border-radius:6px; background:var(--pm-surface-2,rgba(0,0,0,0.05)); color:var(--pm-text-muted);">Sem. ${ind.weekNumber}</span>
-                            <span style="font-size:0.68rem; font-weight:600; padding:0.15rem 0.5rem; border-radius:6px; background:rgba(59,130,246,0.08); color:var(--pm-primary);">${ind.meta.icon} ${ind.meta.label}</span>
+                            <span class="pm-ind-meta" style="font-size:0.68rem; font-weight:600; padding:0.15rem 0.5rem; border-radius:6px; background:rgba(59,130,246,0.08); color:var(--pm-primary);">${ind.meta.icon} ${ind.meta.label}</span>
                           </div>
                           <h5 style="font-weight:700; font-size:0.92rem; margin:0 0 0.25rem; color:var(--pm-text);">${escapeHtml(ind.topic)}</h5>
                           <p style="font-size:0.78rem; color:var(--pm-text-muted); margin:0;">${escapeHtml(ind.objective || 'Sin objetivo registrado')}</p>
@@ -1024,7 +1106,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                       <div style="margin:0.25rem 0 0.1rem;">
                         <div style="display:flex; justify-content:space-between; font-size:0.72rem; margin-bottom:0.3rem;">
                           <span style="color:var(--pm-text-muted);">Dominado por el grupo</span>
-                          <span style="font-weight:700; color:${color};">${ind.progressPercentage}%</span>
+                          <span class="pm-ind-pct" style="font-weight:700; color:${color};">${ind.progressPercentage}%</span>
                         </div>
                         <div style="height:6px; border-radius:999px; background:var(--pm-border); overflow:hidden;">
                           <div class="ind-progress-bar" style="height:100%; width:${ind.progressPercentage}%; background:${color}; border-radius:999px; transition:width 0.4s;"></div>
@@ -1114,13 +1196,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
     // el catálogo institucional global que se abandonó (ver decisión "Sistema A").
     const _closeModalThen = (fn) => {
       if (document.activeElement) document.activeElement.blur()
-      if (classDetailModal) {
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-          bootstrap.Modal.getInstance(classDetailModal)?.dispose()
-        }
-        classDetailModal.remove()
-        classDetailModal = null
-      }
+      disposeClassDetailModal()
       document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
       document.body.classList.remove('modal-open')
       document.body.style.removeProperty('overflow')
@@ -1155,18 +1231,9 @@ export async function renderPlanificacionView(container, { maestroId, router: po
 
       // El período en curso rotula el plan. Si no hay ninguno activo el plan se
       // guarda igual, sin período: es preferible a bloquear al maestro por una
-      // configuración que no depende de él.
-      let periodoActivo = null
-      try {
-        const { data } = await supabase
-          .from('periodos')
-          .select('nombre, fecha_inicio, fecha_fin')
-          .eq('activo', true)
-          .maybeSingle()
-        periodoActivo = data ?? null
-      } catch {
-        periodoActivo = null
-      }
+      // configuración que no depende de él. El acceso a datos vive en la capa
+      // `api/`, no en la vista.
+      const periodoActivo = await obtenerPeriodoActivo()
 
       panelPlan = createPlanClasePanel(host, {
         clase,
@@ -1219,7 +1286,15 @@ export async function renderPlanificacionView(container, { maestroId, router: po
           AppToast.success(`Ajustes guardados — Semana ${weekNum}.`)
           announce(`Ajuste de la semana ${weekNum} guardado correctamente.`)
           await refreshData()
-          openClassDetail(clase, 'temas')
+          // Actualiza la fila de la semana en sitio (badge + filtro) sin
+          // reconstruir el modal: los textareas ya tienen lo que escribió.
+          const adj = currentAdjustmentsMap[String(weekNum)] || null
+          const weekEl = classDetailModal?.querySelector(`#pm-week-${weekNum}`)
+          if (weekEl) {
+            weekEl.dataset.hasAdjustment = String(Boolean(adj))
+            const badge = weekEl.querySelector('.pm-week-adj-badge')
+            if (badge) badge.style.display = adj ? '' : 'none'
+          }
         } catch (err) {
           console.error('[planning] Error guardando ajuste:', err)
           AppToast.error(err.message || 'No se pudieron guardar los ajustes.')
@@ -1262,7 +1337,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
           AppToast.success('Indicador marcado como Dominado para todo el grupo.')
           announce('Indicador marcado como dominado para todos los alumnos.')
           await refreshData()
-          openClassDetail(clase, 'indicadores')
+          refreshIndicatorCardUI(clase, indicatorId)
         } catch (err) {
           console.error('[planning] Error al calificar indicador grupal:', err)
           AppToast.error('Error al actualizar el progreso del indicador.')
@@ -1338,26 +1413,8 @@ export async function renderPlanificacionView(container, { maestroId, router: po
               AppToast.success('Calificación guardada.')
               announce('Calificación del alumno guardada.')
               await refreshData()
-
-              // Actualizar la barra del indicador en el modal sin reconstruirlo
-              const updatedMap       = currentGuideProgressMap || {}
-              const studentIdsForInd = inscripciones
-                .filter((ins) => String(ins.clase_id) === String(clase.id))
-                .map((ins) => ins.alumno_id).filter(Boolean)
-              const achievedCount = studentIdsForInd.filter((sid) =>
-                ['achieved', 'exceeded'].includes(updatedMap[`${sid}_${indicatorId}`]?.status || 'not_started')
-              ).length
-              const total      = studentIdsForInd.length
-              const newPct     = total > 0 ? Math.round((achievedCount / total) * 100) : 0
-              const newColor   = getProgressColor(newPct)
-
-              const card   = btn.closest('.pm-indicator-card')
-              const indBar = card?.querySelector('.ind-progress-bar')
-              const pctEl  = card?.querySelector('.ind-progress-bar')?.parentElement?.previousElementSibling?.querySelector('span:last-child')
-
-              if (indBar) { indBar.style.width = `${newPct}%`; indBar.style.background = newColor }
-              if (pctEl)  pctEl.textContent = `${newPct}%`
-              btn.textContent = `👥 ${achievedCount}/${total}`
+              // Repinta barra, porcentaje, estado y contador de esta tarjeta.
+              refreshIndicatorCardUI(clase, indicatorId)
             } catch (err) {
               console.error('[planning] Error actualizando indicador:', err)
               AppToast.error('No se pudo guardar la calificación.')
@@ -1372,13 +1429,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
     // ── Al cerrar: actualizar solo la tarjeta afectada (no recargar grid) ────
     classDetailModal.addEventListener('hidden.bs.modal', () => {
       // FIX C-3: Dispose antes de remove
-      if (classDetailModal) {
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-          bootstrap.Modal.getInstance(classDetailModal)?.dispose()
-        }
-        classDetailModal.remove()
-        classDetailModal = null
-      }
+      disposeClassDetailModal()
       // FIX I-3: actualizar solo la tarjeta de la clase que se editó
       if (currentClaseId) updateClassCard(currentClaseId)
     }, { once: true })
@@ -1389,5 +1440,14 @@ export async function renderPlanificacionView(container, { maestroId, router: po
 
   // ── Iniciar la carga ────────────────────────────────────────────────────────
   await loadClassesGrid()
+
+  // El shell (main-maestros.js) llama a esta función al navegar fuera de la
+  // vista. Limpia el timer del stepper y cualquier modal que quedara abierto.
+  return () => {
+    teardowns.forEach((fn) => { try { fn() } catch { /* noop */ } })
+    disposeClassDetailModal()
+    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
+    document.body.classList.remove('modal-open')
+  }
 }
 

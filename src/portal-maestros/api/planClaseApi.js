@@ -207,3 +207,22 @@ export async function listarPeriodos() {
   if (error) throw new Error(`No se pudieron cargar los períodos: ${error.message}`)
   return data ?? []
 }
+
+/**
+ * Período en curso. Devuelve null si no hay ninguno activo o si la consulta
+ * falla: rotular un plan sin período es preferible a bloquear al maestro por
+ * una configuración que no depende de él.
+ */
+export async function obtenerPeriodoActivo() {
+  try {
+    const { data, error } = await supabase
+      .from('periodos')
+      .select('nombre, fecha_inicio, fecha_fin')
+      .eq('activo', true)
+      .maybeSingle()
+    if (error) return null
+    return data ?? null
+  } catch {
+    return null
+  }
+}

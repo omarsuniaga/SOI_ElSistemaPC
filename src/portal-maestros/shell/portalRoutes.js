@@ -59,8 +59,11 @@ function resolveClaseId(params = {}, urlParams = new URLSearchParams()) {
 
 export const CACHEABLE_VIEWS = new Set([
   'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'perfil', 'ruta',
-  'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
+  'gamificacion', 'crear-clase', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
   'gestionar-horario', 'mis-clases',
+  // `planificacion` NO se cachea: muestra el % de dominio de los alumnos, que
+  // cambia cuando el maestro califica desde otras vistas (asistencia, ruta).
+  // Cachearla dejaba datos viejos y un stepper con el timer ya cancelado.
 ])
 
 function viewRenderKey(route, params = {}, urlParams = new URLSearchParams()) {

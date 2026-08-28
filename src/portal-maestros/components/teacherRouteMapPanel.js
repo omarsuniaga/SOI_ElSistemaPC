@@ -167,6 +167,10 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
           </div>
 
           <div class="pmr-header-actions">
+            <button type="button" class="pmr-action-btn pmr-btn-guide" id="pmr-btn-guide-modal" title="¿Cómo funciona el mapa y la calificación?">
+              <i class="bi bi-lightbulb-fill text-warning"></i>
+              <span class="pmr-btn-text">Guía</span>
+            </button>
             <button type="button" class="pmr-action-btn pmr-btn-edit" id="pmr-btn-edit-route" title="Editar árbol de unidades y objetivos">
               <i class="bi bi-pencil-square"></i>
               <span class="pmr-btn-text">Editar Malla</span>
@@ -194,6 +198,12 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
 
     const closeModal = () => backdrop.remove()
     backdrop.querySelector("#pmr-btn-close-modal").addEventListener("click", closeModal)
+
+    backdrop.querySelector("#pmr-btn-guide-modal")?.addEventListener("click", () => {
+      import("../views/planificacionView.js").then((mod) => {
+        mod._abrirModalGuiaUso()
+      })
+    })
 
     backdrop.querySelector("#pmr-select-student").addEventListener("change", (e) => {
       selectedStudentId = e.target.value
@@ -712,6 +722,18 @@ function _injectDuolingoStyles() {
       transition: all 0.2s ease;
     }
 
+    .pmr-btn-guide {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      padding: 0.5rem 0.85rem;
+      border-radius: 11px;
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+    .pmr-btn-guide:hover {
+      background: rgba(245, 158, 11, 0.22);
+    }
     .pmr-btn-edit {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);

@@ -102,9 +102,20 @@ export async function openIndicadorGradingModal({
         <div class="igm-empty">
           <i class="bi bi-clipboard-x"></i>
           <p>No hay asistencia registrada para el ${escHTML(fecha)}.</p>
-          <p class="igm-empty-sub">Pasa asistencia primero para poder calificar este indicador.</p>
+          <p class="igm-empty-sub">
+            La evaluación pedagógica califica a los alumnos presentes en el aula. 
+            Primero realiza el <strong>Pase de Lista</strong> en el módulo de Asistencia para habilitar las estrellas (1-5★).
+          </p>
+          <button type="button" class="igm-btn igm-btn-guide-link mt-3" id="igm-btn-view-guide">
+            <i class="bi bi-lightbulb-fill text-warning"></i> ¿Cómo funciona el flujo?
+          </button>
         </div>
       `
+      body.querySelector("#igm-btn-view-guide")?.addEventListener("click", () => {
+        import("../views/planificacionView.js").then((mod) => {
+          mod._abrirModalGuiaUso()
+        })
+      })
       return
     }
 

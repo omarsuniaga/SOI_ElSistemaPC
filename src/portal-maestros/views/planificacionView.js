@@ -64,7 +64,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
         </div>
       </div>
 
-      <!-- Segmented Filter Bar -->
+      <!-- Segmented Filter Bar & Guide Button -->
       <div class="pm-planning-toolbar">
         <div class="pm-segmented-control" id="pm-class-filters">
           <button type="button" class="pm-seg-btn active" data-filter="all">
@@ -77,9 +77,16 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
             <i class="bi bi-exclamation-circle-fill"></i> Pendientes
           </button>
         </div>
-        <div class="pm-search-box">
-          <i class="bi bi-search"></i>
-          <input type="text" id="pm-search-clases" placeholder="Buscar clase o instrumento..." />
+
+        <div class="pm-toolbar-right">
+          <button type="button" class="pm-btn-info-guide" id="btn-open-planning-guide" title="Ver guía paso a paso de uso">
+            <i class="bi bi-lightbulb-fill text-warning"></i>
+            <span>¿Cómo funciona?</span>
+          </button>
+          <div class="pm-search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" id="pm-search-clases" placeholder="Buscar clase o instrumento..." />
+          </div>
         </div>
       </div>
 
@@ -114,6 +121,10 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
   searchInput?.addEventListener("input", (e) => {
     currentSearch = e.target.value.toLowerCase().trim()
     renderGrid()
+  })
+
+  container.querySelector("#btn-open-planning-guide")?.addEventListener("click", () => {
+    _abrirModalGuiaUso()
   })
 
   // Load Classes & Route Data
@@ -1123,5 +1134,327 @@ function _injectStyles() {
       }
     }
   `
+
+    /* ── Botón Guía y Modal Informativo ── */
+    .pm-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .pm-btn-info-guide {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #4f46e5;
+      padding: 0.45rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .pm-btn-info-guide:hover {
+      background: rgba(99, 102, 241, 0.2);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .pm-btn-info-guide {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #c7d2fe;
+    }
+
+    .pm-guide-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 3500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .pm-guide-modal {
+      background: #1e293b;
+      color: #fff;
+      width: 100%;
+      max-width: 580px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: pmr-popover-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .pm-guide-header {
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .pm-guide-header-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .pm-guide-header-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .pm-guide-eyebrow {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #fbbf24;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .pm-guide-header-text h3 {
+      font-size: 1.15rem;
+      font-weight: 900;
+      margin: 0.1rem 0 0;
+      color: #f8fafc;
+    }
+
+    .pm-guide-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .pm-guide-body {
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .pm-guide-intro {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .pm-guide-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .pm-guide-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+    }
+
+    .pm-step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pm-step-content strong {
+      font-size: 0.88rem;
+      color: #fff;
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+
+    .pm-step-content p {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.35;
+    }
+
+    .pm-guide-legend {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+    }
+
+    .pm-guide-legend h4 {
+      font-size: 0.8rem;
+      font-weight: 800;
+      margin: 0 0 0.5rem;
+      color: #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pm-legend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .pm-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+    }
+
+    .pm-leg-icon {
+      font-size: 0.9rem;
+    }
+
+    .pm-guide-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .pm-guide-understood {
+      width: 100%;
+      padding: 0.65rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+
   document.head.appendChild(style)
+}
+
+
+/**
+ * Modal Informativo / Guía de Uso del Sistema Pedagógico
+ */
+export function _abrirModalGuiaUso() {
+  const backdrop = document.createElement("div")
+  backdrop.className = "pm-guide-modal-backdrop"
+
+  backdrop.innerHTML = `
+    <div class="pm-guide-modal" role="dialog" aria-modal="true" aria-label="Guía de Uso">
+      <div class="pm-guide-header">
+        <div class="pm-guide-header-badge"><i class="bi bi-lightbulb-fill"></i></div>
+        <div class="pm-guide-header-text">
+          <span class="pm-guide-eyebrow">GUÍA PEDAGÓGICA</span>
+          <h3>¿Cómo funciona la Malla y Calificación?</h3>
+        </div>
+        <button type="button" class="pm-guide-close" aria-label="Cerrar"><i class="bi bi-x"></i></button>
+      </div>
+
+      <div class="pm-guide-body">
+        <p class="pm-guide-intro">
+          El sistema conecta la planificación del maestro con la asistencia real y el seguimiento de dominio de cada estudiante en <strong>4 pasos simples</strong>:
+        </p>
+
+        <!-- 4 Steps Flow -->
+        <div class="pm-guide-steps">
+          <div class="pm-guide-step">
+            <div class="pm-step-num">1</div>
+            <div class="pm-step-content">
+              <strong>Diseña la Malla Curricular</strong>
+              <p>Presiona <em>"Diseñar"</em> para estructurar tu materia en <strong>Unidades ➔ Objetivos ➔ Indicadores</strong>. Puedes definir prerrequisitos (indicadores que deben dominarse antes de otros).</p>
+            </div>
+          </div>
+
+          <div class="pm-guide-step">
+            <div class="pm-step-num">2</div>
+            <div class="pm-step-content">
+              <strong>Pasa Asistencia en la Clase</strong>
+              <p>En el módulo <em>"Asistencia"</em> o <em>"Hoy"</em>, pasa lista marcando a los alumnos como <strong>Presentes</strong> o <strong>Ausentes</strong>. La evaluación siempre requiere saber quién vino al aula.</p>
+            </div>
+          </div>
+
+          <div class="pm-guide-step">
+            <div class="pm-step-num">3</div>
+            <div class="pm-step-content">
+              <strong>Califica en el Mapa Duolingo (5★)</strong>
+              <p>Abre el <em>"Mapa"</em> de la clase, toca el indicador que trabajaste hoy y califica a los presentes de <strong>1 a 5 estrellas (⭐)</strong>. Con 5★ el indicador se marca como <em>Dominado</em> 👑.</p>
+            </div>
+          </div>
+
+          <div class="pm-guide-step">
+            <div class="pm-step-num">4</div>
+            <div class="pm-step-content">
+              <strong>Controla Deudas y Candados (🔒)</strong>
+              <p>Si un alumno faltó o requiere reforzar un prerrequisito, se le genera una <strong>Deuda Pedagógica</strong> para su sesión de recuperación, desbloqueando su progreso.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="pm-guide-legend">
+          <h4>Glosario de Indicadores del Mapa:</h4>
+          <div class="pm-legend-grid">
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-green">👑 ⭐</span>
+              <span><strong>Dominado (5★):</strong> Logrado por el grupo.</span>
+            </div>
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-blue">▶️</span>
+              <span><strong>En Progreso:</strong> En evaluación activa.</span>
+            </div>
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-red">🔒</span>
+              <span><strong>Bloqueado:</strong> Requiere dominar un tema previo.</span>
+            </div>
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-purple">👤</span>
+              <span><strong>Vista por Alumno:</strong> Filtra el mapa para 1 estudiante.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pm-guide-footer">
+        <button type="button" class="pm-btn-primary pm-guide-understood">
+          ¡Entendido, vamos a usarlo!
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(backdrop)
+
+  const closeModal = () => backdrop.remove()
+  backdrop.querySelector(".pm-guide-close").addEventListener("click", closeModal)
+  backdrop.querySelector(".pm-guide-understood").addEventListener("click", closeModal)
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeModal()
+  })
 }

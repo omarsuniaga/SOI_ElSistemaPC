@@ -1,5 +1,5 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
-import { showToast } from '../../../shared/components/Toast.js'
+import { AppToast } from '../../../shared/components/AppToast.js'
 import { escapeHTML } from '../utils/maestrosUtils.js'
 import { cargarHistorialClases } from '../../../portal-maestros/services/historialClasesService.js'
 import { descargarPdfHistoricoMaestro } from '../domain/generarPdfHistoricoMaestro.js'
@@ -19,6 +19,10 @@ function formatFecha(fecha) {
 
 function formatHora(hora) {
   return hora ? String(hora).slice(0, 5) : '—'
+}
+
+function showToast(message, type = 'info') {
+  AppToast.show(message, type)
 }
 
 /**

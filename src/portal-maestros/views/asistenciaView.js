@@ -74,8 +74,6 @@ import { createAttendanceHeader } from '../components/attendance/AttendanceHeade
 import { createRouteTopicAutoInjector } from '../components/attendance/RouteTopicAutoInjector.js'
 import { createPlanificationCard } from '../components/attendance/PlanificationCard.js'
 import { createDslSection } from '../components/attendance/DslSection.js'
-import { createCategoriaTrabajoBar } from '../components/attendance/CategoriaTrabajoBar.js'
-import { confirmarCategoria } from '../api/nodoSesionApi.js'
 import { createBulkActions } from '../components/attendance/BulkActions.js'
 import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
@@ -1569,41 +1567,17 @@ function _renderVista(container, ctx) {
   }
 
   // === Editor DSL & Toolbar Section ===
-  // categoriaBar se declara antes del editor para que el callback
-  // onEditorChange pueda referenciarlo de forma segura con `?.`
-  // (createDslSection invoca el callback inmediatamente con initialContent).
   let categoriaTrabajo = { codigo: null, origen: null }
-  let categoriaBar = null
 
   const dslSection = createDslSection(container, {
     initialContent: serverDSL,
     claseId,
     onEditorChange: (value) => {
       dslContent = value
-      categoriaBar?.onTextoCambia(value)
     },
   })
   const editor = dslSection.getEditor()
   const editorContainer = container.querySelector('#pm-dsl-editor-container')
-
-  // Categoría de trabajo: se deriva de lo que el maestro ya escribió y él la
-  // confirma con un toque. Se guarda por separado del flujo de asistencia, que
-  // tiene su propia cadena de reintentos y no conviene alterar.
-  categoriaBar = createCategoriaTrabajoBar(
-    container.querySelector('.pm-asist-dsl-section') || container,
-    {
-      onChange: async ({ codigo, origen }) => {
-        categoriaTrabajo = { codigo, origen }
-        if (!sesionId) return // la sesión aún no existe; se persiste al guardarla
-        try {
-          await confirmarCategoria(sesionId, codigo, origen)
-        } catch (err) {
-          console.warn('[asistencia] No se pudo guardar la categoría:', err.message)
-        }
-      },
-    },
-  )
-  if (serverDSL) categoriaBar.analizarAhora(serverDSL)
 
   // === Generar Informe Modal ===
   const informeModal = createGenerarInformeModal(container, {

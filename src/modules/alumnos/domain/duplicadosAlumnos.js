@@ -119,8 +119,10 @@ export function tokenSimilarity(t1, t2) {
   return ratio >= 0.75 ? ratio : 0
 }
 
+export const STOP_PARTICLES = new Set(['de', 'la', 'las', 'los', 'del', 'y', 'san', 'santa', 'da', 'di'])
+
 /**
- * Convierte un nombre en su conjunto de tokens únicos ordenados.
+ * Divide un nombre en tokens únicos normalizados.
  * @param {string} nombre
  * @returns {string[]}
  */
@@ -161,8 +163,10 @@ export function compareNombres(nombreA, nombreB) {
   if (!normA || !normB) return 0.0
   if (normA === normB) return 1.0
 
-  const a = tokensNombre(nombreA)
-  const b = tokensNombre(nombreB)
+  const aRaw = tokensNombre(nombreA)
+  const bRaw = tokensNombre(nombreB)
+  const a = aRaw.filter((t) => !STOP_PARTICLES.has(t))
+  const b = bRaw.filter((t) => !STOP_PARTICLES.has(t))
 
   const maxLen = Math.max(a.length, b.length)
   const minLen = Math.min(a.length, b.length)
@@ -334,39 +338,63 @@ export function camposCompartidos(a, b) {
  * @returns {boolean}
  */
 export function sonHermanos(a, b) {
-  const tokensA = tokensNombre(a?.nombre_completo || a?.nombre)
-  const tokensB = tokensNombre(b?.nombre_completo || b?.nombre)
-  if (tokensA.length === 0 || tokensB.length === 0) return false
+  const nombreScore = compareNombres(a?.nombre_completo || a?.nombre, b?.nombre_completo || b?.nombre)
+  if (nombreScore >= 0.70) return false
 
-  // Nombres de pila (primeros 1-2 tokens)
-  const givenNamesA = tokensA.length > 2 ? tokensA.slice(0, -2) : [tokensA[0]]
-  const givenNamesB = tokensB.length > 2 ? tokensB.slice(0, -2) : [tokensB[0]]
+  const allTokensA = tokensNombre(a?.nombre_completo || a?.nombre)
+  const allTokensB = tokensNombre(b?.nombre_completo || b?.nombre)
+  if (allTokensA.length === 0 || allTokensB.length === 0) return false
+
+  // Filtrar partículas y preposiciones ("de", "la", "los", "del", etc.)
+  const cleanTokensA = allTokensA.filter((t) => !STOP_PARTICLES.has(t))
+  const cleanTokensB = allTokensB.filter((t) => !STOP_PARTICLES.has(t))
+  if (cleanTokensA.length === 0 || cleanTokensB.length === 0) return false
+
+  // Extraer nombres de pila y apellidos con base en tokens limpios
+  // 1 token: [nombre], []
+  // 2 tokens: [nombre], [apellido]
+  // 3 tokens: [nombre], [apellido1, apellido2] (ej. Amelia Baez Rosario)
+  // 4+ tokens: [nombre1, nombre2], [apellido1, apellido2, ...]
+  const givenNamesA = cleanTokensA.length >= 4 ? cleanTokensA.slice(0, 2) : [cleanTokensA[0]]
+  const givenNamesB = cleanTokensB.length >= 4 ? cleanTokensB.slice(0, 2) : [cleanTokensB[0]]
+
+  const surnamesA = cleanTokensA.length >= 4 ? cleanTokensA.slice(2) : cleanTokensA.slice(1)
+  const surnamesB = cleanTokensB.length >= 4 ? cleanTokensB.slice(2) : cleanTokensB.slice(1)
 
   // Verificar si hay alguna coincidencia (exacta o fonética) entre los nombres de pila
-  const sharesGivenName = givenNamesA.some(ga =>
-    tokensB.some(tb => tokenSimilarity(ga, tb) >= 0.80)
-  ) || givenNamesB.some(gb =>
-    tokensA.some(ta => tokenSimilarity(gb, ta) >= 0.80)
+  const sharesGivenName = givenNamesA.some((ga) =>
+    cleanTokensB.some((tb) => !surnamesB.includes(tb) && tokenSimilarity(ga, tb) >= 0.75)
+  ) || givenNamesB.some((gb) =>
+    cleanTokensA.some((ta) => !surnamesA.includes(ta) && tokenSimilarity(gb, ta) >= 0.75)
   )
 
-  // Si los nombres de pila NO tienen coincidencia (ej. "Jose Tomas" vs "Alondra")
+  // Si los nombres de pila NO tienen coincidencia (ej. "Emmanuel" vs "Feder", "Jaime" vs "Richard", "Jaime" vs "Camila")
   if (!sharesGivenName) {
     const genA = normalizeText(a?.genero)
     const genB = normalizeText(b?.genero)
     const distinctGender = genA && genB && ((genA.startsWith('m') && genB.startsWith('f')) || (genA.startsWith('f') && genB.startsWith('m')))
 
-    const fA = String(a?.fecha_nacimiento || '').slice(0, 4)
-    const fB = String(b?.fecha_nacimiento || '').slice(0, 4)
-    const distinctYear = fA && fB && fA.length === 4 && fB.length === 4 && fA !== fB
+    const fA = String(a?.fecha_nacimiento || '').slice(0, 10)
+    const fB = String(b?.fecha_nacimiento || '').slice(0, 10)
+    const distinctBirthDate = fA && fB && fA !== fB
 
-    const sharesFamily = (
-      samePersonName(a?.padre_nombre, b?.padre_nombre) ||
-      samePersonName(a?.madre_nombre, b?.madre_nombre) ||
-      matchPhones(a, b) ||
-      (tokensA.length >= 2 && tokensB.length >= 2 && tokenSimilarity(tokensA[tokensA.length - 1], tokensB[tokensB.length - 1]) >= 0.85)
+    const instA = normalizeText(a?.instrumento_principal || a?.instrumento)
+    const instB = normalizeText(b?.instrumento_principal || b?.instrumento)
+    const distinctInstrument = instA && instB && instA !== instB
+
+    const sharesSurname = surnamesA.some((sa) =>
+      surnamesB.some((sb) => tokenSimilarity(sa, sb) >= 0.85)
     )
 
-    if (sharesFamily || distinctGender || distinctYear) {
+    const sharesFamily = (
+      sharesSurname ||
+      samePersonName(a?.padre_nombre, b?.padre_nombre) ||
+      samePersonName(a?.madre_nombre, b?.madre_nombre) ||
+      samePersonName(a?.representante_nombre, b?.representante_nombre) ||
+      matchPhones(a, b)
+    )
+
+    if (sharesFamily || distinctGender || distinctBirthDate || distinctInstrument) {
       return true
     }
   }

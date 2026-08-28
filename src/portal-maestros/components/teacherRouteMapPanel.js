@@ -4,16 +4,28 @@
  * Incluye:
  * - Modal a pantalla completa (100vw / 100vh) con ambient backdrop y shimmer.
  * - S-Curve trail vertical con nodos 3D estilo Duolingo.
- * - Popover de Misión flotante e interactivo al tocar un nodo.
- * - Soporte para candados de prerrequisitos 🔒.
+ * - Selector de Alumno Individual vs Vista Grupal (Personalización de Ruta).
+ * - Feedback háptico en dispositivos móviles (navigator.vibrate).
+ * - Popover de Misión flotante con z-index 2500.
+ * - Soporte para candados de prerrequisitos 🔒 y deudas pedagógicas.
  * - Auto-scroll inteligente al nodo activo.
  */
 
 import { escHTML } from "../utils/portalUtils.js"
 import { openTeacherRoutePicker, openTeacherRouteBuilder } from "./TeacherRouteBuilder.js"
 import { openIndicadorGradingModal } from "./IndicadorGradingModal.js"
-import { getPersonalRoutes, getIndicadorCheckStates } from "../services/maestroDataService.js"
+import { getPersonalRoutes, getIndicadorCheckStates, getAlumnosPorClaseIds } from "../services/maestroDataService.js"
 import { supabase } from "../../lib/supabaseClient.js"
+
+function triggerHaptic(duration = 15) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(duration)
+    }
+  } catch (_e) {
+    // Ignored in unsupported browsers
+  }
+}
 
 export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
   const routes = await getPersonalRoutes(maestro.id, claseId, true)
@@ -30,10 +42,27 @@ export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
 }
 
 async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
-  const checkStates = await getIndicadorCheckStates(route.id, claseId)
-  const checkByIndicador = Object.fromEntries((checkStates || []).map((c) => [c.indicador_id, c.check_state]))
+  const [checkStates, students, evaluationsData] = await Promise.all([
+    getIndicadorCheckStates(route.id, claseId),
+    getAlumnosPorClaseIds([claseId]),
+    supabase
+      .from("evaluacion_indicador")
+      .select("alumno_id, maestro_indicador_id, nota, recovery_status")
+      .eq("clase_id", claseId)
+      .then((res) => res.data || [])
+      .catch(() => []),
+  ])
 
-  // Fetch all prerequisites in parallel
+  const groupCheckByIndicador = Object.fromEntries((checkStates || []).map((c) => [c.indicador_id, c.check_state]))
+
+  // Map of student evaluations: { [indicador_id]: { [alumno_id]: { nota, recovery_status } } }
+  const studentEvalMap = {}
+  evaluationsData.forEach((ev) => {
+    if (!studentEvalMap[ev.maestro_indicador_id]) studentEvalMap[ev.maestro_indicador_id] = {}
+    studentEvalMap[ev.maestro_indicador_id][ev.alumno_id] = ev
+  })
+
+  // Fetch all prerequisites
   let prereqMap = {}
   try {
     const { data: prereqs } = await supabase
@@ -51,122 +80,181 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
 
   _injectDuolingoStyles()
 
-  // Calculate stats
-  let totalIndicadores = 0
-  let dominadosCount = 0
-  let enProgresoCount = 0
-
-  const unidades = route.unidades || []
-  const allIndicatorsMap = {}
-
-  unidades.forEach((u) => {
-    (u.objetivos || []).forEach((o) => {
-      (o.indicadores || []).forEach((ind) => {
-        totalIndicadores += 1
-        allIndicatorsMap[ind.id] = { ind, obj: o, u }
-        const st = checkByIndicador[ind.id] || "none"
-        if (st === "double") dominadosCount += 1
-        else if (st === "single") enProgresoCount += 1
-      })
-    })
-  })
-
-  const progressPct = totalIndicadores > 0 ? Math.round((dominadosCount / totalIndicadores) * 100) : 0
+  let selectedStudentId = "all" // "all" or specific student id
 
   const backdrop = document.createElement("div")
   backdrop.className = "pmr-fullscreen-backdrop"
 
-  backdrop.innerHTML = `
-    <div class="pmr-fullscreen-modal" role="dialog" aria-modal="true">
-      <!-- Sticky Glass Header -->
-      <div class="pmr-header-bar">
-        <div class="pmr-header-left">
-          <div class="pmr-header-badge"><i class="bi bi-signpost-2-fill"></i></div>
-          <div class="pmr-header-info">
-            <h2 class="pmr-header-title">${escHTML(route.nombre)}</h2>
-            <div class="pmr-header-progress-wrap">
-              <div class="pmr-progress-bar-bg">
-                <div class="pmr-progress-bar-fill" style="width: ${progressPct}%;"></div>
+  function renderFullView() {
+    // Determine active check states based on selected student
+    const activeCheckMap = {}
+    const unidades = route.unidades || []
+    const allIndicatorsMap = {}
+
+    unidades.forEach((u) => {
+      (u.objetivos || []).forEach((o) => {
+        (o.indicadores || []).forEach((ind) => {
+          allIndicatorsMap[ind.id] = { ind, obj: o, u }
+
+          if (selectedStudentId === "all") {
+            activeCheckMap[ind.id] = groupCheckByIndicador[ind.id] || "none"
+          } else {
+            const ev = studentEvalMap[ind.id]?.[selectedStudentId]
+            if (!ev) {
+              activeCheckMap[ind.id] = "none"
+            } else if (ev.nota >= 5 || ev.recovery_status === "passed") {
+              activeCheckMap[ind.id] = "double"
+            } else if (ev.nota > 0) {
+              activeCheckMap[ind.id] = "single"
+            } else {
+              activeCheckMap[ind.id] = "none"
+            }
+          }
+        })
+      })
+    })
+
+    // Calculate stats
+    let totalIndicadores = 0
+    let dominadosCount = 0
+    unidades.forEach((u) => {
+      (u.objetivos || []).forEach((o) => {
+        (o.indicadores || []).forEach((ind) => {
+          totalIndicadores += 1
+          if (activeCheckMap[ind.id] === "double") dominadosCount += 1
+        })
+      })
+    })
+
+    const progressPct = totalIndicadores > 0 ? Math.round((dominadosCount / totalIndicadores) * 100) : 0
+
+    backdrop.innerHTML = `
+      <div class="pmr-fullscreen-modal" role="dialog" aria-modal="true">
+        <!-- Sticky Glass Header -->
+        <div class="pmr-header-bar">
+          <div class="pmr-header-left">
+            <div class="pmr-header-badge"><i class="bi bi-signpost-2-fill"></i></div>
+            <div class="pmr-header-info">
+              <h2 class="pmr-header-title">${escHTML(route.nombre)}</h2>
+              <div class="pmr-header-progress-wrap">
+                <div class="pmr-progress-bar-bg">
+                  <div class="pmr-progress-bar-fill" style="width: ${progressPct}%;"></div>
+                </div>
+                <span class="pmr-progress-text">${dominadosCount}/${totalIndicadores} dominados (${progressPct}%)</span>
               </div>
-              <span class="pmr-progress-text">${dominadosCount}/${totalIndicadores} dominados (${progressPct}%)</span>
             </div>
+          </div>
+
+          <!-- Student Filter Selector -->
+          <div class="pmr-student-filter-wrap">
+            <i class="bi bi-person-fill"></i>
+            <select id="pmr-select-student" class="pmr-student-select" aria-label="Filtrar por alumno">
+              <option value="all" ${selectedStudentId === "all" ? "selected" : ""}>👥 Toda la Clase (Grupal)</option>
+              ${(students || [])
+                .map(
+                  (s) => `
+                <option value="${s.id}" ${selectedStudentId === s.id ? "selected" : ""}>
+                  👤 ${escHTML(s.nombre || s.nombre_completo || "Alumno")}
+                </option>
+              `
+                )
+                .join("")}
+            </select>
+          </div>
+
+          <div class="pmr-header-actions">
+            <button type="button" class="pmr-action-btn pmr-btn-edit" id="pmr-btn-edit-route" title="Editar árbol de unidades y objetivos">
+              <i class="bi bi-pencil-square"></i>
+              <span class="pmr-btn-text">Editar Malla</span>
+            </button>
+            <button type="button" class="pmr-action-btn pmr-btn-close" id="pmr-btn-close-modal" aria-label="Cerrar mapa">
+              <i class="bi bi-x-lg"></i>
+            </button>
           </div>
         </div>
 
-        <div class="pmr-header-actions">
-          <button type="button" class="pmr-action-btn pmr-btn-edit" id="pmr-btn-edit-route" title="Editar árbol de unidades y objetivos">
-            <i class="bi bi-pencil-square"></i>
-            <span class="pmr-btn-text">Editar Malla</span>
-          </button>
-          <button type="button" class="pmr-action-btn pmr-btn-close" id="pmr-btn-close-modal" aria-label="Cerrar mapa">
-            <i class="bi bi-x-lg"></i>
-          </button>
+        <!-- Duolingo Vertical Trail Canvas -->
+        <div class="pmr-scroll-canvas" id="pmr-scroll-canvas">
+          ${
+            unidades.length === 0
+              ? `<div class="pmr-empty-state">
+                   <div class="pmr-empty-icon">🗺️</div>
+                   <h3>Esta ruta aún no tiene unidades</h3>
+                   <p>Presiona "Editar Malla" para agregar tus primeras unidades, objetivos e indicadores.</p>
+                 </div>`
+              : `<div class="pmr-duolingo-trail" id="pmr-duolingo-trail"></div>`
+          }
         </div>
       </div>
+    `
 
-      <!-- Duolingo Vertical Trail Canvas -->
-      <div class="pmr-scroll-canvas" id="pmr-scroll-canvas">
-        ${
-          unidades.length === 0
-            ? `<div class="pmr-empty-state">
-                 <div class="pmr-empty-icon">🗺️</div>
-                 <h3>Esta ruta aún no tiene unidades</h3>
-                 <p>Presiona "Editar Malla" para agregar tus primeras unidades, objetivos e indicadores.</p>
-               </div>`
-            : `<div class="pmr-duolingo-trail" id="pmr-duolingo-trail"></div>`
-        }
-      </div>
-    </div>
-  `
-  document.body.appendChild(backdrop)
+    const closeModal = () => backdrop.remove()
+    backdrop.querySelector("#pmr-btn-close-modal").addEventListener("click", closeModal)
 
-  const closeModal = () => backdrop.remove()
-  backdrop.querySelector("#pmr-btn-close-modal").addEventListener("click", closeModal)
-
-  backdrop.querySelector("#pmr-btn-edit-route")?.addEventListener("click", () => {
-    closeModal()
-    openTeacherRouteBuilder({
-      maestroId: maestro.id,
-      claseId,
-      route,
-      onSaved: () => abrirMapaDeRutas(claseId, maestro, fechaHoy),
+    backdrop.querySelector("#pmr-select-student").addEventListener("change", (e) => {
+      selectedStudentId = e.target.value
+      triggerHaptic(10)
+      renderFullView()
     })
-  })
 
-  // Render Vertical Duolingo Trail
-  if (unidades.length > 0) {
-    const trailContainer = backdrop.querySelector("#pmr-duolingo-trail")
-    const canvas = backdrop.querySelector("#pmr-scroll-canvas")
-
-    const refrescar = () => {
+    backdrop.querySelector("#pmr-btn-edit-route")?.addEventListener("click", () => {
       closeModal()
-      abrirMapaDeRutas(claseId, maestro, fechaHoy)
-    }
-
-    _renderDuolingoVerticalTrail(trailContainer, route, checkByIndicador, prereqMap, allIndicatorsMap, {
-      onEvaluateIndicador: async (indicador, breadcrumb) => {
-        await openIndicadorGradingModal({
-          claseId,
-          fecha: fechaHoy,
-          indicadorId: indicador.id,
-          indicadorNombre: indicador.nombre,
-          breadcrumb,
-          evaluadoPor: maestro.user_id,
-          onSaved: refrescar,
-        })
-      },
+      openTeacherRouteBuilder({
+        maestroId: maestro.id,
+        claseId,
+        route,
+        onSaved: () => abrirMapaDeRutas(claseId, maestro, fechaHoy),
+      })
     })
 
-    // Smart Auto-Scroll to Active / Next in progress node
-    setTimeout(() => {
-      const activeNode =
-        trailContainer.querySelector(".pmr-duo-node-wrap.node-active") ||
-        trailContainer.querySelector(".pmr-duo-node-wrap:not(.node-completed)")
-      if (activeNode) {
-        activeNode.scrollIntoView({ behavior: "smooth", block: "center" })
+    // Render Vertical Duolingo Trail
+    if (unidades.length > 0) {
+      const trailContainer = backdrop.querySelector("#pmr-duolingo-trail")
+
+      const refrescar = () => {
+        closeModal()
+        abrirMapaDeRutas(claseId, maestro, fechaHoy)
       }
-    }, 200)
+
+      _renderDuolingoVerticalTrail(
+        trailContainer,
+        route,
+        activeCheckMap,
+        prereqMap,
+        allIndicatorsMap,
+        studentEvalMap,
+        selectedStudentId,
+        students,
+        {
+          onEvaluateIndicador: async (indicador, breadcrumb) => {
+            triggerHaptic(20)
+            await openIndicadorGradingModal({
+              claseId,
+              fecha: fechaHoy,
+              indicadorId: indicador.id,
+              indicadorNombre: indicador.nombre,
+              breadcrumb,
+              evaluadoPor: maestro.user_id,
+              onSaved: refrescar,
+            })
+          },
+        }
+      )
+
+      // Smart Auto-Scroll to Active Node
+      setTimeout(() => {
+        const activeNode =
+          trailContainer.querySelector(".pmr-duo-node-wrap.node-active") ||
+          trailContainer.querySelector(".pmr-duo-node-wrap:not(.node-completed)")
+        if (activeNode) {
+          activeNode.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 200)
+    }
   }
+
+  renderFullView()
+  document.body.appendChild(backdrop)
 }
 
 /**
@@ -178,6 +266,9 @@ function _renderDuolingoVerticalTrail(
   checkByIndicador,
   prereqMap,
   allIndicatorsMap,
+  studentEvalMap,
+  selectedStudentId,
+  students,
   { onEvaluateIndicador }
 ) {
   const unidades = route.unidades || []
@@ -245,7 +336,7 @@ function _renderDuolingoVerticalTrail(
       nodeCoords.push({ xPct, yPx, item })
     })
 
-    // Build SVG curved road path using numerical coordinates (1000 units reference width in viewBox)
+    // Build SVG curved road path using numerical coordinates
     let svgPathD = ""
     if (nodeCoords.length > 1) {
       const getXVal = (pct) => (pct / 100) * 1000
@@ -320,10 +411,11 @@ function _renderDuolingoVerticalTrail(
 
   container.innerHTML = fullHTML
 
-  // Wire node tap to show Interactive Mission Popover
+  // Wire node tap to show Interactive Mission Popover with Haptic Feedback
   container.querySelectorAll(".pmr-duo-node-wrap").forEach((nodeEl) => {
     nodeEl.addEventListener("click", (e) => {
       e.stopPropagation()
+      triggerHaptic(12)
       const indId = nodeEl.dataset.indId
       const target = allIndicatorsMap[indId]
       if (!target) return
@@ -333,7 +425,19 @@ function _renderDuolingoVerticalTrail(
       const prereqTarget = prereqId ? allIndicatorsMap[prereqId] : null
       const isLocked = prereqId && (checkByIndicador[prereqId] || "none") !== "double"
 
-      _showMissionPopover(nodeEl, target, checkSt, isLocked, prereqTarget, onEvaluateIndicador)
+      const studentEv = selectedStudentId !== "all" ? studentEvalMap[indId]?.[selectedStudentId] || null : null
+      const selectedStudentObj = selectedStudentId !== "all" ? students.find((s) => s.id === selectedStudentId) : null
+
+      _showMissionPopover(
+        nodeEl,
+        target,
+        checkSt,
+        isLocked,
+        prereqTarget,
+        studentEv,
+        selectedStudentObj,
+        onEvaluateIndicador
+      )
     })
   })
 
@@ -348,7 +452,16 @@ function _renderDuolingoVerticalTrail(
 /**
  * Muestra el Popover de Misión táctil estilo Duolingo
  */
-function _showMissionPopover(anchorEl, target, checkSt, isLocked, prereqTarget, onEvaluateIndicador) {
+function _showMissionPopover(
+  anchorEl,
+  target,
+  checkSt,
+  isLocked,
+  prereqTarget,
+  studentEv,
+  selectedStudentObj,
+  onEvaluateIndicador
+) {
   _closeMissionPopover()
   anchorEl.classList.add("has-active-popover")
 
@@ -357,14 +470,24 @@ function _showMissionPopover(anchorEl, target, checkSt, isLocked, prereqTarget, 
   const isInProgress = checkSt === "single"
 
   let statusBadge = ""
-  if (isLocked) {
-    statusBadge = `<span class="pmr-popover-badge badge-locked"><i class="bi bi-lock-fill"></i> Bloqueado por Prerrequisito</span>`
-  } else if (isCompleted) {
-    statusBadge = `<span class="pmr-popover-badge badge-success"><i class="bi bi-star-fill"></i> Malla Dominada (5★)</span>`
-  } else if (isInProgress) {
-    statusBadge = `<span class="pmr-popover-badge badge-active"><i class="bi bi-play-circle-fill"></i> En Evaluación</span>`
+  if (selectedStudentObj) {
+    if (isCompleted) {
+      statusBadge = `<span class="pmr-popover-badge badge-success"><i class="bi bi-star-fill"></i> ${escHTML(selectedStudentObj.nombre)}: 5★ Dominado</span>`
+    } else if (studentEv?.nota) {
+      statusBadge = `<span class="pmr-popover-badge badge-active"><i class="bi bi-star-half"></i> ${escHTML(selectedStudentObj.nombre)}: ${studentEv.nota}★ (${studentEv.recovery_status === "pending" ? "Deuda" : "En proceso"})</span>`
+    } else {
+      statusBadge = `<span class="pmr-popover-badge badge-neutral"><i class="bi bi-circle"></i> ${escHTML(selectedStudentObj.nombre)}: Sin Calificar</span>`
+    }
   } else {
-    statusBadge = `<span class="pmr-popover-badge badge-neutral"><i class="bi bi-circle"></i> Sin Calificar</span>`
+    if (isLocked) {
+      statusBadge = `<span class="pmr-popover-badge badge-locked"><i class="bi bi-lock-fill"></i> Bloqueado por Prerrequisito</span>`
+    } else if (isCompleted) {
+      statusBadge = `<span class="pmr-popover-badge badge-success"><i class="bi bi-star-fill"></i> Malla Dominada (5★)</span>`
+    } else if (isInProgress) {
+      statusBadge = `<span class="pmr-popover-badge badge-active"><i class="bi bi-play-circle-fill"></i> En Evaluación</span>`
+    } else {
+      statusBadge = `<span class="pmr-popover-badge badge-neutral"><i class="bi bi-circle"></i> Sin Calificar</span>`
+    }
   }
 
   const popover = document.createElement("div")
@@ -372,7 +495,6 @@ function _showMissionPopover(anchorEl, target, checkSt, isLocked, prereqTarget, 
   popover.id = "pmr-active-mission-popover"
 
   popover.innerHTML = `
-    <div class="pmr-popover-arrow"></div>
     <div class="pmr-popover-header">
       <span class="pmr-popover-breadcrumb">${escHTML(u.nombre)} › ${escHTML(obj.nombre)}</span>
       <button type="button" class="pmr-popover-close-btn" aria-label="Cerrar"><i class="bi bi-x"></i></button>
@@ -465,31 +587,32 @@ function _injectDuolingoStyles() {
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 1rem 1.5rem;
+      padding: 0.85rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
+      flex-wrap: wrap;
     }
 
     .pmr-header-left {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.85rem;
       flex: 1;
-      min-width: 0;
+      min-width: 220px;
     }
 
     .pmr-header-badge {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 12px;
       background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
       flex-shrink: 0;
     }
@@ -500,9 +623,9 @@ function _injectDuolingoStyles() {
     }
 
     .pmr-header-title {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 900;
-      margin: 0 0 0.25rem;
+      margin: 0 0 0.2rem;
       letter-spacing: -0.02em;
       white-space: nowrap;
       overflow: hidden;
@@ -513,12 +636,12 @@ function _injectDuolingoStyles() {
     .pmr-header-progress-wrap {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .pmr-progress-bar-bg {
-      width: 140px;
-      height: 8px;
+      width: 120px;
+      height: 7px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.1);
       overflow: hidden;
@@ -532,15 +655,47 @@ function _injectDuolingoStyles() {
     }
 
     .pmr-progress-text {
-      font-size: 0.76rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: #34d399;
+    }
+
+    /* Student Filter Dropdown */
+    .pmr-student-filter-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 0.35rem 0.75rem 0.35rem 0.65rem;
+      gap: 6px;
+    }
+
+    .pmr-student-filter-wrap i {
+      color: #818cf8;
+      font-size: 0.9rem;
+    }
+
+    .pmr-student-select {
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .pmr-student-select option {
+      background: #1e293b;
+      color: #fff;
     }
 
     .pmr-header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .pmr-action-btn {
@@ -557,9 +712,9 @@ function _injectDuolingoStyles() {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);
       color: #e2e8f0;
-      padding: 0.55rem 1.1rem;
-      border-radius: 12px;
-      font-size: 0.85rem;
+      padding: 0.5rem 0.95rem;
+      border-radius: 11px;
+      font-size: 0.82rem;
       font-weight: 700;
     }
 
@@ -571,10 +726,10 @@ function _injectDuolingoStyles() {
     .pmr-btn-close {
       background: rgba(255, 255, 255, 0.08);
       color: #94a3b8;
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
     }
 
     .pmr-btn-close:hover {
@@ -933,6 +1088,13 @@ function _injectDuolingoStyles() {
       }
       .pmr-btn-text {
         display: none;
+      }
+      .pmr-student-filter-wrap {
+        width: 100%;
+        order: 3;
+      }
+      .pmr-student-select {
+        width: 100%;
       }
       .pmr-duo-button {
         width: 54px;

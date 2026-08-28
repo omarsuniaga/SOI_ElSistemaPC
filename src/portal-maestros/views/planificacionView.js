@@ -3,11 +3,11 @@
  * Portal Maestros — Gestión y Rutas Académicas (Cuadrícula Móvil 2x & Desktop 3x)
  *
  * Módulo rediseñado enfocado 100% en la jerarquía pedagógica del maestro:
- * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con títulos completos y badges por iconos).
+ * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con títulos completos, clonación y mapa vertical).
  */
 
 import { getMisClases, getInscripcionesClases } from "../services/maestroDataService.js"
-import { getTeacherRoutes } from "../services/maestroRouteService.js"
+import { getTeacherRoutes, createRoute } from "../services/maestroRouteService.js"
 import { announce } from "../utils/a11yUtils.js"
 import { AppToast } from "../../shared/components/AppToast.js"
 import { router as internalRouter } from "../../core/router/router.js"
@@ -305,6 +305,16 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                     <i class="bi bi-diagram-3-fill"></i>
                     <span>Mapa</span>
                   </button>
+
+                  ${
+                    hasRoute
+                      ? `
+                    <button type="button" class="pm-btn-compact-icon pm-btn-clone" data-clase-id="${clase.id}" title="Duplicar Malla hacia otra clase">
+                      <i class="bi bi-copy"></i>
+                    </button>
+                  `
+                      : ""
+                  }
                 </div>
               </div>
             `
@@ -340,9 +350,120 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
         await abrirMapaDeRutas(cid, maestro, fechaHoy)
       })
     })
+
+    gridHost.querySelectorAll(".pm-btn-clone").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        const cid = btn.dataset.claseId
+        const sourceClase = loadedClases.find((c) => c.id === cid)
+        if (!sourceClase || !sourceClase.route) return
+        _abrirModalClonarMalla(sourceClase, loadedClases, maestroId, () => loadData())
+      })
+    })
   }
 
   await loadData()
+}
+
+/**
+ * Modal de 1-Tap para duplicar la malla curricular hacia otra clase
+ */
+function _abrirModalClonarMalla(sourceClase, allClases, maestroId, onComplete) {
+  const otherClases = allClases.filter((c) => c.id !== sourceClase.id)
+  if (otherClases.length === 0) {
+    AppToast.info("No tienes otras clases disponibles para duplicar la malla.")
+    return
+  }
+
+  const backdrop = document.createElement("div")
+  backdrop.className = "pm-clone-modal-backdrop"
+
+  backdrop.innerHTML = `
+    <div class="pm-clone-modal" role="dialog" aria-modal="true">
+      <div class="pm-clone-header">
+        <div>
+          <span class="pm-clone-badge"><i class="bi bi-copy"></i> DUPLICAR MALLA</span>
+          <h3>Copiar Malla de "${escapeHtml(sourceClase.nombre)}"</h3>
+        </div>
+        <button type="button" class="pm-clone-close"><i class="bi bi-x"></i></button>
+      </div>
+
+      <div class="pm-clone-body">
+        <p class="pm-clone-desc">
+          Selecciona a qué clase deseas transferir la estructura de 
+          <strong>${sourceClase.unidadesCount} Unidades</strong> y 
+          <strong>${sourceClase.indicadoresCount} Indicadores</strong>:
+        </p>
+
+        <div class="pm-clone-list">
+          ${otherClases
+            .map(
+              (c) => `
+            <label class="pm-clone-option">
+              <input type="radio" name="target_clase" value="${c.id}" />
+              <div class="pm-clone-option-info">
+                <strong>${escapeHtml(c.nombre)}</strong>
+                <span>${escapeHtml(c.instrumento || "General")} · ${c.hasRoute ? "⚠️ Ya tiene malla (se reemplazará)" : "✨ Sin malla configurada"}</span>
+              </div>
+            </label>
+          `
+            )
+            .join("")}
+        </div>
+      </div>
+
+      <div class="pm-clone-footer">
+        <button type="button" class="pm-btn-secondary pm-clone-cancel">Cancelar</button>
+        <button type="button" class="pm-btn-primary pm-clone-confirm" id="btn-confirm-clone" disabled>
+          <i class="bi bi-copy"></i> Duplicar Malla
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(backdrop)
+
+  const closeModal = () => backdrop.remove()
+  backdrop.querySelector(".pm-clone-close").addEventListener("click", closeModal)
+  backdrop.querySelector(".pm-clone-cancel").addEventListener("click", closeModal)
+
+  const confirmBtn = backdrop.querySelector("#btn-confirm-clone")
+  const radios = backdrop.querySelectorAll("input[name=target_clase]")
+
+  radios.forEach((r) => {
+    r.addEventListener("change", () => {
+      confirmBtn.disabled = false
+    })
+  })
+
+  confirmBtn.addEventListener("click", async () => {
+    const selectedRadio = backdrop.querySelector("input[name=target_clase]:checked")
+    if (!selectedRadio) return
+
+    const targetClaseId = selectedRadio.value
+    const targetClase = allClases.find((c) => c.id === targetClaseId)
+    confirmBtn.disabled = true
+    confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Duplicando...`
+
+    try {
+      // Create new route for target class with source hierarchy
+      await createRoute(
+        maestroId,
+        targetClaseId,
+        sourceClase.route.nombre,
+        sourceClase.route.unidades || []
+      )
+
+      AppToast.success(`Malla duplicada exitosamente hacia "${targetClase?.nombre || "la clase"}"!`)
+      closeModal()
+      onComplete()
+    } catch (err) {
+      console.error("[planificacionView] Error cloning route:", err)
+      AppToast.error(`Error al duplicar malla: ${err.message}`)
+      confirmBtn.disabled = false
+      confirmBtn.innerHTML = `<i class="bi bi-copy"></i> Duplicar Malla`
+    }
+  })
 }
 
 // ─── Estilos CSS Cuadrícula 2x Móvil & 3x Desktop ──────────────────────────────
@@ -721,12 +842,13 @@ function _injectStyles() {
 
     /* Actions Compact */
     .pm-compact-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.45rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
 
     .pm-btn-compact-primary {
+      flex: 1;
       border: none;
       background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
       color: #fff;
@@ -749,6 +871,7 @@ function _injectStyles() {
     }
 
     .pm-btn-compact-secondary {
+      flex: 1;
       border: 1px solid var(--pm-border, #cbd5e1);
       background: var(--pm-surface-2, #f8fafc);
       color: var(--pm-text, #334155);
@@ -769,68 +892,146 @@ function _injectStyles() {
       color: #0f172a;
     }
 
-    /* Loading & Empty States */
-    .pm-loading-card,
-    .pm-empty-card {
-      padding: 3.5rem 1.5rem;
-      text-align: center;
-      background: var(--pm-surface, #fff);
+    .pm-btn-compact-icon {
+      border: 1px solid var(--pm-border, #cbd5e1);
+      background: var(--pm-surface-2, #f8fafc);
+      color: #64748b;
+      padding: 0.48rem 0.55rem;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
+    }
+
+    .pm-btn-compact-icon:hover {
+      color: #4f46e5;
+      background: #f1f5f9;
+    }
+
+    /* Modal Clonar Malla */
+    .pm-clone-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 3000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .pm-clone-modal {
+      background: #1e293b;
+      color: #fff;
+      width: 100%;
+      max-width: 480px;
       border-radius: 18px;
-      border: 1px dashed var(--pm-border, #cbd5e1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      animation: pmr-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .pm-clone-header {
+      padding: 1.2rem 1.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .pm-clone-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #818cf8;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .pm-clone-header h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0.2rem 0 0;
+      color: #f8fafc;
+    }
+
+    .pm-clone-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .pm-clone-body {
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .pm-clone-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .pm-clone-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .pm-clone-option {
+      display: flex;
       align-items: center;
-      gap: 0.65rem;
-    }
-
-    .pm-empty-icon { font-size: 2.6rem; }
-    .pm-empty-title { font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--pm-text, #0f172a); }
-    .pm-empty-desc { font-size: 0.84rem; color: var(--pm-text-muted, #64748b); max-width: 400px; margin: 0; }
-
-    /* Dark Theme Support */
-    [data-theme="dark"] .pm-segmented-control {
-      background: rgba(15, 23, 42, 0.6);
-      border-color: rgba(255, 255, 255, 0.08);
-    }
-
-    [data-theme="dark"] .pm-seg-btn { color: #94a3b8; }
-    [data-theme="dark"] .pm-seg-btn:hover { color: #fff; }
-
-    [data-theme="dark"] .pm-search-box input {
-      background: #1e293b;
-      border-color: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-
-    [data-theme="dark"] .pm-compact-card {
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.85) 100%);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-color: rgba(255, 255, 255, 0.08);
-    }
-
-    [data-theme="dark"] .pm-compact-title { color: #fff; }
-
-    [data-theme="dark"] .pm-icon-hierarchy {
-      background: rgba(15, 23, 42, 0.7);
-      border-color: rgba(255, 255, 255, 0.06);
-    }
-
-    [data-theme="dark"] .pm-btn-compact-secondary {
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
       background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(255, 255, 255, 0.12);
-      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.18s ease;
     }
 
-    [data-theme="dark"] .pm-btn-compact-secondary:hover {
+    .pm-clone-option:hover {
       background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .pm-clone-option-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .pm-clone-option-info strong {
+      font-size: 0.88rem;
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-warning-chip {
-      background: rgba(245, 158, 11, 0.08);
-      border-color: rgba(245, 158, 11, 0.2);
-      color: #fde68a;
+    .pm-clone-option-info span {
+      font-size: 0.74rem;
+      color: #94a3b8;
+    }
+
+    .pm-clone-footer {
+      padding: 1rem 1.4rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
     }
 
     /* ── Mobile Viewport: Fijo 2 Columnas (repeat(2, 1fr)) ── */
@@ -865,7 +1066,6 @@ function _injectStyles() {
       .pm-search-box { width: 100%; }
       .pm-search-box input { padding: 0.45rem 0.8rem 0.45rem 32px; font-size: 16px; }
 
-      /* Fijo 2 Columnas en todas las pantallas de celular */
       .pm-compact-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 0.5rem;
@@ -908,7 +1108,7 @@ function _injectStyles() {
         font-size: 0.66rem;
       }
       .pm-compact-actions {
-        gap: 0.35rem;
+        gap: 0.3rem;
       }
       .pm-btn-compact-primary, .pm-btn-compact-secondary {
         min-height: 34px;
@@ -916,6 +1116,10 @@ function _injectStyles() {
         padding: 0.35rem 0.3rem;
         border-radius: 7px;
         gap: 3px;
+      }
+      .pm-btn-compact-icon {
+        min-height: 34px;
+        padding: 0.35rem 0.45rem;
       }
     }
   `

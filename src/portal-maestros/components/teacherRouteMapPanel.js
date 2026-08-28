@@ -350,6 +350,7 @@ function _renderDuolingoVerticalTrail(
  */
 function _showMissionPopover(anchorEl, target, checkSt, isLocked, prereqTarget, onEvaluateIndicador) {
   _closeMissionPopover()
+  anchorEl.classList.add("has-active-popover")
 
   const { ind, obj, u } = target
   const isCompleted = checkSt === "double"
@@ -419,6 +420,9 @@ function _showMissionPopover(anchorEl, target, checkSt, isLocked, prereqTarget, 
 }
 
 function _closeMissionPopover() {
+  document.querySelectorAll(".pmr-duo-node-wrap.has-active-popover").forEach((el) => {
+    el.classList.remove("has-active-popover")
+  })
   const existing = document.getElementById("pmr-active-mission-popover")
   if (existing) existing.remove()
 }
@@ -676,6 +680,10 @@ function _injectDuolingoStyles() {
       cursor: pointer;
     }
 
+    .pmr-duo-node-wrap.has-active-popover {
+      z-index: 1500 !important;
+    }
+
     /* 3D Duolingo Stepping Stone Button */
     .pmr-duo-button {
       width: 62px;
@@ -800,10 +808,10 @@ function _injectDuolingoStyles() {
       transform: translateX(-50%);
       width: 290px;
       background: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 16px;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
-      z-index: 100;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      z-index: 2500 !important;
       padding: 1rem;
       animation: pmr-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }

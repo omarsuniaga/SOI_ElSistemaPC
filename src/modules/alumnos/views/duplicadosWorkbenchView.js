@@ -239,22 +239,17 @@ export async function renderDuplicadosWorkbenchView(container) {
       if (item.esSubsetNombre) motivos.push('Nombre similar')
 
       return `
-        <div class="p-2.5 mb-2 rounded-3 border cursor-pointer item-cola-duplicado d-flex align-items-start gap-2.5 transition ${
+        <div class="p-2.5 mb-2 rounded-3 border cursor-pointer item-cola-duplicado d-flex flex-column gap-1.5 transition ${
           isSelected ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-body border-secondary-subtle'
         }" data-dupe-index="${idx}" role="button" style="cursor:pointer;">
-          <div class="avatar-compact ${isSelected ? 'bg-primary text-white' : 'bg-body-secondary text-body-secondary'} rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:34px;height:34px;font-size:0.85rem;">
-            ${escapeHTML(inicial)}
+          <div class="d-flex align-items-center justify-content-between gap-1">
+            <span class="fw-bold text-truncate text-body-emphasis small">${escapeHTML(item.a.nombre_completo || item.a.nombre || 'Alumno A')}</span>
+            <span class="badge ${pct >= 80 ? 'bg-success text-white' : 'bg-warning text-dark'} flex-shrink-0" style="font-size:0.68rem;">${pct}%</span>
           </div>
-          <div class="flex-grow-1 min-w-0">
-            <div class="d-flex align-items-center justify-content-between gap-1">
-              <span class="fw-bold text-truncate text-body-emphasis small">${escapeHTML(item.a.nombre_completo || item.a.nombre || 'Alumno A')}</span>
-              <span class="badge ${pct >= 80 ? 'bg-success text-white' : 'bg-warning text-dark'} flex-shrink-0" style="font-size:0.68rem;">${pct}%</span>
-            </div>
-            <div class="text-muted text-truncate" style="font-size:0.75rem;">
-              <i class="bi bi-arrow-return-right me-1 text-secondary"></i>${escapeHTML(item.b.nombre_completo || item.b.nombre || 'Alumno B')}
-            </div>
-            ${motivos.length ? `<div class="text-muted mt-1 text-truncate" style="font-size:0.7rem;"><i class="bi bi-tags me-1"></i>${escapeHTML(motivos.join(' · '))}</div>` : ''}
+          <div class="text-muted text-truncate" style="font-size:0.75rem;">
+            <i class="bi bi-arrow-return-right me-1 text-secondary"></i>${escapeHTML(item.b.nombre_completo || item.b.nombre || 'Alumno B')}
           </div>
+          ${motivos.length ? `<div class="text-muted mt-0.5 text-truncate" style="font-size:0.7rem;"><i class="bi bi-tags me-1"></i>${escapeHTML(motivos.join(' · '))}</div>` : ''}
         </div>
       `
     }).join('')
@@ -388,18 +383,13 @@ export async function renderDuplicadosWorkbenchView(container) {
           <div class="col-md-6">
             <div class="p-3 border rounded-4 cursor-pointer transition ${principalSide === 'a' ? 'border-primary shadow-sm bg-primary-subtle bg-opacity-10' : 'bg-body border-secondary-subtle'}" 
                  id="card-select-a" role="button" style="cursor:pointer;">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="d-flex align-items-center gap-2.5">
-                  <div class="avatar-compact ${principalSide === 'a' ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'} rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:38px;height:38px;">
-                    ${escapeHTML((pair.a.nombre_completo || pair.a.nombre || 'A').slice(0, 2).toUpperCase())}
-                  </div>
-                  <div>
-                    <div class="fw-bold text-body-emphasis">${escapeHTML(pair.a.nombre_completo || pair.a.nombre || 'Alumno A')}</div>
-                    <span class="text-muted font-monospace" style="font-size:0.72rem;">ID: ...${escapeHTML(String(pair.a.id || '').slice(-6))}</span>
-                  </div>
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <div class="min-w-0">
+                  <div class="fw-bold text-body-emphasis fs-6 text-truncate">${escapeHTML(pair.a.nombre_completo || pair.a.nombre || 'Alumno A')}</div>
+                  <span class="text-muted font-monospace" style="font-size:0.72rem;">ID: ...${escapeHTML(String(pair.a.id || '').slice(-6))}</span>
                 </div>
-                <span class="badge ${principalSide === 'a' ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary border'}">
-                  ${principalSide === 'a' ? '<i class="bi bi-check-circle-fill me-1"></i> Conservado (Principal)' : 'A absorber'}
+                <span class="badge ${principalSide === 'a' ? 'bg-primary text-white shadow-xs' : 'bg-secondary-subtle text-secondary border'} py-1.5 px-2.5 rounded-pill d-inline-flex align-items-center flex-shrink-0" style="font-size:0.72rem;">
+                  ${principalSide === 'a' ? '<i class="bi bi-check-circle-fill me-1"></i> Conservado (Principal)' : '<i class="bi bi-arrow-down-circle me-1"></i> A absorber'}
                 </span>
               </div>
 
@@ -418,18 +408,13 @@ export async function renderDuplicadosWorkbenchView(container) {
           <div class="col-md-6">
             <div class="p-3 border rounded-4 cursor-pointer transition ${principalSide === 'b' ? 'border-primary shadow-sm bg-primary-subtle bg-opacity-10' : 'bg-body border-secondary-subtle'}" 
                  id="card-select-b" role="button" style="cursor:pointer;">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="d-flex align-items-center gap-2.5">
-                  <div class="avatar-compact ${principalSide === 'b' ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'} rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:38px;height:38px;">
-                    ${escapeHTML((pair.b.nombre_completo || pair.b.nombre || 'B').slice(0, 2).toUpperCase())}
-                  </div>
-                  <div>
-                    <div class="fw-bold text-body-emphasis">${escapeHTML(pair.b.nombre_completo || pair.b.nombre || 'Alumno B')}</div>
-                    <span class="text-muted font-monospace" style="font-size:0.72rem;">ID: ...${escapeHTML(String(pair.b.id || '').slice(-6))}</span>
-                  </div>
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <div class="min-w-0">
+                  <div class="fw-bold text-body-emphasis fs-6 text-truncate">${escapeHTML(pair.b.nombre_completo || pair.b.nombre || 'Alumno B')}</div>
+                  <span class="text-muted font-monospace" style="font-size:0.72rem;">ID: ...${escapeHTML(String(pair.b.id || '').slice(-6))}</span>
                 </div>
-                <span class="badge ${principalSide === 'b' ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary border'}">
-                  ${principalSide === 'b' ? '<i class="bi bi-check-circle-fill me-1"></i> Conservado (Principal)' : 'A absorber'}
+                <span class="badge ${principalSide === 'b' ? 'bg-primary text-white shadow-xs' : 'bg-secondary-subtle text-secondary border'} py-1.5 px-2.5 rounded-pill d-inline-flex align-items-center flex-shrink-0" style="font-size:0.72rem;">
+                  ${principalSide === 'b' ? '<i class="bi bi-check-circle-fill me-1"></i> Conservado (Principal)' : '<i class="bi bi-arrow-down-circle me-1"></i> A absorber'}
                 </span>
               </div>
 

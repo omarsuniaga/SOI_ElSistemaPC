@@ -29,11 +29,14 @@ function triggerHaptic(duration = 15) {
 
 import { getMaestroLocal } from "../auth/maestroAuth.js"
 
+import { AppToast } from "../../shared/components/AppToast.js"
+
 export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
   try {
     const effectiveMaestro = maestro || getMaestroLocal() || {}
     let effectiveMaestroId = effectiveMaestro?.id || null
 
+    // 1. Try getPersonalRoutes if teacher id is available
     let routes = []
     if (effectiveMaestroId) {
       try {
@@ -43,18 +46,41 @@ export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
       }
     }
 
+    // 2. Fallback direct query by clase_id from maestro_routes
     if (!routes || routes.length === 0) {
       try {
-        const { getTeacherRoutes } = await import("../services/maestroRouteService.js")
-        routes = await getTeacherRoutes(effectiveMaestroId, claseId)
+        const { data: dbRoutes } = await supabase
+          .from("maestro_routes")
+          .select(`
+            id, maestro_id, clase_id, nombre, descripcion,
+            unidades:maestro_unidades(
+              id, orden, nombre, descripcion,
+              objetivos:maestro_objetivos(
+                id, orden, nombre, descripcion,
+                indicadores:maestro_indicadores(id, orden, nombre, criterios_json)
+              )
+            )
+          `)
+          .eq("clase_id", claseId)
+
+        if (dbRoutes && dbRoutes.length > 0) {
+          routes = dbRoutes
+          if (!effectiveMaestroId && dbRoutes[0].maestro_id) {
+            effectiveMaestroId = dbRoutes[0].maestro_id
+          }
+        }
       } catch (_e) {
         routes = []
       }
     }
 
+    // 3. If still no routes, open builder or notify
     if (!routes || routes.length === 0) {
-      openTeacherRoutePicker(effectiveMaestroId, claseId, () => {
-        abrirMapaDeRutas(claseId, effectiveMaestro, fechaHoy)
+      AppToast.info("Esta clase aún no tiene malla. Abriendo diseñador...")
+      openTeacherRouteBuilder({
+        maestroId: effectiveMaestroId,
+        claseId,
+        onSaved: () => abrirMapaDeRutas(claseId, effectiveMaestro, fechaHoy),
       })
       return
     }
@@ -63,6 +89,7 @@ export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
     await _renderMapaDeRutasPanel(route, claseId, effectiveMaestro, fechaHoy)
   } catch (err) {
     console.error("[abrirMapaDeRutas] Error opening map:", err)
+    AppToast.error("Error al abrir mapa: " + (err.message || err))
   }
 }
 
@@ -239,7 +266,7 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
     backdrop.querySelector("#pmr-btn-edit-route")?.addEventListener("click", () => {
       closeModal()
       openTeacherRouteBuilder({
-        maestroId: maestro.id,
+        maestroId: effectiveMaestroId || maestro?.id || null,
         claseId,
         route,
         onSaved: () => abrirMapaDeRutas(claseId, maestro, fechaHoy),
@@ -273,7 +300,7 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
               indicadorId: indicador.id,
               indicadorNombre: indicador.nombre,
               breadcrumb,
-              evaluadoPor: maestro.user_id,
+              evaluadoPor: maestro?.user_id || maestro?.id || null,
               onSaved: refrescar,
             })
           },

@@ -629,7 +629,7 @@ function _injectDuolingoStyles() {
       width: 100vw;
       height: 100vh;
       background: #0b0f19;
-      z-index: 2200;
+      z-index: 10000 !important;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -914,7 +914,7 @@ function _injectDuolingoStyles() {
     }
 
     .pmr-duo-node-wrap.has-active-popover {
-      z-index: 1500 !important;
+      z-index: 10050 !important;
     }
 
     /* 3D Duolingo Stepping Stone Button */

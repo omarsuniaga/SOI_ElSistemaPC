@@ -714,7 +714,7 @@ if (!document.getElementById('trb-styles')) {
       display: flex; align-items: center; justify-content: center;
       /* El footer móvil fuerza z-index 9999 — el modal debe quedar por
          encima para que "Guardar ruta" nunca quede tapado. */
-      z-index: 10000; padding: 1rem;
+      z-index: 10000 !important; padding: 1rem;
     }
     .trb-modal {
       background: var(--pm-surface, #fff); color: var(--pm-text, #111827);

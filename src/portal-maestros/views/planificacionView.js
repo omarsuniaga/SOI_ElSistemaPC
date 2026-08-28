@@ -1100,7 +1100,7 @@ function _injectStyles() {
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      z-index: 3000;
+      z-index: 10000 !important;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1108,7 +1108,7 @@ function _injectStyles() {
     }
 
     .pm-guide-modal-backdrop {
-      z-index: 3500;
+      z-index: 10000 !important;
     }
 
     .pm-clone-modal,

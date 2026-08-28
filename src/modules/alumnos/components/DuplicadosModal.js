@@ -7,8 +7,9 @@
  *  3. Selección de registro Principal mediante tarjetas interactivas "Radio Card".
  *  4. Fusión de clases transparente con desglose antes/después.
  *  5. Tabla de resolución de campos codificada por colores (Coincidencia / Completado / Conflicto).
- *  6. Botón informativo contextual "¿Cómo funciona la fusión?".
- *  7. Flujo continuo sin cierres abruptos.
+ *  6. Totalmente optimizado para Dark Mode y Light Mode mediante tokens de diseño Bootstrap 5.3 / CSS Vars.
+ *  7. Botón informativo contextual "¿Cómo funciona la fusión?".
+ *  8. Flujo continuo sin cierres abruptos.
  */
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -32,7 +33,7 @@ const NIVEL_BADGE = {
 }
 
 function formatearValor(v) {
-  if (v === null || v === undefined || v === '') return '<span class="text-muted fst-italic">— vacío —</span>'
+  if (v === null || v === undefined || v === '') return '<span class="text-body-secondary fst-italic opacity-50">— vacío —</span>'
   return escapeHTML(String(v))
 }
 
@@ -41,13 +42,13 @@ function formatearTipo(tipo) {
     completa: '<span class="badge rounded-pill border border-primary-subtle bg-primary-subtle text-primary py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-plus-circle me-1"></i>Completa datos</span>',
     coincide: '<span class="badge rounded-pill border border-success-subtle bg-success-subtle text-success py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-check2-circle me-1"></i>Idéntico</span>',
     conflicto: '<span class="badge rounded-pill border border-danger-subtle bg-danger-subtle text-danger py-1 px-2" style="font-size:0.7rem;"><i class="bi bi-exclamation-octagon-fill me-1"></i>Conflicto (elegir)</span>',
-    vacia: '<span class="badge rounded-pill border border-secondary-subtle bg-body-secondary text-muted py-1 px-2" style="font-size:0.7rem;">Sin datos</span>',
+    vacia: '<span class="badge rounded-pill border border-secondary-subtle bg-body-secondary text-body-secondary py-1 px-2" style="font-size:0.7rem;">Sin datos</span>',
   }
   return badges[tipo] || badges.vacia
 }
 
 function renderBadgesClases(clases, theme = 'primary') {
-  if (!clases || !clases.length) return '<span class="text-muted fst-italic small">— Sin clases registradas —</span>'
+  if (!clases || !clases.length) return '<span class="text-body-secondary fst-italic small opacity-75">— Sin clases registradas —</span>'
   return clases
     .map((c) => {
       const nombre = escapeHTML(c.nombre || 'Clase')
@@ -98,35 +99,35 @@ export const DuplicadosModal = {
             </div>
 
             <div class="d-flex flex-column gap-2.5">
-              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border border-secondary-subtle bg-body">
                 <span class="badge bg-primary rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">1</span>
                 <div>
                   <strong class="d-block small text-body">Registro Principal vs Secundario</strong>
-                  <span class="text-muted small">El alumno que elijas como <strong>Principal</strong> mantendrá su ID en el sistema. El <strong>Secundario</strong> será absorbido y eliminado.</span>
+                  <span class="text-body-secondary small">El alumno que elijas como <strong>Principal</strong> mantendrá su ID en el sistema. El <strong>Secundario</strong> será absorbido y eliminado.</span>
                 </div>
               </div>
 
-              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border border-secondary-subtle bg-body">
                 <span class="badge bg-success rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">2</span>
                 <div>
                   <strong class="d-block small text-body">Migración Total de Clases</strong>
-                  <span class="text-muted small">Todas las clases, asistencias y evaluaciones inscritas en ambos alumnos se unifican bajo el registro principal sin duplicarse.</span>
+                  <span class="text-body-secondary small">Todas las clases, asistencias y evaluaciones inscritas en ambos alumnos se unifican bajo el registro principal sin duplicarse.</span>
                 </div>
               </div>
 
-              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border border-secondary-subtle bg-body">
                 <span class="badge bg-info text-white rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">3</span>
                 <div>
                   <strong class="d-block small text-body">Resolución de Datos Faltantes</strong>
-                  <span class="text-muted small">Los datos vacíos del principal (como teléfono, cédula o representante) se completan automáticamente con los del secundario.</span>
+                  <span class="text-body-secondary small">Los datos vacíos del principal (como teléfono, cédula o representante) se completan automáticamente con los del secundario.</span>
                 </div>
               </div>
 
-              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border bg-body">
-                <span class="badge bg-warning text-dark rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">4</span>
+              <div class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 border border-secondary-subtle bg-body">
+                <span class="badge bg-warning text-black fw-bold rounded-circle p-2 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">4</span>
                 <div>
                   <strong class="d-block small text-body">Operación Atómica en Base de Datos</strong>
-                  <span class="text-muted small">La fusión se ejecuta en una sola transacción en Supabase/PostgreSQL. Si algo falla, ningún dato se modifica.</span>
+                  <span class="text-body-secondary small">La fusión se ejecuta en una sola transacción en Supabase/PostgreSQL. Si algo falla, ningún dato se modifica.</span>
                 </div>
               </div>
             </div>
@@ -148,8 +149,8 @@ export const DuplicadosModal = {
               <div class="p-3 rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3">
                 <i class="bi bi-check-circle-fill fs-1"></i>
               </div>
-              <h5 class="fw-bold mb-1">¡Base de datos limpia y unificada!</h5>
-              <p class="text-muted mb-0 small">No se encontraron más alumnos duplicados pendientes de revisión.</p>
+              <h5 class="fw-bold mb-1 text-body">¡Base de datos limpia y unificada!</h5>
+              <p class="text-body-secondary mb-0 small">No se encontraron más alumnos duplicados pendientes de revisión.</p>
             </div>
           `,
         })
@@ -169,12 +170,12 @@ export const DuplicadosModal = {
           if (d.esSubsetNombre) motivos.push('Nombre fonético similar')
 
           const motivosBadges = motivos
-            .map((m) => `<span class="badge bg-body-secondary text-body-secondary border rounded-pill px-2 py-0.5" style="font-size:0.68rem;"><i class="bi bi-check2 text-success me-0.5"></i>${escapeHTML(m)}</span>`)
+            .map((m) => `<span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size:0.68rem;"><i class="bi bi-check2 text-success me-0.5"></i>${escapeHTML(m)}</span>`)
             .join(' ')
 
           return `
             <div class="col-12 col-lg-6" id="duplicado-card-${idx}">
-              <div class="d-flex align-items-start gap-3 border rounded-4 p-3 bg-body shadow-xs hover-shadow transition-all h-100 position-relative">
+              <div class="d-flex align-items-start gap-3 border border-secondary-subtle rounded-4 p-3 bg-body shadow-xs hover-shadow transition-all h-100 position-relative">
                 <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:46px;height:46px;font-size:1.1rem;font-weight:700;">
                   ${escapeHTML((d.a.nombre_completo || d.a.nombre || '?').slice(0, 1).toUpperCase())}
                 </div>
@@ -183,7 +184,7 @@ export const DuplicadosModal = {
                     <strong class="text-body text-truncate" style="font-size:0.92rem;">${escapeHTML(d.a.nombre_completo || d.a.nombre || 'Sin nombre')}</strong>
                     <span class="badge rounded-pill ${badge.clase} flex-shrink-0 py-1 px-2.5" style="font-size:0.72rem;"><i class="bi ${badge.icono} me-1"></i>${pct}% similitud</span>
                   </div>
-                  <div class="text-muted small text-truncate mb-1.5"><i class="bi bi-arrow-left-right me-1 text-secondary"></i>${escapeHTML(d.b.nombre_completo || d.b.nombre || 'Sin nombre')}</div>
+                  <div class="text-body-secondary small text-truncate mb-1.5"><i class="bi bi-arrow-left-right me-1 text-secondary"></i>${escapeHTML(d.b.nombre_completo || d.b.nombre || 'Sin nombre')}</div>
                   <div class="d-flex flex-wrap gap-1">${motivosBadges}</div>
                 </div>
                 <div class="d-flex flex-column gap-1.5 flex-shrink-0 align-self-center">
@@ -208,13 +209,13 @@ export const DuplicadosModal = {
         cancelText: 'Cerrar',
         body: `
           <div class="p-2">
-            <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-body-tertiary border mb-3 shadow-xs flex-wrap gap-2">
+            <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-body-tertiary border border-secondary-subtle mb-3 shadow-xs flex-wrap gap-2">
               <div>
                 <h6 class="fw-bold mb-0.5 text-body d-flex align-items-center gap-2">
                   <i class="bi bi-people text-primary"></i>
                   <span>Posibles coincidencias en la base de datos</span>
                 </h6>
-                <small class="text-muted">Se encontraron <strong>${duplicados.length}</strong> parejas que corresponden a la misma persona.</small>
+                <small class="text-body-secondary">Se encontraron <strong>${duplicados.length}</strong> parejas que corresponden a la misma persona.</small>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1.5 shadow-xs fw-semibold" id="btnInfoGuiaLista">
@@ -248,7 +249,7 @@ export const DuplicadosModal = {
       })
     }
 
-    // ── Fusión Rápida Inteligente ────────────────────────────────────────────
+    // ── Fusión Rápida Inteligente ────────────────────────────────────
     async function ejecutarFusionRapida(duplicado, listaActual) {
       try {
         AppModal.showLoading('Ejecutando fusión rápida en base de datos...')
@@ -336,11 +337,11 @@ export const DuplicadosModal = {
           const resultante = formatearValor(campo.valorFusionado)
 
           let filaClase = ''
-          if (campo.tipo === 'conflicto') filaClase = 'table-danger bg-danger-subtle bg-opacity-10'
-          else if (campo.tipo === 'completa') filaClase = 'table-primary bg-primary-subtle bg-opacity-10'
+          if (campo.tipo === 'conflicto') filaClase = 'bg-danger bg-opacity-10'
+          else if (campo.tipo === 'completa') filaClase = 'bg-primary bg-opacity-10'
 
           const celdaResultante = campo.puedeElegir
-            ? `<select class="form-select form-select-sm rounded-3 shadow-xs border-primary fw-semibold py-1 bg-white" data-fusion-key="${campo.key}" data-fusion-label="${escapeHTML(campo.label)}" style="font-size:0.8rem;">
+            ? `<select class="form-select form-select-sm rounded-3 shadow-xs border-primary fw-semibold py-1 bg-body text-body" data-fusion-key="${campo.key}" data-fusion-label="${escapeHTML(campo.label)}" style="font-size:0.8rem;">
                 <option value="__principal__" ${campo.valorFusionado === campo.valorPrincipal ? 'selected' : ''}>${escapeHTML(campo.valorPrincipal)} (de Principal)</option>
                 <option value="__obsoleto__" ${campo.valorFusionado === campo.valorObsoleto ? 'selected' : ''}>${escapeHTML(campo.valorObsoleto)} (de Secundario)</option>
               </select>`
@@ -353,7 +354,7 @@ export const DuplicadosModal = {
                 <div class="mt-0.5">${badge}</div>
               </td>
               <td class="py-2.5 align-middle small text-body">${principalValor}</td>
-              <td class="py-2.5 align-middle small text-muted">${obsoletoValor}</td>
+              <td class="py-2.5 align-middle small text-body-secondary">${obsoletoValor}</td>
               <td class="py-2.5 align-middle">${celdaResultante}</td>
             </tr>
           `
@@ -368,8 +369,8 @@ export const DuplicadosModal = {
 
         const filasPorGrupo = Object.entries(grupos)
           .map(([grupo, campos]) => `
-            <tr class="table-light">
-              <td colspan="4" class="py-1.5 fw-bold text-uppercase text-secondary" style="font-size:0.75rem; letter-spacing:0.04em;"><i class="bi bi-folder2-open me-1"></i>${escapeHTML(grupo)}</td>
+            <tr class="bg-body-secondary bg-opacity-50">
+              <td colspan="4" class="py-1.5 fw-bold text-uppercase text-body-secondary" style="font-size:0.75rem; letter-spacing:0.04em;"><i class="bi bi-folder2-open me-1"></i>${escapeHTML(grupo)}</td>
             </tr>
             ${campos.map(renderFila).join('')}
           `)
@@ -387,12 +388,12 @@ export const DuplicadosModal = {
           <div class="d-flex flex-column gap-3 pb-2">
             
             <!-- Barra Superior de Navegación e Información -->
-            <div class="d-flex justify-content-between align-items-center pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
+            <div class="d-flex justify-content-between align-items-center pb-2 border-bottom border-secondary-subtle flex-wrap gap-2 flex-shrink-0">
               <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 shadow-xs fw-semibold" id="btnVolverALista">
                   <i class="bi bi-arrow-left me-1"></i>Volver a la lista
                 </button>
-                <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1">
                   Pareja ${currentIndex + 1} de ${listaCompletaDuplicados.length}
                 </span>
               </div>
@@ -405,15 +406,15 @@ export const DuplicadosModal = {
             </div>
 
             <!-- BANNER PRINCIPAL DE COINCIDENCIA: ¿Quiénes coinciden y por qué? -->
-            <div class="p-3 rounded-4 bg-body-tertiary border shadow-xs">
-              <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-wrap gap-2">
+            <div class="p-3 rounded-4 bg-body-tertiary border border-secondary-subtle shadow-xs">
+              <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary-subtle flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <span class="badge bg-primary text-white rounded-circle p-2" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
                     <i class="bi bi-link-45deg"></i>
                   </span>
                   <div>
                     <strong class="text-body d-block" style="font-size:0.95rem;">Coincidencia detectada entre 2 expedientes</strong>
-                    <small class="text-muted">Selecciona abajo cuál de los dos deseas conservar como registro principal.</small>
+                    <small class="text-body-secondary">Selecciona abajo cuál de los dos deseas conservar como registro principal.</small>
                   </div>
                 </div>
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-bold" style="font-size:0.82rem;">
@@ -423,7 +424,7 @@ export const DuplicadosModal = {
 
               <!-- Motivos exactos de coincidencia -->
               <div class="d-flex align-items-center gap-1.5 flex-wrap pt-1">
-                <span class="small fw-semibold text-secondary me-1"><i class="bi bi-fingerprint text-primary me-1"></i>Motivos detectados:</span>
+                <span class="small fw-semibold text-body-secondary me-1"><i class="bi bi-fingerprint text-primary me-1"></i>Motivos detectados:</span>
                 ${motivosHTML}
               </div>
             </div>
@@ -433,15 +434,15 @@ export const DuplicadosModal = {
               
               <!-- Tarjeta Alumno A -->
               <div class="col-12 col-md-6">
-                <div class="p-3 rounded-4 border transition-all h-100 ${principal.id === duplicado.a.id ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary-subtle bg-body opacity-75'} position-relative" style="cursor:pointer;" id="card-select-alumno-a">
+                <div class="p-3 rounded-4 border transition-all h-100 ${principal.id === duplicado.a.id ? 'border-2 border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary-subtle bg-body-tertiary bg-opacity-50'} position-relative" style="cursor:pointer;" id="card-select-alumno-a">
                   <div class="d-flex justify-content-between align-items-start mb-2">
                     <div class="d-flex align-items-center gap-2.5">
-                      <div class="avatar-compact ${principal.id === duplicado.a.id ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'} d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:42px;height:42px;font-weight:700;">
+                      <div class="avatar-compact ${principal.id === duplicado.a.id ? 'bg-primary text-white' : 'bg-body-secondary text-body-secondary border border-secondary-subtle'} d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:42px;height:42px;font-weight:700;">
                         ${escapeHTML((duplicado.a.nombre_completo || duplicado.a.nombre || 'A').slice(0, 1).toUpperCase())}
                       </div>
                       <div>
                         <strong class="text-body d-block" style="font-size:0.95rem;">${escapeHTML(duplicado.a.nombre_completo || duplicado.a.nombre || 'Alumno A')}</strong>
-                        <small class="text-muted">ID: ${duplicado.a.id}</small>
+                        <small class="text-body-secondary">ID: ${duplicado.a.id}</small>
                       </div>
                     </div>
 
@@ -451,7 +452,7 @@ export const DuplicadosModal = {
                     }
                   </div>
 
-                  <div class="d-flex flex-column gap-1 small text-muted my-2.5" style="font-size:0.78rem;">
+                  <div class="d-flex flex-column gap-1 small text-body-secondary my-2.5" style="font-size:0.78rem;">
                     <div><i class="bi ${getInstrumentoIcon(duplicado.a.instrumento_principal || duplicado.a.instrumento)} text-primary me-1.5"></i>Cátedra: <strong class="text-body">${escapeHTML(duplicado.a.instrumento_principal || duplicado.a.instrumento || 'No especificada')}</strong></div>
                     <div><i class="bi bi-card-heading text-secondary me-1.5"></i>Cédula: <strong class="text-body">${escapeHTML(duplicado.a.cedula || 'No registrada')}</strong></div>
                     <div><i class="bi bi-calendar-event text-secondary me-1.5"></i>Nacimiento: <strong class="text-body">${formatDate(duplicado.a.fecha_nacimiento)}</strong></div>
@@ -459,8 +460,8 @@ export const DuplicadosModal = {
                     <div><i class="bi bi-person-heart text-danger me-1.5"></i>Representante: <strong class="text-body">${escapeHTML(duplicado.a.padre_nombre || duplicado.a.madre_nombre || duplicado.a.familiar_nombre || 'No registrado')}</strong></div>
                   </div>
 
-                  <div class="pt-2 border-top">
-                    <small class="text-muted fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases inscritas (${clasesA.length}):</small>
+                  <div class="pt-2 border-top border-secondary-subtle">
+                    <small class="text-body-secondary fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases inscritas (${clasesA.length}):</small>
                     <div class="d-flex flex-wrap gap-1">${renderBadgesClases(clasesA, 'primary')}</div>
                   </div>
 
@@ -474,15 +475,15 @@ export const DuplicadosModal = {
 
               <!-- Tarjeta Alumno B -->
               <div class="col-12 col-md-6">
-                <div class="p-3 rounded-4 border transition-all h-100 ${principal.id === duplicado.b.id ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary-subtle bg-body opacity-75'} position-relative" style="cursor:pointer;" id="card-select-alumno-b">
+                <div class="p-3 rounded-4 border transition-all h-100 ${principal.id === duplicado.b.id ? 'border-2 border-primary bg-primary bg-opacity-10 shadow-sm' : 'border-secondary-subtle bg-body-tertiary bg-opacity-50'} position-relative" style="cursor:pointer;" id="card-select-alumno-b">
                   <div class="d-flex justify-content-between align-items-start mb-2">
                     <div class="d-flex align-items-center gap-2.5">
-                      <div class="avatar-compact ${principal.id === duplicado.b.id ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'} d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:42px;height:42px;font-weight:700;">
+                      <div class="avatar-compact ${principal.id === duplicado.b.id ? 'bg-primary text-white' : 'bg-body-secondary text-body-secondary border border-secondary-subtle'} d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:42px;height:42px;font-weight:700;">
                         ${escapeHTML((duplicado.b.nombre_completo || duplicado.b.nombre || 'B').slice(0, 1).toUpperCase())}
                       </div>
                       <div>
                         <strong class="text-body d-block" style="font-size:0.95rem;">${escapeHTML(duplicado.b.nombre_completo || duplicado.b.nombre || 'Alumno B')}</strong>
-                        <small class="text-muted">ID: ${duplicado.b.id}</small>
+                        <small class="text-body-secondary">ID: ${duplicado.b.id}</small>
                       </div>
                     </div>
 
@@ -492,7 +493,7 @@ export const DuplicadosModal = {
                     }
                   </div>
 
-                  <div class="d-flex flex-column gap-1 small text-muted my-2.5" style="font-size:0.78rem;">
+                  <div class="d-flex flex-column gap-1 small text-body-secondary my-2.5" style="font-size:0.78rem;">
                     <div><i class="bi ${getInstrumentoIcon(duplicado.b.instrumento_principal || duplicado.b.instrumento)} text-primary me-1.5"></i>Cátedra: <strong class="text-body">${escapeHTML(duplicado.b.instrumento_principal || duplicado.b.instrumento || 'No especificada')}</strong></div>
                     <div><i class="bi bi-card-heading text-secondary me-1.5"></i>Cédula: <strong class="text-body">${escapeHTML(duplicado.b.cedula || 'No registrada')}</strong></div>
                     <div><i class="bi bi-calendar-event text-secondary me-1.5"></i>Nacimiento: <strong class="text-body">${formatDate(duplicado.b.fecha_nacimiento)}</strong></div>
@@ -500,8 +501,8 @@ export const DuplicadosModal = {
                     <div><i class="bi bi-person-heart text-danger me-1.5"></i>Representante: <strong class="text-body">${escapeHTML(duplicado.b.padre_nombre || duplicado.b.madre_nombre || duplicado.b.familiar_nombre || 'No registrado')}</strong></div>
                   </div>
 
-                  <div class="pt-2 border-top">
-                    <small class="text-muted fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases inscritas (${clasesB.length}):</small>
+                  <div class="pt-2 border-top border-secondary-subtle">
+                    <small class="text-body-secondary fw-semibold d-block mb-1" style="font-size:0.72rem;">Clases inscritas (${clasesB.length}):</small>
                     <div class="d-flex flex-wrap gap-1">${renderBadgesClases(clasesB, 'warning')}</div>
                   </div>
 
@@ -530,8 +531,8 @@ export const DuplicadosModal = {
             </div>
 
             <!-- TABLA DE RESOLUCIÓN CAMPO A CAMPO -->
-            <div class="p-3 rounded-4 border bg-body shadow-xs">
-              <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
+            <div class="p-3 rounded-4 border border-secondary-subtle bg-body shadow-xs">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary-subtle flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <i class="bi bi-table text-primary"></i>
                   <strong class="small text-uppercase text-body" style="font-size:0.8rem;">Resolución de Datos Campo a Campo</strong>
@@ -542,9 +543,9 @@ export const DuplicadosModal = {
                 </div>
               </div>
 
-              <div class="table-responsive rounded-3 border" style="max-height: 480px; overflow-y: auto;">
+              <div class="table-responsive rounded-3 border border-secondary-subtle" style="max-height: 480px; overflow-y: auto;">
                 <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
-                  <thead class="table-light sticky-top">
+                  <thead class="sticky-top bg-body-tertiary border-bottom border-secondary-subtle">
                     <tr>
                       <th style="width:25%; font-size:0.75rem;">Campo</th>
                       <th style="width:25%; font-size:0.75rem;">En Alumno Principal (${escapeHTML(principal.nombre_completo || principal.nombre)})</th>
@@ -556,9 +557,9 @@ export const DuplicadosModal = {
                 </table>
               </div>
 
-              <div class="text-muted small mt-2.5 pt-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-1" style="font-size:0.75rem;">
+              <div class="text-body-secondary small mt-2.5 pt-2 border-top border-secondary-subtle d-flex align-items-center justify-content-between flex-wrap gap-1" style="font-size:0.75rem;">
                 <span><i class="bi bi-shield-fill-check text-success me-1"></i>La fusión es atómica y transaccional en base de datos.</span>
-                <span class="text-secondary"><i class="bi bi-info-circle me-1"></i>Puedes cambiar cualquier valor en caso de conflicto antes de confirmar.</span>
+                <span class="text-body-secondary"><i class="bi bi-info-circle me-1"></i>Puedes cambiar cualquier valor en caso de conflicto antes de confirmar.</span>
               </div>
             </div>
 

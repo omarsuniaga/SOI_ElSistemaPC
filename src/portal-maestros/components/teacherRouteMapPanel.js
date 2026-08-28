@@ -27,18 +27,43 @@ function triggerHaptic(duration = 15) {
   }
 }
 
+import { getMaestroLocal } from "../auth/maestroAuth.js"
+
 export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
-  const routes = await getPersonalRoutes(maestro.id, claseId, true)
+  try {
+    const effectiveMaestro = maestro || getMaestroLocal() || {}
+    let effectiveMaestroId = effectiveMaestro?.id || null
 
-  if (!routes || routes.length === 0) {
-    openTeacherRoutePicker(maestro.id, claseId, () => {
-      abrirMapaDeRutas(claseId, maestro, fechaHoy)
-    })
-    return
+    let routes = []
+    if (effectiveMaestroId) {
+      try {
+        routes = await getPersonalRoutes(effectiveMaestroId, claseId, true)
+      } catch (_e) {
+        routes = []
+      }
+    }
+
+    if (!routes || routes.length === 0) {
+      try {
+        const { getTeacherRoutes } = await import("../services/maestroRouteService.js")
+        routes = await getTeacherRoutes(effectiveMaestroId, claseId)
+      } catch (_e) {
+        routes = []
+      }
+    }
+
+    if (!routes || routes.length === 0) {
+      openTeacherRoutePicker(effectiveMaestroId, claseId, () => {
+        abrirMapaDeRutas(claseId, effectiveMaestro, fechaHoy)
+      })
+      return
+    }
+
+    const route = routes[0]
+    await _renderMapaDeRutasPanel(route, claseId, effectiveMaestro, fechaHoy)
+  } catch (err) {
+    console.error("[abrirMapaDeRutas] Error opening map:", err)
   }
-
-  const route = routes[0]
-  await _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy)
 }
 
 async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {

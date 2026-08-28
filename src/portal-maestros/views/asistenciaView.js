@@ -221,13 +221,17 @@ export async function renderAsistenciaView(
     // suplente) — de lo contrario cada actor crea su propia fila paralela.
     // El filtro por dueño legítimo se aplica después, en JS, una vez que se
     // conoce `clase` (ver maestroIdSesion más abajo).
-    const [misClases, todosHorarios, todasInscripciones, sesionRes] = await Promise.all([
+    // ── Batch 1 Unificado: Traer clases, horarios, inscripciones, sesiones, asistencias y justificaciones en paralelo ──
+    const [
+      misClases,
+      todosHorarios,
+      todasInscripciones,
+      sesionRes,
+      asistenciasRes,
+    ] = await Promise.all([
       getMisClases(), // cache: 1min
       getHorariosClases([claseId]), // cache: 5min
       getInscripcionesClases([claseId]), // cache: 2min
-      // Traer TODAS las sesiones del día para consolidar asistencia.
-      // Es posible que existan dos registros: uno registrado (borrador=false, asistencia vacía)
-      // y uno borrador (borrador=true, con la asistencia real). Consolidamos ambos.
       supabase
         .from('sesiones_clase')
         .select('*')
@@ -235,6 +239,11 @@ export async function renderAsistenciaView(
         .eq('fecha', fechaHoy)
         .order('borrador', { ascending: true })   // registradas primero
         .order('updated_at', { ascending: false }), // más reciente primero dentro de cada grupo
+      supabase
+        .from('asistencias')
+        .select('alumno_id, estado, sesion_clase_id')
+        .eq('clase_id', claseId)
+        .eq('fecha', fechaHoy),
     ])
     const clase = misClases.find((c) => c.id === claseId)
     if (!clase) {
@@ -242,19 +251,11 @@ export async function renderAsistenciaView(
       return
     }
 
-    // Dueño de la sesión de HOY: siempre el titular cuando se conoce (regla
-    // 4.3 de SPEC_suplencias_auditoria.md — lo que registra el suplente se
-    // guarda en la clase del titular, nunca en una fila propia del suplente).
-    // idsRelevantes filtra las sesiones traídas (clase_id+fecha, sin
-    // maestro_id) a solo las que pertenecen a esta relación titular/suplente,
-    // para no mezclar por accidente sesiones de otro maestro que comparta
-    // clase_id por otra vía (ej. clase_horarios con maestro_id propio en otro
-    // horario del mismo día).
+    // Dueño de la sesión de HOY: siempre el titular cuando se conoce
     const { maestroIdSesion, esSuplente: esSuplenteDeEstaClase, idsRelevantes } =
       resolverPertenenciaClase(clase, maestro.id)
 
-    // Bitácora: registra la simple entrada del suplente a la clase (SPEC
-    // §5.2). No bloquea el render — es trazabilidad, no autorización.
+    // Bitácora: registra la simple entrada del suplente a la clase (asíncrono sin bloquear)
     if (esSuplenteDeEstaClase) {
       logSubstituteActivity({
         action: 'SUBSTITUTE_ENTER',
@@ -268,10 +269,6 @@ export async function renderAsistenciaView(
 
     const horario = todosHorarios.find((h) => h.dia?.toLowerCase() === diaHoy)
 
-    // Bug real encontrado: antes esto descartaba hora_inicio/hora_fin/dia de
-    // cada inscripción, así que el turno individual de clases rotativas
-    // nunca llegaba al alumno — StudentList.js lo esperaba pero `tieneTurno`
-    // siempre daba falso.
     let alumnos = (todasInscripciones || [])
       .map((i) => (i.alumnos ? { ...i.alumnos, hora_inicio: i.hora_inicio, hora_fin: i.hora_fin, dia: i.dia } : null))
       .filter(Boolean)
@@ -285,11 +282,9 @@ export async function renderAsistenciaView(
     const todasSesionesHoy = (sesionRes.data || []).filter((s) => idsRelevantes.has(String(s.maestro_id)))
     const sesionExistenteData = todasSesionesHoy[0] || null
 
-    // Merge asistencia from ALL sessions of the day — the registered session may have
-    // empty asistencia[] while a borrador session holds the actual attendance data.
+    // Merge asistencia from ALL sessions of the day
     const asistenciaMerged = (() => {
       const merged = new Map()
-      // Iterate all sessions (drafts after registered, so registered wins on conflict)
       for (const s of [...todasSesionesHoy].reverse()) {
         if (Array.isArray(s.asistencia)) {
           s.asistencia.forEach((item) => {
@@ -299,6 +294,7 @@ export async function renderAsistenciaView(
       }
       return [...merged.entries()].map(([alumno_id, estado]) => ({ alumno_id, estado }))
     })()
+
     const selectedEmergentStudentIds = Array.isArray(sesionExistenteData?.asistencia)
       ? sesionExistenteData.asistencia.map((item) => item?.alumno_id).filter(Boolean)
       : []
@@ -324,18 +320,61 @@ export async function renderAsistenciaView(
     const serverUpdatedAt = sesionExistenteData?.updated_at || null
     const serverDSL = sesionExistenteData?.contenido || ''
 
-    // ── Batch 2: snapshots + salón (en paralelo) ──
+    // ── Batch 2: snapshots + salón + ruta + justificaciones (en paralelo ultra-rápido) ──
     const salonIds = clase.salon ? [clase.salon] : []
-    const [snapshots, salonesData] = await Promise.all([
-      sesionId
-        ? supabase
+    const primerInstrumento = clase.instrumento ? clase.instrumento.split(',')[0].trim().toLowerCase() : ''
+
+    const fetchSnapshots = async () => {
+      if (!sesionId) return []
+      try {
+        const { data } = await supabase
           .from('class_session_content_snapshots')
           .select('*')
           .eq('session_id', sesionId)
-          .then((r) => r.data || [])
-        : Promise.resolve([]),
+        return data || []
+      } catch (_e) {
+        return []
+      }
+    }
+
+    const fetchRouteVersion = async () => {
+      if (!primerInstrumento) return null
+      try {
+        const query = supabase.from('routes').select('id, route_versions!inner(id)')
+        if (typeof query?.ilike === 'function') {
+          const { data: routeData } = await query
+            .ilike('instrument', `%${primerInstrumento}%`)
+            .eq('route_versions.status', 'published')
+            .limit(1)
+            .maybeSingle()
+          return routeData?.route_versions?.[0]?.id || routeData?.route_versions?.id || null
+        }
+      } catch (_e) {
+        console.warn('[asistencia] No se pudo resolver route_version_id:', _e)
+      }
+      return null
+    }
+
+    const fetchJustificaciones = async () => {
+      if (!sesionId) return []
+      try {
+        const { data } = await supabase
+          .from('justificaciones')
+          .select('alumno_id')
+          .eq('sesion_id', sesionId)
+        return data || []
+      } catch (_e) {
+        return []
+      }
+    }
+
+    const [snapshots, salonesData, rutaId, justificacionesRes] = await Promise.all([
+      fetchSnapshots(),
       salonIds.length > 0 ? getSalones(salonIds) : Promise.resolve([]), // cache: 1hr
+      fetchRouteVersion(),
+      fetchJustificaciones(),
     ])
+
     const salonNombre = salonesData.length > 0 ? salonesData[0].nombre : null
 
     // Detectar conflicto
@@ -348,29 +387,6 @@ export async function renderAsistenciaView(
       if (serverTs > localTs + 5000) hasConflict = true
     }
 
-    // ── Resolve route_version_id for the class via instrumento ──
-    let rutaId = null
-    try {
-      // clases.instrumento may be "Violín", "Violines", "Violín, Viola", etc.
-      // routes.instrument is lowercase "violín"
-      // Strategy: normalize clase instrumento, match first word against routes
-      const claseRow = misClases?.find((c) => c.id === claseId)
-      const instrumento = claseRow?.instrumento
-      if (instrumento) {
-        const primerInstrumento = instrumento.split(',')[0].trim().toLowerCase()
-        const { data: routeData } = await supabase
-          .from('routes')
-          .select('id, route_versions!inner(id)')
-          .ilike('instrument', `%${primerInstrumento}%`)
-          .eq('route_versions.status', 'published')
-          .limit(1)
-          .maybeSingle()
-        rutaId = routeData?.route_versions?.[0]?.id || routeData?.route_versions?.id || null
-      }
-    } catch (_e) {
-      console.warn('[asistencia] No se pudo resolver route_version_id:', _e)
-    }
-
     // === Estado local ===
     const estado = {}
     const justificaciones = {}
@@ -378,53 +394,17 @@ export async function renderAsistenciaView(
       estado[a.id] = null
     })
 
-    // Si hay sesión guardada, restaurar estados de asistencia
-    // Source 1: JSONB consolidado de TODAS las sesiones del día.
-    // La sesión registrada puede tener asistencia=[] mientras el borrador tiene los datos reales.
+    // Restaurar estados de asistencia
     let serverAsistencia = asistenciaMerged
-
     const _DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }
 
-    // Source 2: asistencias table — query by sesion_clase_id first, then clase_id+fecha fallback.
-    // This covers: records saved before sesion_clause_id was added, offline saves, and any
-    // case where the JSONB field is empty despite having DB records.
-    if (serverAsistencia.length === 0) {
-      try {
-        // 2a: by ALL sesion_ids from today (covers split-session scenario where
-        // the registered session has asistencia=[] but a borrador session holds the data)
-        let asistenciasDB = null
-        const allSesionIds = todasSesionesHoy.map((s) => s.id).filter(Boolean)
-        if (allSesionIds.length > 0) {
-          const { data } = await supabase
-            .from('asistencias')
-            .select('alumno_id, estado')
-            .in('sesion_clase_id', allSesionIds)
-          asistenciasDB = data
-        }
-
-        // 2b: fallback by clase_id + fecha (catches records without sesion_clase_id)
-        if ((!asistenciasDB || asistenciasDB.length === 0) && claseId && fechaHoy) {
-          const { data } = await supabase
-            .from('asistencias')
-            .select('alumno_id, estado')
-            .eq('clase_id', claseId)
-            .eq('fecha', fechaHoy)
-          asistenciasDB = data
-        }
-
-        if (asistenciasDB?.length > 0) {
-          serverAsistencia = asistenciasDB.map((a) => ({
-            alumno_id: a.alumno_id,
-            estado: _DB_TO_UI[a.estado] ?? a.estado,
-          }))
-        }
-      } catch (_e) {
-        console.warn('[asistencia] No se pudo restaurar desde tabla asistencias:', _e)
-      }
+    if (serverAsistencia.length === 0 && asistenciasRes?.data?.length > 0) {
+      serverAsistencia = asistenciasRes.data.map((a) => ({
+        alumno_id: a.alumno_id,
+        estado: _DB_TO_UI[a.estado] ?? a.estado,
+      }))
     }
 
-
-    // Normalize any full DB values back to UI abbreviations (reuse _DB_TO_UI map)
     serverAsistencia.forEach((item) => {
       if (Object.prototype.hasOwnProperty.call(estado, item.alumno_id)) {
         const estadoNorm = _DB_TO_UI[item.estado] ?? item.estado
@@ -432,23 +412,13 @@ export async function renderAsistenciaView(
       }
     })
 
-    // Restaurar estados "J" desde justificaciones (fuente de verdad para justificación)
-    let justificacionesRegistradas = []
-    if (sesionId) {
-      try {
-        justificacionesRegistradas = await supabase
-          .from('justificaciones')
-          .select('alumno_id')
-          .eq('sesion_id', sesionId)
-          .then((r) => r.data || [])
-        justificacionesRegistradas.forEach((j) => {
-          if (Object.prototype.hasOwnProperty.call(estado, j.alumno_id)) {
-            estado[j.alumno_id] = 'J'
-          }
-        })
-      } catch (_e) {
-        console.warn('[asistencia] No se pudieron restaurar justificaciones:', _e)
-      }
+    // Restaurar estados "J" desde justificaciones
+    if (Array.isArray(justificacionesRes)) {
+      justificacionesRes.forEach((j) => {
+        if (Object.prototype.hasOwnProperty.call(estado, j.alumno_id)) {
+          estado[j.alumno_id] = 'J'
+        }
+      })
     }
 
     // === Render ===

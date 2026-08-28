@@ -8,7 +8,6 @@ import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm } from '../components/AlumnoForm.js'
 import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
 import { PostuladosBackfillModal } from '../components/PostuladosBackfillModal.js'
-import { DuplicadosModal } from '../components/DuplicadosModal.js'
 import { Ficha360Modal } from '../components/Ficha360Modal.js'
 import {
   obtenerAlumnos,

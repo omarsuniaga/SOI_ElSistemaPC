@@ -440,7 +440,7 @@ export async function renderAlumnosView(container) {
     container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV(), { signal })
 
     container.querySelector('#btnDetectarDuplicados')?.addEventListener('click', () => {
-      router.navigate('alumnos-duplicados')
+      router.navigate('alumnos/duplicados')
     }, { signal })
 
     container.querySelector('#btnConciliarPostulados')?.addEventListener('click', () => {

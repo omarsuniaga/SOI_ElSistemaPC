@@ -30,11 +30,60 @@ export const router = {
     document.body.style.removeProperty('padding-right')
   },
 
+  _matchRoute(path) {
+    if (!path) return null
+    const cleanPath = String(path).replace(/^#\/?/, '').replace(/^\/+|\/+$/g, '')
+
+    // 1. Coincidencia exacta directa
+    if (this.routes[cleanPath]) {
+      return { renderFn: this.routes[cleanPath], matchedRoute: cleanPath, routeParams: {} }
+    }
+
+    // 2. Coincidencia por patrón con parámetros dinámicos (:param)
+    for (const pattern of Object.keys(this.routes)) {
+      if (!pattern.includes(':')) continue
+      const patternParts = pattern.replace(/^\/+|\/+$/g, '').split('/')
+      const pathParts = cleanPath.split('/')
+
+      if (patternParts.length !== pathParts.length) continue
+
+      const routeParams = {}
+      let match = true
+
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          const paramName = patternParts[i].slice(1)
+          routeParams[paramName] = decodeURIComponent(pathParts[i])
+        } else if (patternParts[i] !== pathParts[i]) {
+          match = false
+          break
+        }
+      }
+
+      if (match) {
+        return { renderFn: this.routes[pattern], matchedRoute: pattern, routeParams }
+      }
+    }
+
+    // 3. Fallback inteligente por variantes (ej. 'alumnos-duplicados' <-> 'alumnos/duplicados')
+    const slashVersion = cleanPath.replace(/-/g, '/')
+    if (this.routes[slashVersion]) {
+      return { renderFn: this.routes[slashVersion], matchedRoute: slashVersion, routeParams: {} }
+    }
+
+    const hyphenVersion = cleanPath.replace(/\//g, '-')
+    if (this.routes[hyphenVersion]) {
+      return { renderFn: this.routes[hyphenVersion], matchedRoute: hyphenVersion, routeParams: {} }
+    }
+
+    return null
+  },
+
   navigate(path, params = {}) {
     const { routePath, queryParams } = this._splitRoutePath(path)
-    const mergedParams = { ...queryParams, ...(params || {}) }
+    const match = this._matchRoute(routePath)
 
-    if (!this.routes[routePath]) {
+    if (!match) {
       console.warn(`[Router] Route '${routePath}' not found in current context. Falling back to default.`)
       const fallbackRoute = this.routes['clases-hoy']
         ? 'clases-hoy'
@@ -49,7 +98,9 @@ export const router = {
       return
     }
 
-    if (this._guardEnabled && this._authCheck && !this._publicRoutes.includes(routePath)) {
+    const mergedParams = { ...match.routeParams, ...queryParams, ...(params || {}) }
+
+    if (this._guardEnabled && this._authCheck && !this._publicRoutes.includes(match.matchedRoute)) {
       if (!this._authCheck()) {
         localStorage.setItem('current-view', 'login')
         localStorage.setItem('intended-route', routePath)
@@ -58,26 +109,33 @@ export const router = {
         } else {
           localStorage.removeItem('intended-route-params')
         }
-        this._navigateTo('login', {})
+        this._navigateTo('login', 'login', {})
         return
       }
     }
-    this._navigateTo(routePath, mergedParams)
+    this._navigateTo(match.matchedRoute, routePath, mergedParams)
   },
 
-  _navigateTo(path, params = {}) {
+  _navigateTo(matchedKey, originalPath, params = {}) {
     const app = document.querySelector('#app')
     if (app) {
       this._cleanupModals()
       app.innerHTML = ''
-      this.routes[path](app, params)
-      localStorage.setItem('current-view', path)
+      this.routes[matchedKey](app, params)
+      localStorage.setItem('current-view', originalPath)
       if (params && Object.keys(params).length > 0) {
         localStorage.setItem('current-view-params', JSON.stringify(params))
       } else {
         localStorage.removeItem('current-view-params')
       }
-      window.dispatchEvent(new CustomEvent('routeChanged', { detail: path }))
+
+      // Sincronizar hash en la barra del navegador sin loop
+      const targetHash = `#/${originalPath.replace(/^\/+/, '')}`
+      if (window.location.hash !== targetHash && typeof window.history?.replaceState === 'function') {
+        window.history.replaceState(null, '', targetHash)
+      }
+
+      window.dispatchEvent(new CustomEvent('routeChanged', { detail: originalPath }))
     }
   },
 
@@ -86,7 +144,8 @@ export const router = {
       return { routePath: path, queryParams: {} }
     }
 
-    const [routePath, queryString = ''] = path.split('?')
+    const clean = path.replace(/^#\/?/, '')
+    const [routePath, queryString = ''] = clean.split('?')
     const queryParams = {}
 
     if (queryString) {
@@ -101,14 +160,14 @@ export const router = {
 
   init(defaultRoute = 'clases-hoy') {
     const hashRoute = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
-    const currentView = (hashRoute && this.routes[this._splitRoutePath(hashRoute).routePath])
+    const currentView = (hashRoute && this._matchRoute(this._splitRoutePath(hashRoute).routePath))
       ? hashRoute
       : (localStorage.getItem('current-view') || defaultRoute)
     const { routePath } = this._splitRoutePath(currentView)
     const paramsRaw = localStorage.getItem('current-view-params')
     const params = paramsRaw ? JSON.parse(paramsRaw) : {}
 
-    if (!this.routes[routePath]) {
+    if (!this._matchRoute(routePath)) {
       const fallback = this.routes[defaultRoute]
         ? defaultRoute
         : (this.routes['clases-hoy']
@@ -123,20 +182,18 @@ export const router = {
   },
 
   // Escucha eventos de navegación emitidos por componentes hijos
-  // navigate:alumno   → { alumnoId } o { id }
-  // navigate:observaciones → { alumnoId }
   initCustomEvents() {
     window.addEventListener('hashchange', () => {
       const hash = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
       const { routePath } = this._splitRoutePath(hash)
-      if (routePath && this.routes[routePath]) {
+      if (routePath && this._matchRoute(routePath)) {
         this.navigate(hash)
       }
     })
 
     window.addEventListener('navigate:alumno', (e) => {
       const id = e.detail?.alumnoId || e.detail?.id
-      if (id) this.navigate('alumnos', { selectedId: id })
+      if (id) this.navigate(`alumnos/${id}`, { selectedId: id })
     })
 
     window.addEventListener('navigate:observaciones', (e) => {

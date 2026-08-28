@@ -13,16 +13,24 @@ import { renderAlumnosInactivosView } from './views/alumnosInactivosView.js'
 
 export function registerRoutesAlumnos() {
   router.register('alumnos', renderAlumnosView)
-  router.register('alumnos-duplicados', renderDuplicadosWorkbenchView)
-  router.register('ficha-360', renderFicha360AdminView)
+  router.register('alumnos/duplicados', renderDuplicadosWorkbenchView)
+  router.register('alumnos-duplicados', renderDuplicadosWorkbenchView) // Alias retrocompatible
+  router.register('alumnos/inactivos', renderAlumnosInactivosView)
   router.register('alumnos-inactivos', renderAlumnosInactivosView)
+  router.register('alumnos/reporte-mes', renderReporteInscripcionesMes)
   router.register('alumnos-reporte-mes', renderReporteInscripcionesMes)
+  router.register('alumnos/inscribir', renderWizardInscripcionAlumnoView)
   router.register('alumnos-inscribir', renderWizardInscripcionAlumnoView)
+  router.register('alumnos/pdf-demo', renderPdfDemoView)
   router.register('alumnos-pdf-demo', renderPdfDemoView)
+  router.register('alumnos/:id', renderAlumnoAdminView)
   router.register('alumno', renderAlumnoAdminView)
+  router.register('ficha-360', renderFicha360AdminView)
   router.register('postulados', renderPostuladosView)
+  router.register('postulados/:id', renderPostuladoPerfilView)
   router.register('postulado', renderPostuladoPerfilView)
   router.register('postulados-calendario', renderPostuladoCalendarioView)
+  router.register('postulados/calendario', renderPostuladoCalendarioView)
 }
 
 

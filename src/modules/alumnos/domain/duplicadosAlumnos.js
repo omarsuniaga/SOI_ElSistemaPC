@@ -404,6 +404,20 @@ export function similitudEntre(a, b) {
   const pesoCompartido = compartidos.reduce((s, c) => s + c.peso, 0)
   const identityRatio = Math.min(1.0, pesoCompartido / 5.5)
 
+  // Si los nombres son completamente disjuntos (nombreScore < 0.25) y NO comparten teléfono, cédula ni padres:
+  // coincidir únicamente en fecha de nacimiento o instrumento es una coincidencia de cohorte/aula, NO un duplicado.
+  const hasStrongIdentity = compartidos.some((c) =>
+    ['representante_cedula', 'telefono', 'padre_nombre', 'madre_nombre'].includes(c.key)
+  )
+  if (nombreScore < 0.25 && !hasStrongIdentity) {
+    return {
+      puntaje: 0.0,
+      nombreScore: Number(nombreScore.toFixed(4)),
+      coincidencias: { compartidos: 0, peso: 0 },
+      esSubsetNombre: false,
+    }
+  }
+
   const aTokens = tokensNombre(a?.nombre_completo || a?.nombre)
   const bTokens = tokensNombre(b?.nombre_completo || b?.nombre)
   const esSubsetNombre =

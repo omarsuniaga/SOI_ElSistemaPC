@@ -23,8 +23,7 @@ const FREE_MODELS = [
   { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B (Gratis)', provider: 'openrouter' },
   { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku (Gratis)', provider: 'openrouter' },
   { id: 'openrouter/auto', name: '🤖 Auto-Selector (Gratis - El mejor gratuito)', provider: 'openrouter' },
-  { id: 'groq-llama-3.3-70b', name: 'LLaMA 3.3 70B (GROQ - Rápido)', provider: 'groq' },
-  { id: 'groq-llama-3.1-70b', name: 'LLaMA 3.1 70B (GROQ)', provider: 'groq' }
+  { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (GROQ - Rápido)', provider: 'groq' }
 ]
 
 function getLocalStorageKey(key) {
@@ -52,8 +51,8 @@ export async function renderConfigView(container) {
     getGroqApiKey() || getLocalStorageKey('groq-key') || '',
     getOpenRouterApiKey() || getLocalStorageKey('openrouter-key') || '',
     getPreferredModel() || 'google/gemini-2.0-flash-exp',
-    getTelegramClassifierModel() || 'llama-3.1-8b-instant',
-    getHermesClassifierModel() || 'llama-3.1-8b-instant',
+    getTelegramClassifierModel() || 'openai/gpt-oss-20b',
+    getHermesClassifierModel() || 'openai/gpt-oss-20b',
     getDocumentosInstitucionales(),
   ])
 
@@ -104,7 +103,7 @@ export async function renderConfigView(container) {
                     class="form-control"
                     id="telegram-classifier-model"
                     value="${telegramClassifierModel}"
-                    placeholder="llama-3.1-8b-instant"
+                    placeholder="openai/gpt-oss-20b"
                   >
                   <div class="form-text">Usado por telegram-classifier-cron para clasificar mensajes.</div>
                 </div>
@@ -115,7 +114,7 @@ export async function renderConfigView(container) {
                     class="form-control"
                     id="hermes-classifier-model"
                     value="${hermesClassifierModel}"
-                    placeholder="llama-3.1-8b-instant"
+                    placeholder="openai/gpt-oss-20b"
                   >
                   <div class="form-text">Usado por hermes-crear-tarea para clasificar solicitudes.</div>
                 </div>

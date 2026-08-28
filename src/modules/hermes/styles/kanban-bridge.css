@@ -1,0 +1,37 @@
+/**
+ * kanban-bridge.css — Estilos de la vista de solo lectura "Kanban de Hermes (espejo)".
+ * Aditivo y aislado: todas las reglas cuelgan de `.kanban-bridge`.
+ * No usa colores hardcodeados; el color lo aportan las clases utilitarias de Bootstrap 5.
+ */
+
+.kanban-bridge .kanban-bridge-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.kanban-bridge .kanban-bridge-col {
+  min-width: 0;
+}
+
+.kanban-bridge .kanban-bridge-col-body {
+  min-height: 80px;
+}
+
+.kanban-bridge .kanban-bridge-card {
+  cursor: default;
+}
+
+.kanban-bridge .kanban-bridge-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 991.98px) {
+  .kanban-bridge .kanban-bridge-board {
+    grid-template-columns: 1fr;
+  }
+}

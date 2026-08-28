@@ -19,7 +19,7 @@ const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') ?? ''
 const HERMES_TOKEN = Deno.env.get('HERMES_EMAIL_TOKEN') ?? ''
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const DEFAULT_HERMES_CLASSIFIER_MODEL = Deno.env.get('HERMES_CLASSIFIER_MODEL') ?? 'llama-3.1-8b-instant'
+const DEFAULT_HERMES_CLASSIFIER_MODEL = Deno.env.get('HERMES_CLASSIFIER_MODEL') ?? 'openai/gpt-oss-20b'
 
 const DEPTOS = ['DIR', 'ACM', 'ADM', 'FIN', 'LOG', 'COM', 'TECNICO']
 const PRIOS = ['baja', 'media', 'alta', 'critica']

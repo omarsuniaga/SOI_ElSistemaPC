@@ -58,7 +58,7 @@ export const moduleCatalog = Object.freeze([
     ['maestros'], ['clases-hoy'], ['bitacora-suplentes', 'workflow'],
   ]),
   module('alumnos', 'src/modules/alumnos/alumnos.router.js', 'shared', [
-    ['alumnos'], ['alumnos-reporte-mes', 'workflow'], ['alumnos-inscribir', 'workflow'], ['alumnos-pdf-demo', 'workflow'], ['alumno', 'internal-detail'], ['postulados'], ['postulado', 'internal-detail'], ['postulados-calendario'],
+    ['alumnos'], ['alumnos-duplicados', 'workflow'], ['alumnos-inactivos'], ['alumnos-reporte-mes', 'workflow'], ['alumnos-inscribir', 'workflow'], ['alumnos-pdf-demo', 'workflow'], ['alumno', 'internal-detail'], ['postulados'], ['postulado', 'internal-detail'], ['postulados-calendario'],
   ]),
   module('salones', 'src/modules/salones/salones.router.js', 'ACM', [['salones']]),
   module('clases', 'src/modules/clases/clases.router.js', 'ACM', [['clases']]),
@@ -102,6 +102,7 @@ export const moduleCatalog = Object.freeze([
   module('hermes-core', 'src/main.js', 'DIR', [
     ['dir-score'], ['hermes-tareas'], ['hermes-caso', 'internal-detail'], ['hermes-procedimientos'], ['hermes-consulta'],
     ['hermes-evento'], ['hermes-pulso'], ['hermes-reglas'], ['hermes-conciertos'], ['hermes-orquestador'], ['dir-alianzas'],
+    ['hermes-kanban'],
   ]),
   module('help', 'src/modules/help/index.js', 'shared', [['ayuda', 'workflow']]),
   module('catalog-diagnostics', 'src/main.js', 'DIR', [['diagnostico-catalogo']]),

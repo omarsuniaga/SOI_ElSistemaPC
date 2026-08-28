@@ -9,9 +9,11 @@ import { renderPostuladoPerfilView } from './views/postulados/postuladoPerfilVie
 import { renderPostuladoCalendarioView } from './views/postulados/postuladoCalendarioView.js'
 
 import { renderAlumnosInactivosView } from './views/alumnosInactivosView.js'
+import { renderDuplicadosWorkbenchView } from './views/duplicadosWorkbenchView.js'
 
 export function registerRoutesAlumnos() {
   router.register('alumnos', renderAlumnosView)
+  router.register('alumnos-duplicados', renderDuplicadosWorkbenchView)
   router.register('alumnos-inactivos', renderAlumnosInactivosView)
   router.register('alumnos-reporte-mes', renderReporteInscripcionesMes)
   router.register('alumnos-inscribir', renderWizardInscripcionAlumnoView)

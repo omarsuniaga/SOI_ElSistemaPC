@@ -106,6 +106,7 @@ import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaV
 import { renderPulsoView } from './modules/hermes/views/pulsoView.js'
 import { renderRulesView } from './modules/hermes/views/rulesView.js'
 import { renderHermesConcertOrchestratorView } from './modules/hermes/views/hermesConcertOrchestratorView.js'
+import { renderKanbanBridgeView } from './modules/hermes/views/kanbanBridgeView.js'
 
 import {
   startAdminRealtimeNotifications,
@@ -400,6 +401,7 @@ const NAV_GROUPS = [
       { id: 'hermes-reglas', label: 'Reglas Reactivas', icon: 'bi-sliders' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
       { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+      { id: 'hermes-kanban', label: 'Kanban Hermes', icon: 'bi-kanban' },
       { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
   },
@@ -426,6 +428,7 @@ const NAV_GROUPS = [
     icon: 'bi-people',
     items: [
       { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
+      { id: 'alumnos-duplicados', label: 'Unificación Duplicados', icon: 'bi-diagram-3' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
       { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
@@ -822,6 +825,7 @@ function registerModules() {
     router.register('hermes-orquestador', (mount) =>
       renderHermesConcertOrchestratorView(mount),
     )
+    router.register('hermes-kanban', (mount) => renderKanbanBridgeView(mount))
 
   } catch (error) {
     console.error('Error registering hermes routes:', error)

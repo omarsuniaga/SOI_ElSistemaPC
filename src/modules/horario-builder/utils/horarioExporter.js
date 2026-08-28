@@ -3,18 +3,109 @@
  * Reuses dynamic imports for xlsx and jsPDF to optimize production chunk bundles.
  */
 
+/**
+ * Filters assignments down to a single scope entity (a specific teacher,
+ * class, room or student) or returns all assignments for scope 'general'.
+ *
+ * @param {Array} assignments
+ * @param {Object} scope - { type: 'general'|'maestro'|'clase'|'salon'|'alumno', id, name }
+ * @returns {Array}
+ */
+export function filterAssignmentsByScope(assignments = [], scope = null) {
+  if (!scope || scope.type === 'general' || !scope.id) return assignments;
+
+  const fieldByType = {
+    maestro: 'maestro_id',
+    clase: 'clase_id',
+    salon: 'salon_id'
+  };
+
+  if (scope.type === 'alumno') {
+    return assignments.filter(a => (a.alumnos_ids || []).includes(scope.id));
+  }
+
+  const field = fieldByType[scope.type];
+  if (!field) return assignments;
+  return assignments.filter(a => a[field] === scope.id);
+}
+
+/**
+ * Builds the header labels (title/subtitle/entityName) for a given scope,
+ * shared between the PDF and Excel exporters so both stay consistent.
+ *
+ * @param {Object} scope - { type, id, name }
+ * @param {string} period
+ * @returns {{ title: string, subtitle: string, entityName: string|null }}
+ */
+export function buildScopeLabel(scope = null, period = 'S1-2026') {
+  const title = 'SOI — SISTEMA OPERATIVO INSTITUCIONAL';
+
+  if (!scope || scope.type === 'general' || !scope.id) {
+    return {
+      title,
+      subtitle: `Reporte Oficial de Planificación Horaria — Período: ${period}`,
+      entityName: null
+    };
+  }
+
+  const labelByType = {
+    maestro: 'Horario del Maestro',
+    clase: 'Horario de la Clase',
+    salon: 'Horario del Salón',
+    alumno: 'Horario del Alumno'
+  };
+
+  return {
+    title,
+    subtitle: `${labelByType[scope.type] || 'Horario Personalizado'} — Período: ${period}`,
+    entityName: scope.name || null
+  };
+}
+
+/**
+ * Groups assignments by entity (teacher or room), returning only entities
+ * that actually have at least one assignment — used to drive batch exports.
+ *
+ * @param {Array} assignments
+ * @param {'maestro'|'salon'|'clase'} type
+ * @returns {Array<{ id: string, name: string, assignments: Array }>}
+ */
+export function groupAssignmentsByEntity(assignments = [], type = 'maestro') {
+  const idFieldByType = { maestro: 'maestro_id', salon: 'salon_id', clase: 'clase_id' };
+  const nameFieldByType = { maestro: 'maestro_nombre', salon: 'salon_nombre', clase: 'clase_nombre' };
+  const idField = idFieldByType[type] || 'maestro_id';
+  const nameField = nameFieldByType[type] || 'maestro_nombre';
+
+  const byId = new Map();
+  for (const a of assignments) {
+    const id = a[idField];
+    if (!id) continue;
+    if (!byId.has(id)) {
+      byId.set(id, { id, name: a[nameField] || 'Sin nombre', assignments: [] });
+    }
+    byId.get(id).assignments.push(a);
+  }
+
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export async function exportToExcel(assignments = [], options = {}) {
   try {
     const XLSX = await import('xlsx');
     const period = typeof options === 'string' ? options : (options.period || 'S1-2026');
-    const subtitle = typeof options === 'object' ? (options.subtitle || options.entityName || '') : '';
-    
+    const scope = typeof options === 'object' ? (options.scope || null) : null;
+    const scoped = filterAssignmentsByScope(assignments, scope);
+    const labels = buildScopeLabel(scope, period);
+    const subtitle = typeof options === 'object' && options.subtitle
+      ? options.subtitle
+      : (labels.entityName || '');
+
     // Create new workbook
     const wb = XLSX.utils.book_new();
 
     // Map general sheet rows
     const headers = ['Clase', 'Docente/Maestro', 'Día', 'Hora Inicio', 'Hora Fin', 'Salón'];
-    const rows = assignments.map(a => [
+    const rows = scoped.map(a => [
       a.clase_nombre || a.clase || 'Sin nombre',
       a.maestro_nombre || a.maestro || 'Sin asignación',
       (a.dia || '').toUpperCase(),
@@ -29,7 +120,7 @@ export async function exportToExcel(assignments = [], options = {}) {
 
     // Create a detailed sheet grouped by Salon
     const salonHeaders = ['Salón', 'Clase', 'Docente/Maestro', 'Día', 'Horario'];
-    const salonRows = [...assignments]
+    const salonRows = [...scoped]
       .sort((a, b) => (a.salon_nombre || '').localeCompare(b.salon_nombre || ''))
       .map(a => [
         a.salon_nombre || 'Sin salón',
@@ -60,9 +151,13 @@ export async function exportToPDF(assignments = [], options = {}) {
     const { default: autoTable } = await import('jspdf-autotable');
 
     const period = typeof options === 'string' ? options : (options.period || 'S1-2026');
-    const title = typeof options === 'object' ? (options.title || 'SOI — SISTEMA OPERATIVO INSTITUCIONAL') : 'SOI — SISTEMA OPERATIVO INSTITUCIONAL';
-    const subtitle = typeof options === 'object' ? (options.subtitle || `Reporte Oficial de Planificación Horaria — Período: ${period}`) : `Reporte Oficial de Planificación Horaria — Período: ${period}`;
-    const entityName = typeof options === 'object' ? (options.entityName || null) : null;
+    const scope = typeof options === 'object' ? (options.scope || null) : null;
+    const scoped = filterAssignmentsByScope(assignments, scope);
+    const labels = buildScopeLabel(scope, period);
+
+    const title = typeof options === 'object' && options.title ? options.title : labels.title;
+    const subtitle = typeof options === 'object' && options.subtitle ? options.subtitle : labels.subtitle;
+    const entityName = typeof options === 'object' && options.entityName ? options.entityName : labels.entityName;
     const statsText = typeof options === 'object' ? (options.statsText || null) : null;
 
     // Landscape orientation for structured visual weekly schedules
@@ -114,15 +209,22 @@ export async function exportToPDF(assignments = [], options = {}) {
     doc.setLineWidth(0.5);
     doc.line(15, lineY, 282, lineY);
 
-    // AutoTable Body
-    const headers = [['Clase / Cátedra', 'Docente Encargado', 'Día Semanal', 'Franja Horaria', 'Salón Asignado']];
-    const body = assignments.map(a => [
-      a.clase_nombre || a.clase || 'Sin nombre',
-      a.maestro_nombre || a.maestro || 'Sin asignación',
-      (a.dia || '').toUpperCase(),
-      `${a.hora_inicio || ''} - ${a.hora_fin || ''}`,
-      a.salon_nombre || a.salon || 'Sin salón'
-    ]);
+    // AutoTable Body — omit the column matching the active scope entity,
+    // it's already shown in the header and would be redundant on every row.
+    const allColumns = [
+      { key: 'clase', header: 'Clase / Cátedra', width: 70, cell: a => a.clase_nombre || a.clase || 'Sin nombre' },
+      { key: 'maestro', header: 'Docente Encargado', width: 70, cell: a => a.maestro_nombre || a.maestro || 'Sin asignación' },
+      { key: 'dia', header: 'Día Semanal', width: 35, cell: a => (a.dia || '').toUpperCase() },
+      { key: 'horario', header: 'Franja Horaria', width: 40, cell: a => `${a.hora_inicio || ''} - ${a.hora_fin || ''}` },
+      { key: 'salon', header: 'Salón Asignado', width: 50, cell: a => a.salon_nombre || a.salon || 'Sin salón' }
+    ];
+    const hiddenColumnKey = { maestro: 'maestro', clase: 'clase', salon: 'salon' }[scope && scope.type];
+    const columns = allColumns.filter(c => c.key !== hiddenColumnKey);
+
+    const headers = [columns.map(c => c.header)];
+    const body = scoped.map(a => columns.map(c => c.cell(a)));
+    const columnStyles = {};
+    columns.forEach((c, idx) => { columnStyles[idx] = { cellWidth: c.width }; });
 
     autoTable(doc, {
       startY: lineY + 5,
@@ -141,13 +243,7 @@ export async function exportToPDF(assignments = [], options = {}) {
         textColor: textColor,
         cellPadding: 4
       },
-      columnStyles: {
-        0: { cellWidth: 70 }, // Clase
-        1: { cellWidth: 70 }, // Docente
-        2: { cellWidth: 35 }, // Día
-        3: { cellWidth: 40 }, // Horario
-        4: { cellWidth: 50 }  // Salón
-      },
+      columnStyles,
       margin: { left: 15, right: 15 }
     });
 
@@ -161,3 +257,22 @@ export async function exportToPDF(assignments = [], options = {}) {
   }
 }
 
+/**
+ * Generates one personalized PDF per teacher or per room, sequentially.
+ * Skips entities with no assignments (already filtered by groupAssignmentsByEntity).
+ *
+ * @param {Array} assignments
+ * @param {'maestro'|'salon'|'clase'} type
+ * @param {Object} options - forwarded to exportToPDF (period, statsText, etc.)
+ * @returns {Promise<number>} number of PDFs generated
+ */
+export async function exportBatchPDF(assignments = [], type = 'maestro', options = {}) {
+  const groups = groupAssignmentsByEntity(assignments, type);
+  for (const group of groups) {
+    await exportToPDF(assignments, {
+      ...options,
+      scope: { type, id: group.id, name: group.name }
+    });
+  }
+  return groups.length;
+}

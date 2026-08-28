@@ -12,7 +12,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
-const DEFAULT_TELEGRAM_CLASSIFIER_MODEL = Deno.env.get('TELEGRAM_CLASSIFIER_MODEL') ?? 'llama-3.1-8b-instant';
+const DEFAULT_TELEGRAM_CLASSIFIER_MODEL = Deno.env.get('TELEGRAM_CLASSIFIER_MODEL') ?? 'openai/gpt-oss-20b';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

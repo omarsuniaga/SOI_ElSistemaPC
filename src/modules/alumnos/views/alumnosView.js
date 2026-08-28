@@ -145,8 +145,13 @@ export async function renderAlumnosView(container) {
 
   function renderContent(container) {
     const actionsHtml = `
+      <button class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1" id="btnConciliarPostuladosDirecto" title="Conciliar Postulados">
+        <i class="bi bi-sparkles"></i> <span>Conciliar</span>
+      </button>
+      <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" id="btnDirectoDuplicados" title="Taller de Unificación de Duplicados">
+        <i class="bi bi-copy"></i> <span>Duplicados</span>
+      </button>
       <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="btnIrInactivos" title="Ver alumnos inactivos / archivados">
-
         <i class="bi bi-archive"></i> <span class="d-none d-sm-inline">Inactivos</span>
       </button>
       <div class="dropdown">
@@ -369,23 +374,15 @@ export async function renderAlumnosView(container) {
     container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV(), { signal })
 
     container.querySelector('#btnDetectarDuplicados')?.addEventListener('click', () => {
-      DuplicadosModal.abrir({
-        alumnos: state.alumnosOriginales,
-        onSuccess: async () => {
-          try {
-            const { alumnos: nuevos, total } = await obtenerAlumnos()
-            state.totalAlumnos = total
-            state.alumnosOriginales = nuevos.map(a => ({
-              ...a,
-              _completitud: calcularCompletitud(a),
-            }))
-            applyFilters()
-            AppToast.success('Lista actualizada tras la fusión')
-          } catch (err) {
-            console.error('[alumnosView] Error recargando alumnos tras fusión:', err)
-          }
-        },
-      })
+      router.navigate('alumnos-duplicados')
+    }, { signal })
+
+    container.querySelector('#btnDirectoDuplicados')?.addEventListener('click', () => {
+      router.navigate('alumnos-duplicados')
+    }, { signal })
+
+    container.querySelector('#btnConciliarPostuladosDirecto')?.addEventListener('click', () => {
+      container.querySelector('#btnConciliarPostulados')?.click()
     }, { signal })
 
     container.querySelector('#btnConciliarPostulados')?.addEventListener('click', () => {

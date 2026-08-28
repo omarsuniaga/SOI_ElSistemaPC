@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import fetch from 'node-fetch'
 import {
   clampMessageText,
   estimateTokenBudget,
@@ -101,8 +100,9 @@ async function processQueue() {
         headers['apikey'] = config.api_key
       }
 
+      const jid = message.jid.includes('@') ? message.jid : `${message.jid}@s.whatsapp.net`
       const body = {
-        jid: message.jid,
+        jid,
         text: clampMessageText(message.mensaje, MAX_CHARS_PER_MESSAGE)
       }
 

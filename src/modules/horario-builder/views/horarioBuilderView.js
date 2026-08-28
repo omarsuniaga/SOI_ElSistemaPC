@@ -99,7 +99,7 @@
 
 import '../styles/horario-builder.css';
 import { fetchSchedulingData, saveScheduleRun, getScheduleRuns, fetchRegisteredScheduleData } from '../api/horarioBuilderApi.js';
-import { exportToPDF, exportToExcel } from '../utils/horarioExporter.js';
+import { exportToPDF, exportToExcel, exportBatchPDF } from '../utils/horarioExporter.js';
 import { AppToast } from '../../../shared/components/AppToast.js';
 import { minutesBetween, addMinutes } from '../utils/timeUtils.js';
 import { generateOptimizedSchedule } from '../engine/schedulingEngine.js';
@@ -436,9 +436,21 @@ function renderShell() {
         <div style="flex:1;"></div>
         <div class="hb-toolbar-group">
           <!-- Botones de Exportación e Impresión -->
-          <button class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" id="hb-export-pdf-btn" title="Exportar reporte PDF">
-            <i class="bi bi-file-earmark-pdf"></i> PDF
-          </button>
+          <div class="dropdown">
+            <button class="btn btn-outline-danger btn-sm dropdown-toggle d-flex align-items-center gap-1" type="button" id="hb-export-pdf-btn" data-bs-toggle="dropdown" aria-expanded="false" title="Exportar reporte PDF">
+              <i class="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="hb-export-pdf-btn">
+              <li><h6 class="dropdown-header">Horario general</h6></li>
+              <li><a class="dropdown-item" href="#" data-export="pdf" data-scope="general">Horario completo (todos)</a></li>
+              <li><a class="dropdown-item" href="#" data-export="pdf" data-scope="current">Vista filtrada actual</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">Horarios personalizados en lote</h6></li>
+              <li><a class="dropdown-item" href="#" data-export="pdf-batch" data-scope="maestro">Un PDF por cada Maestro</a></li>
+              <li><a class="dropdown-item" href="#" data-export="pdf-batch" data-scope="clase">Un PDF por cada Clase</a></li>
+              <li><a class="dropdown-item" href="#" data-export="pdf-batch" data-scope="salon">Un PDF por cada Salón</a></li>
+            </ul>
+          </div>
           <button class="btn btn-outline-success btn-sm d-flex align-items-center gap-1" id="hb-export-excel-btn" title="Exportar Excel">
             <i class="bi bi-file-earmark-excel"></i> Excel
           </button>
@@ -965,6 +977,26 @@ function wireListeners() {
       return;
     }
 
+    // Export menu items (PDF general/filtered/batch, Excel)
+    const exportItem = e.target.closest('[data-export]');
+    if (exportItem) {
+      e.preventDefault();
+      handleExport(exportItem.dataset.export, exportItem.dataset.scope);
+      return;
+    }
+
+    // Excel export (single button, always general)
+    if (e.target.closest('#hb-export-excel-btn')) {
+      handleExport('excel', 'general');
+      return;
+    }
+
+    // Print
+    if (e.target.closest('#hb-print-btn')) {
+      window.print();
+      return;
+    }
+
     // Publish button
     if (e.target.closest('#hb-publish-btn')) {
       state.publishWizardOpen = !state.publishWizardOpen;
@@ -982,6 +1014,52 @@ function wireListeners() {
 }
 
 // ─── ACTIONS ─────────────────────────────────────────────────────
+
+/** Derives an export scope { type, id, name } from the active on-screen filter, if any. */
+function getCurrentScope() {
+  if (state.activeView === 'teacher' && state.selectedMaestroId) {
+    const m = state.maestros.find(x => x.id === state.selectedMaestroId);
+    return { type: 'maestro', id: state.selectedMaestroId, name: m ? (m.nombre_completo || m.nombre) : '' };
+  }
+  if (state.activeView === 'class' && state.selectedClaseId) {
+    const c = state.clases.find(x => x.id === state.selectedClaseId);
+    return { type: 'clase', id: state.selectedClaseId, name: c ? c.nombre : '' };
+  }
+  if (state.activeView === 'room' && state.selectedSalonId) {
+    const s = state.salones.find(x => x.id === state.selectedSalonId);
+    return { type: 'salon', id: state.selectedSalonId, name: s ? s.nombre : '' };
+  }
+  if (state.activeView === 'student' && state.selectedAlumnoId) {
+    const a = state.alumnos.find(x => x.id === state.selectedAlumnoId);
+    return { type: 'alumno', id: state.selectedAlumnoId, name: a ? a.nombre_completo : '' };
+  }
+  return { type: 'general' };
+}
+
+async function handleExport(kind, scopeArg) {
+  if (!state.assignments || state.assignments.length === 0) {
+    showToast('No hay horario generado para exportar', 'warning');
+    return;
+  }
+
+  try {
+    if (kind === 'pdf' || kind === 'excel') {
+      const scope = scopeArg === 'current' ? getCurrentScope() : { type: 'general' };
+      const exportFn = kind === 'pdf' ? exportToPDF : exportToExcel;
+      await exportFn(state.assignments, { period: state.activePeriodo, scope });
+      showToast('Reporte generado correctamente', 'success');
+    } else if (kind === 'pdf-batch') {
+      const count = await exportBatchPDF(state.assignments, scopeArg, { period: state.activePeriodo });
+      if (count === 0) {
+        showToast('No hay datos suficientes para generar horarios individuales', 'warning');
+      } else {
+        showToast(`${count} PDF${count === 1 ? '' : 's'} generado${count === 1 ? '' : 's'} correctamente`, 'success');
+      }
+    }
+  } catch (error) {
+    showToast(error.message || 'Error al exportar el horario', 'danger');
+  }
+}
 
 async function handleGenerate() {
   const btn = _container.querySelector('#hb-generate-btn');

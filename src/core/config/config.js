@@ -5,7 +5,9 @@ export const config = {
   isDemoMode: import.meta.env.VITE_DEMO_MODE === 'true' || localStorage.getItem('demo_mode') === 'true',
   // GROQ (IA) Configuration
   groq: {
-    model: import.meta.env.VITE_GROQ_MODEL || 'llama-3.1-8b-instant',
+    // Groq retiró llama-3.1-8b-instant para cuentas developer/free.
+    // Keep this in sync with the server-side classifier defaults.
+    model: import.meta.env.VITE_GROQ_MODEL || 'openai/gpt-oss-20b',
     // whisper API (audio transcription)
     whisperModel: import.meta.env.VITE_WHISPER_MODEL || 'whisper-large-v3',
     endpoint: 'https://api.groq.com/openai/v1',

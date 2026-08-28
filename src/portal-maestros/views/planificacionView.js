@@ -457,7 +457,6 @@ function _abrirModalClonarMalla(sourceClase, allClases, maestroId, onComplete) {
     confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Duplicando...`
 
     try {
-      // Create new route for target class with source hierarchy
       await createRoute(
         maestroId,
         targetClaseId,
@@ -474,6 +473,106 @@ function _abrirModalClonarMalla(sourceClase, allClases, maestroId, onComplete) {
       confirmBtn.disabled = false
       confirmBtn.innerHTML = `<i class="bi bi-copy"></i> Duplicar Malla`
     }
+  })
+}
+
+/**
+ * Modal Informativo / Guía de Uso del Sistema Pedagógico
+ */
+export function _abrirModalGuiaUso() {
+  const backdrop = document.createElement("div")
+  backdrop.className = "pm-guide-modal-backdrop"
+
+  backdrop.innerHTML = `
+    <div class="pm-guide-modal" role="dialog" aria-modal="true" aria-label="Guía de Uso">
+      <div class="pm-guide-header">
+        <div class="pm-guide-header-badge"><i class="bi bi-lightbulb-fill"></i></div>
+        <div class="pm-guide-header-text">
+          <span class="pm-guide-eyebrow">GUÍA PEDAGÓGICA</span>
+          <h3>¿Cómo funciona la Malla y Calificación?</h3>
+        </div>
+        <button type="button" class="pm-guide-close" aria-label="Cerrar"><i class="bi bi-x"></i></button>
+      </div>
+
+      <div class="pm-guide-body">
+        <p class="pm-guide-intro">
+          El sistema conecta la planificación del maestro con la asistencia real y el seguimiento de dominio de cada estudiante en <strong>4 pasos simples</strong>:
+        </p>
+
+        <!-- 4 Steps Flow -->
+        <div class="pm-guide-steps">
+          <div class="pm-guide-step">
+            <div class="pm-step-num">1</div>
+            <div class="pm-step-content">
+              <strong>Diseña la Malla Curricular</strong>
+              <p>Presiona <em>"Diseñar"</em> para estructurar tu materia en <strong>Unidades ➔ Objetivos ➔ Indicadores</strong>. Puedes definir prerrequisitos (indicadores que deben dominarse antes de otros).</p>
+            </div>
+          </div>
+
+          <div class="pm-guide-step">
+            <div class="pm-step-num">2</div>
+            <div class="pm-step-content">
+              <strong>Pasa Asistencia en la Clase</strong>
+              <p>En el módulo <em>"Asistencia"</em> o <em>"Hoy"</em>, pasa lista marcando a los alumnos como <strong>Presentes</strong> o <strong>Ausentes</strong>. La evaluación siempre requiere saber quién vino al aula.</p>
+            </div>
+          </div>
+
+          <div class="pm-guide-step">
+            <div class="pm-step-num">3</div>
+            <div class="pm-step-content">
+              <strong>Califica en el Mapa Duolingo (5★)</strong>
+              <p>Abre el <em>"Mapa"</em> de la clase, toca el indicador que trabajaste hoy y califica a los presentes de <strong>1 a 5 estrellas (⭐)</strong>. Con 5★ el indicador se marca como <em>Dominado</em> 👑.</p>
+            </div>
+          </div>
+
+          <div class="pm-guide-step">
+            <div class="pm-step-num">4</div>
+            <div class="pm-step-content">
+              <strong>Controla Deudas y Candados (🔒)</strong>
+              <p>Si un alumno faltó o requiere reforzar un prerrequisito, se le genera una <strong>Deuda Pedagógica</strong> para su sesión de recuperación, desbloqueando su progreso.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="pm-guide-legend">
+          <h4>Glosario de Indicadores del Mapa:</h4>
+          <div class="pm-legend-grid">
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-green">👑 ⭐</span>
+              <span><strong>Dominado (5★):</strong> Logrado por el grupo.</span>
+            </div>
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-blue">▶️</span>
+              <span><strong>En Progreso:</strong> En evaluación activa.</span>
+            </div>
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-red">🔒</span>
+              <span><strong>Bloqueado:</strong> Requiere dominar un tema previo.</span>
+            </div>
+            <div class="pm-legend-item">
+              <span class="pm-leg-icon leg-purple">👤</span>
+              <span><strong>Vista por Alumno:</strong> Filtra el mapa para 1 estudiante.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pm-guide-footer">
+        <button type="button" class="pm-btn-primary pm-guide-understood">
+          ¡Entendido, vamos a usarlo!
+        </button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(backdrop)
+
+  const closeModal = () => backdrop.remove()
+  backdrop.querySelector(".pm-guide-close").addEventListener("click", closeModal)
+  backdrop.querySelector(".pm-guide-understood").addEventListener("click", closeModal)
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeModal()
   })
 }
 
@@ -650,6 +749,39 @@ function _injectStyles() {
       background: var(--pm-primary, #4f46e5);
       color: #fff;
       box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+    }
+
+    .pm-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .pm-btn-info-guide {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #4f46e5;
+      padding: 0.45rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .pm-btn-info-guide:hover {
+      background: rgba(99, 102, 241, 0.2);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .pm-btn-info-guide {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #c7d2fe;
     }
 
     .pm-search-box {
@@ -923,7 +1055,8 @@ function _injectStyles() {
     }
 
     /* Modal Clonar Malla */
-    .pm-clone-modal-backdrop {
+    .pm-clone-modal-backdrop,
+    .pm-guide-modal-backdrop {
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.75);
@@ -936,7 +1069,12 @@ function _injectStyles() {
       padding: 1rem;
     }
 
-    .pm-clone-modal {
+    .pm-guide-modal-backdrop {
+      z-index: 3500;
+    }
+
+    .pm-clone-modal,
+    .pm-guide-modal {
       background: #1e293b;
       color: #fff;
       width: 100%;
@@ -950,7 +1088,13 @@ function _injectStyles() {
       animation: pmr-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .pm-clone-header {
+    .pm-guide-modal {
+      max-width: 580px;
+      border-radius: 20px;
+    }
+
+    .pm-clone-header,
+    .pm-guide-header {
       padding: 1.2rem 1.4rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
@@ -958,248 +1102,7 @@ function _injectStyles() {
       align-items: flex-start;
     }
 
-    .pm-clone-badge {
-      font-size: 0.68rem;
-      font-weight: 800;
-      color: #818cf8;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .pm-clone-header h3 {
-      font-size: 1.1rem;
-      font-weight: 800;
-      margin: 0.2rem 0 0;
-      color: #f8fafc;
-    }
-
-    .pm-clone-close {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-size: 1.3rem;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .pm-clone-body {
-      padding: 1.2rem 1.4rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .pm-clone-desc {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      margin: 0;
-      line-height: 1.4;
-    }
-
-    .pm-clone-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-
-    .pm-clone-option {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.65rem 0.85rem;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.18s ease;
-    }
-
-    .pm-clone-option:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(99, 102, 241, 0.4);
-    }
-
-    .pm-clone-option-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .pm-clone-option-info strong {
-      font-size: 0.88rem;
-      color: #fff;
-    }
-
-    .pm-clone-option-info span {
-      font-size: 0.74rem;
-      color: #94a3b8;
-    }
-
-    .pm-clone-footer {
-      padding: 1rem 1.4rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-    }
-
-    /* ── Mobile Viewport: Fijo 2 Columnas (repeat(2, 1fr)) ── */
-    @media (max-width: 768px) {
-      .pm-planning-container { padding: 0.6rem; }
-      .pm-planning-hero {
-        padding: 0.9rem 1rem;
-        border-radius: 14px;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-        margin-bottom: 0.85rem;
-      }
-      .pm-hero-title { font-size: 1.2rem; }
-      .pm-hero-subtitle { font-size: 0.78rem; line-height: 1.3; }
-      .pm-hero-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.35rem;
-      }
-      .pm-stat-card { padding: 0.4rem 0.2rem; min-width: 0; border-radius: 9px; }
-      .pm-stat-num { font-size: 1.05rem; }
-      .pm-stat-label { font-size: 0.55rem; text-align: center; }
-      .pm-planning-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.6rem;
-        margin-bottom: 0.85rem;
-      }
-      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; }
-      .pm-seg-btn { justify-content: center; padding: 0.42rem 0.2rem; font-size: 0.72rem; }
-      .pm-search-box { width: 100%; }
-      .pm-search-box input { padding: 0.45rem 0.8rem 0.45rem 32px; font-size: 16px; }
-
-      .pm-compact-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.5rem;
-      }
-      .pm-compact-card {
-        padding: 0.7rem 0.65rem;
-        border-radius: 12px;
-        gap: 0.5rem;
-      }
-      .pm-compact-title {
-        font-size: 0.82rem;
-        margin-bottom: 0.15rem;
-      }
-      .pm-card-meta-line {
-        font-size: 0.66rem;
-      }
-      .pm-status-indicator {
-        width: 18px;
-        height: 18px;
-      }
-      .pm-status-dot {
-        width: 6px;
-        height: 6px;
-      }
-      .pm-icon-hierarchy {
-        padding: 0.3rem 0.45rem;
-        border-radius: 7px;
-      }
-      .pm-chip-symbol {
-        font-size: 0.72rem;
-      }
-      .pm-chip-val {
-        font-size: 0.8rem;
-      }
-      .pm-chip-arrow {
-        font-size: 0.65rem;
-      }
-      .pm-warning-chip {
-        padding: 0.3rem 0.45rem;
-        font-size: 0.66rem;
-      }
-      .pm-compact-actions {
-        gap: 0.3rem;
-      }
-      .pm-btn-compact-primary, .pm-btn-compact-secondary {
-        min-height: 34px;
-        font-size: 0.72rem;
-        padding: 0.35rem 0.3rem;
-        border-radius: 7px;
-        gap: 3px;
-      }
-      .pm-btn-compact-icon {
-        min-height: 34px;
-        padding: 0.35rem 0.45rem;
-      }
-    }
-  `
-
-    /* ── Botón Guía y Modal Informativo ── */
-    .pm-toolbar-right {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .pm-btn-info-guide {
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #4f46e5;
-      padding: 0.45rem 0.85rem;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.18s ease;
-    }
-
-    .pm-btn-info-guide:hover {
-      background: rgba(99, 102, 241, 0.2);
-      transform: translateY(-1px);
-    }
-
-    [data-theme="dark"] .pm-btn-info-guide {
-      background: rgba(99, 102, 241, 0.15);
-      border-color: rgba(99, 102, 241, 0.4);
-      color: #c7d2fe;
-    }
-
-    .pm-guide-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 3500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-
-    .pm-guide-modal {
-      background: #1e293b;
-      color: #fff;
-      width: 100%;
-      max-width: 580px;
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: pmr-popover-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
     .pm-guide-header {
-      padding: 1.2rem 1.5rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
       align-items: center;
       gap: 0.85rem;
     }
@@ -1237,20 +1140,40 @@ function _injectStyles() {
       color: #f8fafc;
     }
 
+    .pm-clone-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #818cf8;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .pm-clone-header h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0.2rem 0 0;
+      color: #f8fafc;
+    }
+
+    .pm-clone-close,
     .pm-guide-close {
       background: transparent;
       border: none;
       color: #94a3b8;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       cursor: pointer;
       padding: 0;
     }
 
+    .pm-clone-body,
     .pm-guide-body {
-      padding: 1.2rem 1.5rem;
+      padding: 1.2rem 1.4rem;
       display: flex;
       flex-direction: column;
-      gap: 1.1rem;
+      gap: 1rem;
+    }
+
+    .pm-guide-body {
       max-height: 70vh;
       overflow-y: auto;
     }
@@ -1336,15 +1259,61 @@ function _injectStyles() {
       color: #cbd5e1;
     }
 
-    .pm-leg-icon {
-      font-size: 0.9rem;
+    .pm-clone-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.4;
     }
 
+    .pm-clone-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .pm-clone-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .pm-clone-option:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .pm-clone-option-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .pm-clone-option-info strong {
+      font-size: 0.88rem;
+      color: #fff;
+    }
+
+    .pm-clone-option-info span {
+      font-size: 0.74rem;
+      color: #94a3b8;
+    }
+
+    .pm-clone-footer,
     .pm-guide-footer {
-      padding: 1rem 1.5rem;
+      padding: 1rem 1.4rem;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       justify-content: flex-end;
+      gap: 0.75rem;
     }
 
     .pm-guide-understood {
@@ -1355,106 +1324,96 @@ function _injectStyles() {
       font-weight: 800;
     }
 
-  document.head.appendChild(style)
-}
+    /* ── Mobile Viewport: Fijo 2 Columnas (repeat(2, 1fr)) ── */
+    @media (max-width: 768px) {
+      .pm-planning-container { padding: 0.6rem; }
+      .pm-planning-hero {
+        padding: 0.9rem 1rem;
+        border-radius: 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        margin-bottom: 0.85rem;
+      }
+      .pm-hero-title { font-size: 1.2rem; }
+      .pm-hero-subtitle { font-size: 0.78rem; line-height: 1.3; }
+      .pm-hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.35rem;
+      }
+      .pm-stat-card { padding: 0.4rem 0.2rem; min-width: 0; border-radius: 9px; }
+      .pm-stat-num { font-size: 1.05rem; }
+      .pm-stat-label { font-size: 0.55rem; text-align: center; }
+      .pm-planning-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+        margin-bottom: 0.85rem;
+      }
+      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; }
+      .pm-seg-btn { justify-content: center; padding: 0.42rem 0.2rem; font-size: 0.72rem; }
+      .pm-toolbar-right { width: 100%; flex-direction: column; align-items: stretch; gap: 0.5rem; }
+      .pm-btn-info-guide { justify-content: center; width: 100%; padding: 0.5rem; }
+      .pm-search-box { width: 100%; }
+      .pm-search-box input { padding: 0.45rem 0.8rem 0.45rem 32px; font-size: 16px; }
 
-
-/**
- * Modal Informativo / Guía de Uso del Sistema Pedagógico
- */
-export function _abrirModalGuiaUso() {
-  const backdrop = document.createElement("div")
-  backdrop.className = "pm-guide-modal-backdrop"
-
-  backdrop.innerHTML = `
-    <div class="pm-guide-modal" role="dialog" aria-modal="true" aria-label="Guía de Uso">
-      <div class="pm-guide-header">
-        <div class="pm-guide-header-badge"><i class="bi bi-lightbulb-fill"></i></div>
-        <div class="pm-guide-header-text">
-          <span class="pm-guide-eyebrow">GUÍA PEDAGÓGICA</span>
-          <h3>¿Cómo funciona la Malla y Calificación?</h3>
-        </div>
-        <button type="button" class="pm-guide-close" aria-label="Cerrar"><i class="bi bi-x"></i></button>
-      </div>
-
-      <div class="pm-guide-body">
-        <p class="pm-guide-intro">
-          El sistema conecta la planificación del maestro con la asistencia real y el seguimiento de dominio de cada estudiante en <strong>4 pasos simples</strong>:
-        </p>
-
-        <!-- 4 Steps Flow -->
-        <div class="pm-guide-steps">
-          <div class="pm-guide-step">
-            <div class="pm-step-num">1</div>
-            <div class="pm-step-content">
-              <strong>Diseña la Malla Curricular</strong>
-              <p>Presiona <em>"Diseñar"</em> para estructurar tu materia en <strong>Unidades ➔ Objetivos ➔ Indicadores</strong>. Puedes definir prerrequisitos (indicadores que deben dominarse antes de otros).</p>
-            </div>
-          </div>
-
-          <div class="pm-guide-step">
-            <div class="pm-step-num">2</div>
-            <div class="pm-step-content">
-              <strong>Pasa Asistencia en la Clase</strong>
-              <p>En el módulo <em>"Asistencia"</em> o <em>"Hoy"</em>, pasa lista marcando a los alumnos como <strong>Presentes</strong> o <strong>Ausentes</strong>. La evaluación siempre requiere saber quién vino al aula.</p>
-            </div>
-          </div>
-
-          <div class="pm-guide-step">
-            <div class="pm-step-num">3</div>
-            <div class="pm-step-content">
-              <strong>Califica en el Mapa Duolingo (5★)</strong>
-              <p>Abre el <em>"Mapa"</em> de la clase, toca el indicador que trabajaste hoy y califica a los presentes de <strong>1 a 5 estrellas (⭐)</strong>. Con 5★ el indicador se marca como <em>Dominado</em> 👑.</p>
-            </div>
-          </div>
-
-          <div class="pm-guide-step">
-            <div class="pm-step-num">4</div>
-            <div class="pm-step-content">
-              <strong>Controla Deudas y Candados (🔒)</strong>
-              <p>Si un alumno faltó o requiere reforzar un prerrequisito, se le genera una <strong>Deuda Pedagógica</strong> para su sesión de recuperación, desbloqueando su progreso.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Legend -->
-        <div class="pm-guide-legend">
-          <h4>Glosario de Indicadores del Mapa:</h4>
-          <div class="pm-legend-grid">
-            <div class="pm-legend-item">
-              <span class="pm-leg-icon leg-green">👑 ⭐</span>
-              <span><strong>Dominado (5★):</strong> Logrado por el grupo.</span>
-            </div>
-            <div class="pm-legend-item">
-              <span class="pm-leg-icon leg-blue">▶️</span>
-              <span><strong>En Progreso:</strong> En evaluación activa.</span>
-            </div>
-            <div class="pm-legend-item">
-              <span class="pm-leg-icon leg-red">🔒</span>
-              <span><strong>Bloqueado:</strong> Requiere dominar un tema previo.</span>
-            </div>
-            <div class="pm-legend-item">
-              <span class="pm-leg-icon leg-purple">👤</span>
-              <span><strong>Vista por Alumno:</strong> Filtra el mapa para 1 estudiante.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pm-guide-footer">
-        <button type="button" class="pm-btn-primary pm-guide-understood">
-          ¡Entendido, vamos a usarlo!
-        </button>
-      </div>
-    </div>
+      .pm-compact-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem;
+      }
+      .pm-compact-card {
+        padding: 0.7rem 0.65rem;
+        border-radius: 12px;
+        gap: 0.5rem;
+      }
+      .pm-compact-title {
+        font-size: 0.82rem;
+        margin-bottom: 0.15rem;
+      }
+      .pm-card-meta-line {
+        font-size: 0.66rem;
+      }
+      .pm-status-indicator {
+        width: 18px;
+        height: 18px;
+      }
+      .pm-status-dot {
+        width: 6px;
+        height: 6px;
+      }
+      .pm-icon-hierarchy {
+        padding: 0.3rem 0.45rem;
+        border-radius: 7px;
+      }
+      .pm-chip-symbol {
+        font-size: 0.72rem;
+      }
+      .pm-chip-val {
+        font-size: 0.8rem;
+      }
+      .pm-chip-arrow {
+        font-size: 0.65rem;
+      }
+      .pm-warning-chip {
+        padding: 0.3rem 0.45rem;
+        font-size: 0.66rem;
+      }
+      .pm-compact-actions {
+        gap: 0.3rem;
+      }
+      .pm-btn-compact-primary, .pm-btn-compact-secondary {
+        min-height: 34px;
+        font-size: 0.72rem;
+        padding: 0.35rem 0.3rem;
+        border-radius: 7px;
+        gap: 3px;
+      }
+      .pm-btn-compact-icon {
+        min-height: 34px;
+        padding: 0.35rem 0.45rem;
+      }
+    }
   `
-
-  document.body.appendChild(backdrop)
-
-  const closeModal = () => backdrop.remove()
-  backdrop.querySelector(".pm-guide-close").addEventListener("click", closeModal)
-  backdrop.querySelector(".pm-guide-understood").addEventListener("click", closeModal)
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) closeModal()
-  })
+  document.head.appendChild(style)
 }

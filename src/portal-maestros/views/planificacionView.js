@@ -1,6 +1,6 @@
 /**
  * planificacionView.js
- * Portal Maestros — Gestión y Rutas Académicas
+ * Portal Maestros — Gestión y Rutas Académicas (Ultra-Premium Edition)
  *
  * Módulo rediseñado enfocado 100% en la jerarquía pedagógica del maestro:
  * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con prelaciones y deudas pedagógicas).
@@ -52,53 +52,65 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
   container.innerHTML = `
     <div class="pm-planning-container">
-      <!-- Header Hero -->
+      <!-- Header Hero Ultra-Premium -->
       <div class="pm-planning-hero">
+        <div class="pm-hero-glow"></div>
         <div class="pm-hero-content">
-          <div class="pm-hero-icon">📚</div>
+          <div class="pm-hero-icon-wrap">
+            <span class="pm-hero-icon">🎼</span>
+          </div>
           <div class="pm-hero-text">
-            <h1 class="pm-hero-title">Gestión y Rutas Académicas</h1>
+            <div class="pm-hero-eyebrow">
+              <span class="pm-live-dot"></span> PLANIFICACIÓN PEDAGÓGICA
+            </div>
+            <h1 class="pm-hero-title">Malla Curricular & Rutas</h1>
             <p class="pm-hero-subtitle">
-              Diseña la malla curricular de tus clases: <strong>Unidades ➔ Objetivos ➔ Indicadores</strong> con prelaciones y seguimiento de deudas pedagógicas.
+              Estructura el aprendizaje por <strong>Unidades ➔ Objetivos ➔ Indicadores</strong> con prelación y control de deuda académica.
             </p>
           </div>
         </div>
 
         <!-- Metrics Dashboard -->
         <div class="pm-hero-stats" id="pm-hero-stats">
-          <div class="pm-stat-box">
+          <div class="pm-stat-card">
             <span class="pm-stat-num" id="stat-total-clases">-</span>
-            <span class="pm-stat-label">Mis Clases</span>
+            <span class="pm-stat-label">Clases Asignadas</span>
           </div>
-          <div class="pm-stat-box">
-            <span class="pm-stat-num" id="stat-con-ruta">-</span>
-            <span class="pm-stat-label">Con Ruta Activa</span>
+          <div class="pm-stat-card">
+            <span class="pm-stat-num pm-stat-num--success" id="stat-con-ruta">-</span>
+            <span class="pm-stat-label">Con Malla Diseñada</span>
           </div>
-          <div class="pm-stat-box">
-            <span class="pm-stat-num" id="stat-total-indicadores">-</span>
-            <span class="pm-stat-label">Indicadores Totales</span>
+          <div class="pm-stat-card">
+            <span class="pm-stat-num pm-stat-num--accent" id="stat-total-indicadores">-</span>
+            <span class="pm-stat-label">Indicadores Activos</span>
           </div>
         </div>
       </div>
 
-      <!-- Toolbar & Filters -->
+      <!-- Segmented Filter Bar -->
       <div class="pm-planning-toolbar">
-        <div class="pm-filter-pills" id="pm-class-filters">
-          <button type="button" class="pm-pill active" data-filter="all">Todas las clases</button>
-          <button type="button" class="pm-pill" data-filter="with-route">Con Ruta Diseñada</button>
-          <button type="button" class="pm-pill" data-filter="no-route">Sin Ruta (Pendientes)</button>
+        <div class="pm-segmented-control" id="pm-class-filters">
+          <button type="button" class="pm-seg-btn active" data-filter="all">
+            <i class="bi bi-grid-fill"></i> Todas
+          </button>
+          <button type="button" class="pm-seg-btn" data-filter="with-route">
+            <i class="bi bi-check-circle-fill"></i> Con Ruta
+          </button>
+          <button type="button" class="pm-seg-btn" data-filter="no-route">
+            <i class="bi bi-exclamation-circle-fill"></i> Pendientes
+          </button>
         </div>
-        <div class="pm-toolbar-search">
+        <div class="pm-search-box">
           <i class="bi bi-search"></i>
-          <input type="text" id="pm-search-clases" placeholder="Buscar clase o instrumento..." />
+          <input type="text" id="pm-search-clases" placeholder="Buscar por clase o instrumento..." />
         </div>
       </div>
 
       <!-- Main Content Grid -->
       <div id="pm-classes-grid-host">
-        <div class="pm-loading-skeleton">
+        <div class="pm-loading-card">
           <div class="spinner-border text-primary" role="status"></div>
-          <span>Cargando tus clases y mapas de rutas...</span>
+          <span>Sincronizando mallas curriculares...</span>
         </div>
       </div>
     </div>
@@ -106,18 +118,18 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
   const gridHost = container.querySelector("#pm-classes-grid-host")
   const searchInput = container.querySelector("#pm-search-clases")
-  const filterPills = container.querySelectorAll("#pm-class-filters .pm-pill")
+  const filterButtons = container.querySelectorAll("#pm-class-filters .pm-seg-btn")
 
   let currentFilter = "all"
   let currentSearch = ""
   let loadedClases = []
 
   // Event Listeners
-  filterPills.forEach((pill) => {
-    pill.addEventListener("click", () => {
-      filterPills.forEach((p) => p.classList.remove("active"))
-      pill.classList.add("active")
-      currentFilter = pill.dataset.filter
+  filterButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      filterButtons.forEach((b) => b.classList.remove("active"))
+      btn.classList.add("active")
+      currentFilter = btn.dataset.filter
       renderGrid()
     })
   })
@@ -133,10 +145,10 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       const clases = await getMisClases()
       if (!clases || clases.length === 0) {
         gridHost.innerHTML = `
-          <div class="pm-empty-state">
+          <div class="pm-empty-card">
             <div class="pm-empty-icon">🎼</div>
-            <h3>Sin clases asignadas</h3>
-            <p>Cuando la administración te asigne clases, aparecerán aquí para que puedas diseñar sus rutas.</p>
+            <h3 class="pm-empty-title">Sin clases asignadas</h3>
+            <p class="pm-empty-desc">No tienes clases asignadas en este momento. Cuando la coordinación te asigne un grupo podrás diseñar su malla aquí.</p>
           </div>
         `
         _updateHeroStats(0, 0, 0)
@@ -194,15 +206,15 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       _updateHeroStats(totalClases, conRuta, totalInd)
 
       renderGrid()
-      announce(`${totalClases} clases cargadas en Rutas Académicas.`)
+      announce(`${totalClases} clases cargadas en Malla Curricular.`)
     } catch (err) {
       console.error("[planificacionView] Error loading classes:", err)
       gridHost.innerHTML = `
-        <div class="pm-error-state">
-          <div class="pm-error-icon">⚠️</div>
-          <h3>Error al cargar las rutas</h3>
-          <p>${escapeHtml(err.message)}</p>
-          <button type="button" class="btn btn-outline-primary btn-sm mt-3" id="btn-retry-planning">
+        <div class="pm-empty-card">
+          <div class="pm-empty-icon">⚠️</div>
+          <h3 class="pm-empty-title">Error al sincronizar mallas</h3>
+          <p class="pm-empty-desc">${escapeHtml(err.message)}</p>
+          <button type="button" class="pm-btn-primary mt-3" id="btn-retry-planning">
             <i class="bi bi-arrow-clockwise"></i> Reintentar
           </button>
         </div>
@@ -239,75 +251,89 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
     if (filtered.length === 0) {
       gridHost.innerHTML = `
-        <div class="pm-empty-state">
+        <div class="pm-empty-card">
           <div class="pm-empty-icon">🔍</div>
-          <h3>No se encontraron clases</h3>
-          <p>No hay clases que coincidan con los filtros seleccionados.</p>
+          <h3 class="pm-empty-title">Sin coincidencias</h3>
+          <p class="pm-empty-desc">No hay clases que coincidan con la búsqueda o filtro aplicado.</p>
         </div>
       `
       return
     }
 
     gridHost.innerHTML = `
-      <div class="pm-routes-grid">
+      <div class="pm-premium-grid">
         ${filtered
           .map((clase) => {
             const icon = getInstrumentIcon(clase.instrumento)
             const hasRoute = clase.hasRoute
 
             return `
-              <div class="pm-route-card ${hasRoute ? "has-route" : "no-route"}" data-clase-id="${clase.id}">
-                <!-- Card Header -->
-                <div class="pm-rc-header">
-                  <div class="pm-rc-avatar">${icon}</div>
-                  <div class="pm-rc-title-block">
-                    <h3 class="pm-rc-title">${escapeHtml(clase.nombre)}</h3>
-                    <div class="pm-rc-instrument">${escapeHtml(clase.instrumento || "General")} · 👥 ${clase.totalStudents} alumno${clase.totalStudents !== 1 ? "s" : ""}</div>
+              <div class="pm-luxury-card ${hasRoute ? "has-route" : "no-route"}" data-clase-id="${clase.id}">
+                <!-- Top Glow Accent -->
+                <div class="pm-card-glow ${hasRoute ? "glow-emerald" : "glow-amber"}"></div>
+
+                <!-- Header Block -->
+                <div class="pm-card-header">
+                  <div class="pm-instrument-badge">
+                    <span>${icon}</span>
                   </div>
-                  <div class="pm-rc-status-badge ${hasRoute ? "badge-active" : "badge-pending"}">
-                    ${hasRoute ? "● Ruta Activa" : "○ Sin Ruta"}
+                  <div class="pm-header-info">
+                    <h3 class="pm-card-title">${escapeHtml(clase.nombre)}</h3>
+                    <div class="pm-card-meta">
+                      <span class="pm-meta-chip"><i class="bi bi-music-note-beamed"></i> ${escapeHtml(clase.instrumento || "General")}</span>
+                      <span class="pm-meta-chip"><i class="bi bi-people-fill"></i> ${clase.totalStudents} ${clase.totalStudents === 1 ? "alumno" : "alumnos"}</span>
+                    </div>
+                  </div>
+                  <div class="pm-status-pill ${hasRoute ? "status-active" : "status-pending"}">
+                    <span class="pm-pill-dot"></span>
+                    <span>${hasRoute ? "Ruta Lista" : "Sin Ruta"}</span>
                   </div>
                 </div>
 
-                <!-- Card Structure Summary -->
-                <div class="pm-rc-body">
+                <!-- Body / Hierarchy Stepper -->
+                <div class="pm-card-body">
                   ${
                     hasRoute
                       ? `
-                    <div class="pm-hierarchy-stats">
-                      <div class="pm-hs-item">
-                        <span class="pm-hs-val">${clase.unidadesCount}</span>
-                        <span class="pm-hs-lbl">Unidades</span>
+                    <div class="pm-stepper-capsules">
+                      <div class="pm-capsule">
+                        <span class="pm-capsule-num">${clase.unidadesCount}</span>
+                        <span class="pm-capsule-lbl">Unidades</span>
                       </div>
-                      <div class="pm-hs-divider">➔</div>
-                      <div class="pm-hs-item">
-                        <span class="pm-hs-val">${clase.objetivosCount}</span>
-                        <span class="pm-hs-lbl">Objetivos</span>
+                      <div class="pm-capsule-arrow"><i class="bi bi-chevron-right"></i></div>
+                      <div class="pm-capsule">
+                        <span class="pm-capsule-num">${clase.objetivosCount}</span>
+                        <span class="pm-capsule-lbl">Objetivos</span>
                       </div>
-                      <div class="pm-hs-divider">➔</div>
-                      <div class="pm-hs-item">
-                        <span class="pm-hs-val">${clase.indicadoresCount}</span>
-                        <span class="pm-hs-lbl">Indicadores</span>
+                      <div class="pm-capsule-arrow"><i class="bi bi-chevron-right"></i></div>
+                      <div class="pm-capsule pm-capsule--highlight">
+                        <span class="pm-capsule-num">${clase.indicadoresCount}</span>
+                        <span class="pm-capsule-lbl">Indicadores</span>
                       </div>
                     </div>
                   `
                       : `
-                    <div class="pm-no-route-notice">
-                      <i class="bi bi-exclamation-circle-fill text-warning"></i>
-                      <span>Esta clase no tiene un mapa de ruta definido. Crea una para organizar tus clases y calificar.</span>
+                    <div class="pm-warning-banner">
+                      <div class="pm-warn-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                      <div class="pm-warn-text">
+                        <strong>Malla pendiente de diseño</strong>
+                        <span>Crea las unidades y objetivos para evaluar con estrellas en asistencia.</span>
+                      </div>
                     </div>
                   `
                   }
                 </div>
 
-                <!-- Card Actions -->
-                <div class="pm-rc-actions">
-                  <button type="button" class="pm-btn-action pm-btn-designer" data-clase-id="${clase.id}" title="Diseñar o editar Unidades, Objetivos e Indicadores">
-                    <i class="bi bi-pencil-square"></i> ${hasRoute ? "Editar Ruta" : "Diseñar Ruta"}
+                <!-- Footer Action Buttons -->
+                <div class="pm-card-footer">
+                  <button type="button" class="pm-btn-primary pm-btn-designer" data-clase-id="${clase.id}">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>${hasRoute ? "Editar Malla" : "Diseñar Malla"}</span>
                   </button>
 
-                  <button type="button" class="pm-btn-action pm-btn-map" data-clase-id="${clase.id}" title="Abrir matriz interactiva de logro y deudas">
-                    <i class="bi bi-diagram-3-fill"></i> Ver Mapa & Deudas
+                  <button type="button" class="pm-btn-secondary pm-btn-map" data-clase-id="${clase.id}">
+                    <i class="bi bi-diagram-3-fill"></i>
+                    <span>Ver Mapa & Deudas</span>
                   </button>
                 </div>
               </div>
@@ -339,480 +365,642 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
   await loadData()
 }
 
-// ─── Estilos CSS ───────────────────────────────────────────────────────────────
+// ─── Estilos CSS Ultra-Premium ───────────────────────────────────────────────
 
 function _injectStyles() {
-  if (document.getElementById("pm-planning-redesign-styles")) return
+  if (document.getElementById("pm-planning-ultra-styles")) return
 
   const style = document.createElement("style")
-  style.id = "pm-planning-redesign-styles"
+  style.id = "pm-planning-ultra-styles"
   style.textContent = `
     .pm-planning-container {
-      max-width: 1280px;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: 1.5rem;
-      color: var(--pm-text, #1e293b);
+      padding: 1.75rem 1.5rem 3rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* ── Hero Banner ── */
+    /* ── Hero Banner Ultra-Premium ── */
     .pm-planning-hero {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      position: relative;
+      background: radial-gradient(130% 120% at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
       color: #fff;
-      padding: 2rem 2.2rem;
-      border-radius: 20px;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+      padding: 2.2rem 2.5rem;
+      border-radius: 24px;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 1.5rem;
+      gap: 1.8rem;
       margin-bottom: 2rem;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      position: relative;
       overflow: hidden;
     }
 
-    .pm-planning-hero::after {
-      content: "";
+    .pm-hero-glow {
       position: absolute;
-      right: -40px;
-      bottom: -40px;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+      top: -60px;
+      right: 15%;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .pm-hero-content {
       display: flex;
       align-items: center;
-      gap: 1.2rem;
-      max-width: 680px;
+      gap: 1.4rem;
+      max-width: 650px;
+      position: relative;
+      z-index: 1;
     }
 
-    .pm-hero-icon {
-      font-size: 2.8rem;
-      background: rgba(255, 255, 255, 0.06);
-      width: 68px;
-      height: 68px;
+    .pm-hero-icon-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 2.5rem;
       flex-shrink: 0;
     }
 
-    .pm-hero-title {
-      font-size: 1.6rem;
+    .pm-hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
       font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #818cf8;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    .pm-live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+
+    .pm-hero-title {
+      font-size: 1.85rem;
+      font-weight: 900;
       margin: 0 0 0.4rem;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .pm-hero-subtitle {
-      font-size: 0.92rem;
+      font-size: 0.95rem;
       color: #94a3b8;
       margin: 0;
       line-height: 1.5;
     }
 
     .pm-hero-subtitle strong {
-      color: #e2e8f0;
+      color: #f1f5f9;
+      font-weight: 700;
     }
 
     .pm-hero-stats {
       display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
+      gap: 0.85rem;
+      position: relative;
+      z-index: 1;
     }
 
-    .pm-stat-box {
-      background: rgba(255, 255, 255, 0.04);
+    .pm-stat-card {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 0.9rem 1.4rem;
-      border-radius: 14px;
+      border-radius: 16px;
+      padding: 1rem 1.4rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-width: 100px;
+      min-width: 110px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
 
     .pm-stat-num {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: #38bdf8;
+      font-size: 1.75rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #f8fafc;
+      line-height: 1.1;
+    }
+
+    .pm-stat-num--success {
+      color: #34d399;
+      text-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
+    }
+
+    .pm-stat-num--accent {
+      color: #a78bfa;
+      text-shadow: 0 0 16px rgba(167, 139, 250, 0.35);
     }
 
     .pm-stat-label {
-      font-size: 0.75rem;
-      color: #94a3b8;
-      font-weight: 600;
+      font-size: 0.72rem;
+      color: #64748b;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
+      margin-top: 0.35rem;
     }
 
-    /* ── Toolbar & Filters ── */
+    /* ── Toolbar & Segmented Control ── */
     .pm-planning-toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
+      gap: 1.2rem;
       flex-wrap: wrap;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
-    .pm-filter-pills {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+    .pm-segmented-control {
+      display: inline-flex;
+      background: rgba(15, 23, 42, 0.05);
+      border: 1px solid var(--pm-border, rgba(0, 0, 0, 0.08));
+      padding: 4px;
+      border-radius: 16px;
+      gap: 4px;
     }
 
-    .pm-pill {
-      background: var(--pm-surface, #fff);
+    .pm-seg-btn {
+      background: transparent;
+      border: none;
       color: var(--pm-text-muted, #64748b);
-      border: 1px solid var(--pm-border, #e2e8f0);
-      padding: 0.55rem 1.1rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
+      font-size: 0.86rem;
       font-weight: 700;
+      padding: 0.55rem 1.1rem;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .pm-pill:hover {
-      border-color: #cbd5e1;
-      color: var(--pm-text, #1e293b);
+    .pm-seg-btn:hover {
+      color: var(--pm-text, #0f172a);
     }
 
-    .pm-pill.active {
-      background: var(--pm-primary, #3b82f6);
+    .pm-seg-btn.active {
+      background: var(--pm-primary, #4f46e5);
       color: #fff;
-      border-color: var(--pm-primary, #3b82f6);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
     }
 
-    .pm-toolbar-search {
+    .pm-search-box {
       position: relative;
-      min-width: 260px;
+      min-width: 280px;
     }
 
-    .pm-toolbar-search i {
+    .pm-search-box i {
       position: absolute;
-      left: 12px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
       color: #94a3b8;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
     }
 
-    .pm-toolbar-search input {
+    .pm-search-box input {
       width: 100%;
-      padding: 0.55rem 1rem 0.55rem 36px;
-      border-radius: 999px;
+      padding: 0.65rem 1.1rem 0.65rem 40px;
+      border-radius: 14px;
       border: 1px solid var(--pm-border, #e2e8f0);
       background: var(--pm-surface, #fff);
       color: inherit;
-      font-size: 0.85rem;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
     }
 
-    .pm-toolbar-search input:focus {
+    .pm-search-box input:focus {
       outline: none;
-      border-color: var(--pm-primary, #3b82f6);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      border-color: var(--pm-primary, #4f46e5);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
     }
 
-    /* ── Routes Grid ── */
-    .pm-routes-grid {
+    /* ── Grid & Luxury Cards ── */
+    .pm-premium-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.6rem;
     }
 
-    .pm-route-card {
-      background: var(--pm-surface, #fff);
+    .pm-luxury-card {
+      position: relative;
+      background: var(--pm-surface, #ffffff);
       border: 1px solid var(--pm-border, #e2e8f0);
-      border-radius: 18px;
-      padding: 1.4rem;
+      border-radius: 22px;
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
-      gap: 1.2rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-      transition: all 0.25s ease;
+      gap: 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
     }
 
-    .pm-route-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+    .pm-luxury-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.09);
       border-color: #cbd5e1;
     }
 
-    .pm-route-card.has-route {
-      border-top: 4px solid #10b981;
+    .pm-card-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
     }
 
-    .pm-route-card.no-route {
-      border-top: 4px solid #f59e0b;
+    .glow-emerald {
+      background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
     }
 
-    .pm-rc-header {
+    .glow-amber {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde68a);
+    }
+
+    .pm-card-header {
       display: flex;
       align-items: center;
-      gap: 0.9rem;
+      gap: 1rem;
     }
 
-    .pm-rc-avatar {
-      font-size: 1.8rem;
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: rgba(59, 130, 246, 0.08);
+    .pm-instrument-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+      border: 1px solid rgba(79, 70, 229, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 1.9rem;
       flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
     }
 
-    .pm-rc-title-block {
+    .pm-header-info {
       flex: 1;
       min-width: 0;
     }
 
-    .pm-rc-title {
-      font-size: 1.05rem;
+    .pm-card-title {
+      font-size: 1.12rem;
       font-weight: 800;
-      margin: 0 0 0.2rem;
+      margin: 0 0 0.25rem;
+      letter-spacing: -0.02em;
+      color: var(--pm-text, #0f172a);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: var(--pm-text, #0f172a);
     }
 
-    .pm-rc-instrument {
-      font-size: 0.78rem;
-      color: var(--pm-text-muted, #64748b);
+    .pm-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pm-meta-chip {
+      font-size: 0.76rem;
       font-weight: 600;
+      color: var(--pm-text-muted, #64748b);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
-    .pm-rc-status-badge {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 0.25rem 0.65rem;
+    .pm-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 0.3rem 0.75rem;
       border-radius: 999px;
       white-space: nowrap;
     }
 
-    .pm-rc-status-badge.badge-active {
+    .status-active {
       background: rgba(16, 185, 129, 0.12);
-      color: #10b981;
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.28);
     }
 
-    .pm-rc-status-badge.badge-pending {
+    .status-active .pm-pill-dot {
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    .status-pending {
       background: rgba(245, 158, 11, 0.12);
-      color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.28);
     }
 
-    .pm-rc-body {
+    .status-pending .pm-pill-dot {
+      background: #f59e0b;
+    }
+
+    .pm-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .pm-card-body {
       flex: 1;
     }
 
-    /* Hierarchy Stats */
-    .pm-hierarchy-stats {
+    /* Stepper Capsules */
+    .pm-stepper-capsules {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: var(--pm-surface-2, #f8fafc);
-      padding: 0.8rem 1rem;
-      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      border-radius: 16px;
       border: 1px solid var(--pm-border, #e2e8f0);
     }
 
-    .pm-hs-item {
+    .pm-capsule {
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 2px;
     }
 
-    .pm-hs-val {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: var(--pm-primary, #3b82f6);
+    .pm-capsule-num {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--pm-primary, #4f46e5);
+      line-height: 1;
     }
 
-    .pm-hs-lbl {
+    .pm-capsule--highlight .pm-capsule-num {
+      color: #059669;
+    }
+
+    .pm-capsule-lbl {
       font-size: 0.68rem;
       font-weight: 700;
       color: var(--pm-text-muted, #64748b);
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
     }
 
-    .pm-hs-divider {
+    .pm-capsule-arrow {
       color: #cbd5e1;
       font-size: 0.85rem;
     }
 
-    .pm-no-route-notice {
+    .pm-warning-banner {
       display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
-      padding: 0.8rem;
-      border-radius: 12px;
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.2);
-      font-size: 0.8rem;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 0.85rem 1rem;
+      border-radius: 14px;
+      background: rgba(245, 158, 11, 0.07);
+      border: 1px solid rgba(245, 158, 11, 0.22);
+    }
+
+    .pm-warn-icon {
+      font-size: 1.3rem;
+      color: #f59e0b;
+      flex-shrink: 0;
+    }
+
+    .pm-warn-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 0.78rem;
       color: #92400e;
-      line-height: 1.4;
+      line-height: 1.35;
+    }
+
+    .pm-warn-text strong {
+      font-weight: 700;
+      color: #78350f;
     }
 
     /* Actions */
-    .pm-rc-actions {
+    .pm-card-footer {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.75rem;
+      padding-top: 0.2rem;
     }
 
-    .pm-btn-action {
+    .pm-btn-primary {
       border: none;
-      padding: 0.65rem 0.85rem;
-      border-radius: 12px;
-      font-size: 0.82rem;
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      color: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      font-size: 0.86rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .pm-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+    }
+
+    .pm-btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .pm-btn-secondary {
+      border: 1px solid var(--pm-border, #cbd5e1);
+      background: var(--pm-surface-2, #f8fafc);
+      color: var(--pm-text, #334155);
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      font-size: 0.86rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.4rem;
+      gap: 6px;
       transition: all 0.2s ease;
     }
 
-    .pm-btn-designer {
-      background: var(--pm-primary, #3b82f6);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-    }
-
-    .pm-btn-designer:hover {
-      background: #2563eb;
-      transform: translateY(-1px);
-    }
-
-    .pm-btn-map {
-      background: var(--pm-surface-2, #f1f5f9);
-      color: var(--pm-text, #334155);
-      border: 1px solid var(--pm-border, #cbd5e1);
-    }
-
-    .pm-btn-map:hover {
-      background: #e2e8f0;
+    .pm-btn-secondary:hover {
+      background: #f1f5f9;
       color: #0f172a;
+      border-color: #94a3b8;
     }
 
-    /* States */
-    .pm-loading-skeleton,
-    .pm-empty-state,
-    .pm-error-state {
-      padding: 4rem 2rem;
+    .pm-btn-secondary:active {
+      transform: scale(0.98);
+    }
+
+    /* Loading & Empty States */
+    .pm-loading-card,
+    .pm-empty-card {
+      padding: 4.5rem 2rem;
       text-align: center;
       background: var(--pm-surface, #fff);
-      border-radius: 18px;
+      border-radius: 22px;
       border: 1px dashed var(--pm-border, #cbd5e1);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
-    .pm-empty-icon, .pm-error-icon {
-      font-size: 3rem;
+    .pm-empty-icon {
+      font-size: 3.2rem;
     }
 
-    /* Dark Mode Support */
-    [data-theme="dark"] .pm-planning-container {
-      color: #f1f5f9;
+    .pm-empty-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin: 0;
+      color: var(--pm-text, #0f172a);
     }
 
-    [data-theme="dark"] .pm-pill {
-      background: #1e293b;
-      border-color: #334155;
+    .pm-empty-desc {
+      font-size: 0.88rem;
+      color: var(--pm-text-muted, #64748b);
+      max-width: 440px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Dark Theme Support */
+    [data-theme="dark"] .pm-segmented-control {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    [data-theme="dark"] .pm-seg-btn {
       color: #94a3b8;
     }
 
-    [data-theme="dark"] .pm-pill.active {
-      background: #3b82f6;
+    [data-theme="dark"] .pm-seg-btn:hover {
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-toolbar-search input {
+    [data-theme="dark"] .pm-search-box input {
       background: #1e293b;
-      border-color: #334155;
+      border-color: rgba(255, 255, 255, 0.1);
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-route-card {
-      background: #1e293b;
-      border-color: #334155;
+    [data-theme="dark"] .pm-luxury-card {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-color: rgba(255, 255, 255, 0.08);
     }
 
-    [data-theme="dark"] .pm-rc-title {
+    [data-theme="dark"] .pm-card-title {
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-hierarchy-stats {
-      background: #0f172a;
-      border-color: #334155;
+    [data-theme="dark"] .pm-stepper-capsules {
+      background: rgba(15, 23, 42, 0.7);
+      border-color: rgba(255, 255, 255, 0.06);
     }
 
-    [data-theme="dark"] .pm-btn-map {
-      background: #0f172a;
-      color: #cbd5e1;
-      border-color: #334155;
+    [data-theme="dark"] .pm-btn-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
     }
 
+    [data-theme="dark"] .pm-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    [data-theme="dark"] .pm-warning-banner {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+
+    [data-theme="dark"] .pm-warn-text {
+      color: #fde68a;
+    }
+
+    [data-theme="dark"] .pm-warn-text strong {
+      color: #fbbf24;
+    }
+
+    /* ── Mobile Viewport ── */
     @media (max-width: 768px) {
       .pm-planning-container {
-        padding: 0.85rem;
+        padding: 0.9rem;
       }
       .pm-planning-hero {
-        padding: 1.25rem;
-        border-radius: 16px;
+        padding: 1.4rem;
+        border-radius: 20px;
         flex-direction: column;
         align-items: stretch;
-        gap: 1.2rem;
+        gap: 1.3rem;
       }
       .pm-hero-content {
-        gap: 0.9rem;
+        gap: 1rem;
       }
-      .pm-hero-icon {
-        width: 52px;
-        height: 52px;
-        font-size: 2.2rem;
-        border-radius: 12px;
+      .pm-hero-icon-wrap {
+        width: 56px;
+        height: 56px;
+        font-size: 2rem;
+        border-radius: 16px;
       }
       .pm-hero-title {
-        font-size: 1.35rem;
+        font-size: 1.45rem;
       }
       .pm-hero-subtitle {
-        font-size: 0.84rem;
+        font-size: 0.86rem;
       }
       .pm-hero-stats {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem;
-        width: 100%;
       }
-      .pm-stat-box {
+      .pm-stat-card {
         min-width: 0;
-        padding: 0.65rem 0.4rem;
-        border-radius: 12px;
+        padding: 0.75rem 0.4rem;
+        border-radius: 14px;
       }
       .pm-stat-num {
-        font-size: 1.3rem;
+        font-size: 1.4rem;
       }
       .pm-stat-label {
-        font-size: 0.65rem;
+        font-size: 0.62rem;
         text-align: center;
       }
       .pm-planning-toolbar {
@@ -820,53 +1008,38 @@ function _injectStyles() {
         align-items: stretch;
         gap: 0.85rem;
       }
-      .pm-filter-pills {
-        overflow-x: auto;
-        padding-bottom: 4px;
-        -webkit-overflow-scrolling: touch;
-        flex-wrap: nowrap;
-        scrollbar-width: none;
+      .pm-segmented-control {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
       }
-      .pm-filter-pills::-webkit-scrollbar {
-        display: none;
+      .pm-seg-btn {
+        justify-content: center;
+        padding: 0.6rem 0.5rem;
+        font-size: 0.8rem;
       }
-      .pm-pill {
-        white-space: nowrap;
-        padding: 0.5rem 0.95rem;
-        font-size: 0.82rem;
-        flex-shrink: 0;
-      }
-      .pm-toolbar-search {
+      .pm-search-box {
         width: 100%;
       }
-      .pm-toolbar-search input {
-        font-size: 16px; /* Prevents auto-zoom on mobile */
-        padding: 0.65rem 1rem 0.65rem 38px;
+      .pm-search-box input {
+        font-size: 16px;
+        padding: 0.75rem 1rem 0.75rem 40px;
       }
-      .pm-routes-grid {
+      .pm-premium-grid {
         grid-template-columns: 1fr;
-        gap: 1rem;
+        gap: 1.2rem;
       }
-      .pm-route-card {
-        padding: 1.1rem;
-        border-radius: 16px;
+      .pm-luxury-card {
+        padding: 1.25rem;
+        border-radius: 20px;
       }
-      .pm-rc-avatar {
-        width: 44px;
-        height: 44px;
-        font-size: 1.6rem;
-      }
-      .pm-rc-title {
-        font-size: 1rem;
-      }
-      .pm-rc-actions {
+      .pm-card-footer {
         grid-template-columns: 1fr;
-        gap: 0.6rem;
+        gap: 0.65rem;
       }
-      .pm-btn-action {
-        min-height: 44px;
-        font-size: 0.88rem;
-        padding: 0.75rem 1rem;
+      .pm-btn-primary, .pm-btn-secondary {
+        min-height: 48px;
+        font-size: 0.92rem;
       }
     }
   `

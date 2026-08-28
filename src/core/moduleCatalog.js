@@ -58,7 +58,7 @@ export const moduleCatalog = Object.freeze([
     ['maestros'], ['clases-hoy'], ['bitacora-suplentes', 'workflow'],
   ]),
   module('alumnos', 'src/modules/alumnos/alumnos.router.js', 'shared', [
-    ['alumnos'], ['alumnos-reporte-mes', 'workflow'], ['alumnos-inscribir', 'workflow'], ['alumnos-pdf-demo', 'workflow'], ['alumno', 'internal-detail'], ['postulados'], ['postulado', 'internal-detail'], ['postulados-calendario'],
+    ['alumnos'], ['alumnos-duplicados', 'workflow'], ['alumnos-reporte-mes', 'workflow'], ['alumnos-inscribir', 'workflow'], ['alumnos-pdf-demo', 'workflow'], ['alumno', 'internal-detail'], ['postulados'], ['postulado', 'internal-detail'], ['postulados-calendario'],
   ]),
   module('salones', 'src/modules/salones/salones.router.js', 'ACM', [['salones']]),
   module('clases', 'src/modules/clases/clases.router.js', 'ACM', [['clases']]),

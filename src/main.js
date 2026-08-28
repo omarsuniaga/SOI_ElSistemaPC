@@ -457,6 +457,7 @@ const NAV_GROUPS = [
     icon: 'bi-people',
     items: [
       { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
+      { id: 'alumnos-duplicados', label: 'Unificación Duplicados', icon: 'bi-diagram-3' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
       { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },

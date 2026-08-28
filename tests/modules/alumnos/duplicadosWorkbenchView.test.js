@@ -30,7 +30,7 @@ vi.mock('../../../src/modules/alumnos/api/alumnosApi.js', () => ({
   fusionarAlumnos: vi.fn(),
 }))
 
-describe('duplicadosWorkbenchView (4-Column Deduplication Workspace)', () => {
+describe('duplicadosWorkbenchView (Workbench 2-Panel View)', () => {
   let container
 
   beforeEach(() => {
@@ -48,11 +48,11 @@ describe('duplicadosWorkbenchView (4-Column Deduplication Workspace)', () => {
 
     await renderDuplicadosWorkbenchView(container)
 
-    expect(container.innerHTML).toContain('No hay duplicados pendientes')
-    expect(container.innerHTML).toContain('Base de datos limpia y unificada')
+    expect(container.innerHTML).toContain('¡Base de Alumnos Impecable!')
+    expect(container.innerHTML).toContain('No se detectaron registros duplicados')
   })
 
-  it('renderiza el layout de 4 columnas cuando se detectan parejas duplicadas', async () => {
+  it('renderiza el layout con panel izquierdo y derecho cuando se detectan parejas duplicadas', async () => {
     alumnosApi.obtenerTodosLosAlumnosParaAnalisis.mockResolvedValue([
       { id: '1', nombre_completo: 'Matias Paredes', padre_nombre: 'Carlos Paredes', instrumento_principal: 'Violín' },
       { id: '2', nombre_completo: 'Mathias Alejandro Paredes Masuoka', padre_nombre: 'Carlos Paredes', instrumento_principal: 'Violín' },
@@ -66,24 +66,19 @@ describe('duplicadosWorkbenchView (4-Column Deduplication Workspace)', () => {
 
     await renderDuplicadosWorkbenchView(container)
 
-    // Columna 1: Bandeja
-    expect(container.innerHTML).toContain('Bandeja (1)')
-    expect(container.innerHTML).toContain('inputBuscadorDuplicados')
+    // Panel Izquierdo: Cola de Revisión
+    expect(container.innerHTML).toContain('Cola de Revisión')
+    expect(container.innerHTML).toContain('input-buscar-cola')
 
-    // Columna 2 & 3: Expedientes
+    // Panel Derecho: Tarjetas y Consolidación
     expect(container.innerHTML).toContain('Matias Paredes')
     expect(container.innerHTML).toContain('Mathias Alejandro Paredes Masuoka')
-    expect(container.innerHTML).toContain('Violín I')
-    expect(container.innerHTML).toContain('Coro Infantil')
-
-    // Columna 4: Resultado Unificado
-    expect(container.innerHTML).toContain('Resultado Unificado')
-    expect(container.innerHTML).toContain('Clases combinadas (2)')
+    expect(container.innerHTML).toContain('Consolidación automática de clases')
+    expect(container.innerHTML).toContain('Resolución Campo a Campo')
     expect(container.innerHTML).toContain('btnConfirmarFusion')
-    expect(container.innerHTML).toContain('btnFusionRapida')
   })
 
-  it('permite alternar el alumno Principal dinámicamente y ejecutar la fusión', async () => {
+  it('permite alternar el alumno Principal haciendo clic en la tarjeta y ejecutar la fusión', async () => {
     alumnosApi.obtenerTodosLosAlumnosParaAnalisis.mockResolvedValue([
       { id: '1', nombre_completo: 'Matias Paredes', padre_nombre: 'Carlos Paredes' },
       { id: '2', nombre_completo: 'Mathias Alejandro Paredes Masuoka', padre_nombre: 'Carlos Paredes' },
@@ -93,10 +88,10 @@ describe('duplicadosWorkbenchView (4-Column Deduplication Workspace)', () => {
 
     await renderDuplicadosWorkbenchView(container)
 
-    // Cambiar principal al Alumno 1
-    const btnSetPrincipalA = container.querySelector('[data-set-principal="1"]')
-    expect(btnSetPrincipalA).not.toBeNull()
-    btnSetPrincipalA.click()
+    // Clic en la tarjeta A para fijarlo como principal
+    const cardA = container.querySelector('#card-select-a')
+    expect(cardA).not.toBeNull()
+    cardA.click()
 
     // Confirmar Fusión
     const btnConfirmar = container.querySelector('#btnConfirmarFusion')
@@ -109,7 +104,7 @@ describe('duplicadosWorkbenchView (4-Column Deduplication Workspace)', () => {
       datosFusion: expect.any(Object),
     }))
 
-    // Al liquidar la única pareja, pasa automáticamente a pantalla de base de datos limpia
-    expect(container.innerHTML).toContain('No hay duplicados pendientes')
+    // Al liquidar la única pareja, pasa a estado vacío
+    expect(container.innerHTML).toContain('¡Base de Alumnos Impecable!')
   })
 })

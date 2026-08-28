@@ -307,9 +307,9 @@ export const DuplicadosModal = {
           : `<div class="p-2.5 rounded-3 bg-body-tertiary border small text-muted mb-2"><i class="bi bi-check2-circle text-success me-1"></i>Sin conflictos de datos.</div>`
 
         return `
-          <div class="h-100 d-flex flex-column">
+          <div class="d-flex flex-column gap-3 pb-2">
             
-            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
+            <div class="d-flex justify-content-between align-items-center pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
               <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 shadow-xs" id="btnVolverALista">
                   <i class="bi bi-arrow-left me-1"></i>Volver a lista
@@ -329,9 +329,9 @@ export const DuplicadosModal = {
               </div>
             </div>
 
-            <div class="row g-3 flex-grow-1 overflow-hidden">
+            <div class="row g-3 align-items-start">
               
-              <div class="col-12 col-lg-5 d-flex flex-column gap-2.5 overflow-auto pe-1" style="max-height: calc(92vh - 180px);">
+              <div class="col-12 col-xl-5 d-flex flex-column gap-2.5">
                 
                 <div class="p-3 border border-primary-subtle rounded-4 bg-body shadow-xs">
                   <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom border-primary-subtle">
@@ -409,21 +409,21 @@ export const DuplicadosModal = {
 
               </div>
 
-              <div class="col-12 col-lg-7 d-flex flex-column h-100">
-                <div class="p-3 rounded-4 border bg-body shadow-xs d-flex flex-column h-100">
+              <div class="col-12 col-xl-7 d-flex flex-column gap-3">
+                <div class="p-3 rounded-4 border bg-body shadow-xs">
                   
                   <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-shrink-0 flex-wrap gap-1">
                     <span class="small fw-bold text-uppercase text-body d-flex align-items-center gap-1.5" style="font-size:0.78rem;">
                       <i class="bi bi-table text-primary"></i>
                       <span>Resolución de Campos</span>
                     </span>
-                    <div class="d-flex gap-1.5">
+                    <div class="d-flex gap-1.5 flex-wrap">
                       ${resumenConflictos}
                       ${resumenCompletados}
                     </div>
                   </div>
 
-                  <div class="overflow-auto flex-grow-1 pe-1" style="max-height: calc(92vh - 270px);">
+                  <div class="table-responsive rounded-3 border" style="max-height: 520px; overflow-y: auto;">
                     <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
                       <thead class="table-light sticky-top">
                         <tr>
@@ -437,7 +437,7 @@ export const DuplicadosModal = {
                     </table>
                   </div>
 
-                  <div class="text-muted small mt-2 pt-2 border-top flex-shrink-0" style="font-size:0.74rem;">
+                  <div class="text-muted small mt-2 pt-2 border-top" style="font-size:0.74rem;">
                     <i class="bi bi-shield-fill-check text-success me-1"></i>Al confirmar, la unificación es atómica: se actualiza el principal, se migra el historial y se da de baja el registro secundario.
                   </div>
 

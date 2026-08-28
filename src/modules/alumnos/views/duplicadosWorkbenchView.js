@@ -229,13 +229,11 @@ export async function renderDuplicadosWorkbenchView(container) {
     listContainer.innerHTML = colaDuplicados.map((item, idx) => {
       const isSelected = idx === indiceActual
       const pct = Math.round(item.puntaje * 100)
-      const inicial = (item.a.nombre_completo || item.a.nombre || '?').slice(0, 1).toUpperCase()
 
       const motivos = []
       if (item.coincidencias?.padre_nombre) motivos.push('Mismo Padre')
       if (item.coincidencias?.madre_nombre) motivos.push('Misma Madre')
       if (item.coincidencias?.telefono) motivos.push('Mismo Teléfono')
-      if (item.coincidencias?.fecha_nacimiento) motivos.push('Misma Fecha Nac.')
       if (item.esSubsetNombre) motivos.push('Nombre similar')
 
       return `

@@ -1,62 +1,15 @@
 /**
- * teacherRouteMapPanel.js — Panel del Mapa de Rutas del maestro (por clase)
+ * teacherRouteMapPanel.js — Panel del Mapa de Rutas Vertical estilo Duolingo
  *
- * Compartido entre hoyView.js y asistenciaView.js: ambos abren el mismo mapa
- * SVG estilo Duolingo (anillo de luz = sin evaluar / con deuda, gris-opaco =
- * evaluado al 100%) sobre la ruta personal del maestro (maestro_routes).
- *
- * Los 3 niveles de la jerarquía tienen roles distintos al hacer click —
- * solo el Indicador es "hoja calificable"; Unidad y Objetivo son vistas de
- * resumen/agregado, nunca abren la calificación directamente:
- *   - Indicador → IndicadorGradingModal (calificar alumnos presentes).
- *   - Objetivo  → resumen de sus indicadores y el check de cada uno.
- *   - Unidad    → sinapsis (qué se aprende) + promedio de sus objetivos.
+ * Modal a pantalla completa (100vw / 100vh) con camino sinuoso vertical (S-curve),
+ * nodos táctiles en 3D (Dominado 🌟, En Progreso 🎯, Con Deuda 🔒) y banderas de unidad.
  */
-import { escHTML } from '../utils/portalUtils.js'
-import { openTeacherRoutePicker, openTeacherRouteBuilder } from './TeacherRouteBuilder.js'
-import { openIndicadorGradingModal } from './IndicadorGradingModal.js'
-import { getPersonalRoutes, getIndicadorCheckStates } from '../services/maestroDataService.js'
 
-// Jerarquía de tamaño real: madre (Unidad) notablemente más grande que sus
-// hijos (Objetivo), que a su vez son más grandes que los nietos (Indicador).
-const NODE_R = { unidad: 34, objetivo: 20, indicador: 11 }
-const NODE_COLOR = { unidad: '#0d6efd', objetivo: '#8b5cf6', indicador: '#10b981' }
-const NODE_GLOW = { unidad: '#93c5fd', objetivo: '#c4b5fd', indicador: '#6ee7b7' }
-const OFF_COLOR = '#94a3b8'
+import { escHTML } from "../utils/portalUtils.js"
+import { openTeacherRoutePicker, openTeacherRouteBuilder } from "./TeacherRouteBuilder.js"
+import { openIndicadorGradingModal } from "./IndicadorGradingModal.js"
+import { getPersonalRoutes, getIndicadorCheckStates } from "../services/maestroDataService.js"
 
-// Geometría del árbol de clusters (madre → hijos → nietos, ramificando hacia
-// la derecha en vez de la serpiente vertical anterior de un solo nodo por fila).
-const GAP_UNIDAD_OBJETIVO = 58
-const GAP_OBJETIVO_INDICADOR = 42
-const OBJ_SPACING_Y = 66
-const IND_SPACING_X = 34
-const BLOCK_GAP = 58
-const LEFT_PAD = 46
-const TOP_PAD = 58
-
-/**
- * Combina check_states hijos en el estado agregado del padre:
- *   'double' solo si TODOS los hijos están 'double' (unidad/objetivo "se apagan"
- *   únicamente cuando absolutamente todo debajo fue evaluado al 100%);
- *   'single' si hay al menos un hijo con progreso (evita quedar "none" con
- *   trabajo parcial ya hecho);
- *   'none' si nadie ha tocado nada debajo.
- */
-function _aggregateState(childStates) {
-  if (!childStates.length) return 'none'
-  if (childStates.every((s) => s === 'double')) return 'double'
-  if (childStates.some((s) => s !== 'none')) return 'single'
-  return 'none'
-}
-
-/**
- * Abre el mapa de rutas propio del maestro para una clase: si no tiene
- * ninguna ruta creada, abre el picker (que a su vez ofrece crear una nueva);
- * si ya tiene, muestra el panel con el mapa SVG y sus checks.
- * @param {string} claseId
- * @param {Object} maestro
- * @param {string} fechaHoy - 'YYYY-MM-DD'
- */
 export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
   const routes = await getPersonalRoutes(maestro.id, claseId, true)
 
@@ -67,7 +20,6 @@ export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
     return
   }
 
-  // Fase 1: una ruta activa por clase (UNIQUE(maestro_id, clase_id) en el schema)
   const route = routes[0]
   await _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy)
 }
@@ -76,53 +28,97 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
   const checkStates = await getIndicadorCheckStates(route.id, claseId)
   const checkByIndicador = Object.fromEntries((checkStates || []).map((c) => [c.indicador_id, c.check_state]))
 
-  const backdrop = document.createElement('div')
-  backdrop.className = 'pmr-backdrop'
+  _injectDuolingoStyles()
+
+  // Calculate stats
+  let totalIndicadores = 0
+  let dominadosCount = 0
+  let enProgresoCount = 0
+
+  const unidades = route.unidades || []
+  unidades.forEach((u) => {
+    (u.objetivos || []).forEach((o) => {
+      (o.indicadores || []).forEach((ind) => {
+        totalIndicadores += 1
+        const st = checkByIndicador[ind.id] || "none"
+        if (st === "double") dominadosCount += 1
+        else if (st === "single") enProgresoCount += 1
+      })
+    })
+  })
+
+  const progressPct = totalIndicadores > 0 ? Math.round((dominadosCount / totalIndicadores) * 100) : 0
+
+  const backdrop = document.createElement("div")
+  backdrop.className = "pmr-fullscreen-backdrop"
 
   backdrop.innerHTML = `
-    <div class="pmr-modal" role="dialog" aria-modal="true">
-      <div class="pmr-header">
-        <h3><i class="bi bi-signpost-2-fill"></i> ${escHTML(route.nombre)}</h3>
+    <div class="pmr-fullscreen-modal" role="dialog" aria-modal="true">
+      <!-- Sticky Glass Header -->
+      <div class="pmr-header-bar">
+        <div class="pmr-header-left">
+          <div class="pmr-header-badge"><i class="bi bi-signpost-2-fill"></i></div>
+          <div class="pmr-header-info">
+            <h2 class="pmr-header-title">${escHTML(route.nombre)}</h2>
+            <div class="pmr-header-progress-wrap">
+              <div class="pmr-progress-bar-bg">
+                <div class="pmr-progress-bar-fill" style="width: ${progressPct}%;"></div>
+              </div>
+              <span class="pmr-progress-text">${dominadosCount}/${totalIndicadores} dominados (${progressPct}%)</span>
+            </div>
+          </div>
+        </div>
+
         <div class="pmr-header-actions">
-          <button class="pmr-editar-btn" title="Editar unidades, objetivos e indicadores"><i class="bi bi-pencil-square"></i></button>
-          <button class="pmr-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+          <button type="button" class="pmr-action-btn pmr-btn-edit" id="pmr-btn-edit-route" title="Editar árbol de unidades y objetivos">
+            <i class="bi bi-pencil-square"></i>
+            <span class="pmr-btn-text">Editar Malla</span>
+          </button>
+          <button type="button" class="pmr-action-btn pmr-btn-close" id="pmr-btn-close-modal" aria-label="Cerrar mapa">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
       </div>
-      <div class="pmr-body" id="pmr-mapa-canvas">
-        ${(route.unidades || []).length === 0 ? '<p class="pmr-empty">Esta ruta todavía no tiene unidades.</p>' : ''}
+
+      <!-- Duolingo Vertical Trail Canvas -->
+      <div class="pmr-scroll-canvas" id="pmr-scroll-canvas">
+        ${
+          unidades.length === 0
+            ? `<div class="pmr-empty-state">
+                 <div class="pmr-empty-icon">🗺️</div>
+                 <h3>Esta ruta aún no tiene unidades</h3>
+                 <p>Presiona "Editar Malla" para agregar tus primeras unidades, objetivos e indicadores.</p>
+               </div>`
+            : `<div class="pmr-duolingo-trail" id="pmr-duolingo-trail"></div>`
+        }
       </div>
     </div>
   `
   document.body.appendChild(backdrop)
 
   const closeModal = () => backdrop.remove()
-  backdrop.querySelector('.pmr-close').addEventListener('click', closeModal)
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) closeModal()
-  })
+  backdrop.querySelector("#pmr-btn-close-modal").addEventListener("click", closeModal)
 
-  // Directo al editor de nodos de ESTA ruta (no al picker) — Fase 1 solo permite
-  // una ruta activa por clase (UNIQUE(maestro_id, clase_id)), así que el picker
-  // era un paso extra sin utilidad real acá.
-  backdrop.querySelector('.pmr-editar-btn').addEventListener('click', () => {
+  backdrop.querySelector("#pmr-btn-edit-route")?.addEventListener("click", () => {
     closeModal()
     openTeacherRouteBuilder({
       maestroId: maestro.id,
       claseId,
       route,
-      // `route` queda desactualizado tras guardar (nombres/nodos nuevos) — se
-      // vuelve a resolver desde cero en vez de reusar la referencia vieja.
       onSaved: () => abrirMapaDeRutas(claseId, maestro, fechaHoy),
     })
   })
 
-  const canvas = backdrop.querySelector('#pmr-mapa-canvas')
-  if ((route.unidades || []).length > 0) {
-    const refrescar = () => _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy)
+  // Render Vertical Duolingo Trail
+  if (unidades.length > 0) {
+    const trailContainer = backdrop.querySelector("#pmr-duolingo-trail")
+    const refrescar = () => {
+      closeModal()
+      abrirMapaDeRutas(claseId, maestro, fechaHoy)
+    }
 
-    _renderMapaSVG(canvas, route, checkByIndicador, {
+    _renderDuolingoVerticalTrail(trailContainer, route, checkByIndicador, {
       onIndicadorClick: async (indicador, breadcrumb) => {
-        closeModal()
         await openIndicadorGradingModal({
           claseId,
           fecha: fechaHoy,
@@ -133,371 +129,570 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
           onSaved: refrescar,
         })
       },
-      onObjetivoClick: (objetivo, unidad) => _abrirResumenObjetivo(objetivo, unidad, checkByIndicador),
-      onUnidadClick: (unidad) => _abrirResumenUnidad(unidad, checkByIndicador),
     })
   }
 }
 
 /**
- * Dibuja el mapa como un árbol de clusters, madre → hijos → nietos:
- * cada Unidad es un círculo grande a la izquierda; sus Objetivos son
- * círculos medianos que se ramifican a su derecha; los Indicadores de cada
- * objetivo son círculos chicos que se ramifican todavía más a la derecha,
- * en fila. La diferencia de tamaño ES la jerarquía — no hace falta leer
- * las etiquetas para saber qué nivel es cada nodo.
- *
- * Estado visual por nodo (Duolingo-style), agregado hacia arriba vía
- * `_aggregateState`:
- *   - 'none'/'single' → anillo de luz con gradiente (sin evaluar / con
- *     progreso parcial debajo) — se mantiene "encendido" para invitar al click.
- *   - 'double'        → círculo gris, opaco ("se apaga": todo lo que hay
- *     debajo de este nodo ya fue evaluado al 100%).
- * Insignia inferior derecha: check simple (deuda) o doble check (completo).
+ * Renderiza el camino vertical serpenteante (S-Curve) estilo Duolingo
  */
-function _renderMapaSVG(canvas, route, checkByIndicador, { onIndicadorClick, onObjetivoClick, onUnidadClick }) {
+function _renderDuolingoVerticalTrail(container, route, checkByIndicador, { onIndicadorClick }) {
   const unidades = route.unidades || []
-  if (unidades.length === 0) {
-    canvas.innerHTML = '<p class="pmr-empty">Esta ruta todavía no tiene unidades.</p>'
-    return
-  }
+  let globalStepIndex = 0
 
-  const nodes = [] // { type, node, unidad, objetivo, checkState, x, y }
-  const linksHTML = []
-  let maxIndicadoresEnFila = 0
-  let cursorY = TOP_PAD
-  const unidadX = LEFT_PAD + NODE_R.unidad
-  const objX = unidadX + NODE_R.unidad + GAP_UNIDAD_OBJETIVO
-  const indX0 = objX + NODE_R.objetivo + GAP_OBJETIVO_INDICADOR
+  // Patrón de oscilación horizontal estilo Duolingo (porcentaje X)
+  const X_OFFSETS = [50, 32, 22, 34, 50, 66, 78, 66]
 
-  unidades.forEach((unidad) => {
+  let fullHTML = ""
+
+  unidades.forEach((unidad, uIdx) => {
     const objetivos = unidad.objetivos || []
-    const objetivoStates = []
-    const blockTop = cursorY
+    const unitNumber = uIdx + 1
 
-    objetivos.forEach((objetivo, oi) => {
-      const objY = blockTop + oi * OBJ_SPACING_Y
-      const indicadores = objetivo.indicadores || []
-      const indicadorStates = indicadores.map((ind) => checkByIndicador[ind.id] || 'none')
-      const objetivoState = _aggregateState(indicadorStates)
-      objetivoStates.push(objetivoState)
-
-      nodes.push({ type: 'objetivo', node: objetivo, unidad, checkState: objetivoState, x: objX, y: objY })
-
-      indicadores.forEach((indicador, ii) => {
-        const indX = indX0 + ii * IND_SPACING_X
-        nodes.push({
-          type: 'indicador', node: indicador, unidad, objetivo,
-          checkState: checkByIndicador[indicador.id] || 'none', x: indX, y: objY,
+    // Flatten all indicators for this unit to make a seamless vertical trail
+    const unitIndicators = []
+    objetivos.forEach((obj) => {
+      (obj.indicadores || []).forEach((ind) => {
+        unitIndicators.push({
+          indicador: ind,
+          objetivo: obj,
+          unidad: unidad,
+          checkState: checkByIndicador[ind.id] || "none",
         })
-        linksHTML.push(_linkPath(objX, objY, indX, objY))
       })
-      maxIndicadoresEnFila = Math.max(maxIndicadoresEnFila, indicadores.length)
     })
 
-    const blockBottom = objetivos.length ? blockTop + (objetivos.length - 1) * OBJ_SPACING_Y : blockTop
-    const unidadY = objetivos.length ? (blockTop + blockBottom) / 2 : blockTop
+    const unitTotal = unitIndicators.length
+    const unitDone = unitIndicators.filter((i) => i.checkState === "double").length
 
-    nodes.unshift({ type: 'unidad', node: unidad, checkState: _aggregateState(objetivoStates), x: unidadX, y: unidadY })
-    objetivos.forEach((_, oi) => {
-      linksHTML.push(_linkPath(unidadX, unidadY, objX, blockTop + oi * OBJ_SPACING_Y))
+    fullHTML += `
+      <div class="pmr-unit-section" data-unit-index="${uIdx}">
+        <!-- Unit Banner -->
+        <div class="pmr-unit-banner">
+          <div class="pmr-unit-banner-left">
+            <span class="pmr-unit-tag">UNIDAD ${unitNumber}</span>
+            <h3 class="pmr-unit-title">${escHTML(unidad.nombre)}</h3>
+            <span class="pmr-unit-meta">${unitDone}/${unitTotal} completados · ${objetivos.length} objetivos</span>
+          </div>
+          <div class="pmr-unit-trophy">🏆</div>
+        </div>
+
+        <!-- Vertical S-Curve Path of Nodes -->
+        <div class="pmr-unit-nodes-trail">
+    `
+
+    // Generate nodes and connecting SVG path
+    const nodeCoords = []
+    const nodeYStep = 100 // vertical pixels between nodes
+    const trailHeight = Math.max(120, unitIndicators.length * nodeYStep + 40)
+
+    unitIndicators.forEach((item, itemIdx) => {
+      globalStepIndex += 1
+      const offsetIndex = (globalStepIndex - 1) % X_OFFSETS.length
+      const xPct = X_OFFSETS[offsetIndex]
+      const yPx = 40 + itemIdx * nodeYStep
+
+      nodeCoords.push({ xPct, yPx, item })
     })
 
-    cursorY = blockBottom + OBJ_SPACING_Y + BLOCK_GAP
-  })
-
-  const svgWidth = Math.max(320, indX0 + maxIndicadoresEnFila * IND_SPACING_X + 70)
-  const svgHeight = cursorY - BLOCK_GAP + TOP_PAD
-
-  const nodesHTML = nodes
-    .map((n, i) => {
-      const r = NODE_R[n.type]
-      const encendido = n.checkState !== 'double'
-      const fill = encendido ? NODE_COLOR[n.type] : OFF_COLOR
-      const glowId = `pmr-glow-${i}`
-      const gradId = `pmr-grad-${i}`
-      const titulo = n.node.nombre || ''
-      const badgeR = Math.max(6, r * 0.42)
-      const badgeOffset = r * 0.72
-
-      const badge =
-        n.checkState === 'double'
-          ? `<circle cx="${n.x + badgeOffset}" cy="${n.y + badgeOffset}" r="${badgeR}" class="pmr-svg-badge pmr-svg-badge-double" />
-             <text x="${n.x + badgeOffset}" y="${n.y + badgeOffset + badgeR * 0.35}" text-anchor="middle" class="pmr-svg-badge-text" style="font-size:${badgeR}px">✓✓</text>`
-          : n.checkState === 'single'
-          ? `<circle cx="${n.x + badgeOffset}" cy="${n.y + badgeOffset}" r="${badgeR}" class="pmr-svg-badge pmr-svg-badge-single" />
-             <text x="${n.x + badgeOffset}" y="${n.y + badgeOffset + badgeR * 0.35}" text-anchor="middle" class="pmr-svg-badge-text" style="font-size:${badgeR}px">✓</text>`
-          : ''
-
-      // Todas las etiquetas van centradas y fuera del círculo en el eje
-      // vertical (arriba para Unidad/Objetivo, abajo para Indicador) — nunca
-      // al costado, porque ahí es justo donde se ramifica el siguiente nivel
-      // y un nombre largo terminaba superpuesto con el próximo círculo.
-      const labelHTML =
-        n.type === 'indicador'
-          ? `<text x="${n.x}" y="${n.y + r + 11}" text-anchor="middle" class="pmr-svg-node-label pmr-svg-node-label-indicador">${escHTML(_truncar(titulo, 10))}</text>`
-          : `<text x="${n.x}" y="${n.y - r - (n.type === 'unidad' ? 12 : 9)}" text-anchor="middle" class="pmr-svg-node-label pmr-svg-node-label-${n.type}">${escHTML(_truncar(titulo, n.type === 'unidad' ? 16 : 14))}</text>`
-
-      return `
-        <g class="pmr-svg-node pmr-svg-node-${n.type}" data-idx="${i}" tabindex="0" role="button" aria-label="${escHTML(titulo)}">
-          <title>${escHTML(titulo)}</title>
-          ${encendido ? `<circle cx="${n.x}" cy="${n.y}" r="${r + Math.max(6, r * 0.3)}" fill="url(#${glowId})" />` : ''}
-          <circle class="pmr-svg-node-main" cx="${n.x}" cy="${n.y}" r="${r}" fill="url(#${gradId})" opacity="${encendido ? 1 : 0.6}" stroke="#fff" stroke-width="${n.type === 'indicador' ? 1.5 : 2.5}" />
-          ${badge}
-          ${labelHTML}
-        </g>
-      `
-    })
-    .join('')
-
-  const defsHTML = nodes
-    .map((n, i) => `
-      <radialGradient id="pmr-glow-${i}" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="${NODE_GLOW[n.type]}" stop-opacity="0.85" />
-        <stop offset="100%" stop-color="${NODE_GLOW[n.type]}" stop-opacity="0" />
-      </radialGradient>
-      <radialGradient id="pmr-grad-${i}" cx="35%" cy="30%" r="75%">
-        <stop offset="0%" stop-color="${_lighten(n.checkState !== 'double' ? NODE_COLOR[n.type] : OFF_COLOR)}" />
-        <stop offset="100%" stop-color="${n.checkState !== 'double' ? NODE_COLOR[n.type] : OFF_COLOR}" />
-      </radialGradient>
-    `)
-    .join('')
-
-  canvas.innerHTML = `
-    <div class="pmr-svg-scroll">
-      <svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}" style="display:block;">
-        <defs>
-          ${defsHTML}
-          <filter id="pmr-shadow" x="-40%" y="-40%" width="180%" height="180%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.18" />
-          </filter>
-        </defs>
-        <g filter="url(#pmr-shadow)">
-          ${linksHTML.join('')}
-          ${nodesHTML}
-        </g>
-      </svg>
-    </div>
-  `
-
-  canvas.querySelectorAll('.pmr-svg-node').forEach((g) => {
-    const idx = Number(g.dataset.idx)
-    const n = nodes[idx]
-    const activate = () => {
-      if (n.type === 'indicador') {
-        onIndicadorClick(n.node, `${n.unidad.nombre} > ${n.objetivo.nombre}`)
-      } else if (n.type === 'objetivo') {
-        onObjetivoClick(n.node, n.unidad)
-      } else {
-        onUnidadClick(n.node)
+    // Build SVG curved road path
+    let svgPathD = ""
+    if (nodeCoords.length > 1) {
+      svgPathD = `M ${nodeCoords[0].xPct}% ${nodeCoords[0].yPx}`
+      for (let i = 1; i < nodeCoords.length; i++) {
+        const prev = nodeCoords[i - 1]
+        const curr = nodeCoords[i]
+        const midY = (prev.yPx + curr.yPx) / 2
+        svgPathD += ` C ${prev.xPct}% ${midY}, ${curr.xPct}% ${midY}, ${curr.xPct}% ${curr.yPx}`
       }
     }
-    g.addEventListener('click', activate)
-    g.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        activate()
-      }
-    })
-  })
-}
 
-/** Curva suave (Bézier cuadrática) que conecta un nodo padre con un hijo. */
-function _linkPath(x1, y1, x2, y2) {
-  const midX = (x1 + x2) / 2
-  return `<path d="M ${x1} ${y1} Q ${midX} ${y1}, ${midX} ${(y1 + y2) / 2} T ${x2} ${y2}" class="pmr-svg-link" />`
-}
+    fullHTML += `
+      <div class="pmr-trail-stage" style="height: ${trailHeight}px;">
+        <svg class="pmr-trail-svg" width="100%" height="${trailHeight}" preserveAspectRatio="none">
+          ${svgPathD ? `<path class="pmr-trail-road-back" d="${svgPathD}" />` : ""}
+          ${svgPathD ? `<path class="pmr-trail-road-front" d="${svgPathD}" />` : ""}
+        </svg>
 
-function _truncar(text, max) {
-  if (!text) return ''
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text
-}
+        ${nodeCoords
+          .map(({ xPct, yPx, item }, idx) => {
+            const ind = item.indicador
+            const obj = item.objetivo
+            const st = item.checkState
+            const isCompleted = st === "double"
+            const isInProgress = st === "single"
 
-/** Aclara un color hex para el punto de luz del degradado radial de cada nodo. */
-function _lighten(hex) {
-  const n = parseInt(hex.replace('#', ''), 16)
-  const r = Math.min(255, ((n >> 16) & 255) + 55)
-  const g = Math.min(255, ((n >> 8) & 255) + 55)
-  const b = Math.min(255, (n & 255) + 55)
-  return `rgb(${r}, ${g}, ${b})`
-}
+            let nodeClass = "node-unstarted"
+            let iconHTML = `<span class="pmr-node-num">${idx + 1}</span>`
 
-function _checkIconHTML(state) {
-  if (state === 'double') return '<i class="bi bi-check2-all pmr-resumen-check-double" title="Todos evaluados"></i>'
-  if (state === 'single') return '<i class="bi bi-check2 pmr-resumen-check-single" title="Con deuda pendiente"></i>'
-  return '<span class="pmr-resumen-check-none" title="Sin evaluar todavía"></span>'
-}
+            if (isCompleted) {
+              nodeClass = "node-completed"
+              iconHTML = `<i class="bi bi-star-fill"></i>`
+            } else if (isInProgress) {
+              nodeClass = "node-in-progress"
+              iconHTML = `<i class="bi bi-play-fill"></i>`
+            }
 
-/**
- * Resumen de un Objetivo: solo lectura, lista sus indicadores con el check
- * de cada uno. No se califica desde acá — el maestro debe tocar el nodo del
- * indicador en el mapa para eso (evita calificaciones "a ciegas" sin ver el
- * contexto completo del indicador).
- */
-function _abrirResumenObjetivo(objetivo, unidad, checkByIndicador) {
-  const indicadores = objetivo.indicadores || []
-  const rowsHTML = indicadores.length
-    ? indicadores
-        .map(
-          (ind) => `
-        <div class="pmr-resumen-row">
-          ${_checkIconHTML(checkByIndicador[ind.id] || 'none')}
-          <span>${escHTML(ind.nombre)}</span>
+            return `
+              <div class="pmr-duo-node-wrap" style="left: ${xPct}%; top: ${yPx}px;" data-ind-id="${ind.id}">
+                <button type="button" class="pmr-duo-button ${nodeClass}" aria-label="${escHTML(ind.nombre)}">
+                  <div class="pmr-duo-button-inner">
+                    ${iconHTML}
+                  </div>
+                  ${isCompleted ? `<span class="pmr-node-crown">👑</span>` : ""}
+                  ${isInProgress ? `<span class="pmr-node-pulse"></span>` : ""}
+                </button>
+
+                <!-- Tooltip Title on Side -->
+                <div class="pmr-duo-label ${xPct > 50 ? "label-left" : "label-right"}">
+                  <span class="pmr-label-topic">${escHTML(ind.nombre)}</span>
+                  <span class="pmr-label-sub">${escHTML(obj.nombre)}</span>
+                </div>
+              </div>
+            `
+          })
+          .join("")}
+      </div>
+    `
+
+    fullHTML += `
         </div>
-      `
-        )
-        .join('')
-    : '<p class="pmr-empty">Este objetivo todavía no tiene indicadores.</p>'
-
-  const completos = indicadores.filter((ind) => checkByIndicador[ind.id] === 'double').length
-
-  _abrirResumenModal({
-    breadcrumb: unidad.nombre,
-    titulo: objetivo.nombre,
-    subtitulo: indicadores.length ? `${completos}/${indicadores.length} indicadores completos` : '',
-    descripcion: objetivo.descripcion,
-    bodyHTML: `<div class="pmr-resumen-list">${rowsHTML}</div>
-      <p class="pmr-resumen-hint"><i class="bi bi-info-circle"></i> Toca un indicador en el mapa para calificarlo.</p>`,
+      </div>
+    `
   })
-}
 
-/**
- * Resumen de una Unidad: sinapsis (qué se aprende, `unidad.descripcion` si
- * existe) + promedio agregado de sus objetivos. Tampoco califica directo.
- */
-function _abrirResumenUnidad(unidad, checkByIndicador) {
-  const objetivos = unidad.objetivos || []
+  container.innerHTML = fullHTML
 
-  let totalIndicadores = 0
-  let completosIndicadores = 0
+  // Wire node click events
+  container.querySelectorAll(".pmr-duo-node-wrap").forEach((nodeEl) => {
+    nodeEl.addEventListener("click", () => {
+      const indId = nodeEl.dataset.indId
+      let targetItem = null
 
-  const rowsHTML = objetivos.length
-    ? objetivos
-        .map((obj) => {
-          const indicadores = obj.indicadores || []
-          const completos = indicadores.filter((ind) => checkByIndicador[ind.id] === 'double').length
-          totalIndicadores += indicadores.length
-          completosIndicadores += completos
-          const state = _aggregateState(indicadores.map((ind) => checkByIndicador[ind.id] || 'none'))
-          return `
-            <div class="pmr-resumen-row">
-              ${_checkIconHTML(state)}
-              <span>${escHTML(obj.nombre)}</span>
-              <span class="pmr-resumen-row-meta">${completos}/${indicadores.length}</span>
-            </div>
-          `
+      unidades.forEach((u) => {
+        (u.objetivos || []).forEach((o) => {
+          (o.indicadores || []).forEach((ind) => {
+            if (ind.id === indId) {
+              targetItem = { ind, obj: o, u }
+            }
+          })
         })
-        .join('')
-    : '<p class="pmr-empty">Esta unidad todavía no tiene objetivos.</p>'
+      })
 
-  const sinapsis =
-    unidad.descripcion ||
-    (objetivos.length
-      ? `En esta unidad el alumno trabaja: ${objetivos.map((o) => o.nombre).join(', ')}.`
-      : '')
-
-  _abrirResumenModal({
-    breadcrumb: '',
-    titulo: unidad.nombre,
-    subtitulo: totalIndicadores ? `${completosIndicadores}/${totalIndicadores} indicadores completos en total` : '',
-    descripcion: sinapsis,
-    bodyHTML: `<div class="pmr-resumen-list">${rowsHTML}</div>`,
+      if (targetItem) {
+        onIndicadorClick(targetItem.ind, `${targetItem.u.nombre} > ${targetItem.obj.nombre}`)
+      }
+    })
   })
 }
 
-function _abrirResumenModal({ breadcrumb, titulo, subtitulo, descripcion, bodyHTML }) {
-  const backdrop = document.createElement('div')
-  backdrop.className = 'pmr-backdrop'
-  backdrop.innerHTML = `
-    <div class="pmr-modal" role="dialog" aria-modal="true">
-      <div class="pmr-header">
-        <div>
-          ${breadcrumb ? `<div class="pmr-resumen-breadcrumb">${escHTML(breadcrumb)}</div>` : ''}
-          <h3>${escHTML(titulo)}</h3>
-          ${subtitulo ? `<div class="pmr-resumen-subtitulo">${escHTML(subtitulo)}</div>` : ''}
-        </div>
-        <button class="pmr-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="pmr-body">
-        ${descripcion ? `<p class="pmr-resumen-sinapsis">${escHTML(descripcion)}</p>` : ''}
-        ${bodyHTML}
-      </div>
-    </div>
+// ─── Estilos CSS Duolingo Fullscreen ──────────────────────────────────────────
+
+function _injectDuolingoStyles() {
+  if (document.getElementById("pmr-duolingo-fullscreen-styles")) return
+
+  const style = document.createElement("style")
+  style.id = "pmr-duolingo-fullscreen-styles"
+  style.textContent = `
+    .pmr-fullscreen-backdrop {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #0b0f19;
+      z-index: 2200;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pmr-fullscreen-modal {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(120% 120% at 50% 0%, #171c2f 0%, #0b0f19 60%, #030712 100%);
+      color: #fff;
+    }
+
+    /* ── Sticky Header ── */
+    .pmr-header-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .pmr-header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .pmr-header-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      flex-shrink: 0;
+    }
+
+    .pmr-header-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .pmr-header-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      margin: 0 0 0.25rem;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f8fafc;
+    }
+
+    .pmr-header-progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pmr-progress-bar-bg {
+      width: 140px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .pmr-progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    .pmr-progress-text {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #34d399;
+    }
+
+    .pmr-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pmr-action-btn {
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .pmr-btn-edit {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 0.55rem 1.1rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .pmr-btn-edit:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    .pmr-btn-close {
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+    }
+
+    .pmr-btn-close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    /* ── Scroll Canvas ── */
+    .pmr-scroll-canvas {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 2rem 1rem 5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .pmr-duolingo-trail {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    /* ── Unit Section & Banner ── */
+    .pmr-unit-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .pmr-unit-banner {
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      color: #fff;
+      padding: 1.1rem 1.4rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .pmr-unit-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .pmr-unit-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      margin: 0.1rem 0 0.2rem;
+    }
+
+    .pmr-unit-meta {
+      font-size: 0.78rem;
+      opacity: 0.9;
+    }
+
+    .pmr-unit-trophy {
+      font-size: 2.2rem;
+    }
+
+    /* ── S-Curve Stage & Nodes ── */
+    .pmr-trail-stage {
+      position: relative;
+      width: 100%;
+    }
+
+    .pmr-trail-svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .pmr-trail-road-back {
+      fill: none;
+      stroke: #1e293b;
+      stroke-width: 14;
+      stroke-linecap: round;
+    }
+
+    .pmr-trail-road-front {
+      fill: none;
+      stroke: #334155;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 6 8;
+    }
+
+    .pmr-duo-node-wrap {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    /* 3D Duolingo Stepping Stone Button */
+    .pmr-duo-button {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .pmr-duo-button-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #fff;
+    }
+
+    /* States */
+    .node-completed {
+      background: #10b981;
+      box-shadow: 0 7px 0 #047857, 0 10px 20px rgba(16, 185, 129, 0.4);
+    }
+    .node-completed:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 #047857, 0 14px 26px rgba(16, 185, 129, 0.5);
+    }
+    .node-completed:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 #047857;
+    }
+
+    .node-in-progress {
+      background: #4f46e5;
+      box-shadow: 0 7px 0 #3730a3, 0 10px 20px rgba(79, 70, 229, 0.4);
+    }
+    .node-in-progress:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 #3730a3, 0 14px 26px rgba(79, 70, 229, 0.5);
+    }
+    .node-in-progress:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 #3730a3;
+    }
+
+    .node-unstarted {
+      background: #334155;
+      box-shadow: 0 7px 0 #1e293b;
+    }
+    .node-unstarted:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 #1e293b;
+    }
+    .node-unstarted:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 #1e293b;
+    }
+
+    .pmr-node-num {
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    .pmr-node-crown {
+      position: absolute;
+      top: -14px;
+      right: -6px;
+      font-size: 1.3rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .pmr-node-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid #818cf8;
+      animation: pmr-pulse-glow 2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pmr-pulse-glow {
+      0% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.18); opacity: 0.2; }
+      100% { transform: scale(1); opacity: 0.8; }
+    }
+
+    /* Labels on side */
+    .pmr-duo-label {
+      position: absolute;
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      pointer-events: none;
+    }
+
+    .label-left {
+      right: calc(100% + 14px);
+      text-align: right;
+    }
+
+    .label-right {
+      left: calc(100% + 14px);
+      text-align: left;
+    }
+
+    .pmr-label-topic {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.25;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    .pmr-label-sub {
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+
+    /* Empty state */
+    .pmr-empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+    .pmr-empty-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
+
+    @media (max-width: 640px) {
+      .pmr-header-bar {
+        padding: 0.75rem 1rem;
+      }
+      .pmr-header-title {
+        font-size: 1rem;
+      }
+      .pmr-btn-text {
+        display: none;
+      }
+      .pmr-duo-button {
+        width: 54px;
+        height: 54px;
+      }
+      .pmr-duo-label {
+        width: 110px;
+      }
+      .pmr-label-topic {
+        font-size: 0.75rem;
+      }
+    }
   `
-  document.body.appendChild(backdrop)
-  const closeModal = () => backdrop.remove()
-  backdrop.querySelector('.pmr-close').addEventListener('click', closeModal)
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) closeModal()
-  })
-}
-
-if (!document.getElementById('pmr-styles')) {
-  const s = document.createElement('style')
-  s.id = 'pmr-styles'
-  s.textContent = `
-    .pmr-backdrop {
-      position: fixed; inset: 0; background: rgba(15,23,42,0.55);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9400; padding: 1rem;
-    }
-    .pmr-modal {
-      background: var(--pm-surface, #fff); border-radius: 16px;
-      width: min(560px, 100%); max-height: 85vh; display: flex; flex-direction: column;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
-    }
-    .pmr-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      padding: 1rem 1.15rem; border-bottom: 1px solid var(--pm-border, #e5e7eb);
-    }
-    .pmr-header h3 { margin: 0.1rem 0 0; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
-    .pmr-header-actions { display: flex; gap: 0.4rem; }
-    .pmr-editar-btn, .pmr-close { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--pm-text-muted); }
-    .pmr-body { padding: 1rem 1.15rem; overflow-y: auto; flex: 1; }
-    .pmr-empty { color: var(--pm-text-muted); font-size: 0.85rem; text-align: center; padding: 1.5rem 0; }
-
-    .pmr-svg-scroll { overflow-x: auto; overflow-y: hidden; margin: 0 -1.15rem; padding: 0 1.15rem; }
-    .pmr-svg-link { fill: none; stroke: var(--pm-border, #cbd5e1); stroke-width: 2.5; opacity: 0.7; }
-    .pmr-svg-node { cursor: pointer; }
-    .pmr-svg-node:focus { outline: none; }
-    .pmr-svg-node:focus .pmr-svg-node-main { stroke: #1d4ed8; }
-    .pmr-svg-node-label { font-size: 11px; fill: var(--pm-text, #1f2937); }
-    .pmr-svg-node-label-unidad { font-size: 13px; font-weight: 800; fill: var(--pm-text, #1f2937); }
-    .pmr-svg-node-label-objetivo { font-size: 11px; font-weight: 700; fill: var(--pm-text-muted, #64748b); }
-    .pmr-svg-node-label-indicador { font-size: 8px; fill: var(--pm-text-muted, #64748b); }
-    .pmr-svg-badge { stroke: #fff; stroke-width: 1.5; }
-    .pmr-svg-badge-double { fill: #16a34a; }
-    .pmr-svg-badge-single { fill: #9ca3af; }
-    .pmr-svg-badge-text { fill: #fff; font-weight: 700; }
-
-    .pmr-resumen-breadcrumb { font-size: 0.72rem; color: var(--pm-text-muted); font-weight: 600; }
-    .pmr-resumen-subtitulo { font-size: 0.75rem; color: var(--pm-primary, #3b82f6); font-weight: 700; margin-top: 0.15rem; }
-    .pmr-resumen-sinapsis {
-      font-size: 0.85rem; color: var(--pm-text); background: var(--pm-surface-2, #f3f4f6);
-      border-radius: 10px; padding: 0.65rem 0.8rem; margin: 0 0 0.9rem;
-    }
-    .pmr-resumen-list { display: flex; flex-direction: column; gap: 0.35rem; }
-    .pmr-resumen-row {
-      display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.65rem;
-      border: 1px solid var(--pm-border, #e5e7eb); border-radius: 10px;
-      background: var(--pm-surface-2, #fafafa); font-size: 0.82rem; color: var(--pm-text);
-    }
-    .pmr-resumen-row-meta { margin-left: auto; font-size: 0.72rem; font-weight: 700; color: var(--pm-text-muted); }
-    .pmr-resumen-check-double { color: #16a34a; }
-    .pmr-resumen-check-single { color: #9ca3af; }
-    .pmr-resumen-check-none { display: inline-block; width: 1em; }
-    .pmr-resumen-hint { font-size: 0.72rem; color: var(--pm-text-muted); margin: 0.7rem 0 0; display: flex; align-items: center; gap: 0.3rem; }
-
-    .pm-mapa-btn {
-      background: transparent; border: 2px solid var(--pm-border, #d1d5db); border-radius: 8px;
-      padding: 0.5rem 0.7rem; min-width: 32px; height: 32px; font-size: 1rem;
-      color: var(--pm-text-muted, #6b7280); cursor: pointer; transition: all 0.2s ease;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 10;
-    }
-    .pm-mapa-btn:hover {
-      background: var(--pm-primary, #3b82f6); color: white; border-color: var(--pm-primary, #3b82f6);
-      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-  `
-  document.head.appendChild(s)
+  document.head.appendChild(style)
 }

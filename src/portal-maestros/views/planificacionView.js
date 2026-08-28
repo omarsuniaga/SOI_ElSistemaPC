@@ -1,9 +1,9 @@
 /**
  * planificacionView.js
- * Portal Maestros — Gestión y Rutas Académicas
+ * Portal Maestros — Gestión y Rutas Académicas (Cuadrícula Móvil 2x & Desktop 3x)
  *
  * Módulo rediseñado enfocado 100% en la jerarquía pedagógica del maestro:
- * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con títulos completos sin truncar).
+ * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con títulos completos y badges por iconos).
  */
 
 import { getMisClases, getInscripcionesClases } from "../services/maestroDataService.js"
@@ -15,30 +15,10 @@ import { getMaestroLocal } from "../auth/maestroAuth.js"
 import { abrirMapaDeRutas } from "../components/teacherRouteMapPanel.js"
 import { openTeacherRoutePicker } from "../components/TeacherRouteBuilder.js"
 
-// ─── Constantes de Instrumentos ───────────────────────────────────────────────
-
-const INSTRUMENT_ICONS = {
-  violin: "🎻", viola: "🎻", cello: "🎻", contrabajo: "🎻", chelo: "🎻",
-  piano: "🎹", teclado: "🎹",
-  guitarra: "🎸", bajo: "🎸", ukulele: "🎸",
-  flauta: "🪈", clarinete: "🎵", oboe: "🎵", fagot: "🎵", saxofon: "🎵",
-  trompeta: "🎺", trombon: "🎺", tuba: "🎺", corno: "🎺", corneta: "🎺",
-  percusion: "🥁", bateria: "🥁", marimba: "🥁", xilofono: "🥁", timbal: "🥁",
-  canto: "🎤", voz: "🎤", vocal: "🎤",
-  arpa: "🪗", acordeon: "🪗",
-  teoria: "📖", solfeo: "📖", armonia: "📖", historia: "📖",
-}
-
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;",
   })[char])
-}
-
-function getInstrumentIcon(instrumento) {
-  if (!instrumento) return "🎼"
-  const key = instrumento.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-  return Object.entries(INSTRUMENT_ICONS).find(([k]) => key.includes(k))?.[1] || "🎼"
 }
 
 // ─── Vista Principal ───────────────────────────────────────────────────────────
@@ -52,13 +32,10 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
   container.innerHTML = `
     <div class="pm-planning-container">
-      <!-- Header Hero Compacto & Elegante -->
+      <!-- Header Hero Compacto -->
       <div class="pm-planning-hero">
         <div class="pm-hero-glow"></div>
         <div class="pm-hero-content">
-          <div class="pm-hero-icon-wrap">
-            <span class="pm-hero-icon">🎼</span>
-          </div>
           <div class="pm-hero-text">
             <div class="pm-hero-eyebrow">
               <span class="pm-live-dot"></span> MALLA ACADÉMICA
@@ -106,7 +83,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
         </div>
       </div>
 
-      <!-- Main Content Grid (3 por fila) -->
+      <!-- Main Content Grid (2 por fila en móvil, 3 por fila en desktop) -->
       <div id="pm-classes-grid-host">
         <div class="pm-loading-card">
           <div class="spinner-border text-primary" role="status"></div>
@@ -264,7 +241,6 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       <div class="pm-compact-grid">
         ${filtered
           .map((clase) => {
-            const icon = getInstrumentIcon(clase.instrumento)
             const hasRoute = clase.hasRoute
 
             return `
@@ -272,51 +248,47 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                 <!-- Top Accent Line -->
                 <div class="pm-compact-card-accent ${hasRoute ? "accent-emerald" : "accent-amber"}"></div>
 
-                <!-- Top Metadata Row: Avatar + Tags + Status Badge -->
+                <!-- Top Row: Full Title + Glowing Status Dot Badge -->
                 <div class="pm-card-top-row">
-                  <div class="pm-compact-avatar">
-                    <span>${icon}</span>
+                  <div class="pm-card-title-wrap">
+                    <h3 class="pm-compact-title">${escapeHtml(clase.nombre)}</h3>
+                    <div class="pm-card-meta-line">
+                      <span class="pm-meta-text">${escapeHtml(clase.instrumento || "General")}</span>
+                      <span class="pm-dot-separator">·</span>
+                      <span class="pm-meta-text"><i class="bi bi-people-fill"></i> ${clase.totalStudents}</span>
+                    </div>
                   </div>
-                  <div class="pm-card-tags">
-                    <span class="pm-meta-tag">${escapeHtml(clase.instrumento || "General")}</span>
-                    <span class="pm-meta-tag"><i class="bi bi-people-fill"></i> ${clase.totalStudents}</span>
-                  </div>
-                  <div class="pm-compact-badge ${hasRoute ? "badge-active" : "badge-pending"}">
-                    ${hasRoute ? "● Malla Lista" : "○ Sin Malla"}
+                  <div class="pm-status-indicator ${hasRoute ? "indicator-active" : "indicator-pending"}" title="${hasRoute ? "Malla Diseñada" : "Malla Pendiente"}">
+                    <span class="pm-status-dot"></span>
                   </div>
                 </div>
 
-                <!-- Título Completo de la Clase (Sin truncar, wrap natural) -->
-                <div class="pm-card-title-container">
-                  <h3 class="pm-compact-title">${escapeHtml(clase.nombre)}</h3>
-                </div>
-
-                <!-- Compact Structure Bar -->
+                <!-- Compact Structure Bar (Icon-only metrics) -->
                 <div class="pm-compact-body">
                   ${
                     hasRoute
                       ? `
-                    <div class="pm-micro-hierarchy">
-                      <div class="pm-micro-chip">
-                        <span class="pm-micro-val">${clase.unidadesCount}</span>
-                        <span class="pm-micro-lbl">Unid</span>
+                    <div class="pm-icon-hierarchy">
+                      <div class="pm-icon-chip" title="${clase.unidadesCount} Unidades">
+                        <span class="pm-chip-symbol">📦</span>
+                        <span class="pm-chip-val">${clase.unidadesCount}</span>
                       </div>
-                      <span class="pm-micro-arrow">➔</span>
-                      <div class="pm-micro-chip">
-                        <span class="pm-micro-val">${clase.objetivosCount}</span>
-                        <span class="pm-micro-lbl">Obj</span>
+                      <span class="pm-chip-arrow">›</span>
+                      <div class="pm-icon-chip" title="${clase.objetivosCount} Objetivos">
+                        <span class="pm-chip-symbol">🎯</span>
+                        <span class="pm-chip-val">${clase.objetivosCount}</span>
                       </div>
-                      <span class="pm-micro-arrow">➔</span>
-                      <div class="pm-micro-chip pm-micro-chip--highlight">
-                        <span class="pm-micro-val">${clase.indicadoresCount}</span>
-                        <span class="pm-micro-lbl">Ind</span>
+                      <span class="pm-chip-arrow">›</span>
+                      <div class="pm-icon-chip pm-icon-chip--highlight" title="${clase.indicadoresCount} Indicadores">
+                        <span class="pm-chip-symbol">⚡</span>
+                        <span class="pm-chip-val">${clase.indicadoresCount}</span>
                       </div>
                     </div>
                   `
                       : `
-                    <div class="pm-micro-warning">
+                    <div class="pm-warning-chip" title="Malla pendiente de diseño">
                       <i class="bi bi-exclamation-triangle-fill text-warning"></i>
-                      <span>Malla pendiente de diseño</span>
+                      <span>Sin malla</span>
                     </div>
                   `
                   }
@@ -324,14 +296,14 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
                 <!-- Compact Actions Row -->
                 <div class="pm-compact-actions">
-                  <button type="button" class="pm-btn-compact-primary pm-btn-designer" data-clase-id="${clase.id}">
+                  <button type="button" class="pm-btn-compact-primary pm-btn-designer" data-clase-id="${clase.id}" title="${hasRoute ? "Editar Malla" : "Diseñar Malla"}">
                     <i class="bi bi-pencil-square"></i>
-                    <span>${hasRoute ? "Editar Malla" : "Diseñar Malla"}</span>
+                    <span>${hasRoute ? "Editar" : "Diseñar"}</span>
                   </button>
 
-                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}">
+                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}" title="Ver Mapa y Deudas">
                     <i class="bi bi-diagram-3-fill"></i>
-                    <span>Mapa & Deudas</span>
+                    <span>Mapa</span>
                   </button>
                 </div>
               </div>
@@ -363,7 +335,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
   await loadData()
 }
 
-// ─── Estilos CSS Cuadrícula Compacta 3x ────────────────────────────────────────
+// ─── Estilos CSS Cuadrícula 2x Móvil & 3x Desktop ──────────────────────────────
 
 function _injectStyles() {
   if (document.getElementById("pm-planning-compact-3x-styles")) return
@@ -383,7 +355,7 @@ function _injectStyles() {
       position: relative;
       background: radial-gradient(130% 120% at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
       color: #fff;
-      padding: 1.4rem 1.8rem;
+      padding: 1.25rem 1.6rem;
       border-radius: 18px;
       border: 1px solid rgba(99, 102, 241, 0.22);
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -392,7 +364,7 @@ function _injectStyles() {
       align-items: center;
       flex-wrap: wrap;
       gap: 1.2rem;
-      margin-bottom: 1.4rem;
+      margin-bottom: 1.25rem;
       overflow: hidden;
     }
 
@@ -413,20 +385,6 @@ function _injectStyles() {
       max-width: 600px;
       position: relative;
       z-index: 1;
-    }
-
-    .pm-hero-icon-wrap {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.9rem;
-      flex-shrink: 0;
     }
 
     .pm-hero-eyebrow {
@@ -583,22 +541,16 @@ function _injectStyles() {
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
     }
 
-    /* ── Cuadrícula Compacta: 3 Clases por Fila ── */
+    /* ── Cuadrícula: 3 Clases por Fila en Desktop, 2 en Móvil ── */
     .pm-compact-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.85rem;
     }
 
-    @media (min-width: 992px) {
+    @media (max-width: 1100px) and (min-width: 769px) {
       .pm-compact-grid {
         grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media (min-width: 1360px) {
-      .pm-compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       }
     }
 
@@ -607,18 +559,18 @@ function _injectStyles() {
       background: var(--pm-surface, #ffffff);
       border: 1px solid var(--pm-border, #e2e8f0);
       border-radius: 16px;
-      padding: 1.1rem;
+      padding: 0.95rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.75rem;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
       transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
     }
 
     .pm-compact-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
       border-color: #cbd5e1;
     }
 
@@ -635,159 +587,149 @@ function _injectStyles() {
 
     .pm-card-top-row {
       display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
 
-    .pm-compact-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
-      border: 1px solid rgba(79, 70, 229, 0.14);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.35rem;
-      flex-shrink: 0;
-    }
-
-    .pm-card-tags {
-      display: flex;
-      align-items: center;
-      gap: 5px;
+    .pm-card-title-wrap {
       flex: 1;
       min-width: 0;
-      flex-wrap: wrap;
-    }
-
-    .pm-meta-tag {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--pm-text-muted, #64748b);
-      background: var(--pm-surface-2, #f1f5f9);
-      padding: 0.18rem 0.5rem;
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .pm-compact-badge {
-      font-size: 0.68rem;
-      font-weight: 800;
-      padding: 0.22rem 0.55rem;
-      border-radius: 999px;
-      white-space: nowrap;
-      margin-left: auto;
-    }
-
-    .badge-active {
-      background: rgba(16, 185, 129, 0.12);
-      color: #059669;
-      border: 1px solid rgba(16, 185, 129, 0.25);
-    }
-
-    .badge-pending {
-      background: rgba(245, 158, 11, 0.12);
-      color: #d97706;
-      border: 1px solid rgba(245, 158, 11, 0.25);
-    }
-
-    /* ── Título Completo de la Clase (100% visible, wrap natural) ── */
-    .pm-card-title-container {
-      width: 100%;
     }
 
     .pm-compact-title {
-      font-size: 1rem;
+      font-size: 0.94rem;
       font-weight: 800;
-      margin: 0;
-      line-height: 1.35;
+      margin: 0 0 0.2rem;
+      line-height: 1.3;
       letter-spacing: -0.015em;
       color: var(--pm-text, #0f172a);
-      white-space: normal; /* Ensures full multiline visibility without ellipsis clipping */
+      white-space: normal;
       word-break: break-word;
-      overflow: visible;
+    }
+
+    .pm-card-meta-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--pm-text-muted, #64748b);
+    }
+
+    .pm-dot-separator { opacity: 0.5; }
+
+    /* Glowing Status Dot Indicator */
+    .pm-status-indicator {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .indicator-active {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .indicator-active .pm-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    .indicator-pending {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .indicator-pending .pm-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
     }
 
     .pm-compact-body {
       flex: 1;
     }
 
-    /* Micro-Hierarchy */
-    .pm-micro-hierarchy {
+    /* Icon Hierarchy */
+    .pm-icon-hierarchy {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: var(--pm-surface-2, #f8fafc);
-      padding: 0.55rem 0.8rem;
-      border-radius: 11px;
+      padding: 0.4rem 0.65rem;
+      border-radius: 9px;
       border: 1px solid var(--pm-border, #e2e8f0);
     }
 
-    .pm-micro-chip {
+    .pm-icon-chip {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 3px;
     }
 
-    .pm-micro-val {
-      font-size: 1.02rem;
-      font-weight: 900;
+    .pm-chip-symbol {
+      font-size: 0.8rem;
+    }
+
+    .pm-chip-val {
+      font-size: 0.9rem;
+      font-weight: 800;
       color: var(--pm-primary, #4f46e5);
       line-height: 1;
     }
 
-    .pm-micro-chip--highlight .pm-micro-val { color: #059669; }
+    .pm-icon-chip--highlight .pm-chip-val { color: #059669; }
 
-    .pm-micro-lbl {
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: var(--pm-text-muted, #64748b);
-      text-transform: uppercase;
-    }
-
-    .pm-micro-arrow {
+    .pm-chip-arrow {
       color: #cbd5e1;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
+      font-weight: 700;
     }
 
-    .pm-micro-warning {
+    .pm-warning-chip {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 0.55rem 0.75rem;
-      border-radius: 10px;
+      gap: 5px;
+      padding: 0.4rem 0.6rem;
+      border-radius: 9px;
       background: rgba(245, 158, 11, 0.07);
       border: 1px solid rgba(245, 158, 11, 0.2);
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: #92400e;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     /* Actions Compact */
     .pm-compact-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.55rem;
+      gap: 0.45rem;
     }
 
     .pm-btn-compact-primary {
       border: none;
       background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
       color: #fff;
-      padding: 0.55rem 0.75rem;
-      border-radius: 11px;
-      font-size: 0.82rem;
+      padding: 0.48rem 0.65rem;
+      border-radius: 9px;
+      font-size: 0.78rem;
       font-weight: 800;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+      gap: 4px;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.22);
       transition: all 0.18s ease;
     }
 
@@ -800,15 +742,15 @@ function _injectStyles() {
       border: 1px solid var(--pm-border, #cbd5e1);
       background: var(--pm-surface-2, #f8fafc);
       color: var(--pm-text, #334155);
-      padding: 0.55rem 0.75rem;
-      border-radius: 11px;
-      font-size: 0.82rem;
+      padding: 0.48rem 0.65rem;
+      border-radius: 9px;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       transition: all 0.18s ease;
     }
 
@@ -859,12 +801,7 @@ function _injectStyles() {
 
     [data-theme="dark"] .pm-compact-title { color: #fff; }
 
-    [data-theme="dark"] .pm-meta-tag {
-      background: rgba(255, 255, 255, 0.06);
-      color: #94a3b8;
-    }
-
-    [data-theme="dark"] .pm-micro-hierarchy {
+    [data-theme="dark"] .pm-icon-hierarchy {
       background: rgba(15, 23, 42, 0.7);
       border-color: rgba(255, 255, 255, 0.06);
     }
@@ -880,50 +817,95 @@ function _injectStyles() {
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-micro-warning {
+    [data-theme="dark"] .pm-warning-chip {
       background: rgba(245, 158, 11, 0.08);
       border-color: rgba(245, 158, 11, 0.2);
       color: #fde68a;
     }
 
-    /* ── Mobile Viewport ── */
+    /* ── Mobile Viewport: Fijo 2 Columnas (repeat(2, 1fr)) ── */
     @media (max-width: 768px) {
-      .pm-planning-container { padding: 0.75rem; }
+      .pm-planning-container { padding: 0.6rem; }
       .pm-planning-hero {
-        padding: 1.1rem;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 1rem;
-      }
-      .pm-hero-content { gap: 0.85rem; }
-      .pm-hero-icon-wrap { width: 44px; height: 44px; font-size: 1.6rem; border-radius: 12px; }
-      .pm-hero-title { font-size: 1.3rem; }
-      .pm-hero-subtitle { font-size: 0.8rem; }
-      .pm-hero-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.4rem;
-      }
-      .pm-stat-card { padding: 0.5rem 0.3rem; min-width: 0; border-radius: 10px; }
-      .pm-stat-num { font-size: 1.15rem; }
-      .pm-stat-label { font-size: 0.58rem; text-align: center; }
-      .pm-planning-toolbar {
+        padding: 0.9rem 1rem;
+        border-radius: 14px;
         flex-direction: column;
         align-items: stretch;
         gap: 0.75rem;
+        margin-bottom: 0.85rem;
       }
-      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
-      .pm-seg-btn { justify-content: center; padding: 0.5rem 0.3rem; font-size: 0.76rem; }
+      .pm-hero-title { font-size: 1.2rem; }
+      .pm-hero-subtitle { font-size: 0.78rem; line-height: 1.3; }
+      .pm-hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.35rem;
+      }
+      .pm-stat-card { padding: 0.4rem 0.2rem; min-width: 0; border-radius: 9px; }
+      .pm-stat-num { font-size: 1.05rem; }
+      .pm-stat-label { font-size: 0.55rem; text-align: center; }
+      .pm-planning-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+        margin-bottom: 0.85rem;
+      }
+      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; }
+      .pm-seg-btn { justify-content: center; padding: 0.42rem 0.2rem; font-size: 0.72rem; }
       .pm-search-box { width: 100%; }
+      .pm-search-box input { padding: 0.45rem 0.8rem 0.45rem 32px; font-size: 16px; }
+
+      /* Fijo 2 Columnas en todas las pantallas de celular */
       .pm-compact-grid {
-        grid-template-columns: 1fr;
-        gap: 0.85rem;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem;
       }
       .pm-compact-card {
-        padding: 1rem;
+        padding: 0.7rem 0.65rem;
+        border-radius: 12px;
+        gap: 0.5rem;
       }
       .pm-compact-title {
-        font-size: 0.98rem;
+        font-size: 0.82rem;
+        margin-bottom: 0.15rem;
+      }
+      .pm-card-meta-line {
+        font-size: 0.66rem;
+      }
+      .pm-status-indicator {
+        width: 18px;
+        height: 18px;
+      }
+      .pm-status-dot {
+        width: 6px;
+        height: 6px;
+      }
+      .pm-icon-hierarchy {
+        padding: 0.3rem 0.45rem;
+        border-radius: 7px;
+      }
+      .pm-chip-symbol {
+        font-size: 0.72rem;
+      }
+      .pm-chip-val {
+        font-size: 0.8rem;
+      }
+      .pm-chip-arrow {
+        font-size: 0.65rem;
+      }
+      .pm-warning-chip {
+        padding: 0.3rem 0.45rem;
+        font-size: 0.66rem;
+      }
+      .pm-compact-actions {
+        gap: 0.35rem;
+      }
+      .pm-btn-compact-primary, .pm-btn-compact-secondary {
+        min-height: 34px;
+        font-size: 0.72rem;
+        padding: 0.35rem 0.3rem;
+        border-radius: 7px;
+        gap: 3px;
       }
     }
   `

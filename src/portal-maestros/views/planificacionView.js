@@ -1,6 +1,6 @@
 /**
  * planificacionView.js
- * Portal Maestros — Gestión y Rutas Académicas (Ultra-Premium Edition)
+ * Portal Maestros — Gestión y Rutas Académicas (Cuadrícula Compacta 3x)
  *
  * Módulo rediseñado enfocado 100% en la jerarquía pedagógica del maestro:
  * UNIDADES ➔ OBJETIVOS ➔ INDICADORES (con prelaciones y deudas pedagógicas).
@@ -52,7 +52,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
   container.innerHTML = `
     <div class="pm-planning-container">
-      <!-- Header Hero Ultra-Premium -->
+      <!-- Header Hero Compacto & Elegante -->
       <div class="pm-planning-hero">
         <div class="pm-hero-glow"></div>
         <div class="pm-hero-content">
@@ -61,28 +61,28 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
           </div>
           <div class="pm-hero-text">
             <div class="pm-hero-eyebrow">
-              <span class="pm-live-dot"></span> PLANIFICACIÓN PEDAGÓGICA
+              <span class="pm-live-dot"></span> MALLA ACADÉMICA
             </div>
-            <h1 class="pm-hero-title">Malla Curricular & Rutas</h1>
+            <h1 class="pm-hero-title">Gestión y Rutas</h1>
             <p class="pm-hero-subtitle">
-              Estructura el aprendizaje por <strong>Unidades ➔ Objetivos ➔ Indicadores</strong> con prelación y control de deuda académica.
+              Planificación por <strong>Unidades ➔ Objetivos ➔ Indicadores</strong> con prelación y control de deuda pedagógica.
             </p>
           </div>
         </div>
 
-        <!-- Metrics Dashboard -->
+        <!-- Metrics Dashboard Compacto -->
         <div class="pm-hero-stats" id="pm-hero-stats">
           <div class="pm-stat-card">
             <span class="pm-stat-num" id="stat-total-clases">-</span>
-            <span class="pm-stat-label">Clases Asignadas</span>
+            <span class="pm-stat-label">Clases</span>
           </div>
           <div class="pm-stat-card">
             <span class="pm-stat-num pm-stat-num--success" id="stat-con-ruta">-</span>
-            <span class="pm-stat-label">Con Malla Diseñada</span>
+            <span class="pm-stat-label">Con Malla</span>
           </div>
           <div class="pm-stat-card">
             <span class="pm-stat-num pm-stat-num--accent" id="stat-total-indicadores">-</span>
-            <span class="pm-stat-label">Indicadores Activos</span>
+            <span class="pm-stat-label">Indicadores</span>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
             <i class="bi bi-grid-fill"></i> Todas
           </button>
           <button type="button" class="pm-seg-btn" data-filter="with-route">
-            <i class="bi bi-check-circle-fill"></i> Con Ruta
+            <i class="bi bi-check-circle-fill"></i> Con Malla
           </button>
           <button type="button" class="pm-seg-btn" data-filter="no-route">
             <i class="bi bi-exclamation-circle-fill"></i> Pendientes
@@ -102,11 +102,11 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
         </div>
         <div class="pm-search-box">
           <i class="bi bi-search"></i>
-          <input type="text" id="pm-search-clases" placeholder="Buscar por clase o instrumento..." />
+          <input type="text" id="pm-search-clases" placeholder="Buscar clase o instrumento..." />
         </div>
       </div>
 
-      <!-- Main Content Grid -->
+      <!-- Main Content Grid (3 por fila) -->
       <div id="pm-classes-grid-host">
         <div class="pm-loading-card">
           <div class="spinner-border text-primary" role="status"></div>
@@ -261,79 +261,76 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
     }
 
     gridHost.innerHTML = `
-      <div class="pm-premium-grid">
+      <div class="pm-compact-grid">
         ${filtered
           .map((clase) => {
             const icon = getInstrumentIcon(clase.instrumento)
             const hasRoute = clase.hasRoute
 
             return `
-              <div class="pm-luxury-card ${hasRoute ? "has-route" : "no-route"}" data-clase-id="${clase.id}">
-                <!-- Top Glow Accent -->
-                <div class="pm-card-glow ${hasRoute ? "glow-emerald" : "glow-amber"}"></div>
+              <div class="pm-compact-card ${hasRoute ? "has-route" : "no-route"}" data-clase-id="${clase.id}">
+                <!-- Top Accent Line -->
+                <div class="pm-compact-card-accent ${hasRoute ? "accent-emerald" : "accent-amber"}"></div>
 
-                <!-- Header Block -->
-                <div class="pm-card-header">
-                  <div class="pm-instrument-badge">
+                <!-- Card Header -->
+                <div class="pm-card-top-row">
+                  <div class="pm-compact-avatar">
                     <span>${icon}</span>
                   </div>
-                  <div class="pm-header-info">
-                    <h3 class="pm-card-title">${escapeHtml(clase.nombre)}</h3>
-                    <div class="pm-card-meta">
-                      <span class="pm-meta-chip"><i class="bi bi-music-note-beamed"></i> ${escapeHtml(clase.instrumento || "General")}</span>
-                      <span class="pm-meta-chip"><i class="bi bi-people-fill"></i> ${clase.totalStudents} ${clase.totalStudents === 1 ? "alumno" : "alumnos"}</span>
+                  <div class="pm-compact-title-wrap">
+                    <h3 class="pm-compact-title" title="${escapeHtml(clase.nombre)}">${escapeHtml(clase.nombre)}</h3>
+                    <div class="pm-compact-subtitle">
+                      <span>${escapeHtml(clase.instrumento || "General")}</span>
+                      <span class="pm-dot-separator">·</span>
+                      <span><i class="bi bi-people-fill"></i> ${clase.totalStudents}</span>
                     </div>
                   </div>
-                  <div class="pm-status-pill ${hasRoute ? "status-active" : "status-pending"}">
-                    <span class="pm-pill-dot"></span>
-                    <span>${hasRoute ? "Ruta Lista" : "Sin Ruta"}</span>
+                  <div class="pm-compact-badge ${hasRoute ? "badge-active" : "badge-pending"}" title="${hasRoute ? "Ruta Activa" : "Sin Ruta"}">
+                    ${hasRoute ? "● Lista" : "○ Pendiente"}
                   </div>
                 </div>
 
-                <!-- Body / Hierarchy Stepper -->
-                <div class="pm-card-body">
+                <!-- Compact Structure Bar -->
+                <div class="pm-compact-body">
                   ${
                     hasRoute
                       ? `
-                    <div class="pm-stepper-capsules">
-                      <div class="pm-capsule">
-                        <span class="pm-capsule-num">${clase.unidadesCount}</span>
-                        <span class="pm-capsule-lbl">Unidades</span>
+                    <div class="pm-micro-hierarchy">
+                      <div class="pm-micro-chip">
+                        <span class="pm-micro-val">${clase.unidadesCount}</span>
+                        <span class="pm-micro-lbl">Unid</span>
                       </div>
-                      <div class="pm-capsule-arrow"><i class="bi bi-chevron-right"></i></div>
-                      <div class="pm-capsule">
-                        <span class="pm-capsule-num">${clase.objetivosCount}</span>
-                        <span class="pm-capsule-lbl">Objetivos</span>
+                      <span class="pm-micro-arrow">➔</span>
+                      <div class="pm-micro-chip">
+                        <span class="pm-micro-val">${clase.objetivosCount}</span>
+                        <span class="pm-micro-lbl">Obj</span>
                       </div>
-                      <div class="pm-capsule-arrow"><i class="bi bi-chevron-right"></i></div>
-                      <div class="pm-capsule pm-capsule--highlight">
-                        <span class="pm-capsule-num">${clase.indicadoresCount}</span>
-                        <span class="pm-capsule-lbl">Indicadores</span>
+                      <span class="pm-micro-arrow">➔</span>
+                      <div class="pm-micro-chip pm-micro-chip--highlight">
+                        <span class="pm-micro-val">${clase.indicadoresCount}</span>
+                        <span class="pm-micro-lbl">Ind</span>
                       </div>
                     </div>
                   `
                       : `
-                    <div class="pm-warning-banner">
-                      <div class="pm-warn-icon"><i class="bi bi-lightning-charge-fill"></i></div>
-                      <div class="pm-warn-text">
-                        <strong>Malla pendiente de diseño</strong>
-                        <span>Crea las unidades y objetivos para evaluar con estrellas en asistencia.</span>
-                      </div>
+                    <div class="pm-micro-warning">
+                      <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                      <span>Malla sin definir</span>
                     </div>
                   `
                   }
                 </div>
 
-                <!-- Footer Action Buttons -->
-                <div class="pm-card-footer">
-                  <button type="button" class="pm-btn-primary pm-btn-designer" data-clase-id="${clase.id}">
+                <!-- Compact Actions Row -->
+                <div class="pm-compact-actions">
+                  <button type="button" class="pm-btn-compact-primary pm-btn-designer" data-clase-id="${clase.id}">
                     <i class="bi bi-pencil-square"></i>
-                    <span>${hasRoute ? "Editar Malla" : "Diseñar Malla"}</span>
+                    <span>${hasRoute ? "Editar" : "Diseñar"}</span>
                   </button>
 
-                  <button type="button" class="pm-btn-secondary pm-btn-map" data-clase-id="${clase.id}">
+                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}">
                     <i class="bi bi-diagram-3-fill"></i>
-                    <span>Ver Mapa & Deudas</span>
+                    <span>Mapa</span>
                   </button>
                 </div>
               </div>
@@ -365,160 +362,151 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
   await loadData()
 }
 
-// ─── Estilos CSS Ultra-Premium ───────────────────────────────────────────────
+// ─── Estilos CSS Cuadrícula Compacta 3x ────────────────────────────────────────
 
 function _injectStyles() {
-  if (document.getElementById("pm-planning-ultra-styles")) return
+  if (document.getElementById("pm-planning-compact-3x-styles")) return
 
   const style = document.createElement("style")
-  style.id = "pm-planning-ultra-styles"
+  style.id = "pm-planning-compact-3x-styles"
   style.textContent = `
     .pm-planning-container {
-      max-width: 1320px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 1.75rem 1.5rem 3rem;
+      padding: 1.25rem 1.25rem 2.5rem;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* ── Hero Banner Ultra-Premium ── */
+    /* ── Hero Banner Compacto ── */
     .pm-planning-hero {
       position: relative;
       background: radial-gradient(130% 120% at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
       color: #fff;
-      padding: 2.2rem 2.5rem;
-      border-radius: 24px;
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      padding: 1.4rem 1.8rem;
+      border-radius: 18px;
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 1.8rem;
-      margin-bottom: 2rem;
+      gap: 1.2rem;
+      margin-bottom: 1.4rem;
       overflow: hidden;
     }
 
     .pm-hero-glow {
       position: absolute;
-      top: -60px;
-      right: 15%;
-      width: 260px;
-      height: 260px;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, transparent 70%);
+      top: -40px;
+      right: 20%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.22) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .pm-hero-content {
       display: flex;
       align-items: center;
-      gap: 1.4rem;
-      max-width: 650px;
+      gap: 1rem;
+      max-width: 600px;
       position: relative;
       z-index: 1;
     }
 
     .pm-hero-icon-wrap {
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.5rem;
+      font-size: 1.9rem;
       flex-shrink: 0;
     }
 
     .pm-hero-eyebrow {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
+      gap: 5px;
+      font-size: 0.68rem;
       font-weight: 800;
       letter-spacing: 0.08em;
       color: #818cf8;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.2rem;
       text-transform: uppercase;
     }
 
     .pm-live-dot {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: #38bdf8;
-      box-shadow: 0 0 8px #38bdf8;
+      box-shadow: 0 0 6px #38bdf8;
     }
 
     .pm-hero-title {
-      font-size: 1.85rem;
+      font-size: 1.45rem;
       font-weight: 900;
-      margin: 0 0 0.4rem;
-      letter-spacing: -0.03em;
+      margin: 0 0 0.2rem;
+      letter-spacing: -0.02em;
       background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
     .pm-hero-subtitle {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       color: #94a3b8;
       margin: 0;
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     .pm-hero-subtitle strong {
       color: #f1f5f9;
-      font-weight: 700;
     }
 
     .pm-hero-stats {
       display: flex;
-      gap: 0.85rem;
+      gap: 0.6rem;
       position: relative;
       z-index: 1;
     }
 
     .pm-stat-card {
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1rem 1.4rem;
+      border-radius: 12px;
+      padding: 0.65rem 1rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-width: 110px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      min-width: 85px;
     }
 
     .pm-stat-num {
-      font-size: 1.75rem;
+      font-size: 1.35rem;
       font-weight: 900;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
       color: #f8fafc;
       line-height: 1.1;
     }
 
-    .pm-stat-num--success {
-      color: #34d399;
-      text-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
-    }
-
-    .pm-stat-num--accent {
-      color: #a78bfa;
-      text-shadow: 0 0 16px rgba(167, 139, 250, 0.35);
-    }
+    .pm-stat-num--success { color: #34d399; }
+    .pm-stat-num--accent { color: #a78bfa; }
 
     .pm-stat-label {
-      font-size: 0.72rem;
+      font-size: 0.64rem;
       color: #64748b;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 0.35rem;
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
     }
 
     /* ── Toolbar & Segmented Control ── */
@@ -526,378 +514,312 @@ function _injectStyles() {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1.2rem;
+      gap: 1rem;
       flex-wrap: wrap;
-      margin-bottom: 2rem;
+      margin-bottom: 1.25rem;
     }
 
     .pm-segmented-control {
       display: inline-flex;
       background: rgba(15, 23, 42, 0.05);
       border: 1px solid var(--pm-border, rgba(0, 0, 0, 0.08));
-      padding: 4px;
-      border-radius: 16px;
-      gap: 4px;
+      padding: 3px;
+      border-radius: 12px;
+      gap: 3px;
     }
 
     .pm-seg-btn {
       background: transparent;
       border: none;
       color: var(--pm-text-muted, #64748b);
-      font-size: 0.86rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      padding: 0.55rem 1.1rem;
-      border-radius: 12px;
+      padding: 0.45rem 0.9rem;
+      border-radius: 9px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      gap: 5px;
+      transition: all 0.18s ease;
     }
 
-    .pm-seg-btn:hover {
-      color: var(--pm-text, #0f172a);
-    }
+    .pm-seg-btn:hover { color: var(--pm-text, #0f172a); }
 
     .pm-seg-btn.active {
       background: var(--pm-primary, #4f46e5);
       color: #fff;
-      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
     }
 
     .pm-search-box {
       position: relative;
-      min-width: 280px;
+      min-width: 250px;
     }
 
     .pm-search-box i {
       position: absolute;
-      left: 14px;
+      left: 12px;
       top: 50%;
       transform: translateY(-50%);
       color: #94a3b8;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
     }
 
     .pm-search-box input {
       width: 100%;
-      padding: 0.65rem 1.1rem 0.65rem 40px;
-      border-radius: 14px;
+      padding: 0.5rem 1rem 0.5rem 34px;
+      border-radius: 12px;
       border: 1px solid var(--pm-border, #e2e8f0);
       background: var(--pm-surface, #fff);
       color: inherit;
-      font-size: 0.88rem;
+      font-size: 0.84rem;
       font-weight: 500;
-      transition: all 0.2s ease;
     }
 
     .pm-search-box input:focus {
       outline: none;
       border-color: var(--pm-primary, #4f46e5);
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
     }
 
-    /* ── Grid & Luxury Cards ── */
-    .pm-premium-grid {
+    /* ── Cuadrícula Compacta: 3 Clases por Fila ── */
+    .pm-compact-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 1.6rem;
+      grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+      gap: 1rem;
     }
 
-    .pm-luxury-card {
+    @media (min-width: 992px) {
+      .pm-compact-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1360px) {
+      .pm-compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      }
+    }
+
+    .pm-compact-card {
       position: relative;
       background: var(--pm-surface, #ffffff);
       border: 1px solid var(--pm-border, #e2e8f0);
-      border-radius: 22px;
-      padding: 1.5rem;
+      border-radius: 16px;
+      padding: 1rem 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: 1.3rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      gap: 0.85rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
     }
 
-    .pm-luxury-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.09);
+    .pm-compact-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
       border-color: #cbd5e1;
     }
 
-    .pm-card-glow {
+    .pm-compact-card-accent {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 4px;
+      height: 3px;
     }
 
-    .glow-emerald {
-      background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
-    }
+    .accent-emerald { background: linear-gradient(90deg, #10b981, #34d399); }
+    .accent-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
-    .glow-amber {
-      background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde68a);
-    }
-
-    .pm-card-header {
+    .pm-card-top-row {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
     }
 
-    .pm-instrument-badge {
-      width: 52px;
-      height: 52px;
-      border-radius: 16px;
+    .pm-compact-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
-      border: 1px solid rgba(79, 70, 229, 0.15);
+      border: 1px solid rgba(79, 70, 229, 0.14);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.9rem;
+      font-size: 1.5rem;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
     }
 
-    .pm-header-info {
+    .pm-compact-title-wrap {
       flex: 1;
       min-width: 0;
     }
 
-    .pm-card-title {
-      font-size: 1.12rem;
+    .pm-compact-title {
+      font-size: 0.95rem;
       font-weight: 800;
-      margin: 0 0 0.25rem;
-      letter-spacing: -0.02em;
+      margin: 0 0 0.15rem;
+      letter-spacing: -0.01em;
       color: var(--pm-text, #0f172a);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .pm-card-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pm-meta-chip {
-      font-size: 0.76rem;
+    .pm-compact-subtitle {
+      font-size: 0.74rem;
       font-weight: 600;
       color: var(--pm-text-muted, #64748b);
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 4px;
     }
 
-    .pm-status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.74rem;
+    .pm-dot-separator { opacity: 0.5; }
+
+    .pm-compact-badge {
+      font-size: 0.68rem;
       font-weight: 800;
-      padding: 0.3rem 0.75rem;
+      padding: 0.22rem 0.55rem;
       border-radius: 999px;
       white-space: nowrap;
     }
 
-    .status-active {
+    .badge-active {
       background: rgba(16, 185, 129, 0.12);
       color: #059669;
-      border: 1px solid rgba(16, 185, 129, 0.28);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
-    .status-active .pm-pill-dot {
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
-    }
-
-    .status-pending {
+    .badge-pending {
       background: rgba(245, 158, 11, 0.12);
       color: #d97706;
-      border: 1px solid rgba(245, 158, 11, 0.28);
+      border: 1px solid rgba(245, 158, 11, 0.25);
     }
 
-    .status-pending .pm-pill-dot {
-      background: #f59e0b;
-    }
-
-    .pm-pill-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-
-    .pm-card-body {
+    .pm-compact-body {
       flex: 1;
     }
 
-    /* Stepper Capsules */
-    .pm-stepper-capsules {
+    /* Micro-Hierarchy */
+    .pm-micro-hierarchy {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: var(--pm-surface-2, #f8fafc);
-      padding: 0.9rem 1.1rem;
-      border-radius: 16px;
+      padding: 0.55rem 0.8rem;
+      border-radius: 11px;
       border: 1px solid var(--pm-border, #e2e8f0);
     }
 
-    .pm-capsule {
+    .pm-micro-chip {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
+      align-items: baseline;
+      gap: 3px;
     }
 
-    .pm-capsule-num {
-      font-size: 1.25rem;
+    .pm-micro-val {
+      font-size: 1.02rem;
       font-weight: 900;
       color: var(--pm-primary, #4f46e5);
       line-height: 1;
     }
 
-    .pm-capsule--highlight .pm-capsule-num {
-      color: #059669;
-    }
+    .pm-micro-chip--highlight .pm-micro-val { color: #059669; }
 
-    .pm-capsule-lbl {
-      font-size: 0.68rem;
+    .pm-micro-lbl {
+      font-size: 0.65rem;
       font-weight: 700;
       color: var(--pm-text-muted, #64748b);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
     }
 
-    .pm-capsule-arrow {
+    .pm-micro-arrow {
       color: #cbd5e1;
-      font-size: 0.85rem;
+      font-size: 0.72rem;
     }
 
-    .pm-warning-banner {
+    .pm-micro-warning {
       display: flex;
       align-items: center;
-      gap: 0.9rem;
-      padding: 0.85rem 1rem;
-      border-radius: 14px;
+      gap: 6px;
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
       background: rgba(245, 158, 11, 0.07);
-      border: 1px solid rgba(245, 158, 11, 0.22);
-    }
-
-    .pm-warn-icon {
-      font-size: 1.3rem;
-      color: #f59e0b;
-      flex-shrink: 0;
-    }
-
-    .pm-warn-text {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 0.78rem;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      font-size: 0.75rem;
       color: #92400e;
-      line-height: 1.35;
+      font-weight: 600;
     }
 
-    .pm-warn-text strong {
-      font-weight: 700;
-      color: #78350f;
-    }
-
-    /* Actions */
-    .pm-card-footer {
+    /* Actions Compact */
+    .pm-compact-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      padding-top: 0.2rem;
+      gap: 0.55rem;
     }
 
-    .pm-btn-primary {
+    .pm-btn-compact-primary {
       border: none;
       background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
       color: #fff;
-      padding: 0.75rem 1rem;
-      border-radius: 14px;
-      font-size: 0.86rem;
+      padding: 0.52rem 0.75rem;
+      border-radius: 11px;
+      font-size: 0.8rem;
       font-weight: 800;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      gap: 5px;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+      transition: all 0.18s ease;
     }
 
-    .pm-btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+    .pm-btn-compact-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
     }
 
-    .pm-btn-primary:active {
-      transform: scale(0.98);
-    }
-
-    .pm-btn-secondary {
+    .pm-btn-compact-secondary {
       border: 1px solid var(--pm-border, #cbd5e1);
       background: var(--pm-surface-2, #f8fafc);
       color: var(--pm-text, #334155);
-      padding: 0.75rem 1rem;
-      border-radius: 14px;
-      font-size: 0.86rem;
+      padding: 0.52rem 0.75rem;
+      border-radius: 11px;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: all 0.2s ease;
+      gap: 5px;
+      transition: all 0.18s ease;
     }
 
-    .pm-btn-secondary:hover {
+    .pm-btn-compact-secondary:hover {
       background: #f1f5f9;
       color: #0f172a;
-      border-color: #94a3b8;
-    }
-
-    .pm-btn-secondary:active {
-      transform: scale(0.98);
     }
 
     /* Loading & Empty States */
     .pm-loading-card,
     .pm-empty-card {
-      padding: 4.5rem 2rem;
+      padding: 3.5rem 1.5rem;
       text-align: center;
       background: var(--pm-surface, #fff);
-      border-radius: 22px;
+      border-radius: 18px;
       border: 1px dashed var(--pm-border, #cbd5e1);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.85rem;
+      gap: 0.65rem;
     }
 
-    .pm-empty-icon {
-      font-size: 3.2rem;
-    }
-
-    .pm-empty-title {
-      font-size: 1.2rem;
-      font-weight: 800;
-      margin: 0;
-      color: var(--pm-text, #0f172a);
-    }
-
-    .pm-empty-desc {
-      font-size: 0.88rem;
-      color: var(--pm-text-muted, #64748b);
-      max-width: 440px;
-      margin: 0;
-      line-height: 1.5;
-    }
+    .pm-empty-icon { font-size: 2.6rem; }
+    .pm-empty-title { font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--pm-text, #0f172a); }
+    .pm-empty-desc { font-size: 0.84rem; color: var(--pm-text-muted, #64748b); max-width: 400px; margin: 0; }
 
     /* Dark Theme Support */
     [data-theme="dark"] .pm-segmented-control {
@@ -905,13 +827,8 @@ function _injectStyles() {
       border-color: rgba(255, 255, 255, 0.08);
     }
 
-    [data-theme="dark"] .pm-seg-btn {
-      color: #94a3b8;
-    }
-
-    [data-theme="dark"] .pm-seg-btn:hover {
-      color: #fff;
-    }
+    [data-theme="dark"] .pm-seg-btn { color: #94a3b8; }
+    [data-theme="dark"] .pm-seg-btn:hover { color: #fff; }
 
     [data-theme="dark"] .pm-search-box input {
       background: #1e293b;
@@ -919,127 +836,69 @@ function _injectStyles() {
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-luxury-card {
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+    [data-theme="dark"] .pm-compact-card {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.85) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-color: rgba(255, 255, 255, 0.08);
     }
 
-    [data-theme="dark"] .pm-card-title {
-      color: #fff;
-    }
+    [data-theme="dark"] .pm-compact-title { color: #fff; }
 
-    [data-theme="dark"] .pm-stepper-capsules {
+    [data-theme="dark"] .pm-micro-hierarchy {
       background: rgba(15, 23, 42, 0.7);
       border-color: rgba(255, 255, 255, 0.06);
     }
 
-    [data-theme="dark"] .pm-btn-secondary {
+    [data-theme="dark"] .pm-btn-compact-secondary {
       background: rgba(255, 255, 255, 0.04);
       border-color: rgba(255, 255, 255, 0.12);
       color: #e2e8f0;
     }
 
-    [data-theme="dark"] .pm-btn-secondary:hover {
+    [data-theme="dark"] .pm-btn-compact-secondary:hover {
       background: rgba(255, 255, 255, 0.08);
       color: #fff;
     }
 
-    [data-theme="dark"] .pm-warning-banner {
+    [data-theme="dark"] .pm-micro-warning {
       background: rgba(245, 158, 11, 0.08);
       border-color: rgba(245, 158, 11, 0.2);
-    }
-
-    [data-theme="dark"] .pm-warn-text {
       color: #fde68a;
-    }
-
-    [data-theme="dark"] .pm-warn-text strong {
-      color: #fbbf24;
     }
 
     /* ── Mobile Viewport ── */
     @media (max-width: 768px) {
-      .pm-planning-container {
-        padding: 0.9rem;
-      }
+      .pm-planning-container { padding: 0.75rem; }
       .pm-planning-hero {
-        padding: 1.4rem;
-        border-radius: 20px;
+        padding: 1.1rem;
         flex-direction: column;
         align-items: stretch;
-        gap: 1.3rem;
-      }
-      .pm-hero-content {
         gap: 1rem;
       }
-      .pm-hero-icon-wrap {
-        width: 56px;
-        height: 56px;
-        font-size: 2rem;
-        border-radius: 16px;
-      }
-      .pm-hero-title {
-        font-size: 1.45rem;
-      }
-      .pm-hero-subtitle {
-        font-size: 0.86rem;
-      }
+      .pm-hero-content { gap: 0.85rem; }
+      .pm-hero-icon-wrap { width: 44px; height: 44px; font-size: 1.6rem; border-radius: 12px; }
+      .pm-hero-title { font-size: 1.3rem; }
+      .pm-hero-subtitle { font-size: 0.8rem; }
       .pm-hero-stats {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
+        gap: 0.4rem;
       }
-      .pm-stat-card {
-        min-width: 0;
-        padding: 0.75rem 0.4rem;
-        border-radius: 14px;
-      }
-      .pm-stat-num {
-        font-size: 1.4rem;
-      }
-      .pm-stat-label {
-        font-size: 0.62rem;
-        text-align: center;
-      }
+      .pm-stat-card { padding: 0.5rem 0.3rem; min-width: 0; border-radius: 10px; }
+      .pm-stat-num { font-size: 1.15rem; }
+      .pm-stat-label { font-size: 0.58rem; text-align: center; }
       .pm-planning-toolbar {
         flex-direction: column;
         align-items: stretch;
+        gap: 0.75rem;
+      }
+      .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
+      .pm-seg-btn { justify-content: center; padding: 0.5rem 0.3rem; font-size: 0.76rem; }
+      .pm-search-box { width: 100%; }
+      .pm-compact-grid {
+        grid-template-columns: 1fr;
         gap: 0.85rem;
-      }
-      .pm-segmented-control {
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-      }
-      .pm-seg-btn {
-        justify-content: center;
-        padding: 0.6rem 0.5rem;
-        font-size: 0.8rem;
-      }
-      .pm-search-box {
-        width: 100%;
-      }
-      .pm-search-box input {
-        font-size: 16px;
-        padding: 0.75rem 1rem 0.75rem 40px;
-      }
-      .pm-premium-grid {
-        grid-template-columns: 1fr;
-        gap: 1.2rem;
-      }
-      .pm-luxury-card {
-        padding: 1.25rem;
-        border-radius: 20px;
-      }
-      .pm-card-footer {
-        grid-template-columns: 1fr;
-        gap: 0.65rem;
-      }
-      .pm-btn-primary, .pm-btn-secondary {
-        min-height: 48px;
-        font-size: 0.92rem;
       }
     }
   `

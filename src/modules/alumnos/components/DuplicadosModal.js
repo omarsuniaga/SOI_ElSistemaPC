@@ -1,16 +1,14 @@
 /**
  * DuplicadosModal — revisión, selección y fusión inteligente de alumnos duplicados.
  *
- * Flujo:
- *  1. Analiza y detecta posibles duplicados mediante algoritmos fonéticos,
- *     soft token overlap y correlación de identidad familiar/contacto.
- *  2. Muestra la lista de parejas encontradas con nivel de certeza y motivos de coincidencia.
- *  3. Al abrir una pareja:
- *     - Carga en tiempo real las clases inscritas de ambos alumnos.
- *     - Permite al usuario elegir dinámicamente cuál alumno conservar como Principal.
- *     - Muestra el resultado de unificación de clases (ambas clases se combinan).
- *     - Permite resolver conflictos campo a campo antes de confirmar.
- *  4. Ejecuta la fusión transaccional atómica en backend (RPC) y refresca la vista.
+ * Flujo optimizado (Zero-Friction UX):
+ *  1. Al abrir, ejecuta el análisis automático de forma inmediata (sin pasos intermedios).
+ *  2. Muestra directamente el listado de parejas con nivel de certeza, motivos y opción de:
+ *     - "Revisar": abre la vista detallada de comparación y resolución de campos/clases.
+ *     - "Fusión rápida": unifica en 1 click la pareja conservando al más completo.
+ *  3. Flujo Continuo: al fusionar un alumno, el modal NO se cierra; actualiza la lista
+ *     en memoria y regresa a los duplicados restantes hasta resolver todos.
+ *  4. Ejecuta la fusión transaccional atómica en backend (RPC) y refresca la vista padre.
  */
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -66,45 +64,25 @@ export const DuplicadosModal = {
   async abrir({ alumnos, onSuccess } = {}) {
     let listaAlumnos = alumnos || []
 
-    // ── Paso 1: inicio del análisis ──────────────────────────────────────────
-    const abrirDetector = () => {
-      AppModal.open({
-        title: 'Detectar alumnos duplicados',
-        size: 'md',
-        saveText: 'Analizar base de datos',
-        body: `
-          <div class="text-center py-4">
-            <div class="p-3 rounded-circle bg-warning-subtle text-warning-emphasis d-inline-flex align-items-center justify-content-center mb-3">
-              <i class="bi bi-search-heart fs-1"></i>
-            </div>
-            <h5 class="fw-bold mb-2">Análisis inteligente de duplicados</h5>
-            <p class="text-muted mb-0 small px-3">
-              El motor evaluará coincidencias fonéticas, variantes ortográficas (ej. <em>Matias</em> vs <em>Mathias Alejandro</em>),
-              mismo padre o madre, teléfonos y fechas de nacimiento.
-            </p>
-          </div>
-        `,
-        onSave: async () => {
-          try {
-            AppModal.showLoading('Analizando alumnos y relaciones...')
-            if (!listaAlumnos.length) {
-              listaAlumnos = await obtenerTodosLosAlumnosParaAnalisis()
-            }
-            const resultado = detectarPosiblesDuplicados(listaAlumnos)
-            AppModal.hideLoading()
-            renderLista(resultado)
-            return false
-          } catch (error) {
-            console.error('[DuplicadosModal] Error detectando:', error)
-            AppToast.error(error.message || 'No se pudieron analizar los duplicados')
-          }
-        },
-      })
+    // ── Paso 1: análisis automático inmediato ────────────────────────────────
+    try {
+      AppModal.showLoading('Analizando alumnos y detectando posibles duplicados...')
+      if (!listaAlumnos.length) {
+        listaAlumnos = await obtenerTodosLosAlumnosParaAnalisis()
+      }
+      let duplicadosPendientes = detectarPosiblesDuplicados(listaAlumnos)
+      AppModal.hideLoading()
+      
+      ejecutarFlujoLista(duplicadosPendientes)
+    } catch (error) {
+      AppModal.hideLoading()
+      console.error('[DuplicadosModal] Error en análisis inicial:', error)
+      AppToast.error(error.message || 'No se pudieron analizar los alumnos duplicados')
     }
 
-    // ── Paso 2: listado de parejas encontradas ───────────────────────────────
-    const renderLista = (duplicados) => {
-      if (!duplicados.length) {
+    // ── Paso 2: listado interactivo con retención de estado ──────────────────
+    function ejecutarFlujoLista(duplicados) {
+      if (!duplicados || !duplicados.length) {
         AppModal.open({
           title: 'Alumnos duplicados',
           size: 'md',
@@ -113,10 +91,10 @@ export const DuplicadosModal = {
           body: `
             <div class="text-center py-4">
               <div class="p-3 rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3">
-                <i class="bi bi-emoji-smile fs-1"></i>
+                <i class="bi bi-check-circle-fill fs-1"></i>
               </div>
-              <h5 class="fw-bold mb-1">No se encontraron alumnos duplicados</h5>
-              <p class="text-muted mb-0 small">No hay registros que parezcan corresponder a la misma persona.</p>
+              <h5 class="fw-bold mb-1">Base de datos optimizada</h5>
+              <p class="text-muted mb-0 small">No se encontraron alumnos duplicados pendientes de revisión.</p>
             </div>
           `,
         })
@@ -133,30 +111,35 @@ export const DuplicadosModal = {
           if (d.coincidencias?.madre_nombre) motivos.push('Misma Madre')
           if (d.coincidencias?.telefono) motivos.push('Mismo Teléfono')
           if (d.coincidencias?.fecha_nacimiento) motivos.push('Misma Fecha Nac.')
-          if (d.esSubsetNombre) motivos.push('Nombre contenido/similar')
+          if (d.esSubsetNombre) motivos.push('Nombre similar')
 
           const motivosHTML = motivos.length
             ? `<div class="text-muted small mt-1"><i class="bi bi-info-circle me-1 text-primary"></i>${escapeHTML(motivos.join(' · '))}</div>`
             : ''
 
           return `
-            <div class="col-12 col-lg-6">
-              <div class="d-flex align-items-start gap-3 border rounded-3 p-3.5 bg-body shadow-xs hover-shadow transition-all h-100" data-duplicado-idx="${idx}" style="cursor:pointer;" role="button">
-                <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:46px;height:46px;font-size:1.1rem;font-weight:700;">
+            <div class="col-12 col-lg-6" id="duplicado-card-${idx}">
+              <div class="d-flex align-items-start gap-3 border rounded-3 p-3 bg-body shadow-xs hover-shadow transition-all h-100">
+                <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:44px;height:44px;font-size:1.05rem;font-weight:700;">
                   ${escapeHTML((d.a.nombre_completo || d.a.nombre || '?').slice(0, 1).toUpperCase())}
                 </div>
                 <div class="flex-grow-1 min-w-0">
                   <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                    <strong class="text-body text-truncate" style="font-size:0.95rem;">${escapeHTML(d.a.nombre_completo || d.a.nombre || 'Sin nombre')}</strong>
-                    <span class="badge rounded-pill ${badge.clase} flex-shrink-0 py-1 px-2.5" style="font-size:0.75rem;"><i class="bi ${badge.icono} me-1"></i>${escapeHTML(d.nivelEtiqueta || d.nivel)} (${pct}%)</span>
+                    <strong class="text-body text-truncate" style="font-size:0.92rem;">${escapeHTML(d.a.nombre_completo || d.a.nombre || 'Sin nombre')}</strong>
+                    <span class="badge rounded-pill ${badge.clase} flex-shrink-0 py-1 px-2" style="font-size:0.72rem;"><i class="bi ${badge.icono} me-1"></i>${pct}%</span>
                   </div>
                   <div class="text-muted small text-truncate"><i class="bi bi-arrow-repeat me-1 text-secondary"></i>${escapeHTML(d.b.nombre_completo || d.b.nombre || 'Sin nombre')}</div>
                   ${motivosHTML}
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary rounded-3 shadow-xs flex-shrink-0 px-2.5 py-1 align-self-center" style="font-size:0.78rem;">
-                  <span>Revisar</span>
-                  <i class="bi bi-chevron-right ms-1"></i>
-                </button>
+                <div class="d-flex flex-column gap-1.5 flex-shrink-0 align-self-center">
+                  <button type="button" class="btn btn-sm btn-primary rounded-3 shadow-xs px-2.5 py-1" data-action="revisar" data-duplicado-idx="${idx}" style="font-size:0.78rem;">
+                    <span>Revisar</span>
+                    <i class="bi bi-chevron-right ms-1"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 px-2 py-0.5" data-action="rapida" data-duplicado-idx="${idx}" title="Fusión automática inteligente conservando al más completo" style="font-size:0.72rem;">
+                    <i class="bi bi-lightning-charge me-0.5 text-warning"></i>Rápida
+                  </button>
+                </div>
               </div>
             </div>
           `
@@ -164,36 +147,82 @@ export const DuplicadosModal = {
         .join('')
 
       AppModal.open({
-        title: `Alumnos duplicados encontrados (${duplicados.length})`,
+        title: `Alumnos duplicados detectados (${duplicados.length})`,
         size: 'view',
         hideSave: true,
         cancelText: 'Cerrar',
         body: `
           <div class="p-2">
-            <div class="p-3 rounded-3 bg-body-tertiary border mb-3 shadow-xs">
+            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 bg-body-tertiary border mb-3 shadow-xs flex-wrap gap-2">
               <p class="text-muted small mb-0">
-                Se encontraron <strong>${duplicados.length}</strong> pareja(s) de alumnos con alta probabilidad de ser la misma persona.
-                Haz clic en cualquier pareja para comparar sus clases, elegir cuál conservar como principal y resolver los datos antes de fusionar.
+                Se detectaron <strong>${duplicados.length}</strong> parejas con alta probabilidad de duplicidad. 
+                Podes revisar los datos en detalle o aplicar la fusión rápida.
               </p>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5">
+                <i class="bi bi-collection me-1"></i>${duplicados.length} pendientes
+              </span>
             </div>
             <div class="row g-2.5 overflow-auto pe-1" style="max-height: calc(92vh - 220px);">${items}</div>
           </div>
         `,
         onShow: (body) => {
-          body.querySelectorAll('[data-duplicado-idx]').forEach((card) => {
-            card.addEventListener('click', () => {
-              const idx = Number(card.dataset.duplicadoIdx)
+          // Acción: Revisar en detalle
+          body.querySelectorAll('[data-action="revisar"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const idx = Number(btn.dataset.duplicadoIdx)
+              abrirDetalle(duplicados[idx], duplicados, idx)
+            })
+          })
+
+          // Acción: Fusión rápida 1-Click
+          body.querySelectorAll('[data-action="rapida"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const idx = Number(btn.dataset.duplicadoIdx)
               const d = duplicados[idx]
-              abrirDetalle(d, duplicados)
+              await ejecutarFusionRapida(d, duplicados)
             })
           })
         },
       })
     }
 
+    // ── Fusión Rápida Inteligente ────────────────────────────────────────────
+    async function ejecutarFusionRapida(duplicado, listaActual) {
+      try {
+        AppModal.showLoading('Ejecutando fusión rápida...')
+        const principal = quienEsMasCompleto(duplicado.a, duplicado.b)
+        const obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
+        const fusion = construirFusion(principal, obsoleto)
+
+        const datosFusion = { ...fusion.resultante }
+        delete datosFusion.id
+
+        await fusionarAlumnos({
+          principalId: principal.id,
+          obsoletoId: obsoleto.id,
+          datosFusion,
+        })
+
+        AppModal.hideLoading()
+        AppToast.success(`Fusión completada: se conservó a "${principal.nombre_completo || principal.nombre}"`)
+
+        if (typeof onSuccess === 'function') onSuccess()
+
+        // Filtrar pareja procesada y refrescar lista restante
+        const filtrados = listaActual.filter(
+          (d) => d.a.id !== principal.id && d.a.id !== obsoleto.id && d.b.id !== principal.id && d.b.id !== obsoleto.id
+        )
+        ejecutarFlujoLista(filtrados)
+      } catch (error) {
+        AppModal.hideLoading()
+        console.error('[DuplicadosModal] Error en fusión rápida:', error)
+        AppToast.error(error.message || 'No se pudo realizar la fusión rápida')
+      }
+    }
+
     // ── Paso 3: detalle de fusión con clases y selector de principal ──────────
-    const abrirDetalle = async (duplicado, listaCompletaDuplicados) => {
-      AppModal.showLoading('Cargando clases e historial de los alumnos...')
+    async function abrirDetalle(duplicado, listaCompletaDuplicados, currentIndex = 0) {
+      AppModal.showLoading('Cargando clases e historial...')
 
       let clasesA = []
       let clasesB = []
@@ -210,7 +239,6 @@ export const DuplicadosModal = {
         AppModal.hideLoading()
       }
 
-      // Por defecto sugerir el más completo
       const sugerido = quienEsMasCompleto(duplicado.a, duplicado.b)
       let principal = sugerido
       let obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
@@ -219,7 +247,6 @@ export const DuplicadosModal = {
         const clasesPrincipal = principal.id === duplicado.a.id ? clasesA : clasesB
         const clasesObsoleto = principal.id === duplicado.a.id ? clasesB : clasesA
 
-        // Unificar clases eliminando duplicados por ID de clase
         const mapClasesUnificadas = new Map()
         ;[...clasesPrincipal, ...clasesObsoleto].forEach((c) => {
           if (c?.id) mapClasesUnificadas.set(c.id, c)
@@ -235,7 +262,6 @@ export const DuplicadosModal = {
           const obsoletoValor = formatearValor(campo.valorObsoleto)
           const resultante = formatearValor(campo.valorFusionado)
 
-          // Selector interactivo en caso de conflicto
           const celdaResultante = campo.puedeElegir
             ? `<select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1" data-fusion-key="${campo.key}" data-fusion-label="${escapeHTML(campo.label)}" style="font-size:0.8rem;">
                 <option value="__principal__" ${campo.valorFusionado === campo.valorPrincipal ? 'selected' : ''}>${escapeHTML(campo.valorPrincipal)} (Principal)</option>
@@ -273,24 +299,24 @@ export const DuplicadosModal = {
           .join('')
 
         const resumenCompletados = fusion.completadosLabels.length
-          ? `<div class="p-2.5 rounded-3 bg-success-subtle bg-opacity-30 border border-success-subtle small text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>Datos que se completan automáticamente: <strong>${escapeHTML(fusion.completadosLabels.join(', '))}</strong></div>`
+          ? `<div class="p-2.5 rounded-3 bg-success-subtle bg-opacity-30 border border-success-subtle small text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>Completados: <strong>${escapeHTML(fusion.completadosLabels.join(', '))}</strong></div>`
           : ''
 
         const resumenConflictos = fusion.conflictosLabels.length
-          ? `<div class="p-2.5 rounded-3 bg-danger-subtle bg-opacity-30 border border-danger-subtle small text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Conflictos a revisar: <strong>${escapeHTML(fusion.conflictosLabels.join(', '))}</strong> (selecciona el valor deseado en la tabla)</div>`
-          : `<div class="p-2.5 rounded-3 bg-body-tertiary border small text-muted mb-2"><i class="bi bi-check2-circle text-success me-1"></i>Sin conflictos de datos: toda la información faltante se completará de forma automática.</div>`
+          ? `<div class="p-2.5 rounded-3 bg-danger-subtle bg-opacity-30 border border-danger-subtle small text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Conflictos: <strong>${escapeHTML(fusion.conflictosLabels.join(', '))}</strong></div>`
+          : `<div class="p-2.5 rounded-3 bg-body-tertiary border small text-muted mb-2"><i class="bi bi-check2-circle text-success me-1"></i>Sin conflictos de datos.</div>`
 
         return `
           <div class="h-100 d-flex flex-column">
             
-            <!-- Barra Superior: Selección de Registro Principal (Flex Shrink 0) -->
             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
-              <div>
-                <h6 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
-                  <i class="bi bi-shield-check text-primary fs-5"></i>
-                  <span>¿Cuál alumno deseas conservar como Principal?</span>
-                </h6>
-                <small class="text-muted">El registro seleccionado absorbe los datos, clases e historial del secundario</small>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 shadow-xs" id="btnVolverALista">
+                  <i class="bi bi-arrow-left me-1"></i>Volver a lista
+                </button>
+                <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1">
+                  Pareja ${currentIndex + 1} de ${listaCompletaDuplicados.length}
+                </span>
               </div>
 
               <div class="btn-group btn-group-sm rounded-3 shadow-xs overflow-hidden" role="group" id="btn-group-choose-principal">
@@ -303,13 +329,10 @@ export const DuplicadosModal = {
               </div>
             </div>
 
-            <!-- Estructura a Dos Columnas Independientes (Exacto al módulo CLASES) -->
             <div class="row g-3 flex-grow-1 overflow-hidden">
               
-              <!-- Columna Izquierda: Fichas de Alumnos y Resumen de Clases -->
               <div class="col-12 col-lg-5 d-flex flex-column gap-2.5 overflow-auto pe-1" style="max-height: calc(92vh - 180px);">
                 
-                <!-- Ficha Alumno Principal (Conservado) -->
                 <div class="p-3 border border-primary-subtle rounded-4 bg-body shadow-xs">
                   <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom border-primary-subtle">
                     <div class="d-flex align-items-center gap-2">
@@ -342,7 +365,6 @@ export const DuplicadosModal = {
                   </div>
                 </div>
 
-                <!-- Ficha Alumno Secundario (A Absorber y Eliminar) -->
                 <div class="p-3 border border-warning-subtle rounded-4 bg-body shadow-xs">
                   <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom border-warning-subtle">
                     <div class="d-flex align-items-center gap-2">
@@ -375,7 +397,6 @@ export const DuplicadosModal = {
                   </div>
                 </div>
 
-                <!-- Banner Informativo de Unificación de Clases -->
                 <div class="p-3 rounded-4 bg-success-subtle bg-opacity-30 border border-success-subtle shadow-xs">
                   <div class="d-flex align-items-center gap-2 mb-1.5">
                     <i class="bi bi-diagram-3-fill text-success fs-5 flex-shrink-0"></i>
@@ -388,7 +409,6 @@ export const DuplicadosModal = {
 
               </div>
 
-              <!-- Columna Derecha: Resolución de Datos Campo a Campo -->
               <div class="col-12 col-lg-7 d-flex flex-column h-100">
                 <div class="p-3 rounded-4 border bg-body shadow-xs d-flex flex-column h-100">
                   
@@ -430,91 +450,95 @@ export const DuplicadosModal = {
         `
       }
 
-      const abrirModalDetalle = () => {
-        let fusionActual = construirFusion(principal, obsoleto)
+      let fusionActual = construirFusion(principal, obsoleto)
 
-        AppModal.open({
-          title: 'Revisar y fusionar alumnos',
-          size: 'view',
-          saveText: 'Confirmar y fusionar',
-          cancelText: 'Volver a la lista',
-          body: `<div id="modal-detalle-duplicado-container" class="h-100">${renderModalContent()}</div>`,
-          onCancel: () => {
-            if (listaCompletaDuplicados?.length) {
-              renderLista(listaCompletaDuplicados)
-            }
-          },
-          onShow: (modalBody) => {
-            const bindEvents = () => {
-              // Botones para alternar Principal / Secundario
-              modalBody.querySelectorAll('#btn-group-choose-principal button').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                  const targetId = btn.dataset.principalId
-                  if (targetId === principal.id) return
-                  principal = targetId === duplicado.a.id ? duplicado.a : duplicado.b
-                  obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
-                  fusionActual = construirFusion(principal, obsoleto)
-                  const container = modalBody.querySelector('#modal-detalle-duplicado-container')
-                  if (container) {
-                    container.innerHTML = renderModalContent()
-                    bindEvents()
-                  }
-                })
+      AppModal.open({
+        title: 'Revisar y fusionar alumnos',
+        size: 'view',
+        saveText: 'Confirmar y fusionar',
+        cancelText: 'Volver a la lista',
+        body: `<div id="modal-detalle-duplicado-container" class="h-100">${renderModalContent()}</div>`,
+        onCancel: () => {
+          if (listaCompletaDuplicados?.length) {
+            ejecutarFlujoLista(listaCompletaDuplicados)
+          }
+        },
+        onShow: (modalBody) => {
+          const bindEvents = () => {
+            modalBody.querySelector('#btnVolverALista')?.addEventListener('click', () => {
+              AppModal.close()
+              ejecutarFlujoLista(listaCompletaDuplicados)
+            })
+
+            modalBody.querySelectorAll('#btn-group-choose-principal button').forEach((btn) => {
+              btn.addEventListener('click', () => {
+                const targetId = btn.dataset.principalId
+                if (targetId === principal.id) return
+                principal = targetId === duplicado.a.id ? duplicado.a : duplicado.b
+                obsoleto = principal.id === duplicado.a.id ? duplicado.b : duplicado.a
+                fusionActual = construirFusion(principal, obsoleto)
+                const container = modalBody.querySelector('#modal-detalle-duplicado-container')
+                if (container) {
+                  container.innerHTML = renderModalContent()
+                  bindEvents()
+                }
               })
+            })
 
-              // Selectores de resolución de conflicto
-              modalBody.querySelectorAll('[data-fusion-key]').forEach((select) => {
-                select.addEventListener('change', () => {
-                  const key = select.dataset.fusionKey
-                  const valor = select.value === '__obsoleto__' ? obsoleto[key] : principal[key]
-                  const campo = fusionActual.campos.find((c) => c.key === key)
-                  if (campo) {
-                    campo.valorFusionado = valor ?? null
-                    fusionActual.resultante[key] = valor ?? null
-                  }
-                  const row = modalBody.querySelector(`[data-fusion-row="${key}"]`)
-                  if (row) {
-                    const celda = row.querySelector('td:last-child span')
-                    if (celda) celda.innerHTML = formatearValor(valor)
-                  }
-                })
+            modalBody.querySelectorAll('[data-fusion-key]').forEach((select) => {
+              select.addEventListener('change', () => {
+                const key = select.dataset.fusionKey
+                const valor = select.value === '__obsoleto__' ? obsoleto[key] : principal[key]
+                const campo = fusionActual.campos.find((c) => c.key === key)
+                if (campo) {
+                  campo.valorFusionado = valor ?? null
+                  fusionActual.resultante[key] = valor ?? null
+                }
+                const row = modalBody.querySelector(`[data-fusion-row="${key}"]`)
+                if (row) {
+                  const celda = row.querySelector('td:last-child span')
+                  if (celda) celda.innerHTML = formatearValor(valor)
+                }
               })
-            }
+            })
+          }
 
-            bindEvents()
-          },
-          onSave: async () => {
-            try {
-              AppModal.showLoading('Fusionando alumnos y migrando inscripciones...')
-              const datosFusion = { ...fusionActual.resultante }
-              delete datosFusion.id
+          bindEvents()
+        },
+        onSave: async () => {
+          try {
+            AppModal.showLoading('Fusionando alumnos y migrando inscripciones...')
+            const datosFusion = { ...fusionActual.resultante }
+            delete datosFusion.id
 
-              await fusionarAlumnos({
-                principalId: principal.id,
-                obsoletoId: obsoleto.id,
-                datosFusion,
-              })
+            await fusionarAlumnos({
+              principalId: principal.id,
+              obsoletoId: obsoleto.id,
+              datosFusion,
+            })
 
-              AppModal.hideLoading()
-              AppToast.success(
-                `Alumnos fusionados con éxito: se conservó a "${principal.nombre_completo || principal.nombre}" y se migraron todas sus clases.`,
-              )
+            AppModal.hideLoading()
+            AppToast.success(
+              `Alumnos fusionados con éxito: se conservó a "${principal.nombre_completo || principal.nombre}" y se migraron sus clases.`,
+            )
 
-              if (typeof onSuccess === 'function') onSuccess()
-              return true
-            } catch (error) {
-              AppModal.hideLoading()
-              console.error('[DuplicadosModal] Error fusionando:', error)
-              AppToast.error(error.message || 'No se pudieron fusionar los alumnos')
-              return false
-            }
-          },
-        })
-      }
+            if (typeof onSuccess === 'function') onSuccess()
 
-      abrirModalDetalle()
+            // Filtramos la pareja resuelta de la lista y volvemos a mostrar la lista restante
+            const filtrados = listaCompletaDuplicados.filter(
+              (d) => d.a.id !== principal.id && d.a.id !== obsoleto.id && d.b.id !== principal.id && d.b.id !== obsoleto.id
+            )
+            
+            ejecutarFlujoLista(filtrados)
+            return false // Mantiene la navegación controlada por ejecutarFlujoLista
+          } catch (error) {
+            AppModal.hideLoading()
+            console.error('[DuplicadosModal] Error fusionando:', error)
+            AppToast.error(error.message || 'No se pudieron fusionar los alumnos')
+            return false
+          }
+        },
+      })
     }
-
-    abrirDetector()
   },
 }

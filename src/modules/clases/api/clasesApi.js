@@ -561,6 +561,31 @@ export async function obtenerClasesPorMaestro(maestroId) {
   })
 }
 
+/**
+ * Todas las clases activas con su horario semanal completo y ocupación
+ * (inscritos activos), sin filtrar por maestro. Fuente única para el
+ * módulo "Horario General": vista + diagnóstico de conflictos de salón,
+ * sobre-cupo y datos faltantes.
+ */
+export async function obtenerClasesConHorarioYCupo() {
+  const { data, error } = await supabase
+    .from('clases')
+    .select(`
+      *,
+      clase_horarios ( dia, hora_inicio, hora_fin, salon_id ),
+      alumnos_clases ( id, activo )
+    `)
+    .order('nombre', { ascending: true })
+
+  if (error) throw error
+
+  return (data || []).map(c => {
+    const clase = normalizeClase(c)
+    clase.horarios = c.clase_horarios || []
+    clase.inscritos = (c.alumnos_clases || []).filter(a => a.activo).length
+    return clase
+  })
+}
 export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null, dia = null) {
   const { data, error } = await supabase
     .from('alumnos_clases')

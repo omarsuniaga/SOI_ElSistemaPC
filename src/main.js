@@ -81,6 +81,7 @@ import { registerRoutesAdminDashboard } from './modules/admin-dashboard/admin-da
 import { registerRoutesPermisos } from './modules/permisos/index.js'
 import { registerRoutesPedagogico } from './modules/pedagogico/index.js'
 import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js'
+import { registerRoutesHorarioGeneral } from './modules/horario-general/index.js'
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js'
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
@@ -210,6 +211,14 @@ const MODULES_REGISTRY = [
     description: 'Motor de asignación y optimización de horarios',
     enabled: true,
     register: registerRoutesHorarioBuilder,
+  },
+  {
+    id: 'horario-general',
+    label: 'Horario General',
+    icon: 'bi-calendar3-week',
+    description: 'Vista y diagnóstico del horario semanal de todas las clases activas',
+    enabled: true,
+    register: registerRoutesHorarioGeneral,
   },
   {
     id: 'asistencias',
@@ -432,6 +441,7 @@ const NAV_GROUPS = [
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
       { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
+      { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
     ],
   },
   {

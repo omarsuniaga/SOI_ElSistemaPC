@@ -242,8 +242,19 @@ async function _enriquecerSesiones(confirmadas, { claseById, maestroNombreById =
  * @param {string} [params.claseId] — 'todas' o un id de clase específico
  * @returns {Promise<{ clases: Array, sesiones: Array }>}
  */
-export async function cargarHistorialClases({ maestroId, dias, claseId = 'todas' }) {
-  const { desde, hasta } = rangoFechas(dias)
+export async function cargarHistorialClases({ maestroId, dias, desde: customDesde, hasta: customHasta, claseId = 'todas' }) {
+  let desde, hasta
+  if (customDesde || customHasta) {
+    desde = customDesde || '2000-01-01'
+    hasta = customHasta || '2099-12-31'
+  } else if (dias != null && dias > 0) {
+    const r = rangoFechas(dias)
+    desde = r.desde
+    hasta = r.hasta
+  } else {
+    desde = '2000-01-01'
+    hasta = '2099-12-31'
+  }
 
   const [clases, sesiones] = await Promise.all([
     _getClasesDeMaestro(maestroId),

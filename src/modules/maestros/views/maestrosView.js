@@ -26,6 +26,7 @@ import { openClaseModal } from '../../clases/components/claseModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { descargarPdfReporteMaestro } from '../domain/generarPdfReporteMaestro.js'
+import { openHistoricoMaestroModal } from '../components/maestroHistoricoModal.js'
 
 const state = {
   maestros: [],
@@ -405,6 +406,10 @@ function renderTableRows(maestros) {
                 <span>Editar</span>
               </button>
 
+              <button class="btn btn-xs btn-outline-info rounded-3 shadow-xs d-flex align-items-center justify-content-center btn-maestro-historico py-1 px-2" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias" style="font-size:0.75rem;">
+                <i class="bi bi-clock-history"></i>
+              </button>
+
               <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center btn-maestro-pdf py-1 px-2" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF" style="font-size:0.75rem;">
                 <i class="bi bi-file-earmark-pdf"></i>
               </button>
@@ -481,6 +486,14 @@ function attachEvents(container) {
     if (editBtn) {
       e.stopPropagation()
       openEditModal(editBtn.dataset.id)
+      return
+    }
+
+    const historicoBtn = e.target.closest('[data-action="historico"]')
+    if (historicoBtn) {
+      e.stopPropagation()
+      const maestro = state.maestrosOriginales.find((m) => m.id === historicoBtn.dataset.id)
+      if (maestro) openHistoricoMaestroModal(maestro)
       return
     }
 
@@ -838,6 +851,9 @@ function openViewModal(id) {
   const isActive = maestro.is_active ?? true
   const headerActionsHTML = `
     <div class="d-flex align-items-center gap-1">
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-historico" style="background: rgba(255,255,255,0.25); font-size: 0.8rem; border-radius: 6px; font-weight: 600;" type="button" title="Ver Histórico de Clases y Asistencias">
+        <i class="bi bi-clock-history me-1"></i>Histórico
+      </button>
       <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-pdf" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Descargar Reporte PDF">
         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
       </button>
@@ -857,6 +873,17 @@ function openViewModal(id) {
     hideSave: true,
     cancelText: 'Cerrar',
     body: `
+      <!-- Banner Acceso Directo a Histórico de Clases -->
+      <div class="card bg-light border p-3 mb-3 d-flex flex-row align-items-center justify-content-between rounded-3">
+        <div>
+          <div class="fw-bold text-primary mb-1"><i class="bi bi-clock-history me-1"></i> Histórico de Clases del Maestro</div>
+          <div class="text-muted small">Consulta sesiones dadas, temas impartidos, horarios, asistencias y justificaciones.</div>
+        </div>
+        <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" id="modal-view-body-btn-historico" type="button">
+          <i class="bi bi-journal-check"></i> Ver Histórico
+        </button>
+      </div>
+
       <div class="row">
         <div class="col-md-6">
           <div class="mb-3">
@@ -941,6 +968,12 @@ function openViewModal(id) {
     `,
     onShow: async (modalBody) => {
       const dialog = modalBody.closest('.app-modal-dialog')
+      dialog?.querySelector('#modal-view-btn-historico')?.addEventListener('click', () => {
+        openHistoricoMaestroModal(maestro)
+      })
+      modalBody.querySelector('#modal-view-body-btn-historico')?.addEventListener('click', () => {
+        openHistoricoMaestroModal(maestro)
+      })
       dialog?.querySelector('#modal-view-btn-pdf')?.addEventListener('click', (e) => {
         descargarReporteMaestroPdf(maestro, e.currentTarget)
       })

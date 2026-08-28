@@ -216,27 +216,24 @@ describe('Evaluación de Ingeniería de Duplicados', () => {
       const onSuccess = vi.fn()
       await DuplicadosModal.abrir({ alumnos: [alumno1, alumno2], onSuccess })
 
-      // 1. Iniciar análisis
-      await AppModal.open.mock.calls[0][0].onSave()
-
-      // 2. Lista de duplicados
-      const listModal = AppModal.open.mock.calls[1][0]
+      // 1. Lista de duplicados (directa sin paso previo)
+      const listModal = AppModal.open.mock.calls[0][0]
       const containerList = document.createElement('div')
       containerList.innerHTML = listModal.body
       listModal.onShow(containerList)
 
-      // Clic en la primera pareja
-      containerList.querySelector('[data-duplicado-idx="0"]').click()
+      // Clic en revisar la primera pareja
+      containerList.querySelector('[data-action="revisar"]').click()
       await new Promise(r => setTimeout(r, 20))
 
-      // 3. Modal de Detalle
-      const detailModal = AppModal.open.mock.calls[2][0]
+      // 2. Modal de Detalle
+      const detailModal = AppModal.open.mock.calls[1][0]
       expect(detailModal.title).toBe('Revisar y fusionar alumnos')
       
       // Ambas clases deben aparecer en el cuerpo del modal
       expect(detailModal.body).toContain('Iniciación Musical (Tarde)')
       expect(detailModal.body).toContain('Coro Infantil (Sábado)')
-      expect(detailModal.body).toContain('Fusión de clases')
+      expect(detailModal.body).toContain('Fusión de Clases')
 
       // Verificar que el contenedor de detalle maneja el cambio de principal
       const containerDetail = document.createElement('div')
@@ -250,7 +247,7 @@ describe('Evaluación de Ingeniería de Duplicados', () => {
 
       // Confirmar fusión
       const saveResult = await detailModal.onSave()
-      expect(saveResult).toBe(true)
+      expect(saveResult).toBe(false) // Mantiene la navegación controlada sin cierre abrupto
       expect(alumnosApi.fusionarAlumnos).toHaveBeenCalledWith(expect.objectContaining({
         principalId: 'al_001',
         obsoletoId: 'al_002',

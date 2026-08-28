@@ -441,23 +441,7 @@ export async function renderAlumnosView(container) {
     container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV(), { signal })
 
     container.querySelector('#btnDetectarDuplicados')?.addEventListener('click', () => {
-      DuplicadosModal.abrir({
-        alumnos: state.alumnosOriginales,
-        onSuccess: async () => {
-          try {
-            const { alumnos: nuevos, total } = await obtenerAlumnos()
-            state.totalAlumnos = total
-            state.alumnosOriginales = nuevos.map(a => ({
-              ...a,
-              _completitud: calcularCompletitud(a),
-            }))
-            applyFilters()
-            AppToast.success('Lista actualizada tras la fusión')
-          } catch (err) {
-            console.error('[alumnosView] Error recargando alumnos tras fusión:', err)
-          }
-        },
-      })
+      router.navigate('alumnos-duplicados')
     }, { signal })
 
     container.querySelector('#btnConciliarPostulados')?.addEventListener('click', () => {

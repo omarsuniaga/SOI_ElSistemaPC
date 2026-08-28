@@ -8,11 +8,12 @@ import { renderPostuladosView } from './views/postulados/postuladosView.js'
 import { renderPostuladoPerfilView } from './views/postulados/postuladoPerfilView.js'
 import { renderPostuladoCalendarioView } from './views/postulados/postuladoCalendarioView.js'
 import { renderFicha360AdminView } from './views/ficha360AdminView.js'
-
+import { renderDuplicadosWorkbenchView } from './views/duplicadosWorkbenchView.js'
 import { renderAlumnosInactivosView } from './views/alumnosInactivosView.js'
 
 export function registerRoutesAlumnos() {
   router.register('alumnos', renderAlumnosView)
+  router.register('alumnos-duplicados', renderDuplicadosWorkbenchView)
   router.register('ficha-360', renderFicha360AdminView)
   router.register('alumnos-inactivos', renderAlumnosInactivosView)
   router.register('alumnos-reporte-mes', renderReporteInscripcionesMes)

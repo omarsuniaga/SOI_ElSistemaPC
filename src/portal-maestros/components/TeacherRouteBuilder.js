@@ -326,9 +326,8 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
       el.addEventListener('input', () => {
         const { ui, oi, ii } = el.dataset
         state.unidades[+ui].objetivos[+oi].indicadores[+ii].nombre = el.value
-        // El nombre cambia las opciones de prerrequisito visibles en otros selects
-        _render()
       })
+      el.addEventListener('click', (e) => e.stopPropagation())
     })
     // Prerrequisito (componente atómico: toggle abre/cierra el panel, pick
     // elige y cierra, clear quita sin abrir nada)

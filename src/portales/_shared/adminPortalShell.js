@@ -438,10 +438,22 @@ export async function bootAdminPortal(profile) {
       return
     }
     renderNavbar(profile, true, storageKey)
+    const hashRoute = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
     const stored = localStorage.getItem(storageKey)
-    router.navigate(isValidRoute(stored) && router.routes[stored] ? stored : profile.defaultRoute)
+    const targetRoute = (hashRoute && router.routes[hashRoute])
+      ? hashRoute
+      : (isValidRoute(stored) && router.routes[stored] ? stored : profile.defaultRoute)
+    router.navigate(targetRoute)
     dismissSplashScreen()
   }
+
+  // Sincronizar navegación por hash si el usuario cambia el fragmento en la URL
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
+    if (hash && router.routes[hash]) {
+      router.navigate(hash)
+    }
+  })
 
   try {
     await gate()

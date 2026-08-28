@@ -100,7 +100,10 @@ export const router = {
   },
 
   init(defaultRoute = 'clases-hoy') {
-    const currentView = localStorage.getItem('current-view') || defaultRoute
+    const hashRoute = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
+    const currentView = (hashRoute && this.routes[this._splitRoutePath(hashRoute).routePath])
+      ? hashRoute
+      : (localStorage.getItem('current-view') || defaultRoute)
     const { routePath } = this._splitRoutePath(currentView)
     const paramsRaw = localStorage.getItem('current-view-params')
     const params = paramsRaw ? JSON.parse(paramsRaw) : {}
@@ -123,6 +126,14 @@ export const router = {
   // navigate:alumno   → { alumnoId } o { id }
   // navigate:observaciones → { alumnoId }
   initCustomEvents() {
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : ''
+      const { routePath } = this._splitRoutePath(hash)
+      if (routePath && this.routes[routePath]) {
+        this.navigate(hash)
+      }
+    })
+
     window.addEventListener('navigate:alumno', (e) => {
       const id = e.detail?.alumnoId || e.detail?.id
       if (id) this.navigate('alumnos', { selectedId: id })

@@ -42,7 +42,7 @@ export async function abrirMapaDeRutas(claseId, maestro, fechaHoy) {
 }
 
 async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
-  const [checkStates, students, evaluationsData] = await Promise.all([
+  const [checkStates, studentsMap, evaluationsData] = await Promise.all([
     getIndicadorCheckStates(route.id, claseId),
     getAlumnosPorClaseIds([claseId]),
     supabase
@@ -52,6 +52,10 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
       .then((res) => res.data || [])
       .catch(() => []),
   ])
+
+  const students = Array.isArray(studentsMap)
+    ? studentsMap
+    : studentsMap?.[claseId] || []
 
   const groupCheckByIndicador = Object.fromEntries((checkStates || []).map((c) => [c.indicador_id, c.check_state]))
 
@@ -154,7 +158,7 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
                 .map(
                   (s) => `
                 <option value="${s.id}" ${selectedStudentId === s.id ? "selected" : ""}>
-                  👤 ${escHTML(s.nombre || s.nombre_completo || "Alumno")}
+                  👤 ${escHTML(s.nombre_completo || s.nombre || "Alumno")}
                 </option>
               `
                 )

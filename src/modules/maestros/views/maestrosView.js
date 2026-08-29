@@ -26,6 +26,11 @@ import { openClaseModal } from '../../clases/components/claseModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { descargarPdfReporteMaestro } from '../domain/generarPdfReporteMaestro.js'
+import { obtenerHistoricoPagos } from '../api/historicoPagosApi.js'
+import {
+  abrirReporteHistoricoPagos,
+  descargarPdfHistoricoPagos,
+} from '../domain/generarReporteHistoricoPagos.js'
 
 const state = {
   maestros: [],
@@ -446,6 +451,36 @@ async function descargarReporteMaestroPdf(maestro, btn) {
   }
 }
 
+async function generarHistoricoPagos(maestro, btn) {
+  const label = btn?.innerHTML
+  if (btn) {
+    btn.disabled = true
+    btn.style.opacity = '0.5'
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Generando...'
+  }
+  try {
+    const data = await obtenerHistoricoPagos(maestro.id, {})
+    abrirReporteHistoricoPagos(data)
+    try {
+      descargarPdfHistoricoPagos(data)
+    } catch (pdfErr) {
+      console.error('Error al generar PDF del histórico para pagos:', pdfErr)
+      showToast('El HTML se generó; el PDF falló: ' + pdfErr.message, 'warning')
+      return
+    }
+    showToast('Histórico para pagos generado (HTML + PDF)', 'success')
+  } catch (err) {
+    console.error('Error al generar histórico para pagos:', err)
+    showToast('Error al generar el histórico para pagos: ' + err.message, 'error')
+  } finally {
+    if (btn) {
+      btn.disabled = false
+      btn.style.opacity = '1'
+      if (label != null) btn.innerHTML = label
+    }
+  }
+}
+
 function openWhatsAppModal(id) {
   const maestro = state.maestrosOriginales.find((a) => a.id === id)
   if (!maestro || !maestro.telefono) return
@@ -724,6 +759,9 @@ function openViewModal(id) {
       <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-pdf" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Descargar Reporte PDF">
         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
       </button>
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-historico-pagos" data-action="historico-pagos" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Histórico para pagos (asistencia, horario, contenido y justificaciones)">
+        <i class="bi bi-cash-coin me-1"></i>Histórico para pagos
+      </button>
       <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-edit" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Editar Perfil">
         <i class="bi bi-pencil me-1"></i>Editar
       </button>
@@ -827,6 +865,11 @@ function openViewModal(id) {
       dialog?.querySelector('#modal-view-btn-pdf')?.addEventListener('click', (e) => {
         descargarReporteMaestroPdf(maestro, e.currentTarget)
       })
+      dialog
+        ?.querySelector('#modal-view-btn-historico-pagos')
+        ?.addEventListener('click', (e) => {
+          generarHistoricoPagos(maestro, e.currentTarget)
+        })
       dialog?.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
         AppModal.close()
         setTimeout(() => openEditModal(id), 300)

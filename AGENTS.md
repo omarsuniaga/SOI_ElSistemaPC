@@ -39,5 +39,11 @@ Este archivo es la fuente de verdad para humanos y agentes de IA (Claude, Gemini
 
 ## 5. Documentation
 
-- El `README.md` debe reflejar siempre el estado actual del "Modo Demo" para reclutadores.
-- Comentar el "POR QUÉ" de las decisiones técnicas, no el "QUÉ".
+- Los cambios significativos deben reflejarse en `docs/` o en las `specs/` correspondientes.
+- Los SPECs deben estar vinculados a historias de usuario y tareas concretas.
+
+## 6. Decision Autonomy & Execution Mode
+
+- **Full Autonomy on Implementation:** The agent MUST make technical, structural, architectural, and design decisions autonomously without pausing to ask confirmation on standard implementation steps.
+- **Continuous Tool Chaining:** Read, edit, build, test, and commit consecutively to completion. Report only final synthesis and outcomes.
+- **Zero Question Loops:** Do not ask permission to proceed, write files, or run tests. Execute directly. Only pause for user input on true business domain ambiguities or irreversible destructive operations.

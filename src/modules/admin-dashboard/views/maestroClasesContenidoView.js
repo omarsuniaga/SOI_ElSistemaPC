@@ -24,6 +24,7 @@ import { generateDailyReport, generateRangeReportHTML } from '../../../portal-ma
 import { openReport } from '../../../portal-maestros/services/reportTemplates.js'
 import { analyzeClassProgress } from '../../../portal-maestros/services/groqService.js'
 import { router } from '../../../core/router/router.js'
+import { descargarPdfHistoricoMaestro } from '../../maestros/domain/generarPdfHistoricoMaestro.js'
 
 function escHTML(str) {
   if (!str) return ''
@@ -150,8 +151,11 @@ export class MaestroClasesContenidoView {
               <option value="todas" ${this.claseFiltro === 'todas' ? 'selected' : ''}>Todas las clases</option>
               ${opcionesClase}
             </select>
-            <button id="btnReporteCompleto" ${this.sesiones.length === 0 ? 'disabled' : ''} style="background:linear-gradient(135deg, #6366f1, #a855f7);border:none;border-radius:10px;padding:0.5rem 1rem;font-weight:700;font-size:0.85rem;color:#fff;display:inline-flex;align-items:center;gap:0.5rem;box-shadow:0 4px 14px rgba(99,102,241,0.35);">
-              <i class="bi bi-file-earmark-pdf"></i> Reporte institucional
+            <button id="btnReporteCompleto" ${this.sesiones.length === 0 ? 'disabled' : ''} style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:0.5rem 0.85rem;font-weight:600;font-size:0.85rem;color:#f1f5f9;display:inline-flex;align-items:center;gap:0.4rem;">
+              <i class="bi bi-file-earmark-code"></i> Ver HTML
+            </button>
+            <button id="btnDescargarPdf" ${this.sesiones.length === 0 ? 'disabled' : ''} style="background:linear-gradient(135deg, #6366f1, #a855f7);border:none;border-radius:10px;padding:0.5rem 1rem;font-weight:700;font-size:0.85rem;color:#fff;display:inline-flex;align-items:center;gap:0.4rem;box-shadow:0 4px 14px rgba(99,102,241,0.35);">
+              <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
             </button>
           </div>
         </div>
@@ -311,6 +315,16 @@ export class MaestroClasesContenidoView {
       this._descargarReporte(this.sesiones, this._claseLabelActual())
     })
 
+    document.getElementById('btnDescargarPdf')?.addEventListener('click', () => {
+      if (!this.sesiones || this.sesiones.length === 0) return
+      const rangoLabel = RANGOS.find((r) => r.dias === this.dias)?.label || `Últimos ${this.dias} días`
+      descargarPdfHistoricoMaestro(
+        { id: this.maestroId, nombre: this.maestroNombre },
+        this.sesiones,
+        { rangoLabel, claseLabel: this._claseLabelActual() }
+      )
+    })
+
     this.container.querySelectorAll('.btn-pdf-sesion').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const sesionId = btn.dataset.sesionId
@@ -331,7 +345,12 @@ export class MaestroClasesContenidoView {
         const claseId = btn.dataset.claseId
         const clase = this.clases.find((c) => c.id === claseId)
         const sesionesClase = this.sesiones.filter((s) => s.claseId === claseId)
-        this._descargarReporte(sesionesClase, clase?.nombre || 'Clase')
+        const rangoLabel = RANGOS.find((r) => r.dias === this.dias)?.label || `Últimos ${this.dias} días`
+        descargarPdfHistoricoMaestro(
+          { id: this.maestroId, nombre: this.maestroNombre },
+          sesionesClase,
+          { rangoLabel, claseLabel: clase?.nombre || 'Clase' }
+        )
       })
     })
 

@@ -9,6 +9,7 @@ import {
   getSemanaActualSantoDomingo,
 } from '../api/adminMaestroApi.js'
 import { router } from '../../../core/router/router.js'
+import { openHistoricoMaestroModal } from '../../maestros/components/maestroHistoricoModal.js'
 
 function escHTML(str) {
   if (!str) return ''
@@ -138,7 +139,10 @@ export class MaestroDetalleView {
           </div>
 
           <!-- BOTONES DE ACCIÓN RÁPIDA -->
-          <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn btn-sm" id="btnHistoricoMaestro" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:0.6rem 1.25rem;font-weight:700;font-size:0.9rem;display:inline-flex;align-items:center;gap:0.5rem;color:#fff;">
+              <i class="bi bi-clock-history" style="font-size:1.1rem;color:#38bdf8;"></i> Histórico de Clases
+            </button>
             <button class="btn btn-sm" id="btnVerClasesDadas" style="background:linear-gradient(135deg, #6366f1, #a855f7);border:none;border-radius:12px;padding:0.6rem 1.25rem;font-weight:700;font-size:0.9rem;display:inline-flex;align-items:center;gap:0.5rem;color:#fff;">
               <i class="bi bi-journal-richtext" style="font-size:1.1rem;"></i> Ver Clases Dadas y Contenido
             </button>
@@ -490,6 +494,16 @@ export class MaestroDetalleView {
   attachEvents() {
     document.getElementById('btnVolver')?.addEventListener('click', () => {
       router.navigate('admin-dashboard')
+    })
+
+    document.getElementById('btnHistoricoMaestro')?.addEventListener('click', () => {
+      openHistoricoMaestroModal({
+        id: this.maestroId,
+        nombre: this.maestro?.nombre_completo,
+        email: this.maestro?.email,
+        telefono: this.maestro?.telefono,
+        instrumento: this.maestro?.especialidad || this.maestro?.instrumento,
+      })
     })
 
     document.getElementById('btnVerClasesDadas')?.addEventListener('click', () => {

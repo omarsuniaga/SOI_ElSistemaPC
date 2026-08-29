@@ -14,6 +14,7 @@ import { openReport } from "../../../portal-maestros/services/reportTemplates.js
 import { AppToast } from "../../../shared/components/AppToast.js"
 import { escapeHTML } from "../../../shared/utils/sanitize.js"
 import { renderViewInfoButton, attachViewInfoEvents } from "../../../shared/components/ViewInfoModal.js"
+import { openNominaConsolidadaModal } from "../components/nominaConsolidadaModal.js"
 import "../styles/admin-dashboard.css"
 
 function hoyISO(offsetDias = 0) {
@@ -271,6 +272,10 @@ export class CumplimientoMaestrosWidget {
             <!-- Toolbar de Botones con 0.85rem de separación -->
             <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
               ${renderViewInfoButton('admin-dashboard')}
+              <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnNominaConsolidada" title="Planilla Consolidada de Nómina Docente (PDF / Excel)" style="font-size:0.78rem;">
+                <i class="bi bi-file-earmark-spreadsheet-fill text-success"></i>
+                <span class="d-none d-sm-inline">Nómina Consolidada</span>
+              </button>
               <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnReporteInstitucional" title="Reporte Institucional en PDF" style="font-size:0.78rem;">
                 <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
                 <span class="d-none d-sm-inline">Reporte Institucional</span>
@@ -618,6 +623,10 @@ export class CumplimientoMaestrosWidget {
 
     btnRefresh?.addEventListener("click", () => {
       this.init()
+    })
+
+    this.container.querySelector("#btnNominaConsolidada")?.addEventListener("click", () => {
+      openNominaConsolidadaModal(this.maestros, this.customDates)
     })
 
     btnGotoNotificaciones?.addEventListener("click", () => {

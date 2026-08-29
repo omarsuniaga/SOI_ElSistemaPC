@@ -101,6 +101,7 @@ export const moduleCatalog = Object.freeze([
   ]),
   module('hermes-core', 'src/main.js', 'DIR', [
     ['dir-score'], ['hermes-tareas'], ['hermes-caso', 'internal-detail'], ['hermes-procedimientos'], ['hermes-consulta'],
+    ['hermes-kanban'],
     ['hermes-evento'], ['hermes-pulso'], ['hermes-reglas'], ['hermes-conciertos'], ['hermes-orquestador'], ['dir-alianzas'],
   ]),
   module('help', 'src/modules/help/index.js', 'shared', [['ayuda', 'workflow']]),

@@ -26,6 +26,44 @@ import '../../style.css'
 import '../../styles/bootstrap-support.css'
 import '../../styles/sidebar.css'
 
+// PWA: Registrar Service Worker con actualización automática para portales administrativos
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  let refreshing = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true
+      window.location.reload()
+    }
+  })
+
+  const registerSW = async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      }
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
+            }
+          })
+        }
+      })
+    } catch (err) {
+      console.warn('[portalShell] SW registration error:', err)
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    registerSW()
+  } else {
+    window.addEventListener('load', registerSW)
+  }
+}
+
 import { supabase } from '../../lib/supabaseClient.js'
 import { router } from '../../core/router/router.js'
 import { useAuth } from '../../modules/auth/hooks/useAuth.js'

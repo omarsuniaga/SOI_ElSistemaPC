@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-academico-v4';
+const CACHE_NAME = 'sistema-academico-v6';
 const STATIC_PRECACHE = ['/', '/index.html', '/offline.html', '/manifest.json'];
 
 self.addEventListener('install', event => {
-  console.log('[SW] Instalando...');
+  console.log('[SW] Instalando nueva versión...');
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  console.log('[SW] Activando...');
+  console.log('[SW] Activando y purgando cachés anteriores...');
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
@@ -31,6 +31,17 @@ self.addEventListener('activate', event => {
       }
     })()
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data === 'CLEAR_CACHE' || event.data?.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+    );
+  }
 });
 
 self.addEventListener('fetch', event => {
@@ -50,19 +61,24 @@ self.addEventListener('fetch', event => {
     url.search.includes('t=')
   ) return;
 
-  // Estrategia según tipo de recurso
-  if (request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
-    // Navegación: network first
+  // Estrategia según tipo de recurso:
+  // 1. Navegación y código fuente (HTML, JS, CSS, MJS): NETWORK FIRST obligatorio
+  if (
+    request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname === '/' ||
+    url.pathname.match(/\.(js|mjs|css)$/)
+  ) {
     event.respondWith(networkFirst(request));
   } else if (url.pathname.startsWith('/api/')) {
-    // API: stale while revalidate
-    event.respondWith(staleWhileRevalidate(request));
-  } else if (url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?)$/)) {
-    // Recursos estáticos versionados o no: stale while revalidate
+    // API: network first con fallback
+    event.respondWith(networkFirst(request));
+  } else if (url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|woff2?)$/)) {
+    // Recursos estáticos pesados (fuentes/imágenes): stale while revalidate
     event.respondWith(staleWhileRevalidate(request));
   } else {
-    // Otros: cache first como fallback
-    event.respondWith(cacheFirst(request));
+    // Otros: network first
+    event.respondWith(networkFirst(request));
   }
 });
 

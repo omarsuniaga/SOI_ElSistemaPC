@@ -9,12 +9,36 @@ import './early-error-suppression.js'
 import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
 disablePullToRefresh()
 
-// PWA: Registrar Service Worker
+// PWA: Registrar Service Worker con actualización automática
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  let refreshing = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true
+      window.location.reload()
+    }
+  })
+
   const registerSW = async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js')
       console.log('[PWA] Service Worker registered:', registration.scope)
+
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      }
+
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA] Nueva versión detectada, activando automáticamente...')
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
+            }
+          })
+        }
+      })
     } catch (error) {
       console.log('[PWA] Service Worker registration failed:', error)
     }

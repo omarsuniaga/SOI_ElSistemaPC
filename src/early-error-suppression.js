@@ -113,3 +113,25 @@ try {
     document.documentElement.style.setProperty('--pm-font-family', families[family])
   }
 } catch (_) {}
+
+// ============================================
+// Development / Localhost ServiceWorker and Cache Cleanup
+// ============================================
+try {
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const r of registrations) {
+          r.unregister()
+        }
+      })
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          for (const k of keys) {
+            caches.delete(k)
+          }
+        })
+      }
+    }
+  }
+} catch (_) {}

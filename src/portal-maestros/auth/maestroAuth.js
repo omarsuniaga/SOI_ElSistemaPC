@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
+import viewCache from '../services/viewCache.js'
 
 export const STORAGE_KEY = 'portal-maestros:maestro'
 export const PM_AUTH_KEY  = 'portal-maestros:auth'
@@ -58,6 +59,10 @@ function _setSessionMode(persistent = true) {
  */
 export async function loginMaestro(email, password, options = {}) {
   const keepSession = options.keepSession !== false
+  // Invalida datos cacheados en memoria de una sesión anterior en esta misma
+  // pestaña (otro maestro/admin logueado antes) — evita que clases/horarios/
+  // sesiones de OTRA persona queden servidos bajo la sesión nueva.
+  viewCache.invalidateAll()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error || !data.user) {
@@ -332,6 +337,7 @@ export async function detectarRolMaestro() {
  */
 export async function logoutPortal() {
   localStorage.removeItem(STORAGE_KEY)
+  viewCache.invalidateAll()
   await supabase.auth.signOut()
 }
 

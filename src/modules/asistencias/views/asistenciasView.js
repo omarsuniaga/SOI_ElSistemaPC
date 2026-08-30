@@ -13,12 +13,16 @@
 
 import '../styles/asistencias.css'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 import {
   getPeriodos,
   getPeriodoActivo,
   getClases,
   getReporteConsolidado,
+  getDetalleSesion,
+  ESTADO_LABEL,
 } from '../api/asistenciasApi.js'
+import { openEvaluacionEstrellasModal } from '../../planificacion/components/EvaluacionEstrellasModal.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { descargarPdfResumenMensual } from '../../admin-dashboard/services/academicReportsPdfService.js'
 

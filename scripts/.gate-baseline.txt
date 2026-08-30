@@ -1,11 +1,9 @@
 src/__tests__/integration/admin-alerts-dashboard.integration.test.js > Admin Alerts + Dashboard Integration > should verify admin maestro API has critical maestros function
 src/__tests__/permiso.model.test.js > Permiso Model > toJSON() > should return a clean object without undefined values
 src/__tests__/permisosMock.test.js > permisosMock CRUD > obtenerPermisos > should return all permisos
-src/core/catalogAudit.test.js > shadow catalog > documents the real registry count instead of the previous aggregate undercount
-src/core/catalogAudit.test.js > shadow catalog > freezes critical defaults without becoming runtime authority
-src/core/portalModuleMatrix.test.js > portal module shadow matrix > reports coverage against the real static catalogs
 src/core/shadowCapabilityApproval.test.js > shadow capability approval workflow > accepts only PII-free structural payload fields
 src/modules/admin-dashboard/views/__tests__/maestroClasesContenidoView.test.js > MaestroClasesContenidoView > el reporte por clase arma el HTML solo con las sesiones de esa clase
+src/modules/alumnos/__tests__/alumnoAdminView.test.js > D04 — parallel queries in alumnoAdminView > total elapsed time < 150ms when each query takes 80ms
 src/modules/config/views/__tests__/periodResetApi.test.js [ src/modules/config/views/__tests__/periodResetApi.test.js ]
 src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > auditTrailWidget.js should not contain inline style="..." attributes in templates
 src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > dashboardMetricasView.js should not contain inline style="..." attributes in templates

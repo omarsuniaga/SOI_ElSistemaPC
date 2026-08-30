@@ -114,7 +114,6 @@ export async function renderReportesInventarioView(container) {
   function renderPreview(tipo, data, filtros) {
     const { activos: act, comodatos: coms, reparaciones: reps } = data
     const filtered = filtrarReporte(act, filtros)
-    const { } = filtros
 
     switch (tipo) {
       case 'general': {

@@ -12,6 +12,7 @@
  */
 
 // Core service
+import { getGuidanceService } from './guidanceService.js'
 export { createGuidanceService, getGuidanceService } from './guidanceService.js'
 
 // Context layer

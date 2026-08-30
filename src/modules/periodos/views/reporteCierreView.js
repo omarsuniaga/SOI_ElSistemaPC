@@ -136,7 +136,7 @@ export async function renderReporteCierreView(container) {
     btnPdf.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando…'
     try {
       const doc = await generarInformePdfCierreSemestre(reporteActual)
-      const nombre = String(reporteActual.periodo?.nombre ?? 'periodo').replace(/[^\w\-]+/g, '_')
+      const nombre = String(reporteActual.periodo?.nombre ?? 'periodo').replace(/[^\w-]+/g, '_')
       doc.save(`Informe_Cierre_${nombre}.pdf`)
     } catch (err) {
       contenido.insertAdjacentHTML('afterbegin',

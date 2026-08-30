@@ -525,7 +525,7 @@ export async function renderPeriodosView(container) {
         btnPdf.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando PDF…'
         try {
           const doc = await generarInformePdfCierreSemestre(reporte)
-          const nombre = String(reporte.periodo?.nombre ?? 'periodo').replace(/[^\w\-]+/g, '_')
+          const nombre = String(reporte.periodo?.nombre ?? 'periodo').replace(/[^\w-]+/g, '_')
           doc.save(`Informe_Cierre_${nombre}.pdf`)
           showToast('Informe PDF descargado')
         } catch (pdfErr) {

@@ -1,4 +1,5 @@
 import '../styles/alumnos.css'
+import { router } from '../../../core/router/router.js'
 import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
 

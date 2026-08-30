@@ -124,4 +124,4 @@ export const externalRouteIds = Object.freeze(routeCatalog
 export const findCataloguedRoute = routeId => routeCatalog.find(route => route.routeId === routeId) || null
 export const isCataloguedExternalRoute = routeId => externalRouteIds.includes(routeId)
 
-export const MODULE_REGISTRY_ROUTE_COUNT = 95
+export const MODULE_REGISTRY_ROUTE_COUNT = 96

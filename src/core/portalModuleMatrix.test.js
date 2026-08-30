@@ -33,7 +33,7 @@ describe('portal module shadow matrix', () => {
   it('reports coverage against the real static catalogs', () => {
     const summary = summarizePortalModuleMatrix()
     expect(summary.portalCoverage).toBe(`4 de ${portalCatalog.length}`)
-    expect(summary.moduleCoverage).toBe(`35 de ${moduleCatalog.length}`)
+    expect(summary.moduleCoverage).toBe(`37 de ${moduleCatalog.length}`)
     expect(summary.proposedCapabilityCount).toBeGreaterThan(summary.assignmentCount)
   })
 

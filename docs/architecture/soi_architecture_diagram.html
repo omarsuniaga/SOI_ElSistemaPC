@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOI — Mapa de Arquitectura del Sistema Operativo Institucional</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <style>
+    :root {
+      --bg-base: #030712;
+      --bg-surface: #0b1329;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --bg-card-hover: rgba(30, 41, 59, 0.95);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.1), transparent),
+        linear-gradient(to bottom, transparent, rgba(3, 7, 18, 0.9));
+    }
+
+    /* Container */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2.5rem;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid var(--border-accent);
+      color: #a5b4fc;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-main);
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    /* Tabs Filter */
+    .view-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.4rem;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 2.5rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Architecture Grid Layers */
+    .arch-layer {
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-left: 0.5rem;
+    }
+
+    .layer-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .layer-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .layer-badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 1.25rem;
+    }
+
+    /* Cards */
+    .arch-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.35rem;
+      backdrop-filter: blur(12px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .arch-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--primary));
+      opacity: 0.8;
+    }
+
+    .arch-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px var(--card-glow, transparent);
+      background: var(--bg-card-hover);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .card-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--card-bg, rgba(99, 102, 241, 0.12));
+      border: 1px solid var(--card-border, rgba(99, 102, 241, 0.3));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--card-color, #818cf8);
+      font-size: 1.2rem;
+    }
+
+    .card-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .card-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .pill {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      font-family: var(--font-mono);
+    }
+
+    .card-footer-info {
+      margin-top: auto;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-path {
+      color: #94a3b8;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+    }
+
+    /* Connectors Flow */
+    .flow-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1rem 0;
+      gap: 1rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .flow-line {
+      height: 1px;
+      flex-grow: 1;
+      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent);
+    }
+
+    .flow-pill {
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: #a5b4fc;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Details Panel */
+    .detail-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-top: 3rem;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .detail-item h4 {
+      font-size: 0.95rem;
+      color: #f1f5f9;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .detail-item p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .view-tabs, .controls { display: none; }
+      .arch-card { background: #fff; border: 1px solid #ccc; color: #000; break-inside: avoid; }
+      .title, .card-name { color: #000 !important; -webkit-text-fill-color: #000 !important; }
+      .card-desc, .subtitle, .code-path { color: #555 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header class="header">
+      <div>
+        <div class="brand-badge">
+          <i class="bi bi-diagram-3-fill"></i> El Sistema Punta Cana · Arquitectura Canónica
+        </div>
+        <h1 class="title">Sistema Operativo Institucional (SOI)</h1>
+        <p class="subtitle">Mapa completo de portales, router modular, DataAdapter, Supabase RLS y puente Hermes.</p>
+      </div>
+
+      <div class="controls">
+        <button class="btn" onclick="window.print()">
+          <i class="bi bi-printer"></i> Imprimir / PDF
+        </button>
+        <a class="btn btn-primary" href="/admin" target="_blank">
+          <i class="bi bi-box-arrow-up-right"></i> Abrir Portal Admin
+        </a>
+      </div>
+    </header>
+
+    <!-- VIEW TABS -->
+    <nav class="view-tabs">
+      <button class="tab-btn active" onclick="filterLayer('all')">
+        <i class="bi bi-grid-fill"></i> Vista Global Completa
+      </button>
+      <button class="tab-btn" onclick="filterLayer('portales')">
+        <i class="bi bi-laptop"></i> 1. Portales & Frontend
+      </button>
+      <button class="tab-btn" onclick="filterLayer('core')">
+        <i class="bi bi-cpu"></i> 2. Core & DataAdapter
+      </button>
+      <button class="tab-btn" onclick="filterLayer('supabase')">
+        <i class="bi bi-database-fill"></i> 3. Supabase & PostgreSQL
+      </button>
+      <button class="tab-btn" onclick="filterLayer('hermes')">
+        <i class="bi bi-robot"></i> 4. Hermes & WhatsApp
+      </button>
+    </nav>
+
+    <!-- ================================================================= -->
+    <!-- CAPA 1: PORTALES DEPARTAMENTALES Y CLIENTE (PWA) -->
+    <!-- ================================================================= -->
+    <section class="arch-layer" data-layer="portales">
+      <div class="layer-header">
+        <div class="layer-icon" style="background:rgba(99,102,241,0.15);color:#818cf8;">
+          <i class="bi bi-window-stack"></i>
+        </div>
+        <h2 class="layer-title">Capa 1: Superficie de Portales & PWA Client</h2>
+        <span class="layer-badge">Multi-Entry SPA · Rol & Lente Departamental</span>
+      </div>
+
+      <div class="card-grid">
+        
+        <!-- Portal Maestros -->
+        <div class="arch-card" style="--card-accent:#38bdf8;--card-glow:rgba(56,189,248,0.2);">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(56,189,248,0.15);--card-border:rgba(56,189,248,0.3);--card-color:#38bdf8;">
+              <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">PWA Maestro</span>
+          </div>
+          <div>
+            <h3 class="card-name">Portal de Maestros</h3>
+            <p class="card-desc">Lente operativa del docente para clases del día, toma de asistencia rápida, justificaciones, diseñador curricular, mapa de ruta pedagógica y reportes semanales.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">index.html</span>
+            <span class="pill">src/main-maestros.js</span>
+            <span class="pill">Diseñador Curricular</span>
+            <span class="pill">Asistencias P/A/J</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/portal-maestros/</span>
+            <span>Rol: 'maestro'</span>
+          </div>
+        </div>
+
+        <!-- Portal Administración -->
+        <div class="arch-card" style="--card-accent:#10b981;--card-glow:rgba(16,185,129,0.2);">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(16,185,129,0.15);--card-border:rgba(16,185,129,0.3);--card-color:#34d399;">
+              <i class="bi bi-clipboard-data-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);">Portal ADM</span>
+          </div>
+          <div>
+            <h3 class="card-name">Portal Administración</h3>
+            <p class="card-desc">Ficha 360° alumnos, catálogo de maestros con Histórico de Clases, funnel de admisiones/postulados, gestión de clases, salones, cumplimiento y Nómina Consolidada.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">admin.html</span>
+            <span class="pill">adm.html</span>
+            <span class="pill">Nómina Consolidada</span>
+            <span class="pill">Histórico Maestro</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/portales/adm/adm.js</span>
+            <span>Rol: 'admin'</span>
+          </div>
+        </div>
+
+        <!-- Portal Académico & Cátedras -->
+        <div class="arch-card" style="--card-accent:#a855f7;--card-glow:rgba(168,85,247,0.2);">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(168,85,247,0.15);--card-border:rgba(168,85,247,0.3);--card-color:#c084fc;">
+              <i class="bi bi-easel-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3);">Portal ACM</span>
+          </div>
+          <div>
+            <h3 class="card-name">Portal Académico</h3>
+            <p class="card-desc">Gestión de planes de estudio, cátedras sinfónicas, evaluaciones de audiciones de ingreso, niveles instrumentales y seguimiento curricular consolidado.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">acm.html</span>
+            <span class="pill">Ruta Pedagógica</span>
+            <span class="pill">Audiciones</span>
+            <span class="pill">Cierre de Ciclo</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/portales/acm/</span>
+            <span>Rol: 'coordinacion'</span>
+          </div>
+        </div>
+
+        <!-- Portal Finanzas & Lutería -->
+        <div class="arch-card" style="--card-accent:#f59e0b;--card-glow:rgba(245,158,11,0.2);">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(245,158,11,0.15);--card-border:rgba(245,158,11,0.3);--card-color:#fbbf24;">
+              <i class="bi bi-cash-coin"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">Portal FIN</span>
+          </div>
+          <div>
+            <h3 class="card-name">Portal Finanzas & Lutería</h3>
+            <p class="card-desc">Conciliación de pagos, inventario de instrumentos musicales, hojas de servicio de lutería, compras y desembolsos aprobados de nómina docente.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">fin.html</span>
+            <span class="pill">soi-finanzas.html</span>
+            <span class="pill">Lutería & Taller</span>
+            <span class="pill">Inventario</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/portales/fin/</span>
+            <span>Rol: 'finanzas'</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FLOW CONNECTOR -->
+    <div class="flow-connector">
+      <div class="flow-line"></div>
+      <div class="flow-pill"><i class="bi bi-arrow-down"></i> adminPortalShell & Router Central</div>
+      <div class="flow-line"></div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- CAPA 2: CORE ARCHITECTURE & DATA ADAPTER -->
+    <!-- ================================================================= -->
+    <section class="arch-layer" data-layer="core">
+      <div class="layer-header">
+        <div class="layer-icon" style="background:rgba(6,182,212,0.15);color:#22d3ee;">
+          <i class="bi bi-cpu-fill"></i>
+        </div>
+        <h2 class="layer-title">Capa 2: Infraestructura Core, Router & Service Worker</h2>
+        <span class="layer-badge">PWA Engine · DataAdapter · Auto-Update</span>
+      </div>
+
+      <div class="card-grid">
+        
+        <!-- Router & Shell Parametrizado -->
+        <div class="arch-card" style="--card-accent:#6366f1;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(99,102,241,0.15);--card-color:#818cf8;">
+              <i class="bi bi-signpost-split-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">Router SPA</span>
+          </div>
+          <div>
+            <h3 class="card-name">Admin Portal Shell & Router</h3>
+            <p class="card-desc">Motor SPA reactivo: montaje dinámico en `#app`, persistencia de ruta por portal, sidebar colapsable, gating de sesión y catálogo sombra de auditoría.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">src/core/router/</span>
+            <span class="pill">adminPortalShell.js</span>
+            <span class="pill">allRegistrars.js</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/portales/_shared/</span>
+            <span>Zero Page Reloads</span>
+          </div>
+        </div>
+
+        <!-- Service Worker & PWA Caching -->
+        <div class="arch-card" style="--card-accent:#10b981;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(16,185,129,0.15);--card-color:#34d399;">
+              <i class="bi bi-cloud-arrow-down-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(16,185,129,0.15);color:#34d399;">SW v6</span>
+          </div>
+          <div>
+            <h3 class="card-name">Service Worker & Caching</h3>
+            <p class="card-desc">Estrategia <code>Network-First</code> para todo el código (.js, .css, .html) evitando vistas obsoletas, auto-purga en localhost y auto-update con <code>SKIP_WAITING</code>.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">public/sw.js</span>
+            <span class="pill">early-error-suppression.js</span>
+            <span class="pill">Network-First</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">public/sw.js</span>
+            <span>sistema-academico-v6</span>
+          </div>
+        </div>
+
+        <!-- Generación de Documentos Formales -->
+        <div class="arch-card" style="--card-accent:#f43f5e;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(244,63,94,0.15);--card-color:#fb7185;">
+              <i class="bi bi-file-earmark-pdf-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(244,63,94,0.15);color:#fb7185;">Export Engine</span>
+          </div>
+          <div>
+            <h3 class="card-name">Generadores PDF & Excel</h3>
+            <p class="card-desc">Generación institucional en cliente: Histórico de Clases, Planilla de Nómina Consolidada (Landscape), Reportes de Alumnos y exportación CSV con BOM UTF-8.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">jsPDF + AutoTable</span>
+            <span class="pill">generarPdfNominaConsolidada</span>
+            <span class="pill">generarCsvNomina</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/modules/*/domain/</span>
+            <span>Client-Side Render</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FLOW CONNECTOR -->
+    <div class="flow-connector">
+      <div class="flow-line"></div>
+      <div class="flow-pill"><i class="bi bi-arrow-down"></i> Supabase Client REST & Realtime</div>
+      <div class="flow-line"></div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- CAPA 3: PERSISTENCIA & SUPABASE POSTGRESQL -->
+    <!-- ================================================================= -->
+    <section class="arch-layer" data-layer="supabase">
+      <div class="layer-header">
+        <div class="layer-icon" style="background:rgba(16,185,129,0.15);color:#34d399;">
+          <i class="bi bi-database-check"></i>
+        </div>
+        <h2 class="layer-title">Capa 3: Persistencia, PostgreSQL & Row Level Security (RLS)</h2>
+        <span class="layer-badge">Supabase Backend · RPCs Canónicas · Multi-Tenant</span>
+      </div>
+
+      <div class="card-grid">
+        
+        <!-- Tablas de Operación Académica -->
+        <div class="arch-card" style="--card-accent:#38bdf8;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(56,189,248,0.15);--card-color:#38bdf8;">
+              <i class="bi bi-table"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;">Tablas Core</span>
+          </div>
+          <div>
+            <h3 class="card-name">Gestión Académica & Asistencias</h3>
+            <p class="card-desc">Tablas relacionales que modelan la vida académica del centro: alumnos, maestros, cátedras, clases programadas, sesiones confirmadas y asistencias P/A/J.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">alumnos</span>
+            <span class="pill">maestros</span>
+            <span class="pill">clases</span>
+            <span class="pill">sesiones_clase</span>
+            <span class="pill">asistencias</span>
+            <span class="pill">justificaciones</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">schema: public</span>
+            <span>RLS Authenticated</span>
+          </div>
+        </div>
+
+        <!-- Procedimientos Almacenados (RPCs) -->
+        <div class="arch-card" style="--card-accent:#a855f7;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(168,85,247,0.15);--card-color:#c084fc;">
+              <i class="bi bi-lightning-charge-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(168,85,247,0.15);color:#c084fc;">RPCs Canónicas</span>
+          </div>
+          <div>
+            <h3 class="card-name">Procedimientos & Lógica Backend</h3>
+            <p class="card-desc">Funciones SQL de alto rendimiento para cálculo de solvencia docente, agregaciones de asistencia, auditoría de catálogo y balances de nómina.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">get_maestros_compliance_status</span>
+            <span class="pill">obtener_balance_asistencias</span>
+            <span class="pill">check_teacher_attendance</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">supabase/migrations/</span>
+            <span>Atomic Exec</span>
+          </div>
+        </div>
+
+        <!-- Embudo de Postulados & Admisiones -->
+        <div class="arch-card" style="--card-accent:#10b981;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(168,85,247,0.15);--card-color:#34d399;">
+              <i class="bi bi-funnel-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(16,185,129,0.15);color:#34d399;">Funnel M1</span>
+          </div>
+          <div>
+            <h3 class="card-name">Embudo de Postulaciones</h3>
+            <p class="card-desc">Registro de aspirantes, calendario automático de citas de audición, evaluaciones de ingreso y conversión directa a matrícula formal de alumno.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">soi_postulados</span>
+            <span class="pill">soi_citas_audicion</span>
+            <span class="pill">Google Apps Script</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">migrations/20260827200000*</span>
+            <span>Funnel Pipeline</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FLOW CONNECTOR -->
+    <div class="flow-connector">
+      <div class="flow-line"></div>
+      <div class="flow-pill"><i class="bi bi-arrow-down"></i> Edge Functions & Background Bridge</div>
+      <div class="flow-line"></div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- CAPA 4: HERMES, WHATSAPP & AUTOMATIZACIONES -->
+    <!-- ================================================================= -->
+    <section class="arch-layer" data-layer="hermes">
+      <div class="layer-header">
+        <div class="layer-icon" style="background:rgba(168,85,247,0.15);color:#c084fc;">
+          <i class="bi bi-robot"></i>
+        </div>
+        <h2 class="layer-title">Capa 4: Hermes, WhatsApp CRM & Automatizaciones IA</h2>
+        <span class="layer-badge">Edge Functions · Kanban Bridge · Webhooks</span>
+      </div>
+
+      <div class="card-grid">
+        
+        <!-- WhatsApp Webhook & Bot de Citas -->
+        <div class="arch-card" style="--card-accent:#25D366;--card-glow:rgba(37,211,102,0.2);">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(37,211,102,0.15);--card-border:rgba(37,211,102,0.3);--card-color:#25D366;">
+              <i class="bi bi-whatsapp"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(37,211,102,0.15);color:#25D366;border:1px solid rgba(37,211,102,0.3);">Edge Function</span>
+          </div>
+          <div>
+            <h3 class="card-name">WhatsApp Webhook & KB Bot</h3>
+            <p class="card-desc">Atención automatizada a representantes, preguntas frecuentes (FAQ KB), confirmación de citas de audición y recordatorios docentes por WhatsApp.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">whatsapp-webhook/</span>
+            <span class="pill">kb/faq.json</span>
+            <span class="pill">Auto-Reply CRM</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">supabase/functions/whatsapp-webhook/</span>
+            <span>Meta Graph API</span>
+          </div>
+        </div>
+
+        <!-- Hermes Kanban Bridge -->
+        <div class="arch-card" style="--card-accent:#6366f1;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(99,102,241,0.15);--card-color:#818cf8;">
+              <i class="bi bi-kanban-fill"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(99,102,241,0.15);color:#818cf8;">Sync Bridge</span>
+          </div>
+          <div>
+            <h3 class="card-name">Puente Kanban Hermes → SOI</h3>
+            <p class="card-desc">Espejo en tiempo real del tablero Kanban de Hermes en el portal administrativo. Ingesta segura autenticada por token y sincronizada por cron cada 2 minutos.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">hermes_kanban_cards</span>
+            <span class="pill">hermes-kanban-ingest</span>
+            <span class="pill">kanbanBridgeView.js</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/modules/hermes/</span>
+            <span>Read-Only Mirror</span>
+          </div>
+        </div>
+
+        <!-- IA Pedagógica & Scheduler -->
+        <div class="arch-card" style="--card-accent:#06b6d4;">
+          <div class="card-head">
+            <div class="card-icon-wrap" style="--card-bg:rgba(6,182,212,0.15);--card-color:#22d3ee;">
+              <i class="bi bi-stars"></i>
+            </div>
+            <span class="card-badge" style="background:rgba(6,182,212,0.15);color:#22d3ee;">AI Engine</span>
+          </div>
+          <div>
+            <h3 class="card-name">IA Pedagógica & Scheduler</h3>
+            <p class="card-desc">Análisis curricular con LLMs (Groq / Ollama) para sintetizar el progreso de clases impartidas y programador de notificaciones institucionales.</p>
+          </div>
+          <div class="card-pills">
+            <span class="pill">groqService.js</span>
+            <span class="pill">enrollment-scheduler/</span>
+            <span class="pill">Análisis Pedagógico</span>
+          </div>
+          <div class="card-footer-info">
+            <span class="code-path">src/portal-maestros/services/</span>
+            <span>LLM Synthesizer</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- DETALLES DE ESCALABILIDAD Y GOBERNANZA -->
+    <section class="detail-section">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-shield-check text-primary fs-4"></i>
+        <h3 class="fs-5 fw-bold text-white mb-0">Principios de Escalabilidad de SOI</h3>
+      </div>
+      <p class="text-muted small">Reglas maestras que garantizan la modularidad, velocidad y robustez del sistema:</p>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <h4><i class="bi bi-bounding-box-circles text-info"></i> Modularidad Estricta</h4>
+          <p>Cada módulo en <code>src/modules/[nombre]/</code> es autocontenido (api, components, hooks, views) y se registra en el router central sin acoplamiento cruzado.</p>
+        </div>
+        <div class="detail-item">
+          <h4><i class="bi bi-database-lock text-success"></i> Los Datos Viven 1 Sola Vez</h4>
+          <p>Un portal departamental (ADM, ACM, FIN) es una <strong>lente</strong> de módulos y permisos sobre Supabase, nunca una copia redundante de datos.</p>
+        </div>
+        <div class="detail-item">
+          <h4><i class="bi bi-wifi-off text-warning"></i> Resiliencia PWA & Caching</h4>
+          <p>Estrategia <code>Network-First</code> para código nuevo online + respaldo offline automático en IndexedDB para no frenar la toma de clases en el salón.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    function filterLayer(layer) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      const layers = document.querySelectorAll('.arch-layer');
+      const connectors = document.querySelectorAll('.flow-connector');
+
+      if (layer === 'all') {
+        layers.forEach(l => l.style.display = 'block');
+        connectors.forEach(c => c.style.display = 'flex');
+      } else {
+        layers.forEach(l => {
+          if (l.dataset.layer === layer) {
+            l.style.display = 'block';
+          } else {
+            l.style.display = 'none';
+          }
+        });
+        connectors.forEach(c => c.style.display = 'none');
+      }
+    }
+  </script>
+</body>
+</html>

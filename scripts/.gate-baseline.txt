@@ -1,0 +1,89 @@
+src/__tests__/integration/admin-alerts-dashboard.integration.test.js > Admin Alerts + Dashboard Integration > should verify admin maestro API has critical maestros function
+src/__tests__/permiso.model.test.js > Permiso Model > toJSON() > should return a clean object without undefined values
+src/__tests__/permisosMock.test.js > permisosMock CRUD > obtenerPermisos > should return all permisos
+src/core/catalogAudit.test.js > shadow catalog > documents the real registry count instead of the previous aggregate undercount
+src/core/catalogAudit.test.js > shadow catalog > freezes critical defaults without becoming runtime authority
+src/core/portalModuleMatrix.test.js > portal module shadow matrix > reports coverage against the real static catalogs
+src/core/shadowCapabilityApproval.test.js > shadow capability approval workflow > accepts only PII-free structural payload fields
+src/modules/academic-admin/api/__tests__/academicAdminApi.test.js > academicAdminApi ACM assignment matrix > builds the ACM planning assignment matrix in demo mode
+src/modules/admin-dashboard/views/__tests__/maestroClasesContenidoView.test.js > MaestroClasesContenidoView > el reporte por clase arma el HTML solo con las sesiones de esa clase
+src/modules/config/views/__tests__/periodResetApi.test.js [ src/modules/config/views/__tests__/periodResetApi.test.js ]
+src/modules/inventario/__tests__/dashboardInventarioView.test.js > TASK-09: dashboardInventarioView > renderiza KPIs con valores del mock
+src/modules/inventario/__tests__/dashboardInventarioView.test.js > TASK-09: dashboardInventarioView > renderiza distribucion por tipo en la leyenda
+src/modules/inventario/__tests__/dashboardInventarioView.test.js > TASK-09: dashboardInventarioView > renderiza grafico de torta CSS
+src/modules/inventario/__tests__/dashboardInventarioView.test.js > TASK-09: dashboardInventarioView > renderiza tabla de proximos a vencer
+src/modules/inventario/__tests__/dashboardInventarioView.test.js > TASK-09: dashboardInventarioView > renderiza tabla de ultimas reparaciones
+src/modules/inventario/__tests__/dashboardInventarioView.test.js > TASK-09: dashboardInventarioView > teardown aborta controller
+src/modules/inventario/__tests__/detalleInstrumentoView.test.js > TASK-09: detalleInstrumentoView > renderiza botones de accion
+src/modules/inventario/__tests__/detalleInstrumentoView.test.js > TASK-09: detalleInstrumentoView > renderiza breadcrumb con nombre de instrumento
+src/modules/inventario/__tests__/detalleInstrumentoView.test.js > TASK-09: detalleInstrumentoView > renderiza header con codigo y tipo
+src/modules/inventario/__tests__/detalleInstrumentoView.test.js > TASK-09: detalleInstrumentoView > renderiza tabs: General, Comodato, Historial, Accesorios, Reparaciones
+src/modules/inventario/__tests__/detalleInstrumentoView.test.js > TASK-09: detalleInstrumentoView > tab General muestra datos del instrumento
+src/modules/inventario/__tests__/detalleInstrumentoView.test.js > TASK-09: detalleInstrumentoView > teardown aborta controller
+src/modules/inventario/__tests__/facturasReparacionView.test.js > TASK-11: facturasReparacionView > renderiza columna de acciones
+src/modules/inventario/__tests__/facturasReparacionView.test.js > TASK-11: facturasReparacionView > renderiza filtros: estado_pago, tipo_factura, date range
+src/modules/inventario/__tests__/facturasReparacionView.test.js > TASK-11: facturasReparacionView > renderiza footer con sumas
+src/modules/inventario/__tests__/facturasReparacionView.test.js > TASK-11: facturasReparacionView > renderiza tabla con facturas
+src/modules/inventario/__tests__/facturasReparacionView.test.js > TASK-11: facturasReparacionView > tabla tiene filas con datos del mock
+src/modules/inventario/__tests__/facturasReparacionView.test.js > TASK-11: facturasReparacionView > teardown aborta controller
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > eventos agrupados por fecha
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > eventos tienen iconos de Bootstrap
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > renderiza boton para agregar evento manual
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > renderiza filtros de tipo de evento
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > renderiza modal para evento manual
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > renderiza timeline con eventos del mock
+src/modules/inventario/__tests__/historialInstrumentoView.test.js > TASK-10: historialInstrumentoView > teardown aborta controller
+src/modules/inventario/__tests__/intercambioInstrumentosView.test.js > TASK-13: intercambioInstrumentosView > paso 1 tiene selector de alumno
+src/modules/inventario/__tests__/intercambioInstrumentosView.test.js > TASK-13: intercambioInstrumentosView > paso 3 tiene confirmacion
+src/modules/inventario/__tests__/intercambioInstrumentosView.test.js > TASK-13: intercambioInstrumentosView > renderiza wizard de 3 pasos
+src/modules/inventario/__tests__/intercambioInstrumentosView.test.js > TASK-13: intercambioInstrumentosView > teardown aborta controller
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP01: Crear activo → asignar accesorio → listar accesorios > crear accesorio para ese activo
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP01: Crear activo → asignar accesorio → listar accesorios > crear activo retorna data con id
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP01: Crear activo → asignar accesorio → listar accesorios > listar accesorios por activo_id verifica relación
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > avanzar a en_reparacion
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > avanzar a entregado
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > avanzar a finalizado
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > crear activo disponible
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > crear factura para la reparación
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > crear reparación en estado recibido
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP02: Crear activo → crear reparación → avanzar estado → crear factura → marcar pagada > marcar factura como pagada
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP03: Crear 2 activos → crear comodato → devolver → verificar historial > asignar en comodato
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP03: Crear 2 activos → crear comodato → devolver → verificar historial > crear dos activos disponibles
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP03: Crear 2 activos → crear comodato → devolver → verificar historial > devolver comodato
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP03: Crear 2 activos → crear comodato → devolver → verificar historial > verificar historial del activo contiene eventos
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP04: Flujo de intercambio > intercambiar instrumentos
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP04: Flujo de intercambio > preparar datos: crear activos y comodatos
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP05: Dashboard KPI > obtenerKPI retorna estructura esperada
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP06: Errores > anular factura ya pagada retorna error
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP06: Errores > factura duplicada para misma reparación retorna error
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP06: Errores > obtenerActivoPorId con ID inexistente retorna error 404
+src/modules/inventario/__tests__/inventarioApi.test.js > INV-TASK-06: API Facade + Mock + Integration Tests > CP06: Errores > transición de estado inválida retorna error
+src/modules/inventario/__tests__/reparacionesView.test.js > TASK-14: reparacionesView > renderiza boton nueva reparacion
+src/modules/inventario/__tests__/reparacionesView.test.js > TASK-14: reparacionesView > renderiza filtros: estado, tipo_tallerista, date range
+src/modules/inventario/__tests__/reparacionesView.test.js > TASK-14: reparacionesView > renderiza header counter
+src/modules/inventario/__tests__/reparacionesView.test.js > TASK-14: reparacionesView > renderiza tabla con datos del mock
+src/modules/inventario/__tests__/reparacionesView.test.js > TASK-14: reparacionesView > renderiza tabla con reparaciones
+src/modules/inventario/__tests__/reparacionesView.test.js > TASK-14: reparacionesView > teardown aborta controller
+src/modules/inventario/__tests__/reportesInventarioView.test.js > TASK-12: reportesInventarioView > boton generar-reporte dispara actualizacion
+src/modules/inventario/__tests__/reportesInventarioView.test.js > TASK-12: reportesInventarioView > renderiza boton de exportar PDF
+src/modules/inventario/__tests__/reportesInventarioView.test.js > TASK-12: reportesInventarioView > renderiza panel de filtros
+src/modules/inventario/__tests__/reportesInventarioView.test.js > TASK-12: reportesInventarioView > renderiza tabla de previsualizacion
+src/modules/inventario/__tests__/reportesInventarioView.test.js > TASK-12: reportesInventarioView > renderiza tabs de tipo de reporte
+src/modules/inventario/__tests__/reportesInventarioView.test.js > TASK-12: reportesInventarioView > teardown aborta controller
+src/modules/inventario/__tests__/stockInstrumentosView.test.js > TASK-08: stockInstrumentosView > filtros renderizan controles
+src/modules/inventario/__tests__/stockInstrumentosView.test.js > TASK-08: stockInstrumentosView > renderStockInstrumentosView carga y muestra la tabla
+src/modules/inventario/__tests__/stockInstrumentosView.test.js > TASK-08: stockInstrumentosView > renderiza modal nuevo/editar con campos completos
+src/modules/inventario/__tests__/stockInstrumentosView.test.js > TASK-08: stockInstrumentosView > tabla tiene columnas antiguedad y detalle
+src/modules/inventario/__tests__/stockInstrumentosView.test.js > TASK-08: stockInstrumentosView > tabla tiene filas con datos del mock
+src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > auditTrailWidget.js should not contain inline style="..." attributes in templates
+src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > dashboardMetricasView.js should not contain inline style="..." attributes in templates
+src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > systemLogsWidget.js should not contain inline style="..." attributes in templates
+src/modules/planificacion/__tests__/planificacion.adapter.test.js > planificacionAdapter routing > should return enriched planificaciones via mock with clase_nombre and maestro_nombre
+src/modules/planificacion/__tests__/planificacion.adapter.test.js > planificacionAdapter routing > should return only approved/exportable planificaciones via mock export query
+src/modules/planificacion/__tests__/planificacion.adapter.test.js > planificacionAdapter routing > should return planificaciones via mock when isDemoMode is true
+src/modules/planificacion/__tests__/planificacion.adapter.test.js > planificacionAdapter routing for new functions > should route obtenerClases via mock when isDemoMode is true
+src/modules/planificacion/__tests__/planificacion.adapter.test.js > planificacionAdapter routing for new functions > should route obtenerMaestro via mock when isDemoMode is true
+src/modules/planificacion/__tests__/planificacion.adapter.test.js > planificacionAdapter routing for new functions > should route obtenerSesiones via mock when isDemoMode is true
+tests/portal-entrypoint-guard.test.js > Portal Entry Point Guard (Anti-Regression) > vite.config.js must alias /admin and /adm directly to adm.html
+tests/unit/migrations/finServiceBalances.schema.test.js > FIN service balances foundation > uses a backend lease and never places provider secrets in schema or connector code
+tests/unit/migrations/shadowCapabilityPersistence.test.js > shadow capability persistence migration > uses the canonical profile-backed admin helper, never paths or mutable metadata

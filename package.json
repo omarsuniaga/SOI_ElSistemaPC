@@ -14,6 +14,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:safe": "bash scripts/run-tests-from-tmp.sh",
+    "test:sql": "psql \"$DATABASE_URL\" -f supabase/tests/fn_hermes_resolver_caso.test.sql",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --check src/",

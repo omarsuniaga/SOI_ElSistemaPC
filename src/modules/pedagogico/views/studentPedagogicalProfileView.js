@@ -1,4 +1,4 @@
-﻿import { supabase } from '../../../lib/supabaseClient.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import { router } from '../../../core/router/router.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { getCasesByStudent } from '../services/studentCasesService.js'
@@ -15,7 +15,6 @@ const state = {
   attendanceSummary: null,
   classes: [],
   cases: [],
-}[m]))
 }
 
 function getRiskBadge(level) {

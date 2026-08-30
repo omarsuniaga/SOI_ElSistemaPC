@@ -8,10 +8,14 @@
 
 import { config } from '../../../core/config/config.js'
 import * as supabase from './planificacionSupabase.js'
+import * as mock from './planificacionMock.js'
 import * as plantillasSupabase from './plantillasSupabase.js'
 import * as plantillasPlanificacionSupabase from './plantillasPlanificacionSupabase.js'
 
-const impl = supabase
+// El mock exporta exactamente las 17 funciones que el adapter delega. Antes
+// `impl` estaba hardcodeado a supabase (el import de config quedaba muerto) →
+// en Demo mode y en tests las llamadas colgaban / "No supabase configured".
+const impl = config.isDemoMode ? mock : supabase
 const plantillasImpl = plantillasSupabase
 const plantillasPlanificacionImpl = plantillasPlanificacionSupabase
 

@@ -50,8 +50,32 @@ export function registerRoutesAdminDashboard() {
     try {
       container.innerHTML = `<div id="maestro-detalle-container" class="p-4"></div>`
       const { MaestroDetalleView } = await import('./views/maestroDetalleView.js')
-      const maestroId = params?.maestroId ?? params?.id
-      if (!maestroId) throw new Error('No se recibió el identificador del maestro')
+      const hashParams = typeof window !== 'undefined' && window.location.hash.includes('?')
+        ? Object.fromEntries(new URLSearchParams(window.location.hash.split('?')[1]))
+        : {}
+      const searchParams = typeof window !== 'undefined' && window.location.search
+        ? Object.fromEntries(new URLSearchParams(window.location.search))
+        : {}
+      const maestroId = params?.maestroId ?? params?.id ?? hashParams.maestroId ?? hashParams.id ?? searchParams.maestroId ?? searchParams.id
+      if (!maestroId) {
+        container.innerHTML = `
+          <div class="p-4 text-center">
+            <div class="alert alert-warning d-inline-block shadow-sm">
+              <i class="bi bi-person-exclamation me-2"></i>
+              No se seleccionó ningún maestro para ver el detalle.
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-primary btn-sm" id="btnVolverMaestrosDetalle">
+                <i class="bi bi-arrow-left me-1"></i> Volver al Catálogo de Maestros
+              </button>
+            </div>
+          </div>
+        `
+        container.querySelector('#btnVolverMaestrosDetalle')?.addEventListener('click', () => {
+          router.navigate('maestros')
+        })
+        return
+      }
       const rango = params?.desde && params?.hasta ? { desde: params.desde, hasta: params.hasta } : null
       const view = new MaestroDetalleView('maestro-detalle-container', maestroId, rango)
       view.init()
@@ -66,8 +90,32 @@ export function registerRoutesAdminDashboard() {
     try {
       container.innerHTML = `<div id="maestro-clases-container" class="p-4"></div>`
       const { MaestroClasesContenidoView } = await import('./views/maestroClasesContenidoView.js')
-      const maestroId = params?.maestroId ?? params?.id
-      if (!maestroId) throw new Error('No se recibió el identificador del maestro')
+      const hashParams = typeof window !== 'undefined' && window.location.hash.includes('?')
+        ? Object.fromEntries(new URLSearchParams(window.location.hash.split('?')[1]))
+        : {}
+      const searchParams = typeof window !== 'undefined' && window.location.search
+        ? Object.fromEntries(new URLSearchParams(window.location.search))
+        : {}
+      const maestroId = params?.maestroId ?? params?.id ?? hashParams.maestroId ?? hashParams.id ?? searchParams.maestroId ?? searchParams.id
+      if (!maestroId) {
+        container.innerHTML = `
+          <div class="p-4 text-center">
+            <div class="alert alert-warning d-inline-block shadow-sm">
+              <i class="bi bi-calendar-x me-2"></i>
+              No se especificó el maestro para consultar sus clases.
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-primary btn-sm" id="btnVolverMaestrosClases">
+                <i class="bi bi-arrow-left me-1"></i> Volver al Catálogo de Maestros
+              </button>
+            </div>
+          </div>
+        `
+        container.querySelector('#btnVolverMaestrosClases')?.addEventListener('click', () => {
+          router.navigate('maestros')
+        })
+        return
+      }
       const view = new MaestroClasesContenidoView('maestro-clases-container', maestroId)
       view.init()
     } catch (error) {

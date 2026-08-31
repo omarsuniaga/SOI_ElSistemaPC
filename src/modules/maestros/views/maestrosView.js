@@ -9,6 +9,7 @@ import {
   previsualizarRetiroMaestro,
   retirarMaestroSeguro,
   reactivarMaestroSeguro,
+  eliminarMaestro,
   validarEmail,
 } from '../api/maestrosApi.js'
 import {
@@ -1430,16 +1431,25 @@ function openDeleteModal(id) {
   }
 
   state.deletingId = id
-  const nombre = maestro.nombre || maestro.name || ''
+  const nombre = maestro.nombre || maestro.name || maestro.nombre_completo || 'Maestro'
   const isActive = maestro.is_active !== false
 
+  // 1. Si el maestro ya está inactivo, ofrecer reactivación o eliminación definitiva
   if (!isActive) {
     AppModal.open({
-      title: '▶️ Reactivar Maestro',
-      size: 'sm',
-      saveText: 'Reactivar',
-      body: `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-        <p class="text-muted small mb-0">Se restaurará su acceso, pero las clases no se reasignarán automáticamente.</p>`,
+      title: '⚙️ Opciones de Maestro Inactivo',
+      size: 'md',
+      saveText: '▶️ Reactivar Maestro',
+      body: `
+        <p>El maestro <strong>${escapeHTML(nombre)}</strong> se encuentra actualmente <strong>inactivo</strong>.</p>
+        <p class="text-muted small">¿Qué acción deseas realizar?</p>
+        <div class="d-flex flex-column gap-2 mt-3">
+          <button class="btn btn-outline-danger btn-sm text-start p-2.5 rounded-3" id="btnEliminarDefinitivoModal">
+            <div class="fw-bold"><i class="bi bi-trash3-fill me-1"></i> Eliminar Definitivamente</div>
+            <div class="small opacity-75">Elimina de forma permanente la ficha y credenciales si no tiene clases activas.</div>
+          </button>
+        </div>
+      `,
       onSave: async () => {
         try {
           await reactivarMaestroSeguro(id)
@@ -1452,23 +1462,90 @@ function openDeleteModal(id) {
         }
       },
     })
+
+    // Handler para botón de eliminación permanente desde el modal de inactivo
+    setTimeout(() => {
+      document.getElementById('btnEliminarDefinitivoModal')?.addEventListener('click', () => {
+        AppModal.close()
+        void evaluarYEliminarMaestro(maestro)
+      })
+    }, 100)
     return
   }
 
-  void openRetirementReview(maestro)
+  // 2. Si está activo, evaluamos su carga académica
+  void evaluarYEliminarMaestro(maestro)
 }
 
-async function openRetirementReview(maestro) {
-  let preview
+async function evaluarYEliminarMaestro(maestro) {
+  const nombre = maestro.nombre || maestro.name || maestro.nombre_completo || 'Maestro'
+  let clases = []
+  let preview = null
+
   try {
-    preview = await previsualizarRetiroMaestro(maestro.id)
-  } catch (error) {
-    showToast(error.message || 'No se pudieron revisar las relaciones del maestro', 'error')
+    const [clasesRes, previewRes] = await Promise.all([
+      obtenerClasesPorMaestro(maestro.id).catch(() => []),
+      previsualizarRetiroMaestro(maestro.id).catch(() => null),
+    ])
+    clases = clasesRes || []
+    preview = previewRes
+  } catch (err) {
+    console.warn('Error evaluando carga académica:', err)
+  }
+
+  const principales = Array.isArray(preview?.clases_principales) && preview.clases_principales.length > 0 
+    ? preview.clases_principales 
+    : clases
+  const suplencias = Array.isArray(preview?.clases_suplente) ? preview.clases_suplente : []
+  const totalClases = principales.length + suplencias.length
+
+  // CASO 1: NO TIENE CLASES ASIGNADAS (Carga Académica = 0) -> Eliminación limpia
+  if (totalClases === 0) {
+    AppModal.open({
+      title: '🗑️ Eliminar Maestro',
+      size: 'md',
+      saveText: 'Sí, eliminar permanentemente',
+      body: `
+        <div class="p-1">
+          <div class="alert alert-success d-flex align-items-center gap-2.5 mb-3 py-2 px-3 rounded-3">
+            <i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
+            <div>
+              <div class="fw-bold">Carga Académica: 0 clases asignadas</div>
+              <div class="small opacity-90">Este maestro no tiene alumnos ni clases a su cargo. Puede ser eliminado de forma segura.</div>
+            </div>
+          </div>
+
+          <p class="mb-2">¿Estás seguro de que deseas eliminar permanentemente a <strong>${escapeHTML(nombre)}</strong>?</p>
+          
+          <div class="card bg-body-tertiary border-0 p-2.5 mb-3 rounded-3 small">
+            <div><i class="bi bi-person me-1.5 text-muted"></i><strong>Nombre:</strong> ${escapeHTML(nombre)}</div>
+            ${maestro.email ? `<div><i class="bi bi-envelope me-1.5 text-muted"></i><strong>Email:</strong> ${escapeHTML(maestro.email)}</div>` : ''}
+            ${maestro.instrumento ? `<div><i class="bi bi-music-note me-1.5 text-muted"></i><strong>Cátedra:</strong> ${escapeHTML(maestro.instrumento)}</div>` : ''}
+          </div>
+
+          <div class="text-danger small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Esta acción eliminará de forma irreversible el registro del maestro, sus permisos y credenciales asociadas.
+          </div>
+        </div>
+      `,
+      onSave: async () => {
+        try {
+          await eliminarMaestro(maestro.id)
+          state.maestros = state.maestros.filter((m) => m.id !== maestro.id)
+          state.maestrosOriginales = state.maestrosOriginales.filter((m) => m.id !== maestro.id)
+          applyFilters()
+          showToast(`Maestro "${nombre}" eliminado permanentemente`, 'success')
+        } catch (error) {
+          showToast(error.message || 'No se pudo eliminar el maestro', 'error')
+          return false
+        }
+      },
+    })
     return
   }
 
-  const principales = Array.isArray(preview?.clases_principales) ? preview.clases_principales : []
-  const suplencias = Array.isArray(preview?.clases_suplente) ? preview.clases_suplente : []
+  // CASO 2: TIENE CLASES ASIGNADAS (Carga Académica > 0) -> Transferir y Retirar
   const replacementOptions = state.maestrosOriginales
     .filter((item) => item.id !== maestro.id && item.is_active !== false)
     .map(
@@ -1476,44 +1553,55 @@ async function openRetirementReview(maestro) {
         `<option value="${item.id}">${escapeHTML(item.nombre || item.nombre_completo || 'Maestro')}</option>`,
     )
     .join('')
-  const dependencies = Object.entries(preview?.dependencias || {})
-    .map(
-      ([key, value]) =>
-        `<li><strong>${escapeHTML(key)}</strong>: ${Number(value?.count || 0)} registro(s), ${escapeHTML(value?.on_delete || 'sin regla')}</li>`,
-    )
-    .join('')
 
   AppModal.open({
-    title: 'Retirar maestro de forma segura',
+    title: '⚠️ Carga Académica Activa — Transferencia Requerida',
     size: 'lg',
-    saveText: 'Confirmar retiro',
+    saveText: 'Transferir Clases y Retirar',
     body: `
-      <div class="alert alert-warning">
-        <i class="bi bi-shield-exclamation me-1"></i>
-        Se retirará el acceso de <strong>${escapeHTML(maestro.nombre || maestro.nombre_completo || '')}</strong>.
-        El historial, sesiones y alumnos se conservarán.
+      <div class="alert alert-warning mb-3">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+          <strong>No se puede eliminar directamente: Carga académica detectada</strong>
+        </div>
+        <div class="small">
+          El maestro <strong>${escapeHTML(nombre)}</strong> tiene <strong>${totalClases} clase(s) asignada(s)</strong>.
+          Para no dejar a los alumnos sin docente ni romper la historia académica, debes reasignar las clases a un maestro de reemplazo o desvincularlas en el módulo de Clases.
+        </div>
       </div>
-      <h6>Clases principales (${principales.length})</h6>
-      ${
-        principales.length
-          ? `<ul class="small mb-3">${principales.map((clase) => `<li>${escapeHTML(clase.nombre || 'Clase sin nombre')}</li>`).join('')}</ul>
-           <label class="form-label fw-semibold" for="retirement-replacement">Maestro de reemplazo <span class="text-danger">*</span></label>
-           <select class="form-select mb-3" id="retirement-replacement"><option value="">Selecciona un reemplazo…</option>${replacementOptions}</select>`
-          : '<p class="text-muted small">No tiene clases principales que transferir.</p>'
-      }
-      ${suplencias.length ? `<p class="small text-muted">${suplencias.length} suplencia(s) serán desvinculadas sin eliminar las clases.</p>` : ''}
-      <details class="mb-3">
-        <summary class="small fw-semibold">Ver todas las relaciones detectadas (${Object.keys(preview?.dependencias || {}).length})</summary>
-        <ul class="small text-muted mt-2 mb-0">${dependencies || '<li>Sin relaciones directas activas.</li>'}</ul>
-      </details>
-      <label class="form-label" for="retirement-reason">Motivo del retiro <span class="text-muted">(opcional)</span></label>
-      <textarea class="form-control" id="retirement-reason" rows="2" maxlength="500" placeholder="Ej.: cambio de institución, fin de contrato…"></textarea>
+
+      <h6 class="fw-bold mb-2 small text-uppercase text-muted">Clases Principales a Reasignar (${principales.length})</h6>
+      <ul class="list-group list-group-flush border rounded-3 mb-3 small">
+        ${principales.map((clase) => `
+          <li class="list-group-item d-flex align-items-center justify-content-between py-2">
+            <span><i class="bi bi-journal-bookmark me-2 text-primary"></i>${escapeHTML(clase.nombre || clase.materia || 'Clase')}</span>
+            <span class="badge bg-primary-subtle text-primary">Titular</span>
+          </li>
+        `).join('')}
+      </ul>
+
+      ${suplencias.length ? `
+        <p class="small text-muted mb-3"><i class="bi bi-info-circle me-1"></i>${suplencias.length} clase(s) en suplencia serán desvinculadas automáticamente sin alterar la clase principal.</p>
+      ` : ''}
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="retirement-replacement">Maestro de reemplazo para las clases <span class="text-danger">*</span></label>
+        <select class="form-select" id="retirement-replacement">
+          <option value="">Selecciona un maestro de reemplazo…</option>
+          ${replacementOptions}
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label small text-muted" for="retirement-reason">Motivo del retiro / transferencia <span class="text-muted">(opcional)</span></label>
+        <textarea class="form-control" id="retirement-reason" rows="2" maxlength="500" placeholder="Ej.: cambio de institución, fin de contrato, reasignación…"></textarea>
+      </div>
     `,
     onSave: async () => {
       const replacementId = document.getElementById('retirement-replacement')?.value || null
       const reason = document.getElementById('retirement-reason')?.value || ''
       if (principales.length > 0 && !replacementId) {
-        showToast('Debes seleccionar un maestro de reemplazo para las clases principales.', 'error')
+        showToast('Debes seleccionar un maestro de reemplazo para transferir las clases.', 'error')
         return false
       }
 
@@ -1521,7 +1609,7 @@ async function openRetirementReview(maestro) {
         await retirarMaestroSeguro(maestro.id, replacementId, reason)
         maestro.is_active = false
         applyFilters()
-        showToast('Maestro retirado y relaciones operativas resueltas correctamente', 'success')
+        showToast('Clases transferidas y maestro retirado correctamente', 'success')
       } catch (error) {
         showToast(error.message || 'No se pudo retirar el maestro', 'error')
         return false

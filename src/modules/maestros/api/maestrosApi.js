@@ -200,20 +200,28 @@ export async function reactivarMaestroSeguro(id) {
 }
 
 /**
- * Elimina permanentemente un maestro (hard delete)
- * Solo se permite si no tiene clases asignadas
+ * Elimina permanentemente un maestro (hard delete).
+ * Evalúa en base de datos si no tiene clases asignadas y limpia credenciales/permisos.
  */
 export async function eliminarMaestro(id) {
+  const { data, error: rpcError } = await supabase.rpc('eliminar_maestro_limpio', {
+    p_maestro_id: id,
+  })
+
+  if (!rpcError) return data
+
+  if (rpcError.code === '23503' || rpcError.message.includes('clase(s) asignada(s)')) {
+    throw new Error(rpcError.message)
+  }
+
+  // Fallback a delete directo
   const { error } = await supabase.from('maestros').delete().eq('id', id)
   if (error) {
     console.error('Error eliminando maestro:', error.message)
-
-    // Errores específicos de integridad referencial
     if (error.code === '23503' || error.message.includes('foreign key')) {
-      throw new Error('No se puede eliminar este maestro porque tiene clases asignadas. Desasigna las clases primero.')
+      throw new Error('No se puede eliminar este maestro porque tiene clases o historial asignado. Reasigna o retira el maestro primero.')
     }
-
-    throw new Error('No se pudo eliminar el maestro')
+    throw new Error(error.message || 'No se pudo eliminar el maestro')
   }
 }
 
@@ -251,13 +259,6 @@ export async function validarEmail(email) {
 
 /**
  * Crea un maestro completo: auth user + perfil activo + row en maestros.
- *
- * Estrategia: usar la cadena de triggers DB existente.
- * 1. SignUp CON rol='maestro' en metadata → handle_new_user() crea profile
- *    con estado='pendiente' y auto-confirma el email (evita el 500 de SMTP).
- * 2. on_profile_insert_maestro crea el row en maestros con los datos del metadata.
- * 3. Post-signup: actualizar profile a estado='activo' y upsert datos extra
- *    (tlf, especialidades) que los triggers no manejan.
  */
 export async function crearMaestroConAuth({ nombre, email, password, telefono, instrumento, especialidades, bio }) {
   const nombreLimpio = (nombre || '').trim()
@@ -273,9 +274,6 @@ export async function crearMaestroConAuth({ nombre, email, password, telefono, i
   const instrumentoLimpio = (instrumento || '').trim()
   const resenaLimpia = (bio || '').trim()
 
-  // 1. Crear auth user CON rol='maestro' en metadata.
-  //    handle_new_user() → crea profile con estado='pendiente' y auto-confirma email.
-  //    on_profile_insert_maestro → crea row en maestros (con fallback especialidad).
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
     email: emailLimpio,
     password,
@@ -299,7 +297,6 @@ export async function crearMaestroConAuth({ nombre, email, password, telefono, i
 
   const userId = authData.user.id
 
-  // 2. Actualizar profile → estado='activo' (lo creó el trigger como 'pendiente')
   const { error: profileError } = await supabase
     .from('profiles')
     .update({
@@ -312,7 +309,6 @@ export async function crearMaestroConAuth({ nombre, email, password, telefono, i
     console.error('Error activando profile:', profileError.message)
   }
 
-  // 3. Upsert datos extra en maestros que el trigger no maneja (tlf, especialidades)
   const col = resolverColumna()
   const { error: maestroUpdateErr } = await supabase
     .from('maestros')
@@ -326,7 +322,6 @@ export async function crearMaestroConAuth({ nombre, email, password, telefono, i
     console.error('Error actualizando datos del maestro:', maestroUpdateErr.message)
   }
 
-  // 4. Leer el maestro completo para retornarlo
   const { data: maestroData } = await supabase
     .from('maestros')
     .select('*')

@@ -493,7 +493,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const faq = buscarFaq(texto)
-    const respuestaPublica = faq ? faq.respuesta : MENSAJE_FUERA_DE_ALCANCE
+    let respuestaPublica = faq ? faq.respuesta : MENSAJE_FUERA_DE_ALCANCE
+
+    // Si es intención de inscripción, registrar lead inicial para trazabilidad del embudo
+    if (faq?.id === 'inscripcion') {
+      try {
+        const cleanPhone = jid.replace(/@.*$/, '')
+        await supabase.from('applicants').upsert({
+          idempotency_key: `lead_wa_${cleanPhone}`,
+          full_name: pushName || 'Aspirante WhatsApp',
+          phone_number: cleanPhone,
+          status: 'LEAD',
+          utm_source: 'whatsapp_inbound'
+        }, { onConflict: 'idempotency_key', ignoreDuplicates: true })
+      } catch (errLead) {
+        console.warn('[webhook] Error registrando lead en applicants:', errLead instanceof Error ? errLead.message : String(errLead))
+      }
+    }
+
     try {
       await supabase.from('hermes_whatsapp_queue').insert({ jid, mensaje: respuestaPublica, estado: 'pendiente' })
       await supabase.from('whatsapp_webhook_log').insert({

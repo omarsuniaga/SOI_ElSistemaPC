@@ -341,9 +341,9 @@ function renderContent(container) {
 
       </div>
 
-      <!-- Contenedor de Cuadrícula de Maestros (Hasta 5 por fila responsive) -->
+      <!-- Contenedor de Cuadrícula de Maestros (Al menos 2 por fila en móviles) -->
       <div class="w-100">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 w-100 m-0" id="maestrosTBody">
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2 g-md-3 w-100 m-0" id="maestrosTBody">
           ${renderTableRows(state.maestros)}
         </div>
       </div>
@@ -368,8 +368,8 @@ function renderTableRows(maestros) {
       const rawPhone = a.telefono ? a.telefono.replace(/\D/g, '') : null
 
       return `
-        <div class="col p-2">
-          <div class="card maestro-card-modern h-100 p-3 d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer;">
+        <div class="col p-1 p-md-2">
+          <div class="card maestro-card-modern h-100 p-2.5 p-md-3 d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer;">
             
             <!-- Encabezado de la Tarjeta: Estado, WhatsApp y Nombre -->
             <div class="mb-2.5">

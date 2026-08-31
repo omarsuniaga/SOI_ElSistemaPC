@@ -441,9 +441,26 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
   .maestros-title-premium {
     font-size: 1.15rem;
+  }
+
+  .maestro-card-modern {
+    padding: 0.65rem !important;
+    border-radius: 12px !important;
+  }
+
+  .maestro-card-name {
+    font-size: 0.84rem !important;
+    line-height: 1.2;
+  }
+
+  .maestro-action-btn {
+    width: 27px !important;
+    height: 27px !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
   }
 }
 

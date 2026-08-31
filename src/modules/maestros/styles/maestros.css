@@ -281,6 +281,7 @@
 /* ──────────────────────────────────────────────────────────────────────── */
 
 .maestro-card-modern {
+  padding: calc(1rem + 3px) !important;
   border-radius: 16px !important;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease !important;
   background: var(--bs-card-bg, #ffffff) !important;
@@ -364,16 +365,32 @@
   line-height: 1.25;
 }
 
+/* Dedicated Footer for Buttons */
+.maestro-card-footer {
+  margin-top: auto;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
+[data-bs-theme="dark"] .maestro-card-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
 .maestro-action-btn {
-  width: 32px !important;
-  height: 32px !important;
+  flex: 1 1 0;
+  max-width: 42px;
+  height: 33px !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 8px !important;
   font-size: 0.85rem !important;
-  flex-shrink: 0 !important;
   transition: all 0.15s ease !important;
 }
 
@@ -447,7 +464,7 @@
   }
 
   .maestro-card-modern {
-    padding: 0.65rem !important;
+    padding: calc(0.65rem + 3px) !important;
     border-radius: 12px !important;
   }
 
@@ -456,11 +473,16 @@
     line-height: 1.2;
   }
 
+  .maestro-card-footer {
+    padding-top: 0.5rem;
+    gap: 3px;
+  }
+
   .maestro-action-btn {
-    width: 27px !important;
-    height: 27px !important;
+    height: 28px !important;
+    max-width: 32px;
     border-radius: 6px !important;
-    font-size: 0.75rem !important;
+    font-size: 0.76rem !important;
   }
 }
 

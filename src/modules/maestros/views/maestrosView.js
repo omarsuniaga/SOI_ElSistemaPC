@@ -419,8 +419,8 @@ function renderTableRows(maestros) {
               </div>
             </div>
 
-            <!-- Barra Inferior de Acciones Operativas -->
-            <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-end gap-1.5 mt-auto">
+            <!-- Footer dedicado de Acciones Operativas -->
+            <div class="maestro-card-footer mt-auto">
               <button class="btn btn-sm btn-outline-info maestro-action-btn" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias">
                 <i class="bi bi-clock-history"></i>
               </button>
@@ -433,7 +433,11 @@ function renderTableRows(maestros) {
                 <button class="btn btn-sm btn-outline-success maestro-action-btn" data-action="whatsapp" data-id="${a.id}" title="Enviar mensaje WhatsApp" ${!isActive ? 'disabled' : ''}>
                   <i class="bi bi-whatsapp"></i>
                 </button>
-              ` : ''}
+              ` : `
+                <button class="btn btn-sm btn-outline-secondary maestro-action-btn opacity-25" data-action="whatsapp-disabled" title="Sin WhatsApp registrado" disabled>
+                  <i class="bi bi-whatsapp"></i>
+                </button>
+              `}
 
               <button class="btn btn-sm btn-outline-danger maestro-action-btn" data-action="delete" data-id="${a.id}" title="${isActive ? 'Inactivar maestro' : 'Eliminar permanentemente'}">
                 <i class="bi bi-trash3"></i>

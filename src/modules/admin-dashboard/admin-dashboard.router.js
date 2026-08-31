@@ -1,4 +1,5 @@
 import { router } from '../../core/router/router.js'
+import { importarConReintento } from '../../shared/utils/dynamicImport.js'
 import CumplimientoMaestrosWidget from './views/cumplimientoMaestrosWidget.js'
 import DirectorReportingPanel from './views/directorReportingPanel.js'
 import { analyticsFillingBehaviorWidget } from './views/analyticsFillingBehaviorWidget.js'
@@ -49,7 +50,10 @@ export function registerRoutesAdminDashboard() {
   router.register('admin-maestro-detalle', async (container, params) => {
     try {
       container.innerHTML = `<div id="maestro-detalle-container" class="p-4"></div>`
-      const { MaestroDetalleView } = await import('./views/maestroDetalleView.js')
+      const { MaestroDetalleView } = await importarConReintento(
+        () => import('./views/maestroDetalleView.js'),
+        { nombre: 'admin-maestro-detalle' },
+      )
       const hashParams = typeof window !== 'undefined' && window.location.hash.includes('?')
         ? Object.fromEntries(new URLSearchParams(window.location.hash.split('?')[1]))
         : {}
@@ -89,7 +93,10 @@ export function registerRoutesAdminDashboard() {
   router.register('admin-maestro-clases', async (container, params) => {
     try {
       container.innerHTML = `<div id="maestro-clases-container" class="p-4"></div>`
-      const { MaestroClasesContenidoView } = await import('./views/maestroClasesContenidoView.js')
+      const { MaestroClasesContenidoView } = await importarConReintento(
+        () => import('./views/maestroClasesContenidoView.js'),
+        { nombre: 'admin-maestro-clases' },
+      )
       const hashParams = typeof window !== 'undefined' && window.location.hash.includes('?')
         ? Object.fromEntries(new URLSearchParams(window.location.hash.split('?')[1]))
         : {}
@@ -140,7 +147,10 @@ export function registerRoutesAdminDashboard() {
   router.register('reporte-mensual', async (container) => {
     try {
       container.innerHTML = `<div id="reporte-mensual-container"></div>`
-      const { default: ReporteMensualView } = await import('./views/reporteMensualView.js')
+      const { default: ReporteMensualView } = await importarConReintento(
+        () => import('./views/reporteMensualView.js'),
+        { nombre: 'reporte-mensual' },
+      )
       const view = new ReporteMensualView('reporte-mensual-container')
       view.init()
     } catch (error) {
@@ -153,7 +163,10 @@ export function registerRoutesAdminDashboard() {
   router.register('reporte-semestral', async (container) => {
     try {
       container.innerHTML = `<div id="reporte-semestral-container"></div>`
-      const { default: ReporteSemestralView } = await import('./views/reporteSemestralView.js')
+      const { default: ReporteSemestralView } = await importarConReintento(
+        () => import('./views/reporteSemestralView.js'),
+        { nombre: 'reporte-semestral' },
+      )
       const view = new ReporteSemestralView('reporte-semestral-container')
       view.init()
     } catch (error) {
@@ -166,7 +179,10 @@ export function registerRoutesAdminDashboard() {
   router.register('analisis-contenido', async (container) => {
     try {
       container.innerHTML = `<div id="analisis-contenido-container"></div>`
-      const { default: AnalisisContenidoView } = await import('./views/analisisContenidoView.js')
+      const { default: AnalisisContenidoView } = await importarConReintento(
+        () => import('./views/analisisContenidoView.js'),
+        { nombre: 'analisis-contenido' },
+      )
       const view = new AnalisisContenidoView('analisis-contenido-container')
       view.init()
     } catch (error) {
@@ -179,7 +195,10 @@ export function registerRoutesAdminDashboard() {
   router.register('proyecto-manager', async (container) => {
     try {
       container.innerHTML = `<div id="proyecto-manager-container" class="p-3"></div>`
-      const { renderProyectoManagerView } = await import('./views/proyectoManagerView.js')
+      const { renderProyectoManagerView } = await importarConReintento(
+        () => import('./views/proyectoManagerView.js'),
+        { nombre: 'proyecto-manager' },
+      )
       renderProyectoManagerView('proyecto-manager-container')
     } catch (error) {
       console.error('[proyecto-manager] Error:', error)

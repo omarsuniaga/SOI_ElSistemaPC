@@ -10,6 +10,8 @@
  * El panel admin vive en /admin (admin.html).
  */
 
+import { importarConReintento } from '../../shared/utils/dynamicImport.js'
+
 const VIEW_LOADERS = {
   login:             () => import('../views/loginView.js'),
   register:          () => import('../views/registerView.js'),
@@ -196,7 +198,7 @@ export async function renderViewContent(route, container, params, urlParams, con
   const load = VIEW_LOADERS[route]
   if (!load) return null
 
-  const mod = await load()
+  const mod = await importarConReintento(load, { nombre: `maestros:${route}` })
 
   switch (route) {
     case 'login':

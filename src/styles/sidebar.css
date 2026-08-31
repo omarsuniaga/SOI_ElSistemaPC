@@ -789,6 +789,14 @@ body:has(.app-sidebar) #app {
     border-radius: 0 !important;
     padding-left: 0.25rem !important;
     padding-right: 0.25rem !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .app-bottom-nav::-webkit-scrollbar {
+    display: none !important;
   }
 
   [data-bs-theme="dark"] .app-bottom-nav {
@@ -799,21 +807,23 @@ body:has(.app-sidebar) #app {
 
   .app-bottom-nav .bottom-tab,
   .bottom-tab {
-    flex: 1 1 0 !important;
+    flex: 1 0 auto !important;
+    min-width: 58px !important;
+    max-width: 96px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     height: 100% !important;
     min-height: 52px !important;
-    padding: 0.2rem 0.15rem !important;
+    padding: 0.2rem 0.25rem !important;
     gap: 2px !important;
     background: transparent !important;
     border: none !important;
     border-radius: 8px !important;
     cursor: pointer !important;
     color: #64748b !important;
-    font-size: 0.65rem !important;
+    font-size: 0.68rem !important;
     font-weight: 600 !important;
     line-height: 1.1 !important;
     letter-spacing: -0.01em !important;

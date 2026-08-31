@@ -13,11 +13,11 @@ import { allRegistrars } from '../_shared/allRegistrars.js'
 const navGroups = [
   {
     id: 'personas',
-    label: 'Personas',
+    label: 'Personas & Admisión',
     icon: 'bi-people',
     items: [
-      { id: 'ficha-360', label: 'Ficha 360° Alumnos', icon: 'bi-stars' },
       { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
+      { id: 'ficha-360', label: 'Ficha 360° Alumnos', icon: 'bi-stars' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
       { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
@@ -25,8 +25,8 @@ const navGroups = [
   },
   {
     id: 'operacion',
-    label: 'Operación',
-    icon: 'bi-clipboard-data',
+    label: 'Operación & Clases',
+    icon: 'bi-calendar-check',
     items: [
       {
         id: 'clases-hoy',
@@ -38,11 +38,26 @@ const navGroups = [
       { id: 'clases', label: 'Gestión de Clases', icon: 'bi-calendar3' },
       {
         id: 'salones',
-        label: 'Salones',
+        label: 'Salones & Espacios',
         icon: 'bi-door-open',
         badge: '4',
         badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
       },
+      {
+        id: 'asistencias',
+        label: 'Control de Asistencias',
+        icon: 'bi-calendar-check',
+        badge: '3',
+        badgeClass: 'badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-circle px-1.5 py-0.5',
+      },
+      { id: 'admin-ausencias', label: 'Gestión de Ausencias', icon: 'bi-calendar-x' },
+    ],
+  },
+  {
+    id: 'reportes',
+    label: 'Ciclos & Reportes',
+    icon: 'bi-file-earmark-bar-graph',
+    items: [
       {
         id: 'periodos',
         label: 'Períodos Académicos',
@@ -51,55 +66,40 @@ const navGroups = [
         badgeClass: 'badge bg-primary-subtle text-primary border border-primary-subtle rounded-circle px-1.5 py-0.5',
       },
       {
-        id: 'asistencias',
-        label: 'Resumen Asistencias',
-        icon: 'bi-calendar-check',
-        badge: '3',
-        badgeClass: 'badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-circle px-1.5 py-0.5',
-      },
-      {
         id: 'admin-dashboard',
         label: 'Cumplimiento Maestros',
         icon: 'bi-clipboard-check',
         badge: '2',
         badgeClass: 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-circle px-1.5 py-0.5',
       },
-      { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
-    ],
-  },
-  {
-    id: 'reportes',
-    label: 'Reportes',
-    icon: 'bi-file-earmark-bar-graph',
-    items: [
       { id: 'reporte-mensual', label: 'Resumen del Mes', icon: 'bi-graph-up' },
       { id: 'analisis-contenido', label: 'Análisis Pedagógico', icon: 'bi-journal-text' },
       {
         id: 'reporte-semestral',
         label: 'Informe del Período',
         icon: 'bi-journal-bookmark',
-        badge: 'Cierre de Ciclo',
+        badge: 'Cierre',
         badgeClass: 'badge bg-secondary-subtle text-secondary border',
       },
     ],
   },
   {
     id: 'bandeja',
-    label: 'Bandeja & Hermes',
-    icon: 'bi-inbox',
+    label: 'Hermes & Tareas',
+    icon: 'bi-kanban',
     items: [
       { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
     ],
   },
   {
     id: 'sistema',
-    label: 'Sistema',
+    label: 'Sistema & Accesos',
     icon: 'bi-gear',
     items: [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
-      { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
+      { id: 'permisos', label: 'Permisos & Roles', icon: 'bi-shield-lock' },
     ],
   },
 ]

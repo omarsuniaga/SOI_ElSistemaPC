@@ -413,39 +413,72 @@ function toggleTheme() {
 // ============================================================================
 const NAV_GROUPS = [
   {
-    id: 'portales',
-    label: 'Portales Departamentales',
-    icon: 'bi-grid-fill',
-    items: [
-      { id: 'portal-adm', label: 'Administración (ADM)', icon: 'bi-building-gear', href: '/adm.html' },
-      { id: 'portal-fin', label: 'Finanzas & Caja (FIN)', icon: 'bi-bank2', href: '/fin.html' },
-      { id: 'portal-acm', label: 'Academia & Malla (ACM)', icon: 'bi-mortarboard', href: '/acm.html' },
-      { id: 'portal-lut', label: 'Lutería & Taller (LUT)', icon: 'bi-tools', href: '/lut.html' },
-      { id: 'portal-inv', label: 'Inventario & Stock (INV)', icon: 'bi-box-seam', href: '/inventario.html' },
-      { id: 'portal-cal', label: 'Calendario & Citas (CAL)', icon: 'bi-calendar3', href: '/calendario.html' },
-      { id: 'portal-com', label: 'Comunicaciones (COM)', icon: 'bi-broadcast', href: '/com.html' },
-      { id: 'portal-mae', label: 'Portal Maestros (MAE)', icon: 'bi-person-video3', href: '/index.html' },
-      { id: 'portal-sim', label: 'Simulador de Reglas (SIM)', icon: 'bi-cpu', href: '/simulador.html' },
-    ],
-  },
-  {
     id: 'direccion',
     label: 'Dirección & Hermes',
     icon: 'bi-bullseye',
     items: [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
-      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
+      { id: 'hermes-procedimientos', label: 'Procedimientos Institucionales', icon: 'bi-diagram-3' },
       { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
       { id: 'hermes-reglas', label: 'Reglas Reactivas', icon: 'bi-sliders' },
-      { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
       { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
-      { id: 'hermes-kanban', label: 'Kanban Hermes (espejo)', icon: 'bi-kanban' },
       { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
   },
   {
+    id: 'personas',
+    label: 'Comunidad & Personas',
+    icon: 'bi-people',
+    items: [
+      { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
+      { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
+      { id: 'postulados', label: 'Postulados & Admisión', icon: 'bi-person-plus-fill' },
+      { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
+    ],
+  },
+  {
+    id: 'academico',
+    label: 'Gestión Académica',
+    icon: 'bi-easel',
+    items: [
+      {
+        id: 'clases-hoy',
+        label: 'Clases de Hoy',
+        icon: 'bi-calendar-day',
+        badge: '1',
+        badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
+      },
+      { id: 'clases', label: 'Gestión de Clases', icon: 'bi-easel2' },
+      {
+        id: 'salones',
+        label: 'Salones & Espacios',
+        icon: 'bi-door-open',
+        badge: '4',
+        badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
+      },
+      { id: 'programas', label: 'Programas Curriculares', icon: 'bi-book' },
+      { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
+      { id: 'horario-builder', label: 'Constructor de Horarios', icon: 'bi-calendar-range' },
+    ],
+  },
+  {
+    id: 'pedagogico',
+    label: 'Pedagogía & Planes',
+    icon: 'bi-journal-check',
+    items: [
+      { id: 'pedagogico-dashboard', label: 'Dashboard Pedagógico', icon: 'bi-grid-1x2' },
+      { id: 'planificacion', label: 'Planificación Curricular', icon: 'bi-journal-text' },
+      { id: 'bitacora-clase', label: 'Bitácora de Clases', icon: 'bi-journal-check' },
+      { id: 'bitacora-suplentes', label: 'Auditoría Suplentes', icon: 'bi-clipboard2-data' },
+      { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
+      { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
+      { id: 'pedagogico-seguimiento', label: 'Seguimiento & Evaluaciones', icon: 'bi-person-lines-fill' },
+    ],
+  },
+  {
     id: 'operacion',
-    label: 'Operación',
+    label: 'Períodos & Métricas',
     icon: 'bi-clipboard-data',
     items: [
       {
@@ -455,9 +488,6 @@ const NAV_GROUPS = [
         badge: '5',
         badgeClass: 'badge bg-primary-subtle text-primary border border-primary-subtle rounded-circle px-1.5 py-0.5',
       },
-      { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
-      { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
-      { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
       {
         id: 'asistencias',
         label: 'Resumen Asistencias',
@@ -473,108 +503,36 @@ const NAV_GROUPS = [
         badgeClass: 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-circle px-1.5 py-0.5',
       },
       { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
-      { id: 'inicio-periodo-seguro', label: 'Inicio seguro de período', icon: 'bi-shield-check' },
-      { id: 'simulador-panel-control', label: 'Simulador Operaciones', icon: 'bi-cpu' },
-    ],
-  },
-  {
-    id: 'personas',
-    label: 'Personas',
-    icon: 'bi-people',
-    items: [
-      { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
-      { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
-      { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
-      { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
-    ],
-  },
-  {
-    id: 'academico',
-    label: 'Académico',
-    icon: 'bi-easel',
-    items: [
-      {
-        id: 'clases-hoy',
-        label: 'Clases de Hoy',
-        icon: 'bi-calendar-day',
-        badge: '1',
-        badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
-      },
-      { id: 'programas', label: 'Programas', icon: 'bi-book' },
-      { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
-      {
-        id: 'salones',
-        label: 'Salones',
-        icon: 'bi-door-open',
-        badge: '4',
-        badgeClass: 'badge bg-success-subtle text-success border border-success-subtle rounded-circle px-1.5 py-0.5',
-      },
-      { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
-      { id: 'horario-general', label: 'Horario General', icon: 'bi-calendar3-week' },
-    ],
-  },
-  {
-    id: 'pedagogico',
-    label: 'Pedagógico',
-    icon: 'bi-journal-check',
-    items: [
-      { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
-      { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
-      { id: 'bitacora-clase', label: 'Bitácora', icon: 'bi-journal-check' },
-      { id: 'bitacora-suplentes', label: 'Auditoría Suplentes', icon: 'bi-clipboard2-data' },
-      { id: 'planificacion-maestros', label: 'Todos los Planes', icon: 'bi-journal-check' },
-      { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
-      { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
-      { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
-      { id: 'pedagogico-evaluaciones', label: 'Evaluaciones', icon: 'bi-clipboard2-check' },
-      { id: 'pedagogico-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
-    ],
-  },
-  {
-    id: 'analisis',
-    label: 'Análisis',
-    icon: 'bi-bar-chart-line',
-    items: [
       { id: 'metricas', label: 'Dashboard Métricas', icon: 'bi-bar-chart-line' },
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
-      { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },
-      { id: 'admin-dashboard-tendencias', label: 'Tendencias', icon: 'bi-arrow-up-right' },
+      { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
     ],
   },
   {
-    id: 'operaciones',
-    label: 'Finanzas & Inventario',
+    id: 'servicios',
+    label: 'Finanzas & Logística',
     icon: 'bi-bank',
     items: [
       { id: 'finanzas-balance', label: 'Balances de Alumnos', icon: 'bi-wallet2' },
       { id: 'finanzas-registro', label: 'Registro de Pagos', icon: 'bi-cash-coin' },
       { id: 'inventario-stock', label: 'Stock Instrumentos', icon: 'bi-box-seam' },
-      { id: 'inventario-comodatos', label: 'Comodatos/Préstamos', icon: 'bi-file-earmark-text' },
-      { id: 'inventario-reparaciones', label: 'Reparaciones (Lutería)', icon: 'bi-tools' },
+      { id: 'inventario-comodatos', label: 'Comodatos & Préstamos', icon: 'bi-file-earmark-text' },
       { id: 'luteria-ordenes', label: 'Órdenes de Lutería', icon: 'bi-wrench' },
-    ],
-  },
-  {
-    id: 'comunicaciones',
-    label: 'Comunicaciones',
-    icon: 'bi-broadcast',
-    items: [
       { id: 'comunicaciones', label: 'Bandeja Comunicaciones', icon: 'bi-broadcast' },
-      { id: 'com-seguimiento', label: 'Seguimiento Envíos', icon: 'bi-send-check' },
-      { id: 'com-calendario', label: 'Calendario Difusión', icon: 'bi-calendar-week' },
     ],
   },
   {
     id: 'sistema',
-    label: 'Sistema',
+    label: 'Sistema & Configuración',
     icon: 'bi-gear',
     items: [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
+      { id: 'permisos', label: 'Permisos & Roles', icon: 'bi-shield-lock' },
       { id: 'departamentos', label: 'Correos Departamentos', icon: 'bi-envelope-at' },
-      { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
-      { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
+      { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
+      { id: 'configuracion', label: 'Configuración General', icon: 'bi-sliders' },
       { id: 'diagnostico-catalogo', label: 'Diagnóstico Portales', icon: 'bi-activity' },
       { id: governanceMatrixRoute.routeId, label: governanceMatrixRoute.label, icon: governanceMatrixRoute.icon },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },
@@ -619,8 +577,10 @@ function renderNavbar(_container, isAuthenticated = false) {
   const { signal } = _navAbortController
 
   document.querySelector('.app-sidebar')?.remove()
+  document.querySelector('.app-mobile-header')?.remove()
   document.querySelector('.app-bottom-nav')?.remove()
   document.querySelector('.mobile-sub-sheet')?.remove()
+  document.querySelector('.mobile-sheet-backdrop')?.remove()
 
   if (!isAuthenticated) return
 
@@ -629,9 +589,31 @@ function renderNavbar(_container, isAuthenticated = false) {
   const currentRoute = localStorage.getItem('current-view') || 'clases-hoy'
   const activeGroup = _getGroupForRoute(currentRoute)
   const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark'
-
-  // ── Sidebar ──────────────────────────────────────────────
   const isDemo = config.isDemoMode
+
+  // 1. Barra Superior Móvil (Header)
+  const mobileHeader = document.createElement('header')
+  mobileHeader.className = 'app-mobile-header'
+  mobileHeader.innerHTML = `
+    <div class="mobile-header-brand" id="mobileHeaderBrand" title="SOI · Sistema Académico">
+      <div class="mobile-header-icon"><i class="bi bi-mortarboard-fill"></i></div>
+      <span class="mobile-header-title">SOI · Principal</span>
+      ${isDemo ? '<span class="badge bg-warning text-dark ms-1.5" style="font-size: 0.6rem;">DEMO</span>' : ''}
+    </div>
+    <div class="mobile-header-actions">
+      <button class="mobile-header-btn" id="mobileBtnHub" title="Hub de Portales Departamentales">
+        <i class="bi bi-grid-3x3-gap"></i>
+      </button>
+      <button class="mobile-header-btn" id="mobileBtnTheme" title="Cambiar tema">
+        <i class="bi ${isDark ? 'bi-sun-fill' : 'bi-moon-fill'}"></i>
+      </button>
+      <button class="mobile-header-btn danger" id="mobileBtnLogout" title="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+    </div>
+  `
+
+  // 2. Sidebar Desktop
   const sidebar = document.createElement('aside')
   sidebar.className = 'app-sidebar'
   sidebar.innerHTML = `
@@ -685,7 +667,7 @@ function renderNavbar(_container, isAuthenticated = false) {
     </div>
   `
 
-  // ── Bottom nav (mobile) ───────────────────────────────────
+  // 3. Bottom nav (mobile)
   const bottomNav = document.createElement('nav')
   bottomNav.className = 'app-bottom-nav'
   bottomNav.innerHTML = NAV_GROUPS.map(
@@ -697,7 +679,7 @@ function renderNavbar(_container, isAuthenticated = false) {
   `,
   ).join('')
 
-  // ── Mobile sub-sheet & Backdrop ──────────────────────────
+  // 4. Mobile sub-sheet & Backdrop
   const sheetBackdrop = document.createElement('div')
   sheetBackdrop.className = 'mobile-sheet-backdrop'
 
@@ -715,6 +697,7 @@ function renderNavbar(_container, isAuthenticated = false) {
   document.body.prepend(sheetBackdrop)
   document.body.prepend(subSheet)
   document.body.prepend(bottomNav)
+  document.body.prepend(mobileHeader)
   document.body.prepend(sidebar)
 
   const closeSheet = () => {
@@ -756,18 +739,41 @@ function renderNavbar(_container, isAuthenticated = false) {
     router.navigate('ayuda')
   })
 
-  sidebar.querySelector('#sidebarBtnTheme').addEventListener('click', () => {
-    toggleTheme()
+  const updateThemeIcons = () => {
     const isDarkNow = document.documentElement.getAttribute('data-bs-theme') === 'dark'
-    sidebar.querySelector('#sidebarBtnTheme i').className = isDarkNow
-      ? 'bi bi-sun-fill'
-      : 'bi bi-moon-fill'
-  })
+    sidebar.querySelector('#sidebarBtnTheme i')?.setAttribute('class', isDarkNow ? 'bi bi-sun-fill' : 'bi bi-moon-fill')
+    mobileHeader.querySelector('#mobileBtnTheme i')?.setAttribute('class', isDarkNow ? 'bi bi-sun-fill' : 'bi bi-moon-fill')
+  }
 
-  sidebar.querySelector('#sidebarBtnLogout').addEventListener('click', async () => {
+  sidebar.querySelector('#sidebarBtnTheme')?.addEventListener('click', () => {
+    toggleTheme()
+    updateThemeIcons()
+  }, { signal })
+
+  sidebar.querySelector('#sidebarBtnLogout')?.addEventListener('click', async () => {
     await useAuth.logout()
     router.navigate('login')
-  })
+  }, { signal })
+
+  // Eventos de la Barra Superior Móvil (Header)
+  mobileHeader.querySelector('#mobileHeaderBrand')?.addEventListener('click', () => {
+    router.navigate('clases-hoy')
+  }, { signal })
+
+  mobileHeader.querySelector('#mobileBtnHub')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    abrirModalConmutadorPortales()
+  }, { signal })
+
+  mobileHeader.querySelector('#mobileBtnTheme')?.addEventListener('click', () => {
+    toggleTheme()
+    updateThemeIcons()
+  }, { signal })
+
+  mobileHeader.querySelector('#mobileBtnLogout')?.addEventListener('click', async () => {
+    await useAuth.logout()
+    router.navigate('login')
+  }, { signal })
 
   // ── Eventos bottom nav ────────────────────────────────────
   function openSheet(groupId) {

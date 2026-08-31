@@ -18,7 +18,8 @@ describe('shadow capability persistence migration', () => {
   })
 
   it('uses the canonical profile-backed admin helper, never paths or mutable metadata', () => {
-    expect(sql).toMatch(/auth\.uid\(\) IS NULL OR NOT public\.is_admin\(\)/)
+    expect(sql).toMatch(/v_actor(?: uuid)?(?: :=)? .*auth\.uid\(\)/)
+    expect(sql).toMatch(/v_actor IS NULL OR NOT public\.is_admin\(\)/)
     expect(sql.match(/USING \(\(SELECT public\.is_admin\(\)\)\)/g)).toHaveLength(2)
     expect(sql).not.toMatch(/user_metadata|app_metadata|auth\.jwt|\/admin/)
     expect(sql).toMatch(/REVOKE ALL ON FUNCTION[\s\S]+FROM PUBLIC, anon/)

@@ -46,9 +46,10 @@ describe('shadow capability approval workflow', () => {
   })
 
   it('accepts only PII-free structural payload fields', () => {
-    expect(validateShadowCapabilityPayload({ ...payload, approverName: 'Ana' })).toContain('unsupported fields')
-    expect(validateShadowCapabilityPayload({ ...payload, rationale: 'Contact Ana' })).toContain('unsupported fields')
-    expect(validateShadowCapabilityPayload({ ...payload, rollbackPlan: { strategy: 'discard-proposal', verification: 'navigation-smoke', note: 'Call Ana' } })).toContain('cannot include free-form')
+    const hasError = (result, substr) => result.some(e => e.includes(substr))
+    expect(hasError(validateShadowCapabilityPayload({ ...payload, approverName: 'Ana' }), 'unsupported fields')).toBe(true)
+    expect(hasError(validateShadowCapabilityPayload({ ...payload, rationale: 'Contact Ana' }), 'unsupported fields')).toBe(true)
+    expect(hasError(validateShadowCapabilityPayload({ ...payload, rollbackPlan: { strategy: 'discard-proposal', verification: 'navigation-smoke', note: 'Call Ana' } }), 'cannot include free-form')).toBe(true)
   })
 
   it('returns immutable changes and audit events without altering the previous state', () => {

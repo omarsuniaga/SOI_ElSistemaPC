@@ -18,8 +18,10 @@ describe('Portal Entry Point Guard (Anti-Regression)', () => {
 
   it('vite.config.js must alias /admin and /adm directly to adm.html', () => {
     const viteConfig = fs.readFileSync(path.join(rootDir, 'vite.config.js'), 'utf8')
-    expect(viteConfig).toContain("pathname === '/admin'")
-    expect(viteConfig).toContain("req.url = '/adm.html'")
+    // El dev server enruta /admin y /adm a adm.html vía la tabla portalPrefixes.
+    expect(viteConfig).toContain("{ prefix: '/admin', file: '/adm.html' }")
+    expect(viteConfig).toContain("{ prefix: '/adm', file: '/adm.html' }")
+    expect(viteConfig).toMatch(/pathname === p\.prefix \|\| pathname\.startsWith\(p\.prefix \+ '\/'\)/)
   })
 
   it('portalCatalog.js must define admin with entry adm.html', () => {

@@ -965,19 +965,10 @@ function wireListeners() {
       return;
     }
 
-    // Publish button
-    if (e.target.closest('#hb-publish-btn')) {
-      state.publishWizardOpen = !state.publishWizardOpen;
-      if (state.publishWizardOpen && state.runId) {
-        try {
-          state.feedback = await getRunFeedback(state.runId);
-        } catch (e) {
-          state.feedback = [];
-        }
-      }
-      renderPublishPanel();
-      return;
-    }
+    // Publish button — el wizard de publicación (PublishWizard.js) está
+    // scaffoldeado (botón disabled, #hb-publish-wrapper, estado) pero nunca se
+    // cableó una función render. Handler removido para no llamar a
+    // renderPublishPanel() (inexistente). Completar como feature aparte.
   });
 }
 

@@ -261,7 +261,7 @@ async function createBoardMinutesWorkflow({ load, state, button }) {
   try {
     const corr = `dir-acta-${Date.now()}`
     const templatePath = '01_DEPARTAMENTOS/01_DIR_DIRECCION_EJECUTIVA/junta_directiva/actas/2026/TEMPLATE_acta_YYYY-MM-DD.md'
-    const description = `[DIR_V9_ACTA] ${meetingType} · Fecha ${meetingDate} · Template ${templatePath}`
+    const descripcion = `[DIR_V9_ACTA] ${meetingType} · Fecha ${meetingDate} · Template ${templatePath}`
     const minutaResult = await cajaApi.createMinuta({
       titulo: `${meetingType} · ${meetingDate}`,
       fecha_reunion: meetingDate,
@@ -357,7 +357,7 @@ async function createPaymentApprovalWorkflow({ load, state, button }) {
     const corr = `dir-pago-${Date.now()}`
     const finDoc = '01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/FIN-P15_Emision_Cheques_V9.md'
     const orderTemplate = '01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/pagos/2026/TEMPLATE_orden_pago_YYYY-MM-DD.md'
-    const description = `[DIR_V9_PAGO] Concepto: ${concept} · Monto RD$${amount} · Soporte ${finDoc} · Template ${orderTemplate} · REQUIERE REVISION DE FIRMAS`
+    const descripcion = `[DIR_V9_PAGO] Concepto: ${concept} · Monto RD$${amount} · Soporte ${finDoc} · Template ${orderTemplate} · REQUIERE REVISION DE FIRMAS`
     const numericAmount = Number(amount)
     const requiresBoardReview = numericAmount >= 5000
     const requiresDualSignature = numericAmount > 50000 || numericAmount >= 5000

@@ -82,6 +82,7 @@ import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
 import { resolverPertenenciaClase } from '../services/suplenciaService.js'
+import { generateDailyReport, generateMonthlyAttendance } from '../services/reportService.js'
 // reportService dynamically imported on demand for performance
 
 /**

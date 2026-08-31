@@ -266,7 +266,7 @@ async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
     backdrop.querySelector("#pmr-btn-edit-route")?.addEventListener("click", () => {
       closeModal()
       openTeacherRouteBuilder({
-        maestroId: effectiveMaestroId || maestro?.id || null,
+        maestroId: maestro?.id || null,
         claseId,
         route,
         onSaved: () => abrirMapaDeRutas(claseId, maestro, fechaHoy),

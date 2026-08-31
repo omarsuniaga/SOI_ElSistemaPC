@@ -365,19 +365,25 @@
 }
 
 .maestro-action-btn {
-  border-radius: 9px !important;
-  font-size: 0.78rem !important;
-  padding: 0.35rem 0.6rem !important;
-  font-weight: 600 !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  flex-shrink: 0 !important;
   transition: all 0.15s ease !important;
 }
 
 .maestro-action-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 .maestro-action-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 
 /* ──────────────────────────────────────────────────────────────────────── */

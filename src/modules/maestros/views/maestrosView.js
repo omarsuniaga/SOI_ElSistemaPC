@@ -420,28 +420,27 @@ function renderTableRows(maestros) {
             </div>
 
             <!-- Barra Inferior de Acciones Operativas -->
-            <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-between gap-1.5 mt-auto">
-              <button class="btn btn-sm btn-outline-primary maestro-action-btn d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2" data-action="edit" data-id="${a.id}" title="Editar ficha del maestro">
-                <i class="bi bi-pencil-square me-1"></i>
-                <span>Editar</span>
+            <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-end gap-1.5 mt-auto">
+              <button class="btn btn-sm btn-outline-primary maestro-action-btn" data-action="edit" data-id="${a.id}" title="Editar maestro">
+                <i class="bi bi-pencil-square"></i>
               </button>
 
-              <button class="btn btn-sm btn-outline-info maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias">
+              <button class="btn btn-sm btn-outline-info maestro-action-btn" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias">
                 <i class="bi bi-clock-history"></i>
               </button>
 
-              <button class="btn btn-sm btn-outline-secondary maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="pdf" data-id="${a.id}" title="Descargar Ficha PDF">
+              <button class="btn btn-sm btn-outline-secondary maestro-action-btn" data-action="pdf" data-id="${a.id}" title="Descargar Ficha PDF">
                 <i class="bi bi-file-earmark-pdf"></i>
               </button>
 
               ${rawPhone ? `
-                <button class="btn btn-sm btn-outline-success maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="whatsapp" data-id="${a.id}" title="Enviar mensaje WhatsApp" ${!isActive ? 'disabled' : ''}>
+                <button class="btn btn-sm btn-outline-success maestro-action-btn" data-action="whatsapp" data-id="${a.id}" title="Enviar mensaje WhatsApp" ${!isActive ? 'disabled' : ''}>
                   <i class="bi bi-whatsapp"></i>
                 </button>
               ` : ''}
 
-              <button class="btn btn-sm btn-outline-danger maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="${isActive ? 'Inactivar maestro' : 'Eliminar'}">
-                <i class="bi bi-trash"></i>
+              <button class="btn btn-sm btn-outline-danger maestro-action-btn" data-action="delete" data-id="${a.id}" title="${isActive ? 'Inactivar maestro' : 'Eliminar permanentemente'}">
+                <i class="bi bi-trash3"></i>
               </button>
             </div>
 

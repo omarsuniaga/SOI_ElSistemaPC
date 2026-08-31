@@ -1532,10 +1532,18 @@ async function evaluarYEliminarMaestro(maestro) {
       onSave: async () => {
         try {
           await eliminarMaestro(maestro.id)
+          
+          // 1. Actualización inmediata local
           state.maestros = state.maestros.filter((m) => m.id !== maestro.id)
           state.maestrosOriginales = state.maestrosOriginales.filter((m) => m.id !== maestro.id)
           applyFilters()
           showToast(`Maestro "${nombre}" eliminado permanentemente`, 'success')
+
+          // 2. Sincronización fresca con la base de datos en segundo plano
+          void obtenerMaestros().then((fresh) => {
+            state.maestrosOriginales = fresh
+            applyFilters()
+          }).catch((e) => console.debug('Sync background:', e))
         } catch (error) {
           showToast(error.message || 'No se pudo eliminar el maestro', 'error')
           return false
@@ -1607,9 +1615,16 @@ async function evaluarYEliminarMaestro(maestro) {
 
       try {
         await retirarMaestroSeguro(maestro.id, replacementId, reason)
+        
+        // Actualización inmediata y sincronización
         maestro.is_active = false
         applyFilters()
         showToast('Clases transferidas y maestro retirado correctamente', 'success')
+
+        void obtenerMaestros().then((fresh) => {
+          state.maestrosOriginales = fresh
+          applyFilters()
+        }).catch((e) => console.debug('Sync background:', e))
       } catch (error) {
         showToast(error.message || 'No se pudo retirar el maestro', 'error')
         return false

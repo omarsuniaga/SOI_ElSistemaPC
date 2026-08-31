@@ -17,15 +17,15 @@ export function auditTrailWidget(containerId) {
     container.innerHTML = `
       <div class="row g-3 mb-4 align-items-end">
         <div class="col-12 col-md-5">
-          <label class="form-label small fw-semibold" style="color: var(--obs-text-secondary);">Buscar por Actor / Notas / ID</label>
+          <label class="form-label small fw-semibold obs-text-secondary">Buscar por Actor / Notas / ID</label>
           <div class="input-group">
-            <span class="input-group-text" style="background: rgba(15,23,42,0.6); border-color: var(--obs-border); color: var(--obs-text-secondary);"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control shadow-sm" id="input-audit-search" placeholder="Correo, UUID, notas..." value="${escapeHTML(auditSearch)}" style="background: rgba(15,23,42,0.6); border-color: var(--obs-border); color: var(--obs-text-primary);">
+            <span class="input-group-text obs-input-addon-dark"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control shadow-sm obs-input-dark" id="input-audit-search" placeholder="Correo, UUID, notas..." value="${escapeHTML(auditSearch)}">
           </div>
         </div>
         <div class="col-12 col-md-4">
-          <label class="form-label small fw-semibold" style="color: var(--obs-text-secondary);">Acción Transaccional</label>
-          <select class="form-select shadow-sm" id="select-audit-action" style="background: rgba(15,23,42,0.6); border-color: var(--obs-border); color: var(--obs-text-primary);">
+          <label class="form-label small fw-semibold obs-text-secondary">Acción Transaccional</label>
+          <select class="form-select shadow-sm obs-input-dark" id="select-audit-action">
             <option value="ALL" ${auditActionFilter === 'ALL' ? 'selected' : ''}>Todas las Acciones</option>
             <option value="APROBACION_FINAL" ${auditActionFilter === 'APROBACION_FINAL' ? 'selected' : ''}>Aprobación Final</option>
             <option value="CREACION" ${auditActionFilter === 'CREACION' ? 'selected' : ''}>Creación</option>
@@ -37,7 +37,7 @@ export function auditTrailWidget(containerId) {
         </div>
       </div>
 
-      <div class="table-responsive page-glass p-0 overflow-hidden shadow-sm border rounded-3" style="border-color: var(--obs-border) !important;">
+      <div class="table-responsive page-glass p-0 overflow-hidden shadow-sm border rounded-3 obs-border-subtle">
         <table class="table align-middle mb-0 obs-table-dark" id="table-audit-trail">
           <thead>
             <tr>
@@ -55,7 +55,7 @@ export function auditTrailWidget(containerId) {
           </tbody>
         </table>
       </div>
-      <div id="audit-pagination-info" class="extra-small mt-2 text-end fw-semibold" style="color: var(--obs-text-secondary);"></div>
+      <div id="audit-pagination-info" class="extra-small mt-2 text-end fw-semibold obs-text-secondary"></div>
     `
 
     await loadAuditTrail()
@@ -92,7 +92,7 @@ export function auditTrailWidget(containerId) {
     const paginated = filtered.slice(0, maxRecords)
 
     if (paginated.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5" style="color: var(--obs-text-muted);"><i class="bi bi-info-circle me-1"></i> No se encontraron registros de auditoría.</td></tr>`
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 obs-text-muted"><i class="bi bi-info-circle me-1"></i> No se encontraron registros de auditoría.</td></tr>`
       if (paginationInfo) paginationInfo.textContent = 'Mostrando 0 registros'
       return
     }
@@ -114,10 +114,10 @@ export function auditTrailWidget(containerId) {
 
         return `
         <tr>
-          <td class="text-nowrap px-3" style="color: var(--obs-text-secondary);">${dateStr}</td>
+          <td class="text-nowrap px-3 obs-text-secondary">${dateStr}</td>
           <td><span class="badge ${actionBadge} px-2.5 py-1.5 rounded-pill fw-semibold obs-audit-action-label">${item.accion}</span></td>
-          <td class="fw-semibold text-break obs-audit-actor-cell" title="${actorStr}" style="color: var(--obs-text-primary);">${actorStr}</td>
-          <td style="color: var(--obs-text-secondary);">${escapeHTML(item.notas || 'Sin comentarios adicionales')}</td>
+          <td class="fw-semibold text-break obs-audit-actor-cell obs-text-primary" title="${actorStr}">${actorStr}</td>
+          <td class="obs-text-secondary">${escapeHTML(item.notas || 'Sin comentarios adicionales')}</td>
           <td class="text-center px-3">
             <button class="btn btn-sm btn-outline-secondary btn-audit-detail rounded-circle shadow-sm obs-audit-detail-btn" data-audit-id="${item.id}" title="Ver detalles de auditoría">
               <i class="bi bi-info-circle-fill obs-audit-detail-icon"></i>
@@ -150,8 +150,8 @@ export function auditTrailWidget(containerId) {
           .map(
             (k) => `
           <div class="col-6 mb-2">
-            <span class="d-block extra-small text-uppercase fw-bold" style="color: var(--obs-text-muted);">${k}</span>
-            <span class="small fw-semibold" style="color: var(--obs-text-primary);">${escapeHTML(String(record.detalles[k]))}</span>
+            <span class="d-block extra-small text-uppercase fw-bold obs-text-muted">${k}</span>
+            <span class="small fw-semibold obs-text-primary">${escapeHTML(String(record.detalles[k]))}</span>
           </div>
         `,
           )
@@ -159,35 +159,35 @@ export function auditTrailWidget(containerId) {
       : ''
 
     const content = `
-      <div class="p-3" style="color: var(--obs-text-primary);">
+      <div class="p-3 obs-text-primary">
         <div class="mb-3">
-          <strong class="small d-block" style="color: var(--obs-text-secondary);">ID ÚNICO DE AUDITORÍA:</strong>
-          <div class="font-monospace p-2.5 rounded border text-break extra-small mt-1 text-primary fw-semibold" style="background: rgba(15,23,42,0.8); border-color: var(--obs-border);">${record.id}</div>
+          <strong class="small d-block obs-text-secondary">ID ÚNICO DE AUDITORÍA:</strong>
+          <div class="font-monospace p-2.5 rounded border text-break extra-small mt-1 text-primary fw-semibold obs-inset-panel-strong">${record.id}</div>
         </div>
-        <div class="row g-2 mb-3 p-2.5 rounded border" style="background: rgba(15,23,42,0.6); border-color: var(--obs-border);">
+        <div class="row g-2 mb-3 p-2.5 rounded border obs-inset-panel">
           <div class="col-6">
-            <strong class="extra-small d-block text-uppercase" style="color: var(--obs-text-secondary);">Fecha y Hora:</strong>
-            <span class="small fw-semibold" style="color: var(--obs-text-primary);">${new Date(record.creado_a).toLocaleString('es-ES')}</span>
+            <strong class="extra-small d-block text-uppercase obs-text-secondary">Fecha y Hora:</strong>
+            <span class="small fw-semibold obs-text-primary">${new Date(record.creado_a).toLocaleString('es-ES')}</span>
           </div>
           <div class="col-6">
-            <strong class="extra-small d-block text-uppercase" style="color: var(--obs-text-secondary);">Acción Transaccional:</strong>
+            <strong class="extra-small d-block text-uppercase obs-text-secondary">Acción Transaccional:</strong>
             <span class="badge bg-primary bg-opacity-15 text-primary border border-primary-subtle px-2.5 py-1 rounded-pill mt-0.5 fw-bold obs-audit-badge">${record.accion}</span>
           </div>
         </div>
         <div class="mb-3">
-          <strong class="small d-block" style="color: var(--obs-text-secondary);">USUARIO ACTOR RESPONSABLE:</strong>
-          <div class="mt-1 small fw-bold text-break" style="color: var(--obs-text-primary);"><i class="bi bi-person-fill me-1 text-primary"></i> ${record.usuario_id || record.actor_id}</div>
+          <strong class="small d-block obs-text-secondary">USUARIO ACTOR RESPONSABLE:</strong>
+          <div class="mt-1 small fw-bold text-break obs-text-primary"><i class="bi bi-person-fill me-1 text-primary"></i> ${record.usuario_id || record.actor_id}</div>
         </div>
         <div class="mb-3">
-          <strong class="small d-block" style="color: var(--obs-text-secondary);">NOTAS / OBSERVACIÓN:</strong>
-          <div class="mt-1 p-3 rounded border small lh-base italic" style="background: rgba(15,23,42,0.6); border-color: var(--obs-border); color: var(--obs-text-primary);">"${escapeHTML(record.notas || 'Sin notas registradas en esta transacción')}"</div>
+          <strong class="small d-block obs-text-secondary">NOTAS / OBSERVACIÓN:</strong>
+          <div class="mt-1 p-3 rounded border small lh-base italic obs-inset-panel obs-text-primary">"${escapeHTML(record.notas || 'Sin notas registradas en esta transacción')}"</div>
         </div>
         ${
           detailsHtml
             ? `
-          <div class="border-top pt-3" style="border-color: var(--obs-border) !important;">
-            <strong class="small d-block mb-2" style="color: var(--obs-text-secondary);">METADATOS EN PAYLOAD (JSON):</strong>
-            <div class="row g-2 p-2 rounded border" style="background: rgba(15,23,42,0.6); border-color: var(--obs-border);">
+          <div class="border-top pt-3 obs-border-subtle">
+            <strong class="small d-block mb-2 obs-text-secondary">METADATOS EN PAYLOAD (JSON):</strong>
+            <div class="row g-2 p-2 rounded border obs-inset-panel">
               ${detailsHtml}
             </div>
           </div>

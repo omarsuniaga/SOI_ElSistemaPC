@@ -100,13 +100,13 @@ function renderError(container, msg) {
 
 function renderContent(container) {
   container.innerHTML = `
-    <div class="page-container" style="max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem;">
+    <div class="page-container obs-page-container">
       <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
-          <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--obs-text-primary); display: flex; align-items: center; gap: 0.6rem;">
+          <h2 class="obs-page-title">
             <i class="bi bi-speedometer2 text-primary"></i> Dashboard de Métricas & Observabilidad
           </h2>
-          <p style="margin: 0.25rem 0 0; color: var(--obs-text-secondary); font-size: 0.9rem;">
+          <p class="obs-page-subtitle">
             Indicadores académicos en tiempo real, cuadro de honor y balance de asistencia docente
           </p>
         </div>
@@ -199,14 +199,14 @@ function renderResumenTab() {
         <div class="page-glass p-4">
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <div>
-              <h5 class="fw-bold m-0" style="color: var(--obs-text-primary); font-size: 1.25rem;">
+              <h5 class="fw-bold m-0 obs-honor-title">
                 <i class="bi bi-trophy-fill me-2 text-warning"></i>Cuadro de Honor & Alumnos Destacados
               </h5>
-              <p style="color: var(--obs-text-secondary); margin: 0.25rem 0 0; font-size: 0.85rem;">
+              <p class="obs-honor-subtitle">
                 Evaluación continua de calificaciones del período lectivo activo. Haz clic en las columnas para ordenar.
               </p>
             </div>
-            <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.45rem 0.85rem; border-radius: 999px; font-weight: 700; font-size: 0.8rem;">
+            <span class="badge obs-badge-excelencia">
               <i class="bi bi-award-fill me-1"></i> Excelencia Académica
             </span>
           </div>
@@ -215,20 +215,20 @@ function renderResumenTab() {
           <div class="row g-3 mb-3 align-items-center">
             <div class="col-12 col-md-5">
               <div class="input-group">
-                <span class="input-group-text" style="background: rgba(15,23,42,0.8); border-color: var(--obs-border); color: var(--obs-text-secondary);"><i class="bi bi-search"></i></span>
-                <input type="text" id="inputSearchDestacados" class="form-control" placeholder="Buscar por nombre de alumno..." value="${escapeHTML(state.filtroDestacados.search)}" style="background: rgba(15,23,42,0.8); border-color: var(--obs-border); color: var(--obs-text-primary);">
+                <span class="input-group-text obs-input-addon-dark-strong"><i class="bi bi-search"></i></span>
+                <input type="text" id="inputSearchDestacados" class="form-control obs-input-dark-strong" placeholder="Buscar por nombre de alumno..." value="${escapeHTML(state.filtroDestacados.search)}">
               </div>
             </div>
 
             <div class="col-12 col-md-4">
-              <select id="selectCatedraDestacados" class="form-select" style="background: rgba(15,23,42,0.8); border-color: var(--obs-border); color: var(--obs-text-primary);">
+              <select id="selectCatedraDestacados" class="form-select obs-input-dark-strong">
                 <option value="ALL">Todas las Cátedras (${catedras.length})</option>
                 ${catedras.map((c) => `<option value="${escapeHTML(c)}" ${state.filtroDestacados.catedra === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
               </select>
             </div>
 
             <div class="col-12 col-md-3">
-              <select id="selectRangoDestacados" class="form-select" style="background: rgba(15,23,42,0.8); border-color: var(--obs-border); color: var(--obs-text-primary);">
+              <select id="selectRangoDestacados" class="form-select obs-input-dark-strong">
                 <option value="HONOR" ${state.filtroDestacados.rango === 'HONOR' ? 'selected' : ''}>Cuadro de Honor (&ge; 90 pts)</option>
                 <option value="EXCELENCIA" ${state.filtroDestacados.rango === 'EXCELENCIA' ? 'selected' : ''}>Máxima Excelencia (&ge; 95 pts)</option>
                 <option value="TODOS" ${state.filtroDestacados.rango === 'TODOS' ? 'selected' : ''}>Todos con Calificación (&ge; 80 pts)</option>
@@ -237,7 +237,7 @@ function renderResumenTab() {
           </div>
 
           <!-- Contenedor de la Tabla -->
-          <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+          <div class="table-responsive obs-table-scroll">
             <div id="destacados-table-container">
               <!-- Renderizado dinámico -->
             </div>
@@ -325,7 +325,7 @@ function _renderDestacadosTable() {
 
   if (lista.length === 0) {
     container.innerHTML = `
-      <div class="p-5 text-center" style="color: var(--obs-text-muted);">
+      <div class="p-5 text-center obs-text-muted">
         <i class="bi bi-inbox fs-2 d-block mb-2"></i>
         No se encontraron alumnos con los criterios seleccionados.
       </div>
@@ -343,38 +343,31 @@ function _renderDestacadosTable() {
     return `<i class="bi bi-arrow-down-up text-muted opacity-40 small align-middle ms-1"></i>`
   }
 
-  const getThStyle = (colKey, width, align = 'left') => `
-    padding: 0.85rem 1rem;
-    width: ${width};
-    text-align: ${align};
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.15s ease, background-color 0.15s ease;
-    ${sortBy === colKey ? 'color: var(--obs-text-primary); font-weight: 800;' : 'color: var(--obs-text-secondary);'}
-  `
+  const getThClasses = (colKey) =>
+    `obs-sort-th col-${colKey}${sortBy === colKey ? ' is-sorted' : ''}`
 
   container.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-      <span class="extra-small fw-semibold" style="color: var(--obs-text-muted);">
+      <span class="extra-small fw-semibold obs-text-muted">
         Mostrando ${lista.length} estudiante(s) · Ordenado por: <strong>${_getSortLabel(sortBy)} (${sortDir.toUpperCase()})</strong>
       </span>
     </div>
     <table class="table align-middle mb-0 obs-table-dark">
       <thead>
-        <tr style="border-bottom: 1px solid var(--obs-border); font-size: 0.8rem; text-transform: uppercase;">
-          <th style="${getThStyle('posicion', '12%', 'center')}" data-sort="posicion" title="Ordenar por Posición">
+        <tr class="obs-honor-thead-row">
+          <th class="${getThClasses('posicion')}" data-sort="posicion" title="Ordenar por Posición">
             Posición ${getSortIcon('posicion')}
           </th>
-          <th style="${getThStyle('estudiante', '36%')}" data-sort="estudiante" title="Ordenar por Nombre de Estudiante">
+          <th class="${getThClasses('estudiante')}" data-sort="estudiante" title="Ordenar por Nombre de Estudiante">
             Estudiante ${getSortIcon('estudiante')}
           </th>
-          <th style="${getThStyle('catedra', '22%')}" data-sort="catedra" title="Ordenar por Cátedra / Programa">
+          <th class="${getThClasses('catedra')}" data-sort="catedra" title="Ordenar por Cátedra / Programa">
             Cátedra / Programa ${getSortIcon('catedra')}
           </th>
-          <th style="${getThStyle('nivel', '14%', 'center')}" data-sort="nivel" title="Ordenar por Nivel Académico">
+          <th class="${getThClasses('nivel')}" data-sort="nivel" title="Ordenar por Nivel Académico">
             Nivel ${getSortIcon('nivel')}
           </th>
-          <th style="${getThStyle('promedio', '16%', 'center')}" data-sort="promedio" title="Ordenar por Promedio">
+          <th class="${getThClasses('promedio')}" data-sort="promedio" title="Ordenar por Promedio">
             Promedio ${getSortIcon('promedio')}
           </th>
         </tr>
@@ -383,43 +376,43 @@ function _renderDestacadosTable() {
         ${lista
           .map((d) => {
             const pos = d._rankingNatural
-            let medalla = `<span style="font-weight: 700; color: var(--obs-text-secondary);">#${pos}</span>`
-            if (pos === 1) medalla = `<span style="font-size: 1.15rem;" title="1er Lugar">🥇</span>`
-            else if (pos === 2) medalla = `<span style="font-size: 1.15rem;" title="2do Lugar">🥈</span>`
-            else if (pos === 3) medalla = `<span style="font-size: 1.15rem;" title="3er Lugar">🥉</span>`
+            let medalla = `<span class="obs-honor-pos-num">#${pos}</span>`
+            if (pos === 1) medalla = `<span class="obs-honor-medal" title="1er Lugar">🥇</span>`
+            else if (pos === 2) medalla = `<span class="obs-honor-medal" title="2do Lugar">🥈</span>`
+            else if (pos === 3) medalla = `<span class="obs-honor-medal" title="3er Lugar">🥉</span>`
 
             const nota = Number(d.promedio) || 0
             const esExcelencia = nota >= 95
 
-            const badgeBg = esExcelencia
-              ? 'background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3)); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);'
-              : 'background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);'
+            const badgeNotaClass = esExcelencia
+              ? 'obs-badge-nota-excelencia'
+              : 'obs-badge-nota-honor'
 
             const nivelLabel = (d.nivel || 'Básico').toUpperCase()
 
             return `
-            <tr style="border-bottom: 1px solid var(--obs-border);">
-              <td style="padding: 0.85rem 1rem; text-align: center;">
+            <tr class="obs-honor-row">
+              <td class="obs-honor-td-center">
                 ${medalla}
               </td>
-              <td style="padding: 0.85rem 1rem;">
-                <div style="font-weight: 750; color: var(--obs-text-primary); font-size: 0.95rem;">
+              <td class="obs-honor-td">
+                <div class="obs-honor-name">
                   ${escapeHTML(d.nombre_completo)}
                 </div>
-                <div style="font-size: 0.75rem; color: var(--obs-text-muted); margin-top: 0.1rem;">
+                <div class="obs-honor-tagline">
                   ${esExcelencia ? '🌟 Cuadro de Honor Superior' : '⭐ Alumno Sobresaliente'}
                 </div>
               </td>
-              <td style="padding: 0.85rem 1rem; color: var(--obs-text-secondary); font-size: 0.875rem;">
+              <td class="obs-honor-td-catedra">
                 <i class="bi bi-music-note-beamed text-primary me-1.5"></i> ${escapeHTML(d.programa || 'Iniciación Musical')}
               </td>
-              <td style="padding: 0.85rem 1rem; text-align: center;">
-                <span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--obs-text-secondary); border: 1px solid var(--obs-border); font-size: 0.72rem; padding: 0.3rem 0.6rem;">
+              <td class="obs-honor-td-center">
+                <span class="badge obs-badge-nivel">
                   ${nivelLabel}
                 </span>
               </td>
-              <td style="padding: 0.85rem 1rem; text-align: center;">
-                <span class="badge" style="${badgeBg} font-size: 0.85rem; font-weight: 800; padding: 0.4rem 0.8rem; letter-spacing: 0.02em;">
+              <td class="obs-honor-td-center">
+                <span class="badge obs-badge-nota ${badgeNotaClass}">
                   ${nota.toFixed(1)} pts
                 </span>
               </td>
@@ -472,7 +465,7 @@ function renderOperacionesTab() {
   return `
     <div class="w-100">
       <!-- Widget Canónico Unificado a Ancho Completo: Balance de Asistencia & Solvencia Docente -->
-      <div id="cumplimiento-maestros-container" style="width: 100%; min-width: 0;">
+      <div id="cumplimiento-maestros-container" class="obs-full-width-slot">
         <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
       </div>
 
@@ -496,7 +489,7 @@ function renderLogsTab() {
   return `
     <div class="page-glass p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-        <h5 class="fw-bold m-0" style="color: var(--obs-text-primary);"><i class="bi bi-terminal-fill text-danger me-2"></i>Consola Técnica y Monitor de Red</h5>
+        <h5 class="fw-bold m-0 obs-text-primary"><i class="bi bi-terminal-fill text-danger me-2"></i>Consola Técnica y Monitor de Red</h5>
         <button class="btn btn-sm btn-outline-secondary" id="btn-clear-logs"><i class="bi bi-trash me-1"></i>Limpiar Consola</button>
       </div>
       <!-- Widget Modular de Logs Técnicos -->
@@ -511,7 +504,7 @@ function renderAuditoriaTab() {
   return `
     <div class="page-glass p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-        <h5 class="fw-bold m-0" style="color: var(--obs-text-primary);"><i class="bi bi-shield-check text-success me-2"></i>Pistas de Auditoría y Seguridad</h5>
+        <h5 class="fw-bold m-0 obs-text-primary"><i class="bi bi-shield-check text-success me-2"></i>Pistas de Auditoría y Seguridad</h5>
         <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle px-3 py-1 rounded-pill">Trazabilidad RLS</span>
       </div>
       <!-- Widget Modular de Auditoría -->
@@ -526,8 +519,8 @@ function renderIATab() {
   return `
     <div class="page-glass p-5 text-center">
       <i class="bi bi-robot fs-1 text-primary d-block mb-3 animate-bell"></i>
-      <h4 class="fw-bold" style="color: var(--obs-text-primary);">SOI Intelligence</h4>
-      <p style="color: var(--obs-text-secondary); max-width: 600px; margin: 0.5rem auto 1.5rem;">
+      <h4 class="fw-bold obs-text-primary">SOI Intelligence</h4>
+      <p class="obs-ia-intro">
         Genera un análisis narrativo institucional cruzando en tiempo real los KPIs del período activo con datos reales de Supabase.
       </p>
       <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -674,7 +667,7 @@ function _attachGlobalEventsIA() {
     const area = state.container?.querySelector('#ia-result-area')
     if (!area) return
     area.innerHTML =
-      '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2" style="color: var(--obs-text-secondary);">Compilando datos reales y analizando con IA...</p></div>'
+      '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2 obs-text-secondary">Compilando datos reales y analizando con IA...</p></div>'
 
     try {
       const dslData = await callDslRpc('global')
@@ -698,10 +691,10 @@ function _attachGlobalEventsIA() {
         area.innerHTML = `
           <div class="page-glass p-4 border-primary border-start border-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <strong style="color: var(--obs-text-primary); font-size: 1rem;"><i class="bi bi-stars text-primary me-2"></i>Análisis Institucional</strong>
+              <strong class="obs-ia-result-title"><i class="bi bi-stars text-primary me-2"></i>Análisis Institucional</strong>
               <span class="badge bg-success bg-opacity-15 text-success border border-success-subtle extra-small px-2.5 py-1">GROQ · datos reales</span>
             </div>
-            <div class="ia-content markdown-body small" style="color: var(--obs-text-secondary); line-height: 1.6;">${_formatMarkdown(escapeHTML(narrativa.trim()))}</div>
+            <div class="ia-content markdown-body small obs-ia-content">${_formatMarkdown(escapeHTML(narrativa.trim()))}</div>
             <div class="d-flex gap-2 mt-3">
               <button class="btn btn-xs btn-outline-primary" id="btn-copy-report"><i class="bi bi-clipboard me-1"></i>Copiar</button>
               <a href="#/metricas-ia-reportes" class="btn btn-xs btn-outline-secondary"><i class="bi bi-file-earmark-pdf me-1"></i>Reporte completo + PDF</a>
@@ -717,10 +710,10 @@ function _attachGlobalEventsIA() {
         area.innerHTML = `
           <div class="page-glass p-4 border-warning border-start border-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <strong style="color: var(--obs-text-primary);">Resumen automático</strong>
+              <strong class="obs-text-primary">Resumen automático</strong>
               <span class="badge bg-warning bg-opacity-15 text-warning border border-warning-subtle extra-small px-2 py-1">IA no disponible</span>
             </div>
-            <p class="small mb-0" style="color: var(--obs-text-secondary);">${escapeHTML(resumen)}</p>
+            <p class="small mb-0 obs-text-secondary">${escapeHTML(resumen)}</p>
           </div>
         `
       }
@@ -733,12 +726,12 @@ function _attachGlobalEventsIA() {
 
 function _formatMarkdown(text) {
   return text
-    .replace(/^### (.*$)/gim, '<h6 class="fw-bold mt-3 mb-1" style="color: var(--obs-text-primary);">$1</h6>')
-    .replace(/^## (.*$)/gim, '<h5 class="fw-bold mt-3 mb-2" style="color: var(--obs-text-primary);">$1</h5>')
-    .replace(/^# (.*$)/gim, '<h4 class="fw-bold mt-3 mb-2" style="color: var(--obs-text-primary);">$1</h4>')
-    .replace(/^\* (.*$)/gim, '<li style="margin-bottom: 0.25rem;">$1</li>')
-    .replace(/^- (.*$)/gim, '<li style="margin-bottom: 0.25rem;">$1</li>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: var(--obs-text-primary);">$1</strong>')
+    .replace(/^### (.*$)/gim, '<h6 class="fw-bold mt-3 mb-1 obs-text-primary">$1</h6>')
+    .replace(/^## (.*$)/gim, '<h5 class="fw-bold mt-3 mb-2 obs-text-primary">$1</h5>')
+    .replace(/^# (.*$)/gim, '<h4 class="fw-bold mt-3 mb-2 obs-text-primary">$1</h4>')
+    .replace(/^\* (.*$)/gim, '<li class="obs-md-li">$1</li>')
+    .replace(/^- (.*$)/gim, '<li class="obs-md-li">$1</li>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong class="obs-text-primary">$1</strong>')
     .replace(/\n\n/gim, '<br><br>')
 }
 
@@ -753,21 +746,21 @@ function _openGuiaAnaliticaModal() {
     title: 'Guía de Interpretación Analítica',
     body: `
       <div class="obs-guia-modal-body p-2">
-        <p style="color: var(--obs-text-secondary); font-size: 0.9rem;">
+        <p class="obs-guia-intro">
           Este Hub centraliza los indicadores operacionales y de observabilidad de la institución.
         </p>
         <div class="vstack gap-3 mt-3">
           <div class="obs-guia-panel-card">
-            <h6 class="fw-bold mb-1" style="color: var(--obs-text-primary);"><i class="bi bi-trophy text-warning me-2"></i>Cuadro de Honor & Destacados</h6>
-            <p class="small mb-0" style="color: var(--obs-text-secondary);">Muestra los estudiantes con mejor desempeño académico del período evaluado.</p>
+            <h6 class="fw-bold mb-1 obs-text-primary"><i class="bi bi-trophy text-warning me-2"></i>Cuadro de Honor & Destacados</h6>
+            <p class="small mb-0 obs-text-secondary">Muestra los estudiantes con mejor desempeño académico del período evaluado.</p>
           </div>
           <div class="obs-guia-panel-card">
-            <h6 class="fw-bold mb-1" style="color: var(--obs-text-primary);"><i class="bi bi-person-check-fill text-success me-2"></i>Balance de Asistencia & Solvencia</h6>
-            <p class="small mb-0" style="color: var(--obs-text-secondary);">Control canónico de clases programadas contra bitácoras cerradas para emisión de nómina.</p>
+            <h6 class="fw-bold mb-1 obs-text-primary"><i class="bi bi-person-check-fill text-success me-2"></i>Balance de Asistencia & Solvencia</h6>
+            <p class="small mb-0 obs-text-secondary">Control canónico de clases programadas contra bitácoras cerradas para emisión de nómina.</p>
           </div>
           <div class="obs-guia-panel-card">
-            <h6 class="fw-bold mb-1" style="color: var(--obs-text-primary);"><i class="bi bi-terminal text-danger me-2"></i>Consola de Logs & Auditoría</h6>
-            <p class="small mb-0" style="color: var(--obs-text-secondary);">Monitoreo de red, eventos PWA y trazabilidad de cambios en Supabase.</p>
+            <h6 class="fw-bold mb-1 obs-text-primary"><i class="bi bi-terminal text-danger me-2"></i>Consola de Logs & Auditoría</h6>
+            <p class="small mb-0 obs-text-secondary">Monitoreo de red, eventos PWA y trazabilidad de cambios en Supabase.</p>
           </div>
         </div>
       </div>

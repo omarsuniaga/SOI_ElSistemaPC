@@ -20,7 +20,7 @@ export function systemLogsWidget(containerId) {
         <div class="col-12 col-lg-8">
           <div class="obs-panel-card p-3 h-100">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-              <span class="small fw-semibold" style="color: var(--obs-text-secondary);">Filtro de Severidad:</span>
+              <span class="small fw-semibold obs-text-secondary">Filtro de Severidad:</span>
               <div class="btn-group btn-group-sm shadow-sm" role="group">
                 <button class="btn btn-outline-secondary ${activeFilter === 'ALL' ? 'active' : ''}" data-log-filter="ALL">TODOS</button>
                 <button class="btn btn-outline-info ${activeFilter === 'INFO' ? 'active' : ''}" data-log-filter="INFO">INFO</button>
@@ -51,7 +51,7 @@ export function systemLogsWidget(containerId) {
           <div class="obs-panel-card p-3 h-100 d-flex flex-column justify-content-between">
             <div>
               <h6 class="fw-bold text-primary mb-2"><i class="bi bi-bug me-1"></i>Simulador de Eventos Técnicos</h6>
-              <p class="extra-small lh-base" style="color: var(--obs-text-secondary);">
+              <p class="extra-small lh-base obs-text-secondary">
                 Genera de manera interactiva excepciones en caliente para evaluar el sistema de alertas tempranas, el flujo RLS de Supabase y la tolerancia offline.
               </p>
               <div class="vstack gap-2 mt-3">
@@ -70,9 +70,9 @@ export function systemLogsWidget(containerId) {
               </div>
             </div>
 
-            <div class="mt-4 border-top pt-3" style="border-color: var(--obs-border) !important;">
-              <span class="small fw-semibold d-block mb-1" style="color: var(--obs-text-secondary);">Audit Trail de Conectividad</span>
-              <p class="extra-small mb-0" style="color: var(--obs-text-muted);">
+            <div class="mt-4 border-top pt-3 obs-border-subtle">
+              <span class="small fw-semibold d-block mb-1 obs-text-secondary">Audit Trail de Conectividad</span>
+              <p class="extra-small mb-0 obs-text-muted">
                 La PWA encola de forma resiliente todos los logs de excepción locales en su almacenamiento cacheado cuando no detecta conexión a internet.
               </p>
             </div>

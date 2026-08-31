@@ -487,6 +487,214 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Text-color helpers (CSP: reemplazan style="color: var(--obs-text-*)")
+   --------------------------------------------------------------------------- */
+.obs-text-primary {
+  color: var(--obs-text-primary);
+}
+.obs-text-secondary {
+  color: var(--obs-text-secondary);
+}
+.obs-text-muted {
+  color: var(--obs-text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Campos de formulario oscuros y paneles embebidos
+   (CSP: reemplazan style="background: rgba(15,23,42,...); border-color: ...")
+   --------------------------------------------------------------------------- */
+.obs-input-dark {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: var(--obs-border);
+  color: var(--obs-text-primary);
+}
+.obs-input-addon-dark {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: var(--obs-border);
+  color: var(--obs-text-secondary);
+}
+.obs-inset-panel {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: var(--obs-border);
+}
+.obs-inset-panel-strong {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--obs-border);
+}
+
+/* ---------------------------------------------------------------------------
+   Dashboard de Métricas — layout, cuadro de honor, badges
+   (CSP: reemplazan inline style="..." en dashboardMetricasView.js)
+   --------------------------------------------------------------------------- */
+.obs-page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+.obs-page-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--obs-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.obs-page-subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--obs-text-secondary);
+  font-size: 0.9rem;
+}
+.obs-honor-title {
+  color: var(--obs-text-primary);
+  font-size: 1.25rem;
+}
+.obs-honor-subtitle {
+  color: var(--obs-text-secondary);
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+.obs-badge-excelencia {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.obs-input-dark-strong {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--obs-border);
+  color: var(--obs-text-primary);
+}
+.obs-input-addon-dark-strong {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--obs-border);
+  color: var(--obs-text-secondary);
+}
+.obs-table-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+}
+.obs-honor-thead-row {
+  border-bottom: 1px solid var(--obs-border);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+.obs-sort-th {
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  color: var(--obs-text-secondary);
+}
+.obs-sort-th.is-sorted {
+  color: var(--obs-text-primary);
+  font-weight: 800;
+}
+.obs-sort-th.col-posicion {
+  width: 12%;
+  text-align: center;
+}
+.obs-sort-th.col-estudiante {
+  width: 36%;
+  text-align: left;
+}
+.obs-sort-th.col-catedra {
+  width: 22%;
+  text-align: left;
+}
+.obs-sort-th.col-nivel {
+  width: 14%;
+  text-align: center;
+}
+.obs-sort-th.col-promedio {
+  width: 16%;
+  text-align: center;
+}
+.obs-honor-row {
+  border-bottom: 1px solid var(--obs-border);
+}
+.obs-honor-td {
+  padding: 0.85rem 1rem;
+}
+.obs-honor-td-center {
+  padding: 0.85rem 1rem;
+  text-align: center;
+}
+.obs-honor-td-catedra {
+  padding: 0.85rem 1rem;
+  color: var(--obs-text-secondary);
+  font-size: 0.875rem;
+}
+.obs-honor-pos-num {
+  font-weight: 700;
+  color: var(--obs-text-secondary);
+}
+.obs-honor-medal {
+  font-size: 1.15rem;
+}
+.obs-honor-name {
+  font-weight: 750;
+  color: var(--obs-text-primary);
+  font-size: 0.95rem;
+}
+.obs-honor-tagline {
+  font-size: 0.75rem;
+  color: var(--obs-text-muted);
+  margin-top: 0.1rem;
+}
+.obs-badge-nivel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--obs-text-secondary);
+  border: 1px solid var(--obs-border);
+  font-size: 0.72rem;
+  padding: 0.3rem 0.6rem;
+}
+.obs-badge-nota {
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.4rem 0.8rem;
+  letter-spacing: 0.02em;
+}
+.obs-badge-nota-honor {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.obs-badge-nota-excelencia {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.obs-ia-intro {
+  color: var(--obs-text-secondary);
+  max-width: 600px;
+  margin: 0.5rem auto 1.5rem;
+}
+.obs-ia-result-title {
+  color: var(--obs-text-primary);
+  font-size: 1rem;
+}
+.obs-ia-content {
+  color: var(--obs-text-secondary);
+  line-height: 1.6;
+}
+.obs-md-li {
+  margin-bottom: 0.25rem;
+}
+.obs-guia-intro {
+  color: var(--obs-text-secondary);
+  font-size: 0.9rem;
+}
+.obs-full-width-slot {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
    RESPONSIVE — Mobile breakpoints for metricas views
    --------------------------------------------------------------------------- */
 @media (max-width: 768px) {

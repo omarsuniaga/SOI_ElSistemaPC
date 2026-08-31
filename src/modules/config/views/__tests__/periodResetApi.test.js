@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const rpc = vi.fn()
+// vi.mock se hoistea arriba de los imports; la fn del mock debe crearse con
+// vi.hoisted para existir en ese momento (antes: 'const rpc' top-level → error).
+const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }))
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({ supabase: { rpc } }))
 vi.mock('../../../periodos/api/periodosApi.js', () => ({ getPeriodos: vi.fn(async () => []) }))

@@ -36,9 +36,11 @@ describe('FIN service balances foundation', () => {
   it('uses a backend lease and never places provider secrets in schema or connector code', () => {
     expect(migration).toMatch(/fn_fin_acquire_service_refresh_lock/)
     expect(refreshFunction).toMatch(/connector_unconfigured/)
-    expect(refreshFunction).toMatch(/cepm: unsupportedConnector\('CEPM'\)/)
-    expect(refreshFunction).not.toMatch(/CEPM_API_(KEY|TOKEN|PASSWORD)/)
-    expect(migration).not.toMatch(/CEPM_API_(KEY|TOKEN|PASSWORD)/)
+    // El conector CEPM ya está implementado (scraping de la página pública de
+    // balance, sin credenciales). Lo que importa de seguridad: cero secretos.
+    expect(refreshFunction).toMatch(/CEPM_BALANCE_URL = 'https:\/\/oficina\.cepm\.com\.do\/balance'/)
+    expect(refreshFunction).not.toMatch(/CEPM_API_(KEY|TOKEN|PASSWORD|SECRET)/i)
+    expect(migration).not.toMatch(/CEPM_API_(KEY|TOKEN|PASSWORD|SECRET)/i)
   })
 
   it('removes hardcoded CEPM monetary cards from the authoritative dashboard area', () => {

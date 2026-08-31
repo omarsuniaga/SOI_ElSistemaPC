@@ -309,6 +309,26 @@
   opacity: 1;
 }
 
+/* ── SIDEBAR NAV BADGES ───────────────────────────────────────────────── */
+.app-sidebar .sidebar-nav-badge,
+.app-sidebar .nav-item-btn .badge,
+.sidebar-nav-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  padding: 0 6px !important;
+  border-radius: 9999px !important;
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  letter-spacing: normal !important;
+}
+
 /* ── SIDEBAR FOOTER (User & Actions) ──────────────────────────────────── */
 .app-sidebar .sidebar-footer {
   padding: 1rem 1.5rem;
@@ -974,11 +994,27 @@ body:has(.app-sidebar) #app {
   }
 
   .sheet-item .sheet-item-text,
-  .sheet-item span:not(.sheet-item-icon) {
+  .sheet-item > span:not(.sheet-item-icon):not(.badge):not(.sidebar-nav-badge) {
     flex: 1 !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
+  }
+
+  .sheet-item .badge,
+  .sheet-item .sidebar-nav-badge {
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    padding: 0 6px !important;
+    border-radius: 9999px !important;
   }
 
   .sheet-item:hover {

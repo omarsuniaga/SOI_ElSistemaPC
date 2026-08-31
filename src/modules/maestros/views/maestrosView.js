@@ -595,14 +595,22 @@ function openWhatsAppModal(id) {
   })
 }
 
+function getContainer() {
+  if (currentContainer && document.body.contains(currentContainer)) {
+    return currentContainer
+  }
+  return document.querySelector('#maestrosTBody')?.closest('.page-container') || document.querySelector('#app-main') || document
+}
+
 // ─── Filters ─────────────────────────────────────────────────────────────────
 
 function applyFilters() {
-  const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
-  const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
-  const filtroInstrumento = currentContainer.querySelector('#filtroInstrumentoMaestro')?.value || 'todos'
-  const filtroWhatsapp = currentContainer.querySelector('#filtroWhatsappMaestro')?.value || 'todos'
-  const orden = currentContainer.querySelector('#selectOrdenarMaestros')?.value || 'nombre_asc'
+  const container = getContainer()
+  const searchTerm = container?.querySelector('#buscar')?.value.trim().toLowerCase() || ''
+  const filtroEstado = container?.querySelector('#filtroEstado')?.value || 'todos'
+  const filtroInstrumento = container?.querySelector('#filtroInstrumentoMaestro')?.value || 'todos'
+  const filtroWhatsapp = container?.querySelector('#filtroWhatsappMaestro')?.value || 'todos'
+  const orden = container?.querySelector('#selectOrdenarMaestros')?.value || 'nombre_asc'
 
   state.maestros = state.maestrosOriginales.filter((a) => {
     const nombre = (a.nombre || a.name || '').toLowerCase()
@@ -647,7 +655,7 @@ function applyFilters() {
   if (filtroInstrumento !== 'todos') activos++
   if (filtroWhatsapp !== 'todos') activos++
 
-  const badgeEl = currentContainer.querySelector('#filtrosBadgeCountMaestros')
+  const badgeEl = container?.querySelector('#filtrosBadgeCountMaestros')
   if (badgeEl) {
     badgeEl.textContent = activos
     if (activos > 0) {
@@ -1526,15 +1534,22 @@ async function evaluarYEliminarMaestro(maestro) {
       `,
       onSave: async () => {
         try {
+          // 1. Quitar visualmente del DOM de forma instantánea
+          const cardEl = document.querySelector(`.maestro-card-modern[data-id="${maestro.id}"], [data-id="${maestro.id}"]`)?.closest('.col')
+          if (cardEl) {
+            cardEl.remove()
+          }
+
+          // 2. Ejecutar eliminación en base de datos
           await eliminarMaestro(maestro.id)
           
-          // 1. Actualización inmediata local
+          // 3. Actualización inmediata local
           state.maestros = state.maestros.filter((m) => m.id !== maestro.id)
           state.maestrosOriginales = state.maestrosOriginales.filter((m) => m.id !== maestro.id)
           applyFilters()
           showToast(`Maestro "${nombre}" eliminado permanentemente`, 'success')
 
-          // 2. Sincronización fresca con la base de datos en segundo plano
+          // 4. Sincronización fresca con la base de datos en segundo plano
           void obtenerMaestros().then((fresh) => {
             state.maestrosOriginales = fresh
             applyFilters()
@@ -1629,18 +1644,20 @@ async function evaluarYEliminarMaestro(maestro) {
 }
 
 function refreshTable() {
-  const tbody = currentContainer?.querySelector('#maestrosTBody')
-  if (!tbody) return
-  tbody.innerHTML = renderTableRows(state.maestros)
+  const container = getContainer()
+  const tbody = container?.querySelector('#maestrosTBody') || document.querySelector('#maestrosTBody')
+  if (tbody) {
+    tbody.innerHTML = renderTableRows(state.maestros)
+  }
 
   const totalMaestros = state.maestrosOriginales.length
   const totalActivos = state.maestrosOriginales.filter(a => a.is_active ?? true).length
   const totalConInstrumento = state.maestrosOriginales.filter(a => !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado').length
   const totalConWhatsapp = state.maestrosOriginales.filter(a => !!a.telefono && a.telefono.trim() !== '').length
 
-  const badgeActivos = currentContainer.querySelector('#badgeActivosMaestros')
-  const badgeCatedra = currentContainer.querySelector('#badgeCatedraMaestros')
-  const badgeWhatsapp = currentContainer.querySelector('#badgeWhatsappMaestros')
+  const badgeActivos = container?.querySelector('#badgeActivosMaestros') || document.querySelector('#badgeActivosMaestros')
+  const badgeCatedra = container?.querySelector('#badgeCatedraMaestros') || document.querySelector('#badgeCatedraMaestros')
+  const badgeWhatsapp = container?.querySelector('#badgeWhatsappMaestros') || document.querySelector('#badgeWhatsappMaestros')
   if (badgeActivos) badgeActivos.textContent = `${totalActivos}/${totalMaestros}`
   if (badgeCatedra) badgeCatedra.textContent = `${totalConInstrumento}`
   if (badgeWhatsapp) badgeWhatsapp.textContent = `${totalConWhatsapp}`

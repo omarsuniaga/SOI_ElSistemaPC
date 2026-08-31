@@ -3,7 +3,7 @@
     "id": "inscripcion",
     "intencion": "iniciar_inscripcion",
     "claves": ["inscribirme", "inscripcion", "inscripción", "postularme", "postulacion", "postulación", "formulario", "admision", "admisión", "quiero entrar", "ingreso", "cupo"],
-    "respuesta": "¡Hola! Bienvenido al proceso de inscripciones de El Sistema Punta Cana 🎶.\n\nPara iniciar tu postulación, por favor completa el siguiente formulario oficial con tus datos básicos:\n👉 Formulario: https://forms.gle/soi-inscripciones\n\n📺 Conoce más sobre nuestro proyecto educativo y musical aquí: https://youtu.be/soi-presentacion\n\nUna vez enviado el formulario, te contactaremos por este mismo medio para agendar tu cita presencial obligatoria."
+    "respuesta": "¡Hola! Gracias por tu interés en inscribirte a El Sistema Punta Cana 🎶.\n\nYa registramos tu solicitud. Un coordinador de admisiones te contactará por este mismo medio en las próximas 24 a 48 horas hábiles para darte los siguientes pasos y agendar tu cita presencial.\n\nMientras tanto, puedes ir preparando: copia del acta de nacimiento del niño/a, copia de la cédula del representante y 2 fotos 2x2."
   },
   {
     "id": "requisitos",

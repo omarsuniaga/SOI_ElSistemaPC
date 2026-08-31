@@ -9,6 +9,7 @@ import {
   previsualizarRetiroMaestro,
   retirarMaestroSeguro,
   reactivarMaestroSeguro,
+  inactivarMaestro,
   eliminarMaestro,
   validarEmail,
 } from '../api/maestrosApi.js'
@@ -1448,13 +1449,18 @@ function openDeleteModal(id) {
       size: 'md',
       saveText: '▶️ Reactivar Maestro',
       body: `
-        <p>El maestro <strong>${escapeHTML(nombre)}</strong> se encuentra actualmente <strong>inactivo</strong>.</p>
-        <p class="text-muted small">¿Qué acción deseas realizar?</p>
-        <div class="d-flex flex-column gap-2 mt-3">
-          <button class="btn btn-outline-danger btn-sm text-start p-2.5 rounded-3" id="btnEliminarDefinitivoModal">
-            <div class="fw-bold"><i class="bi bi-trash3-fill me-1"></i> Eliminar Definitivamente</div>
-            <div class="small opacity-75">Elimina de forma permanente la ficha y credenciales si no tiene clases activas.</div>
-          </button>
+        <div class="p-1">
+          <p>El maestro <strong>${escapeHTML(nombre)}</strong> se encuentra actualmente <strong>inactivo</strong>.</p>
+          <p class="text-muted small">¿Qué acción deseas realizar?</p>
+          <div class="d-flex flex-column gap-2 mt-3">
+            <button class="btn btn-outline-danger btn-sm text-start p-2.5 rounded-3 d-flex align-items-center justify-content-between" id="btnEliminarDefinitivoModal">
+              <div>
+                <div class="fw-bold"><i class="bi bi-trash3-fill me-1"></i> Eliminar Definitivamente</div>
+                <div class="small opacity-75">Elimina de forma permanente la ficha y credenciales si no tiene clases activas.</div>
+              </div>
+              <i class="bi bi-chevron-right flex-shrink-0 ms-2"></i>
+            </button>
+          </div>
         </div>
       `,
       onSave: async () => {
@@ -1462,7 +1468,7 @@ function openDeleteModal(id) {
           await reactivarMaestroSeguro(id)
           maestro.is_active = true
           applyFilters()
-          showToast('Maestro reactivado correctamente', 'success')
+          showToast(`Maestro "${nombre}" reactivado correctamente`, 'success')
         } catch (error) {
           showToast(error.message || 'No se pudo reactivar el maestro', 'error')
           return false
@@ -1470,11 +1476,10 @@ function openDeleteModal(id) {
       },
     })
 
-    // Handler para botón de eliminación permanente desde el modal de inactivo
     setTimeout(() => {
       document.getElementById('btnEliminarDefinitivoModal')?.addEventListener('click', () => {
         AppModal.close()
-        void evaluarYEliminarMaestro(maestro)
+        void ejecutarEliminacionFisicaOInactivar(maestro)
       })
     }, 100)
     return
@@ -1482,6 +1487,44 @@ function openDeleteModal(id) {
 
   // 2. Si está activo, evaluamos su carga académica
   void evaluarYEliminarMaestro(maestro)
+}
+
+async function ejecutarEliminacionFisicaOInactivar(maestro) {
+  const nombre = maestro.nombre || maestro.name || maestro.nombre_completo || 'Maestro'
+  const cardEl = document.querySelector(`.maestro-card-modern[data-id="${maestro.id}"], [data-id="${maestro.id}"]`)?.closest('.col')
+
+  try {
+    // 1. Intentar eliminación física permanente
+    await eliminarMaestro(maestro.id)
+    
+    if (cardEl) cardEl.remove()
+    state.maestros = state.maestros.filter((m) => m.id !== maestro.id)
+    state.maestrosOriginales = state.maestrosOriginales.filter((m) => m.id !== maestro.id)
+    applyFilters()
+    showToast(`Maestro "${nombre}" eliminado permanentemente`, 'success')
+
+    void obtenerMaestros().then((fresh) => {
+      state.maestrosOriginales = fresh
+      applyFilters()
+    }).catch((e) => console.debug('Sync background:', e))
+  } catch (error) {
+    console.warn(`No se pudo eliminar permanentemente a "${nombre}" (${error.message}). Procediendo con inactivación segura...`)
+    
+    // 2. Fallback automático: Inactivar de forma segura si la eliminación falla
+    try {
+      await inactivarMaestro(maestro.id, 'Inactivado por restricciones de historial')
+      maestro.is_active = false
+      applyFilters()
+      showToast(`No se pudo eliminar permanentemente por historial vinculado; el maestro "${nombre}" fue inactivado correctamente`, 'warning')
+
+      void obtenerMaestros().then((fresh) => {
+        state.maestrosOriginales = fresh
+        applyFilters()
+      }).catch((e) => console.debug('Sync background:', e))
+    } catch (inactErr) {
+      showToast(inactErr.message || 'No se pudo inactivar al maestro', 'error')
+    }
+  }
 }
 
 async function evaluarYEliminarMaestro(maestro) {
@@ -1506,68 +1549,72 @@ async function evaluarYEliminarMaestro(maestro) {
   const suplencias = Array.isArray(preview?.clases_suplente) ? preview.clases_suplente : []
   const totalClases = principales.length + suplencias.length
 
-  // CASO 1: NO TIENE CLASES ASIGNADAS (Carga Académica = 0) -> Eliminación limpia
+  // CASO 1: NO TIENE CLASES ASIGNADAS (Carga Académica = 0)
   if (totalClases === 0) {
     AppModal.open({
-      title: '🗑️ Eliminar Maestro',
+      title: '🗑️ Baja de Maestro',
       size: 'md',
-      saveText: 'Sí, eliminar permanentemente',
+      saveText: '🚫 Inactivar Maestro (Seguro)',
       body: `
         <div class="p-1">
           <div class="alert alert-success d-flex align-items-center gap-2.5 mb-3 py-2 px-3 rounded-3">
             <i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
             <div>
               <div class="fw-bold">Carga Académica: 0 clases asignadas</div>
-              <div class="small opacity-90">Este maestro no tiene alumnos ni clases a su cargo. Puede ser eliminado de forma segura.</div>
+              <div class="small opacity-90">Este maestro no tiene clases activas a su cargo.</div>
             </div>
           </div>
 
-          <p class="mb-2">¿Estás seguro de que deseas eliminar permanentemente a <strong>${escapeHTML(nombre)}</strong>?</p>
-          
           <div class="card bg-body-tertiary border-0 p-2.5 mb-3 rounded-3 small">
             <div><i class="bi bi-person me-1.5 text-muted"></i><strong>Nombre:</strong> ${escapeHTML(nombre)}</div>
             ${maestro.email ? `<div><i class="bi bi-envelope me-1.5 text-muted"></i><strong>Email:</strong> ${escapeHTML(maestro.email)}</div>` : ''}
             ${maestro.instrumento ? `<div><i class="bi bi-music-note me-1.5 text-muted"></i><strong>Cátedra:</strong> ${escapeHTML(maestro.instrumento)}</div>` : ''}
           </div>
 
-          <div class="text-danger small">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>
-            Esta acción eliminará de forma irreversible el registro del maestro, sus permisos y credenciales asociadas.
+          <div class="d-flex flex-column gap-2">
+            <div class="p-2.5 border rounded-3 bg-light-subtle">
+              <div class="fw-bold text-body"><i class="bi bi-pause-circle text-warning me-1.5"></i>Opción 1: Inactivar (Recomendado)</div>
+              <div class="small text-muted mt-1">Desactiva el acceso y permisos sin borrar el historial institucional.</div>
+            </div>
+
+            <button class="btn btn-outline-danger btn-sm text-start p-2.5 rounded-3 d-flex align-items-center justify-content-between" id="btnEliminarDefinitivoCeroCarga">
+              <div>
+                <div class="fw-bold"><i class="bi bi-trash3-fill me-1.5"></i>Opción 2: Eliminar Definitivamente</div>
+                <div class="small opacity-75">Intenta el borrado físico de la base de datos (se inactivará si posee historial).</div>
+              </div>
+              <i class="bi bi-chevron-right fs-6 flex-shrink-0 ms-2"></i>
+            </button>
           </div>
         </div>
       `,
       onSave: async () => {
         try {
-          // 1. Quitar visualmente del DOM de forma instantánea
-          const cardEl = document.querySelector(`.maestro-card-modern[data-id="${maestro.id}"], [data-id="${maestro.id}"]`)?.closest('.col')
-          if (cardEl) {
-            cardEl.remove()
-          }
-
-          // 2. Ejecutar eliminación en base de datos
-          await eliminarMaestro(maestro.id)
-          
-          // 3. Actualización inmediata local
-          state.maestros = state.maestros.filter((m) => m.id !== maestro.id)
-          state.maestrosOriginales = state.maestrosOriginales.filter((m) => m.id !== maestro.id)
+          await inactivarMaestro(maestro.id, 'Inactivado desde gestión de maestros')
+          maestro.is_active = false
           applyFilters()
-          showToast(`Maestro "${nombre}" eliminado permanentemente`, 'success')
+          showToast(`Maestro "${nombre}" inactivado correctamente`, 'success')
 
-          // 4. Sincronización fresca con la base de datos en segundo plano
           void obtenerMaestros().then((fresh) => {
             state.maestrosOriginales = fresh
             applyFilters()
           }).catch((e) => console.debug('Sync background:', e))
         } catch (error) {
-          showToast(error.message || 'No se pudo eliminar el maestro', 'error')
+          showToast(error.message || 'No se pudo inactivar el maestro', 'error')
           return false
         }
       },
     })
+
+    setTimeout(() => {
+      document.getElementById('btnEliminarDefinitivoCeroCarga')?.addEventListener('click', () => {
+        AppModal.close()
+        void ejecutarEliminacionFisicaOInactivar(maestro)
+      })
+    }, 100)
     return
   }
 
-  // CASO 2: TIENE CLASES ASIGNADAS (Carga Académica > 0) -> Transferir y Retirar
+  // CASO 2: TIENE CLASES ASIGNADAS (Carga Académica > 0) -> Transferir y Retirar, o Inactivar
   const replacementOptions = state.maestrosOriginales
     .filter((item) => item.id !== maestro.id && item.is_active !== false)
     .map(
@@ -1577,19 +1624,24 @@ async function evaluarYEliminarMaestro(maestro) {
     .join('')
 
   AppModal.open({
-    title: '⚠️ Carga Académica Activa — Transferencia Requerida',
+    title: '⚠️ Carga Académica Activa — Transferencia o Inactivación',
     size: 'lg',
     saveText: 'Transferir Clases y Retirar',
     body: `
       <div class="alert alert-warning mb-3">
         <div class="d-flex align-items-center gap-2 mb-1">
           <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
-          <strong>No se puede eliminar directamente: Carga académica detectada</strong>
+          <strong>Carga académica detectada: ${totalClases} clase(s)</strong>
         </div>
         <div class="small">
-          El maestro <strong>${escapeHTML(nombre)}</strong> tiene <strong>${totalClases} clase(s) asignada(s)</strong>.
-          Para no dejar a los alumnos sin docente ni romper la historia académica, debes reasignar las clases a un maestro de reemplazo o desvincularlas en el módulo de Clases.
+          El maestro <strong>${escapeHTML(nombre)}</strong> tiene clases asignadas. Puedes transferir sus clases a un suplente/reemplazo o inactivarlo directamente.
         </div>
+      </div>
+
+      <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-outline-warning btn-sm" id="btnInactivarDirectoConCarga">
+          <i class="bi bi-pause-circle me-1"></i> Inactivar maestro sin reasignar ahora
+        </button>
       </div>
 
       <h6 class="fw-bold mb-2 small text-uppercase text-muted">Clases Principales a Reasignar (${principales.length})</h6>
@@ -1645,6 +1697,25 @@ async function evaluarYEliminarMaestro(maestro) {
       }
     },
   })
+
+  setTimeout(() => {
+    document.getElementById('btnInactivarDirectoConCarga')?.addEventListener('click', async () => {
+      AppModal.close()
+      try {
+        await inactivarMaestro(maestro.id, 'Inactivado con carga académica pendiente')
+        maestro.is_active = false
+        applyFilters()
+        showToast(`Maestro "${nombre}" inactivado correctamente`, 'success')
+
+        void obtenerMaestros().then((fresh) => {
+          state.maestrosOriginales = fresh
+          applyFilters()
+        }).catch((e) => console.debug('Sync background:', e))
+      } catch (inactErr) {
+        showToast(inactErr.message || 'No se pudo inactivar el maestro', 'error')
+      }
+    })
+  }, 100)
 }
 
 function refreshTable() {

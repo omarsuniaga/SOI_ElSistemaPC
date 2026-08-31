@@ -135,21 +135,7 @@ export async function actualizarMaestro(id, actualizaciones) {
   return normalizeMaestro(data[0])
 }
 
-/**
- * Desactiva un maestro (soft delete) en lugar de eliminarlo
- * El maestro seguirá existiendo en la BD pero marcado como inactivo
- */
-export async function inactivarMaestro(id) {
-  const { error } = await supabase
-    .from('maestros')
-    .update({ activo: false })
-    .eq('id', id)
 
-  if (error) {
-    console.error('Error inactivando maestro:', error.message)
-    throw new Error('No se pudo desactivar el maestro')
-  }
-}
 
 /**
  * Reactiva un maestro previamente inactivado
@@ -197,6 +183,46 @@ export async function reactivarMaestroSeguro(id) {
   })
 
   if (error) throw new Error(error.message || 'No se pudo reactivar el maestro')
+}
+
+/**
+ * Inactiva un maestro de forma segura (soft delete / estado inactivo),
+ * revocando credenciales y permisos sin borrar el historial.
+ */
+export async function inactivarMaestro(id, motivo = 'Inactivado desde gestión de maestros') {
+  // 1. Intentar actualizar estado en tabla maestros
+  const { error: updErr } = await supabase
+    .from('maestros')
+    .update({
+      is_active: false,
+      estado: 'inactivo',
+      fecha_actualizacion: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  // 2. Desactivar credenciales de acceso maestro si existen
+  await supabase
+    .from('maestro_access_credentials')
+    .update({ is_active: false })
+    .eq('maestro_id', id)
+    .catch(() => {})
+
+  // 3. Desactivar permisos
+  await supabase
+    .from('permisos_maestros')
+    .update({ puede_planificar: false, puede_asistir: false })
+    .eq('maestro_id', id)
+    .catch(() => {})
+
+  if (updErr) {
+    // Fallback con solo is_active
+    const { error: err2 } = await supabase
+      .from('maestros')
+      .update({ is_active: false })
+      .eq('id', id)
+    if (err2) throw new Error(err2.message || 'No se pudo inactivar al maestro')
+  }
+  return true
 }
 
 /**

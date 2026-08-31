@@ -1,3 +1,0 @@
-src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > auditTrailWidget.js should not contain inline style="..." attributes in templates
-src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > dashboardMetricasView.js should not contain inline style="..." attributes in templates
-src/modules/metricas/__tests__/observabilidad-harden.test.js > PR2 — Task F: CSP compliance (no inline styles) > systemLogsWidget.js should not contain inline style="..." attributes in templates

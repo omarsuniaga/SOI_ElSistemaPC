@@ -421,10 +421,6 @@ function renderTableRows(maestros) {
 
             <!-- Barra Inferior de Acciones Operativas -->
             <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-end gap-1.5 mt-auto">
-              <button class="btn btn-sm btn-outline-primary maestro-action-btn" data-action="edit" data-id="${a.id}" title="Editar maestro">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-
               <button class="btn btn-sm btn-outline-info maestro-action-btn" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias">
                 <i class="bi bi-clock-history"></i>
               </button>

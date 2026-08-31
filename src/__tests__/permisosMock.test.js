@@ -33,12 +33,15 @@ import * as mockImpl from '../modules/permisos/api/permisosMock.js'
 
 describe('permisosMock CRUD', () => {
   describe('obtenerPermisos', () => {
-    it('should return all permisos', async () => {
+    it('should return the full teacher roster with permisos merged', async () => {
       const result = await mockImpl.obtenerPermisos()
       expect(Array.isArray(result)).toBe(true)
-      expect(result.length).toBe(2)
-      expect(result[0].maestro_id).toBe('maestro_001')
-      expect(result[1].maestro_id).toBe('maestro_002')
+      // obtenerPermisos ahora devuelve una fila por maestro del roster
+      // (mergePermisosRoster), no solo los que tienen permisos explícitos.
+      expect(result.length).toBe(4)
+      const ids = result.map(p => p.maestro_id)
+      expect(ids).toContain('maestro_001')
+      expect(ids).toContain('maestro_002')
     })
 
     it('should normalize permiso fields', async () => {

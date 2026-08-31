@@ -124,6 +124,7 @@ describe('Permiso Model', () => {
         maestro_email: 'carlos@ejemplo.com',
         puede_registrar_alumnos: true,
         puede_inscribir_clases: false,
+        puede_crear_clases: false,
         permisos: [],
         solicitudes: [],
         concedido_por: null,

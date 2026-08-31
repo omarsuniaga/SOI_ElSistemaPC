@@ -112,8 +112,10 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   _navAbortController = new AbortController()
 
   document.querySelector('.app-sidebar')?.remove()
+  document.querySelector('.app-mobile-header')?.remove()
   document.querySelector('.app-bottom-nav')?.remove()
   document.querySelector('.mobile-sub-sheet')?.remove()
+  document.querySelector('.mobile-sheet-backdrop')?.remove()
 
   if (!isAuthenticated) return
 
@@ -123,6 +125,28 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   const activeGroup = getGroupForRoute(profile.navGroups, currentRoute)
   const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark'
 
+  // 1. Barra Superior Móvil
+  const mobileHeader = document.createElement('header')
+  mobileHeader.className = 'app-mobile-header'
+  mobileHeader.innerHTML = `
+    <div class="mobile-header-brand" id="mobileHeaderBrand" title="${profile.brandText}">
+      <div class="mobile-header-icon"><i class="bi ${profile.brandIcon}"></i></div>
+      <span class="mobile-header-title">${profile.brandText}</span>
+    </div>
+    <div class="mobile-header-actions">
+      <button class="mobile-header-btn" id="mobileBtnHub" title="Hub de Portales Departamentales">
+        <i class="bi bi-grid-3x3-gap"></i>
+      </button>
+      <button class="mobile-header-btn" id="mobileBtnTheme" title="Cambiar tema">
+        <i class="bi ${isDark ? 'bi-sun-fill' : 'bi-moon-fill'}"></i>
+      </button>
+      <button class="mobile-header-btn danger" id="mobileBtnLogout" title="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+    </div>
+  `
+
+  // 2. Desktop Sidebar
   const sidebar = document.createElement('aside')
   sidebar.className = 'app-sidebar'
   sidebar.innerHTML = `
@@ -173,6 +197,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     </div>
   `
 
+  // 3. Barra Inferior Móvil (Bottom Navigation)
   const bottomNav = document.createElement('nav')
   bottomNav.className = 'app-bottom-nav'
   bottomNav.innerHTML = profile.navGroups
@@ -186,6 +211,10 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     )
     .join('')
 
+  // 4. Sub-Sheet y Backdrop
+  const backdrop = document.createElement('div')
+  backdrop.className = 'mobile-sheet-backdrop'
+
   const subSheet = document.createElement('div')
   subSheet.className = 'mobile-sub-sheet'
   subSheet.innerHTML = `
@@ -194,9 +223,11 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     <div class="sheet-items" id="sheetItems"></div>
   `
 
-  document.body.prepend(sidebar)
-  document.body.prepend(bottomNav)
+  document.body.prepend(backdrop)
   document.body.prepend(subSheet)
+  document.body.prepend(bottomNav)
+  document.body.prepend(mobileHeader)
+  document.body.prepend(sidebar)
 
   const { signal } = _navAbortController
 
@@ -234,6 +265,12 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     )
   })
 
+  const updateThemeIcons = () => {
+    const isDarkNow = document.documentElement.getAttribute('data-bs-theme') === 'dark'
+    sidebar.querySelector('#sidebarBtnTheme i')?.setAttribute('class', isDarkNow ? 'bi bi-sun-fill' : 'bi bi-moon-fill')
+    mobileHeader.querySelector('#mobileBtnTheme i')?.setAttribute('class', isDarkNow ? 'bi bi-sun-fill' : 'bi bi-moon-fill')
+  }
+
   sidebar.querySelector('#sidebarBtnHub')?.addEventListener(
     'click',
     (e) => {
@@ -243,23 +280,66 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     { signal },
   )
 
-  sidebar.querySelector('#sidebarBtnTheme').addEventListener(
+  sidebar.querySelector('#sidebarBtnTheme')?.addEventListener(
     'click',
     () => {
       toggleTheme()
-      const isDarkNow = document.documentElement.getAttribute('data-bs-theme') === 'dark'
-      sidebar.querySelector('#sidebarBtnTheme i').className = isDarkNow
-        ? 'bi bi-sun-fill'
-        : 'bi bi-moon-fill'
+      updateThemeIcons()
     },
     { signal },
   )
 
-  sidebar.querySelector('#sidebarBtnLogout').addEventListener(
+  sidebar.querySelector('#sidebarBtnLogout')?.addEventListener(
     'click',
     async () => {
-      await supabase.auth.signOut()
+      await supabase?.auth.signOut()
       window.location.reload()
+    },
+    { signal },
+  )
+
+  // Eventos de la Barra Superior Móvil
+  mobileHeader.querySelector('#mobileHeaderBrand')?.addEventListener(
+    'click',
+    () => {
+      router.navigate(profile.defaultRoute)
+    },
+    { signal },
+  )
+
+  mobileHeader.querySelector('#mobileBtnHub')?.addEventListener(
+    'click',
+    (e) => {
+      e.stopPropagation()
+      abrirModalConmutadorPortales()
+    },
+    { signal },
+  )
+
+  mobileHeader.querySelector('#mobileBtnTheme')?.addEventListener(
+    'click',
+    () => {
+      toggleTheme()
+      updateThemeIcons()
+    },
+    { signal },
+  )
+
+  mobileHeader.querySelector('#mobileBtnLogout')?.addEventListener(
+    'click',
+    async () => {
+      await supabase?.auth.signOut()
+      window.location.reload()
+    },
+    { signal },
+  )
+
+  // Backdrop: cerrar sub-sheet al tocar fuera
+  backdrop.addEventListener(
+    'click',
+    () => {
+      subSheet.classList.remove('open')
+      backdrop.classList.remove('open')
     },
     { signal },
   )
@@ -287,11 +367,13 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
 
     subSheet.dataset.group = groupId
     subSheet.classList.add('open')
+    backdrop.classList.add('open')
 
     itemsEl.querySelectorAll('.sheet-item').forEach((btn) => {
       btn.addEventListener('click', () => {
         router.navigate(btn.dataset.route)
         subSheet.classList.remove('open')
+        backdrop.classList.remove('open')
         bottomNav.querySelectorAll('.bottom-tab').forEach((t) =>
           t.classList.toggle('active', t.dataset.group === getGroupForRoute(profile.navGroups, btn.dataset.route)),
         )
@@ -304,6 +386,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
       const groupId = tab.dataset.group
       if (subSheet.classList.contains('open') && subSheet.dataset.group === groupId) {
         subSheet.classList.remove('open')
+        backdrop.classList.remove('open')
       } else {
         openSheet(groupId)
         bottomNav

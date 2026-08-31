@@ -352,6 +352,18 @@ function renderContent(container) {
 }
 
 
+function getAvatarClass(instrumento = '') {
+  const inst = (instrumento || '').toLowerCase()
+  if (inst.includes('viol') || inst.includes('cello') || inst.includes('bajo') || inst.includes('guitar') || inst.includes('arpa')) return 'avatar-color-strings'
+  if (inst.includes('flaut') || inst.includes('clarin') || inst.includes('oboe') || inst.includes('fagot') || inst.includes('sax')) return 'avatar-color-woodwinds'
+  if (inst.includes('tromp') || inst.includes('tromb') || inst.includes('corno') || inst.includes('tuba') || inst.includes('metal')) return 'avatar-color-brass'
+  if (inst.includes('pian') || inst.includes('tecl') || inst.includes('organ')) return 'avatar-color-keyboards'
+  if (inst.includes('perc') || inst.includes('bate') || inst.includes('timb')) return 'avatar-color-percussion'
+  if (inst.includes('cant') || inst.includes('coral') || inst.includes('voz')) return 'avatar-color-vocal'
+  if (inst.includes('teor') || inst.includes('solf') || inst.includes('direc') || inst.includes('comp')) return 'avatar-color-theory'
+  return ''
+}
+
 function renderTableRows(maestros) {
   if (!maestros.length) {
     return `
@@ -364,70 +376,91 @@ function renderTableRows(maestros) {
     .map((a) => {
       const nombre = a.nombre || a.name || '-'
       const isActive = a.is_active ?? true
-      const statusColor = isActive ? 'success' : 'secondary'
+      const avatarClass = getAvatarClass(a.instrumento)
+      const initials = getInitials(nombre)
+      const rawPhone = a.telefono ? a.telefono.replace(/\D/g, '') : null
 
       return `
-        <div class="col p-1">
-          <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer; padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+        <div class="col p-1.5">
+          <div class="card maestro-card-modern h-100 p-3 d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer;">
             
-            <!-- Parte Superior: Nombre, Instrumento/Cátedra y Contacto -->
-            <div class="mb-2">
-              
-              <!-- Nombre del Maestro -->
-              <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(nombre)}">
-                ${escapeHTML(nombre)}
-              </strong>
-
-              <!-- Chip de Cátedra / Instrumento -->
-              <div class="mb-2">
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;">
-                  <i class="bi bi-music-note-beamed me-1 text-primary"></i>${escapeHTML(a.instrumento || 'Sin cátedra')}
-                </span>
+            <!-- Encabezado de la Tarjeta: Avatar con iniciales, Nombre y Estado -->
+            <div class="d-flex align-items-start gap-2.5 mb-2.5">
+              <div class="maestro-avatar-circle ${avatarClass}" title="${escapeHTML(nombre)}">
+                ${initials}
               </div>
-
-              <!-- Datos de Contacto y Estado -->
-              <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                  <span class="text-truncate"><i class="bi bi-whatsapp me-1 text-success"></i>Tel:</span>
-                  <span class="fw-semibold text-body text-truncate" style="max-width: 110px;">${escapeHTML(a.telefono || 'Sin número')}</span>
+              <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                  <span class="badge ${isActive ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'} rounded-pill py-0.5 px-2 d-inline-flex align-items-center gap-1" style="font-size: 0.68rem;">
+                    ${isActive ? '<span class="status-dot-pulse bg-success"></span> Activo' : 'Inactivo'}
+                  </span>
+                  ${rawPhone ? `
+                    <a href="https://wa.me/${rawPhone}" target="_blank" rel="noopener" class="text-success small p-0 lh-1" title="Chatear por WhatsApp" onclick="event.stopPropagation();">
+                      <i class="bi bi-whatsapp"></i>
+                    </a>
+                  ` : ''}
                 </div>
-
-                <div class="d-flex align-items-center justify-content-between">
-                  <span class="text-truncate"><i class="bi bi-envelope me-1 text-muted"></i>Email:</span>
-                  <span class="text-body text-truncate" style="max-width: 110px;" title="${escapeHTML(a.email || '')}">${escapeHTML(a.email || '-')}</span>
-                </div>
+                <h6 class="maestro-card-name text-truncate mb-0" title="${escapeHTML(nombre)}">
+                  ${escapeHTML(nombre)}
+                </h6>
               </div>
             </div>
 
-            <!-- Barra Inferior de Acciones Contextuales -->
-            <div class="pt-2 border-top d-flex align-items-center justify-content-between gap-1 mt-auto">
-              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-1.5 fw-semibold" data-action="edit" data-id="${a.id}" title="Editar maestro" style="font-size:0.75rem;">
+            <!-- Sección Media: Cátedra Principal y Datos de Contacto -->
+            <div class="mb-3">
+              <div class="mb-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 text-truncate w-100 text-start d-flex align-items-center gap-1.5 rounded-3" style="font-size: 0.76rem;" title="Cátedra: ${escapeHTML(a.instrumento || 'Sin cátedra asignada')}">
+                  <i class="bi bi-music-note-beamed text-primary flex-shrink-0"></i>
+                  <span class="text-truncate fw-semibold">${escapeHTML(a.instrumento || 'Sin cátedra asignada')}</span>
+                </span>
+              </div>
+
+              <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
+                ${a.telefono ? `
+                  <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-muted"><i class="bi bi-telephone me-1.5 text-secondary"></i>Teléfono:</span>
+                    <span class="fw-medium text-body text-truncate" style="max-width: 120px;">${escapeHTML(a.telefono)}</span>
+                  </div>
+                ` : `
+                  <div class="d-flex align-items-center justify-content-between text-muted opacity-75">
+                    <span><i class="bi bi-telephone me-1.5"></i>Teléfono:</span>
+                    <span class="fst-italic">No registrado</span>
+                  </div>
+                `}
+
+                ${a.email ? `
+                  <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-muted"><i class="bi bi-envelope me-1.5 text-secondary"></i>Email:</span>
+                    <span class="text-body text-truncate" style="max-width: 120px;" title="${escapeHTML(a.email)}">${escapeHTML(a.email)}</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Barra Inferior de Acciones Operativas -->
+            <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-between gap-1.5 mt-auto">
+              <button class="btn btn-sm btn-outline-primary maestro-action-btn d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2" data-action="edit" data-id="${a.id}" title="Editar ficha del maestro">
                 <i class="bi bi-pencil-square me-1"></i>
                 <span>Editar</span>
               </button>
 
-              <button class="btn btn-xs btn-outline-info rounded-3 shadow-xs d-flex align-items-center justify-content-center btn-maestro-historico py-1 px-2" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias" style="font-size:0.75rem;">
+              <button class="btn btn-sm btn-outline-info maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="historico" data-id="${a.id}" title="Histórico de Clases y Asistencias">
                 <i class="bi bi-clock-history"></i>
               </button>
 
-              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center btn-maestro-pdf py-1 px-2" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF" style="font-size:0.75rem;">
+              <button class="btn btn-sm btn-outline-secondary maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="pdf" data-id="${a.id}" title="Descargar Ficha PDF">
                 <i class="bi bi-file-earmark-pdf"></i>
               </button>
 
-              ${a.telefono ? `
-                <button class="btn btn-xs btn-outline-success rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="font-size:0.75rem;" ${!isActive ? 'disabled' : ''}>
+              ${rawPhone ? `
+                <button class="btn btn-sm btn-outline-success maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="whatsapp" data-id="${a.id}" title="Enviar mensaje WhatsApp" ${!isActive ? 'disabled' : ''}>
                   <i class="bi bi-whatsapp"></i>
                 </button>
               ` : ''}
 
-              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="${isActive ? 'Inactivar maestro' : 'Eliminar'}" style="font-size:0.75rem;">
+              <button class="btn btn-sm btn-outline-danger maestro-action-btn d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="${isActive ? 'Inactivar maestro' : 'Eliminar'}">
                 <i class="bi bi-trash"></i>
               </button>
-            </div>
-
-            <!-- Borde Inferior Sutil como Barra de Estado Operativo -->
-            <div class="position-absolute bottom-0 start-0 end-0 bg-body-tertiary" style="height: 3.5px;" title="${isActive ? 'Maestro activo' : 'Maestro inactivo'}">
-              <div class="h-100 bg-${statusColor}" style="width: 100%;"></div>
             </div>
 
           </div>
@@ -519,7 +552,7 @@ function attachEvents(container) {
       return
     }
 
-    const card = e.target.closest('.list-group-item[data-id]')
+    const card = e.target.closest('.maestro-card-modern[data-id], .list-group-item[data-id]')
     if (card) {
       openViewModal(card.dataset.id)
     }

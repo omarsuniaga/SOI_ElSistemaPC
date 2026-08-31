@@ -277,6 +277,110 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────── */
+/* MODERN MAESTRO CARD SYSTEM (V3)                                         */
+/* ──────────────────────────────────────────────────────────────────────── */
+
+.maestro-card-modern {
+  border-radius: 16px !important;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease !important;
+  background: var(--bs-card-bg, #ffffff) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-bs-theme="dark"] .maestro-card-modern {
+  background: #1e2430 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.maestro-card-modern:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(0, 122, 255, 0.35) !important;
+}
+
+[data-bs-theme="dark"] .maestro-card-modern:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5) !important;
+  border-color: rgba(64, 158, 255, 0.45) !important;
+}
+
+/* Avatar con Degradado */
+.maestro-avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #007aff, #0056b3);
+  box-shadow: 0 3px 8px rgba(0, 122, 255, 0.25);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.maestro-card-modern:hover .maestro-avatar-circle {
+  transform: scale(1.06);
+}
+
+.avatar-color-strings { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.avatar-color-woodwinds { background: linear-gradient(135deg, #06b6d4, #0e7490); }
+.avatar-color-brass { background: linear-gradient(135deg, #f59e0b, #b45309); }
+.avatar-color-keyboards { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.avatar-color-percussion { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.avatar-color-vocal { background: linear-gradient(135deg, #ec4899, #be185d); }
+.avatar-color-theory { background: linear-gradient(135deg, #10b981, #047857); }
+
+/* Status Pulse Dot */
+.status-dot-pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.status-dot-pulse.bg-success {
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+  70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.maestro-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--bs-body-color);
+  line-height: 1.25;
+}
+
+.maestro-action-btn {
+  border-radius: 9px !important;
+  font-size: 0.78rem !important;
+  padding: 0.35rem 0.6rem !important;
+  font-weight: 600 !important;
+  transition: all 0.15s ease !important;
+}
+
+.maestro-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.maestro-action-btn:active {
+  transform: scale(0.94);
+}
+
+/* ──────────────────────────────────────────────────────────────────────── */
 /* RESPONSIVE LAYOUT (Mobile & Tablet)                                     */
 /* ──────────────────────────────────────────────────────────────────────── */
 
@@ -328,12 +432,6 @@
 
   .list-group-item {
     padding: 0.75rem 0.85rem !important;
-  }
-
-  .list-group-item .d-flex.justify-content-between {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 0.5rem;
   }
 }
 

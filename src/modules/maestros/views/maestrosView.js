@@ -352,18 +352,6 @@ function renderContent(container) {
 }
 
 
-function getAvatarClass(instrumento = '') {
-  const inst = (instrumento || '').toLowerCase()
-  if (inst.includes('viol') || inst.includes('cello') || inst.includes('bajo') || inst.includes('guitar') || inst.includes('arpa')) return 'avatar-color-strings'
-  if (inst.includes('flaut') || inst.includes('clarin') || inst.includes('oboe') || inst.includes('fagot') || inst.includes('sax')) return 'avatar-color-woodwinds'
-  if (inst.includes('tromp') || inst.includes('tromb') || inst.includes('corno') || inst.includes('tuba') || inst.includes('metal')) return 'avatar-color-brass'
-  if (inst.includes('pian') || inst.includes('tecl') || inst.includes('organ')) return 'avatar-color-keyboards'
-  if (inst.includes('perc') || inst.includes('bate') || inst.includes('timb')) return 'avatar-color-percussion'
-  if (inst.includes('cant') || inst.includes('coral') || inst.includes('voz')) return 'avatar-color-vocal'
-  if (inst.includes('teor') || inst.includes('solf') || inst.includes('direc') || inst.includes('comp')) return 'avatar-color-theory'
-  return ''
-}
-
 function renderTableRows(maestros) {
   if (!maestros.length) {
     return `
@@ -376,34 +364,27 @@ function renderTableRows(maestros) {
     .map((a) => {
       const nombre = a.nombre || a.name || '-'
       const isActive = a.is_active ?? true
-      const avatarClass = getAvatarClass(a.instrumento)
-      const initials = getInitials(nombre)
       const rawPhone = a.telefono ? a.telefono.replace(/\D/g, '') : null
 
       return `
         <div class="col p-1.5">
           <div class="card maestro-card-modern h-100 p-3 d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer;">
             
-            <!-- Encabezado de la Tarjeta: Avatar con iniciales, Nombre y Estado -->
-            <div class="d-flex align-items-start gap-2.5 mb-2.5">
-              <div class="maestro-avatar-circle ${avatarClass}" title="${escapeHTML(nombre)}">
-                ${initials}
+            <!-- Encabezado de la Tarjeta: Estado, WhatsApp y Nombre -->
+            <div class="mb-2.5">
+              <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
+                <span class="badge ${isActive ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'} rounded-pill py-0.5 px-2 d-inline-flex align-items-center gap-1" style="font-size: 0.68rem;">
+                  ${isActive ? '<span class="status-dot-pulse bg-success"></span> Activo' : 'Inactivo'}
+                </span>
+                ${rawPhone ? `
+                  <a href="https://wa.me/${rawPhone}" target="_blank" rel="noopener" class="text-success small p-0 lh-1" title="Chatear por WhatsApp" onclick="event.stopPropagation();">
+                    <i class="bi bi-whatsapp fs-6"></i>
+                  </a>
+                ` : ''}
               </div>
-              <div class="flex-grow-1 min-w-0">
-                <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
-                  <span class="badge ${isActive ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'} rounded-pill py-0.5 px-2 d-inline-flex align-items-center gap-1" style="font-size: 0.68rem;">
-                    ${isActive ? '<span class="status-dot-pulse bg-success"></span> Activo' : 'Inactivo'}
-                  </span>
-                  ${rawPhone ? `
-                    <a href="https://wa.me/${rawPhone}" target="_blank" rel="noopener" class="text-success small p-0 lh-1" title="Chatear por WhatsApp" onclick="event.stopPropagation();">
-                      <i class="bi bi-whatsapp"></i>
-                    </a>
-                  ` : ''}
-                </div>
-                <h6 class="maestro-card-name text-truncate mb-0" title="${escapeHTML(nombre)}">
-                  ${escapeHTML(nombre)}
-                </h6>
-              </div>
+              <h6 class="maestro-card-name text-truncate mb-0" title="${escapeHTML(nombre)}">
+                ${escapeHTML(nombre)}
+              </h6>
             </div>
 
             <!-- Sección Media: Cátedra Principal y Datos de Contacto -->

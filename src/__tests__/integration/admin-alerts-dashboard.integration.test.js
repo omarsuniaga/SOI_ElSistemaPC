@@ -7,8 +7,10 @@ describe('Admin Alerts + Dashboard Integration', () => {
 
   it('should verify admin maestro API has critical maestros function', async () => {
     const adminMaestroApi = await import('../../modules/admin-dashboard/api/adminMaestroApi.js')
+    const adminReportingApi = await import('../../modules/admin-dashboard/api/adminReportingApi.js')
 
-    expect(typeof adminMaestroApi.getCriticalMaestros).toBe('function')
+    // "maestros críticos" se movió a adminReportingApi.getCriticalMaestrosReport
+    expect(typeof adminReportingApi.getCriticalMaestrosReport).toBe('function')
     expect(typeof adminMaestroApi.getMaestrosComplianceStatus).toBe('function')
     expect(typeof adminMaestroApi.getMaestroPendingRegistros).toBe('function')
   })

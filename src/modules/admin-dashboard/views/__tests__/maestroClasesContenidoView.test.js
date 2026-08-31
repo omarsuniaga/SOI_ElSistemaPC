@@ -53,6 +53,11 @@ vi.mock('../../../../core/router/router.js', () => ({
   router: { navigate: (...args) => mockNavigate(...args) },
 }))
 
+const mockDescargarPdfHistoricoMaestro = vi.fn()
+vi.mock('../../../maestros/domain/generarPdfHistoricoMaestro.js', () => ({
+  descargarPdfHistoricoMaestro: (...args) => mockDescargarPdfHistoricoMaestro(...args),
+}))
+
 import { MaestroClasesContenidoView } from '../maestroClasesContenidoView.js'
 
 const CLASES = [
@@ -253,11 +258,13 @@ describe('MaestroClasesContenidoView', () => {
     const btn = [...container.querySelectorAll('.btn-pdf-clase')].find((b) => b.dataset.claseId === 'clase-2')
     btn.click()
 
-    const [sesionesArg, contexto] = mockGenerateRangeReportHTML.mock.calls[0]
+    // El botón por clase ahora genera el PDF vía descargarPdfHistoricoMaestro
+    // (maestro, sesionesDeEsaClase, { rangoLabel, claseLabel }).
+    const [maestroArg, sesionesArg, contexto] = mockDescargarPdfHistoricoMaestro.mock.calls[0]
+    expect(maestroArg.id).toBe('maestro-1')
     expect(sesionesArg).toHaveLength(1)
     expect(sesionesArg[0].contenido).toBe('contenido-cello')
     expect(contexto.claseLabel).toBe('Cello 201')
-    expect(mockOpenReport).toHaveBeenCalledOnce()
   })
 
   it('el reporte institucional completo incluye todas las clases visibles', async () => {

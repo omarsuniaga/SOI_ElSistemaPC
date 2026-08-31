@@ -6,12 +6,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.en
 /** @returns {import('@supabase/supabase-js').SupabaseClient | null} */
 function createSupabaseClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (import.meta.env.MODE === 'test' || import.meta.env.MODE === 'production') {
-      return null
-    }
-    throw new Error(
-      'Faltan variables de entorno de Supabase. Defini VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env.local, y reinicia el servidor de Vite.',
+    console.warn(
+      '[supabaseClient] Variables de entorno de Supabase no detectadas. Operando con adaptadores/mock.',
     )
+    return null
   }
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {

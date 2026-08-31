@@ -59,6 +59,7 @@ export class ReporteSemestralView {
     const ausencias = Array.isArray(d?.ranking_ausencias) ? d.ranking_ausencias : []
     const causas = Array.isArray(d?.causas_justificaciones) ? d.causas_justificaciones : []
     const retencion = Array.isArray(d?.retencion_por_catedra) ? d.retencion_por_catedra : []
+    const docentes = Array.isArray(d?.evaluacion_docente) ? d.evaluacion_docente : []
     const destacados = Array.isArray(d?.alumnos_destacados) ? d.alumnos_destacados : []
     const audicionesRealizadas = Boolean(d?.audiciones_realizadas)
 

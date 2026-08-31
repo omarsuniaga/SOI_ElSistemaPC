@@ -341,7 +341,7 @@ function _renderStudentMatrix(container, evaluaciones) {
                 <td class="text-center">${reprobados > 0 ? `<span class="badge bg-danger-subtle text-danger">${reprobados}</span>` : '<span class="text-muted">—</span>'}</td>
                 <td class="text-center">${pendientes > 0 ? `<span class="badge bg-secondary-subtle text-secondary">${pendientes}</span>` : '<span class="text-muted">—</span>'}</td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary btn-ver-detalle-alumno" data-student-id="${e.student_id}" title="Ver detalle">
+                  <button class="btn btn-sm btn-outline-primary btn-ver-detalle-alumno" data-student-id="${s.student_id}" title="Ver detalle">
                     <i class="bi bi-eye"></i>
                   </button>
                 </td>

@@ -89,7 +89,7 @@ describe('RutaPedagogicaView', () => {
       hide: vi.fn(),
       dispose: vi.fn(),
     }
-    global.bootstrap = {
+    globalThis.bootstrap = {
       Modal: class {
         constructor() {
           return mockModalInstance

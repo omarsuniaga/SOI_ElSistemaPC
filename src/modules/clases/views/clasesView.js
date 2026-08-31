@@ -104,7 +104,12 @@ export async function renderClasesView(container, params = {}) {
     if (params?.selectedId) {
       const clase = state.clasesOriginales.find(c => c.id === params.selectedId)
       if (clase) {
-        openClasePerfilModal(clase)
+        openClaseModal(clase, {
+          onSuccess: () => renderClasesView(state.container),
+          onSaved: () => renderClasesView(state.container),
+          maestros: state.maestros,
+          salones: state.salones,
+        })
       } else {
         AppToast.error('No se encontró la clase solicitada')
       }

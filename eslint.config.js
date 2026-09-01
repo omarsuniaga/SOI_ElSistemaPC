@@ -34,6 +34,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', '*.config.*'],
+    ignores: ['dist/', 'node_modules/', 'coverage/', '*.config.*', 'public/signage/**'],
   },
 ]

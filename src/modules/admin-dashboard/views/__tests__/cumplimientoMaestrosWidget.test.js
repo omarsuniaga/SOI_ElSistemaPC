@@ -260,4 +260,71 @@ describe('CumplimientoMaestrosWidget — propagación del rango al detalle de ma
     const llamada = mockNavigate.mock.calls.find((c) => c[0] === 'admin-maestro-detalle')
     expect(llamada[1]).not.toEqual({ id: 'maestro-1', desde: '2026-08-17', hasta: '2026-08-23' })
   })
+
+  it('permite filtrar la lista por un rango de fechas personalizado', async () => {
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'personalizado'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+
+    const containerCustom = container.querySelector('#containerRangoPersonalizado')
+    expect(containerCustom).toBeTruthy()
+    expect(containerCustom.classList.contains('d-flex')).toBe(true)
+
+    container.querySelector('#inputCustomDesde').value = '2026-06-01'
+    container.querySelector('#inputCustomHasta').value = '2026-06-30'
+
+    container.querySelector('#btnAplicarRangoPersonalizado').click()
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(mockGetMaestrosComplianceStatus).toHaveBeenCalledWith({
+      desde: '2026-06-01',
+      hasta: '2026-06-30',
+    })
+
+    // Al hacer click en ver detalle, viaja con el rango personalizado aplicado
+    container.querySelector('.btn-detalle').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(mockNavigate).toHaveBeenCalledWith('admin-maestro-detalle', {
+      id: 'maestro-1',
+      desde: '2026-06-01',
+      hasta: '2026-06-30',
+    })
+  })
+
+  it('valida que la fecha desde no sea posterior a hasta en rango personalizado', async () => {
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'personalizado'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+
+    container.querySelector('#inputCustomDesde').value = '2026-07-20'
+    container.querySelector('#inputCustomHasta').value = '2026-07-10'
+
+    container.querySelector('#btnAplicarRangoPersonalizado').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(mockAppToast.error).toHaveBeenCalledWith("La fecha 'Desde' no puede ser posterior a 'Hasta'")
+  })
+
+  it('el botón limpiar restablece el período a la semana actual', async () => {
+    const widget = await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'personalizado'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    container.querySelector('#inputCustomDesde').value = '2026-06-01'
+    container.querySelector('#inputCustomHasta').value = '2026-06-30'
+    container.querySelector('#btnAplicarRangoPersonalizado').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(widget.currentRango).toBe('personalizado')
+
+    container.querySelector('#btnLimpiarFiltrosMaestros').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(widget.currentRango).toBe('semana_actual')
+  })
 })
+

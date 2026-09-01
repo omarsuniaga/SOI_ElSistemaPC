@@ -82,6 +82,19 @@ export class CumplimientoMaestrosWidget {
     if (this.currentRango === "semana_actual") {
       return getSemanaActualSantoDomingo()
     }
+
+    // Semana anterior (Lunes a Domingo previo)
+    if (this.currentRango === "semana_anterior") {
+      const sem = getSemanaActualSantoDomingo()
+      const lunesSemana = new Date(`${sem.desde}T12:00:00Z`)
+      lunesSemana.setUTCDate(lunesSemana.getUTCDate() - 7)
+      const domingoSemana = new Date(lunesSemana)
+      domingoSemana.setUTCDate(domingoSemana.getUTCDate() + 6)
+      return {
+        desde: lunesSemana.toISOString().split("T")[0],
+        hasta: domingoSemana.toISOString().split("T")[0],
+      }
+    }
     
     // Rango 14 días (2 semanas)
     if (this.currentRango === "ultimas_2_semanas") {
@@ -92,6 +105,33 @@ export class CumplimientoMaestrosWidget {
         desde: lunesSemana.toISOString().split("T")[0],
         hasta: sem.hasta,
       }
+    }
+
+    // 1ra Quincena del mes en curso (1 al 15)
+    if (this.currentRango === "quincena_1_actual") {
+      const ahora = new Date()
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santo_Domingo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      const [y, m] = formatter.format(ahora).split("-")
+      return { desde: `${y}-${m}-01`, hasta: `${y}-${m}-15` }
+    }
+
+    // 2da Quincena del mes en curso (16 a fin de mes)
+    if (this.currentRango === "quincena_2_actual") {
+      const ahora = new Date()
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santo_Domingo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      const [y, m] = formatter.format(ahora).split("-")
+      const ultimoDiaNum = new Date(Number(y), Number(m), 0).getDate()
+      return { desde: `${y}-${m}-16`, hasta: `${y}-${m}-${String(ultimoDiaNum).padStart(2, "0")}` }
     }
 
     // Mes en curso AST
@@ -108,6 +148,34 @@ export class CumplimientoMaestrosWidget {
       const ultimoDiaNum = new Date(Number(y), Number(m), 0).getDate()
       const ultimoDia = `${y}-${m}-${String(ultimoDiaNum).padStart(2, "0")}`
       return { desde: primerDia, hasta: ultimoDia }
+    }
+
+    // Mes anterior AST
+    if (this.currentRango === "mes_anterior") {
+      const ahora = new Date()
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santo_Domingo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      const [y, m] = formatter.format(ahora).split("-")
+      const prevDate = new Date(Number(y), Number(m) - 2, 1)
+      const prevYear = prevDate.getFullYear()
+      const prevMonth = String(prevDate.getMonth() + 1).padStart(2, "0")
+      const ultimoDiaPrev = new Date(prevYear, Number(prevMonth), 0).getDate()
+      return {
+        desde: `${prevYear}-${prevMonth}-01`,
+        hasta: `${prevYear}-${prevMonth}-${String(ultimoDiaPrev).padStart(2, "0")}`,
+      }
+    }
+
+    // Rango personalizado explícito
+    if (this.currentRango === "personalizado" && this.customDates?.desde && this.customDates?.hasta) {
+      return {
+        desde: this.customDates.desde,
+        hasta: this.customDates.hasta,
+      }
     }
 
     return getSemanaActualSantoDomingo()
@@ -230,6 +298,7 @@ export class CumplimientoMaestrosWidget {
     const countPendientes = this.maestros.filter(m => m.estado === "pendiente").length
     const countVencidas = this.maestros.filter(m => m.estado === "vencida").length
     const totalClasesEnRango = this.maestros.reduce((acc, m) => acc + (m.totalSesiones || 0), 0)
+    const semanaActual = getSemanaActualSantoDomingo()
 
     const especialidades = Array.from(
       new Set(this.maestros.map(m => m.maestros?.especialidad).filter(Boolean))
@@ -263,8 +332,8 @@ export class CumplimientoMaestrosWidget {
                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Docentes con clases vencidas (>7 días)">
                   <i class="bi bi-exclamation-octagon-fill me-1"></i><span>${countVencidas}</span> Vencidas
                 </span>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Total de clases programadas en el rango activo">
-                  <i class="bi bi-calendar3 me-1"></i><span>${totalClasesEnRango}</span> Clases en Rango
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Rango activo consultado: ${this.customDates.desde} al ${this.customDates.hasta}">
+                  <i class="bi bi-calendar3 me-1"></i><span>${totalClasesEnRango}</span> Clases (${this.customDates.desde} a ${this.customDates.hasta})
                 </span>
               </div>
             </div>
@@ -291,9 +360,9 @@ export class CumplimientoMaestrosWidget {
             </div>
           </div>
 
-          <!-- Fila 2: Búsqueda, Selector de Rango y Botón Desplegable de Filtros -->
+          <!-- Fila 2: Búsqueda, Selector de Rango, Controles Personalizados y Filtros -->
           <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
-            <div class="flex-grow-1" style="min-width: 240px;">
+            <div class="flex-grow-1" style="min-width: 220px;">
               <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
                 <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="searchMaestro" placeholder="Buscar maestro por nombre o especialidad..." value="${escapeHTML(this.currentFilter.search || "")}" autocomplete="off" style="font-size:0.8rem;">
@@ -301,15 +370,36 @@ export class CumplimientoMaestrosWidget {
             </div>
 
             <!-- Selector de Período / Rango -->
-            <div style="min-width: 220px;">
+            <div style="min-width: 210px;">
               <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
                 <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-calendar3 text-primary"></i></span>
                 <select id="selectRangoFechas" class="form-select border-start-0 py-1.5 fw-medium" style="font-size:0.8rem;">
-                  <option value="semana_actual" ${this.currentRango === "semana_actual" ? "selected" : ""}>Esta Semana (${this.customDates.desde} a ${this.customDates.hasta})</option>
+                  <option value="semana_actual" ${this.currentRango === "semana_actual" ? "selected" : ""}>Esta Semana (${semanaActual.desde} a ${semanaActual.hasta})</option>
+                  <option value="semana_anterior" ${this.currentRango === "semana_anterior" ? "selected" : ""}>Semana Anterior</option>
                   <option value="ultimas_2_semanas" ${this.currentRango === "ultimas_2_semanas" ? "selected" : ""}>Últimas 2 Semanas</option>
+                  <option value="quincena_1_actual" ${this.currentRango === "quincena_1_actual" ? "selected" : ""}>1ra Quincena (1-15)</option>
+                  <option value="quincena_2_actual" ${this.currentRango === "quincena_2_actual" ? "selected" : ""}>2da Quincena (16-Fin)</option>
                   <option value="mes_actual" ${this.currentRango === "mes_actual" ? "selected" : ""}>Mes en Curso</option>
+                  <option value="mes_anterior" ${this.currentRango === "mes_anterior" ? "selected" : ""}>Mes Anterior</option>
+                  <option value="personalizado" ${this.currentRango === "personalizado" ? "selected" : ""}>📅 Rango Personalizado...</option>
                 </select>
               </div>
+            </div>
+
+            <!-- Controles de Rango Personalizado (Desde / Hasta / Aplicar) -->
+            <div id="containerRangoPersonalizado" class="${this.currentRango === "personalizado" ? "d-flex" : "d-none"} align-items-center gap-1.5 flex-wrap">
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden" style="max-width: 145px;">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1 px-2 text-muted fw-semibold" style="font-size:0.72rem;">Desde</span>
+                <input type="date" id="inputCustomDesde" class="form-control border-start-0 py-1 px-2 fw-medium" value="${this.customDates.desde}" style="font-size:0.78rem;">
+              </div>
+              <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden" style="max-width: 145px;">
+                <span class="input-group-text bg-body-tertiary border-end-0 py-1 px-2 text-muted fw-semibold" style="font-size:0.72rem;">Hasta</span>
+                <input type="date" id="inputCustomHasta" class="form-control border-start-0 py-1 px-2 fw-medium" value="${this.customDates.hasta}" style="font-size:0.78rem;">
+              </div>
+              <button id="btnAplicarRangoPersonalizado" class="btn btn-sm btn-primary rounded-3 shadow-xs px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" style="font-size:0.78rem;" title="Aplicar rango personalizado de fechas">
+                <i class="bi bi-calendar-check-fill"></i>
+                <span>Filtrar</span>
+              </button>
             </div>
 
             <div class="d-flex align-items-center" style="gap: 0.85rem;">
@@ -372,9 +462,9 @@ export class CumplimientoMaestrosWidget {
 
         ${this.reportePanelOpen ? this.renderReportePanel() : ""}
 
-        <!-- Contenedor de Cuadrícula de Cumplimiento (Estructura Salones responsive) -->
+        <!-- Contenedor de Cuadrícula de Cumplimiento (Estructura Salones responsive - 4 columnas en desktop) -->
         <div class="w-100">
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0" id="maestrosGridBody">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2.5 w-100 m-0" id="maestrosGridBody">
             ${this.renderGridItemsHTML()}
           </div>
         </div>
@@ -570,12 +660,47 @@ export class CumplimientoMaestrosWidget {
       this.applyFilter({ search: e.target.value.trim() })
     })
 
-    // Rango de fechas
+    // Selector de rango de fechas
     selectRangoFechas?.addEventListener("change", async (e) => {
-      this.currentRango = e.target.value
+      const val = e.target.value
+      this.currentRango = val
+      if (val === "personalizado") {
+        const containerCustom = this.container.querySelector("#containerRangoPersonalizado")
+        if (containerCustom) {
+          containerCustom.classList.remove("d-none")
+          containerCustom.classList.add("d-flex")
+        }
+      } else {
+        await this.loadData()
+        this.render()
+        this.attachEventListeners()
+      }
+    })
+
+    // Botón para aplicar rango personalizado
+    const btnAplicarCustom = this.container.querySelector("#btnAplicarRangoPersonalizado")
+    const inputCustomDesde = this.container.querySelector("#inputCustomDesde")
+    const inputCustomHasta = this.container.querySelector("#inputCustomHasta")
+
+    btnAplicarCustom?.addEventListener("click", async () => {
+      const desdeVal = inputCustomDesde?.value
+      const hastaVal = inputCustomHasta?.value
+
+      if (!desdeVal || !hastaVal) {
+        AppToast.error("Debe especificar ambas fechas")
+        return
+      }
+      if (desdeVal > hastaVal) {
+        AppToast.error("La fecha 'Desde' no puede ser posterior a 'Hasta'")
+        return
+      }
+
+      this.currentRango = "personalizado"
+      this.customDates = { desde: desdeVal, hasta: hastaVal }
       await this.loadData()
       this.render()
       this.attachEventListeners()
+      AppToast.show(`Filtro aplicado: ${desdeVal} al ${hastaVal}`)
     })
 
     // Toggle Filtros
@@ -588,8 +713,8 @@ export class CumplimientoMaestrosWidget {
       }
     })
 
-    // Limpiar
-    btnLimpiar?.addEventListener("click", () => {
+    // Limpiar filtros y restablecer período
+    btnLimpiar?.addEventListener("click", async () => {
       if (searchInput) searchInput.value = ""
       if (filterEstado) filterEstado.value = ""
       if (filterEspecialidad) filterEspecialidad.value = ""
@@ -598,12 +723,11 @@ export class CumplimientoMaestrosWidget {
       const badgeCount = this.container.querySelector("#filtrosBadgeCountMaestros")
       if (badgeCount) badgeCount.classList.add("d-none")
 
-      this.applyFilter({
-        estado: null,
-        especialidad: "",
-        search: "",
-        sort: "nombre_asc",
-      })
+      this.currentRango = "semana_actual"
+      this.customDates = getSemanaActualSantoDomingo()
+      await this.loadData()
+      this.render()
+      this.attachEventListeners()
     })
 
     // Filtros internos

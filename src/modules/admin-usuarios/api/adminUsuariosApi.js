@@ -71,7 +71,16 @@ export async function crearUsuario({ nombre, email, password, rol, portales = []
   })
 
   if (error) {
-    throw new Error(error.message || 'Error al crear el usuario')
+    // FunctionsHttpError trae solo un mensaje genérico ("Edge Function
+    // returned a non-2xx status code"); el motivo real viene en el body de
+    // error.context (la Response de la función). Sin esto, cualquier 400/403
+    // del servidor se mostraba como un error opaco e inútil.
+    let detalle = ''
+    try {
+      const body = await error.context?.json()
+      detalle = body?.error || ''
+    } catch (_) { /* context no era JSON o ya se consumió */ }
+    throw new Error(detalle || error.message || 'Error al crear el usuario')
   }
   if (data?.error) {
     throw new Error(data.error)

@@ -30,6 +30,17 @@
   to = "/"
   status = 301
 
+# device.js solo existe en la copia que rsync manda a la Raspberry (lo escribe
+# scripts/deploy-signage-pi.sh); en Netlify nunca está. Sin esta regla cae en
+# el catch-all de abajo, que responde 200 text/html -> el navegador tira
+# "Refused to execute script ... MIME type not executable". Con esto responde
+# un 404 real, el <script onerror> lo traga en silencio (comportamiento
+# esperado: fuera de la Pi, la pantalla arranca en modo "web"/"preview").
+[[redirects]]
+  from = "/signage/device.js"
+  to = "/index.html"
+  status = 404
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

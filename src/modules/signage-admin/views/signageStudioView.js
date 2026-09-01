@@ -36,7 +36,10 @@ export async function renderSignageStudioView(container) {
   state.container = container
   container.innerHTML = shell('<div class="text-center text-muted py-5"><span class="spinner-border spinner-border-sm me-2"></span>Cargando…</div>')
 
-  const cerrar = () => window.removeEventListener('message', onMessage)
+  const cerrar = () => {
+    window.removeEventListener('message', onMessage)
+    window.removeEventListener('resize', fitWorkspace)
+  }
   const onMessage = (ev) => {
     // el router borra el DOM sin llamar cleanup al navegar fuera: auto-desmontar
     if (!state.container || !state.container.isConnected) { cerrar(); return }
@@ -80,17 +83,15 @@ async function seleccionarPantalla(id) {
 function shell(inner) {
   return `
     <div class="page-container signage-studio">
-      <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
-        <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap:.85rem">
-          <div class="d-flex align-items-center gap-2">
-            <div class="p-2 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"><i class="bi bi-tv fs-5"></i></div>
-            <div>
-              <h5 class="fw-bold mb-0 text-body">Cartelera — Estudio</h5>
-              <small class="text-muted d-block" style="font-size:.75rem">Vista previa en vivo de la pantalla del vestíbulo</small>
-            </div>
+      <div class="ss-header">
+        <div class="d-flex align-items-center gap-2 min-w-0">
+          <div class="ss-header-ico"><i class="bi bi-tv"></i></div>
+          <div class="min-w-0">
+            <h5 class="fw-bold mb-0 text-body text-truncate">Cartelera — Estudio</h5>
+            <small class="text-muted d-block text-truncate" style="font-size:.75rem">Vista previa en vivo de la pantalla del vestíbulo</small>
           </div>
-          <div id="ss-toolbar" class="d-flex align-items-center flex-wrap" style="gap:.6rem"></div>
         </div>
+        <div id="ss-toolbar" class="d-flex align-items-center flex-wrap justify-content-end" style="gap:.5rem"></div>
       </div>
       <div id="ss-body">${inner}</div>
     </div>`
@@ -104,6 +105,25 @@ function render() {
   attach(host)
 }
 
+/* Ajusta el workspace para llenar la ventana y encaja la vista previa en 16:9. */
+function fitWorkspace() {
+  const ws = document.querySelector('.signage-studio .ss-workspace')
+  if (!ws) return
+  const desktop = window.matchMedia('(min-width: 1200px)').matches
+  ws.style.height = ''
+  const top = ws.getBoundingClientRect().top
+  ws.style.height = desktop ? Math.max(420, window.innerHeight - top - 18) + 'px' : ''
+
+  const vp = ws.querySelector('.ss-stage-viewport')
+  const fr = ws.querySelector('.ss-stage-frame')
+  if (!vp || !fr) return
+  const availW = vp.clientWidth
+  const availH = vp.clientHeight || (window.innerHeight * 0.44)
+  const w = Math.max(240, Math.min(availW, availH * 16 / 9))
+  fr.style.width = Math.round(w) + 'px'
+  fr.style.height = Math.round(w * 9 / 16) + 'px'
+}
+
 function renderToolbar() {
   const tb = document.getElementById('ss-toolbar')
   const opts = state.pantallas
@@ -111,7 +131,7 @@ function renderToolbar() {
     .join('')
   tb.innerHTML = `
     ${state.pantallas.length > 1 ? `<select class="form-select form-select-sm" id="ss-pantalla" style="width:auto">${opts}</select>` : ''}
-    <a class="btn btn-sm btn-outline-secondary" href="/signage/index.html" target="_blank" rel="noopener" title="Abrir la cartelera en una pestaña">
+    <a class="btn btn-sm btn-outline-secondary" href="${PREVIEW_SRC}" target="_blank" rel="noopener" title="Abrir la cartelera en una pestaña">
       <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
     </a>
     <button class="btn btn-sm btn-primary" id="ss-guardar" ${state.guardando ? 'disabled' : ''}>
@@ -121,22 +141,22 @@ function renderToolbar() {
 
 function renderBody() {
   document.getElementById('ss-body').innerHTML = `
-    <div class="row g-3 ss-grid">
-      <div class="col-12 col-xl-7">
-        <div class="ss-preview-card card border border-body-tertiary rounded-4 overflow-hidden">
-          <div class="ss-preview-frame">
+    <div class="ss-workspace">
+      <div class="ss-stage">
+        <div class="ss-stage-viewport">
+          <div class="ss-stage-frame">
             <iframe id="ss-preview" src="${PREVIEW_SRC}" title="Vista previa de la cartelera"
               referrerpolicy="no-referrer" loading="eager"></iframe>
           </div>
-          <div class="card-footer bg-body-tertiary d-flex align-items-center gap-2 small text-muted">
-            <i class="bi bi-broadcast text-success"></i>
-            Refleja tus cambios al instante. La pantalla real se actualiza 1–3 min después de guardar.
-          </div>
+        </div>
+        <div class="ss-stage-note">
+          <i class="bi bi-broadcast text-success"></i>
+          <span>Refleja tus cambios al instante. La pantalla real del vestíbulo se actualiza 1–3 min después de guardar.</span>
         </div>
       </div>
-      <div class="col-12 col-xl-5">
+      <aside class="ss-side">
         <div class="ss-panel">${panelHTML()}</div>
-      </div>
+      </aside>
     </div>`
 }
 
@@ -262,25 +282,30 @@ function medioRow(m) {
     ? `<img src="${escapeHTML(url)}" alt="" class="ss-thumb">`
     : `<div class="ss-thumb ss-thumb--icon"><i class="bi bi-${TIPO_ICONO[m.tipo] || 'image'}"></i></div>`
   const vig = [m.vigente_desde, m.vigente_hasta].filter(Boolean).join(' → ')
+  const sub = [
+    (TIPO_LABEL[m.tipo] || m.tipo) + (m.tipo === 'slide' && m.contenido?.plantilla ? ` · ${m.contenido.plantilla}` : ''),
+    m.duracion_seg ? `${m.duracion_seg}s` : '',
+    vig,
+  ].filter(Boolean).join('  ·  ')
   return `
-    <div class="ss-media-row d-flex align-items-center gap-2" data-id="${m.id}">
-      <div class="d-flex flex-column">
-        <button class="btn btn-sm btn-link p-0 ss-move" data-dir="-1" title="Subir"><i class="bi bi-chevron-up"></i></button>
-        <button class="btn btn-sm btn-link p-0 ss-move" data-dir="1" title="Bajar"><i class="bi bi-chevron-down"></i></button>
-      </div>
-      ${thumb}
-      <div class="flex-grow-1 min-w-0">
-        <div class="fw-semibold text-truncate small">${escapeHTML(m.titulo || m.youtube_url || m.storage_path || 'Sin título')}</div>
-        <div class="text-muted" style="font-size:.72rem">
-          ${TIPO_LABEL[m.tipo] || m.tipo}${m.tipo === 'slide' && m.contenido?.plantilla ? ` · ${escapeHTML(m.contenido.plantilla)}` : ''}
-          ${m.duracion_seg ? ` · ${m.duracion_seg}s` : ''}${vig ? ` · ${escapeHTML(vig)}` : ''}
+    <div class="ss-media-row${m.activo ? '' : ' is-off'}" data-id="${m.id}">
+      <div class="ss-media-main">
+        ${thumb}
+        <div class="ss-media-txt">
+          <div class="ss-media-title">${escapeHTML(m.titulo || m.youtube_url || 'Sin título')}</div>
+          <div class="ss-media-sub">${escapeHTML(sub)}</div>
         </div>
+        <label class="ss-media-sw form-check form-switch m-0" title="${m.activo ? 'Activo — clic para ocultar' : 'Oculto — clic para mostrar'}">
+          <input class="form-check-input ss-activo" type="checkbox" ${m.activo ? 'checked' : ''}>
+        </label>
       </div>
-      <label class="form-check form-switch m-0" title="Activo">
-        <input class="form-check-input ss-activo" type="checkbox" ${m.activo ? 'checked' : ''}>
-      </label>
-      <button class="btn btn-sm btn-outline-secondary ss-edit" title="Editar"><i class="bi bi-pencil"></i></button>
-      <button class="btn btn-sm btn-outline-danger ss-del" title="Eliminar"><i class="bi bi-trash"></i></button>
+      <div class="ss-media-actions">
+        <button class="btn btn-sm ss-move" data-dir="-1" title="Subir"><i class="bi bi-chevron-up"></i></button>
+        <button class="btn btn-sm ss-move" data-dir="1" title="Bajar"><i class="bi bi-chevron-down"></i></button>
+        <span class="flex-grow-1"></span>
+        <button class="btn btn-sm btn-outline-secondary ss-edit"><i class="bi bi-pencil me-1"></i>Editar</button>
+        <button class="btn btn-sm btn-outline-danger ss-del" title="Eliminar"><i class="bi bi-trash"></i></button>
+      </div>
     </div>`
 }
 
@@ -341,6 +366,12 @@ function attach(host) {
   // reintenta pintar el modelo por si el iframe ya estaba listo
   if (state.iframeReady) postModel()
   else preview()?.addEventListener('load', () => { try { preview().contentWindow.postMessage({ type: 'signage:ping' }, '*') } catch { /* iframe aún no accesible */ } })
+
+  fitWorkspace()
+  requestAnimationFrame(fitWorkspace)
+  setTimeout(fitWorkspace, 250)
+  window.removeEventListener('resize', fitWorkspace)
+  window.addEventListener('resize', fitWorkspace)
 }
 
 function irASeccion(zona) {

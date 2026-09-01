@@ -243,13 +243,16 @@
         if (node) node.addEventListener('click', function () { postToParent({ type: 'signage:zone-click', zone: pair[1] }); });
       });
 
-    // el horario/calendario reales dan realismo; layout/media vendrán por mensaje
-    Promise.all([loadHorario(), loadCalendario()]).then(function () {
+    // Carga TODO de la BD (pantalla, horario, calendario, medios) para que la
+    // vista previa suelta muestre la cartelera real. El Estudio, si está,
+    // sobrescribe layout/marca/medios por postMessage.
+    Promise.all([loadPantalla(), loadHorario(), loadCalendario(), loadMedia()]).then(function () {
       push();
       hideBoot();
       postToParent({ type: 'signage:ready' });
       setInterval(function () { loadHorario().then(push); }, CFG.poll.horario);
       setInterval(function () { loadCalendario().then(push); }, CFG.poll.calendario);
+      setInterval(function () { loadMedia().then(push); }, CFG.poll.media);
     });
   }
 

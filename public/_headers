@@ -6,3 +6,11 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(self), geolocation=()
+
+# La cartelera: no indexar (se administra desde el portal; el iframe del
+# Estudio la embebe same-origin, la Raspberry la sirve local).
+/signage/*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

@@ -15,7 +15,11 @@
                         calendario se siguen trayendo reales (solo lectura).
   */
   var PREVIEW = /[?&]preview=1\b/.test(location.search);
+  // 'device' = la copia de la Raspberry (device.js la marca); 'web' = una carga
+  // suelta en Netlify (no hace consultas: la cartelera se administra desde el portal).
+  var MODE = PREVIEW ? 'preview' : (CFG.mode === 'device' ? 'device' : 'web');
   SIG.preview = PREVIEW;
+  SIG.mode = MODE;
 
   function postToParent(msg) {
     try { if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); } catch (e) {}
@@ -241,9 +245,16 @@
     });
   }
 
+  /* ---- carga suelta en web: sin consultas, solo un aviso ---- */
+  function bootWeb() {
+    $('#boot').hidden = true;
+    $('#no-autorizado').hidden = false;
+  }
+
   /* ---- común ---- */
   function boot() {
     document.documentElement.classList.toggle('is-preview', PREVIEW);
+    if (MODE === 'web') { bootWeb(); return; }
     applyGrid();
     cab.start(); vis.start(); hor.start();
     setInterval(applyReposo, 20000);

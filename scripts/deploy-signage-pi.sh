@@ -12,10 +12,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> Desplegando cartelera a $TARGET"
 
-rsync -az --delete "$ROOT/public/signage/" "$TARGET:~/signage/public/"
+rsync -az --delete --exclude 'device.js' "$ROOT/public/signage/" "$TARGET:~/signage/public/"
 rsync -az --delete "$ROOT/signage-pi/"     "$TARGET:~/signage/deploy/"
 
 ssh "$TARGET" '
+  # marca esta copia como "dispositivo" (habilita las consultas a Supabase).
+  # Sin este archivo, el player asume modo web y no consulta nada.
+  printf "window.SIGNAGE_CONFIG.mode = %s;\n" "\"device\"" > ~/signage/public/device.js
   chmod +x ~/signage/deploy/*.sh 2>/dev/null || true
   # reinicia el navegador del kiosco (el watchdog lo relanza en ~5 s)
   P=$(pgrep -x surf || true); [ -n "$P" ] && kill "$P" || true

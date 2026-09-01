@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>Cartelera · El Sistema Punta Cana</title>
   <link rel="stylesheet" href="css/app.css" />
 </head>
@@ -27,9 +28,17 @@
       <div class="boot__bar"><span></span></div>
       <p>Cargando cartelera…</p>
     </div>
+
+    <div class="boot" id="no-autorizado" hidden>
+      <div class="boot__mark">✳</div>
+      <p>Esta cartelera se administra desde el portal de El Sistema Punta Cana.</p>
+    </div>
   </div>
 
   <script src="js/config.js"></script>
+  <!-- device.js solo existe en la Raspberry (lo escribe deploy-signage-pi.sh);
+       en Netlify da 404 y no pasa nada. Marca esta copia como "dispositivo". -->
+  <script src="device.js" onerror="void 0"></script>
   <script src="js/core.js"></script>
   <script src="js/components/cabecera.js"></script>
   <script src="js/components/visualizador.js"></script>

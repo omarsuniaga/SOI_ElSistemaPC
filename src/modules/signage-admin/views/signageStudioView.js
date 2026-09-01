@@ -12,6 +12,7 @@
 import '../styles/signage-admin.css'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 import * as api from '../api/signageAdminApi.js'
 
 const PREVIEW_SRC = '/signage/?preview=1'
@@ -288,7 +289,11 @@ function attach(host) {
     const id = row.dataset.id
     const m = state.medios.find((x) => x.id === id)
     row.querySelector('.ss-activo')?.addEventListener('change', (e) => cambiarMedio(id, { activo: e.target.checked }, m))
-    row.querySelector('.ss-del')?.addEventListener('click', () => borrarMedio(m))
+    row.querySelector('.ss-del')?.addEventListener('click', async () => {
+      if (!confirm('¿Quitar este contenido de la cartelera?')) return
+      try { await api.eliminarMedio(m.id, m.storage_path); AppToast.success('Contenido quitado.'); await recargarMedios() }
+      catch (err) { AppToast.error(err.message) }
+    })
     row.querySelector('.ss-edit')?.addEventListener('click', () => editarMedio(m))
     row.querySelectorAll('.ss-move').forEach((btn) => btn.addEventListener('click', () => moverMedio(id, Number(btn.dataset.dir))))
   })
@@ -383,20 +388,37 @@ async function onSubir(e) {
   } catch (err) { AppToast.error(err.message) }
 }
 
-async function onYouTube() {
-  const url = prompt('Pega el enlace de YouTube:')
-  if (!url) return
-  const vid = api.youtubeId(url)
-  if (!vid) { AppToast.error('No reconozco ese enlace de YouTube.'); return }
-  const titulo = prompt('Título (opcional):') || null
-  try {
-    await api.crearMedio({
-      tipo: 'youtube', titulo, youtube_url: url, youtube_video_id: vid,
-      orden: (state.medios.length + 1) * 10, activo: true,
-    })
-    AppToast.success('Vídeo agregado. Se descargará en la pantalla para reproducirlo.')
-    await recargarMedios()
-  } catch (err) { AppToast.error(err.message) }
+function onYouTube() {
+  AppModal.open({
+    title: 'Agregar vídeo de YouTube',
+    saveText: 'Agregar',
+    body: `
+      <div class="signage-studio">
+        <label class="d-block mb-3">
+          <span class="d-block mb-1 small fw-semibold">Enlace de YouTube</span>
+          <input type="url" id="ssm-url" class="form-control" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off">
+        </label>
+        <label class="d-block mb-1">
+          <span class="d-block mb-1 small fw-semibold">Título (opcional)</span>
+          <input type="text" id="ssm-titulo" class="form-control" placeholder="Nombre para identificarlo">
+        </label>
+        <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>La pantalla descargará el vídeo para reproducirlo sin cortes.</p>
+      </div>`,
+    onSave: async () => {
+      const url = (document.getElementById('ssm-url')?.value || '').trim()
+      const vid = api.youtubeId(url)
+      if (!vid) { AppToast.error('No reconozco ese enlace de YouTube.'); return false }
+      const titulo = (document.getElementById('ssm-titulo')?.value || '').trim() || null
+      try {
+        await api.crearMedio({
+          tipo: 'youtube', titulo, youtube_url: url, youtube_video_id: vid,
+          orden: (state.medios.length + 1) * 10, activo: true,
+        })
+      } catch (err) { AppToast.error(err.message); return false }
+      AppToast.success('Vídeo agregado.')
+      await recargarMedios()
+    },
+  })
 }
 
 async function cambiarMedio(id, cambios, m) {
@@ -407,28 +429,62 @@ async function cambiarMedio(id, cambios, m) {
   } catch (err) { AppToast.error(err.message); await recargarMedios() }
 }
 
-async function editarMedio(m) {
-  const titulo = prompt('Título:', m.titulo || '')
-  if (titulo === null) return
-  const credito = prompt('Crédito (opcional):', m.credito || '')
-  const dur = m.tipo === 'imagen' ? prompt('Segundos en pantalla:', m.duracion_seg || 12) : null
-  const desde = prompt('Mostrar desde (AAAA-MM-DD, opcional):', m.vigente_desde || '')
-  const hasta = prompt('Mostrar hasta (AAAA-MM-DD, opcional):', m.vigente_hasta || '')
-  const cambios = {
-    titulo: titulo || null,
-    credito: credito || null,
-    vigente_desde: (desde || '').trim() || null,
-    vigente_hasta: (hasta || '').trim() || null,
-  }
-  if (dur !== null) cambios.duracion_seg = Math.max(3, Number(dur) || 12)
-  try { await api.actualizarMedio(m.id, cambios); await recargarMedios() }
-  catch (err) { AppToast.error(err.message) }
-}
-
-async function borrarMedio(m) {
-  if (!confirm('¿Quitar este contenido de la cartelera?')) return
-  try { await api.eliminarMedio(m.id, m.storage_path); await recargarMedios() }
-  catch (err) { AppToast.error(err.message) }
+function editarMedio(m) {
+  const esImagen = m.tipo === 'imagen'
+  const val = (x) => escapeHTML(x == null ? '' : String(x))
+  AppModal.open({
+    title: 'Editar contenido',
+    saveText: 'Guardar',
+    deleteText: '<i class="bi bi-trash me-1"></i>Quitar',
+    onDelete: async () => {
+      try { await api.eliminarMedio(m.id, m.storage_path) }
+      catch (err) { AppToast.error(err.message); return false }
+      AppToast.success('Contenido quitado.')
+      await recargarMedios()
+    },
+    body: `
+      <div class="signage-studio">
+        <label class="d-block mb-3">
+          <span class="d-block mb-1 small fw-semibold">Título</span>
+          <input type="text" id="ssm-titulo" class="form-control" value="${val(m.titulo)}">
+        </label>
+        <label class="d-block mb-3">
+          <span class="d-block mb-1 small fw-semibold">Crédito / bajada (opcional)</span>
+          <input type="text" id="ssm-credito" class="form-control" value="${val(m.credito)}" placeholder="Ej: Departamento Académico">
+        </label>
+        ${esImagen ? `
+        <label class="d-block mb-3">
+          <span class="d-block mb-1 small fw-semibold">Segundos en pantalla</span>
+          <input type="number" id="ssm-dur" class="form-control" style="max-width:8rem" min="3" max="120" value="${m.duracion_seg || 12}">
+        </label>` : ''}
+        <div class="row g-2">
+          <div class="col-6"><label class="d-block">
+            <span class="d-block mb-1 small fw-semibold">Mostrar desde</span>
+            <input type="date" id="ssm-desde" class="form-control" value="${val(m.vigente_desde)}">
+          </label></div>
+          <div class="col-6"><label class="d-block">
+            <span class="d-block mb-1 small fw-semibold">Mostrar hasta</span>
+            <input type="date" id="ssm-hasta" class="form-control" value="${val(m.vigente_hasta)}">
+          </label></div>
+        </div>
+        <p class="small text-muted mt-2 mb-0">Deja las fechas en blanco para mostrarlo siempre.</p>
+      </div>`,
+    onSave: async () => {
+      const cambios = {
+        titulo: (document.getElementById('ssm-titulo')?.value || '').trim() || null,
+        credito: (document.getElementById('ssm-credito')?.value || '').trim() || null,
+        vigente_desde: (document.getElementById('ssm-desde')?.value || '').trim() || null,
+        vigente_hasta: (document.getElementById('ssm-hasta')?.value || '').trim() || null,
+      }
+      if (esImagen) {
+        const d = Number(document.getElementById('ssm-dur')?.value)
+        cambios.duracion_seg = Math.min(120, Math.max(3, d || 12))
+      }
+      try { await api.actualizarMedio(m.id, cambios) }
+      catch (err) { AppToast.error(err.message); return false }
+      await recargarMedios()
+    },
+  })
 }
 
 async function moverMedio(id, dir) {

@@ -30,6 +30,8 @@ const CSP = [
   "base-uri 'self'",
   // Forms only to self
   "form-action 'self'",
+  // Enmarcado: solo mismo origen (el Estudio de la cartelera embebe /signage/)
+  "frame-ancestors 'self'",
 ].join('; ')
 
 // Dev-server-only relaxation: Vite's client, React Fast Refresh preamble,

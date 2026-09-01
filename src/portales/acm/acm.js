@@ -53,6 +53,14 @@ const navGroups = [
       { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
     ],
   },
+  {
+    id: 'cartelera',
+    label: 'Cartelera',
+    icon: 'bi-tv',
+    items: [
+      { id: 'signage-pantalla', label: 'Pantalla del vestíbulo', icon: 'bi-tv' },
+    ],
+  },
 ]
 
 bootAdminPortal({

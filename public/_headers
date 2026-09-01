@@ -1,8 +1,16 @@
 # Security headers applied to every response.
 # Keep in sync with the CSP constant in vite.config.js.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com http://localhost:11434 ws://localhost:11434; worker-src 'self' blob:; media-src 'self' blob:; frame-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com http://localhost:11434 ws://localhost:11434; worker-src 'self' blob:; media-src 'self' blob:; frame-src 'self' blob: data:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
   X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
+  X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(self), geolocation=()
+
+# La cartelera: no indexar (se administra desde el portal; el iframe del
+# Estudio la embebe same-origin, la Raspberry la sirve local).
+/signage/*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

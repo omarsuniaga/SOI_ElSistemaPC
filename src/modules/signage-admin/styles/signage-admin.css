@@ -1,0 +1,94 @@
+/* Panel de la cartelera — estilos propios del módulo signage-admin */
+
+.signage-admin .sa-thumb {
+  width: 76px;
+  height: 46px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--bs-tertiary-bg);
+  flex: 0 0 auto;
+}
+.signage-admin .sa-thumb--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--bs-secondary);
+}
+
+.signage-admin .signage-media-list .list-group-item {
+  padding: 0.6rem 0.85rem;
+}
+
+.signage-admin .sa-move {
+  line-height: 1;
+  color: var(--bs-secondary);
+}
+.signage-admin .sa-move:hover {
+  color: var(--bs-primary);
+}
+
+.signage-admin .min-w-0 {
+  min-width: 0;
+}
+
+.signage-admin .form-check-input {
+  cursor: pointer;
+}
+
+/* ═══ Estudio de la cartelera ═══ */
+.signage-studio .ss-preview-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0b0e17;
+}
+.signage-studio .ss-preview-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.signage-studio .ss-panel {
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+.signage-studio .ss-acc-head {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.signage-studio .ss-media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.signage-studio .ss-media-row {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 10px;
+}
+.signage-studio .ss-thumb {
+  width: 60px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--bs-tertiary-bg);
+  flex: 0 0 auto;
+}
+.signage-studio .ss-thumb--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bs-secondary);
+}
+.signage-studio .ss-move {
+  line-height: 1;
+  color: var(--bs-secondary);
+}
+.signage-studio .min-w-0 { min-width: 0; }
+
+@media (max-width: 1199.98px) {
+  .signage-studio .ss-panel { max-height: none; overflow: visible; }
+}

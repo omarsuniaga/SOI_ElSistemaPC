@@ -1,0 +1,6 @@
+# ~/.config/lxsession/LXDE-pi/autostart  (contenido para la cartelera)
+# El instalador añade estas líneas si no están.
+@xset s off
+@xset s noblank
+@xset -dpms
+@bash /home/omarviolin/signage/deploy/kiosk.sh

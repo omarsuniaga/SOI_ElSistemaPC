@@ -129,15 +129,34 @@ html, body {
 
 .vis__caption {
   position: absolute; left: 0; bottom: calc(var(--u) * 2.4);
-  max-width: 62%; padding: calc(var(--u) * 0.5) 0 calc(var(--u) * 0.5) calc(var(--u) * 1.5);
+  max-width: 62%;
+  padding: calc(var(--u) * 0.7) calc(var(--u) * 1.5) calc(var(--u) * 0.7) calc(var(--u) * 1.35);
   margin-left: var(--pad);
   border-left: calc(var(--u) * 0.22) solid var(--gold);
+  /* Barra oscura translúcida: el pie de foto tiene que leerse aunque el
+     medio de fondo sea claro/blanco. */
+  background: rgba(7, 9, 18, 0.78);
+  border-radius: 0 calc(var(--u) * 0.6) calc(var(--u) * 0.6) 0;
+  box-shadow: 0 calc(var(--u) * 0.25) calc(var(--u) * 1.1) rgba(0, 0, 0, 0.42);
   transition: opacity .4s;
 }
-.vis__caption-title { font-size: calc(var(--u) * 1.7); line-height: 1.25; color: var(--ink); }
+/* Donde el navegador lo soporta (Chrome del Estudio, no la Pi Zero W sin GPU)
+   se agrega un desenfoque sutil; si no, la capa solida ya cumple. */
+@supports ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .vis__caption {
+    background: rgba(7, 9, 18, 0.62);
+    -webkit-backdrop-filter: blur(calc(var(--u) * 0.5));
+    backdrop-filter: blur(calc(var(--u) * 0.5));
+  }
+}
+.vis__caption-title {
+  font-size: calc(var(--u) * 1.7); line-height: 1.25; color: var(--ink);
+  text-shadow: 0 calc(var(--u) * 0.06) calc(var(--u) * 0.2) rgba(0, 0, 0, 0.6);
+}
 .vis__caption-detail {
   font-family: var(--sans); font-size: calc(var(--u) * 1.02);
-  color: var(--ink-dim); margin-top: calc(var(--u) * 0.25);
+  color: #b6bdcc; margin-top: calc(var(--u) * 0.25);
+  text-shadow: 0 calc(var(--u) * 0.06) calc(var(--u) * 0.16) rgba(0, 0, 0, 0.55);
 }
 
 /* ══════════════ HORARIO (sidebar) ══════════════ */

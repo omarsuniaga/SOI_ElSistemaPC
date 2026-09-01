@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# post-checkout — provisiona worktrees efímeras del Carril B (Hermes kanban).
+#
+# `git worktree add` dispara este hook con cwd = la worktree nueva. Una worktree
+# recién creada NO tiene node_modules, así que `vite build` (y el gate
+# scripts/soi-verify-gate.sh) fallan con ENOENT. Symlinkeamos node_modules del
+# checkout principal para que el build funcione sin un `npm ci` de varios minutos.
+#
+# Idempotente y defensivo: si ya hay node_modules real, o no encontramos uno en
+# el checkout principal, no hace nada. Nunca toca .env ni archivos versionados.
+
+set -u
+
+# $3 = 1 cuando es un checkout de rama (incluye `git worktree add`); 0 = archivo.
+is_branch_checkout="${3:-1}"
+[ "$is_branch_checkout" = "1" ] || exit 0
+
+# Raíz de esta worktree.
+wt_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+
+# Ya tiene node_modules poblado (dir real o symlink) → nada que hacer.
+if [ -e "$wt_root/node_modules/.package-lock.json" ] || [ -L "$wt_root/node_modules" ]; then
+  exit 0
+fi
+
+# Checkout principal = parent del git-common-dir (…/repo/.git → …/repo).
+common_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || exit 0
+case "$common_dir" in
+  /*) : ;;
+  *)  common_dir="$wt_root/$common_dir" ;;
+esac
+main_root="$(cd "$(dirname "$common_dir")" && pwd)" || exit 0
+
+# Solo si es OTRA ruta y tiene node_modules poblado.
+[ "$main_root" != "$wt_root" ] || exit 0
+[ -d "$main_root/node_modules" ] || exit 0
+
+if [ -d "$wt_root/node_modules" ] && [ ! -L "$wt_root/node_modules" ]; then
+  # dir vacío que dejó un build fallido: quitarlo para poder symlinkear.
+  rmdir "$wt_root/node_modules" 2>/dev/null || exit 0
+fi
+
+ln -s "$main_root/node_modules" "$wt_root/node_modules" 2>/dev/null \
+  && echo "[post-checkout] node_modules → $main_root/node_modules" \
+  || true
+
+exit 0

@@ -28,10 +28,19 @@ fi
 
 BASE_REF="${1:-}"
 if [ -z "$BASE_REF" ]; then
-  if git rev-parse --verify -q origin/master >/dev/null; then
+  # El trunk de facto es feat/planificacion-clases-rediseño (= producción / Netlify).
+  # `origin/master` sigue existiendo pero divergió ~1300 archivos hace >1 mes, así que
+  # un merge-base contra master marca como violación todo el historial del trunk.
+  # Orden de preferencia: trunk real → default remoto (origin/HEAD) → master → HEAD~1.
+  TRUNK_REF="origin/feat/planificacion-clases-rediseño"
+  if git rev-parse --verify -q "$TRUNK_REF" >/dev/null; then
+    BASE_REF="$(git merge-base HEAD "$TRUNK_REF" 2>/dev/null || echo HEAD~1)"
+  elif git rev-parse --verify -q origin/HEAD >/dev/null; then
+    BASE_REF="$(git merge-base HEAD origin/HEAD 2>/dev/null || echo HEAD~1)"
+  elif git rev-parse --verify -q origin/master >/dev/null; then
     BASE_REF="$(git merge-base HEAD origin/master 2>/dev/null || echo HEAD~1)"
   else
-    BASE_REF="$(git merge-base HEAD origin/HEAD 2>/dev/null || echo HEAD~1)"
+    BASE_REF="HEAD~1"
   fi
 fi
 

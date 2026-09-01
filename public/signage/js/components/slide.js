@@ -120,8 +120,8 @@
       if (!isFinite(s) || s <= 0) { pendiente = true; return; }
       art.style.transform = 'scale(' + s + ')';
     });
-    if (pendiente && (_try || 0) < 30) {
-      requestAnimationFrame(function () { SIG.fitCanvasArt(root, (_try || 0) + 1); });
+    if (pendiente && (_try || 0) < 60) {
+      setTimeout(function () { SIG.fitCanvasArt(root, (_try || 0) + 1); }, 90);
     }
   };
 })();

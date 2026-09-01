@@ -159,8 +159,8 @@ export function formatClaseHorariosForPdf(horarios, salones = []) {
   }).join('\n')
 }
 
-export function resolveClasePdfMetadata(clase, context) {
-  const { maestros = [], programas = [], salones = [] } = context
+export function resolveClasePdfMetadata(clase, context = {}) {
+  const { maestros = [], programas = [], salones = [] } = context || {}
   const maestroPrincipal = maestros.find(m => m.id === clase.maestro_principal_id)
   const maestroSuplente = maestros.find(m => m.id === clase.maestro_suplente_id)
   const programa = programas.find(p => p.id === clase.programa_id)
@@ -200,7 +200,7 @@ function renderClaseHeader(doc, clase, context) {
   return 66
 }
 
-export function descargarPdfClase(clase, inscritos, context) {
+export function descargarPdfClase(clase, inscritos = [], context = {}) {
   const doc = new jsPDF({ unit: 'mm', format: 'letter' })
   const nowDate = now()
   const filename = buildClasePdfFilename(clase.nombre, new Date().toISOString().slice(0, 10))

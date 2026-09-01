@@ -1919,7 +1919,14 @@ async function _mostrarModalNominaClase(claseId) {
       document.getElementById('btnPdfNominaModal')?.addEventListener('click', async () => {
         AppToast.info(`Generando planilla PDF de ${clase.nombre}...`)
         try {
-          await descargarPdfClase(clase)
+          const inscritosPdf = (inscritosData || [])
+            .map((row) => ({ alumno: row.alumnos || {} }))
+            .sort((a, b) => (a.alumno.nombre_completo || '').localeCompare(b.alumno.nombre_completo || ''))
+          await descargarPdfClase(clase, inscritosPdf, {
+            maestros: state.maestros || [],
+            salones: state.salones || [],
+            programas: state.programas || [],
+          })
           AppToast.success('PDF descargado con éxito.')
         } catch (err) {
           console.error(err)
@@ -2142,7 +2149,22 @@ function attachEvents(container) {
       if (c) {
         AppToast.info(`Generando PDF de ${c.nombre}...`)
         try {
-          await descargarPdfClase(c)
+          // descargarPdfClase(clase, inscritos, context): hay que traer los
+          // inscritos y pasar el context con maestros/salones/programas.
+          const { data: insData, error } = await supabase
+            .from('alumnos_clases')
+            .select('hora_inicio, hora_fin, alumnos(*)')
+            .eq('clase_id', c.id)
+            .neq('activo', false)
+          if (error) throw error
+          const inscritos = (insData || [])
+            .map((i) => ({ alumno: i.alumnos || {}, hora_inicio: i.hora_inicio, hora_fin: i.hora_fin }))
+            .sort((a, b) => (a.alumno.nombre_completo || '').localeCompare(b.alumno.nombre_completo || ''))
+          await descargarPdfClase(c, inscritos, {
+            maestros: state.maestros || [],
+            salones: state.salones || [],
+            programas: state.programas || [],
+          })
           AppToast.success('PDF generado con éxito.')
         } catch (err) {
           console.error(err)

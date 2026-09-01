@@ -56,11 +56,11 @@ export function reportCatalogAudit(input) {
     auditStore.set(result.portalId, Object.freeze({ ...result, observedAt: new Date().toISOString() }))
     const issues = Object.entries(result).filter(hasIssues)
     // El audit de catálogo es una herramienta de desarrollo: la "deuda conocida"
-    // (rutas sin catalogar, candidatas legacy, etc.) no es un fallo y no debe
-    // ensuciar la consola en producción. El evento `catalog:audit` sigue
-    // emitiéndose para cualquier panel interno que lo escuche.
-    const isDev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV)
-    if (issues.length && isDev) console.warn(`[catalog-shadow] ${input.portalId}`, result)
+    // (rutas sin catalogar, candidatas legacy, etc.) no es un fallo. Se emite como
+    // console.debug (oculto por defecto en devtools, visible con nivel "Verbose")
+    // para no ensuciar la consola de nadie. El evento `catalog:audit` y
+    // `getCatalogAuditResults()` siguen disponibles para paneles internos.
+    if (issues.length) console.debug(`[catalog-shadow] ${input.portalId}`, result)
     if (typeof globalThis.dispatchEvent === 'function' && typeof globalThis.CustomEvent === 'function') {
       globalThis.dispatchEvent(new CustomEvent('catalog:audit', { detail: result }))
     }

@@ -18,6 +18,11 @@ const SUPPRESSED_PATTERNS = [
   'lock:sb-soi-auth',
   'gotrue-js: Lock',
   'was not released within',
+  // La librería web-vitals que inyectan algunas extensiones del navegador
+  // (Web Vitals, Lighthouse, etc.) tira "Cannot read properties of undefined
+  // (reading 'startTime')" en reportAllChanges al navegar dentro del SPA.
+  // No es código de la app (acá web-vitals se usa con PerformanceObserver a mano).
+  'reportAllChanges',
 ]
 
 /**

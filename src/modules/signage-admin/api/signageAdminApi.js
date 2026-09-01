@@ -9,12 +9,11 @@ import { supabase } from '../../../lib/supabaseClient.js'
 
 const BUCKET = 'signage'
 
-/** Layout por defecto — debe coincidir con public/config.js del player. */
+/** Layout por defecto — debe coincidir con public/signage/js/config.js del player. */
 export const LAYOUT_DEFAULT = {
-  cabecera: { visible: true, marca: true, reloj: true, fecha: true, centro: 'calendario', texto: '' },
-  sidebar: { visible: true, anchoPct: 31, hoy: true, manana: true, salon: true, maestro: true, instrumento: true },
-  central: { contenido: 'media', leyendas: true, ajuste: 'contain', mensaje: '' },
-  footer: { visible: false, altoPct: 7, contenido: 'texto', texto: '' },
+  cabecera: { visible: true, marca: true, reloj: true, fecha: true, evento: true },
+  visualizador: { visible: true, ajuste: 'contain', pie: true, pieTexto: '' },
+  horario: { visible: true, anchoPct: 27.5, hoy: true, manana: true, instrumento: false, meta: false },
 }
 
 export function mergeLayout(dbLayout) {
@@ -32,10 +31,18 @@ export function mergeLayout(dbLayout) {
 export async function listarPantallas() {
   const { data, error } = await supabase
     .from('signage_pantallas')
-    .select('id, slug, nombre, ubicacion, orientacion, ancho_px, alto_px, layout, modo_nocturno, activo, updated_at')
+    .select('id, slug, nombre, institucion, siglas, ubicacion, orientacion, layout, modo_nocturno, activo, updated_at')
     .order('nombre', { ascending: true })
   if (error) throw new Error('No se pudieron cargar las pantallas: ' + error.message)
   return data || []
+}
+
+export async function guardarIdentidad(pantallaId, { institucion, siglas }) {
+  const { error } = await supabase
+    .from('signage_pantallas')
+    .update({ institucion: institucion || null, siglas: siglas || null })
+    .eq('id', pantallaId)
+  if (error) throw new Error('No se pudo guardar la identidad: ' + error.message)
 }
 
 export async function guardarLayout(pantallaId, layout) {

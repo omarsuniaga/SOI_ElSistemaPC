@@ -213,11 +213,12 @@ function panelHTML() {
       ${txt('visualizador.pieTexto', 'Pie de foto fijo (opcional)', 'Sobrescribe el título del medio actual')}
     `) : ''}
     ${acc('visibilidad', 'bi-eye', 'Visibilidad del menú', `
-      <p class="small text-muted mb-2">El menú <b>Cartelera</b> siempre está en el portal Admin. Aquí eliges en qué otros portales departamentales aparece también:</p>
+      <p class="small text-muted mb-2">El menú <b>Cartelera</b> siempre está en los portales <b>Admin</b>, <b>ADM</b> y <b>ACM</b>. Aquí eliges en qué otros portales aparece también:</p>
       ${api.PORTALES_DEPTO.map((p) => `
         <label class="form-check form-switch d-flex align-items-center gap-2 py-1 m-0">
-          <input class="form-check-input" type="checkbox" data-portal="${p.id}" ${state.menuPortales.includes(p.id) ? 'checked' : ''}>
-          <span>${escapeHTML(p.label)} <small class="text-muted">(${p.id})</small></span>
+          <input class="form-check-input" type="checkbox" data-portal="${p.id}"
+            ${p.fijo || state.menuPortales.includes(p.id) ? 'checked' : ''} ${p.fijo ? 'disabled' : ''}>
+          <span>${escapeHTML(p.label)} <small class="text-muted">(${p.id})${p.fijo ? ' · siempre' : ''}</small></span>
         </label>`).join('')}
     `)}`
 }

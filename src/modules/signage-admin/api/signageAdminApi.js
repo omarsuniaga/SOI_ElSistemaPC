@@ -28,10 +28,13 @@ export function mergeLayout(dbLayout) {
 
 /* ─── Pantallas ─────────────────────────────────────────────────────────── */
 
-/** Portales departamentales donde puede aparecer el menú "Cartelera". */
+/**
+ * Portales departamentales donde puede aparecer el menú "Cartelera".
+ * `fijo: true` → siempre visible (nav estático), no se puede desactivar aquí.
+ */
 export const PORTALES_DEPTO = [
-  { id: 'ADM', label: 'Administración' },
-  { id: 'ACM', label: 'Académico' },
+  { id: 'ADM', label: 'Administración', fijo: true },
+  { id: 'ACM', label: 'Académico', fijo: true },
   { id: 'COM', label: 'Comunicaciones' },
   { id: 'FIN', label: 'Finanzas' },
   { id: 'LOG', label: 'Logística' },

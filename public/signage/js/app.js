@@ -229,10 +229,11 @@
   }
 
   function bootPreview() {
+    var driven = false;   // true en cuanto el Estudio manda un modelo
     window.addEventListener('message', function (ev) {
       var d = ev.data;
       if (!d || typeof d !== 'object' || String(d.type || '').indexOf('signage:') !== 0) return;
-      if (d.type === 'signage:model') applyModel(d.model);
+      if (d.type === 'signage:model') { driven = true; applyModel(d.model); }
       else if (d.type === 'signage:ping') postToParent({ type: 'signage:ready' });
     });
 
@@ -250,9 +251,12 @@
       push();
       hideBoot();
       postToParent({ type: 'signage:ready' });
+      // El horario/calendario siempre son datos reales; los medios y el layout,
+      // si el Estudio está manejando la vista previa (driven), NO se recargan
+      // de la BD para no pisar los cambios sin guardar.
       setInterval(function () { loadHorario().then(push); }, CFG.poll.horario);
       setInterval(function () { loadCalendario().then(push); }, CFG.poll.calendario);
-      setInterval(function () { loadMedia().then(push); }, CFG.poll.media);
+      setInterval(function () { if (!driven) loadMedia().then(push); }, CFG.poll.media);
     });
   }
 
@@ -278,7 +282,7 @@
     applyGrid();
     cab.start(); vis.start(); hor.start();
     setInterval(applyReposo, 20000);
-    window.addEventListener('resize', function () { applyGrid(); hor.relayout(); });
+    window.addEventListener('resize', function () { applyGrid(); hor.relayout(); vis.relayout && vis.relayout(); });
     if (PREVIEW) bootPreview(); else bootPlayer();
   }
 

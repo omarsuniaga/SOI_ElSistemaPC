@@ -188,20 +188,34 @@
   align-items: center;
   gap: 0.3rem;
   border-top: 1px solid var(--bs-border-color-translucent);
-  padding-top: 0.4rem;
+  padding-top: 0.45rem;
 }
-.signage-studio .ss-media-actions .btn {
-  --bs-btn-padding-y: 0.15rem;
-  --bs-btn-padding-x: 0.5rem;
-  --bs-btn-font-size: 0.72rem;
-}
-.signage-studio .ss-move {
+.signage-studio .ss-iconbtn {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.85rem;
   line-height: 1;
-  color: var(--bs-secondary-color);
   border: 1px solid var(--bs-border-color-translucent);
-  background: transparent;
+  border-radius: 8px;
+  background: var(--bs-body-bg);
+  color: var(--bs-secondary-color);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
-.signage-studio .ss-move:hover { color: var(--bs-primary); border-color: var(--bs-primary); }
+.signage-studio .ss-iconbtn:hover {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+.signage-studio .ss-iconbtn--danger:hover {
+  color: var(--bs-danger);
+  border-color: var(--bs-danger);
+  background: var(--bs-danger-bg-subtle);
+}
 
 .signage-studio .ss-thumb {
   width: 56px;
@@ -246,4 +260,52 @@
 .signage-studio .ss-logo-empty {
   font-size: 1.1rem;
   color: var(--bs-secondary);
+}
+
+/* ═══ Editor de lienzo libre ═══ */
+.ss-cv { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.ss-cv-tools {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.ss-cv-sep { width: 1px; align-self: stretch; background: var(--bs-border-color); margin: 0 0.15rem; }
+.ss-cv-body {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; gap: 0.85rem; padding-top: 0.7rem;
+}
+.ss-cv-stage {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 12px; overflow: hidden;
+}
+.ss-cv-art {
+  position: relative; flex: 0 0 auto;
+  transform-origin: center center;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.4);
+  touch-action: none;
+}
+.ss-cv-props {
+  flex: 0 0 264px; overflow-y: auto; padding-right: 0.15rem;
+}
+.ss-cv-art .cvel {
+  position: absolute; box-sizing: border-box; cursor: move;
+  user-select: none;
+}
+.ss-cv-art .cvel.is-sel { outline: 2px solid var(--bs-primary); outline-offset: 1px; }
+.ss-cv-art .cvel--texto[contenteditable="true"] {
+  cursor: text; outline: 2px solid var(--bs-warning); user-select: text;
+}
+.ss-cv-art .cvel-h {
+  position: absolute; right: -7px; bottom: -7px;
+  width: 15px; height: 15px;
+  background: var(--bs-primary); border: 2px solid #fff;
+  border-radius: 50%; cursor: nwse-resize;
+}
+
+@media (max-width: 991.98px) {
+  .ss-cv-body { flex-direction: column; }
+  .ss-cv-props { flex: none; max-height: 40vh; }
 }

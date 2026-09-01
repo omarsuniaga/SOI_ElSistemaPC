@@ -99,6 +99,10 @@
         }
       }
       r.stage.appendChild(node);
+      if (m.tipo === 'slide' && SIG.fitCanvasArt) {
+        SIG.fitCanvasArt(node);
+        requestAnimationFrame(function () { SIG.fitCanvasArt(node); });
+      }
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           node.classList.add('is-live');
@@ -170,6 +174,7 @@
       },
       start: function () {},
       stop: function () { clearTimer(); },
+      relayout: function () { if (live && SIG.fitCanvasArt) SIG.fitCanvasArt(live.parentNode || document); },
     };
   };
 })();

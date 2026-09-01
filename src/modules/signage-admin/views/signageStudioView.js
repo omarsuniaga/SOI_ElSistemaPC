@@ -300,11 +300,11 @@ function medioRow(m) {
         </label>
       </div>
       <div class="ss-media-actions">
-        <button class="btn btn-sm ss-move" data-dir="-1" title="Subir"><i class="bi bi-chevron-up"></i></button>
-        <button class="btn btn-sm ss-move" data-dir="1" title="Bajar"><i class="bi bi-chevron-down"></i></button>
+        <button class="ss-iconbtn ss-move" data-dir="-1" title="Subir"><i class="bi bi-chevron-up"></i></button>
+        <button class="ss-iconbtn ss-move" data-dir="1" title="Bajar"><i class="bi bi-chevron-down"></i></button>
         <span class="flex-grow-1"></span>
-        <button class="btn btn-sm btn-outline-secondary ss-edit"><i class="bi bi-pencil me-1"></i>Editar</button>
-        <button class="btn btn-sm btn-outline-danger ss-del" title="Eliminar"><i class="bi bi-trash"></i></button>
+        <button class="ss-iconbtn ss-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+        <button class="ss-iconbtn ss-iconbtn--danger ss-del" title="Eliminar"><i class="bi bi-trash"></i></button>
       </div>
     </div>`
 }
@@ -348,7 +348,7 @@ function attach(host) {
 
   // medios
   host.querySelector('#ss-file')?.addEventListener('change', onSubir)
-  host.querySelector('#ss-slide')?.addEventListener('click', () => editorSlide(null))
+  host.querySelector('#ss-slide')?.addEventListener('click', () => editorCanvas(null))
   host.querySelector('#ss-yt')?.addEventListener('click', onYouTube)
   host.querySelectorAll('.ss-media-row').forEach((row) => {
     const id = row.dataset.id
@@ -507,6 +507,268 @@ async function onSubir(e) {
     AppToast.success('Contenido agregado.')
     await recargarMedios()
   } catch (err) { AppToast.error(err.message) }
+}
+
+/* ─── editor de lienzo libre (arrastrar textos e imágenes) ───────────── */
+
+const CV_GRAD = {
+  oscuro: 'linear-gradient(135deg,#10192b,#0b0e17 75%)',
+  dorado: 'linear-gradient(135deg,#2a2312,#0b0e17 72%)',
+  azul: 'linear-gradient(135deg,#0a1b2e,#0b0e17 78%)',
+  verde: 'linear-gradient(135deg,#10241c,#0b0e17 78%)',
+}
+const CV_FONT = { sans: 'system-ui,"Segoe UI",Roboto,sans-serif', serif: 'Georgia,"Times New Roman",serif' }
+const cvUid = () => 'e' + Math.random().toString(36).slice(2, 8)
+
+function editorCanvas(m) {
+  const editar = !!(m && m.contenido && m.contenido.tipo === 'canvas')
+  const cv = editar
+    ? JSON.parse(JSON.stringify(m.contenido))
+    : { tipo: 'canvas', w: 1280, h: 720, fondo: { tipo: 'gradiente', valor: 'oscuro' }, elementos: [] }
+  cv.w = cv.w || 1280
+  cv.h = cv.h || 720
+  cv.elementos = cv.elementos || []
+  let sel = null
+  let scale = 1
+
+  AppModal.open({
+    title: editar ? 'Editar diapositiva' : 'Nueva diapositiva',
+    saveText: editar ? 'Guardar' : 'Agregar',
+    size: 'xl',
+    deleteText: editar ? '<i class="bi bi-trash me-1"></i>Quitar' : '',
+    onDelete: editar ? async () => {
+      try { await api.eliminarMedio(m.id, null) } catch (e) { AppToast.error(e.message); return false }
+      AppToast.success('Diapositiva quitada.'); await recargarMedios()
+    } : null,
+    body: `
+      <div class="signage-studio ss-cv">
+        <div class="ss-cv-tools">
+          <button class="btn btn-sm btn-primary" data-cv="add-text"><i class="bi bi-fonts me-1"></i>Texto</button>
+          <label class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-image me-1"></i>Imagen<input type="file" accept="image/*" hidden data-cv="add-img"></label>
+          <span class="ss-cv-sep"></span>
+          <select class="form-select form-select-sm" style="width:auto" data-cv="bg-kind">
+            <option value="gradiente">Fondo: gradiente</option>
+            <option value="color">Fondo: color</option>
+            <option value="imagen">Fondo: imagen</option>
+          </select>
+          <select class="form-select form-select-sm" style="width:auto" data-cv="bg-grad">
+            <option value="oscuro">Oscuro</option><option value="dorado">Dorado</option>
+            <option value="azul">Azul</option><option value="verde">Verde</option>
+          </select>
+          <input type="color" class="form-control form-control-color form-control-sm" data-cv="bg-color" value="#0b0e17" hidden>
+          <label class="btn btn-sm btn-outline-secondary mb-0" data-cv="bg-img-lbl" hidden>Subir fondo<input type="file" accept="image/*" hidden data-cv="bg-img"></label>
+          <span class="ss-cv-sep"></span>
+          <label class="d-flex align-items-center gap-1 small mb-0">Seg
+            <input type="number" class="form-control form-control-sm" style="width:4.5rem" min="4" max="60" value="${(editar && m.duracion_seg) || 12}" data-cv="dur"></label>
+        </div>
+        <div class="ss-cv-body">
+          <div class="ss-cv-stage" data-cv="stage"><div class="ss-cv-art" data-cv="art"></div></div>
+          <div class="ss-cv-props" data-cv="props"></div>
+        </div>
+      </div>`,
+    onShow: (body) => wireCanvas(body),
+    onSave: async (body) => {
+      if (!cv.elementos.length) { AppToast.error('Agrega al menos un texto o una imagen.'); return false }
+      const d = Math.min(60, Math.max(4, Number(body.querySelector('[data-cv="dur"]')?.value) || 12))
+      const txt = cv.elementos.find((e) => e.tipo === 'texto' && e.texto)
+      const label = (txt ? txt.texto : 'Diapositiva').replace(/\s+/g, ' ').trim().slice(0, 42) || 'Diapositiva'
+      const comun = { titulo: label, contenido: cv, duracion_seg: d }
+      try {
+        if (editar) await api.actualizarMedio(m.id, comun)
+        else await api.crearMedio({ ...comun, tipo: 'slide', orden: (state.medios.length + 1) * 10, activo: true })
+      } catch (e) { AppToast.error(e.message); return false }
+      AppToast.success(editar ? 'Diapositiva actualizada.' : 'Diapositiva agregada.')
+      await recargarMedios()
+    },
+  })
+
+  function wireCanvas(body) {
+    const art = body.querySelector('[data-cv="art"]')
+    const stage = body.querySelector('[data-cv="stage"]')
+    const props = body.querySelector('[data-cv="props"]')
+    art.style.width = cv.w + 'px'
+    art.style.height = cv.h + 'px'
+
+    const fitScale = () => {
+      const r = stage.getBoundingClientRect()
+      scale = Math.max(0.08, Math.min((r.width - 28) / cv.w, (r.height - 28) / cv.h))
+      art.style.transform = `scale(${scale})`
+    }
+    const bgCss = () => {
+      const f = cv.fondo || {}
+      if (f.tipo === 'imagen' && f.storage_path) return `#0b0e17 center/cover no-repeat url(${api.urlPublica(f.storage_path)})`
+      if (f.tipo === 'color') return f.valor || '#0b0e17'
+      return CV_GRAD[f.valor] || CV_GRAD.oscuro
+    }
+
+    function renderArt() {
+      art.style.background = bgCss()
+      art.innerHTML = cv.elementos.map((el) => {
+        const base = `left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;`
+        const handle = sel === el.id ? '<span class="cvel-h" data-h="se"></span>' : ''
+        if (el.tipo === 'imagen') {
+          return `<div class="cvel${sel === el.id ? ' is-sel' : ''}" data-id="${el.id}" style="${base}">
+            <img src="${el.storage_path ? escapeHTML(api.urlPublica(el.storage_path)) : ''}" draggable="false"
+              style="width:100%;height:100%;object-fit:${el.ajuste === 'cover' ? 'cover' : 'contain'}">${handle}</div>`
+        }
+        const ts = base +
+          `font-size:${el.tamano || 48}px;color:${el.color || '#fff'};font-weight:${el.peso || 700};` +
+          `text-align:${el.align || 'left'};font-family:${CV_FONT[el.fuente] || CV_FONT.sans};` +
+          `line-height:1.15;white-space:pre-wrap;overflow:hidden;display:flex;flex-direction:column;justify-content:center;` +
+          (el.sombra ? 'text-shadow:0 2px 12px rgba(0,0,0,.55);' : '')
+        return `<div class="cvel cvel--texto${sel === el.id ? ' is-sel' : ''}" data-id="${el.id}" style="${ts}">${escapeHTML(el.texto || '')}${handle}</div>`
+      }).join('')
+      renderProps()
+    }
+
+    function elById(id) { return cv.elementos.find((e) => e.id === id) }
+
+    function renderProps() {
+      const el = elById(sel)
+      if (!el) { props.innerHTML = '<p class="text-muted small m-0">Seleccioná un elemento para editarlo. Doble clic en un texto para escribir.</p>'; return }
+      const layerBtns = `<div class="d-flex gap-2 mt-1">
+        <button class="btn btn-sm btn-outline-secondary" data-p="fwd">Al frente</button>
+        <button class="btn btn-sm btn-outline-secondary" data-p="back">Atrás</button>
+        <button class="btn btn-sm btn-outline-danger ms-auto" data-p="del"><i class="bi bi-trash"></i></button></div>`
+      if (el.tipo === 'imagen') {
+        props.innerHTML = `<div class="fw-semibold small mb-2">Imagen</div>
+          <label class="d-block mb-2"><span class="small">Ajuste</span>
+            <select class="form-select form-select-sm" data-p="ajuste">
+              <option value="contain" ${el.ajuste !== 'cover' ? 'selected' : ''}>Completa</option>
+              <option value="cover" ${el.ajuste === 'cover' ? 'selected' : ''}>Rellenar</option></select></label>${layerBtns}`
+      } else {
+        props.innerHTML = `<div class="fw-semibold small mb-2">Texto</div>
+          <textarea class="form-control form-control-sm mb-2" rows="3" data-p="texto">${escapeHTML(el.texto || '')}</textarea>
+          <label class="d-block mb-2"><span class="small">Tamaño: <b data-p-val>${el.tamano || 48}</b></span>
+            <input type="range" class="form-range" min="16" max="260" value="${el.tamano || 48}" data-p="tamano"></label>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><span class="small d-block">Color</span>
+              <input type="color" class="form-control form-control-color form-control-sm w-100" value="${el.color || '#ffffff'}" data-p="color"></div>
+            <div class="col-6"><span class="small d-block">Fuente</span>
+              <select class="form-select form-select-sm" data-p="fuente">
+                <option value="sans" ${el.fuente !== 'serif' ? 'selected' : ''}>Sans</option>
+                <option value="serif" ${el.fuente === 'serif' ? 'selected' : ''}>Serif</option></select></div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><span class="small d-block">Peso</span>
+              <select class="form-select form-select-sm" data-p="peso">${[300, 400, 600, 700, 800, 900].map((w) => `<option ${String(el.peso || 700) === String(w) ? 'selected' : ''}>${w}</option>`).join('')}</select></div>
+            <div class="col-6"><span class="small d-block">Alinear</span>
+              <div class="btn-group btn-group-sm w-100">
+                ${['left', 'center', 'right'].map((a) => `<button class="btn btn-outline-secondary ${(el.align || 'left') === a ? 'active' : ''}" data-p="align" data-v="${a}"><i class="bi bi-text-${a === 'center' ? 'center' : a}"></i></button>`).join('')}
+              </div></div>
+          </div>
+          <label class="form-check form-switch small mb-1"><input class="form-check-input" type="checkbox" data-p="sombra" ${el.sombra ? 'checked' : ''}> Sombra</label>${layerBtns}`
+      }
+      props.querySelectorAll('[data-p]').forEach((node) => {
+        const p = node.dataset.p
+        if (p === 'del') return node.addEventListener('click', () => { cv.elementos = cv.elementos.filter((e) => e.id !== el.id); sel = null; renderArt() })
+        if (p === 'fwd') return node.addEventListener('click', () => { const i = cv.elementos.indexOf(el); if (i > -1 && i < cv.elementos.length - 1) { cv.elementos.splice(i, 1); cv.elementos.push(el); renderArt() } })
+        if (p === 'back') return node.addEventListener('click', () => { const i = cv.elementos.indexOf(el); if (i > 0) { cv.elementos.splice(i, 1); cv.elementos.unshift(el); renderArt() } })
+        if (p === 'align') return node.addEventListener('click', () => { el.align = node.dataset.v; renderArt() })
+        const ev = (node.type === 'range' || node.type === 'color' || node.tagName === 'TEXTAREA') ? 'input' : 'change'
+        node.addEventListener(ev, () => {
+          if (node.type === 'checkbox') el[p] = node.checked
+          else if (p === 'tamano') { el.tamano = Number(node.value); const v = props.querySelector('[data-p-val]'); if (v) v.textContent = node.value }
+          else el[p] = node.value
+          if (p === 'tamano') syncStyle(el)
+          else renderArt()
+        })
+      })
+    }
+
+    function node(el) { return art.querySelector(`.cvel[data-id="${el.id}"]`) }
+    function syncStyle(el) {
+      const n = node(el); if (n && el.tipo === 'texto') n.style.fontSize = (el.tamano || 48) + 'px'
+    }
+
+    // arrastre + resize
+    let drag = null
+    art.addEventListener('pointerdown', (e) => {
+      const elNode = e.target.closest('.cvel')
+      if (!elNode) { if (sel) { sel = null; renderArt() } return }
+      const el = elById(elNode.dataset.id)
+      if (!el) return
+      if (sel !== el.id) { sel = el.id; renderArt() }
+      drag = { el, mode: e.target.closest('.cvel-h') ? 'resize' : 'move', sx: e.clientX, sy: e.clientY, ox: el.x, oy: el.y, ow: el.w, oh: el.h }
+      try { art.setPointerCapture(e.pointerId) } catch { /* sin soporte de pointer capture */ }
+      e.preventDefault()
+    })
+    art.addEventListener('pointermove', (e) => {
+      if (!drag) return
+      const dx = (e.clientX - drag.sx) / scale
+      const dy = (e.clientY - drag.sy) / scale
+      if (drag.mode === 'move') { drag.el.x = Math.round(drag.ox + dx); drag.el.y = Math.round(drag.oy + dy) }
+      else { drag.el.w = Math.max(40, Math.round(drag.ow + dx)); drag.el.h = Math.max(24, Math.round(drag.oh + dy)) }
+      const n = node(drag.el)
+      if (n) { n.style.left = drag.el.x + 'px'; n.style.top = drag.el.y + 'px'; n.style.width = drag.el.w + 'px'; n.style.height = drag.el.h + 'px' }
+    })
+    const endDrag = () => { drag = null }
+    art.addEventListener('pointerup', endDrag)
+    art.addEventListener('pointercancel', endDrag)
+    art.addEventListener('dblclick', (e) => {
+      const elNode = e.target.closest('.cvel--texto')
+      if (!elNode) return
+      const el = elById(elNode.dataset.id)
+      elNode.setAttribute('contenteditable', 'true')
+      elNode.focus()
+      const done = () => { el.texto = elNode.innerText; elNode.removeAttribute('contenteditable'); elNode.removeEventListener('blur', done); renderArt() }
+      elNode.addEventListener('blur', done)
+    })
+
+    // toolbar
+    body.querySelector('[data-cv="add-text"]').addEventListener('click', () => {
+      const el = { id: cvUid(), tipo: 'texto', x: 140, y: 280, w: 1000, h: 160, texto: 'Doble clic para escribir', tamano: 84, color: '#ffffff', peso: 700, align: 'center', fuente: 'sans', sombra: true }
+      cv.elementos.push(el); sel = el.id; renderArt()
+    })
+    body.querySelector('[data-cv="add-img"]').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0]; e.target.value = ''
+      if (!file) return
+      AppToast.info('Subiendo…')
+      try {
+        const { path } = await api.subirArchivo(file)
+        const el = { id: cvUid(), tipo: 'imagen', x: 360, y: 150, w: 560, h: 420, storage_path: path, ajuste: 'contain' }
+        cv.elementos.push(el); sel = el.id; renderArt()
+      } catch (err) { AppToast.error(err.message) }
+    })
+    const bgKind = body.querySelector('[data-cv="bg-kind"]')
+    const bgGrad = body.querySelector('[data-cv="bg-grad"]')
+    const bgColor = body.querySelector('[data-cv="bg-color"]')
+    const bgImgLbl = body.querySelector('[data-cv="bg-img-lbl"]')
+    bgKind.value = (cv.fondo && cv.fondo.tipo) || 'gradiente'
+    if (cv.fondo && cv.fondo.tipo === 'gradiente') bgGrad.value = cv.fondo.valor || 'oscuro'
+    if (cv.fondo && cv.fondo.tipo === 'color') bgColor.value = cv.fondo.valor || '#0b0e17'
+    const syncBg = () => {
+      bgGrad.hidden = bgKind.value !== 'gradiente'
+      bgColor.hidden = bgKind.value !== 'color'
+      bgImgLbl.hidden = bgKind.value !== 'imagen'
+    }
+    syncBg()
+    bgKind.addEventListener('change', () => {
+      const k = bgKind.value
+      cv.fondo = k === 'color' ? { tipo: 'color', valor: bgColor.value }
+        : k === 'imagen' ? { tipo: 'imagen', storage_path: cv.fondo && cv.fondo.storage_path }
+          : { tipo: 'gradiente', valor: bgGrad.value }
+      syncBg(); renderArt()
+    })
+    bgGrad.addEventListener('change', () => { cv.fondo = { tipo: 'gradiente', valor: bgGrad.value }; renderArt() })
+    bgColor.addEventListener('input', () => { cv.fondo = { tipo: 'color', valor: bgColor.value }; renderArt() })
+    body.querySelector('[data-cv="bg-img"]').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0]; e.target.value = ''
+      if (!file) return
+      AppToast.info('Subiendo fondo…')
+      try { const { path } = await api.subirArchivo(file); cv.fondo = { tipo: 'imagen', storage_path: path }; renderArt() }
+      catch (err) { AppToast.error(err.message) }
+    })
+
+    renderArt()
+    setTimeout(fitScale, 60)
+    setTimeout(fitScale, 320)
+    window.addEventListener('resize', fitScale)
+    const obs = new MutationObserver(() => {
+      if (!body.isConnected) { window.removeEventListener('resize', fitScale); obs.disconnect() }
+    })
+    obs.observe(document.body, { childList: true, subtree: true })
+  }
 }
 
 function onYouTube() {
@@ -683,7 +945,11 @@ async function cambiarMedio(id, cambios, m) {
 }
 
 function editarMedio(m) {
-  if (m.tipo === 'slide') { editorSlide(m); return }
+  if (m.tipo === 'slide') {
+    if (m.contenido?.tipo === 'canvas') editorCanvas(m)
+    else editorSlide(m)
+    return
+  }
   const esImagen = m.tipo === 'imagen'
   const val = (x) => escapeHTML(x == null ? '' : String(x))
   AppModal.open({

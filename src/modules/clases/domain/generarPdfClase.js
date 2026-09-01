@@ -246,7 +246,10 @@ export function descargarPdfClase(clase, inscritos, context) {
   doc.save(filename)
 }
 
-export function descargarPdfListadoAlumnosPorClases(report, context) {
+export function descargarPdfListadoAlumnosPorClases(report, context = {}) {
+  if (!Array.isArray(report)) {
+    throw new TypeError('descargarPdfListadoAlumnosPorClases: se esperaba un arreglo [{ clase, inscritos }]')
+  }
   const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' })
   const nowDate = now()
   const WL = 279.4

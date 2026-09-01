@@ -2077,9 +2077,41 @@ function attachEvents(container) {
 
   // 6. Botón Descargar PDF Listados Generales
   container.querySelector('#btnPdfListadosClases')?.addEventListener('click', async () => {
+    const clases = state.clasesOriginales || []
+    if (!clases.length) { AppToast.warning('No hay clases para listar.'); return }
     AppToast.info('Generando planilla general de clases en PDF...')
     try {
-      await descargarPdfListadoAlumnosPorClases({ clases: state.clasesOriginales })
+      // descargarPdfListadoAlumnosPorClases espera [{ clase, inscritos }],
+      // no { clases }. Se arma el reporte trayendo los inscritos de todas las
+      // clases en una sola consulta y agrupándolos por clase.
+      const { data: insData, error } = await supabase
+        .from('alumnos_clases')
+        .select('clase_id, hora_inicio, hora_fin, alumnos(*)')
+        .in('clase_id', clases.map((c) => c.id))
+        .neq('activo', false)
+      if (error) throw error
+
+      const porClase = new Map()
+      for (const ins of insData || []) {
+        if (!porClase.has(ins.clase_id)) porClase.set(ins.clase_id, [])
+        porClase.get(ins.clase_id).push({
+          alumno: ins.alumnos || {},
+          hora_inicio: ins.hora_inicio,
+          hora_fin: ins.hora_fin,
+        })
+      }
+
+      const report = clases.map((clase) => ({
+        clase,
+        inscritos: (porClase.get(clase.id) || []).sort((a, b) =>
+          (a.alumno.nombre_completo || '').localeCompare(b.alumno.nombre_completo || '')),
+      }))
+
+      descargarPdfListadoAlumnosPorClases(report, {
+        maestros: state.maestros || [],
+        salones: state.salones || [],
+        programas: state.programas || [],
+      })
       AppToast.success('Planilla PDF generada exitosamente.')
     } catch (err) {
       console.error(err)

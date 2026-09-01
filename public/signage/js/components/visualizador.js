@@ -103,22 +103,26 @@
         SIG.fitCanvasArt(node);
         requestAnimationFrame(function () { SIG.fitCanvasArt(node); });
       }
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          node.classList.add('is-live');
-          var prev = live;
-          live = node;
-          if (prev) {
-            prev.classList.remove('is-live');
-            setTimeout(function () {
-              if (prev.parentNode) {
-                if (prev.tagName === 'VIDEO') { try { prev.pause(); } catch (e) {} }
-                prev.parentNode.removeChild(prev);
-              }
-            }, 800);
-          }
-        });
-      });
+      var activado = false;
+      function activar() {
+        if (activado) return;
+        activado = true;
+        node.classList.add('is-live');
+        if (m.tipo === 'slide' && SIG.fitCanvasArt) SIG.fitCanvasArt(node);
+        var prev = live;
+        live = node;
+        if (prev && prev !== node) {
+          prev.classList.remove('is-live');
+          setTimeout(function () {
+            if (prev.parentNode) {
+              if (prev.tagName === 'VIDEO') { try { prev.pause(); } catch (e) {} }
+              prev.parentNode.removeChild(prev);
+            }
+          }, 800);
+        }
+      }
+      requestAnimationFrame(function () { requestAnimationFrame(activar); });
+      setTimeout(activar, 120);   // red de seguridad si rAF está frenado
       pintarPie(m);
     }
     function advance() { clearTimer(); next(); }

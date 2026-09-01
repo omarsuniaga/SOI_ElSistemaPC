@@ -184,9 +184,7 @@
         setInterval(function () { loadHorario().then(push); }, CFG.poll.horario);
         setInterval(function () { loadCalendario().then(push); }, CFG.poll.calendario);
         setInterval(function () { loadMedia().then(push); }, CFG.poll.media);
-        setInterval(function () {
-          if (SIG.time.localHour() === CFG.dailyReloadHour) location.reload();
-        }, 60000);
+        scheduleDailyReload();
         hideBoot();
       });
   }
@@ -243,6 +241,15 @@
       setInterval(function () { loadHorario().then(push); }, CFG.poll.horario);
       setInterval(function () { loadCalendario().then(push); }, CFG.poll.calendario);
     });
+  }
+
+  /* ---- recarga diaria: UNA sola vez, a CFG.dailyReloadHour (madrugada) ---- */
+  function scheduleDailyReload() {
+    var ahora = new Date(new Date().toLocaleString('en-US', { timeZone: CFG.timezone }));
+    var prox = new Date(ahora);
+    prox.setHours(CFG.dailyReloadHour, 0, 0, 0);
+    if (prox <= ahora) prox.setDate(prox.getDate() + 1);
+    setTimeout(function () { location.reload(); }, prox - ahora);
   }
 
   /* ---- carga suelta en web: sin consultas, solo un aviso ---- */

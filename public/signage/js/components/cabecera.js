@@ -45,6 +45,7 @@
     };
 
     var eventos = [];
+    var eventosSig = null;
     var evIdx = 0;
     var tClock = null;
     var tRota = null;
@@ -90,10 +91,16 @@
         if (L.evento === false) {
           r.event.hidden = true;
         } else {
-          eventos = p.eventos || [];
-          r.event.hidden = eventos.length === 0;
-          evIdx = 0;
-          pintarEvento();
+          var nuevos = p.eventos || [];
+          var sigNueva = nuevos.map(function (e) { return e.titulo + '|' + (e.cuando || ''); }).join('~');
+          r.event.hidden = nuevos.length === 0;
+          if (sigNueva !== eventosSig) {
+            // la lista de eventos cambió: reinicia la rotación
+            eventos = nuevos;
+            eventosSig = sigNueva;
+            evIdx = 0;
+            pintarEvento();
+          }
         }
       },
       start: function () {

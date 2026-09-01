@@ -26,6 +26,7 @@
     var data = { hoy: [], manana: [] };
     var layout = {};
     var scrollTimer = null;
+    var sig = null;          // firma de (layout + datos) para no reconstruir en balde
 
     /* agrupa por hora_inicio, preservando orden cronológico */
     function agrupar(filas) {
@@ -55,27 +56,40 @@
       return '<div class="hitem">' + SIG.esc(f.clase_nombre || 'Clase') + chip + emg + meta + '</div>';
     }
 
-    function grupoHTML(g, manana) {
+    function estadoDe(ini, fin) {
       var now = T.nowMins();
+      if (now >= ini && now < fin) return 'now';
+      if (now >= fin) return 'past';
+      if (ini - now <= 20 && ini - now > 0) return 'soon';
+      return '';
+    }
+    function markDe(estado) {
+      if (estado === 'now') return '<span class="hgroup__dot"></span>';
+      if (estado === 'soon') return '<span class="hgroup__ring"></span>';
+      return '';
+    }
+
+    function grupoHTML(g, manana) {
       var ini = T.mins(g.inicio), fin = T.mins(g.fin);
-      var cls = 'hgroup';
-      var mark = '';
-      if (manana) {
-        cls += ' hgroup--manana';
-      } else if (now >= ini && now < fin) {
-        cls += ' hgroup--now'; mark = '<span class="hgroup__dot"></span>';
-      } else if (now >= fin) {
-        cls += ' hgroup--past';
-      } else if (ini - now <= 20 && ini - now > 0) {
-        cls += ' hgroup--soon'; mark = '<span class="hgroup__ring"></span>';
-      }
+      var estado = manana ? 'manana' : estadoDe(ini, fin);
       return (
-        '<div class="' + cls + '">' +
+        '<div class="hgroup' + (estado ? ' hgroup--' + estado : '') + '" data-ini="' + ini + '" data-fin="' + fin + '">' +
           '<div class="hgroup__time">' + T.hhmm(g.inicio) + '</div>' +
           '<div class="hgroup__items">' + g.clases.map(itemHTML).join('') + '</div>' +
-          '<div class="hgroup__mark">' + mark + '</div>' +
+          '<div class="hgroup__mark">' + markDe(manana ? '' : estado) + '</div>' +
         '</div>'
       );
+    }
+
+    /* re-evalúa "en curso / pasada / próxima" sin reconstruir el DOM ni resetear el scroll */
+    function refreshEstado() {
+      var grupos = r.list.querySelectorAll('.hgroup:not(.hgroup--manana)');
+      Array.prototype.forEach.call(grupos, function (el) {
+        var e = estadoDe(+el.getAttribute('data-ini'), +el.getAttribute('data-fin'));
+        el.className = 'hgroup' + (e ? ' hgroup--' + e : '');
+        var mk = el.querySelector('.hgroup__mark');
+        if (mk) mk.innerHTML = markDe(e);
+      });
     }
 
     function secHead(nombre, count, manana) {
@@ -130,6 +144,16 @@
       fit();
     }
 
+    function firma() {
+      var d = function (list) {
+        return list.map(function (f) {
+          return [f.hora_inicio, f.hora_fin, f.clase_nombre, f.origen].join('~');
+        }).join('|');
+      };
+      return JSON.stringify([layout.hoy, layout.manana, layout.instrumento, layout.meta]) +
+        '::' + d(data.hoy) + '::' + d(data.manana);
+    }
+
     return {
       update: function (p) {
         p = p || {};
@@ -137,9 +161,11 @@
         r.host.hidden = layout.visible === false;
         data.hoy = p.hoy || [];
         data.manana = p.manana || [];
-        render();
+        var nueva = firma();
+        if (nueva !== sig) { sig = nueva; render(); }   // solo reconstruye si algo cambió
+        else refreshEstado();                            // si no, solo re-evalúa el estado
       },
-      start: function () { this._t = setInterval(render, 60000); },
+      start: function () { this._t = setInterval(refreshEstado, 30000); },
       stop: function () { clearInterval(this._t); if (scrollTimer) clearInterval(scrollTimer); },
       relayout: fit,
     };

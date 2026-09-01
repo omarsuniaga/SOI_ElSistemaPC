@@ -1,7 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
    Componente: Visualizador (reproductor/visor del área central)
-   Props (update): { layout, items:[{tipo,storage_path,youtube_url,titulo,credito,duracion_seg}] }
+   Props (update): { layout, items:[{id,tipo,storage_path,youtube_url,titulo,credito,duracion_seg}] }
    Rota imágenes/vídeos con crossfade y pinta el pie de foto del elemento actual.
+
+   IMPORTANTE: update() NO reinicia la rotación si la lista de medios no cambió
+   (los refrescos de datos cada 2-3 min no deben "volver al primero").
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -28,22 +31,28 @@
     };
 
     var items = [];
+    var sig = null;         // firma de la lista actual (para detectar cambios)
     var idx = -1;
     var live = null;
     var timer = null;
+    var running = false;
     var layout = {};
 
-    function pieFijo() {
-      var t = (layout.pieTexto || '').trim();
-      if (!t) { r.caption.hidden = true; return; }
-      r.capTitle.textContent = t;
-      r.capDetail.textContent = '';
-      r.caption.hidden = false;
+    function firma(list) {
+      return list.map(function (m) {
+        return [m.id || m.storage_path || m.youtube_url, m.tipo, m.duracion_seg || 0].join('~');
+      }).join('|');
     }
 
     function pintarPie(m) {
       if (layout.pie === false) { r.caption.hidden = true; return; }
-      if ((layout.pieTexto || '').trim()) { pieFijo(); return; }
+      var fijo = (layout.pieTexto || '').trim();
+      if (fijo) {
+        r.capTitle.textContent = fijo;
+        r.capDetail.textContent = '';
+        r.caption.hidden = false;
+        return;
+      }
       var has = m && (m.titulo || m.credito);
       r.caption.hidden = !has;
       if (has) {
@@ -55,7 +64,6 @@
     function clearTimer() { if (timer) { clearTimeout(timer); timer = null; } }
 
     function next() {
-      // limpia cualquier nodo que no sea el que está en pantalla
       Array.prototype.slice.call(r.stage.children).forEach(function (n) {
         if (n !== live) {
           if (n.tagName === 'VIDEO') { try { n.pause(); } catch (e) {} }
@@ -76,8 +84,11 @@
         node = document.createElement('img');
         node.src = SIG.STORAGE_PUBLIC + m.storage_path;
         node.onerror = function () { advance(); };
-        var secs = (m.duracion_seg && m.duracion_seg > 0) ? m.duracion_seg : (SIG.cfg.slideDefaultSeconds || 12);
-        timer = setTimeout(advance, secs * 1000);
+        // con un solo elemento no hace falta temporizador: se queda fijo
+        if (items.length > 1) {
+          var secs = (m.duracion_seg && m.duracion_seg > 0) ? m.duracion_seg : (SIG.cfg.slideDefaultSeconds || 12);
+          timer = setTimeout(advance, secs * 1000);
+        }
       }
       r.stage.appendChild(node);
       requestAnimationFrame(function () {
@@ -100,28 +111,54 @@
     }
     function advance() { clearTimer(); next(); }
 
-    function restart() {
+    function detener() {
+      clearTimer();
+      running = false;
+      idx = -1;
+      while (r.stage.firstChild) r.stage.removeChild(r.stage.firstChild);
+      live = null;
+    }
+
+    function arrancar() {
       clearTimer();
       idx = -1;
-      var on = items.length > 0 && layout.visible !== false;
-      r.wm.style.display = on ? 'none' : 'flex';
-      if (!on) {
-        while (r.stage.firstChild) r.stage.removeChild(r.stage.firstChild);
-        live = null;
-        pintarPie(null);
-        return;
-      }
+      running = true;
       next();
     }
 
     return {
       update: function (p) {
         p = p || {};
-        layout = (p.layout && p.layout.visualizador) || {};
+        var nuevoLayout = (p.layout && p.layout.visualizador) || {};
+        var pieCambio = nuevoLayout.pie !== layout.pie || (nuevoLayout.pieTexto || '') !== (layout.pieTexto || '');
+        layout = nuevoLayout;
         r.host.hidden = layout.visible === false;
         r.host.classList.toggle('vis--cover', layout.ajuste === 'cover');
-        items = (p.items || []).slice();
-        restart();
+
+        var nuevos = (p.items || []).slice();
+        var nuevaSig = firma(nuevos);
+        var visible = nuevos.length > 0 && layout.visible !== false;
+        r.wm.style.display = visible ? 'none' : 'flex';
+
+        if (!visible) {
+          if (running || live) detener();
+          pintarPie(null);
+          return;
+        }
+
+        items = nuevos;
+
+        if (nuevaSig !== sig) {
+          // la lista cambió (o es la primera vez): reinicia desde el principio
+          sig = nuevaSig;
+          arrancar();
+        } else if (!running) {
+          // misma lista pero no estaba corriendo
+          arrancar();
+        } else if (pieCambio) {
+          // misma lista, sigue corriendo: solo refresca el pie del elemento actual
+          pintarPie(items[idx] || null);
+        }
       },
       start: function () {},
       stop: function () { clearTimer(); },

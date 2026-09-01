@@ -10,11 +10,20 @@
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
+    # SAMEORIGIN (no DENY): el Estudio de la cartelera embebe /signage/ en un
+    # iframe del mismo origen. Sigue bloqueando el enmarcado desde otros dominios.
+    X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     # Keep this in sync with vite.config.js and public/_headers. Ollama runs on the developer's host.
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://openrouter.ai https://docs.google.com http://localhost:11434 ws://localhost:11434; frame-src 'self' blob: data:; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://openrouter.ai https://docs.google.com http://localhost:11434 ws://localhost:11434; frame-src 'self' blob: data:; frame-ancestors 'self'"
+
+[[headers]]
+  for = "/signage/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "no-referrer"
 
 [[redirects]]
   from = "/maestros.html"

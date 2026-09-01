@@ -15,7 +15,7 @@ import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import * as api from '../api/signageAdminApi.js'
 
-const PREVIEW_SRC = '/signage/?preview=1'
+const PREVIEW_SRC = '/signage/index.html?preview=1'
 
 const state = {
   container: null,
@@ -36,14 +36,17 @@ export async function renderSignageStudioView(container) {
   state.container = container
   container.innerHTML = shell('<div class="text-center text-muted py-5"><span class="spinner-border spinner-border-sm me-2"></span>Cargando…</div>')
 
+  const cerrar = () => window.removeEventListener('message', onMessage)
   const onMessage = (ev) => {
+    // el router borra el DOM sin llamar cleanup al navegar fuera: auto-desmontar
+    if (!state.container || !state.container.isConnected) { cerrar(); return }
     const d = ev.data
     if (!d || typeof d !== 'object' || String(d.type || '').indexOf('signage:') !== 0) return
     if (d.type === 'signage:ready') { state.iframeReady = true; postModel() }
     else if (d.type === 'signage:zone-click' && d.zone) irASeccion(d.zone)
   }
   window.addEventListener('message', onMessage)
-  container.cleanup = () => window.removeEventListener('message', onMessage)
+  container.cleanup = cerrar
 
   try {
     state.pantallas = await api.listarPantallas()
@@ -107,7 +110,7 @@ function renderToolbar() {
     .join('')
   tb.innerHTML = `
     ${state.pantallas.length > 1 ? `<select class="form-select form-select-sm" id="ss-pantalla" style="width:auto">${opts}</select>` : ''}
-    <a class="btn btn-sm btn-outline-secondary" href="/signage/" target="_blank" rel="noopener" title="Abrir la cartelera en una pestaña">
+    <a class="btn btn-sm btn-outline-secondary" href="/signage/index.html" target="_blank" rel="noopener" title="Abrir la cartelera en una pestaña">
       <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
     </a>
     <button class="btn btn-sm btn-primary" id="ss-guardar" ${state.guardando ? 'disabled' : ''}>

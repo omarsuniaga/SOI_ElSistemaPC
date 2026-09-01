@@ -148,6 +148,18 @@ export function buildClasePdfRows(inscripciones, claseHorarios = []) {
   })
 }
 
+/**
+ * Filas para la PLANILLA DE ASISTENCIA: #, nombre completo, teléfono y una
+ * celda de asistencia vacía para llenar a mano (A / P / J).
+ * @param {Array} inscripciones - filas con { alumno } embebido
+ */
+export function buildAsistenciaPdfRows(inscripciones = []) {
+  return inscripciones.map((ins, i) => {
+    const a = ins.alumno || {}
+    return [i + 1, p(a.nombre_completo), p(resolverTelefonoAlumno(a)), '']
+  })
+}
+
 export function formatClaseHorariosForPdf(horarios, salones = []) {
   if (!Array.isArray(horarios) || horarios.length === 0) return 'Sin horarios'
   return horarios.map(h => {
@@ -200,50 +212,104 @@ function renderClaseHeader(doc, clase, context) {
   return 66
 }
 
+/**
+ * PLANILLA DE ASISTENCIA de una clase: lista de alumnos con una columna vacía
+ * para marcar la asistencia a mano (A / P / J), la leyenda de esas siglas y un
+ * apartado para anotar los totales de Presentes / Ausentes / Justificados.
+ */
 export function descargarPdfClase(clase, inscritos = [], context = {}) {
+  const doc = buildPlanillaClaseDoc(clase, inscritos, context)
+  doc.save(buildClasePdfFilename(clase.nombre, new Date().toISOString().slice(0, 10)))
+}
+
+/** Construye (sin descargar) el jsPDF de la planilla de asistencia. Testeable. */
+export function buildPlanillaClaseDoc(clase, inscritos = [], context = {}) {
   const doc = new jsPDF({ unit: 'mm', format: 'letter' })
   const nowDate = now()
-  const filename = buildClasePdfFilename(clase.nombre, new Date().toISOString().slice(0, 10))
 
-  header(doc, 'FICHA DE CLASE', `Generado: ${nowDate}`)
+  header(doc, 'PLANILLA DE ASISTENCIA', `Generado: ${nowDate}`)
   let y = renderClaseHeader(doc, clase, context)
 
-  if (clase.descripcion) {
-    doc.setFont('helvetica', 'italic')
-    doc.setFontSize(8)
-    doc.setTextColor(...C.grisMedio)
-    const lines = doc.splitTextToSize(clase.descripcion, W - M * 2)
-    y += 2
-    doc.text(lines, M, y)
-    y += lines.length * 4 + 2
-  }
-
+  // Fecha de la clase — se llena a mano el día que se pasa lista.
+  y += 2
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8.5)
+  doc.setFontSize(9)
   doc.setTextColor(...C.grisOscuro)
-  doc.text(`Alumnos inscritos: ${inscritos.length}`, M, y)
+  doc.text('Fecha de la clase:', M, y)
+  doc.setDrawColor(...C.grisMedio)
+  doc.line(M + 33, y + 0.5, M + 95, y + 0.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...C.grisMedio)
+  doc.text(`Alumnos inscritos: ${inscritos.length}`, W - M, y, { align: 'right' })
   y += 5
 
-  if (inscritos.length > 0) {
-    const rows = buildClasePdfRows(inscritos, clase.horarios)
-    autoTable(doc, {
-      startY: y,
-      margin: { top: 44, left: M, right: M },
-      theme: 'grid',
-      head: [['#', 'Nombre', 'Instrumento', 'Teléfono', 'Última actualización', 'Horarios']],
-      headStyles: { fillColor: C.azul, textColor: C.blanco, fontStyle: 'bold', fontSize: 7.5 },
-      styles: { fontSize: 7, cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 }, overflow: 'linebreak' },
-      alternateRowStyles: { fillColor: C.grisClaro },
-      body: rows,
-      didDrawPage: (data) => {
-        header(doc, 'FICHA DE CLASE', `FUNEYCA PC · ${clase.nombre}`)
-        footer(doc, data.pageNumber)
-      },
-    })
-  }
+  const rows = buildAsistenciaPdfRows(inscritos)
+  const usable = W - M * 2
 
-  footer(doc, 1)
-  doc.save(filename)
+  autoTable(doc, {
+    startY: y,
+    margin: { top: 44, left: M, right: M },
+    theme: 'grid',
+    head: [['#', 'Nombre completo', 'Teléfono', 'Asistencia']],
+    headStyles: { fillColor: C.azul, textColor: C.blanco, fontStyle: 'bold', fontSize: 8, halign: 'left' },
+    styles: {
+      fontSize: 8.5,
+      cellPadding: { top: 2.6, bottom: 2.6, left: 2.5, right: 2.5 },
+      minCellHeight: 8.5,
+      overflow: 'linebreak',
+      valign: 'middle',
+      lineColor: C.grisMedio,
+    },
+    alternateRowStyles: { fillColor: C.grisClaro },
+    columnStyles: {
+      0: { cellWidth: 9, halign: 'center' },
+      1: { cellWidth: usable * 0.5 },
+      2: { cellWidth: usable * 0.22 },
+      3: { cellWidth: 'auto' },
+    },
+    body: rows.length ? rows : [[{ content: 'Sin alumnos inscritos en esta clase.', colSpan: 4, styles: { halign: 'center', textColor: C.grisMedio } }]],
+    didDrawPage: (data) => {
+      header(doc, 'PLANILLA DE ASISTENCIA', `El Sistema PC · ${clase.nombre}`)
+      footer(doc, data.pageNumber)
+    },
+  })
+
+  let fy = (doc.lastAutoTable?.finalY || y) + 8
+  if (fy > H - 40) { footer(doc, doc.internal.getNumberOfPages()); doc.addPage(); header(doc, 'PLANILLA DE ASISTENCIA', clase.nombre); fy = 46 }
+
+  // Leyenda de siglas
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8.5)
+  doc.setTextColor(...C.azul)
+  doc.text('Leyenda:', M, fy)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...C.grisOscuro)
+  doc.text('P = Presente        A = Ausente        J = Justificado', M + 20, fy)
+  fy += 8
+
+  // Apartado de totales — se anotan a mano al cerrar la lista.
+  doc.setFillColor(...C.azulClaro)
+  doc.roundedRect(M, fy, usable, 20, 2, 2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8.5)
+  doc.setTextColor(...C.azul)
+  doc.text('Totales de la clase', M + 4, fy + 6)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...C.grisOscuro)
+  const campos = ['Presentes:', 'Ausentes:', 'Justificados:']
+  const cw = (usable - 8) / 3
+  campos.forEach((label, i) => {
+    const cx = M + 4 + i * cw
+    doc.text(label, cx, fy + 14)
+    doc.setDrawColor(...C.grisMedio)
+    doc.line(cx + doc.getTextWidth(label) + 2, fy + 14.5, cx + cw - 6, fy + 14.5)
+  })
+
+  footer(doc, doc.internal.getNumberOfPages())
+  return doc
 }
 
 export function descargarPdfListadoAlumnosPorClases(report, context = {}) {

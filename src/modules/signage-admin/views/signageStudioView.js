@@ -23,6 +23,7 @@ const state = {
   pantalla: null,
   layout: null,
   marca: { institucion: '', siglas: '' },
+  menuPortales: [],
   medios: [],
   seccion: 'cabecera',
   dirty: false,
@@ -63,6 +64,7 @@ async function seleccionarPantalla(id) {
     institucion: state.pantalla.institucion || '',
     siglas: state.pantalla.siglas || '',
   }
+  state.menuPortales = Array.isArray(state.pantalla.menu_portales) ? [...state.pantalla.menu_portales] : []
   state.medios = await api.listarMedios(state.pantalla.id)
   state.dirty = false
   state.iframeReady = false
@@ -206,7 +208,15 @@ function panelHTML() {
       ${sel('visualizador.ajuste', 'Ajuste de imagen', [['contain', 'Completa (sin recortar)'], ['cover', 'Rellenar (recorta bordes)']])}
       ${sw('visualizador.pie', 'Pie de foto (título y crédito)')}
       ${txt('visualizador.pieTexto', 'Pie de foto fijo (opcional)', 'Sobrescribe el título del medio actual')}
-    `) : ''}`
+    `) : ''}
+    ${acc('visibilidad', 'bi-eye', 'Visibilidad del menú', `
+      <p class="small text-muted mb-2">El menú <b>Cartelera</b> siempre está en el portal Admin. Aquí eliges en qué otros portales departamentales aparece también:</p>
+      ${api.PORTALES_DEPTO.map((p) => `
+        <label class="form-check form-switch d-flex align-items-center gap-2 py-1 m-0">
+          <input class="form-check-input" type="checkbox" data-portal="${p.id}" ${state.menuPortales.includes(p.id) ? 'checked' : ''}>
+          <span>${escapeHTML(p.label)} <small class="text-muted">(${p.id})</small></span>
+        </label>`).join('')}
+    `)}`
 }
 
 function mediosHTML() {
@@ -282,6 +292,10 @@ function attach(host) {
     el.addEventListener('change', () => { state.marca[el.dataset.marca] = el.value.trim(); markDirty(); postModel() }),
   )
 
+  host.querySelectorAll('[data-portal]').forEach((el) =>
+    el.addEventListener('change', () => togglePortal(el.dataset.portal, el.checked)),
+  )
+
   // medios
   host.querySelector('#ss-file')?.addEventListener('change', onSubir)
   host.querySelector('#ss-yt')?.addEventListener('click', onYouTube)
@@ -338,6 +352,22 @@ function markDirty() {
   state.dirty = true
   const btn = document.getElementById('ss-guardar')
   if (btn) btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar diseño'
+}
+
+async function togglePortal(portalId, on) {
+  const prev = [...state.menuPortales]
+  state.menuPortales = on
+    ? [...new Set([...state.menuPortales, portalId])]
+    : state.menuPortales.filter((x) => x !== portalId)
+  try {
+    await api.guardarMenuPortales(state.pantalla.id, state.menuPortales)
+    state.pantalla.menu_portales = [...state.menuPortales]
+    AppToast.success(on ? `Menú visible en ${portalId}.` : `Menú oculto en ${portalId}.`)
+  } catch (e) {
+    state.menuPortales = prev
+    AppToast.error(e.message)
+    render()
+  }
 }
 
 async function guardar() {

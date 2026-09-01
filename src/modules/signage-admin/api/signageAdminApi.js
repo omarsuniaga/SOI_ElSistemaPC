@@ -28,13 +28,32 @@ export function mergeLayout(dbLayout) {
 
 /* ─── Pantallas ─────────────────────────────────────────────────────────── */
 
+/** Portales departamentales donde puede aparecer el menú "Cartelera". */
+export const PORTALES_DEPTO = [
+  { id: 'ADM', label: 'Administración' },
+  { id: 'ACM', label: 'Académico' },
+  { id: 'COM', label: 'Comunicaciones' },
+  { id: 'FIN', label: 'Finanzas' },
+  { id: 'LOG', label: 'Logística' },
+  { id: 'TECNICO', label: 'Técnico' },
+  { id: 'LUT', label: 'Lutería' },
+]
+
 export async function listarPantallas() {
   const { data, error } = await supabase
     .from('signage_pantallas')
-    .select('id, slug, nombre, institucion, siglas, ubicacion, orientacion, layout, modo_nocturno, activo, updated_at')
+    .select('id, slug, nombre, institucion, siglas, ubicacion, orientacion, layout, modo_nocturno, menu_portales, activo, updated_at')
     .order('nombre', { ascending: true })
   if (error) throw new Error('No se pudieron cargar las pantallas: ' + error.message)
   return data || []
+}
+
+export async function guardarMenuPortales(pantallaId, portales) {
+  const { error } = await supabase
+    .from('signage_pantallas')
+    .update({ menu_portales: portales })
+    .eq('id', pantallaId)
+  if (error) throw new Error('No se pudo guardar la visibilidad: ' + error.message)
 }
 
 export async function guardarIdentidad(pantallaId, { institucion, siglas }) {

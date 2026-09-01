@@ -452,6 +452,33 @@ function renderAccessDenied(app, brandText) {
  * Arranca un portal departamental.
  * @param {PortalProfile} profile
  */
+/**
+ * Inyecta el menú "Cartelera" si el portal Admin lo autorizó para este
+ * departamento (signage_pantallas.menu_portales). El módulo ya está registrado
+ * vía allRegistrars; esto solo lo hace visible en la nav. Falla en silencio.
+ */
+async function injectCarteleraNav(profile) {
+  if (!supabase) return
+  try {
+    const { data } = await supabase
+      .from('signage_pantallas')
+      .select('menu_portales')
+      .limit(1)
+      .maybeSingle()
+    const portales = (data && data.menu_portales) || []
+    if (!portales.includes(profile.hermesDept)) return
+    if (profile.navGroups.some((g) => g.items.some((i) => i.id === 'signage-pantalla'))) return
+    profile.navGroups.push({
+      id: 'cartelera',
+      label: 'Cartelera',
+      icon: 'bi-tv',
+      items: [{ id: 'signage-pantalla', label: 'Pantalla del vestíbulo', icon: 'bi-tv' }],
+    })
+  } catch (e) {
+    console.warn('[portalShell] cartelera nav:', e?.message)
+  }
+}
+
 export async function bootAdminPortal(profile) {
   const storageKey = `current-view-${profile.hermesDept.toLowerCase()}`
   const app = document.querySelector('#app')
@@ -462,6 +489,8 @@ export async function bootAdminPortal(profile) {
 
   initializeTheme()
   router.setPortalPrefix(profile.hermesDept.toLowerCase())
+
+  await injectCarteleraNav(profile)
 
   // Registrar auth + módulos del perfil
   try {

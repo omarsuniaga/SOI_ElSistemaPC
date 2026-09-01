@@ -1,0 +1,16 @@
+[Unit]
+Description=Cartelera — servidor web de vista previa (sirve ~/signage/public)
+After=network.target
+
+[Service]
+Type=simple
+User=omarviolin
+WorkingDirectory=/home/omarviolin/signage/public
+# Puerto NO privilegiado (8080) y sin root — sirve solo estáticos de lectura.
+ExecStart=/usr/bin/python3 -m http.server 8080 --directory /home/omarviolin/signage/public --bind 0.0.0.0
+Restart=always
+RestartSec=5
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

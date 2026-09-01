@@ -1,0 +1,269 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Cartelera — El Sistema Punta Cana
+   Réplica del diseño de Claude Design. Componentes: cabecera · visualizador
+   · horario. Layout fluido (--u). Sin fuentes web (Pi Zero W).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* unidad de escala: ~1% del ancho, con tope por alto para ratios raros */
+  --u: min(1.04vw, 1.78vh);
+  --fit: 1;                         /* compresión del horario (la ajusta app.js) */
+
+  --bg:        #0b0e17;
+  --panel:     #111726;
+  --panel-hi:  #161e30;
+  --vis-bg:    #070912;
+  --ink:       #e7ebf3;
+  --ink-dim:   #8b93a6;
+  --ink-faint: #565e73;
+  --gold:      #c6a05c;
+  --gold-soft: #a98f57;
+  --line:      rgba(255, 255, 255, 0.055);
+  --line-2:    rgba(255, 255, 255, 0.09);
+
+  --serif: "Liberation Serif", "DejaVu Serif", Georgia, "Times New Roman", serif;
+  --sans:  "DejaVu Sans", "Liberation Sans", system-ui, -apple-system, sans-serif;
+
+  --pad: calc(var(--u) * 2.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100vw; height: 100vh; overflow: hidden;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--serif); font-size: var(--u);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { position: relative; width: 100vw; height: 100vh; }
+
+.app__grid {
+  width: 100%; height: 100%;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 27.5%);
+  grid-template-rows: calc(var(--u) * 8.4) 1fr;
+  grid-template-areas:
+    "cabecera cabecera"
+    "visualizador horario";
+  background:
+    radial-gradient(90vw 55vh at 22% -18%, #16203a 0%, var(--bg) 62%);
+}
+.mount { min-width: 0; min-height: 0; display: contents; }
+
+/* ══════════════ CABECERA ══════════════ */
+.cab {
+  grid-area: cabecera;
+  display: flex; align-items: center; gap: calc(var(--u) * 2.6);
+  padding: 0 var(--pad);
+  background: linear-gradient(180deg, #0e1422, #0b0f1b);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.cab__brand { display: flex; align-items: center; gap: calc(var(--u) * 1.15); flex: 0 0 auto; }
+.cab__logo {
+  width: calc(var(--u) * 3.9); height: calc(var(--u) * 3.9);
+  border-radius: 50%; border: 1px solid rgba(198, 160, 92, 0.65);
+  display: grid; place-items: center;
+  color: var(--gold); font-family: var(--sans); font-weight: 300;
+  font-size: calc(var(--u) * 1.65); line-height: 1;
+}
+.cab__inst { font-size: calc(var(--u) * 1.72); font-weight: 700; line-height: 1.12; letter-spacing: .01em; }
+.cab__siglas {
+  font-family: var(--sans); font-size: calc(var(--u) * 0.86);
+  letter-spacing: .22em; text-transform: uppercase; color: var(--ink-dim);
+  margin-top: calc(var(--u) * 0.18);
+}
+
+.cab__event {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: calc(var(--u) * 1.1);
+  border: 1px solid var(--line-2); border-radius: calc(var(--u) * 0.9);
+  background: rgba(255, 255, 255, 0.018);
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1.4);
+  max-width: 46vw;
+}
+.cab__event-ico {
+  flex: 0 0 auto; color: var(--gold); font-family: var(--sans);
+  font-size: calc(var(--u) * 1.5); opacity: .9;
+}
+.cab__event-body { min-width: 0; display: flex; flex-direction: column; gap: calc(var(--u) * 0.12); transition: opacity .4s; }
+.cab__event-label {
+  font-family: var(--sans); font-size: calc(var(--u) * 0.78);
+  letter-spacing: .24em; text-transform: uppercase; color: var(--gold);
+}
+.cab__event-title {
+  font-size: calc(var(--u) * 1.42); line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink);
+}
+
+.cab__clock { flex: 0 0 auto; margin-left: auto; text-align: right; font-family: var(--sans); }
+.cab__date {
+  font-size: calc(var(--u) * 0.98); color: var(--ink-dim); line-height: 1.25;
+  white-space: nowrap;
+}
+.cab__time {
+  font-size: calc(var(--u) * 3.05); font-weight: 700; line-height: 1;
+  letter-spacing: .015em; font-variant-numeric: tabular-nums;
+  margin-top: calc(var(--u) * 0.15);
+}
+
+/* ══════════════ VISUALIZADOR ══════════════ */
+.vis {
+  grid-area: visualizador; position: relative; overflow: hidden;
+  background: var(--vis-bg);
+}
+.vis__stage { position: absolute; inset: 0; }
+.vis__stage img, .vis__stage video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; opacity: 0; transition: opacity .6s ease; background: var(--vis-bg);
+}
+.vis--cover .vis__stage img, .vis--cover .vis__stage video { object-fit: cover; }
+.vis__stage .is-live { opacity: 1; }
+
+.vis__watermark {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: rgba(198, 160, 92, 0.10); font-family: var(--sans);
+  font-size: calc(var(--u) * 22); pointer-events: none; user-select: none;
+}
+
+.vis__caption {
+  position: absolute; left: 0; bottom: calc(var(--u) * 2.4);
+  max-width: 62%; padding: calc(var(--u) * 0.5) 0 calc(var(--u) * 0.5) calc(var(--u) * 1.5);
+  margin-left: var(--pad);
+  border-left: calc(var(--u) * 0.22) solid var(--gold);
+  transition: opacity .4s;
+}
+.vis__caption-title { font-size: calc(var(--u) * 1.7); line-height: 1.25; color: var(--ink); }
+.vis__caption-detail {
+  font-family: var(--sans); font-size: calc(var(--u) * 1.02);
+  color: var(--ink-dim); margin-top: calc(var(--u) * 0.25);
+}
+
+/* ══════════════ HORARIO (sidebar) ══════════════ */
+.hor {
+  grid-area: horario; background: var(--panel);
+  border-left: 1px solid var(--line-2);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 1.5) calc(var(--u) * 1.2);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.hor__scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+.hor__sec-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-family: var(--sans);
+  padding: calc(var(--u) * 0.85 * var(--fit)) 0 calc(var(--u) * 0.5 * var(--fit));
+}
+.hor__sec-head:first-child { padding-top: 0; }
+.hor__sec-name {
+  font-size: calc(var(--u) * 1.15 * var(--fit)); font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--gold);
+}
+.hor__sec-count {
+  font-size: calc(var(--u) * 1.0 * var(--fit)); color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.hor__sec--manana { border-top: 1px solid var(--line); margin-top: calc(var(--u) * 0.7 * var(--fit)); }
+.hor__sec--manana .hor__sec-name { color: var(--ink-dim); }
+
+.hgroup {
+  position: relative;
+  display: grid; grid-template-columns: calc(var(--u) * 4.9 * var(--fit)) 1fr auto;
+  gap: calc(var(--u) * 0.9);
+  align-items: start;
+  padding: calc(var(--u) * 0.52 * var(--fit)) 0;
+  border-bottom: 1px solid var(--line);
+}
+.hgroup__time {
+  font-family: var(--sans); font-size: calc(var(--u) * 1.06 * var(--fit));
+  color: var(--gold-soft); font-variant-numeric: tabular-nums; letter-spacing: .01em;
+  padding-top: calc(var(--u) * 0.1 * var(--fit));
+}
+.hgroup__items { min-width: 0; display: flex; flex-direction: column; gap: calc(var(--u) * 0.22 * var(--fit)); }
+.hitem {
+  font-size: calc(var(--u) * 1.24 * var(--fit)); line-height: 1.18; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hitem__meta {
+  display: block; font-family: var(--sans); font-size: calc(var(--u) * 0.86 * var(--fit));
+  color: var(--ink-faint); margin-top: calc(var(--u) * 0.05 * var(--fit));
+}
+.hgroup__mark { font-family: var(--sans); }
+
+.hgroup--now {
+  background: linear-gradient(90deg, rgba(198, 160, 92, 0.14), transparent 70%);
+  margin: 0 calc(var(--u) * -1.5);
+  padding-left: calc(var(--u) * 1.28); padding-right: calc(var(--u) * 1.5);
+  border-bottom-color: transparent;
+}
+.hgroup--now::before {
+  content: ""; position: absolute; left: 0; top: 10%; bottom: 10%;
+  width: calc(var(--u) * 0.22); background: var(--gold);
+}
+.hgroup--now .hitem { color: #fff; }
+.hgroup__dot {
+  display: block; width: calc(var(--u) * 0.55); height: calc(var(--u) * 0.55);
+  border-radius: 50%; background: var(--gold); margin-top: calc(var(--u) * 0.35);
+}
+.hgroup__ring {
+  display: block; width: calc(var(--u) * 0.6); height: calc(var(--u) * 0.6);
+  border-radius: 50%; border: 1px solid var(--gold-soft); margin-top: calc(var(--u) * 0.32);
+}
+.hgroup--past { opacity: .4; }
+.hgroup--past .hgroup__time, .hgroup--past .hitem { color: var(--ink-faint); }
+
+.hgroup--manana .hitem { color: var(--ink-dim); font-size: calc(var(--u) * 1.12 * var(--fit)); }
+.hgroup--manana .hgroup__time { color: var(--ink-faint); }
+
+.hrow__chip {
+  font-family: var(--sans); font-size: calc(var(--u) * 0.72 * var(--fit));
+  letter-spacing: .06em; text-transform: uppercase; color: var(--gold-soft);
+  border: 1px solid var(--line-2); border-radius: 999px;
+  padding: 0 calc(var(--u) * 0.5); margin-left: calc(var(--u) * 0.5);
+}
+.hrow__chip--emg { color: #d8934a; border-color: rgba(216,147,74,.35); }
+
+.hor__empty { color: var(--ink-dim); font-family: var(--sans); font-size: calc(var(--u) * 1.15); padding: calc(var(--u) * 0.8) 0; }
+
+/* ══════════════ ESTADOS ══════════════ */
+.flag-offline {
+  position: absolute; right: calc(var(--u) * 0.9); bottom: calc(var(--u) * 0.7); z-index: 40;
+  font-family: var(--sans); font-size: calc(var(--u) * 0.92);
+  background: rgba(0, 0, 0, 0.55); color: var(--ink-dim);
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 0.85); border-radius: calc(var(--u) * 0.35);
+}
+
+.reposo {
+  position: absolute; inset: 0; z-index: 60; background: #04060c;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(var(--u) * 1.1); font-family: var(--sans); color: #2f3c58;
+}
+.reposo__mark { font-size: calc(var(--u) * 5); color: #38455f; }
+.reposo__time { font-size: calc(var(--u) * 7); font-weight: 700; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.reposo__date { font-size: calc(var(--u) * 1.5); text-transform: capitalize; }
+
+.boot {
+  position: absolute; inset: 0; z-index: 80; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(var(--u) * 1.6); font-family: var(--sans); color: var(--ink-dim);
+  transition: opacity .5s;
+}
+.boot__mark { font-size: calc(var(--u) * 4.4); color: var(--gold); }
+.boot__bar { width: calc(var(--u) * 20); height: calc(var(--u) * 0.32); background: var(--line-2); border-radius: 999px; overflow: hidden; }
+.boot__bar span { display: block; width: 42%; height: 100%; background: var(--gold); animation: boot-slide 1.15s ease-in-out infinite; }
+@keyframes boot-slide { 0% { margin-left: -42%; } 100% { margin-left: 100%; } }
+.boot.is-hidden { opacity: 0; pointer-events: none; }
+
+[hidden] { display: none !important; }
+
+/* ── modo preview (dentro del Estudio del portal) ── */
+.is-preview .boot__bar { display: none; }
+.is-preview .cab,
+.is-preview .vis,
+.is-preview .hor { cursor: pointer; }
+.is-preview .cab:hover,
+.is-preview .vis:hover,
+.is-preview .hor:hover {
+  outline: 2px solid rgba(198, 160, 92, 0.55);
+  outline-offset: -2px;
+}

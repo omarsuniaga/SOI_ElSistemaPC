@@ -174,10 +174,14 @@ src/modules/signage-admin/
   + `NAV_GROUPS` grupo "Sistema & Configuración").
 - **También en `allRegistrars.js`** para que la ruta resuelva en los portales
   departamentales.
-- **Autorización por departamento**: `signage_pantallas.menu_portales`. El Estudio
-  tiene la sección "Visibilidad del menú" (switches ADM/ACM/COM/FIN/LOG/TECNICO/LUT).
-  `adminPortalShell.injectCarteleraNav()` lee esa lista al arrancar cada portal
-  de depto y añade el grupo "Cartelera" si corresponde.
+- **Acceso fijo**: portal **Admin** (`main.js`), **ADM** (`adm.js`) y **ACM**
+  (`acm.js`) tienen el menú "Cartelera" de forma **estática**.
+- **Autorización de los demás departamentos**: `signage_pantallas.menu_portales`
+  (`text[]`). El Estudio tiene la sección "Visibilidad del menú": ADM/ACM salen
+  como fijos (no editables); COM/FIN/LOG/TECNICO/LUT como switches que se guardan
+  al momento. `adminPortalShell.injectCarteleraNav()` lee esa lista al arrancar
+  cada portal de depto y añade el grupo "Cartelera" si corresponde (con
+  early-return si ya está estático, para no consultar Supabase en ADM/ACM).
 - **Pendiente**: catalogarlo en `src/core/moduleCatalog.js` (hoy sale un aviso
   benigno en "Diagnóstico Portales").
 

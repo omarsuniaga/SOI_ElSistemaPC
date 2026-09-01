@@ -553,10 +553,13 @@ export async function bootAdminPortal(profile) {
     const view = isValidRoute(stored) && this.routes[stored] ? stored : profile.defaultRoute
     this.navigate(view)
   }
+  // _navigateTo(matchedKey, originalPath, params) tiene 3 argumentos: hay que
+  // reenviarlos TODOS. Antes se pasaban solo 2 y el 3ro (los params, ej. el id
+  // del alumno) se perdía → "ID de alumno no especificado".
   const origNavigateTo = router._navigateTo.bind(router)
-  router._navigateTo = function (path, params = {}) {
-    origNavigateTo(path, params)
-    localStorage.setItem(storageKey, path)
+  router._navigateTo = function (matchedKey, originalPath, params = {}) {
+    origNavigateTo(matchedKey, originalPath, params)
+    localStorage.setItem(storageKey, originalPath || matchedKey)
   }
 
   const dismissSplashScreen = () => {

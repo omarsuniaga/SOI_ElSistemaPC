@@ -302,7 +302,7 @@ Se evitó por ahora porque la Pi Zero W tiene poco margen para mantener un token
 
 | Prioridad | Tarea |
 |---|---|
-| Alta | Probar el Estudio visualmente en el portal corriendo (`npm run dev` → `/adm` → Sistema & Configuración → Cartelera / Pantalla) |
+| ~~Alta~~ ✅ | **Verificado** con render headless del módulo aislado: monta sin errores, carga la pantalla, el iframe arranca en modo preview, editar un campo se refleja al instante vía postMessage, la sección "Visibilidad del menú" lista los 7 deptos. Falta solo la prueba con login real en el portal completo. |
 | Alta | Merge de `feat/signage-pantalla-informativa` a su trunk (dispara Netlify) |
 | Media | Correr `instalar-web.sh` en la Pi (vista previa `:8080`) |
 | Media | IP fija (reserva DHCP) + `ufw` en la Pi |

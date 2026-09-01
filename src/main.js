@@ -107,7 +107,6 @@ import { registerRoutesHorarioGeneral } from './modules/horario-general/index.js
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js'
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
-import { registerRoutesSignageAdmin } from './modules/signage-admin/signage-admin.router.js'
 import { registerRoutesBitacora } from './modules/bitacora/index.js'
 import { registerRoutesFinanzas } from './modules/finanzas/index.js'
 import { registerRoutesLuteria } from './modules/luteria/index.js'
@@ -179,14 +178,6 @@ const MODULES_REGISTRY = [
     description: 'Alertas tempranas de riesgo y sustituciones sugeridas',
     enabled: true,
     register: registerRoutesAdminNotificaciones,
-  },
-  {
-    id: 'signage-pantalla',
-    label: 'Cartelera / Pantalla',
-    icon: 'bi-tv',
-    description: 'Estudio de la pantalla informativa del vestíbulo (contenido, diseño y visibilidad)',
-    enabled: true,
-    register: registerRoutesSignageAdmin,
   },
   {
     id: 'admin-aprobacion',
@@ -506,7 +497,6 @@ const NAV_GROUPS = [
     icon: 'bi-gear',
     items: [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
-      { id: 'signage-pantalla', label: 'Cartelera / Pantalla', icon: 'bi-tv' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
       { id: 'permisos', label: 'Permisos & Roles', icon: 'bi-shield-lock' },

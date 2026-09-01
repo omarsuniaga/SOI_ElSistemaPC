@@ -1,0 +1,37 @@
+/* Panel de la cartelera — estilos propios del módulo signage-admin */
+
+.signage-admin .sa-thumb {
+  width: 76px;
+  height: 46px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--bs-tertiary-bg);
+  flex: 0 0 auto;
+}
+.signage-admin .sa-thumb--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--bs-secondary);
+}
+
+.signage-admin .signage-media-list .list-group-item {
+  padding: 0.6rem 0.85rem;
+}
+
+.signage-admin .sa-move {
+  line-height: 1;
+  color: var(--bs-secondary);
+}
+.signage-admin .sa-move:hover {
+  color: var(--bs-primary);
+}
+
+.signage-admin .min-w-0 {
+  min-width: 0;
+}
+
+.signage-admin .form-check-input {
+  cursor: pointer;
+}

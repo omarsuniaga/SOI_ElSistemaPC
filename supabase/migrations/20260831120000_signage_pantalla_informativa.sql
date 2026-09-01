@@ -279,6 +279,11 @@ values (
   'punta-cana-vestibulo',
   'Vestíbulo — Sede Punta Cana',
   'Hall de entrada',
-  '{"media_pct": 70, "banner_pct": 14, "sidebar_pct": 30}'::jsonb
+  '{
+    "cabecera": {"visible": true, "marca": true, "reloj": true, "fecha": true, "centro": "calendario", "texto": ""},
+    "sidebar":  {"visible": true, "anchoPct": 31, "hoy": true, "manana": true, "salon": true, "maestro": true, "instrumento": true},
+    "central":  {"contenido": "media", "leyendas": true, "ajuste": "contain", "mensaje": ""},
+    "footer":   {"visible": false, "altoPct": 7, "contenido": "texto", "texto": ""}
+  }'::jsonb
 )
 on conflict (slug) do nothing;

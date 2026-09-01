@@ -80,6 +80,14 @@
         node.onended = advance;
         node.onerror = function () { advance(); };
         timer = setTimeout(advance, (SIG.cfg.videoMaxSeconds || 240) * 1000);
+      } else if (m.tipo === 'slide') {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = SIG.slideHTML(m.contenido || m.slide || {});
+        node = tmp.firstElementChild || document.createElement('div');
+        if (items.length > 1) {
+          var secsS = (m.duracion_seg && m.duracion_seg > 0) ? m.duracion_seg : (SIG.cfg.slideDefaultSeconds || 12);
+          timer = setTimeout(advance, secsS * 1000);
+        }
       } else {
         node = document.createElement('img');
         node.src = SIG.STORAGE_PUBLIC + m.storage_path;

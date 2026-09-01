@@ -109,7 +109,7 @@ export async function guardarModoNocturno(pantallaId, modoNocturno) {
 export async function listarMedios(pantallaId) {
   const { data, error } = await supabase
     .from('signage_media')
-    .select('id, pantalla_id, tipo, titulo, credito, storage_path, youtube_url, youtube_video_id, duracion_seg, orden, activo, vigente_desde, vigente_hasta, created_at')
+    .select('id, pantalla_id, tipo, titulo, credito, storage_path, youtube_url, youtube_video_id, contenido, duracion_seg, orden, activo, vigente_desde, vigente_hasta, created_at')
     .order('orden', { ascending: true })
     .order('created_at', { ascending: true })
   if (error) throw new Error('No se pudieron cargar los medios: ' + error.message)
@@ -147,6 +147,7 @@ export async function crearMedio(payload) {
     storage_path: payload.storage_path || null,
     youtube_url: payload.youtube_url || null,
     youtube_video_id: payload.youtube_video_id || null,
+    contenido: payload.contenido || null,
     duracion_seg: payload.duracion_seg ?? null,
     orden: payload.orden ?? 0,
     activo: payload.activo ?? true,

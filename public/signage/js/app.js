@@ -138,7 +138,7 @@
   }
 
   function loadMedia() {
-    return SIG.api('signage_media?activo=eq.true&order=orden.asc&select=id,pantalla_id,tipo,titulo,credito,storage_path,youtube_url,youtube_video_id,duracion_seg,vigente_desde,vigente_hasta')
+    return SIG.api('signage_media?activo=eq.true&order=orden.asc&select=id,pantalla_id,tipo,titulo,credito,storage_path,youtube_url,youtube_video_id,contenido,duracion_seg,vigente_desde,vigente_hasta')
       .then(function (rows) {
         var today = SIG.time.isoDate();
         var sid = state.screen && state.screen.id;

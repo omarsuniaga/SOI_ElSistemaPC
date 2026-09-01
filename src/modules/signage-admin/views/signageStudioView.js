@@ -247,16 +247,20 @@ function mediosHTML() {
         <i class="bi bi-upload me-1"></i>Subir imagen / vídeo
         <input type="file" id="ss-file" accept="image/*,video/mp4,video/webm" hidden>
       </label>
+      <button class="btn btn-sm btn-outline-primary" id="ss-slide"><i class="bi bi-easel2 me-1"></i>Nueva diapositiva</button>
       <button class="btn btn-sm btn-outline-danger" id="ss-yt"><i class="bi bi-youtube me-1"></i>YouTube</button>
     </div>
     <div class="ss-media-list">${filas}</div>`
 }
 
+const TIPO_ICONO = { video: 'film', youtube: 'youtube', slide: 'easel2' }
+const TIPO_LABEL = { imagen: 'Imagen', video: 'Vídeo', youtube: 'YouTube', slide: 'Diapositiva' }
+
 function medioRow(m) {
   const url = m.storage_path ? api.urlPublica(m.storage_path) : null
   const thumb = m.tipo === 'imagen' && url
     ? `<img src="${escapeHTML(url)}" alt="" class="ss-thumb">`
-    : `<div class="ss-thumb ss-thumb--icon"><i class="bi bi-${m.tipo === 'video' ? 'film' : 'youtube'}"></i></div>`
+    : `<div class="ss-thumb ss-thumb--icon"><i class="bi bi-${TIPO_ICONO[m.tipo] || 'image'}"></i></div>`
   const vig = [m.vigente_desde, m.vigente_hasta].filter(Boolean).join(' → ')
   return `
     <div class="ss-media-row d-flex align-items-center gap-2" data-id="${m.id}">
@@ -268,7 +272,7 @@ function medioRow(m) {
       <div class="flex-grow-1 min-w-0">
         <div class="fw-semibold text-truncate small">${escapeHTML(m.titulo || m.youtube_url || m.storage_path || 'Sin título')}</div>
         <div class="text-muted" style="font-size:.72rem">
-          ${{ imagen: 'Imagen', video: 'Vídeo', youtube: 'YouTube' }[m.tipo] || m.tipo}
+          ${TIPO_LABEL[m.tipo] || m.tipo}${m.tipo === 'slide' && m.contenido?.plantilla ? ` · ${escapeHTML(m.contenido.plantilla)}` : ''}
           ${m.duracion_seg ? ` · ${m.duracion_seg}s` : ''}${vig ? ` · ${escapeHTML(vig)}` : ''}
         </div>
       </div>
@@ -319,6 +323,7 @@ function attach(host) {
 
   // medios
   host.querySelector('#ss-file')?.addEventListener('change', onSubir)
+  host.querySelector('#ss-slide')?.addEventListener('click', () => editorSlide(null))
   host.querySelector('#ss-yt')?.addEventListener('click', onYouTube)
   host.querySelectorAll('.ss-media-row').forEach((row) => {
     const id = row.dataset.id
@@ -361,6 +366,7 @@ function postModel() {
       tipo: m.tipo,
       storage_path: m.storage_path,
       youtube_url: m.youtube_url,
+      contenido: m.contenido,
       titulo: m.titulo,
       credito: m.credito,
       duracion_seg: m.duracion_seg,
@@ -505,6 +511,138 @@ function onYouTube() {
   })
 }
 
+/* ─── diapositivas (plantillas nativas, sin Canva) ───────────────────── */
+
+const SLIDE_TPLS = [
+  ['titulo', 'Título grande'],
+  ['evento', 'Evento (fecha + lugar)'],
+  ['aviso', 'Aviso'],
+  ['cita', 'Frase / cita'],
+]
+const SLIDE_FONDOS = [
+  ['oscuro', 'Oscuro'], ['dorado', 'Dorado'], ['azul', 'Azul'], ['verde', 'Verde'],
+]
+
+function editorSlide(m) {
+  const editar = !!m
+  const c = (editar && m.contenido) || {}
+  const f = c.fondo || { tipo: 'gradiente', valor: 'oscuro' }
+  const v = (x) => escapeHTML(x == null ? '' : String(x))
+  const grp = (tpls, inner) => `<div class="sl-group" data-tpl="${tpls}">${inner}</div>`
+  const campo = (id, label, val, ph = '') =>
+    `<label class="d-block mb-2"><span class="d-block mb-1 small fw-semibold">${label}</span>
+      <input type="text" id="${id}" class="form-control" value="${v(val)}" placeholder="${ph}"></label>`
+  const area = (id, label, val, ph = '') =>
+    `<label class="d-block mb-2"><span class="d-block mb-1 small fw-semibold">${label}</span>
+      <textarea id="${id}" class="form-control" rows="3" placeholder="${ph}">${v(val)}</textarea></label>`
+
+  AppModal.open({
+    title: editar ? 'Editar diapositiva' : 'Nueva diapositiva',
+    saveText: editar ? 'Guardar' : 'Agregar',
+    size: 'lg',
+    deleteText: editar ? '<i class="bi bi-trash me-1"></i>Quitar' : '',
+    onDelete: editar ? async () => {
+      try { await api.eliminarMedio(m.id, null) } catch (e) { AppToast.error(e.message); return false }
+      AppToast.success('Diapositiva quitada.')
+      await recargarMedios()
+    } : null,
+    body: `
+      <div class="signage-studio">
+        <label class="d-block mb-3"><span class="d-block mb-1 small fw-semibold">Plantilla</span>
+          <select id="sl-tpl" class="form-select">
+            ${SLIDE_TPLS.map(([k, l]) => `<option value="${k}" ${c.plantilla === k ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+        </label>
+
+        ${grp('titulo evento aviso', campo('sl-titulo', 'Título', c.titulo, 'Texto principal'))}
+        ${grp('titulo', campo('sl-subtitulo', 'Subtítulo (opcional)', c.subtitulo))}
+        ${grp('evento', campo('sl-fecha', 'Fecha', c.fecha, 'Sábado 6 de septiembre'))}
+        ${grp('evento', `<div class="row g-2 mb-2">
+          <div class="col-7"><label class="d-block"><span class="d-block mb-1 small fw-semibold">Lugar</span>
+            <input type="text" id="sl-lugar" class="form-control" value="${v(c.lugar)}" placeholder="Teatro Nacional"></label></div>
+          <div class="col-5"><label class="d-block"><span class="d-block mb-1 small fw-semibold">Hora</span>
+            <input type="text" id="sl-hora" class="form-control" value="${v(c.hora)}" placeholder="19:00"></label></div>
+        </div>`)}
+        ${grp('aviso', campo('sl-icono', 'Ícono / emoji (opcional)', c.icono, '📣'))}
+        ${grp('aviso', area('sl-cuerpo-aviso', 'Cuerpo', c.cuerpo))}
+        ${grp('cita', area('sl-cuerpo-cita', 'Frase', c.cuerpo))}
+        ${grp('cita', campo('sl-autor', 'Autor (opcional)', c.autor))}
+
+        <hr class="my-2">
+        <div class="row g-2 mb-2">
+          <div class="col-6"><label class="d-block"><span class="d-block mb-1 small fw-semibold">Fondo</span>
+            <select id="sl-bg-valor" class="form-select">
+              ${SLIDE_FONDOS.map(([k, l]) => `<option value="${k}" ${f.tipo !== 'color' && f.valor === k ? 'selected' : ''}>${l}</option>`).join('')}
+              <option value="__color" ${f.tipo === 'color' ? 'selected' : ''}>Color sólido…</option>
+            </select></label></div>
+          <div class="col-6" id="sl-bg-color-wrap" style="${f.tipo === 'color' ? '' : 'display:none'}">
+            <label class="d-block"><span class="d-block mb-1 small fw-semibold">Color</span>
+              <input type="color" id="sl-bg-color" class="form-control form-control-color" value="${f.tipo === 'color' ? v(f.valor) : '#0b0e17'}"></label>
+          </div>
+        </div>
+        <div class="row g-2">
+          <div class="col-4"><label class="d-block"><span class="d-block mb-1 small fw-semibold">Segundos</span>
+            <input type="number" id="sl-dur" class="form-control" min="4" max="60" value="${(editar && m.duracion_seg) || 12}"></label></div>
+          <div class="col-4"><label class="d-block"><span class="d-block mb-1 small fw-semibold">Desde</span>
+            <input type="date" id="sl-desde" class="form-control" value="${editar ? v(m.vigente_desde) : ''}"></label></div>
+          <div class="col-4"><label class="d-block"><span class="d-block mb-1 small fw-semibold">Hasta</span>
+            <input type="date" id="sl-hasta" class="form-control" value="${editar ? v(m.vigente_hasta) : ''}"></label></div>
+        </div>
+        <p class="small text-muted mt-2 mb-0">La diapositiva aparece en la vista previa de la izquierda al guardar.</p>
+      </div>`,
+    onShow: (body) => {
+      const tplSel = body.querySelector('#sl-tpl')
+      const sync = () => {
+        const t = tplSel.value
+        body.querySelectorAll('.sl-group').forEach((g) => {
+          g.style.display = g.dataset.tpl.split(' ').includes(t) ? '' : 'none'
+        })
+      }
+      tplSel.addEventListener('change', sync)
+      sync()
+      const bgSel = body.querySelector('#sl-bg-valor')
+      const bgWrap = body.querySelector('#sl-bg-color-wrap')
+      bgSel.addEventListener('change', () => { bgWrap.style.display = bgSel.value === '__color' ? '' : 'none' })
+    },
+    onSave: async (body) => {
+      const g = (id) => (body.querySelector('#' + id)?.value || '').trim()
+      const plantilla = g('sl-tpl')
+      const cuerpo = plantilla === 'cita' ? g('sl-cuerpo-cita') : g('sl-cuerpo-aviso')
+      const bgVal = g('sl-bg-valor')
+      const fondo = bgVal === '__color'
+        ? { tipo: 'color', valor: g('sl-bg-color') || '#0b0e17' }
+        : { tipo: 'gradiente', valor: bgVal }
+      const contenido = {
+        plantilla,
+        titulo: g('sl-titulo') || null,
+        subtitulo: g('sl-subtitulo') || null,
+        fecha: g('sl-fecha') || null,
+        lugar: g('sl-lugar') || null,
+        hora: g('sl-hora') || null,
+        icono: g('sl-icono') || null,
+        cuerpo: cuerpo || null,
+        autor: g('sl-autor') || null,
+        fondo,
+      }
+      const label = contenido.titulo || contenido.fecha || (contenido.cuerpo || '').slice(0, 40) || 'Diapositiva'
+      if (!contenido.titulo && !contenido.cuerpo && !contenido.fecha) {
+        AppToast.error('Escribe al menos un título, una fecha o un texto.'); return false
+      }
+      const dur = Math.min(60, Math.max(4, Number(g('sl-dur')) || 12))
+      const comun = {
+        titulo: label, contenido, duracion_seg: dur,
+        vigente_desde: g('sl-desde') || null, vigente_hasta: g('sl-hasta') || null,
+      }
+      try {
+        if (editar) await api.actualizarMedio(m.id, comun)
+        else await api.crearMedio({ ...comun, tipo: 'slide', orden: (state.medios.length + 1) * 10, activo: true })
+      } catch (e) { AppToast.error(e.message); return false }
+      AppToast.success(editar ? 'Diapositiva actualizada.' : 'Diapositiva agregada.')
+      await recargarMedios()
+    },
+  })
+}
+
 async function cambiarMedio(id, cambios, m) {
   try {
     await api.actualizarMedio(id, cambios)
@@ -514,6 +652,7 @@ async function cambiarMedio(id, cambios, m) {
 }
 
 function editarMedio(m) {
+  if (m.tipo === 'slide') { editorSlide(m); return }
   const esImagen = m.tipo === 'imagen'
   const val = (x) => escapeHTML(x == null ? '' : String(x))
   AppModal.open({

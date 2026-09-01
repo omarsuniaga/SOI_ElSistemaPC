@@ -22,7 +22,7 @@ const state = {
   pantallas: [],
   pantalla: null,
   layout: null,
-  marca: { institucion: '', siglas: '' },
+  marca: { institucion: '', siglas: '', logoPath: '' },
   menuPortales: [],
   medios: [],
   seccion: 'cabecera',
@@ -66,6 +66,7 @@ async function seleccionarPantalla(id) {
   state.marca = {
     institucion: state.pantalla.institucion || '',
     siglas: state.pantalla.siglas || '',
+    logoPath: state.pantalla.logo_path || '',
   }
   state.menuPortales = Array.isArray(state.pantalla.menu_portales) ? [...state.pantalla.menu_portales] : []
   state.medios = await api.listarMedios(state.pantalla.id)
@@ -182,6 +183,19 @@ function rng(path, label, min, max, suf) {
 function panelHTML() {
   return `
     ${acc('cabecera', 'bi-window-sidebar', 'Cabecera', `
+      <div class="py-1">
+        <span class="d-block mb-1 small">Logo (PNG, se ajusta al alto de la cabecera)</span>
+        <div class="d-flex align-items-center gap-2">
+          <div class="ss-logo-preview">${state.marca.logoPath
+            ? `<img src="${escapeHTML(api.urlPublica(state.marca.logoPath))}" alt="logo">`
+            : '<span class="ss-logo-empty">✳</span>'}</div>
+          <label class="btn btn-sm btn-outline-secondary mb-0">
+            <i class="bi bi-upload me-1"></i>${state.marca.logoPath ? 'Cambiar' : 'Subir logo'}
+            <input type="file" id="ss-logo-file" accept="image/png,image/webp,image/svg+xml" hidden>
+          </label>
+          ${state.marca.logoPath ? '<button class="btn btn-sm btn-outline-danger" id="ss-logo-del" title="Quitar logo"><i class="bi bi-x-lg"></i></button>' : ''}
+        </div>
+      </div>
       <label class="d-block py-1"><span class="d-block mb-1 small">Institución</span>
         <input type="text" class="form-control form-control-sm" data-marca="institucion" value="${escapeHTML(state.marca.institucion)}" placeholder="El Sistema Punta Cana"></label>
       <label class="d-block py-1"><span class="d-block mb-1 small">Siglas</span>
@@ -296,6 +310,9 @@ function attach(host) {
     el.addEventListener('change', () => { state.marca[el.dataset.marca] = el.value.trim(); markDirty(); postModel() }),
   )
 
+  host.querySelector('#ss-logo-file')?.addEventListener('change', onLogo)
+  host.querySelector('#ss-logo-del')?.addEventListener('click', quitarLogo)
+
   host.querySelectorAll('[data-portal]').forEach((el) =>
     el.addEventListener('change', () => togglePortal(el.dataset.portal, el.checked)),
   )
@@ -335,7 +352,11 @@ function postModel() {
   if (!iframe || !iframe.contentWindow) return
   const model = {
     layout: state.layout,
-    marca: state.marca,
+    marca: {
+      institucion: state.marca.institucion,
+      siglas: state.marca.siglas,
+      logo: state.marca.logoPath ? api.urlPublica(state.marca.logoPath) : '',
+    },
     media: state.medios.map((m) => ({
       tipo: m.tipo,
       storage_path: m.storage_path,
@@ -401,6 +422,35 @@ async function recargarMedios() {
   state.medios = await api.listarMedios(state.pantalla.id)
   render()
   postModel()
+}
+
+async function onLogo(e) {
+  const file = e.target.files && e.target.files[0]
+  e.target.value = ''
+  if (!file) return
+  if (file.size > 4 * 1024 * 1024) { AppToast.error('El logo supera 4 MB.'); return }
+  AppToast.info('Subiendo logo…')
+  try {
+    const path = await api.subirLogo(file)
+    await api.guardarLogo(state.pantalla.id, path)
+    state.marca.logoPath = path
+    state.pantalla.logo_path = path
+    AppToast.success('Logo actualizado. La pantalla se refresca en 1–3 min.')
+    render()
+    postModel()
+  } catch (err) { AppToast.error(err.message) }
+}
+
+async function quitarLogo() {
+  if (!confirm('¿Quitar el logo? Volverá a mostrarse el ✳.')) return
+  try {
+    await api.guardarLogo(state.pantalla.id, null)
+    state.marca.logoPath = ''
+    state.pantalla.logo_path = null
+    AppToast.success('Logo quitado.')
+    render()
+    postModel()
+  } catch (err) { AppToast.error(err.message) }
 }
 
 async function onSubir(e) {

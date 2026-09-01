@@ -45,7 +45,7 @@ export const PORTALES_DEPTO = [
 export async function listarPantallas() {
   const { data, error } = await supabase
     .from('signage_pantallas')
-    .select('id, slug, nombre, institucion, siglas, ubicacion, orientacion, layout, modo_nocturno, menu_portales, activo, updated_at')
+    .select('id, slug, nombre, institucion, siglas, logo_path, ubicacion, orientacion, layout, modo_nocturno, menu_portales, activo, updated_at')
     .order('nombre', { ascending: true })
   if (error) throw new Error('No se pudieron cargar las pantallas: ' + error.message)
   return data || []
@@ -65,6 +65,27 @@ export async function guardarIdentidad(pantallaId, { institucion, siglas }) {
     .update({ institucion: institucion || null, siglas: siglas || null })
     .eq('id', pantallaId)
   if (error) throw new Error('No se pudo guardar la identidad: ' + error.message)
+}
+
+/** Sube un PNG/SVG de logo al bucket y devuelve su storage_path. */
+export async function subirLogo(file) {
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+  const path = `logos/${Date.now()}-logo.${ext}`
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    upsert: false,
+    contentType: file.type || 'image/png',
+    cacheControl: '3600',
+  })
+  if (error) throw new Error('Error al subir el logo: ' + error.message)
+  return path
+}
+
+export async function guardarLogo(pantallaId, logoPath) {
+  const { error } = await supabase
+    .from('signage_pantallas')
+    .update({ logo_path: logoPath || null })
+    .eq('id', pantallaId)
+  if (error) throw new Error('No se pudo guardar el logo: ' + error.message)
 }
 
 export async function guardarLayout(pantallaId, layout) {

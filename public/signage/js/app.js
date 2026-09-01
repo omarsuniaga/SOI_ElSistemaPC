@@ -70,7 +70,7 @@
   /* ---- cargas ---- */
   function loadPantalla() {
     return SIG.api('signage_pantallas?slug=eq.' + encodeURIComponent(CFG.screenSlug) +
-      '&select=id,nombre,institucion,siglas,layout,modo_nocturno&limit=1')
+      '&select=id,nombre,institucion,siglas,logo_path,layout,modo_nocturno&limit=1')
       .then(function (rows) {
         if (rows && rows[0]) {
           state.screen = rows[0];
@@ -78,13 +78,22 @@
           state.marca = {
             institucion: rows[0].institucion || CFG.marca.institucion,
             siglas: rows[0].siglas || CFG.marca.siglas,
+            logo: rows[0].logo_path ? SIG.STORAGE_PUBLIC + rows[0].logo_path : '',
           };
           SIG.cache.put('screen', rows[0]);
         }
       })
       .catch(function (e) {
         var c = state.screen || SIG.cache.get('screen');
-        if (c) { state.screen = c; state.layout = SIG.mergeLayout(c.layout); }
+        if (c) {
+          state.screen = c;
+          state.layout = SIG.mergeLayout(c.layout);
+          state.marca = {
+            institucion: c.institucion || CFG.marca.institucion,
+            siglas: c.siglas || CFG.marca.siglas,
+            logo: c.logo_path ? SIG.STORAGE_PUBLIC + c.logo_path : '',
+          };
+        }
         console.warn('[pantalla]', e.message);
       });
   }
@@ -196,6 +205,7 @@
     if (model.marca) state.marca = {
       institucion: model.marca.institucion || CFG.marca.institucion,
       siglas: model.marca.siglas || CFG.marca.siglas,
+      logo: model.marca.logo || '',
     };
     if (Array.isArray(model.media)) {
       var today = SIG.time.isoDate();

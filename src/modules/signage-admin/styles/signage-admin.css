@@ -89,6 +89,28 @@
 }
 .signage-studio .min-w-0 { min-width: 0; }
 
+.signage-studio .ss-logo-preview {
+  width: 92px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  background: var(--bs-tertiary-bg);
+  overflow: hidden;
+}
+.signage-studio .ss-logo-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.signage-studio .ss-logo-empty {
+  font-size: 1.1rem;
+  color: var(--bs-secondary);
+}
+
 @media (max-width: 1199.98px) {
   .signage-studio .ss-panel { max-height: none; overflow: visible; }
 }

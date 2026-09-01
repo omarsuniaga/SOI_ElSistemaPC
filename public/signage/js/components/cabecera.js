@@ -12,7 +12,7 @@
     root.innerHTML =
       '<header class="cab">' +
         '<div class="cab__brand" data-brand>' +
-          '<div class="cab__logo">✳</div>' +
+          '<div class="cab__logo" data-logo>✳</div>' +
           '<div>' +
             '<div class="cab__inst" data-inst>—</div>' +
             '<div class="cab__siglas" data-siglas></div>' +
@@ -34,6 +34,7 @@
     var r = {
       host: SIG.$('.cab', root),
       brand: SIG.$('[data-brand]', root),
+      logo: SIG.$('[data-logo]', root),
       inst: SIG.$('[data-inst]', root),
       siglas: SIG.$('[data-siglas]', root),
       event: SIG.$('[data-event]', root),
@@ -49,6 +50,26 @@
     var evIdx = 0;
     var tClock = null;
     var tRota = null;
+    var logoSrc = null;
+
+    /* Logo de la cabecera: <img> si hay PNG configurado, si no el ✳.
+       Si la imagen falla al cargar, vuelve al ✳. */
+    function setLogo(url) {
+      if (url === logoSrc) return;
+      logoSrc = url;
+      if (url) {
+        r.logo.textContent = '';
+        r.logo.classList.add('cab__logo--img');
+        var img = new Image();
+        img.alt = '';
+        img.onerror = function () { logoSrc = null; setLogo(''); };
+        img.src = url;
+        r.logo.appendChild(img);
+      } else {
+        r.logo.classList.remove('cab__logo--img');
+        r.logo.textContent = '✳';
+      }
+    }
 
     function tick() {
       r.time.textContent = SIG.time.hm();
@@ -85,6 +106,7 @@
         r.date.hidden = L.fecha === false;
 
         var m = p.marca || {};
+        setLogo(m.logo || '');
         r.inst.textContent = m.institucion || '';
         r.siglas.textContent = m.siglas || '';
 

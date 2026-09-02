@@ -28,7 +28,50 @@
   gap: 12px;
 }
 
-/* ── Responsive (mobile) ────────────────────────────────────────────────── */
+/* ── Salones Card Styles ────────────────────────────────────────────────── */
+
+.salon-card-item {
+  padding: 0.95rem !important;
+  border-radius: 14px !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.08));
+}
+
+.salon-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-color: var(--bs-primary-border-subtle, #b6d4fe) !important;
+}
+
+[data-bs-theme="dark"] .salon-card-item:hover,
+.dark-theme .salon-card-item:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  border-color: var(--bs-primary, #0d6efd) !important;
+}
+
+/* Inactive room card styling */
+.salon-card-item--inactivo {
+  background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
+  opacity: 0.75;
+  border-style: dashed !important;
+}
+
+.salon-card-item--inactivo:hover {
+  opacity: 0.95;
+}
+
+.salon-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.salon-btn-action {
+  font-size: 0.78rem;
+  min-height: 32px;
+}
+
+/* ── Responsive Adaptations (Mobile & Small screens) ─────────────────────── */
 
 @media (max-width: 576px) {
   .salones-header-premium {
@@ -43,5 +86,21 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .salon-card-item {
+    padding: 1rem 1.15rem !important;
+    border-radius: 14px !important;
+  }
+
+  .salon-card-title {
+    font-size: 1.05rem;
+  }
+
+  .salon-btn-action {
+    font-size: 0.82rem;
+    min-height: 38px; /* Mobile touch-target friendly */
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
   }
 }

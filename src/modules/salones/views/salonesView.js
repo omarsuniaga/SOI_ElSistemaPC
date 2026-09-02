@@ -175,9 +175,9 @@ function renderContent(container) {
 
       </div>
 
-      <!-- Contenedor de Cuadrícula de Salones (Hasta 5 por fila responsive) -->
+      <!-- Contenedor de Cuadrícula de Salones (Hasta 4 por fila en desktop, adaptado a móviles) -->
       <div class="w-100">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0" id="salonesTableBody">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2.5 g-md-3 w-100 m-0" id="salonesTableBody">
           <div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>
         </div>
       </div>
@@ -267,26 +267,29 @@ function renderTable() {
       const statusColor = active ? 'success' : 'secondary'
 
       return `
-        <div class="col p-1">
-          <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${salon.id}" style="cursor: pointer; padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+        <div class="col p-1.5">
+          <div class="salon-card-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden ${!active ? 'salon-card-item--inactivo' : ''}" data-id="${salon.id}" style="cursor: pointer;">
             
             <!-- Parte Superior: Nombre, Piso, Capacidad y Condición -->
             <div class="mb-2">
               
               <!-- Nombre del Salón -->
-              <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(salon.nombre || '-')}">
-                ${escapeHTML(salon.nombre || '-')}
-              </strong>
+              <div class="d-flex align-items-start justify-content-between gap-1.5 mb-1.5">
+                <strong class="text-body text-truncate d-block salon-card-title flex-grow-1" title="${escapeHTML(salon.nombre || '-')}">
+                  ${escapeHTML(salon.nombre || '-')}
+                </strong>
+                ${!active ? `<span class="badge bg-secondary text-white py-0.5 px-1.5 rounded-2 flex-shrink-0" style="font-size: 0.65rem;">Inactivo</span>` : ''}
+              </div>
 
               <!-- Ubicación / Piso -->
               <div class="mb-2">
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.74rem;">
                   <i class="bi bi-geo-alt me-1 text-primary"></i>${escapeHTML(ubicacionPiso)}
                 </span>
               </div>
 
               <!-- Capacidad y Condición -->
-              <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
+              <div class="d-flex flex-column gap-1.5 text-muted small" style="font-size: 0.78rem;">
                 <div class="d-flex align-items-center justify-content-between">
                   <span class="text-truncate"><i class="bi bi-people me-1 text-primary"></i>Capacidad:</span>
                   <span class="fw-semibold text-body">${salon.capacidad || 0} pers.</span>
@@ -298,21 +301,21 @@ function renderTable() {
                 </div>
 
                 ${salon.equipamiento ? `
-                  <div class="text-truncate text-muted fst-italic mt-0.5" style="font-size:0.72rem;" title="${escapeHTML(salon.equipamiento)}">
+                  <div class="text-truncate text-muted fst-italic mt-0.5" style="font-size:0.73rem;" title="${escapeHTML(salon.equipamiento)}">
                     <i class="bi bi-tools me-1"></i>${escapeHTML(salon.equipamiento)}
                   </div>
-                ` : '<div class="text-truncate text-muted fst-italic mt-0.5" style="font-size:0.72rem;"><i class="bi bi-tools me-1"></i>Sin equipamiento</div>'}
+                ` : '<div class="text-truncate text-muted fst-italic mt-0.5" style="font-size:0.73rem;"><i class="bi bi-tools me-1"></i>Sin equipamiento</div>'}
               </div>
             </div>
 
             <!-- Barra Inferior de Acciones Contextuales -->
-            <div class="pt-2 border-top d-flex align-items-center justify-content-between gap-1.5 mt-auto">
-              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2 fw-semibold" data-action="edit" data-id="${salon.id}" title="Editar salón" style="font-size:0.75rem;">
-                <i class="bi bi-pencil-square me-1"></i>
+            <div class="pt-2.5 border-top d-flex align-items-center justify-content-between gap-1.5 mt-auto">
+              <button class="btn btn-sm btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 salon-btn-action fw-semibold" data-action="edit" data-id="${salon.id}" title="Editar salón">
+                <i class="bi bi-pencil-square me-1.5"></i>
                 <span>Editar</span>
               </button>
 
-              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${salon.id}" title="${active ? 'Inactivar salón' : 'Eliminar salón'}" style="font-size:0.75rem;">
+              <button class="btn btn-sm btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center px-2.5 salon-btn-action" data-action="delete" data-id="${salon.id}" title="${active ? 'Inactivar salón' : 'Eliminar salón'}">
                 <i class="bi bi-trash"></i>
               </button>
             </div>

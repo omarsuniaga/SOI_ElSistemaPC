@@ -485,4 +485,118 @@ describe('clasesApi Integration', () => {
       await expect(clasesApi.obtenerClasesConHorarioYCupo()).rejects.toBeTruthy()
     })
   })
+
+  describe('construirDatosClonados', () => {
+    function mockCloneSource({ clase, inscritos = [], horarios = [] } = {}) {
+      supabase.from.mockImplementation((table) => {
+        if (table === 'clases') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: clase, error: clase ? null : { message: 'not found' } }),
+              }),
+            }),
+          }
+        }
+        if (table === 'alumnos_clases') {
+          const chain = {
+            select: vi.fn(() => chain),
+            eq: vi.fn(() => chain),
+            order: vi.fn().mockResolvedValue({ data: inscritos, error: null }),
+          }
+          return chain
+        }
+        if (table === 'clase_horarios') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: horarios, error: null }),
+            }),
+          }
+        }
+        throw new Error(`unexpected table ${table}`)
+      })
+    }
+
+    it('copia datos académicos, horario y nómina; vacía maestro y salón', async () => {
+      mockCloneSource({
+        clase: {
+          id: 'c1', nombre: 'Violín A', instrumento: 'Violín', programa_id: 'p1',
+          nivel_id: 'n1', capacidad_maxima: 12, tipo_clase: 'grupal', estado: 'activa',
+          descripcion: 'desc', ruta_id: 'r1', modalidad: 'presencial',
+          es_clase_iniciacion: false, maestro_principal_id: 'm1', maestro_suplente_id: 'm2',
+        },
+        inscritos: [
+          { alumno_id: 'a2', hora_inicio: null, hora_fin: null, alumno: { nombre_completo: 'Beto' } },
+          { alumno_id: 'a1', hora_inicio: null, hora_fin: null, alumno: { nombre_completo: 'Ana' } },
+        ],
+        horarios: [{ dia: 'lunes', hora_inicio: '15:30:00', hora_fin: '17:00:00' }],
+      })
+
+      const res = await clasesApi.construirDatosClonados('c1')
+
+      expect(res.prefill.nombre).toBe('Violín A (copia)')
+      expect(res.prefill.maestro_principal_id).toBeNull()
+      expect(res.prefill.maestro_suplente_id).toBeNull()
+      expect(res.prefill.tiene_suplente).toBe(false)
+      expect(res.prefill.programa_id).toBe('p1')
+      expect(res.prefill.nivel_id).toBe('n1')
+      expect(res.prefill.capacidad_maxima).toBe(12)
+      expect(res.prefill.horarios).toEqual([
+        { dia: 'lunes', hora_inicio: '15:30:00', hora_fin: '17:00:00', salon_id: null },
+      ])
+      expect([...res.preInscritosIds].sort()).toEqual(['a1', 'a2'])
+      expect(res.preInscritosSlots).toHaveLength(2)
+      expect(res.origen).toEqual({ id: 'c1', nombre: 'Violín A' })
+    })
+
+    it('rechaza cuando falta claseId', async () => {
+      await expect(clasesApi.construirDatosClonados()).rejects.toThrow('obligatorio')
+      expect(supabase.from).not.toHaveBeenCalled()
+    })
+
+    it('propaga error cuando la clase modelo no existe', async () => {
+      mockCloneSource({ clase: null })
+      await expect(clasesApi.construirDatosClonados('missing')).rejects.toThrow('No se pudo cargar')
+    })
+  })
+
+  describe('marcarClaseComoClon', () => {
+    it('deja la copia fuera del feed y en revisión, con los campos académicos extra no nulos', async () => {
+      const eq = vi.fn().mockResolvedValue({ error: null })
+      const update = vi.fn().mockReturnValue({ eq })
+      supabase.from.mockReturnValue({ update })
+
+      await clasesApi.marcarClaseComoClon('c2', {
+        origenNombre: 'Violín A',
+        extraFields: { nivel_id: 'n1', modalidad: null, es_clase_iniciacion: false },
+      })
+
+      expect(supabase.from).toHaveBeenCalledWith('clases')
+      const payload = update.mock.calls[0][0]
+      expect(payload.activo).toBe(false)
+      expect(payload.necesita_revision).toBe(true)
+      expect(payload.revision_motivo).toContain('Violín A')
+      expect(payload.nivel_id).toBe('n1')
+      expect(payload.es_clase_iniciacion).toBe(false)
+      expect(payload).not.toHaveProperty('modalidad')
+      expect(eq).toHaveBeenCalledWith('id', 'c2')
+    })
+  })
+
+  describe('suspenderClase', () => {
+    it('saca la clase del feed operativo conservando datos y nómina', async () => {
+      const eq = vi.fn().mockResolvedValue({ error: null })
+      const update = vi.fn().mockReturnValue({ eq })
+      supabase.from.mockReturnValue({ update })
+
+      await clasesApi.suspenderClase('c1', 'Reemplazada por la copia "X".')
+
+      const payload = update.mock.calls[0][0]
+      expect(payload.activo).toBe(false)
+      expect(payload.estado).toBe('suspendida')
+      expect(payload.necesita_revision).toBe(true)
+      expect(payload.revision_motivo).toBe('Reemplazada por la copia "X".')
+      expect(eq).toHaveBeenCalledWith('id', 'c1')
+    })
+  })
 })

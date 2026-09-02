@@ -11,6 +11,8 @@ import {
   actualizarTurnoInscripcion,
   verificarSolapamientoCompleto,
   resolverConflictosClases,
+  marcarClaseComoClon,
+  suspenderClase,
 } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
@@ -37,6 +39,11 @@ const DEFAULT_OPTIONS = {
   lockedPrincipalTeacherId: null,
   lockedPrincipalTeacherLabel: '',
   allowPrincipalTeacherSelection: true,
+  // Modo duplicar: prefill académico + nómina precargada del modelo original.
+  clonarDe: null,
+  preInscritosIds: null,
+  preInscritosSlots: null,
+  origenClon: null,
 }
 
 let _options = { ...DEFAULT_OPTIONS }
@@ -52,11 +59,21 @@ const VALIDATION = {
 export async function openClaseModal(clase = null, options = {}) {
   _options = { ...DEFAULT_OPTIONS, ...options }
   const isEdicion = !!clase
-  let inscritosIds = []
+  const isClon = !isEdicion && !!_options.clonarDe
+  // En modo duplicar, el formulario se prellena desde `clonarDe` (mismo shape
+  // que una clase) pero seguimos el flujo de alta (crearClase, sin eliminar).
+  const prefill = clase || _options.clonarDe
 
-  let inscritosSlots = []   // full records with hora_inicio/hora_fin per alumno
+  let inscritosIds = isClon ? [...new Set(_options.preInscritosIds || [])] : []
+  let inscritosSlots = isClon ? [...(_options.preInscritosSlots || [])] : []   // full records with hora_inicio/hora_fin per alumno
 
-  AppToast.info(isEdicion ? 'Cargando datos de la clase y alumnos...' : 'Cargando catálogo...')
+  const _loadingToast = AppToast.progress(
+    isEdicion
+      ? 'Cargando datos de la clase...'
+      : isClon
+        ? 'Preparando duplicado...'
+        : 'Cargando catálogo...'
+  )
 
   const fetchPromises = []
 
@@ -88,10 +105,18 @@ export async function openClaseModal(clase = null, options = {}) {
     )
   }
 
-  await Promise.all(fetchPromises)
+  try {
+    await Promise.all(fetchPromises)
+  } finally {
+    _loadingToast.dismiss()
+  }
 
-  const title = isEdicion ? `Editar Clase: ${clase.nombre}` : 'Nueva Clase'
-  const saveText = isEdicion ? 'Guardar Cambios' : 'Crear Clase'
+  const title = isEdicion
+    ? `Editar Clase: ${clase.nombre}`
+    : isClon
+      ? `Duplicar Clase: ${_options.origenClon?.nombre || prefill?.nombre || ''}`
+      : 'Nueva Clase'
+  const saveText = isEdicion ? 'Guardar Cambios' : isClon ? 'Crear Copia' : 'Crear Clase'
 
   AppModal.open({
     title,
@@ -111,17 +136,18 @@ export async function openClaseModal(clase = null, options = {}) {
       }
     } : null,
     size: 'view',
-    body: _getClaseFormHTML(clase, inscritosIds, inscritosSlots),
+    body: _getClaseFormHTML(prefill, inscritosIds, inscritosSlots, { isClon }),
     onShow: (modalBody) => {
       _attachModalEvents(modalBody, clase)
     },
     onSave: async (modalBody) => {
-      return await _handleSave(modalBody, clase)
+      return await _handleSave(modalBody, clase, { isClon })
     }
   })
 }
 
-function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
+function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) {
+  const { isClon = false } = opts
   const selectedPrincipalTeacherId = clase?.maestro_principal_id || _options.lockedPrincipalTeacherId || ''
   const principalTeacherLabel =
     _options.lockedPrincipalTeacherLabel ||
@@ -139,7 +165,27 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
   return `
     <form class="container-fluid p-0" id="formClase">
       <div class="row g-3">
-        
+
+        ${isClon ? `
+        <!-- Aviso de modo Duplicar -->
+        <div class="col-12">
+          <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-0 rounded-3" style="font-size:0.82rem;">
+            <i class="bi bi-files fs-5 flex-shrink-0"></i>
+            <div>
+              <strong>Estás duplicando una clase.</strong> Se copian el horario y la nómina del modelo original.
+              Asigná el nuevo <strong>maestro titular</strong> y el <strong>salón</strong> de cada bloque.
+              La copia nace <strong>en revisión</strong> y fuera del feed operativo hasta que la actives desde la ficha.
+              <div class="form-check mt-1">
+                <input class="form-check-input" type="checkbox" id="modal-suspender-original" checked>
+                <label class="form-check-label" for="modal-suspender-original">
+                  Suspender la clase original al crear la copia
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
         <!-- COLUMNA 1: Datos Académicos & Cátedra (25%) -->
         <div class="col-12 col-lg-3">
           <div class="card border-0 shadow-sm rounded-4 p-3 bg-body h-100 border border-body-tertiary d-flex flex-column gap-2.5">
@@ -871,8 +917,9 @@ function _attachModalEvents(modalBody, _clase) {
   updateCount()
 }
 
-async function _handleSave(modalBody, originalClase) {
+async function _handleSave(modalBody, originalClase, ctx = {}) {
   const isEdicion = !!originalClase
+  const isClon = !isEdicion && !!ctx.isClon
 
   const getFormData = () => {
     const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id')?.value || ''
@@ -967,13 +1014,18 @@ async function _handleSave(modalBody, originalClase) {
     return true
   }
 
+  const tSave = AppToast.progress(
+    isEdicion ? 'Guardando cambios...' : isClon ? 'Creando copia...' : 'Creando clase...'
+  )
+  let originalSuspendida = false
+
   try {
     let resultClase
     if (isEdicion) {
       resultClase = await actualizarClase(originalClase.id, formData, true)
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)
-        if (!ok) return false
+        if (!ok) { tSave.dismiss(); return false }
       } else {
         await _syncGrupal(resultClase.id)
       }
@@ -981,22 +1033,60 @@ async function _handleSave(modalBody, originalClase) {
       resultClase = await crearClase(formData, true)
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)
-        if (!ok) return false
+        if (!ok) { tSave.dismiss(); return false }
       } else {
         const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
         if (selectedIds.length > 0) {
-          await Promise.all(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
+          const results = await Promise.allSettled(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
+          const fallidos = results.filter(r => r.status === 'rejected').length
+          if (fallidos > 0) {
+            AppToast.warning(`${fallidos} de ${selectedIds.length} alumno(s) no se pudieron inscribir. Revisá la nómina.`)
+          }
+        }
+      }
+
+      if (isClon) {
+        // La copia nace fuera del feed operativo y en revisión; además arrastra
+        // los campos académicos que el formulario no expone.
+        try {
+          await marcarClaseComoClon(resultClase.id, {
+            origenNombre: _options.origenClon?.nombre,
+            extraFields: {
+              nivel_id: _options.clonarDe?.nivel_id ?? null,
+              modalidad: _options.clonarDe?.modalidad ?? null,
+              es_clase_iniciacion: _options.clonarDe?.es_clase_iniciacion ?? null,
+            },
+          })
+        } catch (err) {
+          console.warn('[claseModal] No se pudo marcar la clase como duplicada:', err)
+        }
+
+        const suspenderOriginal = modalBody.querySelector('#modal-suspender-original')?.checked
+        if (suspenderOriginal && _options.origenClon?.id) {
+          try {
+            await suspenderClase(_options.origenClon.id, `Reemplazada por la copia "${formData.nombre}".`)
+            originalSuspendida = true
+          } catch (err) {
+            console.error('[claseModal] No se pudo suspender la clase original:', err)
+            AppToast.error('La copia se creó, pero no se pudo suspender la clase original.')
+          }
         }
       }
     }
 
-    AppToast.success(isEdicion ? 'Clase actualizada con éxito' : 'Clase creada con éxito')
+    tSave.success(
+      isEdicion
+        ? 'Clase actualizada con éxito.'
+        : isClon
+          ? `Copia creada${originalSuspendida ? ' y original suspendida' : ''}. Queda en revisión hasta verificar maestro, salón y nómina.`
+          : 'Clase creada con éxito.'
+    )
     if (_options.onSuccess) await _options.onSuccess()
     if (_options.onSaved) await _options.onSaved()
     return true
   } catch (err) {
     console.error('[claseModal] Error al guardar clase:', err)
-    AppToast.error(err.message || 'Error al procesar el guardado de la clase')
+    tSave.error(err.message || 'Error al procesar el guardado de la clase')
     return false
   }
 }

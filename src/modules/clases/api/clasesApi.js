@@ -539,6 +539,129 @@ export async function eliminarClase(id) {
   }
 }
 
+/**
+ * Arma el prefill para DUPLICAR una clase: copia datos académicos, horario y
+ * nómina (grupal o por turnos) del modelo original, dejando maestro y salón
+ * vacíos para que coordinación los reasigne. No escribe nada en la base.
+ *
+ * @param {string} claseId - Clase modelo a clonar
+ * @returns {Promise<{prefill: object, preInscritosIds: string[], preInscritosSlots: object[], origen: {id: string, nombre: string}}>}
+ */
+export async function construirDatosClonados(claseId) {
+  if (!claseId) throw new Error('claseId es obligatorio para duplicar una clase')
+
+  const [{ data: original, error }, inscritos] = await Promise.all([
+    supabase.from('clases').select('*').eq('id', claseId).single(),
+    obtenerAlumnosInscritos(claseId),
+  ])
+
+  if (error || !original) {
+    console.error('Error cargando la clase a duplicar:', error?.message)
+    throw new Error('No se pudo cargar la clase a duplicar')
+  }
+
+  const { data: horarios, error: errorHorarios } = await supabase
+    .from('clase_horarios')
+    .select('dia, hora_inicio, hora_fin')
+    .eq('clase_id', claseId)
+
+  if (errorHorarios) {
+    console.error('Error cargando horarios de la clase a duplicar:', errorHorarios.message)
+    throw new Error('No se pudieron cargar los horarios de la clase a duplicar')
+  }
+
+  const inscritosOrdenados = [...(inscritos || [])].sort((a, b) => {
+    const an = (a.alumno?.nombre_completo || '').toString().toLocaleLowerCase('es')
+    const bn = (b.alumno?.nombre_completo || '').toString().toLocaleLowerCase('es')
+    return an.localeCompare(bn, 'es')
+  })
+
+  return {
+    prefill: {
+      nombre: `${original.nombre} (copia)`,
+      instrumento: original.instrumento || '',
+      programa_id: original.programa_id || null,
+      nivel_id: original.nivel_id || null,
+      capacidad_maxima: original.capacidad_maxima ?? 20,
+      tipo_clase: original.tipo_clase || 'grupal',
+      estado: original.estado || 'activa',
+      descripcion: original.descripcion || '',
+      ruta_id: original.ruta_id || null,
+      modalidad: original.modalidad || null,
+      es_clase_iniciacion:
+        typeof original.es_clase_iniciacion === 'boolean' ? original.es_clase_iniciacion : null,
+      // Se vacían a propósito: el usuario los reasigna en el modal.
+      maestro_principal_id: null,
+      maestro_suplente_id: null,
+      tiene_suplente: false,
+      horarios: (horarios || []).map((h) => ({
+        dia: h.dia,
+        hora_inicio: h.hora_inicio,
+        hora_fin: h.hora_fin,
+        salon_id: null,
+      })),
+    },
+    preInscritosIds: [...new Set(inscritosOrdenados.map((i) => i.alumno_id).filter(Boolean))],
+    preInscritosSlots: inscritosOrdenados,
+    origen: { id: original.id, nombre: original.nombre },
+  }
+}
+
+/**
+ * Marca una clase recién creada como DUPLICADO: fuera del feed operativo
+ * (`activo = false`) y con bandera de revisión, hasta que coordinación
+ * verifique maestro, salón y nómina. Aplica también los campos académicos que
+ * el formulario del modal no expone (nivel, modalidad, iniciación).
+ */
+export async function marcarClaseComoClon(claseId, { origenNombre = '', extraFields = {} } = {}) {
+  if (!claseId) return
+
+  const motivo = origenNombre
+    ? `Clase duplicada de "${origenNombre}" — verificar maestro, salón y nómina antes de activar.`
+    : 'Clase duplicada — verificar maestro, salón y nómina antes de activar.'
+
+  const payload = {
+    activo: false,
+    necesita_revision: true,
+    revision_motivo: motivo,
+    updated_at: new Date().toISOString(),
+  }
+  for (const [key, value] of Object.entries(extraFields || {})) {
+    if (value !== null && value !== undefined) payload[key] = value
+  }
+
+  const { error } = await supabase.from('clases').update(payload).eq('id', claseId)
+  if (error) {
+    console.error('Error marcando la clase como duplicada:', error.message)
+    throw new Error('No se pudo marcar la clase como duplicada')
+  }
+}
+
+/**
+ * Suspende una clase: la saca del feed operativo conservando datos, horario y
+ * nómina. Se usa al duplicar, para retirar la clase original que la copia
+ * reemplaza.
+ */
+export async function suspenderClase(claseId, motivo = 'Reemplazada por una clase duplicada.') {
+  if (!claseId) return
+
+  const { error } = await supabase
+    .from('clases')
+    .update({
+      activo: false,
+      estado: 'suspendida',
+      necesita_revision: true,
+      revision_motivo: motivo,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', claseId)
+
+  if (error) {
+    console.error('Error suspendiendo la clase:', error.message)
+    throw new Error('No se pudo suspender la clase')
+  }
+}
+
 export async function obtenerClasesPorMaestro(maestroId) {
   const { data, error } = await supabase
     .from('clases')

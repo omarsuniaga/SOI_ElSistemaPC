@@ -641,7 +641,7 @@ function attachEvents(container) {
 
   // Ver perfil alumno
   container.querySelector('#btn-ver-alumno')?.addEventListener('click', () => {
-    window.router?.navigate('alumno', { id: p.alumno_id }) ?? router.navigate('alumno', { id: p.alumno_id })
+    window.router?.navigate(`alumnos/${p.alumno_id}`, { id: p.alumno_id }) ?? router.navigate(`alumnos/${p.alumno_id}`, { id: p.alumno_id })
   })
 
   // Docs checkboxes

@@ -168,7 +168,20 @@ function getInitials(name) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function renderAlumnoAdminView(container, params = {}) {
-  const alumnoId = params.alumnoId || params.id
+  let alumnoId = params?.alumnoId || params?.id
+  if (!alumnoId && typeof window !== 'undefined') {
+    const searchParams = window.location.search ? Object.fromEntries(new URLSearchParams(window.location.search)) : {}
+    const hashParams = window.location.hash && window.location.hash.includes('?') ? Object.fromEntries(new URLSearchParams(window.location.hash.split('?')[1])) : {}
+    alumnoId = searchParams.id || searchParams.alumnoId || hashParams.id || hashParams.alumnoId
+    if (!alumnoId) {
+      const parts = window.location.pathname.split('/').filter(Boolean)
+      const idx = parts.findIndex(p => p === 'alumnos' || p === 'alumno')
+      if (idx !== -1 && parts[idx + 1] && !['inactivos', 'duplicados', 'reporte-mes', 'inscribir', 'pdf-demo'].includes(parts[idx + 1])) {
+        alumnoId = decodeURIComponent(parts[idx + 1])
+      }
+    }
+  }
+
   if (!alumnoId) {
     container.innerHTML = '<div class="alert alert-danger m-4">ID de alumno no especificado.</div>'
     return

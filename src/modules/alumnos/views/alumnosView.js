@@ -539,7 +539,7 @@ export async function renderAlumnosView(container) {
     tbody?.addEventListener('click', async (e) => {
       const row = e.target.closest('.list-group-item[data-id]')
       if (row && !e.target.closest('[data-action]')) {
-        window.router?.navigate('alumno', { id: row.dataset.id })
+        window.router?.navigate(`alumnos/${row.dataset.id}`, { id: row.dataset.id })
         return
       }
 
@@ -550,7 +550,7 @@ export async function renderAlumnosView(container) {
         const alumno = state.alumnosOriginales.find(a => a.id === id)
         Ficha360Modal.abrir(alumno || id)
       } else if (btn.dataset.action === 'edit') {
-        window.router?.navigate('alumno', { id })
+        window.router?.navigate(`alumnos/${id}`, { id })
       } else if (btn.dataset.action === 'delete') {
         openDeleteModal(id)
       } else if (btn.dataset.action === 'whatsapp') {

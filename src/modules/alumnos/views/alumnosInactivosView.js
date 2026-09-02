@@ -219,7 +219,7 @@ export async function renderAlumnosInactivosView(container) {
       const btn = e.target.closest('[data-action]')
       if (!btn) {
         const row = e.target.closest('.list-group-item[data-id]')
-        if (row && window.router?.navigate) window.router.navigate('alumno', { id: row.dataset.id })
+        if (row && window.router?.navigate) window.router.navigate(`alumnos/${row.dataset.id}`, { id: row.dataset.id })
         return
       }
 
@@ -227,7 +227,7 @@ export async function renderAlumnosInactivosView(container) {
       const id = btn.dataset.id
 
       if (action === 'view') {
-        if (window.router?.navigate) window.router.navigate('alumno', { id })
+        if (window.router?.navigate) window.router.navigate(`alumnos/${id}`, { id })
       } else if (action === 'reactivate') {
         openReactivateModal(id)
       }

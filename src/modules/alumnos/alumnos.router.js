@@ -24,6 +24,7 @@ export function registerRoutesAlumnos() {
   router.register('alumnos/pdf-demo', renderPdfDemoView)
   router.register('alumnos-pdf-demo', renderPdfDemoView)
   router.register('alumnos/:id', renderAlumnoAdminView)
+  router.register('alumno/:id', renderAlumnoAdminView)
   router.register('alumno', renderAlumnoAdminView)
   router.register('ficha-360', renderFicha360AdminView)
   router.register('postulados', renderPostuladosView)

@@ -716,7 +716,7 @@ function _attachEvents(container) {
 
   container.querySelector('#diag-lista')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-edit-alumno]')
-    if (btn) window.router?.navigate('alumno', { id: btn.dataset.editAlumno })
+    if (btn) window.router?.navigate(`alumnos/${btn.dataset.editAlumno}`, { id: btn.dataset.editAlumno })
   })
 
   // ── Documentos institucionales ─────────────────────────────────────────────

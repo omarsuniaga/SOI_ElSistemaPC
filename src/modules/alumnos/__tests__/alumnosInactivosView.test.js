@@ -106,4 +106,45 @@ describe('alumnosInactivosView', () => {
     expect(alumnosApi.reactivarAlumno).toHaveBeenCalledWith('alum-002')
     expect(AppToast.success).toHaveBeenCalledWith('Alumno reactivado correctamente')
   })
+
+  it('navigates to alumnos/:id when clicking on an inactive student row', async () => {
+    const mockInactivos = [
+      {
+        id: 'alum-003',
+        nombre_completo: 'Marcos Diaz',
+        instrumento_principal: 'Violonchelo',
+        activo: false,
+      },
+    ]
+    alumnosApi.obtenerAlumnosInactivos.mockResolvedValue({ alumnos: mockInactivos, total: 1 })
+
+    await renderAlumnosInactivosView(container)
+
+    const row = container.querySelector('.list-group-item[data-id="alum-003"]')
+    expect(row).not.toBeNull()
+    row.click()
+
+    expect(window.router.navigate).toHaveBeenCalledWith('alumnos/alum-003', { id: 'alum-003' })
+  })
+
+  it('navigates to alumnos/:id when clicking the view action button', async () => {
+    const mockInactivos = [
+      {
+        id: 'alum-004',
+        nombre_completo: 'Sofia Blanco',
+        instrumento_principal: 'Clarinete',
+        activo: false,
+      },
+    ]
+    alumnosApi.obtenerAlumnosInactivos.mockResolvedValue({ alumnos: mockInactivos, total: 1 })
+
+    await renderAlumnosInactivosView(container)
+
+    const viewBtn = container.querySelector('[data-action="view"][data-id="alum-004"]')
+    expect(viewBtn).not.toBeNull()
+    viewBtn.click()
+
+    expect(window.router.navigate).toHaveBeenCalledWith('alumnos/alum-004', { id: 'alum-004' })
+  })
 })
+

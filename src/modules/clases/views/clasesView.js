@@ -640,41 +640,41 @@ function _renderClaseCardV2(c) {
   const hasWarningIssues = badgesConsolidados.some(i => i.nivel === 'warning')
 
   return `
-    <div class="col-12 col-md-6 col-xl-4">
+    <div class="col-12 col-sm-6 col-lg-3">
       <div class="clase-card-v2 h-100 ${hasDangerIssues ? 'border-danger' : hasWarningIssues ? 'border-warning' : ''}" style="--teacher-hue: ${teacherHue};">
         
         <div>
           <!-- Header de Ficha -->
           <div class="clase-card-v2-header">
-            <div>
+            <div class="min-w-0 flex-grow-1">
               <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
-                <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.68rem;">
+                <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5" style="font-size:0.65rem;">
                   <i class="bi ${getInstrumentoIcon(c.instrumento)} me-1"></i>${escapeHTML(c.instrumento || 'General')}
                 </span>
-                ${c.tipo_clase ? `<span class="badge bg-body-tertiary text-muted border" style="font-size:0.68rem;">${escapeHTML(c.tipo_clase)}</span>` : ''}
-                ${c.necesita_revision ? `<span class="badge bg-warning text-dark" style="font-size:0.68rem;"><i class="bi bi-flag-fill me-1"></i>Revisión</span>` : ''}
+                ${c.tipo_clase ? `<span class="badge bg-body-tertiary text-muted border px-1.5 py-0.5" style="font-size:0.65rem;">${escapeHTML(c.tipo_clase)}</span>` : ''}
+                ${c.necesita_revision ? `<span class="badge bg-warning text-dark px-1.5 py-0.5" style="font-size:0.65rem;"><i class="bi bi-flag-fill me-1"></i>Revisión</span>` : ''}
               </div>
-              <h6 class="clase-card-v2-title">${escapeHTML(c.nombre || 'Clase')}</h6>
+              <h6 class="clase-card-v2-title" title="${escapeHTML(c.nombre || 'Clase')}">${escapeHTML(c.nombre || 'Clase')}</h6>
             </div>
             
-            <span class="badge ${isActiva ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}" style="font-size:0.68rem;">
+            <span class="badge ${isActiva ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} flex-shrink-0 px-1.5 py-0.5 ms-1" style="font-size:0.65rem;">
               ${isActiva ? 'Activa' : 'Inactiva'}
             </span>
           </div>
 
           <!-- Metadatos Operativos -->
           <div class="clase-card-v2-meta">
-            <div class="clase-meta-row">
+            <div class="clase-meta-row" title="${escapeHTML(diaTexto)} · ${escapeHTML(horaTexto)}">
               <i class="bi bi-clock text-primary"></i>
-              <span><strong>${escapeHTML(diaTexto)}</strong> · ${escapeHTML(horaTexto)}</span>
+              <span class="text-truncate"><strong>${escapeHTML(diaTexto)}</strong> · ${escapeHTML(horaTexto)}</span>
             </div>
-            <div class="clase-meta-row">
+            <div class="clase-meta-row" title="${escapeHTML(salonTexto)}">
               <i class="bi bi-door-closed text-secondary"></i>
-              <span>${escapeHTML(salonTexto)}</span>
+              <span class="text-truncate">${escapeHTML(salonTexto)}</span>
             </div>
-            <div class="clase-meta-row">
+            <div class="clase-meta-row" title="${escapeHTML(maestroNombre)}">
               <i class="bi bi-person-badge" style="color: hsl(var(--teacher-hue), 70%, 60%);"></i>
-              <span>Docente: <strong>${escapeHTML(maestroNombre)}</strong></span>
+              <span class="text-truncate">Docente: <strong>${escapeHTML(maestroNombre)}</strong></span>
             </div>
           </div>
 
@@ -682,7 +682,7 @@ function _renderClaseCardV2(c) {
           ${badgesConsolidados.length > 0 ? `
             <div class="d-flex flex-wrap gap-1 mb-2">
               ${badgesConsolidados.map(b => `
-                <span class="badge ${b.nivel === 'danger' ? 'bg-danger-subtle text-danger border border-danger-subtle' : b.nivel === 'warning' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle'}" style="font-size:0.68rem;" title="${escapeHTML(b.tooltip)}">
+                <span class="badge ${b.nivel === 'danger' ? 'bg-danger-subtle text-danger border border-danger-subtle' : b.nivel === 'warning' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle'} px-1.5 py-0.5 text-truncate" style="font-size:0.65rem; max-width: 100%;" title="${escapeHTML(b.tooltip)}">
                   <i class="bi ${b.icon} me-1"></i>${escapeHTML(b.label)}
                 </span>
               `).join('')}
@@ -691,9 +691,9 @@ function _renderClaseCardV2(c) {
 
           <!-- Ocupación / Capacidad -->
           <div class="clase-occupancy-container">
-            <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem;">
-              <span class="text-muted fw-semibold">Capacidad: <strong>${totalAlumnos}/${capacidad}</strong> alumnos</span>
-              <span class="fw-bold ${pctOcupacion >= 100 ? 'text-danger' : 'text-success'}">${pctOcupacion}%</span>
+            <div class="d-flex justify-content-between align-items-center" style="font-size:0.72rem;">
+              <span class="text-muted fw-semibold text-truncate">Cupo: <strong>${totalAlumnos}/${capacidad}</strong> alumnos</span>
+              <span class="fw-bold ms-1 flex-shrink-0 ${pctOcupacion >= 100 ? 'text-danger' : 'text-success'}">${pctOcupacion}%</span>
             </div>
             <div class="clase-occupancy-bar">
               <div class="clase-occupancy-fill ${fillClass}" style="width: ${pctOcupacion}%;"></div>
@@ -703,45 +703,45 @@ function _renderClaseCardV2(c) {
 
         <!-- Footer / Acciones Rápidas -->
         <div class="clase-card-v2-footer">
-          <div class="d-flex gap-1 align-items-center">
-            <button class="btn btn-outline-primary btn-sm px-2 py-1 d-inline-flex align-items-center" 
+          <div class="d-flex gap-1 align-items-center flex-wrap min-w-0">
+            <button class="btn btn-outline-primary btn-sm py-1 px-2 d-inline-flex align-items-center" 
                     data-action="ver-nomina" 
                     data-id="${c.id}"
-                    style="font-size:0.78rem;">
-              <i class="bi bi-people-fill me-1"></i>Nómina (${totalAlumnos})
+                    style="font-size:0.74rem;"
+                    title="Ver nómina de inscritos">
+              <i class="bi bi-people-fill me-1"></i>Nómina <span class="badge bg-primary-subtle text-primary border ms-1 px-1 py-0" style="font-size:0.68rem;">${totalAlumnos}</span>
             </button>
 
             ${issues.length > 0 ? `
-              <button class="btn btn-warning btn-sm px-2 py-1 d-inline-flex align-items-center"
+              <button class="btn btn-warning btn-sm clase-btn-action-icon"
                       data-action="resolver-conflicto"
                       data-id="${c.id}"
-                      style="font-size:0.78rem;"
-                      title="Evaluar y resolver conflictos de esta clase">
-                <i class="bi bi-shield-exclamation me-1"></i>Resolver (${issues.length})
+                      title="Evaluar y resolver ${issues.length} advertencias de esta clase">
+                <i class="bi bi-shield-exclamation"></i>
               </button>
             ` : ''}
           </div>
 
-          <div class="d-flex gap-1">
-            <button class="btn btn-outline-secondary btn-sm px-2 py-1"
+          <div class="d-flex gap-1 align-items-center flex-shrink-0">
+            <button class="btn btn-outline-secondary btn-sm clase-btn-action-icon"
                     data-action="pdf-clase"
                     data-id="${c.id}"
                     title="Descargar Planilla PDF">
               <i class="bi bi-file-earmark-pdf"></i>
             </button>
-            <button class="btn btn-outline-secondary btn-sm px-2 py-1"
+            <button class="btn btn-outline-secondary btn-sm clase-btn-action-icon"
                     data-action="editar-clase"
                     data-id="${c.id}"
                     title="Editar Clase y Horario">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-outline-secondary btn-sm px-2 py-1"
+            <button class="btn btn-outline-secondary btn-sm clase-btn-action-icon"
                     data-action="duplicar-clase"
                     data-id="${c.id}"
                     title="Duplicar clase (copia horario y alumnos; sin maestro ni salón)">
               <i class="bi bi-files"></i>
             </button>
-            <button class="btn btn-outline-danger btn-sm px-2 py-1"
+            <button class="btn btn-outline-danger btn-sm clase-btn-action-icon"
                     data-action="eliminar-clase"
                     data-id="${c.id}"
                     data-nombre="${escapeHTML(c.nombre)}"

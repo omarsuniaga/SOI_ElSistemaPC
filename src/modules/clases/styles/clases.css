@@ -1225,6 +1225,45 @@ body.dark-mode .clase-card-v2 {
   box-shadow: 0 5px 16px rgba(0, 0, 0, 0.3);
 }
 
+/* Inactive class card: fondo gris, borde neutro y opacidad reducida */
+.clase-card-v2--inactiva {
+  background: var(--bs-tertiary-bg, #f1f3f5) !important;
+  border-color: var(--bs-border-color, #dee2e6) !important;
+  opacity: 0.78;
+  filter: grayscale(0.25);
+}
+
+.clase-card-v2--inactiva:hover {
+  opacity: 0.95;
+  filter: none;
+  border-color: #adb5bd !important;
+}
+
+[data-bs-theme="dark"] .clase-card-v2--inactiva,
+.dark-theme .clase-card-v2--inactiva,
+body.dark-mode .clase-card-v2--inactiva {
+  background: rgba(35, 39, 47, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Botón de advertencia en esquina superior derecha */
+.clase-btn-warning-corner {
+  padding: 0.22rem 0.48rem;
+  font-size: 0.72rem;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.clase-btn-warning-corner:hover {
+  transform: scale(1.06);
+}
+
 .clase-card-v2-header {
   display: flex;
   justify-content: space-between;

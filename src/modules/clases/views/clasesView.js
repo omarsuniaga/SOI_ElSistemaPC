@@ -43,6 +43,7 @@ const state = {
   cargando: false,
   filtrosAbiertos: false,
   filtroFamilia: 'todas',
+  soloActivas: true,
   filtroEstado: 'todos',
   filtroCatedra: 'todas',
   filtroMaestro: 'todos',
@@ -74,6 +75,7 @@ export async function renderClasesView(container, params = {}) {
     if (params?.resetFilters) {
       state.searchQuery = ''
       state.filtroFamilia = 'todas'
+      state.soloActivas = true
       state.filtroEstado = 'todos'
       state.filtroCatedra = 'todas'
       state.filtroMaestro = 'todos'
@@ -170,18 +172,22 @@ function getFiltradosClases() {
   const maestro = state.filtroMaestro
   const salon = state.filtroSalon
   const dia = state.filtroDia
-  const estado = state.filtroEstado
   const conflictoFiltro = state.filtroConflictos
+  const soloActivas = state.soloActivas
 
   return state.clasesOriginales.filter((c) => {
     const issues = state.conflictosMap.get(c.id) || []
+    const isActiva = c.activo !== false && c.estado !== 'inactiva'
 
-    // 0. Filtro por Conflictos
+    // 0. Filtro por Solo Activas
+    if (soloActivas && !isActiva) return false
+
+    // 1. Filtro por Conflictos
     if (conflictoFiltro === 'con-conflictos' && issues.length === 0) return false
     if (conflictoFiltro === 'en-revision' && !c.necesita_revision) return false
     if (conflictoFiltro === 'sin-conflictos' && issues.length > 0) return false
 
-    // 1. Filtro por Familia Instrumental
+    // 2. Filtro por Familia Instrumental
     if (fam !== 'todas') {
       const instNorm = normalizeStr(c.instrumento || c.nombre || '')
       const keywords = FAMILIAS_MAP[fam] || []
@@ -189,35 +195,28 @@ function getFiltradosClases() {
       if (!matchFam) return false
     }
 
-    // 2. Filtro por Cátedra
+    // 3. Filtro por Cátedra
     if (catedra !== 'todas' && normalizeStr(c.instrumento) !== normalizeStr(catedra)) {
       return false
     }
 
-    // 3. Filtro por Docente
+    // 4. Filtro por Docente
     if (maestro !== 'todos') {
       const matchDocenteId = c.maestro_principal_id === maestro || c.maestro_id === maestro
       const matchDocenteNombre = normalizeStr(c.maestro_nombre) === normalizeStr(maestro)
       if (!matchDocenteId && !matchDocenteNombre) return false
     }
 
-    // 4. Filtro por Salón
+    // 5. Filtro por Salón
     if (salon !== 'todos') {
       const salonNombre = c.salon || (c.horarios || [])[0]?.salones?.nombre || ''
       if (normalizeStr(salonNombre) !== normalizeStr(salon)) return false
     }
 
-    // 5. Filtro por Día
+    // 6. Filtro por Día
     if (dia !== 'todos') {
       const tieneDia = (c.horarios || c.clase_horarios || []).some(h => normalizeStr(h.dia || h.dia_semana) === normalizeStr(dia))
       if (!tieneDia) return false
-    }
-
-    // 6. Filtro por Estado
-    if (estado !== 'todos') {
-      const isActiva = c.activo !== false && c.estado !== 'inactiva'
-      if (estado === 'activa' && !isActiva) return false
-      if (estado === 'inactiva' && isActiva) return false
     }
 
     // 7. Buscador Universal
@@ -231,6 +230,13 @@ function getFiltradosClases() {
 
     return true
   }).sort((a, b) => {
+    // Aislamiento prioritario de clases inactivas al final de todos los listados
+    const isActivaA = a.activo !== false && a.estado !== 'inactiva'
+    const isActivaB = b.activo !== false && b.estado !== 'inactiva'
+    if (isActivaA !== isActivaB) {
+      return isActivaA ? -1 : 1 // Activas primero, Inactivas al final
+    }
+
     const orden = state.ordenarPor || 'maestro'
     const maestrosMap = new Map(state.maestros.map(m => [m.id, m.nombre_completo || m.nombre || '']))
     const maestroA = a.maestro_nombre || maestrosMap.get(a.maestro_principal_id) || maestrosMap.get(a.maestro_id) || 'Sin asignar'
@@ -306,7 +312,7 @@ function contarFiltrosActivos() {
   if (state.filtroMaestro !== 'todos') count++
   if (state.filtroSalon !== 'todos') count++
   if (state.filtroDia !== 'todos') count++
-  if (state.filtroEstado !== 'todos') count++
+  if (!state.soloActivas) count++
   if (state.filtroConflictos !== 'todos') count++
   if (state.searchQuery.trim().length > 0) count++
   return count
@@ -348,6 +354,13 @@ function updateClasesGrid(container) {
     badgeWrapper.innerHTML = count > 0
       ? `<span class="badge bg-warning text-dark ms-1 rounded-pill" style="font-size:0.65rem;">${count}</span>`
       : ''
+  }
+
+  // Actualizar visibilidad y texto de limpiar filtros
+  const btnLimpiar = root.querySelector('#btnLimpiarTodosFiltros')
+  if (btnLimpiar) {
+    btnLimpiar.style.display = count > 0 ? 'inline-block' : 'none'
+    btnLimpiar.innerHTML = `<i class="bi bi-x-circle me-1"></i>Limpiar Filtros (${count})`
   }
 }
 
@@ -479,84 +492,63 @@ function renderContent(container) {
           </div>
         </div>
 
-        <!-- Panel de Filtros Desplegable (Oculto por defecto para garantizar 80% pantalla útil) -->
-        <div class="collapse ${state.filtrosAbiertos ? 'show' : ''} pt-2 mt-2 border-top border-body-tertiary" id="panelFiltrosClases">
+        <!-- Panel de Filtros Desplegable con Espaciado Generoso -->
+        <div class="collapse ${state.filtrosAbiertos ? 'show' : ''} pt-3 mt-2 border-top border-body-tertiary" id="panelFiltrosClases">
           
-          <!-- Píldoras de Familia Instrumental -->
-          <div class="d-flex align-items-center gap-1.5 mb-2.5 flex-wrap">
-            <span class="small text-muted me-1 fw-bold" style="font-size:0.75rem;"><i class="bi bi-tag-fill me-1"></i>Familia:</span>
-            <button class="btn btn-sm ${state.filtroFamilia === 'todas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="todas" style="font-size:0.75rem;">Todas</button>
-            <button class="btn btn-sm ${state.filtroFamilia === 'cuerdas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="cuerdas" style="font-size:0.75rem;">🎻 Cuerdas</button>
-            <button class="btn btn-sm ${state.filtroFamilia === 'maderas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="maderas" style="font-size:0.75rem;">🎷 Maderas</button>
-            <button class="btn btn-sm ${state.filtroFamilia === 'metales' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="metales" style="font-size:0.75rem;">🎺 Metales</button>
-            <button class="btn btn-sm ${state.filtroFamilia === 'perc_teclado' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="perc_teclado" style="font-size:0.75rem;">🥁 Percusión & Piano</button>
-            <button class="btn btn-sm ${state.filtroFamilia === 'coral_iniciacion' ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="coral_iniciacion" style="font-size:0.75rem;">🎶 Iniciación & Coro</button>
+          <!-- Fila 1: Píldoras de Familia Instrumental y Acceso a Limpiar -->
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-1.5 flex-wrap gap-2">
+              <span class="text-uppercase fw-bold text-muted" style="font-size:0.72rem; letter-spacing:0.5px;">
+                <i class="bi bi-tag-fill text-primary me-1"></i>Familia Instrumental
+              </span>
+              ${filtrosActivosCount > 0 ? `
+                <button class="btn btn-link btn-sm text-decoration-none p-0 text-danger fw-semibold" id="btnLimpiarTodosFiltros" style="font-size:0.75rem;">
+                  <i class="bi bi-x-circle me-1"></i>Limpiar Filtros (${filtrosActivosCount})
+                </button>
+              ` : ''}
+            </div>
+            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+              <button class="btn btn-sm ${state.filtroFamilia === 'todas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="todas" style="font-size:0.75rem;">Todas</button>
+              <button class="btn btn-sm ${state.filtroFamilia === 'cuerdas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="cuerdas" style="font-size:0.75rem;">🎻 Cuerdas</button>
+              <button class="btn btn-sm ${state.filtroFamilia === 'maderas' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="maderas" style="font-size:0.75rem;">🎷 Maderas</button>
+              <button class="btn btn-sm ${state.filtroFamilia === 'metales' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="metales" style="font-size:0.75rem;">🎺 Metales</button>
+              <button class="btn btn-sm ${state.filtroFamilia === 'perc_teclado' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="perc_teclado" style="font-size:0.75rem;">🥁 Percusión & Piano</button>
+              <button class="btn btn-sm ${state.filtroFamilia === 'coral_iniciacion' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 py-1 fw-semibold shadow-xs family-pill-btn" data-familia="coral_iniciacion" style="font-size:0.75rem;">🎶 Iniciación & Coro</button>
+            </div>
           </div>
 
-          <!-- Selects de Filtro y Ordenamiento Estilizados -->
-          <div class="row g-2 align-items-center">
-            
+          <!-- Fila 2: Barra de Búsqueda, Filtro "Solo Activas" y Criterio de Orden -->
+          <div class="row g-2.5 align-items-center mb-2.5">
             <!-- Buscador -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-md-6 col-lg-5">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Búsqueda por texto</label>
               <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
                 <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="inputBuscarClases" placeholder="Buscar por nombre, docente..." value="${escapeHTML(state.searchQuery)}" style="font-size:0.8rem;">
+                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="inputBuscarClases" placeholder="Buscar por nombre, docente, salón..." value="${escapeHTML(state.searchQuery)}" style="font-size:0.82rem;">
+                ${state.searchQuery ? `
+                  <button class="btn btn-outline-secondary border-start-0 py-1.5" type="button" id="btnClearSearchQuery" title="Limpiar búsqueda">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                ` : ''}
               </div>
             </div>
 
-            <!-- Cátedra -->
-            <div class="col-6 col-sm-3 col-lg-2">
-              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectCatedraClase" style="font-size:0.8rem;">
-                <option value="todas" ${state.filtroCatedra === 'todas' ? 'selected' : ''}>Todas Cátedras</option>
-                ${catedrasList.map(c => `<option value="${escapeHTML(c)}" ${state.filtroCatedra === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
-              </select>
+            <!-- Botón Solo Activas -->
+            <div class="col-6 col-md-3 col-lg-3">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Estado Operativo</label>
+              <button type="button" class="btn btn-sm w-100 ${state.soloActivas ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center justify-content-center gap-1.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnFiltroSoloActivas" title="Alternar entre solo activas o todas las clases">
+                <i class="bi ${state.soloActivas ? 'bi-check2-circle' : 'bi-circle'}"></i>
+                <span>Solo Activas</span>
+              </button>
             </div>
 
-            <!-- Docente -->
-            <div class="col-6 col-sm-3 col-lg-2">
-              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectMaestroClase" style="font-size:0.8rem;">
-                <option value="todos" ${state.filtroMaestro === 'todos' ? 'selected' : ''}>Todos Docentes</option>
-                ${maestrosList.map(m => `<option value="${escapeHTML(m)}" ${state.filtroMaestro === m ? 'selected' : ''}>${escapeHTML(m)}</option>`).join('')}
-              </select>
-            </div>
-
-            <!-- Salón -->
-            <div class="col-6 col-sm-3 col-lg-1">
-              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectSalonClase" style="font-size:0.8rem;">
-                <option value="todos" ${state.filtroSalon === 'todos' ? 'selected' : ''}>Salones</option>
-                ${salonesList.map(s => `<option value="${escapeHTML(s)}" ${state.filtroSalon === s ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}
-              </select>
-            </div>
-
-            <!-- Día -->
-            <div class="col-6 col-sm-3 col-lg-1">
-              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectDiaClase" style="font-size:0.8rem;">
-                <option value="todos" ${state.filtroDia === 'todos' ? 'selected' : ''}>Día</option>
-                <option value="lunes" ${state.filtroDia === 'lunes' ? 'selected' : ''}>Lun</option>
-                <option value="martes" ${state.filtroDia === 'martes' ? 'selected' : ''}>Mar</option>
-                <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Mié</option>
-                <option value="jueves" ${state.filtroDia === 'jueves' ? 'selected' : ''}>Jue</option>
-                <option value="viernes" ${state.filtroDia === 'viernes' ? 'selected' : ''}>Vie</option>
-                <option value="sabado" ${state.filtroDia === 'sabado' ? 'selected' : ''}>Sáb</option>
-              </select>
-            </div>
-
-            <!-- Conflictos / Estados -->
-            <div class="col-6 col-sm-3 col-lg-1">
-              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectConflictosFiltro" style="font-size:0.8rem;">
-                <option value="todos" ${state.filtroConflictos === 'todos' ? 'selected' : ''}>Estados</option>
-                <option value="con-conflictos" ${state.filtroConflictos === 'con-conflictos' ? 'selected' : ''}>⚠️ Advertencias</option>
-                <option value="en-revision" ${state.filtroConflictos === 'en-revision' ? 'selected' : ''}>🚩 Revisión</option>
-                <option value="sin-conflictos" ${state.filtroConflictos === 'sin-conflictos' ? 'selected' : ''}>✅ Sin Conflictos</option>
-              </select>
-            </div>
-
-            <!-- Ordenar Por -->
-            <div class="col-12 col-sm-6 col-lg-2">
+            <!-- Criterio de Orden -->
+            <div class="col-6 col-md-3 col-lg-4">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Criterio de Orden</label>
               <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
                 <span class="input-group-text bg-body-tertiary border-end-0 py-1.5 text-muted" style="font-size:0.75rem;"><i class="bi bi-sort-down"></i></span>
-                <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarClases" style="font-size:0.8rem;">
-                  <option value="maestro" ${state.ordenarPor === 'maestro' ? 'selected' : ''}>Maestro (A-Z)</option>
+                <select class="form-select form-select-sm border-start-0 py-1.5 fw-semibold text-primary" id="selectOrdenarClases" style="font-size:0.82rem;">
+                  <option value="maestro" ${state.ordenarPor === 'maestro' ? 'selected' : ''}>Docente (A-Z)</option>
                   <option value="familia" ${state.ordenarPor === 'familia' ? 'selected' : ''}>Familia Instrumental</option>
                   <option value="catedra" ${state.ordenarPor === 'catedra' ? 'selected' : ''}>Cátedra (A-Z)</option>
                   <option value="dia" ${state.ordenarPor === 'dia' ? 'selected' : ''}>Día y Horario</option>
@@ -566,8 +558,63 @@ function renderContent(container) {
                 </select>
               </div>
             </div>
-
           </div>
+
+          <!-- Fila 3: Filtros Específicos Espaciosos con Etiquetas -->
+          <div class="row g-2.5">
+            <!-- Cátedra -->
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Cátedra / Instrumento</label>
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectCatedraClase" style="font-size:0.8rem;">
+                <option value="todas" ${state.filtroCatedra === 'todas' ? 'selected' : ''}>Todas las Cátedras</option>
+                ${catedrasList.map(c => `<option value="${escapeHTML(c)}" ${state.filtroCatedra === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Docente -->
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Docente Titular</label>
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectMaestroClase" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroMaestro === 'todos' ? 'selected' : ''}>Todos los Docentes</option>
+                ${maestrosList.map(m => `<option value="${escapeHTML(m)}" ${state.filtroMaestro === m ? 'selected' : ''}>${escapeHTML(m)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Salón -->
+            <div class="col-6 col-sm-4 col-lg-2">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Salón</label>
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectSalonClase" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroSalon === 'todos' ? 'selected' : ''}>Todos los Salones</option>
+                ${salonesList.map(s => `<option value="${escapeHTML(s)}" ${state.filtroSalon === s ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Día -->
+            <div class="col-6 col-sm-4 col-lg-2">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Día de Semana</label>
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectDiaClase" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroDia === 'todos' ? 'selected' : ''}>Todos los Días</option>
+                <option value="lunes" ${state.filtroDia === 'lunes' ? 'selected' : ''}>Lunes</option>
+                <option value="martes" ${state.filtroDia === 'martes' ? 'selected' : ''}>Martes</option>
+                <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Miércoles</option>
+                <option value="jueves" ${state.filtroDia === 'jueves' ? 'selected' : ''}>Jueves</option>
+                <option value="viernes" ${state.filtroDia === 'viernes' ? 'selected' : ''}>Viernes</option>
+                <option value="sabado" ${state.filtroDia === 'sabado' ? 'selected' : ''}>Sábado</option>
+              </select>
+            </div>
+
+            <!-- Conflictos / Solapes -->
+            <div class="col-12 col-sm-4 col-lg-2">
+              <label class="form-label text-muted fw-semibold mb-1 d-block" style="font-size: 0.72rem;">Solapes / Alertas</label>
+              <select class="form-select form-select-sm rounded-3 shadow-xs border-body-tertiary fw-medium py-1.5" id="selectConflictosFiltro" style="font-size:0.8rem;">
+                <option value="todos" ${state.filtroConflictos === 'todos' ? 'selected' : ''}>Todas</option>
+                <option value="con-conflictos" ${state.filtroConflictos === 'con-conflictos' ? 'selected' : ''}>⚠️ Con Advertencias</option>
+                <option value="en-revision" ${state.filtroConflictos === 'en-revision' ? 'selected' : ''}>🚩 En Revisión</option>
+                <option value="sin-conflictos" ${state.filtroConflictos === 'sin-conflictos' ? 'selected' : ''}>✅ Sin Conflictos</option>
+              </select>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -641,25 +688,31 @@ function _renderClaseCardV2(c) {
 
   return `
     <div class="col-12 col-sm-6 col-lg-3">
-      <div class="clase-card-v2 h-100 ${hasDangerIssues ? 'border-danger' : hasWarningIssues ? 'border-warning' : ''}" style="--teacher-hue: ${teacherHue};">
+      <div class="clase-card-v2 h-100 ${!isActiva ? 'clase-card-v2--inactiva' : ''} ${hasDangerIssues ? 'border-danger' : hasWarningIssues ? 'border-warning' : ''}" style="--teacher-hue: ${teacherHue};">
         
         <div>
           <!-- Header de Ficha -->
           <div class="clase-card-v2-header">
-            <div class="min-w-0 flex-grow-1">
+            <div class="min-w-0 flex-grow-1 pe-1">
               <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
                 <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5" style="font-size:0.65rem;">
                   <i class="bi ${getInstrumentoIcon(c.instrumento)} me-1"></i>${escapeHTML(c.instrumento || 'General')}
                 </span>
                 ${c.tipo_clase ? `<span class="badge bg-body-tertiary text-muted border px-1.5 py-0.5" style="font-size:0.65rem;">${escapeHTML(c.tipo_clase)}</span>` : ''}
                 ${c.necesita_revision ? `<span class="badge bg-warning text-dark px-1.5 py-0.5" style="font-size:0.65rem;"><i class="bi bi-flag-fill me-1"></i>Revisión</span>` : ''}
+                ${!isActiva ? `<span class="badge bg-secondary text-white px-1.5 py-0.5" style="font-size:0.65rem;"><i class="bi bi-pause-circle me-1"></i>Inactiva</span>` : ''}
               </div>
               <h6 class="clase-card-v2-title" title="${escapeHTML(c.nombre || 'Clase')}">${escapeHTML(c.nombre || 'Clase')}</h6>
             </div>
             
-            <span class="badge ${isActiva ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} flex-shrink-0 px-1.5 py-0.5 ms-1" style="font-size:0.65rem;">
-              ${isActiva ? 'Activa' : 'Inactiva'}
-            </span>
+            ${issues.length > 0 ? `
+              <button class="btn btn-warning btn-sm clase-btn-warning-corner flex-shrink-0 shadow-xs"
+                      data-action="resolver-conflicto"
+                      data-id="${c.id}"
+                      title="Evaluar y resolver ${issues.length} advertencias de esta clase">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i><span class="fw-bold">${issues.length}</span>
+              </button>
+            ` : ''}
           </div>
 
           <!-- Metadatos Operativos -->
@@ -703,7 +756,7 @@ function _renderClaseCardV2(c) {
 
         <!-- Footer / Acciones Rápidas -->
         <div class="clase-card-v2-footer">
-          <div class="d-flex gap-1 align-items-center flex-wrap min-w-0">
+          <div class="d-flex gap-1 align-items-center min-w-0">
             <button class="btn btn-outline-primary btn-sm py-1 px-2 d-inline-flex align-items-center" 
                     data-action="ver-nomina" 
                     data-id="${c.id}"
@@ -711,15 +764,6 @@ function _renderClaseCardV2(c) {
                     title="Ver nómina de inscritos">
               <i class="bi bi-people-fill me-1"></i>Nómina <span class="badge bg-primary-subtle text-primary border ms-1 px-1 py-0" style="font-size:0.68rem;">${totalAlumnos}</span>
             </button>
-
-            ${issues.length > 0 ? `
-              <button class="btn btn-warning btn-sm clase-btn-action-icon"
-                      data-action="resolver-conflicto"
-                      data-id="${c.id}"
-                      title="Evaluar y resolver ${issues.length} advertencias de esta clase">
-                <i class="bi bi-shield-exclamation"></i>
-              </button>
-            ` : ''}
           </div>
 
           <div class="d-flex gap-1 align-items-center flex-shrink-0">
@@ -2105,7 +2149,44 @@ function attachEvents(container) {
   const searchInput = container.querySelector('#inputBuscarClases')
   searchInput?.addEventListener('input', (e) => {
     state.searchQuery = e.target.value
+    const btnClear = container.querySelector('#btnClearSearchQuery')
+    if (btnClear) {
+      btnClear.style.display = state.searchQuery ? 'inline-block' : 'none'
+    }
     updateClasesGrid(container)
+  })
+
+  container.querySelector('#btnClearSearchQuery')?.addEventListener('click', () => {
+    state.searchQuery = ''
+    if (searchInput) searchInput.value = ''
+    const btnClear = container.querySelector('#btnClearSearchQuery')
+    if (btnClear) btnClear.style.display = 'none'
+    updateClasesGrid(container)
+  })
+
+  // 3.1 Toggle Solo Activas
+  container.querySelector('#btnFiltroSoloActivas')?.addEventListener('click', () => {
+    state.soloActivas = !state.soloActivas
+    const btn = container.querySelector('#btnFiltroSoloActivas')
+    if (btn) {
+      btn.className = `btn btn-sm w-100 ${state.soloActivas ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center justify-content-center gap-1.5 py-1.5 rounded-3 fw-semibold shadow-xs`
+      btn.innerHTML = `<i class="bi ${state.soloActivas ? 'bi-check2-circle' : 'bi-circle'}"></i><span>Solo Activas</span>`
+    }
+    updateClasesGrid(container)
+  })
+
+  // 3.2 Limpiar Todos los Filtros
+  container.querySelector('#btnLimpiarTodosFiltros')?.addEventListener('click', () => {
+    state.searchQuery = ''
+    state.filtroFamilia = 'todas'
+    state.soloActivas = true
+    state.filtroCatedra = 'todas'
+    state.filtroMaestro = 'todos'
+    state.filtroSalon = 'todos'
+    state.filtroDia = 'todos'
+    state.filtroConflictos = 'todos'
+    renderContent(container)
+    attachEvents(container)
   })
 
   // 4. Selects de Filtros

@@ -116,4 +116,64 @@ describe('clasesView Search & Focus preservation', () => {
 
     expect(badgeWrapper.textContent.trim()).toBe('')
   })
+
+  it('does not display "Activa" badge and places warning button in card header when conflicts exist', async () => {
+    obtenerClases.mockImplementation(() => Promise.resolve([
+      { id: 'c1', nombre: 'Violín Inicial', instrumento: 'Violín', maestro_nombre: 'Carlos Gómez', activo: true },
+    ]))
+
+    const { detectarConflictosDeClases } = await import('../../utils/claseConflictDetector.js')
+    detectarConflictosDeClases.mockReturnValue(new Map([
+      ['c1', [{ tipo: 'solapamiento_maestro', nivel: 'warning', label: 'Solape Maestro' }]],
+    ]))
+
+    await renderClasesView(container, { resetFilters: true })
+
+    // Check that "Activa" badge is NOT rendered
+    const badges = Array.from(container.querySelectorAll('.badge')).map(b => b.textContent.trim())
+    expect(badges).not.toContain('Activa')
+
+    // Check that warning button is rendered in the card header (top-right corner)
+    const cardHeader = container.querySelector('.clase-card-v2-header')
+    expect(cardHeader).not.toBeNull()
+    const warningBtn = cardHeader.querySelector('.clase-btn-warning-corner')
+    expect(warningBtn).not.toBeNull()
+    expect(warningBtn.dataset.action).toBe('resolver-conflicto')
+  })
+
+  it('toggles "Solo Activas" filter and puts inactive classes at the end with clase-card-v2--inactiva class', async () => {
+    obtenerClases.mockImplementation(() => Promise.resolve([
+      { id: 'c1', nombre: 'Violín Inicial', instrumento: 'Violín', maestro_nombre: 'Carlos Gómez', activo: false, estado: 'inactiva' },
+      { id: 'c2', nombre: 'Flauta Avanzada', instrumento: 'Flauta', maestro_nombre: 'María López', activo: true, estado: 'activa' },
+    ]))
+
+    const { detectarConflictosDeClases } = await import('../../utils/claseConflictDetector.js')
+    detectarConflictosDeClases.mockReturnValue(new Map())
+
+    await renderClasesView(container, { resetFilters: true })
+
+    // By default, Solo Activas is true -> only c2 should be visible
+    let cardsContainer = container.querySelector('#clasesCardsContainer')
+    expect(cardsContainer.textContent).toContain('Flauta Avanzada')
+    expect(cardsContainer.textContent).not.toContain('Violín Inicial')
+
+    // Click "Solo Activas" button to toggle off
+    const btnSoloActivas = container.querySelector('#btnFiltroSoloActivas')
+    expect(btnSoloActivas).not.toBeNull()
+    btnSoloActivas.dispatchEvent(new Event('click', { bubbles: true }))
+
+    // Now both should be visible, with inactive at the end and having .clase-card-v2--inactiva
+    const cards = container.querySelectorAll('.clase-card-v2')
+    expect(cards.length).toBe(2)
+
+    // First card should be active (Flauta Avanzada)
+    expect(cards[0].textContent).toContain('Flauta Avanzada')
+    expect(cards[0].classList.contains('clase-card-v2--inactiva')).toBe(false)
+
+    // Second card should be inactive (Violín Inicial) isolated at the end
+    expect(cards[1].textContent).toContain('Violín Inicial')
+    expect(cards[1].classList.contains('clase-card-v2--inactiva')).toBe(true)
+    expect(cards[1].textContent).toContain('Inactiva')
+  })
 })
+

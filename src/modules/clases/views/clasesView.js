@@ -19,6 +19,7 @@ import {
   eliminarClase,
   inscribirAlumno,
   desinscribirAlumno,
+  construirDatosClonados,
 } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
@@ -70,6 +71,16 @@ export async function renderClasesView(container, params = {}) {
   try {
     state.container = container
     state.cargando = true
+    if (params?.resetFilters) {
+      state.searchQuery = ''
+      state.filtroFamilia = 'todas'
+      state.filtroEstado = 'todos'
+      state.filtroCatedra = 'todas'
+      state.filtroMaestro = 'todos'
+      state.filtroSalon = 'todos'
+      state.filtroDia = 'todos'
+      state.filtroConflictos = 'todos'
+    }
     renderLoading(container)
 
     const [clases, maestrosRes, salonesRes, programasRes, alumnosRes] = await Promise.all([
@@ -301,7 +312,51 @@ function contarFiltrosActivos() {
   return count
 }
 
+function _renderCardsHTML(clasesFiltradas) {
+  if (clasesFiltradas.length > 0) {
+    return `
+      <div class="row g-3">
+        ${clasesFiltradas.map(c => _renderClaseCardV2(c)).join('')}
+      </div>
+    `
+  }
+  return `
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body text-muted">
+      <i class="bi bi-easel fs-1 d-block mb-3 opacity-50 text-secondary"></i>
+      <h5 class="fw-bold">No se encontraron clases</h5>
+      <p class="small text-muted mb-3">Probá cambiando los filtros o agregá una nueva clase al catálogo.</p>
+      <button class="btn btn-primary btn-sm mx-auto" id="btnCrearClaseEmpty">
+        <i class="bi bi-plus-lg me-1"></i>Crear Nueva Clase
+      </button>
+    </div>
+  `
+}
+
+function updateClasesGrid(container) {
+  const root = container || state.container
+  if (!root) return
+  const cardsContainer = root.querySelector('#clasesCardsContainer')
+  if (!cardsContainer) return
+
+  const clasesFiltradas = getFiltradosClases()
+  cardsContainer.innerHTML = _renderCardsHTML(clasesFiltradas)
+
+  // Actualizar contador en el botón de filtros
+  const badgeWrapper = root.querySelector('#filtrosActivosBadgeWrapper')
+  const count = contarFiltrosActivos()
+  if (badgeWrapper) {
+    badgeWrapper.innerHTML = count > 0
+      ? `<span class="badge bg-warning text-dark ms-1 rounded-pill" style="font-size:0.65rem;">${count}</span>`
+      : ''
+  }
+}
+
 function renderContent(container) {
+  const activeInput = container?.querySelector('#inputBuscarClases')
+  const hadFocus = activeInput && document.activeElement === activeInput
+  const selStart = hadFocus ? activeInput.selectionStart : null
+  const selEnd = hadFocus ? activeInput.selectionEnd : null
+
   const clasesFiltradas = getFiltradosClases()
   const totalClases = state.clasesOriginales.length
   const totalActivas = state.clasesOriginales.filter(c => c.activo !== false && c.estado !== 'inactiva').length
@@ -406,7 +461,7 @@ function renderContent(container) {
             <button class="btn btn-sm ${state.filtrosAbiertos ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnToggleFiltrosClases">
               <i class="bi bi-funnel-fill"></i>
               <span>Filtros</span>
-              ${filtrosActivosCount > 0 ? `<span class="badge bg-warning text-dark ms-1 rounded-pill" style="font-size:0.65rem;">${filtrosActivosCount}</span>` : ''}
+              <span id="filtrosActivosBadgeWrapper">${filtrosActivosCount > 0 ? `<span class="badge bg-warning text-dark ms-1 rounded-pill" style="font-size:0.65rem;">${filtrosActivosCount}</span>` : ''}</span>
               <i class="bi bi-chevron-${state.filtrosAbiertos ? 'up' : 'down'} ms-1" style="font-size:0.75rem;"></i>
             </button>
 
@@ -518,23 +573,22 @@ function renderContent(container) {
       </div>
 
       <!-- GRID DE TARJETAS DE CLASE (80% DEL ESPACIO VISUAL) -->
-      ${clasesFiltradas.length > 0 ? `
-        <div class="row g-3">
-          ${clasesFiltradas.map(c => _renderClaseCardV2(c)).join('')}
-        </div>
-      ` : `
-        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body text-muted">
-          <i class="bi bi-easel fs-1 d-block mb-3 opacity-50 text-secondary"></i>
-          <h5 class="fw-bold">No se encontraron clases</h5>
-          <p class="small text-muted mb-3">Probá cambiando los filtros o agregá una nueva clase al catálogo.</p>
-          <button class="btn btn-primary btn-sm mx-auto" id="btnCrearClaseEmpty">
-            <i class="bi bi-plus-lg me-1"></i>Crear Nueva Clase
-          </button>
-        </div>
-      `}
+      <div id="clasesCardsContainer">
+        ${_renderCardsHTML(clasesFiltradas)}
+      </div>
 
     </div>
   `
+
+  if (hadFocus) {
+    const newInput = container.querySelector('#inputBuscarClases')
+    if (newInput) {
+      newInput.focus()
+      if (selStart !== null && selEnd !== null) {
+        newInput.setSelectionRange(selStart, selEnd)
+      }
+    }
+  }
 }
 
 /**
@@ -669,22 +723,28 @@ function _renderClaseCardV2(c) {
           </div>
 
           <div class="d-flex gap-1">
-            <button class="btn btn-outline-secondary btn-sm px-2 py-1" 
-                    data-action="pdf-clase" 
-                    data-id="${c.id}" 
+            <button class="btn btn-outline-secondary btn-sm px-2 py-1"
+                    data-action="pdf-clase"
+                    data-id="${c.id}"
                     title="Descargar Planilla PDF">
               <i class="bi bi-file-earmark-pdf"></i>
             </button>
-            <button class="btn btn-outline-secondary btn-sm px-2 py-1" 
-                    data-action="editar-clase" 
-                    data-id="${c.id}" 
+            <button class="btn btn-outline-secondary btn-sm px-2 py-1"
+                    data-action="editar-clase"
+                    data-id="${c.id}"
                     title="Editar Clase y Horario">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-outline-danger btn-sm px-2 py-1" 
-                    data-action="eliminar-clase" 
-                    data-id="${c.id}" 
-                    data-nombre="${escapeHTML(c.nombre)}" 
+            <button class="btn btn-outline-secondary btn-sm px-2 py-1"
+                    data-action="duplicar-clase"
+                    data-id="${c.id}"
+                    title="Duplicar clase (copia horario y alumnos; sin maestro ni salón)">
+              <i class="bi bi-files"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm px-2 py-1"
+                    data-action="eliminar-clase"
+                    data-id="${c.id}"
+                    data-nombre="${escapeHTML(c.nombre)}"
                     title="Eliminar Clase">
               <i class="bi bi-trash"></i>
             </button>
@@ -894,8 +954,8 @@ function _mostrarModalResolucionConflictos(claseId) {
     // 1. Guardar en Revisión
     document.getElementById('btnMarcarRevision')?.addEventListener('click', async () => {
       const motivo = document.getElementById('inputMotivoRevision')?.value.trim() || 'Pendiente de revisión por coordinación.'
+      const t = AppToast.progress('Actualizando estado de revisión...')
       try {
-        AppToast.info('Actualizando estado de revisión...')
         await supabase
           .from('clases')
           .update({
@@ -905,19 +965,19 @@ function _mostrarModalResolucionConflictos(claseId) {
           })
           .eq('id', clase.id)
 
-        AppToast.success('Clase marcada en revisión con éxito.')
+        t.success('Clase marcada en revisión.')
         AppModal.close()
         await renderClasesView(state.container)
       } catch (err) {
         console.error(err)
-        AppToast.error('No se pudo marcar en revisión.')
+        t.error('No se pudo marcar en revisión.')
       }
     })
 
     // 2. Marcar como Resuelto
     document.getElementById('btnMarcarResuelto')?.addEventListener('click', async () => {
+      const t = AppToast.progress('Marcando clase como resuelta...')
       try {
-        AppToast.info('Marcando clase como resuelta...')
         await supabase
           .from('clases')
           .update({
@@ -927,12 +987,12 @@ function _mostrarModalResolucionConflictos(claseId) {
           })
           .eq('id', clase.id)
 
-        AppToast.success('Advertencia resuelta y clase normalizada.')
+        t.success('Advertencia resuelta y clase normalizada.')
         AppModal.close()
         await renderClasesView(state.container)
       } catch (err) {
         console.error(err)
-        AppToast.error('Error al actualizar el estado de la clase.')
+        t.error('Error al actualizar el estado de la clase.')
       }
     })
 
@@ -1034,8 +1094,8 @@ function _mostrarModalResolucionConflictos(claseId) {
         const otraClaseObj = state.clasesOriginales.find(x => x.id === otraClaseId)
         const otraMaestroObj = state.maestros.find(m => m.id === otraClaseObj?.maestro_principal_id || m.id === otraClaseObj?.maestro_id)
 
+        const tAcuerdo = AppToast.progress('Registrando acuerdo de maestros...')
         try {
-          AppToast.info('Registrando acuerdo de maestros...')
           await guardarAcuerdoMaestro({
             alumno_id: alumnoId,
             alumno_nombre: alumnoNombre,
@@ -1052,12 +1112,12 @@ function _mostrarModalResolucionConflictos(claseId) {
             motivo,
           })
 
-          AppToast.success(`Acuerdo formalizado para ${alumnoNombre}. Advertencia despejada.`)
+          tAcuerdo.success(`Acuerdo formalizado para ${alumnoNombre}. Advertencia despejada.`)
           AppModal.close()
           await renderClasesView(state.container)
         } catch (acuerdoErr) {
           console.error(acuerdoErr)
-          AppToast.error('Error al guardar el acuerdo de maestros.')
+          tAcuerdo.error('Error al guardar el acuerdo de maestros.')
         }
         return
       }
@@ -1080,15 +1140,16 @@ function _mostrarModalResolucionConflictos(claseId) {
       if (btnLiberar) {
         const otraClaseId = btnLiberar.dataset.claseId
         if (confirm('¿Desvincular el salón de la otra clase para que lo use exclusivamente esta?')) {
+          const tLiberar = AppToast.progress('Liberando salón de la otra clase...')
           try {
             await supabase.from('clases').update({ salon_id: null, salon: null }).eq('id', otraClaseId)
             await supabase.from('clase_horarios').update({ salon_id: null }).eq('clase_id', otraClaseId)
-            AppToast.success('Salón liberado exitosamente.')
+            tLiberar.success('Salón liberado exitosamente.')
             AppModal.close()
             await renderClasesView(state.container)
           } catch (err) {
             console.error(err)
-            AppToast.error('No se pudo liberar el salón.')
+            tLiberar.error('No se pudo liberar el salón.')
           }
         }
         return
@@ -1100,20 +1161,20 @@ function _mostrarModalResolucionConflictos(claseId) {
         const otraClaseId = btnDesinscribir.dataset.claseId
         const alumnosIds = (btnDesinscribir.dataset.alumnos || '').split(',').filter(Boolean)
         if (confirm(`¿Dar de baja a ${alumnosIds.length} alumno(s) de la otra clase para evitar el solape?`)) {
+          const tDesin = AppToast.progress('Desinscribiendo alumnos de la otra clase...')
           try {
-            AppToast.info('Desinscribiendo alumnos de la otra clase...')
             const { data: inscritos } = await supabase.from('alumnos_clases').select('id, alumno_id').eq('clase_id', otraClaseId)
             for (const ins of inscritos || []) {
               if (alumnosIds.includes(ins.alumno_id)) {
                 await desinscribirAlumno(ins.id)
               }
             }
-            AppToast.success('Alumnos desinscritos de la otra clase.')
+            tDesin.success('Alumnos desinscritos de la otra clase.')
             AppModal.close()
             await renderClasesView(state.container)
           } catch (err) {
             console.error(err)
-            AppToast.error('Error al desinscribir alumnos.')
+            tDesin.error('Error al desinscribir alumnos.')
           }
         }
         return
@@ -1156,8 +1217,8 @@ function _mostrarModalResolucionConflictos(claseId) {
 
       const btnLimpiarDup = e.target.closest('[data-bifurcacion="limpiar-duplicados"]')
       if (btnLimpiarDup) {
+        const tDup = AppToast.progress('Limpiando inscripciones duplicadas...')
         try {
-          AppToast.info('Limpiando inscripciones duplicadas...')
           const { data: inscripciones } = await supabase
             .from('alumnos_clases')
             .select('id, alumno_id')
@@ -1172,12 +1233,12 @@ function _mostrarModalResolucionConflictos(claseId) {
             }
           }
 
-          AppToast.success('Inscripciones duplicadas eliminadas.')
+          tDup.success('Inscripciones duplicadas eliminadas.')
           AppModal.close()
           await renderClasesView(state.container)
         } catch (err) {
           console.error(err)
-          AppToast.error('Error al depurar duplicados.')
+          tDup.error('Error al depurar duplicados.')
         }
         return
       }
@@ -1741,7 +1802,7 @@ async function _mostrarModalNominaClase(claseId) {
   const clase = state.clasesOriginales.find(c => c.id === claseId)
   if (!clase) return
 
-  AppToast.info('Cargando nómina de la clase...')
+  const tNomina = AppToast.progress('Cargando nómina de la clase...')
 
   try {
     const { data: inscritosData, error } = await supabase
@@ -1896,6 +1957,7 @@ async function _mostrarModalNominaClase(claseId) {
       </div>
     `
 
+    tNomina.dismiss()
     AppModal.open({
       title: `Nómina Oficial · ${escapeHTML(clase.nombre)}`,
       size: 'view',
@@ -1917,7 +1979,7 @@ async function _mostrarModalNominaClase(claseId) {
 
       // 2. Descargar PDF desde el modal
       document.getElementById('btnPdfNominaModal')?.addEventListener('click', async () => {
-        AppToast.info(`Generando planilla PDF de ${clase.nombre}...`)
+        const tPdf = AppToast.progress(`Generando planilla PDF de ${clase.nombre}...`)
         try {
           const inscritosPdf = (inscritosData || [])
             .map((row) => ({ alumno: row.alumnos || {} }))
@@ -1927,10 +1989,10 @@ async function _mostrarModalNominaClase(claseId) {
             salones: state.salones || [],
             programas: state.programas || [],
           })
-          AppToast.success('PDF descargado con éxito.')
+          tPdf.success('PDF descargado con éxito.')
         } catch (err) {
           console.error(err)
-          AppToast.error('Error generando PDF.')
+          tPdf.error('Error generando PDF.')
         }
       })
 
@@ -1943,16 +2005,16 @@ async function _mostrarModalNominaClase(claseId) {
           return
         }
 
+        const tIns = AppToast.progress('Inscribiendo alumno...')
         try {
-          AppToast.info('Inscribiendo alumno...')
           await inscribirAlumno(claseId, alumnoId)
-          AppToast.success('Alumno inscrito exitosamente.')
+          tIns.success('Alumno inscrito exitosamente.')
           AppModal.close()
           await renderClasesView(state.container)
           _mostrarModalNominaClase(claseId)
         } catch (err) {
           console.error(err)
-          AppToast.error('No se pudo inscribir al alumno.')
+          tIns.error('No se pudo inscribir al alumno.')
         }
       })
 
@@ -1980,7 +2042,7 @@ async function _mostrarModalNominaClase(claseId) {
 
   } catch (err) {
     console.error(err)
-    AppToast.error('Error cargando nómina de alumnos.')
+    tNomina.error('Error cargando nómina de alumnos.')
   }
 }
 
@@ -1988,8 +2050,18 @@ function attachEvents(container) {
   // 1. Toggle Filtros Desplegables
   container.querySelector('#btnToggleFiltrosClases')?.addEventListener('click', () => {
     state.filtrosAbiertos = !state.filtrosAbiertos
-    renderContent(container)
-    attachEvents(container)
+    const panel = container.querySelector('#panelFiltrosClases')
+    const btn = container.querySelector('#btnToggleFiltrosClases')
+    if (panel) {
+      panel.classList.toggle('show', state.filtrosAbiertos)
+    }
+    if (btn) {
+      btn.className = `btn btn-sm ${state.filtrosAbiertos ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs`
+      const icon = btn.querySelector('.bi-chevron-up, .bi-chevron-down')
+      if (icon) {
+        icon.className = `bi bi-chevron-${state.filtrosAbiertos ? 'up' : 'down'} ms-1`
+      }
+    }
   })
 
   // 1.1 Badge de filtro de advertencias en cabecera
@@ -1997,8 +2069,17 @@ function attachEvents(container) {
     e.stopPropagation()
     state.filtroConflictos = state.filtroConflictos === 'con-conflictos' ? 'todos' : 'con-conflictos'
     state.filtrosAbiertos = true
-    renderContent(container)
-    attachEvents(container)
+    const selectConflictos = container.querySelector('#selectConflictosFiltro')
+    if (selectConflictos) selectConflictos.value = state.filtroConflictos
+    const panel = container.querySelector('#panelFiltrosClases')
+    if (panel) panel.classList.add('show')
+    const btn = container.querySelector('#btnToggleFiltrosClases')
+    if (btn) {
+      btn.className = 'btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs'
+      const icon = btn.querySelector('.bi-chevron-up, .bi-chevron-down')
+      if (icon) icon.className = 'bi bi-chevron-up ms-1'
+    }
+    updateClasesGrid(container)
   })
 
   // 1.2 Abrir Guía de Explicación de Métricas
@@ -2012,8 +2093,11 @@ function attachEvents(container) {
   container.querySelectorAll('.family-pill-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.filtroFamilia = btn.dataset.familia
-      renderContent(container)
-      attachEvents(container)
+      container.querySelectorAll('.family-pill-btn').forEach(b => {
+        const isActive = b.dataset.familia === state.filtroFamilia
+        b.className = `btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-secondary'} rounded-3 px-2.5 py-1 fw-semibold shadow-xs family-pill-btn`
+      })
+      updateClasesGrid(container)
     })
   })
 
@@ -2021,45 +2105,38 @@ function attachEvents(container) {
   const searchInput = container.querySelector('#inputBuscarClases')
   searchInput?.addEventListener('input', (e) => {
     state.searchQuery = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   // 4. Selects de Filtros
   container.querySelector('#selectCatedraClase')?.addEventListener('change', (e) => {
     state.filtroCatedra = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   container.querySelector('#selectMaestroClase')?.addEventListener('change', (e) => {
     state.filtroMaestro = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   container.querySelector('#selectSalonClase')?.addEventListener('change', (e) => {
     state.filtroSalon = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   container.querySelector('#selectDiaClase')?.addEventListener('change', (e) => {
     state.filtroDia = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   container.querySelector('#selectConflictosFiltro')?.addEventListener('change', (e) => {
     state.filtroConflictos = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   container.querySelector('#selectOrdenarClases')?.addEventListener('change', (e) => {
     state.ordenarPor = e.target.value
-    renderContent(container)
-    attachEvents(container)
+    updateClasesGrid(container)
   })
 
   // 4b. Botón Alumnos Sin Clase
@@ -2086,7 +2163,7 @@ function attachEvents(container) {
   container.querySelector('#btnPdfListadosClases')?.addEventListener('click', async () => {
     const clases = state.clasesOriginales || []
     if (!clases.length) { AppToast.warning('No hay clases para listar.'); return }
-    AppToast.info('Generando planilla general de clases en PDF...')
+    const tPdfGen = AppToast.progress('Generando planilla general de clases en PDF...')
     try {
       // descargarPdfListadoAlumnosPorClases espera [{ clase, inscritos }],
       // no { clases }. Se arma el reporte trayendo los inscritos de todas las
@@ -2119,15 +2196,21 @@ function attachEvents(container) {
         salones: state.salones || [],
         programas: state.programas || [],
       })
-      AppToast.success('Planilla PDF generada exitosamente.')
+      tPdfGen.success('Planilla PDF generada exitosamente.')
     } catch (err) {
       console.error(err)
-      AppToast.error('No se pudo generar el PDF de clases.')
+      tPdfGen.error('No se pudo generar el PDF de clases.')
     }
   })
 
   // 7. Delegación de Clics en Tarjetas de Clase
   container.addEventListener('click', async (e) => {
+    // 0. Crear clase desde estado vacío
+    if (e.target.closest('#btnCrearClaseEmpty')) {
+      abrirModalCrear()
+      return
+    }
+
     // A. Ver Nómina
     const btnNomina = e.target.closest('[data-action="ver-nomina"]')
     if (btnNomina) {
@@ -2147,7 +2230,7 @@ function attachEvents(container) {
     if (btnPdf) {
       const c = state.clasesOriginales.find(x => x.id === btnPdf.dataset.id)
       if (c) {
-        AppToast.info(`Generando PDF de ${c.nombre}...`)
+        const tPdfClase = AppToast.progress(`Generando PDF de ${c.nombre}...`)
         try {
           // descargarPdfClase(clase, inscritos, context): hay que traer los
           // inscritos y pasar el context con maestros/salones/programas.
@@ -2165,10 +2248,10 @@ function attachEvents(container) {
             salones: state.salones || [],
             programas: state.programas || [],
           })
-          AppToast.success('PDF generado con éxito.')
+          tPdfClase.success('PDF generado con éxito.')
         } catch (err) {
           console.error(err)
-          AppToast.error('Error generando PDF de la clase.')
+          tPdfClase.error('Error generando PDF de la clase.')
         }
       }
       return
@@ -2187,6 +2270,34 @@ function attachEvents(container) {
           programas: state.programas,
           alumnos: state.alumnosDisponibles,
         })
+      }
+      return
+    }
+
+    // D2. Duplicar Clase — copia horario y nómina, sin maestro ni salón
+    const btnDuplicar = e.target.closest('[data-action="duplicar-clase"]')
+    if (btnDuplicar) {
+      const c = state.clasesOriginales.find(x => x.id === btnDuplicar.dataset.id)
+      if (!c) return
+      const tDuplicar = AppToast.progress('Preparando duplicado de la clase...')
+      try {
+        const { prefill, preInscritosIds, preInscritosSlots, origen } = await construirDatosClonados(c.id)
+        tDuplicar.dismiss()
+        openClaseModal(null, {
+          clonarDe: prefill,
+          preInscritosIds,
+          preInscritosSlots,
+          origenClon: origen,
+          onSuccess: () => renderClasesView(state.container),
+          onSaved: () => renderClasesView(state.container),
+          maestros: state.maestros,
+          salones: state.salones,
+          programas: state.programas,
+          alumnos: state.alumnosDisponibles,
+        })
+      } catch (err) {
+        console.error('[clasesView] Error preparando duplicado:', err)
+        tDuplicar.error('No se pudo preparar el duplicado de la clase.')
       }
       return
     }

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/stamp-signage-build.js",
     "build": "vite build",
     "build:safe": "bash scripts/run-build-safe.sh",
     "preview": "vite preview",

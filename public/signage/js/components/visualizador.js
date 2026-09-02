@@ -37,6 +37,7 @@
     var timer = null;
     var running = false;
     var layout = {};
+    var attempts = 0;       // intentos seguidos de next() sin que nada llegue a pantalla
 
     function firma(list) {
       return list.map(function (m) {
@@ -63,6 +64,55 @@
 
     function clearTimer() { if (timer) { clearTimeout(timer); timer = null; } }
 
+    function segundos(m) {
+      return (m && m.duracion_seg && m.duracion_seg > 0)
+        ? m.duracion_seg
+        : (SIG.cfg.slideDefaultSeconds || 12);
+    }
+
+    /* Construye el nodo DOM para un medio. Devuelve null si el player no puede
+       renderizarlo (tipo desconocido, build sin soporte de slides, sin fuente):
+       next() lo saltará en vez de dejar la pantalla en blanco o romper. */
+    function crearNodo(m) {
+      if (m.tipo === 'video') {
+        var v = document.createElement('video');
+        v.src = m.storage_path ? SIG.STORAGE_PUBLIC + m.storage_path : (m.youtube_url || '');
+        if (!v.src) { console.warn('[vis] vídeo sin fuente, se omite', m.id); return null; }
+        v.muted = true; v.autoplay = true; v.playsInline = true; v.preload = 'auto';
+        v.onended = advance;
+        v.onloadeddata = function () { attempts = 0; };
+        v.onerror = function () { console.warn('[vis] no cargó el vídeo', v.src); advance(); };
+        timer = setTimeout(advance, (SIG.cfg.videoMaxSeconds || 240) * 1000);
+        return v;
+      }
+      if (m.tipo === 'slide') {
+        if (typeof SIG.slideHTML !== 'function') {
+          console.warn('[vis] llegó una diapositiva pero este player no tiene soporte de slides ' +
+            '(build desactualizado: falta js/components/slide.js). Se omite.');
+          return null;
+        }
+        var tmp = document.createElement('div');
+        tmp.innerHTML = SIG.slideHTML(m.contenido || m.slide || {});
+        var s = tmp.firstElementChild;
+        if (!s) { console.warn('[vis] diapositiva sin contenido renderizable, se omite', m.id); return null; }
+        if (items.length > 1) timer = setTimeout(advance, segundos(m) * 1000);
+        return s;
+      }
+      if (m.tipo === 'imagen') {
+        if (!m.storage_path) { console.warn('[vis] imagen sin storage_path, se omite', m.id); return null; }
+        var img = document.createElement('img');
+        img.src = SIG.STORAGE_PUBLIC + m.storage_path;
+        img.onload = function () { attempts = 0; };
+        img.onerror = function () { console.warn('[vis] no cargó la imagen', m.storage_path); advance(); };
+        // con un solo elemento no hace falta temporizador: se queda fijo
+        if (items.length > 1) timer = setTimeout(advance, segundos(m) * 1000);
+        return img;
+      }
+      console.warn('[vis] tipo de medio no soportado: "' + m.tipo + '" — se omite. ' +
+        '¿Player desactualizado respecto al panel de control?');
+      return null;
+    }
+
     function next() {
       Array.prototype.slice.call(r.stage.children).forEach(function (n) {
         if (n !== live) {
@@ -70,34 +120,31 @@
           n.parentNode.removeChild(n);
         }
       });
+
+      // Cortafuegos: si ninguno de los ítems llega a pantalla (tipo no soportado,
+      // build viejo, todas las imágenes 404) no girar en bucle infinito.
+      attempts++;
+      if (attempts > items.length) {
+        clearTimer();
+        var aviso = 'ningún medio del listado (' + items.length + ') se pudo mostrar' +
+          (typeof SIG.slideHTML !== 'function' ? ' — player sin soporte de diapositivas (build viejo)' : '');
+        console.warn('[vis] ' + aviso + '. Rotación en pausa hasta el próximo cambio del listado.');
+        SIG.visWarn = aviso;
+        running = false;
+        if (!live) r.wm.style.display = 'flex';
+        return;
+      }
+
       idx = (idx + 1) % items.length;
       var m = items[idx];
-      var node;
-      if (m.tipo === 'video') {
-        node = document.createElement('video');
-        node.src = m.storage_path ? SIG.STORAGE_PUBLIC + m.storage_path : m.youtube_url;
-        node.muted = true; node.autoplay = true; node.playsInline = true; node.preload = 'auto';
-        node.onended = advance;
-        node.onerror = function () { advance(); };
-        timer = setTimeout(advance, (SIG.cfg.videoMaxSeconds || 240) * 1000);
-      } else if (m.tipo === 'slide') {
-        var tmp = document.createElement('div');
-        tmp.innerHTML = SIG.slideHTML(m.contenido || m.slide || {});
-        node = tmp.firstElementChild || document.createElement('div');
-        if (items.length > 1) {
-          var secsS = (m.duracion_seg && m.duracion_seg > 0) ? m.duracion_seg : (SIG.cfg.slideDefaultSeconds || 12);
-          timer = setTimeout(advance, secsS * 1000);
-        }
-      } else {
-        node = document.createElement('img');
-        node.src = SIG.STORAGE_PUBLIC + m.storage_path;
-        node.onerror = function () { advance(); };
-        // con un solo elemento no hace falta temporizador: se queda fijo
-        if (items.length > 1) {
-          var secs = (m.duracion_seg && m.duracion_seg > 0) ? m.duracion_seg : (SIG.cfg.slideDefaultSeconds || 12);
-          timer = setTimeout(advance, secs * 1000);
-        }
+      var node = crearNodo(m);
+
+      if (!node) {
+        // Ítem no renderizable: probar el siguiente sin dejar la pantalla en blanco.
+        clearTimer();
+        return next();
       }
+
       r.stage.appendChild(node);
       if (m.tipo === 'slide' && SIG.fitCanvasArt) {
         SIG.fitCanvasArt(node);
@@ -107,6 +154,10 @@
       function activar() {
         if (activado) return;
         activado = true;
+        // las diapositivas se dibujan sincrónicamente; img/vídeo reinician el
+        // cortafuegos en su propio onload/onloadeddata.
+        if (m.tipo === 'slide') attempts = 0;
+        SIG.visWarn = null;
         node.classList.add('is-live');
         if (m.tipo === 'slide' && SIG.fitCanvasArt) SIG.fitCanvasArt(node);
         var prev = live;
@@ -131,6 +182,7 @@
       clearTimer();
       running = false;
       idx = -1;
+      attempts = 0;
       while (r.stage.firstChild) r.stage.removeChild(r.stage.firstChild);
       live = null;
     }
@@ -138,6 +190,7 @@
     function arrancar() {
       clearTimer();
       idx = -1;
+      attempts = 0;
       running = true;
       next();
     }

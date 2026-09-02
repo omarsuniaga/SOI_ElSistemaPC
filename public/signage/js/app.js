@@ -44,7 +44,85 @@
     if (ok === state.online) return;
     state.online = ok;
     $('#flag-offline').hidden = ok;
+    diag.refresh();
   }
+
+  /* ── diagnóstico en pantalla ──────────────────────────────────────────
+     Se ve con ?debug=1 o #debug en la URL, y se auto-muestra unos segundos
+     cuando falla la carga de un feed (útil en la Raspberry, sin teclado:
+     "creé una diapositiva y no sale" → acá se ve por qué). */
+  var diag = (function () {
+    var box = null;
+    var hideTimer = null;
+    var forced = /[?&]debug=1\b/.test(location.search) || /\bdebug\b/.test(location.hash);
+    var feeds = { pantalla: {}, horario: {}, calendario: {}, media: {} };
+    var jsErr = null;
+
+    function autoShow() {
+      if (forced) return;
+      if (box) box.hidden = false;
+      else ensure().hidden = false;
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () { if (box) box.hidden = true; }, 14000);
+    }
+
+    function ensure() {
+      if (box) return box;
+      box = document.createElement('pre');
+      box.id = 'diag';
+      box.hidden = !forced;
+      document.body.appendChild(box);
+      return box;
+    }
+    function rel(ts) {
+      if (!ts) return 'nunca';
+      var s = Math.round((Date.now() - ts) / 1000);
+      if (s < 60) return 'hace ' + s + ' s';
+      if (s < 3600) return 'hace ' + Math.round(s / 60) + ' min';
+      return 'hace ' + Math.round(s / 3600) + ' h';
+    }
+    function paint() {
+      var b = ensure();
+      var bld = window.SIGNAGE_BUILD || {};
+      var lines = [
+        'CARTELERA · diagnóstico',
+        'build   ' + (bld.ver || '?') + (bld.at ? '  ·  ' + bld.at : ''),
+        'modo    ' + SIG.mode + (state.screen ? '  ·  ' + (state.screen.slug || CFG.screenSlug) : ''),
+        'red     ' + (state.online ? 'OK' : 'SIN CONEXIÓN (mostrando lo último guardado)'),
+        '',
+      ];
+      Object.keys(feeds).forEach(function (k) {
+        var f = feeds[k];
+        var pad = (k + '       ').slice(0, 7);
+        if (f.error) lines.push(pad + ' ERROR: ' + f.error + '  (último OK ' + rel(f.okAt) + ')');
+        else lines.push(pad + ' OK ' + rel(f.okAt) + (f.count != null ? '  ·  ' + f.count + ' ítem(s)' : ''));
+      });
+      if (SIG.visWarn) lines.push('', 'VISUAL  ' + SIG.visWarn);
+      if (jsErr) lines.push('', 'JS      ' + jsErr);
+      b.textContent = lines.join('\n');
+    }
+    return {
+      feed: function (name, info) {
+        var f = feeds[name] || (feeds[name] = {});
+        if (info.ok) {
+          f.okAt = Date.now();
+          f.error = null;
+          if (info.count != null) f.count = info.count;
+        } else {
+          f.error = info.error || 'fallo';
+          autoShow();
+        }
+        paint();
+      },
+      jsError: function (msg) { jsErr = msg; autoShow(); paint(); },
+      refresh: function () {
+        if (SIG.visWarn) autoShow();
+        if (box || forced) paint();
+      },
+      show: function () { ensure().hidden = false; paint(); },
+      forced: function () { return forced; },
+    };
+  })();
 
   function applyGrid() {
     var L = state.layout;
@@ -82,8 +160,10 @@
           };
           SIG.cache.put('screen', rows[0]);
         }
+        diag.feed('pantalla', { ok: true, count: (rows && rows.length) || 0 });
       })
       .catch(function (e) {
+        diag.feed('pantalla', { ok: false, error: e.message });
         var c = state.screen || SIG.cache.get('screen');
         if (c) {
           state.screen = c;
@@ -109,10 +189,12 @@
       SIG.cache.put('hoy', state.hoy);
       SIG.cache.put('manana', state.manana);
       setOnline(true);
+      diag.feed('horario', { ok: true, count: state.hoy.length + state.manana.length });
     }).catch(function (e) {
       if (!state.hoy.length) state.hoy = SIG.cache.get('hoy') || [];
       if (!state.manana.length) state.manana = SIG.cache.get('manana') || [];
       setOnline(false);
+      diag.feed('horario', { ok: false, error: e.message });
       console.warn('[horario]', e.message);
     });
   }
@@ -129,10 +211,12 @@
           });
         SIG.cache.put('eventos', state.eventos);
         setOnline(true);
+        diag.feed('calendario', { ok: true, count: state.eventos.length });
       })
       .catch(function (e) {
         if (!state.eventos.length) state.eventos = SIG.cache.get('eventos') || [];
         setOnline(false);
+        diag.feed('calendario', { ok: false, error: e.message });
         console.warn('[calendario]', e.message);
       });
   }
@@ -151,10 +235,12 @@
         });
         SIG.cache.put('media', state.media);
         setOnline(true);
+        diag.feed('media', { ok: true, count: state.media.length });
       })
       .catch(function (e) {
         if (!state.media.length) state.media = SIG.cache.get('media') || [];
         setOnline(false);
+        diag.feed('media', { ok: false, error: e.message });
         console.warn('[media]', e.message);
       });
   }
@@ -233,8 +319,14 @@
     window.addEventListener('message', function (ev) {
       var d = ev.data;
       if (!d || typeof d !== 'object' || String(d.type || '').indexOf('signage:') !== 0) return;
-      if (d.type === 'signage:model') { driven = true; applyModel(d.model); }
-      else if (d.type === 'signage:ping') postToParent({ type: 'signage:ready' });
+      if (d.type === 'signage:model') {
+        driven = true;
+        applyModel(d.model);
+        // acuse: el Estudio deja de reintentar el envío del modelo
+        postToParent({ type: 'signage:model-ack', seq: d.seq });
+      } else if (d.type === 'signage:ping') {
+        postToParent({ type: 'signage:ready' });
+      }
     });
 
     // clic en una zona -> avisa al Estudio para que abra ese panel
@@ -273,11 +365,14 @@
   function bootWeb() {
     $('#boot').hidden = true;
     $('#no-autorizado').hidden = false;
+    if (diag.forced()) diag.show();
   }
 
   /* ---- común ---- */
   function boot() {
     document.documentElement.classList.toggle('is-preview', PREVIEW);
+    if (diag.forced()) diag.show();
+    setInterval(diag.refresh, 5000);
     if (MODE === 'web') { bootWeb(); return; }
     applyGrid();
     cab.start(); vis.start(); hor.start();
@@ -286,6 +381,9 @@
     if (PREVIEW) bootPreview(); else bootPlayer();
   }
 
-  window.addEventListener('error', function (e) { console.error('[win]', e.message); });
+  window.addEventListener('error', function (e) {
+    console.error('[win]', e.message);
+    diag.jsError(e.message || 'error');
+  });
   boot();
 })();

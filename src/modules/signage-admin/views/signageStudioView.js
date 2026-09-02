@@ -29,6 +29,9 @@ const state = {
   dirty: false,
   guardando: false,
   iframeReady: false,
+  // handshake del modelo con el iframe de vista previa
+  modelSeq: 0,
+  modelRetry: null,
 }
 
 export async function renderSignageStudioView(container) {
@@ -39,6 +42,7 @@ export async function renderSignageStudioView(container) {
   const cerrar = () => {
     window.removeEventListener('message', onMessage)
     window.removeEventListener('resize', fitWorkspace)
+    clearInterval(state.modelRetry)
   }
   const onMessage = (ev) => {
     // el router borra el DOM sin llamar cleanup al navegar fuera: auto-desmontar
@@ -46,6 +50,7 @@ export async function renderSignageStudioView(container) {
     const d = ev.data
     if (!d || typeof d !== 'object' || String(d.type || '').indexOf('signage:') !== 0) return
     if (d.type === 'signage:ready') { state.iframeReady = true; postModel() }
+    else if (d.type === 'signage:model-ack') { if (d.seq === state.modelSeq) clearInterval(state.modelRetry) }
     else if (d.type === 'signage:zone-click' && d.zone) irASeccion(d.zone)
   }
   window.addEventListener('message', onMessage)
@@ -100,9 +105,24 @@ function shell(inner) {
 function render() {
   const host = state.container
   host.innerHTML = shell('')
+  // renderBody() recrea el <iframe>: hasta el próximo handshake no está listo.
+  state.iframeReady = false
+  clearInterval(state.modelRetry)
   renderToolbar()
   renderBody()
   attach(host)
+}
+
+/* Re-renderiza SOLO el panel lateral (acordeones, medios). NO toca el iframe de
+   vista previa ni la toolbar: antes cada clic de acordeón o cada reordenamiento
+   de medios llamaba a render() y recreaba el iframe, que se quedaba en la
+   pantalla de carga y perdía el modelo hasta rehacer el handshake. */
+function renderPanel() {
+  const host = state.container
+  const panel = host && host.querySelector('.ss-panel')
+  if (!panel) { render(); return }
+  panel.innerHTML = panelHTML()
+  attachPanel(host)
 }
 
 /* Ajusta el workspace para llenar la ventana y encaja la vista previa en 16:9. */
@@ -312,13 +332,34 @@ function medioRow(m) {
 /* ─── eventos ─────────────────────────────────────────────────────────── */
 
 function attach(host) {
+  attachShell(host)
+  attachPanel(host)
+}
+
+/* Eventos del marco (toolbar + iframe). Se cablean una sola vez por montaje. */
+function attachShell(host) {
   const preview = () => document.getElementById('ss-preview')
 
   host.querySelector('#ss-pantalla')?.addEventListener('change', (e) => seleccionarPantalla(e.target.value))
   host.querySelector('#ss-guardar')?.addEventListener('click', guardar)
 
+  // reintenta pintar el modelo por si el iframe ya estaba listo
+  if (state.iframeReady) postModel()
+  else preview()?.addEventListener('load', () => {
+    try { preview().contentWindow.postMessage({ type: 'signage:ping' }, '*') } catch { /* iframe aún no accesible */ }
+  })
+
+  fitWorkspace()
+  requestAnimationFrame(fitWorkspace)
+  setTimeout(fitWorkspace, 250)
+  window.removeEventListener('resize', fitWorkspace)
+  window.addEventListener('resize', fitWorkspace)
+}
+
+/* Eventos del panel lateral. Se re-cablean en cada renderPanel(). */
+function attachPanel(host) {
   host.querySelectorAll('[data-acc-toggle]').forEach((b) =>
-    b.addEventListener('click', () => { state.seccion = state.seccion === b.dataset.accToggle ? '' : b.dataset.accToggle; render() }),
+    b.addEventListener('click', () => { state.seccion = state.seccion === b.dataset.accToggle ? '' : b.dataset.accToggle; renderPanel() }),
   )
 
   host.querySelectorAll('[data-path]').forEach((el) => {
@@ -362,31 +403,19 @@ function attach(host) {
     row.querySelector('.ss-edit')?.addEventListener('click', () => editarMedio(m))
     row.querySelectorAll('.ss-move').forEach((btn) => btn.addEventListener('click', () => moverMedio(id, Number(btn.dataset.dir))))
   })
-
-  // reintenta pintar el modelo por si el iframe ya estaba listo
-  if (state.iframeReady) postModel()
-  else preview()?.addEventListener('load', () => { try { preview().contentWindow.postMessage({ type: 'signage:ping' }, '*') } catch { /* iframe aún no accesible */ } })
-
-  fitWorkspace()
-  requestAnimationFrame(fitWorkspace)
-  setTimeout(fitWorkspace, 250)
-  window.removeEventListener('resize', fitWorkspace)
-  window.addEventListener('resize', fitWorkspace)
 }
 
 function irASeccion(zona) {
   const map = { cabecera: 'cabecera', visualizador: 'visualizador', horario: 'horario' }
   state.seccion = map[zona] || state.seccion
-  render()
+  renderPanel()
   state.container.querySelector(`[data-acc="${state.seccion}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 
 /* ─── modelo → iframe ─────────────────────────────────────────────────── */
 
-function postModel() {
-  const iframe = document.getElementById('ss-preview')
-  if (!iframe || !iframe.contentWindow) return
-  const model = {
+function buildModel() {
+  return {
     layout: state.layout,
     marca: {
       institucion: state.marca.institucion,
@@ -407,7 +436,29 @@ function postModel() {
       vigente_hasta: m.vigente_hasta,
     })),
   }
-  iframe.contentWindow.postMessage({ type: 'signage:model', model }, '*')
+}
+
+/* Envía el modelo al iframe y reintenta hasta el acuse (signage:model-ack) o
+   hasta agotar los intentos. Cubre la carrera de que el iframe todavía no tenga
+   su listener puesto cuando se manda el primer postMessage. */
+function postModel() {
+  const iframe = document.getElementById('ss-preview')
+  if (!iframe || !iframe.contentWindow) return
+
+  state.modelSeq += 1
+  const seq = state.modelSeq
+  const msg = { type: 'signage:model', seq, model: buildModel() }
+
+  clearInterval(state.modelRetry)
+  let tries = 0
+  const send = () => {
+    const f = document.getElementById('ss-preview')
+    if (!f || !f.contentWindow || seq !== state.modelSeq) { clearInterval(state.modelRetry); return }
+    try { f.contentWindow.postMessage(msg, '*') } catch { /* iframe cross-origin momentáneo */ }
+    if (++tries >= 6) clearInterval(state.modelRetry)   // ~2.4 s de reintentos
+  }
+  send()
+  state.modelRetry = setInterval(send, 400)
 }
 
 function markDirty() {
@@ -428,7 +479,7 @@ async function togglePortal(portalId, on) {
   } catch (e) {
     state.menuPortales = prev
     AppToast.error(e.message)
-    render()
+    renderPanel()
   }
 }
 
@@ -457,7 +508,7 @@ async function guardar() {
 
 async function recargarMedios() {
   state.medios = await api.listarMedios(state.pantalla.id)
-  render()
+  renderPanel()
   postModel()
 }
 
@@ -466,16 +517,16 @@ async function onLogo(e) {
   e.target.value = ''
   if (!file) return
   if (file.size > 4 * 1024 * 1024) { AppToast.error('El logo supera 4 MB.'); return }
-  AppToast.info('Subiendo logo…')
+  const t = AppToast.progress('Subiendo logo…')
   try {
     const path = await api.subirLogo(file)
     await api.guardarLogo(state.pantalla.id, path)
     state.marca.logoPath = path
     state.pantalla.logo_path = path
-    AppToast.success('Logo actualizado. La pantalla se refresca en 1–3 min.')
-    render()
+    t.success('Logo actualizado. La pantalla se refresca en 1–3 min.')
+    renderPanel()
     postModel()
-  } catch (err) { AppToast.error(err.message) }
+  } catch (err) { t.error(err.message) }
 }
 
 async function quitarLogo() {
@@ -485,7 +536,7 @@ async function quitarLogo() {
     state.marca.logoPath = ''
     state.pantalla.logo_path = null
     AppToast.success('Logo quitado.')
-    render()
+    renderPanel()
     postModel()
   } catch (err) { AppToast.error(err.message) }
 }
@@ -496,7 +547,7 @@ async function onSubir(e) {
   if (!file) return
   if (file.size > 60 * 1024 * 1024) { AppToast.error('El archivo supera 60 MB.'); return }
   const tipo = file.type.startsWith('video') ? 'video' : 'imagen'
-  AppToast.info('Subiendo…')
+  const t = AppToast.progress('Subiendo…')
   try {
     const { path } = await api.subirArchivo(file)
     await api.crearMedio({
@@ -504,9 +555,9 @@ async function onSubir(e) {
       duracion_seg: tipo === 'imagen' ? 12 : null,
       orden: (state.medios.length + 1) * 10, activo: true,
     })
-    AppToast.success('Contenido agregado.')
+    t.success('Contenido agregado.')
     await recargarMedios()
-  } catch (err) { AppToast.error(err.message) }
+  } catch (err) { t.error(err.message) }
 }
 
 /* ─── editor de lienzo libre (arrastrar textos e imágenes) ───────────── */
@@ -1014,7 +1065,7 @@ async function moverMedio(id, dir) {
   const arr = [...state.medios]
   ;[arr[i], arr[j]] = [arr[j], arr[i]]
   state.medios = arr
-  render()
+  renderPanel()
   postModel()
   try { await api.reordenarMedios(arr.map((m) => m.id)) }
   catch (err) { AppToast.error(err.message); await recargarMedios() }

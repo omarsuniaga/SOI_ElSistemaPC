@@ -380,3 +380,17 @@ html, body {
   outline: 2px solid rgba(198, 160, 92, 0.55);
   outline-offset: -2px;
 }
+
+/* ── overlay de diagnóstico (?debug=1 / #debug, o auto al fallar un feed) ── */
+#diag {
+  position: fixed; left: calc(var(--u) * 1.4); bottom: calc(var(--u) * 1.4);
+  z-index: 9999; max-width: 92vw;
+  margin: 0; padding: calc(var(--u) * 1.1) calc(var(--u) * 1.4);
+  background: rgba(7, 9, 18, 0.92); color: #cfd6e6;
+  border: 1px solid rgba(198, 160, 92, 0.4); border-radius: calc(var(--u) * 0.6);
+  font-family: "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace;
+  font-size: calc(var(--u) * 1.15); line-height: 1.5;
+  white-space: pre; overflow: auto;
+  box-shadow: 0 calc(var(--u) * 0.8) calc(var(--u) * 2.4) rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}

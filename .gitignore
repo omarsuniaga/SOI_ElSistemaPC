@@ -71,5 +71,9 @@ scratch/
 docs/scratch/
 
 public/signage/device.js
+public/signage/build.js
+
+# artefacto temporal del CLI de Supabase (MCP)
+.tmp-supabase-cli-home/
 
 historico-clases-prof-ana-*.pdf

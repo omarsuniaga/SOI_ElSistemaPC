@@ -39,6 +39,10 @@
   <!-- device.js solo existe en la Raspberry (lo escribe deploy-signage-pi.sh);
        en Netlify da 404 y no pasa nada. Marca esta copia como "dispositivo". -->
   <script src="device.js" onerror="void 0"></script>
+  <!-- build.js: sello de versión (lo genera scripts/stamp-signage-build.js en el
+       build de Netlify y deploy-signage-pi.sh en la Raspberry). El overlay de
+       diagnóstico lo muestra para saber qué build corre cada pantalla. -->
+  <script src="build.js" onerror="void 0"></script>
   <script src="js/core.js"></script>
   <script src="js/components/cabecera.js"></script>
   <script src="js/components/slide.js"></script>

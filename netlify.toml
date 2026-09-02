@@ -24,6 +24,11 @@
     X-Robots-Tag = "noindex, nofollow"
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "no-referrer"
+    # El player no tiene hash en el nombre de sus assets (index.html, js/*.js,
+    # css/app.css). Forzar revalidación en cada carga evita que la pantalla del
+    # vestíbulo o la vista previa del Estudio se queden con una versión vieja
+    # tras un deploy (fue la causa de que las diapositivas no aparecieran).
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[redirects]]
   from = "/maestros.html"
@@ -38,6 +43,14 @@
 # esperado: fuera de la Pi, la pantalla arranca en modo "web"/"preview").
 [[redirects]]
   from = "/signage/device.js"
+  to = "/index.html"
+  status = 404
+
+# build.js normalmente SÍ existe en el deploy (lo genera scripts/stamp-signage-build.js
+# en el prebuild). Este redirect solo actúa si faltara: 404 limpio en vez de que
+# el <script> reciba el index.html y el navegador tire un error de MIME.
+[[redirects]]
+  from = "/signage/build.js"
   to = "/index.html"
   status = 404
 

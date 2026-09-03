@@ -1100,3 +1100,72 @@
   }
 }
 
+/* ─── Roster Student Items & Interactive Justificado Badge ────────────── */
+
+.roster-student-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  background: var(--bs-body-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.06));
+  transition: all 0.18s ease;
+}
+
+.roster-student-item:hover {
+  background: var(--bs-secondary-bg, rgba(255, 255, 255, 0.08));
+}
+
+.roster-student-item.asistencia-presente .student-status-badge {
+  background: rgba(25, 135, 84, 0.15);
+  color: #20c997;
+  border: 1px solid rgba(25, 135, 84, 0.3);
+}
+
+.roster-student-item.asistencia-ausente .student-status-badge {
+  background: rgba(220, 53, 69, 0.15);
+  color: #ea868f;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* ── Badge Justificado Clickeable ───────────────────────────────────────── */
+
+.badge-justificado-clickable {
+  background: linear-gradient(135deg, rgba(111, 66, 193, 0.22) 0%, rgba(142, 68, 173, 0.3) 100%) !important;
+  color: #d6bbfb !important;
+  border: 1px solid rgba(168, 85, 247, 0.5) !important;
+  cursor: pointer !important;
+  padding: 0.3rem 0.65rem !important;
+  border-radius: 7px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 1px 4px rgba(111, 66, 193, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  outline: none;
+}
+
+.badge-justificado-clickable:hover {
+  background: linear-gradient(135deg, rgba(111, 66, 193, 0.42) 0%, rgba(142, 68, 173, 0.52) 100%) !important;
+  color: #ffffff !important;
+  border-color: #c084fc !important;
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+.badge-justificado-clickable:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.roster-student-item.asistencia-justificado {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: rgba(111, 66, 193, 0.04);
+}
+
+.roster-student-item.asistencia-justificado:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(111, 66, 193, 0.08);
+}
+

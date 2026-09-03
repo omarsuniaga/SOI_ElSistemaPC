@@ -568,18 +568,29 @@ function _renderClaseCardDetalle(c, idx) {
             }
             if (isJustificado) {
               const justifObj = a.justificacion || (c.justificaciones || []).find(j => j.alumno_id === (a.alumno_id || a.alumnoId)) || {}
+              const detalleMotivo = justifObj.motivo && justifObj.descripcion && justifObj.motivo !== justifObj.descripcion
+                ? `${justifObj.motivo} — ${justifObj.descripcion}`
+                : (justifObj.descripcion || justifObj.motivo || a.justificacion_texto || 'Justificación asentada por la cátedra.')
+
               return `
-                <div class="roster-student-item asistencia-justificado py-1 px-2"
-                     data-action="ver-justificacion-modal"
-                     data-student="${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}"
-                     data-clase="${escapeHTML(c.clase_nombre || 'Clase')}"
-                     data-docente="${escapeHTML(c.maestro_nombre || 'Docente')}"
-                     data-fecha="${escapeHTML(c.fecha)}"
-                     data-motivo="${escapeHTML(justifObj.motivo || justifObj.descripcion || a.justificacion_texto || 'Justificación asentada por la cátedra.')}"
-                     data-evidencia="${escapeHTML(justifObj.evidencia_url || '')}"
-                     title="Ver motivo de justificación">
-                  <span class="small" style="font-size:0.8rem;"><strong class="text-muted me-1">${aIdx + 1}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}</span>
-                  <span class="badge student-status-badge" style="font-size:0.65rem"><i class="bi bi-file-earmark-medical-fill me-1"></i>Justificado <i class="bi bi-info-circle ms-1"></i></span>
+                <div class="roster-student-item asistencia-justificado py-1 px-2">
+                  <span class="small" style="font-size:0.8rem;">
+                    <strong class="text-muted me-1">${aIdx + 1}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}
+                  </span>
+                  <button type="button"
+                          class="badge student-status-badge badge-justificado-clickable border-0 shadow-xs"
+                          data-action="ver-justificacion-modal"
+                          data-student="${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}"
+                          data-clase="${escapeHTML(c.clase_nombre || 'Clase')}"
+                          data-docente="${escapeHTML(c.maestro_nombre || 'Maestro')}"
+                          data-fecha="${escapeHTML(c.fecha)}"
+                          data-motivo="${escapeHTML(detalleMotivo)}"
+                          data-evidencia="${escapeHTML(justifObj.evidencia_url || '')}"
+                          title="Hacé clic para ver el justificativo o causa de inasistencia">
+                    <i class="bi bi-file-earmark-medical-fill"></i>
+                    <span>Justificado</span>
+                    <i class="bi bi-box-arrow-up-right ms-0.5" style="font-size:0.6rem;"></i>
+                  </button>
                 </div>
               `
             }
@@ -634,74 +645,93 @@ function formatTimelineDate(dateStr) {
 }
 
 function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, evidencia }) {
-  document.getElementById('justifModalContainer')?.remove()
+  const fechaFormateada = formatTimelineDate(fecha)
 
-  const modalHtml = `
-    <div class="justif-modal-backdrop" id="justifModalContainer">
-      <div class="justif-modal-dialog">
-        <div class="p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: rgba(111,66,193,0.3) !important;">
-          <div class="d-flex align-items-center gap-2">
-            <div class="p-2 rounded-3" style="background: rgba(111,66,193,0.2); color: #cbb2fe;">
-              <i class="bi bi-file-earmark-medical-fill fs-5"></i>
-            </div>
-            <div>
-              <h6 class="mb-0 fw-bold">Detalle de Inasistencia Justificada</h6>
-              <div class="small text-muted">${escapeHTML(fecha)}</div>
-            </div>
+  const bodyHtml = `
+    <div class="p-1">
+      <!-- Ficha Alumno Destacada -->
+      <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-3" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%); border: 1px solid rgba(111, 66, 193, 0.25);">
+        <div class="d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center justify-content-center rounded-circle text-white shadow-xs" style="width: 44px; height: 44px; background: linear-gradient(135deg, #7952b3 0%, #6f42c1 100%); font-size: 1.25rem;">
+            <i class="bi bi-person-fill"></i>
           </div>
-          <button type="button" class="btn-close btn-close-white" id="btnCerrarJustifModal" aria-label="Cerrar"></button>
-        </div>
-
-        <div class="p-4">
-          <div class="mb-3">
-            <div class="text-muted small fw-semibold text-uppercase">Estudiante</div>
-            <div class="fs-6 fw-bold">${escapeHTML(student)}</div>
-          </div>
-
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <div class="text-muted small fw-semibold text-uppercase">Clase</div>
-              <div class="small fw-semibold">${escapeHTML(clase)}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-muted small fw-semibold text-uppercase">Docente</div>
-              <div class="small">${escapeHTML(docente)}</div>
-            </div>
-          </div>
-
-          <div class="p-3 rounded-3 mb-3" style="background: rgba(111, 66, 193, 0.12); border: 1px dashed rgba(111, 66, 193, 0.4);">
-            <div class="d-flex align-items-center gap-2 mb-1" style="color: #d6bbfb;">
-              <i class="bi bi-chat-left-quote-fill"></i>
-              <span class="small fw-bold text-uppercase">Causa / Justificación Declarada</span>
-            </div>
-            <p class="mb-0 small text-body" style="line-height: 1.5;">${escapeHTML(motivo)}</p>
-          </div>
-
-          ${evidencia ? `
-            <div class="mb-3">
-              <a href="${escapeHTML(evidencia)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2">
-                <i class="bi bi-paperclip"></i> Ver Documento / Evidencia Adjunta
-              </a>
-            </div>
-          ` : ''}
-
-          <div class="text-end mt-4">
-            <button type="button" class="btn btn-secondary btn-sm px-4 rounded-3" id="btnAceptarJustifModal">Entendido</button>
+          <div>
+            <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.68rem; letter-spacing: 0.05em;">Estudiante / Alumno</span>
+            <h5 class="fw-bold mb-0 text-body" style="letter-spacing: -0.01em;">${escapeHTML(student || 'Estudiante')}</h5>
           </div>
         </div>
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-pill fw-semibold shadow-2xs" style="font-size: 0.72rem;">
+          <i class="bi bi-file-earmark-medical-fill me-1"></i>Inasistencia Justificada
+        </span>
+      </div>
+
+      <!-- Cuadrícula de Metadatos Contextuales -->
+      <div class="row g-2.5 mb-3">
+        <div class="col-12 col-sm-6">
+          <div class="p-2.5 rounded-3 bg-body-tertiary border h-100">
+            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.72rem;">
+              <i class="bi bi-easel2 text-primary me-1"></i>Clase
+            </span>
+            <strong class="text-body d-block" style="font-size: 0.88rem;">${escapeHTML(clase || 'Clase')}</strong>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="p-2.5 rounded-3 bg-body-tertiary border h-100">
+            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.72rem;">
+              <i class="bi bi-person-badge text-primary me-1"></i>Maestro Titular
+            </span>
+            <strong class="text-body d-block" style="font-size: 0.88rem;">${escapeHTML(docente || 'Sin asignar')}</strong>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="p-2.5 rounded-3 bg-body-tertiary border">
+            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.72rem;">
+              <i class="bi bi-calendar-event text-primary me-1"></i>Fecha de la Sesión
+            </span>
+            <strong class="text-body d-block text-capitalize" style="font-size: 0.88rem;">${escapeHTML(fechaFormateada)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Declaración de Causa / Motivo -->
+      <div class="p-3 rounded-3 mb-3" style="background: rgba(111, 66, 193, 0.08); border: 1px solid rgba(111, 66, 193, 0.25); border-left: 4px solid #8e44ad;">
+        <div class="d-flex align-items-center gap-1.5 mb-1.5" style="color: #9d65c9;">
+          <i class="bi bi-chat-left-quote-fill"></i>
+          <span class="small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Causa / Motivo Declarado</span>
+        </div>
+        <p class="mb-0 text-body" style="font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap;">${escapeHTML(motivo || 'Justificación registrada en el parte de clase sin notas adicionales.')}</p>
+      </div>
+
+      <!-- Evidencia / Archivo Adjunto -->
+      <div>
+        ${evidencia ? `
+          <a href="${escapeHTML(evidencia)}" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between p-2.5 rounded-3 shadow-xs">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-paperclip fs-5 text-primary"></i>
+              <span class="fw-semibold small">Ver Comprobante / Certificado Adjunto</span>
+            </div>
+            <i class="bi bi-box-arrow-up-right small"></i>
+          </a>
+        ` : `
+          <div class="p-2.5 text-center text-muted small bg-body-tertiary rounded-3 border border-dashed" style="font-size: 0.75rem;">
+            <i class="bi bi-file-earmark-x me-1"></i>No se adjuntó comprobante digital en este registro.
+          </div>
+        `}
       </div>
     </div>
   `
 
-  document.body.insertAdjacentHTML('beforeend', modalHtml)
-
-  const backdrop = document.getElementById('justifModalContainer')
-  const close = () => backdrop?.remove()
-
-  document.getElementById('btnCerrarJustifModal')?.addEventListener('click', close)
-  document.getElementById('btnAceptarJustifModal')?.addEventListener('click', close)
-  backdrop?.addEventListener('click', (e) => {
-    if (e.target === backdrop) close()
+  AppModal.open({
+    title: `<div class="d-flex align-items-center gap-2">
+      <i class="bi bi-file-earmark-medical-fill text-warning"></i>
+      <span>Detalle de Inasistencia Justificada</span>
+    </div>`,
+    body: bodyHtml,
+    size: 'md',
+    hideSave: true,
+    cancelText: 'Entendido',
   })
 }
 

@@ -168,15 +168,15 @@ function cardHTML(sesion) {
           </span>
           ${sesion.nivel ? `<span class="badge bg-body-tertiary text-muted border" style="font-size:0.68rem;">Nivel ${escapeHTML(String(sesion.nivel))}</span>` : ''}
         </div>
-        <h5 class="clases-hoy__card-titulo">${escapeHTML(sesion.nombre)}</h5>
+        <h5 class="clases-hoy__card-titulo" title="${escapeHTML(sesion.nombre)}">${escapeHTML(sesion.nombre)}</h5>
 
         <!-- Metadatos: Docente y Salón -->
         <div class="clases-hoy__card-meta">
-          <div class="clases-hoy__meta-row">
+          <div class="clases-hoy__meta-row" title="${escapeHTML(maestroNombre)}${suplenteHTML ? ` (Suplente: ${escapeHTML(sesion.maestroSuplente.nombre_completo)})` : ''}">
             <i class="bi bi-person-check"></i>
             <span><strong>Docente:</strong> ${escapeHTML(maestroNombre)}${suplenteHTML}</span>
           </div>
-          <div class="clases-hoy__meta-row">
+          <div class="clases-hoy__meta-row" title="${escapeHTML(sesion.salon?.nombre || 'Sin salón asignado')}">
             <i class="bi bi-door-open"></i>
             <span><strong>Salón:</strong> ${escapeHTML(sesion.salon?.nombre || 'Sin salón asignado')}</span>
           </div>
@@ -194,7 +194,7 @@ function cardHTML(sesion) {
         </div>
 
         <!-- Nómina desplegable -->
-        <button type="button" class="btn btn-sm btn-light border w-100 clases-hoy__toggle-nomina mb-2 text-start d-flex justify-content-between align-items-center">
+        <button type="button" class="btn btn-sm btn-light border w-100 clases-hoy__toggle-nomina mb-2 text-start d-flex justify-content-between align-items-center" title="Desplegar lista de alumnos">
           <span><i class="bi bi-list-check me-1"></i> Ver Nómina (${totalAlumnos})</span>
           <i class="bi bi-chevron-down text-muted" style="font-size:0.75rem;"></i>
         </button>
@@ -203,11 +203,11 @@ function cardHTML(sesion) {
 
       <!-- Footer de Acciones -->
       <div class="clases-hoy__card-footer">
-        <div class="d-flex align-items-center gap-1 flex-grow-1">
-          <button type="button" class="btn btn-sm btn-outline-info clases-hoy__justificar flex-grow-1" data-clase-id="${sesion.claseId}">
+        <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0">
+          <button type="button" class="btn btn-sm btn-outline-info clases-hoy__justificar flex-grow-1 text-truncate py-1 px-1.5" data-clase-id="${sesion.claseId}" title="Justificar ausencia de alumno">
             <i class="bi bi-shield-check me-1"></i>Justificar
           </button>
-          <button type="button" class="btn btn-sm btn-outline-primary clases-hoy__ver-ficha flex-grow-1" data-clase-id="${sesion.claseId}">
+          <button type="button" class="btn btn-sm btn-outline-primary clases-hoy__ver-ficha flex-grow-1 text-truncate py-1 px-1.5" data-clase-id="${sesion.claseId}" title="Ver ficha técnica de clase">
             <i class="bi bi-eye me-1"></i>Ficha
           </button>
           ${recordatorioBtn}

@@ -88,8 +88,9 @@ function _procesarDatos(sesiones) {
 
 function _render(container) {
   const { programas, niveles, totales } = state.datos
-  const tasa = totales.presentes + totales.ausentes + totales.justificados
-    ? Math.round((totales.presentes / tasa) * 100)
+  const totalAlumnos = totales.presentes + totales.ausentes + totales.justificados
+  const tasa = totalAlumnos > 0
+    ? Math.round((totales.presentes / totalAlumnos) * 100)
     : 0
 
   container.innerHTML = `

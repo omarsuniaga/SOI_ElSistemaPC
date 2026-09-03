@@ -348,6 +348,7 @@ export async function getReporteConsolidado({ fecha, claseId } = {}) {
       sesion_clase_id: row.id,
       clase_id: row.clase_id,
       clase_nombre: classInfo.nombre ?? '—',
+      instrumento: classInfo.instrumento || 'General',
       fecha: row.fecha,
       hora_inicio: row.hora_inicio,
       hora_fin: row.hora_fin,

@@ -55,6 +55,44 @@ const state = {
   container: null,
 }
 
+/**
+ * Padrón de alumnos que puede figurar como "sin clase": SOLO activos.
+ * Un alumno inactivo nunca debe aparecer en ese listado, aunque por alguna
+ * razón haya entrado a `alumnos`. Segunda barrera además del filtro
+ * `.eq('activo', true)` de la consulta.
+ * @param {Array} alumnos
+ * @returns {Array}
+ */
+export const filtrarPadronActivo = (alumnos) => (alumnos || []).filter(a => a?.activo !== false)
+
+/**
+ * IDs de alumnos inscritos en al menos una clase.
+ * @param {Array} clases
+ * @returns {Set<string>}
+ */
+export const construirSetInscritos = (clases) => {
+  const set = new Set()
+  ;(clases || []).forEach(c => {
+    (c.alumnos_ids || []).forEach(aid => set.add(aid))
+  })
+  return set
+}
+
+/**
+ * Alumnos activos que no están inscritos en ninguna clase.
+ * @param {Array} alumnos
+ * @param {Array} clases
+ * @returns {Array}
+ */
+export const calcularAlumnosSinClase = (alumnos, clases) => {
+  const inscritos = construirSetInscritos(clases)
+  return filtrarPadronActivo(alumnos).filter(a => !inscritos.has(a.id))
+}
+
+const getPadronActivo = () => filtrarPadronActivo(state.alumnosDisponibles)
+const getInscritosGeneralSet = () => construirSetInscritos(state.clasesOriginales)
+const getAlumnosSinClase = () => calcularAlumnosSinClase(state.alumnosDisponibles, state.clasesOriginales)
+
 const FAMILIAS_MAP = {
   cuerdas: ['violin', 'viola', 'violoncello', 'cello', 'contrabajo'],
   maderas: ['flauta', 'oboe', 'clarinete', 'fagot', 'saxofon'],
@@ -90,7 +128,7 @@ export async function renderClasesView(container, params = {}) {
       supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
       supabase.from('salones').select('*').order('nombre', { ascending: true }),
       supabase.from('programas').select('*').order('nombre', { ascending: true }),
-      supabase.from('alumnos').select('*').order('nombre_completo', { ascending: true }),
+      supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
     ])
 
     state.clases = clases || []
@@ -386,14 +424,11 @@ function renderContent(container) {
 
   const filtrosActivosCount = contarFiltrosActivos()
 
-  // Calcular alumnos únicos inscritos y alumnos sin clase
-  const inscritosGeneralSet = new Set()
-  state.clasesOriginales.forEach(c => {
-    (c.alumnos_ids || []).forEach(aid => inscritosGeneralSet.add(aid))
-  })
-  const totalAlumnosPadron = state.alumnosDisponibles.length
+  // Calcular alumnos únicos inscritos y alumnos sin clase (solo activos)
+  const inscritosGeneralSet = getInscritosGeneralSet()
+  const totalAlumnosPadron = getPadronActivo().length
   const totalAlumnosUnicos = inscritosGeneralSet.size
-  const alumnosSinClaseCount = state.alumnosDisponibles.filter(a => !inscritosGeneralSet.has(a.id)).length
+  const alumnosSinClaseCount = getAlumnosSinClase().length
 
   // Extraer opciones únicas para los selects
   const catedrasList = [...new Set(state.clasesOriginales.map(c => c.instrumento).filter(Boolean))].sort()
@@ -1294,13 +1329,7 @@ function _mostrarModalResolucionConflictos(claseId) {
  * Modal interactivo y guiado para consultar y asignar alumnos sin clase (Paso 1 → Paso 2 → Paso 3)
  */
 function _mostrarModalAlumnosSinClase() {
-  const getSinClaseList = () => {
-    const inscritosGeneralSet = new Set()
-    state.clasesOriginales.forEach(c => {
-      (c.alumnos_ids || []).forEach(aid => inscritosGeneralSet.add(aid))
-    })
-    return state.alumnosDisponibles.filter(a => !inscritosGeneralSet.has(a.id))
-  }
+  const getSinClaseList = () => getAlumnosSinClase()
 
   let selectedAlumno = null
   let selectedClase = null
@@ -1729,13 +1758,10 @@ function _mostrarModalExplicacionMetricas() {
   const totalCapacidad = state.clasesOriginales.reduce((s, c) => s + (c.capacidad_maxima || 20), 0)
   const pctOcupacionGlobal = totalCapacidad > 0 ? Math.round((totalMatriculas / totalCapacidad) * 100) : 0
   
-  const inscritosGeneralSet = new Set()
-  state.clasesOriginales.forEach(c => {
-    (c.alumnos_ids || []).forEach(aid => inscritosGeneralSet.add(aid))
-  })
-  const totalAlumnosPadron = state.alumnosDisponibles.length
+  const inscritosGeneralSet = getInscritosGeneralSet()
+  const totalAlumnosPadron = getPadronActivo().length
   const totalAlumnosUnicos = inscritosGeneralSet.size
-  const alumnosSinClaseCount = totalAlumnosPadron - totalAlumnosUnicos
+  const alumnosSinClaseCount = getAlumnosSinClase().length
   const promedioMaterias = totalAlumnosUnicos > 0 ? (totalMatriculas / totalAlumnosUnicos).toFixed(1) : '0.0'
 
   const modalHtml = `

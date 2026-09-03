@@ -9,6 +9,7 @@
 
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
 import { allRegistrars } from '../_shared/allRegistrars.js'
+import { supabase } from '../../lib/supabaseClient.js'
 
 const navGroups = [
   {
@@ -75,6 +76,31 @@ const navGroups = [
   },
 ]
 
+async function syncAusenciasBadge() {
+  try {
+    const { count, error } = await supabase
+      .from('ausencias_maestros')
+      .select('*', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+
+    console.log('[adm] Conteo ausencias pendientes:', count, error || '')
+
+    if (!error && count !== null) {
+      window.dispatchEvent(new CustomEvent('set-nav-badge', {
+        detail: { route: 'admin-ausencias', count }
+      }))
+      window.dispatchEvent(new CustomEvent('set-nav-badge', {
+        detail: { route: 'asistencias', count: 0 }
+      }))
+    }
+  } catch (e) {
+    console.warn('[adm] Error al sincronizar badge de ausencias:', e)
+  }
+}
+
+// Sincronizar badge inmediatamente al cargar el módulo
+syncAusenciasBadge()
+
 bootAdminPortal({
   brandText: 'SOI · Administración',
   brandIcon: 'bi-clipboard-data',
@@ -83,6 +109,9 @@ bootAdminPortal({
   allowedRoles: ['admin', 'superadmin', 'coordinacion_academica'],
   defaultRoute: 'clases-hoy',
   hermesDept: 'ADM',
+}).then(() => {
+  syncAusenciasBadge()
+  setInterval(syncAusenciasBadge, 60000)
 }).catch((err) => {
   console.error('[adm] boot falló:', err)
   const app = document.querySelector('#app')

@@ -97,8 +97,69 @@ function toggleTheme() {
   localStorage.setItem('app-theme', next)
 }
 
-// ── Sidebar ─────────────────────────────────────────────────────────────────
+// ── Sidebar & Badges Dinámicos ──────────────────────────────────────────────
 let _navAbortController = null
+const _dynamicBadges = new Map()
+
+export function setPortalNavBadge(route, count, options = {}) {
+  if (!route) return
+  _dynamicBadges.set(route, { count, ...options })
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('set-nav-badge', {
+      detail: { route, count, ...options }
+    }))
+  }
+}
+
+function _renderItemBadge(item) {
+  const dyn = _dynamicBadges.get(item.id)
+  if (dyn) {
+    if (dyn.count !== undefined && dyn.count !== null) {
+      if (dyn.count > 0) {
+        const text = dyn.count > 99 ? '99+' : String(dyn.count)
+        const cls = dyn.badgeClass || 'dynamic-nav-badge badge bg-danger text-white rounded-pill ms-auto'
+        return `<span class="${cls}" style="font-size:0.68rem; padding: 0.15rem 0.45rem; font-weight:700; line-height: 1;">${text}</span>`
+      }
+      return ''
+    }
+    if (dyn.label) {
+      const cls = dyn.badgeClass || 'dynamic-nav-badge badge bg-danger text-white rounded-pill ms-auto'
+      return `<span class="${cls}" style="font-size:0.68rem; padding: 0.15rem 0.45rem; font-weight:700; line-height: 1;">${dyn.label}</span>`
+    }
+  }
+  if (item.badge) {
+    const cls = item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle ms-auto'
+    return `<span class="${cls}" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>`
+  }
+  return ''
+}
+
+// Listener global permanente para actualizaciones de badges desde cualquier módulo
+if (typeof window !== 'undefined') {
+  window.addEventListener('set-nav-badge', (e) => {
+    const { route, count, label, badgeClass } = e.detail || {}
+    if (!route) return
+    _dynamicBadges.set(route, { count, label, badgeClass })
+
+    const targets = document.querySelectorAll(
+      `.nav-item-btn[data-route="${route}"], .sheet-item[data-route="${route}"]`
+    )
+    targets.forEach((btn) => {
+      const old = btn.querySelector('.dynamic-nav-badge')
+      if (old) old.remove()
+
+      const hasCount = count !== undefined && count !== null
+      const shouldShow = hasCount ? count > 0 : Boolean(label)
+      if (shouldShow) {
+        const badgeEl = document.createElement('span')
+        badgeEl.className = badgeClass || 'dynamic-nav-badge badge bg-danger text-white rounded-pill ms-auto'
+        badgeEl.style.cssText = 'font-size:0.68rem; padding: 0.15rem 0.45rem; font-weight:700; line-height: 1;'
+        badgeEl.textContent = hasCount ? (count > 99 ? '99+' : String(count)) : label
+        btn.appendChild(badgeEl)
+      }
+    })
+  })
+}
 
 function getGroupForRoute(navGroups, route) {
   for (const g of navGroups) {
@@ -174,7 +235,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
               <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}">
                 <i class="bi ${item.icon}"></i>
                 <span>${item.label}</span>
-                ${item.badge ? `<span class="${item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle'} ms-auto" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>` : ''}
+                ${_renderItemBadge(item)}
               </button>`,
               )
               .join('')}
@@ -236,9 +297,9 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     bottomNav.querySelectorAll('.bottom-tab').forEach((tab) => {
       tab.classList.toggle('active', tab.dataset.group === nextGroup)
     })
-    const currentSheetGroup = subSheet.dataset.group
-    if (subSheet.classList.contains('open') && currentSheetGroup && currentSheetGroup !== nextGroup) {
+    if (subSheet.classList.contains('open')) {
       subSheet.classList.remove('open')
+      backdrop.classList.remove('open')
     }
   }
 
@@ -359,7 +420,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
       <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}">
         <i class="bi ${item.icon}"></i>
         <span>${item.label}</span>
-        ${item.badge ? `<span class="${item.badgeClass || 'badge bg-success-subtle text-success border border-success-subtle'} ms-auto" style="font-size:0.68rem; padding: 0.2rem 0.45rem;">${item.badge}</span>` : ''}
+        ${_renderItemBadge(item)}
       </button>
     `,
       )
@@ -371,12 +432,15 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
 
     itemsEl.querySelectorAll('.sheet-item').forEach((btn) => {
       btn.addEventListener('click', () => {
-        router.navigate(btn.dataset.route)
+        const route = btn.dataset.route
         subSheet.classList.remove('open')
         backdrop.classList.remove('open')
-        bottomNav.querySelectorAll('.bottom-tab').forEach((t) =>
-          t.classList.toggle('active', t.dataset.group === getGroupForRoute(profile.navGroups, btn.dataset.route)),
-        )
+        if (route) {
+          bottomNav.querySelectorAll('.bottom-tab').forEach((t) =>
+            t.classList.toggle('active', t.dataset.group === getGroupForRoute(profile.navGroups, route)),
+          )
+          router.navigate(route)
+        }
       })
     })
   }

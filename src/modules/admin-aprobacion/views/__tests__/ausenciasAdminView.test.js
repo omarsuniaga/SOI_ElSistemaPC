@@ -3,6 +3,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../api/ausenciaAprobacionApi.js', () => ({
   aprobarAusencia: vi.fn(() => Promise.resolve({})),
   obtenerAusenciasPendientes: vi.fn(() => Promise.resolve([])),
+  obtenerHistorialAusencias: vi.fn(() => Promise.resolve([])),
   rechazarAusencia: vi.fn(() => Promise.resolve({})),
 }));
 
@@ -54,6 +55,17 @@ describe('ausenciasAdminView', () => {
     await renderAusenciasAdminView(container);
 
     expect(container.textContent).toContain('No hay solicitudes de ausencia pendientes');
+  });
+
+  it('uses a four-column grid for absence cards on desktop', async () => {
+    await renderAusenciasAdminView(container);
+
+    const styles = document.getElementById('ausencias-admin-view-styles');
+
+    expect(styles.textContent).toContain('max-width: 1400px;');
+    expect(styles.textContent).toContain('display: grid;');
+    expect(styles.textContent).toContain('@media (min-width: 1200px)');
+    expect(styles.textContent).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
   });
 
   it('approves an absence and refreshes the list', async () => {

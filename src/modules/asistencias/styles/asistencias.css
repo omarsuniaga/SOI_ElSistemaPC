@@ -1061,7 +1061,7 @@
   border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.08));
   border-radius: 16px;
   padding: 1.25rem;
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .selected-day-header {
@@ -1089,24 +1089,136 @@
   background: var(--bs-tertiary-bg, rgba(255, 255, 255, 0.05));
 }
 
+/* ─── Calendar Day Cell (Compact & 3-Color Bar) ─────────────────────── */
+
+.calendar-day-cell {
+  min-height: 62px;
+  background: var(--bs-tertiary-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  padding: 0.35rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.calendar-day-cell:hover {
+  background: var(--bs-secondary-bg, rgba(255, 255, 255, 0.08));
+  border-color: var(--bs-primary, #0d6efd);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.calendar-day-cell.other-month {
+  opacity: 0.35;
+  background: transparent;
+  cursor: default;
+}
+
+.calendar-day-cell.other-month:hover {
+  transform: none;
+  border-color: var(--bs-border-color, rgba(255, 255, 255, 0.06));
+  box-shadow: none;
+}
+
+.calendar-day-cell.is-today {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4);
+}
+
+.calendar-day-cell.is-today .calendar-day-num {
+  color: #d97706;
+  font-weight: 800;
+}
+
+[data-bs-theme="dark"] .calendar-day-cell.is-today .calendar-day-num {
+  color: #fbbf24;
+}
+
+.calendar-day-cell.is-selected {
+  border-color: #2563eb !important;
+  background: rgba(37, 99, 235, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35) !important;
+}
+
+.calendar-day-num {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.calendar-clases-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+[data-bs-theme="dark"] .calendar-clases-badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+/* ─── 3-Color Progress Bar in Calendar ────────────────────────────── */
+
+.calendar-day-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.calendar-bar-asistencia {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(128, 128, 128, 0.18);
+  display: flex;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.calendar-bar-asistencia .bar-p { background: #16a34a; }
+.calendar-bar-asistencia .bar-j { background: #6366f1; }
+.calendar-bar-asistencia .bar-a { background: #dc2626; }
+
 @media (max-width: 768px) {
   .calendar-day-cell {
-    min-height: 60px;
-    padding: 0.25rem;
+    min-height: 56px;
+    padding: 0.25rem 0.3rem;
   }
   .calendar-clases-badge {
-    font-size: 0.6rem;
-    padding: 0.1rem 0.2rem;
+    font-size: 0.62rem;
+    padding: 0.08rem 0.2rem;
   }
 }
 
-/* ─── Roster Student Items & Interactive Justificado Badge ────────────── */
+/* ─── Roster Student Items & Exception Sections ────────────────────────── */
+
+.roster-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 0.4rem;
+}
 
 .roster-student-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-radius: 8px;
+  padding: 0.4rem 0.65rem;
   background: var(--bs-body-bg, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.06));
   transition: all 0.18s ease;
@@ -1116,56 +1228,128 @@
   background: var(--bs-secondary-bg, rgba(255, 255, 255, 0.08));
 }
 
+.roster-student-item.asistencia-presente {
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
 .roster-student-item.asistencia-presente .student-status-badge {
-  background: rgba(25, 135, 84, 0.15);
-  color: #20c997;
-  border: 1px solid rgba(25, 135, 84, 0.3);
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .roster-student-item.asistencia-presente .student-status-badge {
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.roster-student-item.asistencia-ausente {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(239, 68, 68, 0.03);
 }
 
 .roster-student-item.asistencia-ausente .student-status-badge {
-  background: rgba(220, 53, 69, 0.15);
-  color: #ea868f;
-  border: 1px solid rgba(220, 53, 69, 0.3);
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-weight: 600;
 }
 
-/* ── Badge Justificado Clickeable ───────────────────────────────────────── */
+[data-bs-theme="dark"] .roster-student-item.asistencia-ausente .student-status-badge {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.roster-student-item.asistencia-justificado {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.03);
+}
+
+/* ── Badge Justificado Clickeable (WCAG AA Compliant) ─────────────────── */
 
 .badge-justificado-clickable {
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.22) 0%, rgba(142, 68, 173, 0.3) 100%) !important;
-  color: #d6bbfb !important;
-  border: 1px solid rgba(168, 85, 247, 0.5) !important;
+  background: #eef2ff !important;
+  color: #3730a3 !important;
+  border: 1px solid #c7d2fe !important;
   cursor: pointer !important;
   padding: 0.3rem 0.65rem !important;
   border-radius: 7px !important;
   font-weight: 600 !important;
+  font-size: 0.75rem !important;
   letter-spacing: 0.01em;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-shadow: 0 1px 4px rgba(111, 66, 193, 0.2);
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   outline: none;
 }
 
+[data-bs-theme="dark"] .badge-justificado-clickable {
+  background: rgba(99, 102, 241, 0.22) !important;
+  color: #e0e7ff !important;
+  border-color: rgba(165, 180, 252, 0.4) !important;
+}
+
 .badge-justificado-clickable:hover {
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.42) 0%, rgba(142, 68, 173, 0.52) 100%) !important;
+  background: #e0e7ff !important;
+  color: #312e81 !important;
+  border-color: #818cf8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+}
+
+[data-bs-theme="dark"] .badge-justificado-clickable:hover {
+  background: rgba(99, 102, 241, 0.38) !important;
   color: #ffffff !important;
-  border-color: #c084fc !important;
-  transform: translateY(-1px) scale(1.03);
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+  border-color: #a5b4fc !important;
 }
 
 .badge-justificado-clickable:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0);
 }
 
-.roster-student-item.asistencia-justificado {
-  border-color: rgba(168, 85, 247, 0.25);
-  background: rgba(111, 66, 193, 0.04);
+/* ── Acordeón de Alumnos Presentes ────────────────────────────────────── */
+
+.roster-presentes-accordion {
+  border-radius: 8px;
+  border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.08));
+  overflow: hidden;
+  background: var(--bs-body-bg, rgba(255, 255, 255, 0.02));
 }
 
-.roster-student-item.asistencia-justificado:hover {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: rgba(111, 66, 193, 0.08);
+.roster-presentes-accordion summary {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: background 0.15s ease;
+  list-style: none;
 }
+
+.roster-presentes-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.roster-presentes-accordion summary:hover {
+  background: var(--bs-tertiary-bg, rgba(255, 255, 255, 0.05));
+}
+
+.roster-presentes-accordion[open] summary {
+  border-bottom: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.06));
+}
+
+.roster-presentes-content {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 

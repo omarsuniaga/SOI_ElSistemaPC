@@ -253,7 +253,7 @@ function renderContent(container) {
               <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size:0.75rem;" title="Presentes">
                 <i class="bi bi-check-circle-fill me-1"></i>${totalPresentesFiltrados} P
               </span>
-              <span class="badge border py-1 px-2" style="font-size:0.75rem; background: rgba(111, 66, 193, 0.15); color: #d6bbfb; border-color: rgba(111, 66, 193, 0.3) !important;" title="Justificados">
+              <span class="badge calendar-status-badge status-justificado py-1 px-2" style="font-size:0.75rem;" title="Justificados">
                 <i class="bi bi-file-earmark-medical-fill me-1"></i>${totalJustificadosFiltrados} J
               </span>
               <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2" style="font-size:0.75rem;" title="Ausentes">
@@ -416,7 +416,7 @@ function renderCalendarioGrid(fechasMap) {
 
         <div class="d-none d-sm-flex align-items-center gap-3 small text-muted" style="font-size: 0.75rem;">
           <span class="d-flex align-items-center gap-1"><span class="badge rounded-circle p-1 bg-success"> </span> Presentes</span>
-          <span class="d-flex align-items-center gap-1"><span class="badge rounded-circle p-1" style="background:#9d65c9;"> </span> Justificados</span>
+          <span class="d-flex align-items-center gap-1"><span class="badge rounded-circle p-1" style="background:#6366f1;"> </span> Justificados</span>
           <span class="d-flex align-items-center gap-1"><span class="badge rounded-circle p-1 bg-danger"> </span> Ausentes</span>
         </div>
       </div>
@@ -456,17 +456,17 @@ function renderCalendarioGrid(fechasMap) {
               ${totalClases > 0 ? `
                 <div class="calendar-day-content">
                   <div class="calendar-bar-asistencia" title="${totalP} Pres / ${totalJ} Just / ${totalA} Aus">
-                    <div class="bar-p" style="width: ${pctP}%"></div>
-                    <div class="bar-j" style="width: ${pctJ}%"></div>
-                    <div class="bar-a" style="width: ${pctA}%"></div>
+                    <div class="bar-p" style="width: ${pctP}%;"></div>
+                    <div class="bar-j" style="width: ${pctJ}%;"></div>
+                    <div class="bar-a" style="width: ${pctA}%;"></div>
                   </div>
-                  <div class="d-flex justify-content-between" style="font-size:0.62rem; color:#aaa; font-weight: 600;">
+                  <div class="d-flex justify-content-between align-items-center mt-1" style="font-size:0.68rem; font-weight: 700;">
                     <span class="text-success">${totalP}P</span>
-                    <span style="color:#d6bbfb;">${totalJ}J</span>
+                    <span style="color:#6366f1;">${totalJ}J</span>
                     <span class="text-danger">${totalA}A</span>
                   </div>
                 </div>
-              ` : '<div class="small text-muted" style="font-size:0.6rem; opacity:0.25;">—</div>'}
+              ` : '<div class="small text-muted py-1 text-center" style="font-size:0.65rem; opacity:0.25;">—</div>'}
             </div>
           `
         }).join('')}
@@ -515,95 +515,148 @@ function _renderClaseCardDetalle(c, idx) {
   const total = c.total_alumnos || (c.asistencias || []).length || 0
   const asistencias = c.asistencias || []
 
+  // Clasificación para patrón UX Exception-First (Novedades primero)
+  const ausentes = []
+  const justificados = []
+  const presentes = []
+
+  for (let i = 0; i < asistencias.length; i++) {
+    const a = asistencias[i]
+    const estado = (a.estado || '').toLowerCase()
+    const itemWithIndex = { ...a, originalIdx: i + 1 }
+    if (estado === 'ausente' || estado === 'a') {
+      ausentes.push(itemWithIndex)
+    } else if (estado === 'justificado' || estado === 'j') {
+      justificados.push(itemWithIndex)
+    } else {
+      presentes.push(itemWithIndex)
+    }
+  }
+
+  const tieneNovedades = ausentes.length > 0 || justificados.length > 0
+
   return `
-    <div class="clase-session-card p-3 rounded-3 mb-1">
+    <div class="clase-session-card p-3 rounded-3 mb-2">
       
       <!-- Header Clase -->
       <div>
         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
           <div>
-            <h6 class="fw-bold mb-0 text-body" style="font-size: 0.92rem;">${escapeHTML(c.clase_nombre || 'Clase')}</h6>
-            <div class="small text-muted d-flex align-items-center gap-2 mt-1" style="font-size:0.75rem;">
-              <span><i class="bi bi-clock me-1"></i>${escapeHTML(formatHorario(c.hora_inicio, c.hora_fin))}</span>
+            <h6 class="fw-bold mb-0 text-body" style="font-size: 0.95rem;">${escapeHTML(c.clase_nombre || 'Clase')}</h6>
+            <div class="small text-muted d-flex align-items-center gap-2 mt-1" style="font-size:0.78rem;">
+              <span><i class="bi bi-clock me-1 text-primary"></i>${escapeHTML(formatHorario(c.hora_inicio, c.hora_fin))}</span>
               <span>•</span>
-              <span><i class="bi bi-music-note me-1"></i>${escapeHTML(c.instrumento || 'General')}</span>
+              <span><i class="bi bi-music-note me-1 text-primary"></i>${escapeHTML(c.instrumento || 'General')}</span>
             </div>
           </div>
-          <div class="text-end">
-            <span class="badge bg-success-subtle text-success border border-success-subtle me-1" style="font-size:0.68rem;">${c.presentes || 0} P</span>
-            <span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1" style="font-size:0.68rem;">${c.ausentes || 0} A</span>
-            <span class="badge border" style="font-size:0.68rem; background: rgba(111, 66, 193, 0.15); color: #d6bbfb; border-color: rgba(111, 66, 193, 0.3) !important;">${c.justificados || 0} J</span>
+          <div class="text-end d-flex align-items-center gap-1">
+            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.72rem;">${c.presentes || 0} P</span>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.72rem;">${c.ausentes || 0} A</span>
+            <span class="badge calendar-status-badge status-justificado" style="font-size:0.72rem;">${c.justificados || 0} J</span>
           </div>
         </div>
 
-        <div class="small text-muted mb-2" style="font-size:0.78rem;">
-          <i class="bi bi-person-badge me-1"></i>Docente: <strong>${escapeHTML(c.maestro_nombre || 'Sin asignar')}</strong>
+        <div class="small text-muted mb-2" style="font-size:0.8rem;">
+          <i class="bi bi-person-badge me-1 text-secondary"></i>Docente: <strong>${escapeHTML(c.maestro_nombre || 'Sin asignar')}</strong>
         </div>
 
         ${c.observacion_sesion || c.observacion_clase ? `
-          <div class="p-2 rounded-2 mb-2 bg-body-tertiary border text-secondary small" style="font-size: 0.76rem;">
+          <div class="p-2 rounded-2 mb-2 bg-body-tertiary border text-secondary small" style="font-size: 0.78rem;">
             <i class="bi bi-journal-text me-1 text-primary"></i>${escapeHTML(c.observacion_sesion || c.observacion_clase)}
           </div>
         ` : ''}
       </div>
 
-      <!-- Nómina de Alumnos y Asistencia -->
+      <!-- Nómina de Alumnos (Sin Scroll Trap - Exception First) -->
       <div class="mt-2 pt-2 border-top border-body-tertiary">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="small fw-bold text-uppercase text-muted" style="font-size: 0.68rem;">Nómina (${total} alumnos)</span>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="small fw-bold text-uppercase text-muted" style="font-size: 0.72rem; letter-spacing: 0.04em;">Nómina (${total} alumnos)</span>
+          ${!tieneNovedades && total > 0 ? `
+            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.68rem;">
+              <i class="bi bi-check2-all me-1"></i>Asistencia completa
+            </span>
+          ` : ''}
         </div>
 
-        <div class="d-flex flex-column gap-1" style="max-height: 150px; overflow-y: auto;">
-          ${asistencias.length > 0 ? asistencias.map((a, aIdx) => {
-            const isPresente = a.estado === 'presente' || a.estado === 'P'
-            const isJustificado = a.estado === 'justificado' || a.estado === 'J'
+        ${asistencias.length === 0 ? `
+          <div class="small text-muted py-1" style="font-size:0.75rem;">No hay alumnos registrados en esta sesión.</div>
+        ` : `
+          <div class="d-flex flex-column gap-2">
             
-            if (isPresente) {
-              return `
-                <div class="roster-student-item asistencia-presente py-1 px-2">
-                  <span class="small" style="font-size:0.8rem;"><strong class="text-muted me-1">${aIdx + 1}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}</span>
-                  <span class="badge student-status-badge" style="font-size:0.65rem"><i class="bi bi-check-circle-fill me-1"></i>Presente</span>
-                </div>
-              `
-            }
-            if (isJustificado) {
-              const justifObj = a.justificacion || (c.justificaciones || []).find(j => j.alumno_id === (a.alumno_id || a.alumnoId)) || {}
-              const detalleMotivo = justifObj.motivo && justifObj.descripcion && justifObj.motivo !== justifObj.descripcion
-                ? `${justifObj.motivo} — ${justifObj.descripcion}`
-                : (justifObj.descripcion || justifObj.motivo || a.justificacion_texto || 'Justificación asentada por la cátedra.')
+            <!-- 1. Sección de Novedades (Ausencias y Justificaciones Primero) -->
+            ${tieneNovedades ? `
+              <div class="d-flex flex-column gap-1">
+                ${ausentes.map(a => `
+                  <div class="roster-student-item asistencia-ausente">
+                    <span class="text-body fw-medium" style="font-size:0.85rem;">
+                      <strong class="text-muted me-1">${a.originalIdx}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}
+                    </span>
+                    <span class="badge student-status-badge" style="font-size:0.72rem;">
+                      <i class="bi bi-x-circle-fill me-1"></i>Ausente
+                    </span>
+                  </div>
+                `).join('')}
 
-              return `
-                <div class="roster-student-item asistencia-justificado py-1 px-2">
-                  <span class="small" style="font-size:0.8rem;">
-                    <strong class="text-muted me-1">${aIdx + 1}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}
-                  </span>
-                  <button type="button"
-                          class="badge student-status-badge badge-justificado-clickable border-0 shadow-xs"
-                          data-action="ver-justificacion-modal"
-                          data-student="${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}"
-                          data-clase="${escapeHTML(c.clase_nombre || 'Clase')}"
-                          data-docente="${escapeHTML(c.maestro_nombre || 'Maestro')}"
-                          data-fecha="${escapeHTML(c.fecha)}"
-                          data-motivo="${escapeHTML(detalleMotivo)}"
-                          data-evidencia="${escapeHTML(justifObj.evidencia_url || '')}"
-                          title="Hacé clic para ver el justificativo o causa de inasistencia">
-                    <i class="bi bi-file-earmark-medical-fill"></i>
-                    <span>Justificado</span>
-                    <i class="bi bi-box-arrow-up-right ms-0.5" style="font-size:0.6rem;"></i>
-                  </button>
-                </div>
-              `
-            }
-            return `
-              <div class="roster-student-item asistencia-ausente py-1 px-2">
-                <span class="small" style="font-size:0.8rem;"><strong class="text-muted me-1">${aIdx + 1}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}</span>
-                <span class="badge student-status-badge" style="font-size:0.65rem"><i class="bi bi-x-circle-fill me-1"></i>Ausente</span>
+                ${justificados.map(a => {
+                  const justifObj = a.justificacion || (c.justificaciones || []).find(j => j.alumno_id === (a.alumno_id || a.alumnoId)) || {}
+                  const detalleMotivo = justifObj.motivo && justifObj.descripcion && justifObj.motivo !== justifObj.descripcion
+                    ? `${justifObj.motivo} — ${justifObj.descripcion}`
+                    : (justifObj.descripcion || justifObj.motivo || a.justificacion_texto || 'Justificación asentada por la cátedra.')
+
+                  return `
+                    <div class="roster-student-item asistencia-justificado">
+                      <span class="text-body fw-medium" style="font-size:0.85rem;">
+                        <strong class="text-muted me-1">${a.originalIdx}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}
+                      </span>
+                      <button type="button"
+                              class="badge student-status-badge badge-justificado-clickable border-0"
+                              data-action="ver-justificacion-modal"
+                              data-student="${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}"
+                              data-clase="${escapeHTML(c.clase_nombre || 'Clase')}"
+                              data-docente="${escapeHTML(c.maestro_nombre || 'Maestro')}"
+                              data-fecha="${escapeHTML(c.fecha)}"
+                              data-motivo="${escapeHTML(detalleMotivo)}"
+                              data-evidencia="${escapeHTML(justifObj.evidencia_url || '')}"
+                              title="Hacé clic para ver el justificativo o comprobante médico">
+                        <i class="bi bi-file-earmark-medical-fill"></i>
+                        <span>Justificado</span>
+                        <i class="bi bi-box-arrow-up-right ms-0.5" style="font-size:0.65rem;"></i>
+                      </button>
+                    </div>
+                  `
+                }).join('')}
               </div>
-            `
-          }).join('') : `
-            <div class="small text-muted py-1" style="font-size:0.75rem;">No hay alumnos registrados en esta sesión.</div>
-          `}
-        </div>
+            ` : ''}
+
+            <!-- 2. Sección de Presentes -->
+            ${presentes.length > 0 ? `
+              <details class="roster-presentes-accordion" ${!tieneNovedades ? 'open' : ''}>
+                <summary>
+                  <span class="d-flex align-items-center gap-1.5 text-body fw-semibold" style="font-size:0.78rem;">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Alumnos Presentes (${presentes.length})</span>
+                  </span>
+                  <span class="badge bg-success-subtle text-success" style="font-size:0.68rem;">
+                    ${tieneNovedades ? 'Ver nómina' : 'Mostrar lista'}
+                  </span>
+                </summary>
+                <div class="roster-presentes-content">
+                  ${presentes.map(a => `
+                    <div class="roster-student-item asistencia-presente">
+                      <span class="text-body" style="font-size:0.82rem;">
+                        <strong class="text-muted me-1">${a.originalIdx}.</strong> ${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}
+                      </span>
+                      <span class="badge student-status-badge" style="font-size:0.68rem;">
+                        <i class="bi bi-check-circle-fill me-1"></i>Presente
+                      </span>
+                    </div>
+                  `).join('')}
+                </div>
+              </details>
+            ` : ''}
+
+          </div>
+        `}
       </div>
 
     </div>
@@ -650,17 +703,17 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
   const bodyHtml = `
     <div class="p-1">
       <!-- Ficha Alumno Destacada -->
-      <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-3" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%); border: 1px solid rgba(111, 66, 193, 0.25);">
+      <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-3" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25);">
         <div class="d-flex align-items-center gap-3">
-          <div class="d-flex align-items-center justify-content-center rounded-circle text-white shadow-xs" style="width: 44px; height: 44px; background: linear-gradient(135deg, #7952b3 0%, #6f42c1 100%); font-size: 1.25rem;">
+          <div class="d-flex align-items-center justify-content-center rounded-circle text-white shadow-xs" style="width: 44px; height: 44px; background: #4f46e5; font-size: 1.25rem;">
             <i class="bi bi-person-fill"></i>
           </div>
           <div>
-            <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.68rem; letter-spacing: 0.05em;">Estudiante / Alumno</span>
+            <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.75rem; letter-spacing: 0.04em;">Estudiante / Alumno</span>
             <h5 class="fw-bold mb-0 text-body" style="letter-spacing: -0.01em;">${escapeHTML(student || 'Estudiante')}</h5>
           </div>
         </div>
-        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-pill fw-semibold shadow-2xs" style="font-size: 0.72rem;">
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-pill fw-semibold shadow-2xs" style="font-size: 0.75rem;">
           <i class="bi bi-file-earmark-medical-fill me-1"></i>Inasistencia Justificada
         </span>
       </div>
@@ -669,37 +722,37 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
       <div class="row g-2.5 mb-3">
         <div class="col-12 col-sm-6">
           <div class="p-2.5 rounded-3 bg-body-tertiary border h-100">
-            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.72rem;">
+            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.75rem;">
               <i class="bi bi-easel2 text-primary me-1"></i>Clase
             </span>
-            <strong class="text-body d-block" style="font-size: 0.88rem;">${escapeHTML(clase || 'Clase')}</strong>
+            <strong class="text-body d-block" style="font-size: 0.9rem;">${escapeHTML(clase || 'Clase')}</strong>
           </div>
         </div>
 
         <div class="col-12 col-sm-6">
           <div class="p-2.5 rounded-3 bg-body-tertiary border h-100">
-            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.72rem;">
+            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.75rem;">
               <i class="bi bi-person-badge text-primary me-1"></i>Maestro Titular
             </span>
-            <strong class="text-body d-block" style="font-size: 0.88rem;">${escapeHTML(docente || 'Sin asignar')}</strong>
+            <strong class="text-body d-block" style="font-size: 0.9rem;">${escapeHTML(docente || 'Sin asignar')}</strong>
           </div>
         </div>
 
         <div class="col-12">
           <div class="p-2.5 rounded-3 bg-body-tertiary border">
-            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.72rem;">
+            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.75rem;">
               <i class="bi bi-calendar-event text-primary me-1"></i>Fecha de la Sesión
             </span>
-            <strong class="text-body d-block text-capitalize" style="font-size: 0.88rem;">${escapeHTML(fechaFormateada)}</strong>
+            <strong class="text-body d-block text-capitalize" style="font-size: 0.9rem;">${escapeHTML(fechaFormateada)}</strong>
           </div>
         </div>
       </div>
 
       <!-- Declaración de Causa / Motivo -->
-      <div class="p-3 rounded-3 mb-3" style="background: rgba(111, 66, 193, 0.08); border: 1px solid rgba(111, 66, 193, 0.25); border-left: 4px solid #8e44ad;">
-        <div class="d-flex align-items-center gap-1.5 mb-1.5" style="color: #9d65c9;">
+      <div class="p-3 rounded-3 mb-3" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-left: 4px solid #4f46e5;">
+        <div class="d-flex align-items-center gap-1.5 mb-1.5" style="color: #4338ca;">
           <i class="bi bi-chat-left-quote-fill"></i>
-          <span class="small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Causa / Motivo Declarado</span>
+          <span class="small fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.04em;">Causa / Motivo Declarado</span>
         </div>
         <p class="mb-0 text-body" style="font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap;">${escapeHTML(motivo || 'Justificación registrada en el parte de clase sin notas adicionales.')}</p>
       </div>

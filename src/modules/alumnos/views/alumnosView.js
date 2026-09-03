@@ -32,6 +32,7 @@ import {
   getInitials,
 } from '../utils/alumnosUtils.js'
 import { getInstrumentoIcon } from '../../clases/utils/clasesUtils.js'
+import { agruparAlumnosPorPrograma } from '../domain/agruparAlumnosPorPrograma.js'
 
 // D03: AbortController for SPA event-listener cleanup
 let _abortController = null
@@ -310,8 +311,8 @@ export async function renderAlumnosView(container) {
 
         <!-- Contenedor de Cuadrícula de Alumnos (Hasta 5 por fila responsive) -->
         <div class="w-100">
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0" id="alumnosTBody">
-            ${renderTableRows(state.alumnos)}
+          <div class="alumnos-programa-groups w-100" id="alumnosTBody">
+            ${renderProgramGroups(state.alumnos)}
           </div>
           <div id="emptyContainer">
             ${state.alumnos.length === 0 ? renderEmpty() : ''}
@@ -354,6 +355,14 @@ export async function renderAlumnosView(container) {
                   <i class="bi ${getInstrumentoIcon(a.instrumento)} me-1 text-primary"></i>${escapeHTML(a.instrumento || 'Sin cátedra')}
                 </span>
               </div>
+
+              ${Array.isArray(a.programas) && a.programas.length > 1 ? `
+                <div class="alumno-programa-tags mb-2" aria-label="Programas del alumno">
+                  ${a.programas.map(programa => `
+                    <span class="badge rounded-pill text-bg-light border me-1 mb-1">${escapeHTML(programa.nombre)}</span>
+                  `).join('')}
+                </div>
+              ` : ''}
 
               <!-- Teléfono y Representante -->
               <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
@@ -403,6 +412,23 @@ export async function renderAlumnosView(container) {
         </div>
       `
     }).join('')
+  }
+
+  function renderProgramGroups(alumnos) {
+    return agruparAlumnosPorPrograma(alumnos).map((group, index) => `
+      <section class="alumnos-programa-group alumnos-programa-group--tone-${index % 5}" data-programa-key="${escapeHTML(group.key)}">
+        <header class="alumnos-programa-group__header">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <span class="alumnos-programa-group__marker" aria-hidden="true"><i class="bi bi-music-note-list"></i></span>
+            <h6 class="mb-0 text-truncate">${escapeHTML(group.nombre)}</h6>
+          </div>
+          <span class="badge rounded-pill alumnos-programa-group__count">${group.alumnos.length} ${group.alumnos.length === 1 ? 'alumno' : 'alumnos'}</span>
+        </header>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2.5 w-100 m-0">
+          ${renderTableRows(group.alumnos)}
+        </div>
+      </section>
+    `).join('')
   }
 
   function attachGlobalEvents(container) {
@@ -1186,7 +1212,7 @@ export async function renderAlumnosView(container) {
     if (state.alumnos.length === 0) {
       tbody.innerHTML = ''
     } else {
-      tbody.innerHTML = renderTableRows(state.alumnos)
+      tbody.innerHTML = renderProgramGroups(state.alumnos)
     }
 
     const emptyContainer = currentContainer.querySelector('#emptyContainer')

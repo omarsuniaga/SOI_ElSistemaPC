@@ -248,7 +248,7 @@ export async function obtenerSesionesRango(claseIds, fechaInicio, fechaFin) {
   if (!claseIds || claseIds.length === 0) return [];
 
   const { data, error } = await supabase
-    .from('sesiones')
+    .from('sesiones_clase')
     .select('id, clase_id, fecha, hora_inicio, hora_fin, salon_id')
     .in('clase_id', claseIds)
     .gte('fecha', fechaInicio)
@@ -295,7 +295,7 @@ export async function obtenerSesionesOcupadas(fecha, hora) {
   if (!fecha || !hora) return [];
 
   const { data, error } = await supabase
-    .from('sesiones')
+    .from('sesiones_clase')
     .select('id, salon_id, clase_id, fecha, hora_inicio, hora_fin')
     .eq('fecha', fecha)
     .order('hora_inicio', { ascending: true });
@@ -355,8 +355,8 @@ export async function registrarAusencia(payload) {
       actividades_por_clase: payload.actividades_por_clase,
       clase_emergente: payload.clase_emergente,
       archivo_url: payload.archivo_url,
-      estado: payload.estado || 'pendiente',
-      creado_en: new Date().toISOString()
+      estado: payload.estado || 'pendiente'
+      // created_at is filled by the column default
     }])
     .select()
     .single();
@@ -385,9 +385,8 @@ export async function crearNotificacionAusencia({ ausencia, maestro, approvalUrl
       titulo: 'Nueva Solicitud de Ausencia',
       mensaje,
       deep_link: approvalUrl || '/ausencias/pendientes',
-      estado: 'pendiente',
-      ausencia_id: ausencia.id,
-      creado_en: new Date().toISOString()
+      estado: 'pendiente'
+      // `notificaciones` has no `ausencia_id`; `created_at` uses the column default
     }])
     .select()
     .single();

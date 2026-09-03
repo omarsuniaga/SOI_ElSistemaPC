@@ -146,6 +146,13 @@ describe('ausenciaModal', () => {
     expect(createAbsenceRequest).toHaveBeenCalledWith(expect.objectContaining({
       maestro: { id: 'm1', nombre_completo: 'Ada Lovelace' },
       notifyDirector: true,
+      formState: expect.objectContaining({
+        fechaInicio: '2026-05-20',
+        fechaFin: '2026-05-20',
+        motivo: 'Motivo institucional válido',
+        tipoAusencia: 'personal',
+        urgencia: 'media',
+      }),
     }));
     expect(document.body.textContent).toContain('Solicitud enviada');
 

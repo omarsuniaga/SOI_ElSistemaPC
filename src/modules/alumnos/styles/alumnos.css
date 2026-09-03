@@ -531,5 +531,86 @@
   }
 }
 
+/* Agrupación visual por programa: tintes transparentes, nunca color como único indicador. */
+.alumnos-programa-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.alumnos-programa-group {
+  --program-accent: #0d6efd;
+  --program-tint: rgba(13, 110, 253, 0.07);
+  background: var(--program-tint);
+  border: 1px solid color-mix(in srgb, var(--program-accent) 22%, transparent);
+  border-left: 4px solid var(--program-accent);
+  border-radius: 1rem;
+  padding: 0.8rem;
+}
+
+.alumnos-programa-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2rem;
+  margin: 0 0 0.5rem;
+  color: var(--bs-body-color);
+}
+
+.alumnos-programa-group__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+  border-radius: 0.6rem;
+  color: var(--program-accent);
+  background: color-mix(in srgb, var(--program-accent) 15%, transparent);
+}
+
+.alumnos-programa-group__count {
+  color: var(--program-accent);
+  background: color-mix(in srgb, var(--program-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--program-accent) 24%, transparent);
+  white-space: nowrap;
+}
+
+.alumnos-programa-group--tone-1 {
+  --program-accent: #198754;
+  --program-tint: rgba(25, 135, 84, 0.07);
+}
+
+.alumnos-programa-group--tone-2 {
+  --program-accent: #6f42c1;
+  --program-tint: rgba(111, 66, 193, 0.07);
+}
+
+.alumnos-programa-group--tone-3 {
+  --program-accent: #fd7e14;
+  --program-tint: rgba(253, 126, 20, 0.08);
+}
+
+.alumnos-programa-group--tone-4 {
+  --program-accent: #d63384;
+  --program-tint: rgba(214, 51, 132, 0.07);
+}
+
+.alumno-programa-tags .badge {
+  color: var(--bs-secondary-color);
+  background: color-mix(in srgb, var(--program-accent, var(--bs-primary)) 8%, transparent) !important;
+}
+
+@media (max-width: 575.98px) {
+  .alumnos-programa-group {
+    padding: 0.65rem;
+  }
+
+  .alumnos-programa-group__header {
+    align-items: flex-start;
+  }
+}
+
 
 

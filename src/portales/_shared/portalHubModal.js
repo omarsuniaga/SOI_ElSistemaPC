@@ -110,7 +110,7 @@ export async function abrirModalConmutadorPortales() {
           const isCurrent = currentPath.includes(cleanPath)
           return `
             <div class="col-12 col-md-6">
-              <a href="${escapeHTML(p.ruta || '#')}" class="card border h-100 p-3 text-decoration-none rounded-4 transition-all ${isCurrent ? 'border-primary bg-primary-subtle shadow-sm' : 'border-light-subtle bg-body shadow-none hover-lift'}" style="transition: all 0.2s ease;">
+              <a href="${escapeHTML(p.ruta || '#')}" data-bs-dismiss="modal" class="card border h-100 p-3 text-decoration-none rounded-4 transition-all portal-option-link ${isCurrent ? 'border-primary bg-primary-subtle shadow-sm' : 'border-light-subtle bg-body shadow-none hover-lift'}" style="transition: all 0.2s ease;">
                 <div class="d-flex align-items-start gap-3">
                   <div class="rounded-3 p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="background-color: ${meta.bgLight}; color: ${meta.color}; width: 48px; height: 48px; font-size: 1.35rem;">
                     <i class="bi ${p.icono || 'bi-door-open'}"></i>
@@ -135,6 +135,14 @@ export async function abrirModalConmutadorPortales() {
             </div>
           `
         }).join('')
+
+        // Cerrar modal al hacer clic en cualquier opción
+        grid.querySelectorAll('.portal-option-link').forEach((link) => {
+          link.addEventListener('click', () => {
+            const modal = window.bootstrap?.Modal?.getInstance(modalEl)
+            if (modal) modal.hide()
+          })
+        })
       }
     }
   } catch (err) {

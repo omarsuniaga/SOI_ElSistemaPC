@@ -10,7 +10,8 @@ vi.mock('../../../../shared/components/AppToast.js', () => ({
 
 const mockSupabaseData = { data: [] }
 const mockOrder = vi.fn().mockImplementation(() => Promise.resolve(mockSupabaseData))
-const mockSelect = vi.fn().mockImplementation(() => ({ order: mockOrder }))
+const mockEq = vi.fn().mockImplementation(() => ({ eq: mockEq, order: mockOrder }))
+const mockSelect = vi.fn().mockImplementation(() => ({ eq: mockEq, order: mockOrder }))
 const mockFrom = vi.fn().mockImplementation(() => ({ select: mockSelect }))
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({
@@ -174,6 +175,19 @@ describe('clasesView Search & Focus preservation', () => {
     expect(cards[1].textContent).toContain('Violín Inicial')
     expect(cards[1].classList.contains('clase-card-v2--inactiva')).toBe(true)
     expect(cards[1].textContent).toContain('Inactiva')
+  })
+
+  it('only loads active students into the padrón (inactive students must not appear as "sin clase")', async () => {
+    mockEq.mockClear()
+    mockFrom.mockClear()
+
+    await renderClasesView(container, { resetFilters: true })
+
+    // The alumnos query must filter by activo = true so that inactive students
+    // never surface in "Alumnos Sin Clase Asignada".
+    const alumnosSelected = mockFrom.mock.calls.some(([tabla]) => tabla === 'alumnos')
+    expect(alumnosSelected).toBe(true)
+    expect(mockEq).toHaveBeenCalledWith('activo', true)
   })
 })
 

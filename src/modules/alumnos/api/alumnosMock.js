@@ -11,6 +11,36 @@ const inscripciones = [
   { alumno_id: '4', clase_id: 'clase_004', clase_nombre: 'Flauta Travesera' },
 ]
 
+// Catálogo y membresías deterministas para demostrar la clasificación en Modo Demo.
+const programas = [
+  { id: 'prog_001', nombre: 'Programa de Cuerdas' },
+  { id: 'prog_002', nombre: 'Programa de Vientos' },
+  { id: 'prog_003', nombre: 'Programa Coral' },
+]
+
+const alumnosProgramas = alumnosMockData.flatMap((alumno, index) => {
+  if (index % 11 === 0) return []
+  const first = programas[index % programas.length]
+  const memberships = [{ alumno_id: alumno.id, programa_id: first.id, activo: true }]
+  if (index % 7 === 0) {
+    const second = programas[(index + 1) % programas.length]
+    memberships.push({ alumno_id: alumno.id, programa_id: second.id, activo: true })
+  }
+  return memberships
+})
+
+function getProgramasForAlumno(alumnoId) {
+  const programMap = new Map(programas.map(programa => [programa.id, programa]))
+  const uniquePrograms = new Map()
+
+  for (const membership of alumnosProgramas.filter(item => item.alumno_id === alumnoId && item.activo !== false)) {
+    const programa = programMap.get(membership.programa_id)
+    if (programa && !uniquePrograms.has(programa.id)) uniquePrograms.set(programa.id, programa)
+  }
+
+  return [...uniquePrograms.values()]
+}
+
 function normalizeAlumno(a) {
   if (!a) return null
   const studentClasses = (inscripciones || [])
@@ -24,6 +54,7 @@ function normalizeAlumno(a) {
     instrumento: a.instrumento_principal ?? '',
     is_active: a.activo ?? true,
     clases: studentClasses,
+    programas: getProgramasForAlumno(a.id),
     contacto_emergencia_nombre: a.contacto_emergencia_nombre ?? '',
     contacto_emergencia_telefono: a.contacto_emergencia_telefono ?? '',
     contacto_emergencia_parentesco: a.contacto_emergencia_parentesco ?? '',

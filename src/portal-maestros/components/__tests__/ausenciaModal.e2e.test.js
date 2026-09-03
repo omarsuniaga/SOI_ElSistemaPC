@@ -320,10 +320,12 @@ describe('AusenciaModal E2E — full flow', () => {
     expect(createAbsenceRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         maestro: { id: 'teacher-1', nombre_completo: 'María García' },
-        fechaInicio: '2026-06-01',
-        fechaFin: '2026-06-01',
-        motivo: 'Motivo válido de prueba',
         notifyDirector: true,
+        formState: expect.objectContaining({
+          fechaInicio: '2026-06-01',
+          fechaFin: '2026-06-01',
+          motivo: 'Motivo válido de prueba',
+        }),
       }),
     );
 
@@ -332,7 +334,7 @@ describe('AusenciaModal E2E — full flow', () => {
     expect(ausenciaModal.state.submitted).toBe(true);
   });
 
-  it('passes coverageType and claseEmergente to service on submit', async () => {
+  it('maps reschedule coverage into formState.claseEmergente on submit', async () => {
     createAbsenceRequest.mockResolvedValue({ whatsappText: '' });
     findAvailableSalons.mockResolvedValue([{ id: 's99', nombre: 'Salón Z', capacidad: 20 }]);
 
@@ -355,11 +357,13 @@ describe('AusenciaModal E2E — full flow', () => {
 
     expect(createAbsenceRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        coverageType: 'reschedule',
-        claseEmergente: expect.objectContaining({
-          fecha: '2026-06-05',
-          hora: '14:00',
-          salonIdNuevo: 's99',
+        formState: expect.objectContaining({
+          claseEmergente: expect.objectContaining({
+            activo: true,
+            fechaNueva: '2026-06-05',
+            horaNueva: '14:00',
+            salonIdNuevo: 's99',
+          }),
         }),
       }),
     );
@@ -429,7 +433,9 @@ describe('AusenciaModal E2E — full flow', () => {
 
     // Service was called and no error was thrown (success view replaces the form)
     expect(createAbsenceRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ tipoAusencia: 'enfermedad' }),
+      expect.objectContaining({
+        formState: expect.objectContaining({ tipoAusencia: 'enfermedad' }),
+      }),
     );
     expect(document.body.textContent).toContain('Solicitud enviada');
   });

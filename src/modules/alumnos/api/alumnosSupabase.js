@@ -1,5 +1,7 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 
+const ALUMNO_PROGRAMS_SELECT = '*, alumnos_programas(activo,programa:programas(id,nombre))'
+
 export const PARENTESCOS = [
   { value: 'madre', label: 'Madre' },
   { value: 'padre', label: 'Padre' },
@@ -21,6 +23,12 @@ function normalizeAlumno(a) {
     .map(ac => ac.clase?.nombre ?? '')
     .filter(Boolean)
   const clasesStr = clasesList.length > 0 ? clasesList.join(', ') : (a.clases || '')
+  const programas = []
+  for (const membership of (a.alumnos_programas || [])) {
+    const programa = membership?.programa
+    if (membership?.activo === false || !programa?.id || programas.some(item => item.id === programa.id)) continue
+    programas.push({ id: programa.id, nombre: programa.nombre || `Programa ${programa.id}` })
+  }
 
   return {
     ...a,
@@ -32,6 +40,7 @@ function normalizeAlumno(a) {
     is_active: a.activo ?? true,
     cedula: a.representante_cedula ?? '',
     clases: clasesStr || 'Sin clases',
+    programas,
     contacto_emergencia_nombre: a.contacto_emergencia_nombre ?? '',
     contacto_emergencia_telefono: a.contacto_emergencia_telefono ?? '',
     contacto_emergencia_parentesco: a.contacto_emergencia_parentesco ?? '',
@@ -90,7 +99,9 @@ function normalizeAlumnoWriteError(error) {
 
 export async function obtenerAlumnos({ page = 0, pageSize = 1000, soloActivos = true } = {}) {
   const from = page * pageSize, to = from + pageSize - 1
-  let q = supabase.from('alumnos').select('*', { count: 'exact' })
+  let q = supabase
+    .from('alumnos')
+    .select(ALUMNO_PROGRAMS_SELECT, { count: 'exact' })
   if (soloActivos) q = q.eq('activo', true)
   const { data, error, count } = await q.order('nombre_completo', { ascending: true }).range(from, to)
   if (error) {
@@ -105,7 +116,7 @@ export async function obtenerAlumnos({ page = 0, pageSize = 1000, soloActivos = 
 export async function obtenerAlumno(id) {
   const { data, error } = await supabase
     .from('alumnos')
-    .select('*')
+    .select('*, alumnos_programas(activo,programa:programas(id,nombre))')
     .eq('id', id)
     .single()
 
@@ -480,10 +491,10 @@ export async function obtenerAlumnosFiltradosYOrdenados({
   if (id_clase) {
     // Para filtrar por clase, hacemos un inner join con la tabla alumnos_clases (renombrada para evitar conflictos)
     query = query
-      .select('*, enrolled_class:alumnos_clases!inner(clase_id), alumnos_clases(clase:clases(nombre))')
+      .select('*, enrolled_class:alumnos_clases!inner(clase_id), alumnos_clases(clase:clases(nombre)), alumnos_programas(activo,programa:programas(id,nombre))')
       .eq('enrolled_class.clase_id', id_clase)
   } else {
-    query = query.select('*, alumnos_clases(clase:clases(nombre))')
+    query = query.select('*, alumnos_clases(clase:clases(nombre)), alumnos_programas(activo,programa:programas(id,nombre))')
   }
 
   // Filtro de alumnos activos

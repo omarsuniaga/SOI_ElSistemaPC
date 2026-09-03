@@ -49,6 +49,7 @@ describe('ausenciasApi - new functions', () => {
       const result = await ausenciasApi.obtenerSesionesRango(['clase-1'], '2026-05-21', '2026-05-23')
 
       expect(result).toEqual(mockSesiones)
+      expect(supabaseModule.supabase.from).toHaveBeenCalledWith('sesiones_clase')
     })
 
     it('should return empty array if no claseIds', async () => {
@@ -92,6 +93,28 @@ describe('ausenciasApi - new functions', () => {
       const result = await ausenciasApi.registrarAusencia(payload)
       expect(result).toEqual(mockAusencia)
     })
+
+    it('does not insert columns absent from ausencias_maestros', async () => {
+      const mockChain = {
+        insert: vi.fn(function () { return this }),
+        select: vi.fn(function () { return this }),
+        single: vi.fn().mockResolvedValue({ data: { id: 'a1' }, error: null })
+      }
+      supabaseModule.supabase.from.mockReturnValue(mockChain)
+
+      await ausenciasApi.registrarAusencia({
+        maestro_id: 'm1',
+        tipo_ausencia: 'personal',
+        fecha_inicio: '2026-06-01',
+        fecha_fin: '2026-06-01',
+        motivo: 'x',
+        estado: 'pendiente'
+      })
+
+      const inserted = mockChain.insert.mock.calls[0][0][0]
+      // `creado_en` does not exist — the column is `created_at` (DB default).
+      expect(inserted).not.toHaveProperty('creado_en')
+    })
   })
 
   describe('crearNotificacionAusencia', () => {
@@ -126,6 +149,25 @@ describe('ausenciasApi - new functions', () => {
       })
 
       expect(result).toEqual(mockNotification)
+    })
+
+    it('does not insert columns absent from notificaciones', async () => {
+      const mockChain = {
+        insert: vi.fn(function () { return this }),
+        select: vi.fn(function () { return this }),
+        single: vi.fn().mockResolvedValue({ data: { id: 'n1' }, error: null })
+      }
+      supabaseModule.supabase.from.mockReturnValue(mockChain)
+
+      await ausenciasApi.crearNotificacionAusencia({
+        ausencia: { id: 'a1', fecha_inicio: '2026-06-01', fecha_fin: '2026-06-01', tipo_ausencia: 'personal' },
+        maestro: { nombre_completo: 'Juan' },
+        approvalUrl: '/ausencias/pendientes'
+      })
+
+      const inserted = mockChain.insert.mock.calls[0][0][0]
+      expect(inserted).not.toHaveProperty('ausencia_id') // no such column on notificaciones
+      expect(inserted).not.toHaveProperty('creado_en')   // column is created_at (DB default)
     })
 
     it('should return null if ausencia is missing', async () => {

@@ -26,11 +26,25 @@ function formatDateRange(ausencia) {
 }
 
 function getTeacherName(ausencia) {
-  return ausencia.maestros?.nombre_completo || ausencia.maestro_nombre || 'Maestro no especificado'
+  return (
+    ausencia.maestros?.nombre_completo ||
+    ausencia.maestro_nombre ||
+    ausencia.nombre_completo ||
+    ausencia.docente_nombre ||
+    'Docente de la Institución'
+  )
 }
 
 function getTeacherEmail(ausencia) {
-  return ausencia.maestros?.correo || ''
+  return (
+    ausencia.maestros?.correo ||
+    ausencia.maestros?.email ||
+    ausencia.maestro_email ||
+    ausencia.docente_email ||
+    ausencia.correo ||
+    ausencia.email ||
+    ''
+  )
 }
 
 const TIPO_CONFIG = {
@@ -64,15 +78,17 @@ function injectCardStyles() {
   style.id = 'ausencia-aprobacion-card-styles'
   style.textContent = `
     .ausencia-approval-card {
-      background: var(--bs-card-bg, #fff);
-      border: 1px solid var(--bs-border-color, rgba(0,0,0,0.1));
+      background: var(--surface-color, var(--bs-card-bg, #ffffff));
+      border: 1px solid var(--border-color, var(--bs-border-color, #e2e8f0));
       border-radius: 1rem;
       overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-      transition: box-shadow 0.2s;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+      color: var(--bs-body-color, #334155);
     }
     .ausencia-approval-card:hover {
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
+      border-color: var(--bs-primary, #2563eb);
     }
 
     .aac-accent-bar {
@@ -94,11 +110,12 @@ function injectCardStyles() {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      color: #fff;
+      color: #ffffff;
       flex-shrink: 0;
       background: var(--aac-tipo-color, #6b7280);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
 
     .aac-header-info {
@@ -113,11 +130,12 @@ function injectCardStyles() {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: var(--bs-heading-color, #0f172a);
     }
 
     .aac-teacher-email {
       font-size: 0.75rem;
-      opacity: 0.55;
+      color: var(--bs-secondary-color, #64748b);
       margin: 0;
     }
 
@@ -138,7 +156,8 @@ function injectCardStyles() {
       font-size: 0.72rem;
       font-weight: 600;
       color: var(--aac-tipo-color, #6b7280);
-      background: color-mix(in srgb, var(--aac-tipo-color, #6b7280) 12%, transparent);
+      background: color-mix(in srgb, var(--aac-tipo-color, #6b7280) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--aac-tipo-color, #6b7280) 25%, transparent);
     }
 
     .aac-urg-chip {
@@ -149,6 +168,7 @@ function injectCardStyles() {
       border-radius: 999px;
       font-size: 0.72rem;
       font-weight: 600;
+      border: 1px solid transparent;
     }
 
     .aac-body {
@@ -162,11 +182,11 @@ function injectCardStyles() {
       font-size: 0.82rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
-      color: var(--bs-body-color);
+      color: var(--bs-body-color, #1e293b);
     }
 
     .aac-date-row i {
-      opacity: 0.55;
+      opacity: 0.65;
     }
 
     .aac-coverage {
@@ -174,17 +194,18 @@ function injectCardStyles() {
       align-items: center;
       gap: 0.4rem;
       font-size: 0.78rem;
-      opacity: 0.7;
+      color: var(--bs-secondary-color, #64748b);
       margin-bottom: 0.5rem;
     }
 
     .aac-motivo {
       font-size: 0.82rem;
       line-height: 1.5;
-      opacity: 0.8;
       padding: 0.6rem 0.75rem;
       border-radius: 0.5rem;
-      background: var(--bs-tertiary-bg, rgba(0,0,0,0.04));
+      background: var(--bs-tertiary-bg, #f8fafc);
+      border: 1px solid var(--border-color, #e2e8f0);
+      color: var(--bs-body-color, #334155);
       margin-bottom: 0.75rem;
     }
 
@@ -193,7 +214,7 @@ function injectCardStyles() {
       gap: 0.5rem;
       flex-wrap: wrap;
       font-size: 0.73rem;
-      opacity: 0.55;
+      color: var(--bs-secondary-color, #64748b);
       margin-bottom: 0.25rem;
     }
 
@@ -201,29 +222,82 @@ function injectCardStyles() {
       padding: 0 1rem 0.75rem;
     }
 
-    .aac-notes-label {
-      display: block;
+    .aac-doc-wrap {
+      margin-bottom: 0.6rem;
+    }
+
+    .aac-btn-doc {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      background: rgba(37, 99, 235, 0.08);
+      color: #2563eb;
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      border-radius: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .aac-btn-doc:hover {
+      background: rgba(37, 99, 235, 0.16);
+      color: #1d4ed8;
+      border-color: #2563eb;
+    }
+
+    .aac-notes-details {
+      border: 1px dashed var(--border-color, #cbd5e1);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.65rem;
+      background: var(--bs-tertiary-bg, #f8fafc);
+    }
+
+    .aac-notes-summary {
+      cursor: pointer;
       font-size: 0.75rem;
       font-weight: 600;
-      opacity: 0.65;
-      margin-bottom: 0.35rem;
+      color: var(--bs-secondary-color, #64748b);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      user-select: none;
+      list-style: none;
+    }
+    .aac-notes-summary::-webkit-details-marker {
+      display: none;
+    }
+    .aac-notes-summary:hover {
+      color: var(--bs-primary, #2563eb);
+    }
+
+    .aac-notes-body {
+      margin-top: 0.4rem;
+    }
+
+    .aac-notes-label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--bs-secondary-color, #64748b);
+      margin-bottom: 0.25rem;
     }
 
     .aac-notes-input {
       width: 100%;
-      border: 1px solid var(--bs-border-color, rgba(0,0,0,0.15));
-      border-radius: 0.5rem;
-      padding: 0.45rem 0.65rem;
-      font-size: 0.82rem;
-      background: var(--bs-body-bg);
-      color: var(--bs-body-color);
+      border: 1px solid var(--border-color, #cbd5e1);
+      border-radius: 0.4rem;
+      padding: 0.45rem 0.6rem;
+      font-size: 0.8rem;
+      background: #ffffff;
+      color: var(--bs-body-color, #0f172a);
       resize: vertical;
-      min-height: 3rem;
+      min-height: 2.75rem;
       transition: border-color 0.15s;
     }
     .aac-notes-input:focus {
       outline: none;
-      border-color: var(--aac-tipo-color, #3b82f6);
+      border-color: var(--bs-primary, #2563eb);
     }
 
     .aac-actions {
@@ -240,36 +314,154 @@ function injectCardStyles() {
       gap: 0.4rem;
       padding: 0.55rem;
       border-radius: 0.6rem;
-      border: none;
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: all 0.15s ease;
     }
     .aac-btn:active { transform: scale(0.97); }
     .aac-btn:disabled { opacity: 0.45; pointer-events: none; }
 
     .aac-btn-approve {
-      background: rgba(34,197,94,0.15);
+      background: rgba(34, 197, 94, 0.12);
       color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.25);
     }
-    .aac-btn-approve:hover { background: rgba(34,197,94,0.25); }
+    .aac-btn-approve:hover {
+      background: rgba(34, 197, 94, 0.22);
+      color: #15803d;
+      border-color: #22c55e;
+    }
 
     .aac-btn-reject {
-      background: rgba(239,68,68,0.12);
+      background: rgba(239, 68, 68, 0.1);
       color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.25);
     }
-    .aac-btn-reject:hover { background: rgba(239,68,68,0.22); }
+    .aac-btn-reject:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #b91c1c;
+      border-color: #ef4444;
+    }
 
-    /* Dark mode compatibility */
+    /* ══════════════════════════════════════════════════════════════════════
+       DARK MODE TOKENS & OVERRIDES (data-bs-theme="dark")
+       ══════════════════════════════════════════════════════════════════════ */
+
     [data-bs-theme="dark"] .ausencia-approval-card,
     [data-portal-theme="dark"] .ausencia-approval-card {
-      border-color: rgba(255,255,255,0.1);
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      color: #cbd5e1;
+    }
+    [data-bs-theme="dark"] .ausencia-approval-card:hover,
+    [data-portal-theme="dark"] .ausencia-approval-card:hover {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-bs-theme="dark"] .aac-teacher-name,
+    [data-portal-theme="dark"] .aac-teacher-name {
+      color: #f8fafc;
+    }
+
+    [data-bs-theme="dark"] .aac-teacher-email,
+    [data-portal-theme="dark"] .aac-teacher-email {
+      color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] .aac-date-row,
+    [data-portal-theme="dark"] .aac-date-row {
+      color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] .aac-coverage,
+    [data-portal-theme="dark"] .aac-coverage {
+      color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] .aac-meta,
+    [data-portal-theme="dark"] .aac-meta {
+      color: #94a3b8;
     }
 
     [data-bs-theme="dark"] .aac-motivo,
     [data-portal-theme="dark"] .aac-motivo {
-      background: rgba(255,255,255,0.05);
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] .aac-btn-doc,
+    [data-portal-theme="dark"] .aac-btn-doc {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.35);
+    }
+    [data-bs-theme="dark"] .aac-btn-doc:hover,
+    [data-portal-theme="dark"] .aac-btn-doc:hover {
+      background: rgba(59, 130, 246, 0.28);
+      color: #bfdbfe;
+      border-color: #60a5fa;
+    }
+
+    [data-bs-theme="dark"] .aac-notes-details,
+    [data-portal-theme="dark"] .aac-notes-details {
+      background: #0f172a;
+      border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .aac-notes-summary,
+    [data-portal-theme="dark"] .aac-notes-summary {
+      color: #94a3b8;
+    }
+    [data-bs-theme="dark"] .aac-notes-summary:hover,
+    [data-portal-theme="dark"] .aac-notes-summary:hover {
+      color: #60a5fa;
+    }
+
+    [data-bs-theme="dark"] .aac-notes-label,
+    [data-portal-theme="dark"] .aac-notes-label {
+      color: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] .aac-notes-input,
+    [data-portal-theme="dark"] .aac-notes-input {
+      background: #1e293b;
+      border-color: #334155;
+      color: #f8fafc;
+    }
+    [data-bs-theme="dark"] .aac-notes-input:focus,
+    [data-portal-theme="dark"] .aac-notes-input:focus {
+      background: #1e293b;
+      border-color: #60a5fa;
+    }
+
+    [data-bs-theme="dark"] .aac-btn-approve,
+    [data-portal-theme="dark"] .aac-btn-approve {
+      background: rgba(34, 197, 94, 0.18);
+      color: #4ade80;
+      border-color: rgba(74, 222, 128, 0.35);
+    }
+    [data-bs-theme="dark"] .aac-btn-approve:hover,
+    [data-portal-theme="dark"] .aac-btn-approve:hover {
+      background: rgba(34, 197, 94, 0.28);
+      color: #86efac;
+      border-color: #4ade80;
+    }
+
+    [data-bs-theme="dark"] .aac-btn-reject,
+    [data-portal-theme="dark"] .aac-btn-reject {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.35);
+    }
+    [data-bs-theme="dark"] .aac-btn-reject:hover,
+    [data-portal-theme="dark"] .aac-btn-reject:hover {
+      background: rgba(239, 68, 68, 0.28);
+      color: #fca5a5;
+      border-color: #f87171;
     }
   `
   document.head.appendChild(style)
@@ -315,32 +507,52 @@ export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, o
     <div class="aac-body">
       <div class="aac-date-row">
         <i class="bi bi-calendar-range"></i>
-        ${escHTML(formatDateRange(ausencia))}
+        <span>${escHTML(formatDateRange(ausencia))}</span>
+        ${ausencia.duracion_tipo ? `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-auto" style="font-size:0.68rem;">${escHTML(ausencia.duracion_tipo)}</span>` : ''}
       </div>
       <div class="aac-coverage">${getCoverageSummary(ausencia)}</div>
-      ${affectedCount > 0 ? `<div class="aac-meta"><span><i class="bi bi-journal-text"></i> ${affectedCount} clase${affectedCount > 1 ? 's' : ''} afectada${affectedCount > 1 ? 's' : ''}</span></div>` : ''}
+      ${affectedCount > 0 ? `<div class="aac-meta"><span class="text-danger fw-semibold"><i class="bi bi-journal-x"></i> ${affectedCount} clase${affectedCount > 1 ? 's' : ''} afectada${affectedCount > 1 ? 's' : ''}</span></div>` : ''}
       ${ausencia.motivo ? `<div class="aac-motivo">${escHTML(ausencia.motivo)}</div>` : ''}
+      
+      ${ausencia.archivo_url ? `
+        <div class="aac-doc-wrap">
+          <a href="${escHTML(ausencia.archivo_url)}" target="_blank" rel="noopener" class="aac-btn-doc" title="Ver comprobante médico o documento oficial">
+            <i class="bi bi-paperclip"></i>
+            <span>Ver Comprobante / Certificado</span>
+            <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;"></i>
+          </a>
+        </div>
+      ` : ''}
+
       <div class="aac-meta">
-        ${submittedAt ? `<span><i class="bi bi-clock-history"></i> Enviada el ${submittedAt}</span>` : ''}
+        ${submittedAt ? `<span><i class="bi bi-clock-history"></i> Solicitada el ${submittedAt}</span>` : ''}
       </div>
     </div>
 
     <div class="aac-notes-wrap">
-      <label class="aac-notes-label" for="notes-${escHTML(ausencia.id)}">Nota de decisión (opcional)</label>
-      <textarea
-        class="aac-notes-input"
-        id="notes-${escHTML(ausencia.id)}"
-        data-decision-notes
-        rows="2"
-        placeholder="Ej: Aprobada según reglamento art. 5..."
-      ></textarea>
+      <details class="aac-notes-details">
+        <summary class="aac-notes-summary">
+          <i class="bi bi-pencil-square"></i>
+          <span>Agregar nota de decisión (opcional)</span>
+        </summary>
+        <div class="aac-notes-body">
+          <label class="aac-notes-label" for="notes-${escHTML(ausencia.id)}">Nota interna de resolución:</label>
+          <textarea
+            class="aac-notes-input"
+            id="notes-${escHTML(ausencia.id)}"
+            data-decision-notes
+            rows="2"
+            placeholder="Ej: Aprobada con suplente coordinado..."
+          ></textarea>
+        </div>
+      </details>
     </div>
 
     <div class="aac-actions">
-      <button type="button" class="aac-btn aac-btn-approve" data-action="approve">
+      <button type="button" class="aac-btn aac-btn-approve" data-action="approve" title="Aprobar solicitud de ausencia">
         <i class="bi bi-check-circle-fill"></i> Aprobar
       </button>
-      <button type="button" class="aac-btn aac-btn-reject" data-action="reject">
+      <button type="button" class="aac-btn aac-btn-reject" data-action="reject" title="Rechazar solicitud de ausencia">
         <i class="bi bi-x-circle-fill"></i> Rechazar
       </button>
     </div>
@@ -351,18 +563,52 @@ export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, o
   const approveBtn = card.querySelector('[data-action="approve"]')
   const rejectBtn  = card.querySelector('[data-action="reject"]')
 
+  const _cerrarCard = () => {
+    card.style.transition = 'all 0.32s cubic-bezier(0.16, 1, 0.3, 1)'
+    card.style.transform = 'scale(0.96) translateY(-8px)'
+    card.style.opacity = '0'
+    card.style.maxHeight = `${card.offsetHeight}px`
+    requestAnimationFrame(() => {
+      card.style.maxHeight = '0px'
+      card.style.marginTop = '0px'
+      card.style.marginBottom = '0px'
+      card.style.paddingTop = '0px'
+      card.style.paddingBottom = '0px'
+      card.style.overflow = 'hidden'
+    })
+    setTimeout(() => {
+      card.remove()
+    }, 330)
+  }
+
   approveBtn.addEventListener('click', async () => {
     approveBtn.disabled = true
     rejectBtn.disabled  = true
+    const origHTML = approveBtn.innerHTML
     approveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aprobando...'
-    await onApprove(ausencia.id, getNotes())
+    try {
+      await onApprove(ausencia.id, getNotes())
+      _cerrarCard()
+    } catch (err) {
+      approveBtn.disabled = false
+      rejectBtn.disabled  = false
+      approveBtn.innerHTML = origHTML
+    }
   })
 
   rejectBtn.addEventListener('click', async () => {
     approveBtn.disabled = true
     rejectBtn.disabled  = true
+    const origHTML = rejectBtn.innerHTML
     rejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Rechazando...'
-    await onReject(ausencia.id, getNotes())
+    try {
+      await onReject(ausencia.id, getNotes())
+      _cerrarCard()
+    } catch (err) {
+      approveBtn.disabled = false
+      rejectBtn.disabled  = false
+      rejectBtn.innerHTML = origHTML
+    }
   })
 
   return card

@@ -637,15 +637,8 @@ class AusenciaModal {
     try {
       const result = await createAbsenceRequest({
         maestro: this.maestro,
-        fechaInicio: this.state.fechaInicio,
-        fechaFin: this.state.fechaFin,
-        tipoAusencia: this.state.tipoAusencia,
-        urgencia: this.state.urgencia,
-        motivo: this.state.motivo,
+        formState: this._buildFormState(),
         notifyDirector: this.state.notifyDirector,
-        clasesAfectadas: this.state.clasesAfectadas,
-        coverageType: this.state.coverageType,
-        claseEmergente: this.state.claseEmergente,
       });
 
       const whatsappText = result?.whatsappText || '';
@@ -662,10 +655,41 @@ class AusenciaModal {
       AppModal.resetSaveBtn('Cerrar');
     } catch (error) {
       console.error('[AusenciaModal] Error submitting form:', error);
-      AppToast.error('Error al enviar la solicitud');
+      if (error?.validationErrors && Object.keys(error.validationErrors).length > 0) {
+        const errDiv = document.getElementById('ausencia-errors');
+        if (errDiv) errDiv.textContent = Object.values(error.validationErrors).join('; ');
+        AppToast.error('Revisá los campos marcados');
+      } else {
+        AppToast.error('Error al enviar la solicitud');
+      }
     }
 
     return false;
+  }
+
+  /**
+   * Maps the modal's internal state into the `formState` shape expected by
+   * `createAbsenceRequest` / `validateAbsenceRequest` / `buildAbsencePayload`.
+   */
+  _buildFormState() {
+    const isReschedule = this.state.coverageType === 'reschedule';
+    return {
+      fechaInicio: this.state.fechaInicio,
+      fechaFin: this.state.fechaFin,
+      tipoAusencia: this.state.tipoAusencia,
+      urgencia: this.state.urgencia,
+      motivo: this.state.motivo,
+      archivo: this.state.archivo?.file ? this.state.archivo : null,
+      clasesAfectadas: this.state.clasesAfectadas,
+      claseEmergente: isReschedule
+        ? {
+            activo: true,
+            fechaNueva: this.state.claseEmergente.fecha,
+            horaNueva: this.state.claseEmergente.hora,
+            salonIdNuevo: this.state.claseEmergente.salonIdNuevo,
+          }
+        : { activo: false },
+    };
   }
 
   _attachSuccessEvents(container, whatsappText) {

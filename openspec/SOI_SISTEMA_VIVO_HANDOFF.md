@@ -1,5 +1,44 @@
 # SOI Sistema Vivo — Handoff para agente continuador
-> Última actualización: 2026-08-18 | Autor: Claude Sonnet 4.6
+> Última actualización: 2026-09-03 | Autor: Claude Sonnet 4.6
+
+---
+
+## Trabajo reciente en el portal (UI/UX) — 2026-09-03
+
+Rediseño y consolidación de varios módulos del portal ADM/maestros. Rama:
+`feat/planificacion-clases-rediseño`. Build verde, suite en verde salvo 2 tests
+pre-existentes con fecha hardcodeada (`reporteSemestralView.test.js`, agosto).
+
+- **Alumnos** (`src/modules/alumnos/`): la grilla ahora se agrupa por programa vía
+  `domain/agruparAlumnosPorPrograma.js` (grupos "Sin programa asignado" y
+  "Más de un programa" al final; resto alfabético). Cada card muestra tags de
+  programa cuando el alumno tiene más de uno. Estilos nuevos `alumnos-programa-*`.
+- **Clases** (`src/modules/clases/views/clasesView.js`): "alumnos sin clase" ahora
+  se calcula solo sobre el padrón **activo**. Helpers exportados y testeables:
+  `filtrarPadronActivo`, `construirSetInscritos`, `calcularAlumnosSinClase`. La
+  consulta a `alumnos` agrega `.eq('activo', true)`.
+- **Asistencias** (`src/modules/asistencias/`): affordance del estado
+  "justificado" y modal de formato con `AppModal`; fix de TDZ en reporte view.
+- **Portal-maestros / ausenciaModal** (`src/portal-maestros/`): el modal arma un
+  `formState` único (`_buildFormState`) que consume
+  `createAbsenceRequest` / `validateAbsenceRequest` / `buildAbsencePayload`;
+  errores de validación se muestran inline. `ausenciasApi.js`: tabla correcta
+  `sesiones_clase` (no `sesiones`); se removió `creado_en` manual (usa default de
+  columna `created_at`); `notificaciones` no tiene `ausencia_id`.
+- **Admin-aprobación de ausencias** (`src/modules/admin-aprobacion/`): vista
+  reworkeada con pestañas Pendientes/Historial (`obtenerHistorialAusencias`),
+  barra de filtros en vivo (búsqueda + tipo + urgencia), stats-cards clicables y
+  grilla de 4 columnas en desktop (`@media (min-width: 1200px)`). Los callbacks
+  approve/reject hacen recarga (`_loadData`) para reconciliar con el servidor.
+- **Shells de portal** (`src/portales/_shared/`): `adminPortalShell.js` expone
+  `setPortalNavBadge(route, count)` + listener global del evento `set-nav-badge`
+  para badges dinámicos en el nav lateral/bottom-sheet. `portalHubModal.js` cierra
+  el modal al elegir un portal. `adm.js` sincroniza el badge de `admin-ausencias`
+  contando `ausencias_maestros` pendientes (poll cada 60s).
+
+**Nota Event Spine**: el trigger sobre `justificaciones` y los tipos
+`justificacion.*` siguen vigentes; este trabajo no tocó migraciones ni Edge
+Functions.
 
 ---
 

@@ -1,12 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ReporteSemestralView } from '../reporteSemestralView.js'
 
 describe('ReporteSemestralView — Cronograma y Bloqueo de Meses', () => {
   let view
 
   beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 7, 20, 12, 0, 0)) // 20 de Agosto 2026
     document.body.innerHTML = '<div id="test-container"></div>'
     view = new ReporteSemestralView('test-container')
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('genera todos los meses del período desde fecha_inicio hasta fecha_fin', () => {

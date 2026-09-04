@@ -35,8 +35,8 @@ export async function detectAttendanceRisk(alumnoId, period = {}) {
     .lte('fecha', to)
   if (error) console.error('[detectAttendanceRisk]', error)
 
-  const ausencias = (data || []).filter(a => a.estado === 'A').length
-  const justifs   = (data || []).filter(a => a.estado === 'J').length
+  const ausencias = (data || []).filter(a => a.estado === 'ausente').length
+  const justifs   = (data || []).filter(a => a.estado === 'justificado').length
   const contarJ   = rule.config?.contar_justificadas
   const count     = contarJ ? (ausencias + justifs) : ausencias
   const level     = _bucketLevel(count, rule.config)
@@ -62,7 +62,8 @@ export async function detectTardinessRisk(alumnoId, period = {}) {
     .lte('fecha', to)
   if (error) console.error('[detectTardinessRisk]', error)
 
-  const tardanzas = (data || []).filter(a => a.estado === 'T').length
+  // TODO(seguimiento-ausentes): confirmar valor real de tardanza en asistencias.estado; hoy la BD solo tiene presente|ausente|justificado
+  const tardanzas = (data || []).filter(a => a.estado === 'tarde').length
   const level     = _bucketLevel(tardanzas, rule.config)
 
   return {
@@ -257,8 +258,8 @@ export async function analyzeAllStudentsRisk(options = {}) {
     let attResult = null
     if (attRule) {
       const attList = asistMap[alumnoId] || []
-      const ausencias = attList.filter(a => a.estado === 'A').length
-      const justifs   = attList.filter(a => a.estado === 'J').length
+      const ausencias = attList.filter(a => a.estado === 'ausente').length
+      const justifs   = attList.filter(a => a.estado === 'justificado').length
       const contarJ   = attRule.config?.contar_justificadas
       const count     = contarJ ? (ausencias + justifs) : ausencias
       const level     = _bucketLevel(count, attRule.config)
@@ -274,7 +275,8 @@ export async function analyzeAllStudentsRisk(options = {}) {
     let tardResult = null
     if (tardRule) {
       const tardList = asistMap[alumnoId] || []
-      const tardanzas = tardList.filter(a => a.estado === 'T').length
+      // TODO(seguimiento-ausentes): confirmar valor real de tardanza en asistencias.estado; hoy la BD solo tiene presente|ausente|justificado
+      const tardanzas = tardList.filter(a => a.estado === 'tarde').length
       const level     = _bucketLevel(tardanzas, tardRule.config)
       tardResult = {
         tipo: 'tardanzas_recurrentes',

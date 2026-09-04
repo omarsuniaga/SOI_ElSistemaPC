@@ -1,6 +1,6 @@
 change: seguimiento-ausentes
 title: Seguimiento de Alumnos Ausentes
-status: in-progress
+status: fase-0-1-implementadas
 artifact_store: openspec
 execution_mode: interactive
 delivery_strategy: ask-on-risk
@@ -27,8 +27,29 @@ phases:
       (drive nivel) + sesiones_ausente (solo panel detalle). security_invoker de la
       vista quedó como decisión abierta para diseño.
   design:
-    status: not-started
+    status: done
     file: design.md
+  implementacion_fase_0_1:
+    status: done
+    branch: feat/seguimiento-ausentes
+    commits:
+      - "bc578773 docs SDD (proposal/spec/design/tasks)"
+      - "5a108961 Fase 0: fix bug estado + resolverContactoAlumno (20 tests)"
+      - "b9402277 Fase 1a: 3 migraciones aplicadas a prod + data service (37 tests)"
+      - "d961f39c Fase 1b: vista ACM + panel ADM + ruta + nav (55 tests pedagogico)"
+    migraciones_aplicadas:
+      - 20260904023143_seguimiento_ausentes_foundation
+      - 20260904023243_seguimiento_ausentes_view
+      - 20260904024000_seguimiento_ausentes_retencion_audit_defaults
+    tests: "suite completa 4198 pass; 2 fallos pre-existentes (reporteSemestralView, fechas hardcodeadas)"
+    notas: >
+      - No commiteado/pusheado nada fuera de los 4 commits arriba. NO push aún.
+      - adm.js NO tocado (tenía cambios ajenos sin commitear en el working tree).
+        El ítem de menú de ADM + analytics van en Fase 4. Ruta ADM: pedagogico-ausentismo-dashboard.
+      - Con umbrales 1/2/3 días, 80 alumnos (~29%) caen en nivel 3. El Departamento
+        debe subir los umbrales en seguimiento_reglas (UPDATE 1 fila, sin deploy).
+      - Durante la sesión aparecieron cambios ajenos en el working tree (auth/, maestros/,
+        migración restrict_delete) — otra sesión/persona trabajando en paralelo. No commiteados por mí.
     notes: >
       Sub-agente sdd-design falló por límite de sesión (resets 4:10pm America/Santo_Domingo)
       antes de escribir nada. Reanudar con el mismo prompt (ver historial de la sesión).

@@ -1,2 +1,9 @@
 export { registerRoutesPedagogico } from './pedagogico.router.js'
-export { resolverContactoAlumno } from './services/seguimientoAusentesService.js'
+export {
+  resolverContactoAlumno,
+  getPeriodoActivo,
+  fetchSeguimientoAusentes,
+  registrarContacto,
+  crearRetencion,
+  levantarRetencion,
+} from './services/seguimientoAusentesService.js'

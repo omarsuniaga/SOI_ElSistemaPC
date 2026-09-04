@@ -1,12 +1,11 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 
 /**
- * Normalize Dominican Republic phone number format.
+ * Normalize Dominican Republic phone number format to match SQL normalizar_tel_rd().
  * - Strips non-digits
- * - 7 digits → prepend +1809 (default DR area code)
- * - 10 digits → prepend +1
- * - 11 digits starting with 1 → prepend +
- * - Invalid → return null
+ * - 11 digits matching 1(809|829|849)\d{7} → +digits
+ * - 10 digits matching (809|829|849)\d{7} → +1+digits
+ * - All else → null
  *
  * @param {string} raw - Raw phone input
  * @returns {string|null} - Normalized E.164 format or null
@@ -14,32 +13,18 @@ import { supabase } from '../../../lib/supabaseClient.js'
 function normalizarTelefonoRD(raw) {
   if (!raw || !raw.trim()) return null
 
-  // Check if already normalized (starts with +1)
-  if (raw.trim().startsWith('+1')) {
-    const digits = raw.replace(/\D/g, '')
-    if (digits.length === 11 && digits.startsWith('1')) {
-      return `+${digits}`
-    }
-    return null
-  }
-
   const digits = raw.replace(/\D/g, '')
 
-  if (digits.length < 7) return null
+  if (digits.length < 10) return null
 
-  // 7 digits: prepend +1809 (DR default area code)
-  if (digits.length === 7) {
-    return `+1809${digits}`
-  }
-
-  // 10 digits: prepend +1
-  if (digits.length === 10) {
-    return `+1${digits}`
-  }
-
-  // 11 digits starting with 1: prepend +
-  if (digits.length === 11 && digits.startsWith('1')) {
+  // 11 digits: 1 followed by (809|829|849) followed by 7 more
+  if (digits.length === 11 && /^1(809|829|849)\d{7}$/.test(digits)) {
     return `+${digits}`
+  }
+
+  // 10 digits: (809|829|849) followed by 7 more
+  if (digits.length === 10 && /^(809|829|849)\d{7}$/.test(digits)) {
+    return `+1${digits}`
   }
 
   return null
@@ -75,14 +60,14 @@ export async function resolverContactoAlumno(alumnoId) {
   // Tier 1: representantes.telefono_whatsapp where alumno_id = alumnoId
   const { data: repr1 } = await supabase
     .from('representantes')
-    .select('nombre_completo, telefono_whatsapp')
+    .select('nombre, telefono_whatsapp')
     .eq('alumno_id', alumnoId)
     .single()
 
   if (repr1?.telefono_whatsapp) {
     const telefono = normalizarTelefonoRD(repr1.telefono_whatsapp)
     if (telefono) {
-      return { nombre: repr1.nombre_completo, telefono, origen: 'representante_alumno' }
+      return { nombre: repr1.nombre, telefono, origen: 'representante_alumno' }
     }
   }
 
@@ -90,7 +75,7 @@ export async function resolverContactoAlumno(alumnoId) {
   if (alumno.familia_id) {
     const { data: repr2List } = await supabase
       .from('representantes')
-      .select('nombre_completo, telefono_whatsapp, es_pagador')
+      .select('nombre, telefono_whatsapp, es_pagador')
       .eq('familia_id', alumno.familia_id)
       .order('es_pagador', { ascending: false })
 
@@ -99,7 +84,7 @@ export async function resolverContactoAlumno(alumnoId) {
         if (repr.telefono_whatsapp) {
           const telefono = normalizarTelefonoRD(repr.telefono_whatsapp)
           if (telefono) {
-            return { nombre: repr.nombre_completo, telefono, origen: 'representante_familia' }
+            return { nombre: repr.nombre, telefono, origen: 'representante_familia' }
           }
         }
       }
@@ -148,4 +133,255 @@ export async function resolverContactoAlumno(alumnoId) {
 
   // No valid contact found
   return { origen: null }
+}
+
+/**
+ * In-memory cache for active periodo with 5-min TTL
+ */
+let periodoCacheData = null
+let periodoCacheTime = null
+const PERIODO_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Clear the periodo cache (for testing only).
+ * @private
+ */
+export function __clearPeriodoCache() {
+  periodoCacheData = null
+  periodoCacheTime = null
+}
+
+/**
+ * Get the active periodo (cached, 5-min TTL).
+ * Throws if no active periodo exists.
+ *
+ * @returns {Promise<{id, nombre, fecha_inicio, fecha_fin}>}
+ */
+export async function getPeriodoActivo() {
+  const now = Date.now()
+  if (periodoCacheData && periodoCacheTime && now - periodoCacheTime < PERIODO_CACHE_TTL) {
+    return periodoCacheData
+  }
+
+  const { data, error } = await supabase
+    .from('periodos')
+    .select('id, nombre, fecha_inicio, fecha_fin')
+    .eq('activo', true)
+    .single()
+
+  if (error || !data) {
+    throw new Error('No active periodo found')
+  }
+
+  periodoCacheData = data
+  periodoCacheTime = now
+  return data
+}
+
+/**
+ * Fetch ausentes from vw_seguimiento_ausentes with filters and pagination.
+ *
+ * @param {Object} options
+ * @param {number} [options.nivel] - Filter by nivel (1|2|3)
+ * @param {string} [options.maestroId] - Filter by maestro_id
+ * @param {boolean} [options.soloSinContacto] - If true, filter to contacto_telefono IS NULL
+ * @param {string} [options.busqueda] - Search alumno_nombre (ILIKE)
+ * @param {number} [options.limit=50] - Pagination limit
+ * @param {number} [options.offset=0] - Pagination offset
+ * @returns {Promise<{alumnos: Array, totalCount: number}>}
+ */
+export async function fetchSeguimientoAusentes({
+  nivel = null,
+  maestroId = null,
+  soloSinContacto = false,
+  busqueda = '',
+  limit = 50,
+  offset = 0,
+} = {}) {
+  let q = supabase.from('vw_seguimiento_ausentes').select('*')
+
+  if (nivel !== null) {
+    q = q.eq('nivel', nivel)
+  }
+
+  if (maestroId !== null) {
+    q = q.eq('maestro_id', maestroId)
+  }
+
+  if (soloSinContacto) {
+    q = q.is('contacto_telefono', null)
+  }
+
+  if (busqueda) {
+    q = q.ilike('alumno_nombre', `%${busqueda}%`)
+  }
+
+  // Order by nivel DESC, then by dias_ausente DESC
+  q = q.order('nivel', { ascending: false }).order('dias_ausente', { ascending: false })
+
+  // Pagination
+  const { data, count, error } = await q.range(offset, offset + limit - 1)
+
+  if (error) {
+    console.error('[fetchSeguimientoAusentes]', error)
+    throw new Error('Failed to fetch ausentes')
+  }
+
+  return {
+    alumnos: data || [],
+    totalCount: count || 0,
+  }
+}
+
+/**
+ * Register a contact action to comunicaciones_seguimiento.
+ * Enforces 120-min duplicate guard at the same nivel.
+ * For nivel 2, auto-sets proxima_fecha = now() + 7 days.
+ *
+ * @param {Object} options
+ * @param {string} options.alumnoId
+ * @param {number} options.nivel - 1|2|3
+ * @param {string} options.contactoTelefono
+ * @param {string} [options.contactoNombre]
+ * @param {string} [options.notas]
+ * @param {string} [options.responsableId]
+ * @returns {Promise<Object>} - Inserted comunicaciones_seguimiento row
+ * @throws {Error} 'CONTACTO_DUPLICADO' if duplicate within 120 min
+ */
+export async function registrarContacto({
+  alumnoId,
+  nivel,
+  contactoTelefono,
+  contactoNombre = '',
+  notas = '',
+  responsableId = null,
+} = {}) {
+  // Check for duplicate within 120 minutes
+  const minutoAtras = new Date(Date.now() - 120 * 60 * 1000).toISOString()
+  const { data: recentContacts } = await supabase
+    .from('comunicaciones_seguimiento')
+    .select('id, fecha')
+    .eq('alumno_id', alumnoId)
+    .eq('origen', 'ausentismo')
+    .eq('nivel', nivel)
+    .gte('fecha', minutoAtras)
+
+  if (recentContacts && recentContacts.length > 0) {
+    throw new Error('CONTACTO_DUPLICADO')
+  }
+
+  // Prepare insert data
+  const insertData = {
+    alumno_id: alumnoId,
+    canal: 'whatsapp',
+    fecha: new Date().toISOString(),
+    // resultado/estado según CHECK de comunicaciones_seguimiento:
+    //   resultado ∈ contactado|buzon_no_contesto|reagendar|sin_interes|resuelto
+    //   estado ∈ abierto|cerrado
+    resultado: 'contactado',
+    estado: 'abierto',
+    requiere_seguimiento: true,
+    origen: 'ausentismo',
+    nivel,
+    contacto_nombre: contactoNombre,
+    contacto_telefono: contactoTelefono,
+    notas,
+  }
+
+  if (responsableId) {
+    insertData.responsable_id = responsableId
+  }
+
+  // For nivel 2, auto-set escalation deadline
+  if (nivel === 2) {
+    insertData.proxima_accion = 'contacto_nivel_3'
+    const tomorrow7d = new Date()
+    tomorrow7d.setDate(tomorrow7d.getDate() + 7)
+    insertData.proxima_fecha = tomorrow7d.toISOString().split('T')[0]
+  }
+
+  const { data, error } = await supabase
+    .from('comunicaciones_seguimiento')
+    .insert(insertData)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[registrarContacto]', error)
+    throw new Error('Failed to register contact')
+  }
+
+  return data
+}
+
+/**
+ * Create a retention (retención de instrumento).
+ * Requires ACM role (enforced by RLS).
+ *
+ * @param {Object} options
+ * @param {string} options.alumnoId
+ * @param {string} [options.instrumentoTexto]
+ * @param {string} [options.instrumentoId]
+ * @param {string} [options.notas]
+ * @returns {Promise<Object>} - Inserted retenciones_instrumento row
+ */
+export async function crearRetencion({
+  alumnoId,
+  instrumentoTexto = null,
+  instrumentoId = null,
+  notas = '',
+} = {}) {
+  const { data, error } = await supabase
+    .from('retenciones_instrumento')
+    .insert({
+      alumno_id: alumnoId,
+      instrumento_id: instrumentoId,
+      instrumento_texto: instrumentoTexto,
+      motivo: 'ausentismo_acumulado',
+      estado: 'retenido',
+      notas,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[crearRetencion] RLS or DB error:', error)
+    throw new Error(error.message || 'Failed to create retention')
+  }
+
+  return data
+}
+
+/**
+ * Lift a retention (mark as levantada).
+ *
+ * @param {Object} options
+ * @param {string} options.retencionId
+ * @param {string} [options.notas]
+ * @returns {Promise<Object>} - Updated retenciones_instrumento row
+ */
+export async function levantarRetencion({
+  retencionId,
+  notas = '',
+} = {}) {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('retenciones_instrumento')
+    .update({
+      estado: 'levantada',
+      acta_firmada_en: now,
+      fecha_reincorporacion: now,
+      levantada_en: now,
+      ...(notas && { notas }),
+    })
+    .eq('id', retencionId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[levantarRetencion]', error)
+    throw new Error('Failed to lift retention')
+  }
+
+  return data
 }

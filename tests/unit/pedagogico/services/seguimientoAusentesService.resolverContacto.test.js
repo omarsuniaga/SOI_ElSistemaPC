@@ -49,7 +49,7 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
       }
       if (callCount === 2 && table === 'representantes') {
         return mockQueryChain({
-          data: { nombre_completo: 'Repr 1', telefono_whatsapp: '+18091234567' },
+          data: { nombre: 'Repr 1', telefono_whatsapp: '8091234567' },
         })
       }
       return mockQueryChain({ data: null })
@@ -231,7 +231,7 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
     expect(result.origen).toBeNull()
   })
 
-  it('normalizes 7-digit phone to +1809XXXXXXX format (DR default area code)', async () => {
+  it('rejects 7-digit phone numbers (too short for DR area code matching)', async () => {
     const alumnoId = 'alumno-7digit'
 
     mockFrom.mockImplementation((table) => {
@@ -253,10 +253,10 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
 
     const result = await resolverContactoAlumno(alumnoId)
 
-    expect(result.telefono).toBe('+18091234567')
+    expect(result.origen).toBeNull()
   })
 
-  it('normalizes 10-digit phone to +1XXXXXXXXXX format', async () => {
+  it('normalizes 10-digit phone with DR area code 809 to +1XXXXXXXXXX format', async () => {
     const alumnoId = 'alumno-10digit'
 
     mockFrom.mockImplementation((table) => {
@@ -266,7 +266,7 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
             id: alumnoId,
             nombre_completo: 'Test Alumno 10digit',
             familia_id: null,
-            representante_tlf: '1234567890',
+            representante_tlf: '8091234567',
           },
         })
       }
@@ -278,7 +278,32 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
 
     const result = await resolverContactoAlumno(alumnoId)
 
-    expect(result.telefono).toBe('+11234567890')
+    expect(result.telefono).toBe('+18091234567')
+  })
+
+  it('rejects 10-digit phone with non-DR area code (e.g., 212 NYC)', async () => {
+    const alumnoId = 'alumno-10digit-non-dr'
+
+    mockFrom.mockImplementation((table) => {
+      if (table === 'alumnos') {
+        return mockQueryChain({
+          data: {
+            id: alumnoId,
+            nombre_completo: 'Test Alumno Non-DR',
+            familia_id: null,
+            representante_tlf: '2121234567',
+          },
+        })
+      }
+      if (table === 'representantes') {
+        return mockQueryChain({ data: null })
+      }
+      return mockQueryChain({ data: null })
+    })
+
+    const result = await resolverContactoAlumno(alumnoId)
+
+    expect(result.origen).toBeNull()
   })
 
   it('skips malformed number and falls through to next tier', async () => {
@@ -334,8 +359,8 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
               eq: vi.fn().mockReturnValue({
                 order: vi.fn().mockResolvedValue({
                   data: [
-                    { nombre_completo: 'Non Pagador', telefono_whatsapp: null, es_pagador: false },
-                    { nombre_completo: 'Repr Pagador', telefono_whatsapp: '+18095556666', es_pagador: true },
+                    { nombre: 'Non Pagador', telefono_whatsapp: null, es_pagador: false },
+                    { nombre: 'Repr Pagador', telefono_whatsapp: '8295556666', es_pagador: true },
                   ],
                 }),
               }),
@@ -349,6 +374,6 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
     const result = await resolverContactoAlumno(alumnoId)
 
     expect(result.origen).toBe('representante_familia')
-    expect(result.telefono).toBe('+18095556666')
+    expect(result.telefono).toBe('+18295556666')
   })
 })

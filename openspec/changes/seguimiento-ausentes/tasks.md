@@ -315,6 +315,8 @@ Test the read-model view (will be created in T1a.4). Test scenarios:
 - [ ] Tests verify view columns and nivel logic
 - [ ] Tests FAIL (view doesn't exist)
 
+**NOTE (Fase 1a execution)**: Integration tests for view require DB migration (T1a.4) to be applied first. Migration is already applied to production by orchestrator. Unit tests for service methods (T1a.3) are DONE and PASSING.
+
 ---
 
 ### T1a.2 (Vitest) — Write failing integration test for retenciones_instrumento RLS
@@ -365,9 +367,9 @@ Test the service functions that will query the view and write to tables. Mock Su
 **Estimated Lines**: 100
 
 **Done Criteria**:
-- [ ] Test file created with 7 test cases
-- [ ] All mocks implemented correctly
-- [ ] Tests FAIL (service functions don't exist)
+- [x] Test file created with 7 test cases
+- [x] All mocks implemented correctly
+- [x] Tests PASS (service functions implemented)
 
 ---
 
@@ -498,10 +500,17 @@ export async function getActivePeriodo() {
 **Estimated Lines**: 80
 
 **Done Criteria**:
-- [ ] All 5 exports implemented
-- [ ] Service exported from `src/modules/pedagogico/index.js`
-- [ ] T1a.3 unit tests PASS
-- [ ] Service uses DataAdapter pattern (no direct view imports in UI)
+- [x] All 5 exports implemented: getPeriodoActivo, fetchSeguimientoAusentes, registrarContacto, crearRetencion, levantarRetencion
+- [x] Service exported from `src/modules/pedagogico/index.js`
+- [x] T1a.3 unit tests PASS (28 tests passing)
+- [x] Service uses DataAdapter pattern (no direct view imports in UI)
+
+**Fase 1a Implementation Notes**:
+- **FIX 1 (representantes column)**: Changed `nombre_completo` → `nombre` in Tier 1 and Tier 2 queries. Updated tests to use correct column name and valid DR phone numbers (809/829/849 area codes).
+- **FIX 2 (normalizarTelefonoRD)**: Rewrote to match SQL exactly: 11-digit with 1(809|829|849) pattern → +digits; 10-digit with (809|829|849) pattern → +1+digits; else null. Removed lenient 7-digit and generic 10-digit branches.
+- **comunicaciones_seguimiento.estado field**: Confirmed via migration comments that `estado` CHECK constraint allows values: pending state value is 'abierta' (verified in existing migrations pattern). Used 'abierta' for new contacts.
+- **Cache implementation**: getPeriodoActivo uses 5-min in-memory cache (TTL). Test utility __clearPeriodoCache() added for test isolation.
+- All 37 pedagogico service tests passing; no regressions detected.
 
 ---
 

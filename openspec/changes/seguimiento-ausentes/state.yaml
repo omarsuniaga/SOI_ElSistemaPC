@@ -1,6 +1,6 @@
 change: seguimiento-ausentes
 title: Seguimiento de Alumnos Ausentes
-status: fase-0-1-implementadas
+status: fase-0-2-en-PR-49
 artifact_store: openspec
 execution_mode: interactive
 delivery_strategy: ask-on-risk
@@ -87,3 +87,5 @@ key_findings:
   - "Riesgo abierto: doble canal de asistencia (tabla asistencias vs sesiones_clase.asistencia jsonb) - confirmar fuente autoritativa."
 
 artifact_pitch: https://claude.ai/code/artifact/867ddd69-013e-4806-872a-042ce6d20a07
+
+pr: https://github.com/omarsuniaga/SOI_ElSistemaPC/pull/49  # base feat/planificacion-clases-rediseño; Fases 0-2 + reinicio/suspension + contador mensual

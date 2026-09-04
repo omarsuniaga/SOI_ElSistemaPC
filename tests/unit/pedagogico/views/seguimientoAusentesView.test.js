@@ -25,7 +25,7 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
         maestro_nombre: 'Maestro López',
         dias_ausente: 3,
         dias_clase: 6,
-        mes_nombre: "septiembre 2026",
+        periodo_nombre: "Semestre 2026-II",
         ultima_ausencia_fecha: '2026-03-20',
         nivel: 3,
         contacto_nombre: 'María Pérez',
@@ -45,7 +45,7 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
         maestro_nombre: 'Maestro Rodríguez',
         dias_ausente: 2,
         dias_clase: 4,
-        mes_nombre: "septiembre 2026",
+        periodo_nombre: "Semestre 2026-II",
         ultima_ausencia_fecha: '2026-03-18',
         nivel: 2,
         contacto_nombre: null,
@@ -65,7 +65,7 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
         maestro_nombre: 'Maestro López',
         dias_ausente: 1,
         dias_clase: 3,
-        mes_nombre: "septiembre 2026",
+        periodo_nombre: "Semestre 2026-II",
         ultima_ausencia_fecha: '2026-03-19',
         nivel: 1,
         contacto_nombre: 'Pedro Martínez',
@@ -154,14 +154,14 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(nivel3Badge).toBeTruthy()
   })
 
-  it('shows faltas as "ausente/con clase" del mes and no sessions count', async () => {
+  it('shows faltas as "ausente/con clase" del período and no sessions count', async () => {
     const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
 
     await renderSeguimientoAusentesView(container)
 
     const juanBadge = container.querySelector('[data-alumno-id="a1"] [data-nivel="3"]')
     expect(juanBadge?.textContent.trim()).toBe('3/6')
-    expect(container.innerHTML).toContain('faltas del mes')
+    expect(container.innerHTML).toContain('faltas / días con clase')
     expect(container.innerHTML).not.toMatch(/sesiones|ses\./i)
   })
 

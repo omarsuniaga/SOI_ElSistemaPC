@@ -97,11 +97,11 @@ function _render() {
         <div class="flex-grow-1">
           <h1 class="page-title mb-0">Seguimiento de Ausentes</h1>
           <p class="text-muted small mb-0">
-            ${state.alumnos[0]?.mes_nombre ? `${state.alumnos[0].mes_nombre} · ` : ''}${state.totalCount} alumno${state.totalCount !== 1 ? 's' : ''}
+            ${state.alumnos[0]?.periodo_nombre ? `${state.alumnos[0].periodo_nombre} · ` : ''}${state.totalCount} alumno${state.totalCount !== 1 ? 's' : ''}
             · N1: ${state.alumnos.filter((a) => a.nivel === 1).length}
             · N2: ${state.alumnos.filter((a) => a.nivel === 2).length}
             · N3: ${state.alumnos.filter((a) => a.nivel === 3).length}
-            <span class="ms-1">(el contador se renueva cada mes)</span>
+            <span class="ms-1">(acumulado del período académico)</span>
           </p>
         </div>
         <button class="btn-help-trigger" id="btn-help-ausentes" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
@@ -175,7 +175,7 @@ function _render() {
 function _abrirAyuda() {
   HelpPanel.open({
     title: 'Seguimiento de Ausentes',
-    intro: 'El número es "faltas / días con clase" del MES en curso: días con inasistencia sin justificar sobre los días que el alumno tuvo clase. Si falta a varias clases el mismo día, cuenta una sola vez. El contador se renueva el 1° de cada mes.',
+    intro: 'El número es "faltas / días con clase" acumulado desde el inicio del período académico: días con inasistencia sin justificar sobre los días que el alumno tuvo clase. Si falta a varias clases el mismo día, cuenta una sola vez. Para poner el contador en cero usá "Reiniciar contador" en el detalle del alumno.',
     sections: [
       { icon: 'bi-1-circle-fill', title: 'Nivel 1 — Aviso preventivo', description: 'Se contacta al representante para entender la situación.', color: '#d99a2b' },
       { icon: 'bi-2-circle-fill', title: 'Nivel 2 — Comunicación institucional', description: 'Mensaje formal con fecha límite. Requiere respuesta de la familia.', color: '#c2560f' },
@@ -231,7 +231,7 @@ function _renderAlumnoRow(alumno) {
               <div class="badge p-2 d-inline-block" data-nivel="${alumno.nivel}" style="font-size:1rem;${badgeStyle}">
                 ${faltas}
               </div>
-              <p class="small text-muted mb-0">faltas del mes</p>
+              <p class="small text-muted mb-0">faltas / días con clase</p>
             </div>
           </div>
           <div class="col-md-2">
@@ -408,10 +408,10 @@ async function _openDetailPanel(alumno) {
 
       <div class="row mb-4">
         <div class="col">
-          <h5>Ausencias del mes${alumno.mes_nombre ? ` (${alumno.mes_nombre})` : ''}</h5>
+          <h5>Ausencias del período${alumno.periodo_nombre ? ` (${alumno.periodo_nombre})` : ''}</h5>
           <p>Faltó a <strong>${alumno.dias_ausente}</strong> de <strong>${alumno.dias_clase ?? alumno.dias_ausente}</strong> días de clase &nbsp;
             <span class="badge" style="${badgeStyleFromNivel(alumno.nivel)}">Nivel ${alumno.nivel}</span></p>
-          <p class="small text-muted">Última ausencia: ${alumno.ultima_ausencia_fecha ? String(alumno.ultima_ausencia_fecha).slice(0, 10) : '—'} · el contador se renueva cada mes</p>
+          <p class="small text-muted">Última ausencia: ${alumno.ultima_ausencia_fecha ? String(alumno.ultima_ausencia_fecha).slice(0, 10) : '—'} · acumulado desde el inicio del período</p>
         </div>
       </div>
 

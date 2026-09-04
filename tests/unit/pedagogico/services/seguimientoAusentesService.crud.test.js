@@ -24,6 +24,8 @@ import {
   crearRetencion,
   levantarRetencion,
   enviarSeguimientoAusentismo,
+  reiniciarContadorAusencias,
+  suspenderAlumno,
   __clearPeriodoCache, // For testing only
 } from '../../../../src/modules/pedagogico/services/seguimientoAusentesService.js'
 
@@ -483,6 +485,50 @@ describe('DataAdapter CRUD Service Methods', () => {
       await expect(
         enviarSeguimientoAusentismo({ alumno: { ...alumno, contacto_telefono: null } }),
       ).rejects.toThrow('SIN_CONTACTO')
+    })
+  })
+
+  // ============ reiniciarContadorAusencias ============
+  describe('reiniciarContadorAusencias', () => {
+    it('inserta un corte en seguimiento_ausencias_reinicio para el alumno', async () => {
+      let inserted = null
+      mockFrom.mockImplementation((table) => {
+        if (table === 'seguimiento_ausencias_reinicio') {
+          return {
+            insert: (payload) => {
+              inserted = payload
+              return { select: () => ({ single: async () => ({ data: { id: 'r1', ...payload } }) }) }
+            },
+          }
+        }
+        return mockQueryChain({ data: null })
+      })
+
+      const res = await reiniciarContadorAusencias({ alumnoId: 'a1', motivo: 'ok' })
+      expect(inserted.alumno_id).toBe('a1')
+      expect(inserted.motivo).toBe('ok')
+      expect(res.id).toBe('r1')
+    })
+  })
+
+  // ============ suspenderAlumno ============
+  describe('suspenderAlumno', () => {
+    it('inserta una suspensión activa con motivo y hasta', async () => {
+      let inserted = null
+      mockFrom.mockImplementation((table) => {
+        if (table === 'alumno_suspensiones') {
+          return {
+            insert: (payload) => {
+              inserted = payload
+              return { select: () => ({ single: async () => ({ data: { id: 's1', ...payload } }) }) }
+            },
+          }
+        }
+        return mockQueryChain({ data: null })
+      })
+
+      await suspenderAlumno({ alumnoId: 'a1', motivo: 'viaje', hasta: '2026-10-01' })
+      expect(inserted).toMatchObject({ alumno_id: 'a1', motivo: 'viaje', hasta: '2026-10-01', estado: 'activa' })
     })
   })
 })

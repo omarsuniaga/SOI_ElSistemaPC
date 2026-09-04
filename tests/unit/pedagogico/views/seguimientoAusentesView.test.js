@@ -92,6 +92,8 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
     mensaje: 'mensaje de prueba',
     registro: { id: 'c1', nivel: nivel || alumno.nivel },
   })),
+  reiniciarContadorAusencias: vi.fn(async () => ({ id: 'r1' })),
+  suspenderAlumno: vi.fn(async () => ({ id: 's1', estado: 'activa' })),
 }))
 
 // Mock shared components — shape matches the real modules (objects with static methods)
@@ -254,6 +256,78 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(row.querySelector('[data-wa]')).toBeNull()
     const disabled = row.querySelector('button[disabled]')
     expect(disabled?.textContent).toContain('Sin contacto')
+  })
+
+  it('modal "Reiniciar contador" calls the service after confirm and refreshes', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+
+    container.querySelector('[data-alumno-id="a1"]')?.click()
+    await new Promise((r) => setTimeout(r, 20))
+    const { body, onOpen } = modalOpenMock.mock.calls[0][0]
+
+    const host = document.createElement('div')
+    host.innerHTML = body
+    document.body.appendChild(host)
+    dom.window.confirm = vi.fn(() => true)
+    onOpen(host)
+
+    host.querySelector('[data-accion-reiniciar]').click()
+    await new Promise((r) => setTimeout(r, 30))
+
+    expect(dom.window.confirm).toHaveBeenCalled()
+    expect(svc.reiniciarContadorAusencias).toHaveBeenCalledWith(
+      expect.objectContaining({ alumnoId: 'a1' }),
+    )
+  })
+
+  it('modal "Reiniciar contador" does nothing if the user cancels the confirm', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+    container.querySelector('[data-alumno-id="a1"]')?.click()
+    await new Promise((r) => setTimeout(r, 20))
+    const { body, onOpen } = modalOpenMock.mock.calls[0][0]
+    const host = document.createElement('div')
+    host.innerHTML = body
+    document.body.appendChild(host)
+    dom.window.confirm = vi.fn(() => false)
+    onOpen(host)
+    host.querySelector('[data-accion-reiniciar]').click()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(svc.reiniciarContadorAusencias).not.toHaveBeenCalled()
+  })
+
+  it('modal "Suspender" requires a motivo and then calls suspenderAlumno', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+    container.querySelector('[data-alumno-id="a1"]')?.click()
+    await new Promise((r) => setTimeout(r, 20))
+    const { body, onOpen } = modalOpenMock.mock.calls[0][0]
+    const host = document.createElement('div')
+    host.innerHTML = body
+    document.body.appendChild(host)
+    onOpen(host)
+
+    // abre el mini-form
+    host.querySelector('[data-accion-suspender]').click()
+    expect(host.querySelector('[data-form-suspender]').classList.contains('d-none')).toBe(false)
+
+    // sin motivo → no llama al servicio
+    host.querySelector('[data-susp-confirmar]').click()
+    await new Promise((r) => setTimeout(r, 10))
+    expect(svc.suspenderAlumno).not.toHaveBeenCalled()
+
+    // con motivo → sí
+    host.querySelector('[data-susp-motivo]').value = 'Viaje familiar'
+    host.querySelector('[data-susp-hasta]').value = '2026-10-15'
+    host.querySelector('[data-susp-confirmar]').click()
+    await new Promise((r) => setTimeout(r, 30))
+    expect(svc.suspenderAlumno).toHaveBeenCalledWith(
+      expect.objectContaining({ alumnoId: 'a1', motivo: 'Viaje familiar', hasta: '2026-10-15' }),
+    )
   })
 
   it('shows a warning toast when the contact is a duplicate within 120 min', async () => {

@@ -379,6 +379,84 @@ export async function enviarSeguimientoAusentismo({ alumno, nivel, destinatario 
 }
 
 /**
+ * Reinicia el contador de ausencias de un alumno: inserta un corte con fecha now().
+ * La vista sólo cuenta ausencias posteriores al corte más reciente.
+ *
+ * @param {Object} opts
+ * @param {string} opts.alumnoId
+ * @param {string} [opts.motivo]
+ * @returns {Promise<Object>} fila de seguimiento_ausencias_reinicio
+ */
+export async function reiniciarContadorAusencias({ alumnoId, motivo = '' } = {}) {
+  const { data, error } = await supabase
+    .from('seguimiento_ausencias_reinicio')
+    .insert({
+      alumno_id: alumnoId,
+      motivo: motivo || null,
+      creado_por: await _uidActual(),
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[reiniciarContadorAusencias]', error)
+    throw new Error(error.message || 'No se pudo reiniciar el contador')
+  }
+  return data
+}
+
+/**
+ * Suspende temporalmente a un alumno. Mientras la suspensión esté activa y vigente,
+ * el alumno no aparece en el panel de seguimiento de ausentes. No toca alumnos.activo.
+ *
+ * @param {Object} opts
+ * @param {string} opts.alumnoId
+ * @param {string} [opts.motivo]
+ * @param {string} [opts.hasta] - fecha 'YYYY-MM-DD'; null = indefinida
+ * @returns {Promise<Object>} fila de alumno_suspensiones
+ */
+export async function suspenderAlumno({ alumnoId, motivo = '', hasta = null } = {}) {
+  const { data, error } = await supabase
+    .from('alumno_suspensiones')
+    .insert({
+      alumno_id: alumnoId,
+      motivo: motivo || null,
+      hasta: hasta || null,
+      estado: 'activa',
+      creado_por: await _uidActual(),
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[suspenderAlumno]', error)
+    throw new Error(error.message || 'No se pudo suspender al alumno')
+  }
+  return data
+}
+
+/**
+ * Levanta la suspensión activa de un alumno (reactivarlo).
+ * @param {Object} opts
+ * @param {string} opts.suspensionId
+ * @returns {Promise<Object>}
+ */
+export async function levantarSuspension({ suspensionId } = {}) {
+  const { data, error } = await supabase
+    .from('alumno_suspensiones')
+    .update({ estado: 'levantada' })
+    .eq('id', suspensionId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[levantarSuspension]', error)
+    throw new Error(error.message || 'No se pudo levantar la suspensión')
+  }
+  return data
+}
+
+/**
  * Create a retention (retención de instrumento).
  * Requires ACM role (enforced by RLS).
  *

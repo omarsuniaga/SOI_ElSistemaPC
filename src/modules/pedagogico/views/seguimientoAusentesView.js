@@ -6,6 +6,8 @@ import {
   fetchHistorialSeguimiento,
   resolverContactoAlumno,
   enviarSeguimientoAusentismo,
+  reiniciarContadorAusencias,
+  suspenderAlumno,
 } from '../services/seguimientoAusentesService.js'
 
 const state = {
@@ -451,6 +453,35 @@ async function _openDetailPanel(alumno) {
         </div>
         <p class="small text-muted mt-2 mb-0">Abre WhatsApp con el mensaje precargado. Revisalo antes de enviar; el contacto queda registrado.</p>
       </div>
+
+      <div class="border-top pt-3">
+        <h5>Gestión del alumno</h5>
+        <div class="gap-2 d-flex flex-wrap">
+          <button class="btn btn-sm btn-outline-secondary" data-accion-reiniciar>
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reiniciar contador a 0
+          </button>
+          <button class="btn btn-sm btn-outline-warning" data-accion-suspender>
+            <i class="bi bi-pause-circle me-1"></i>Suspender temporalmente
+          </button>
+        </div>
+
+        <div class="mt-3 p-3 bg-body-tertiary border rounded d-none" data-form-suspender>
+          <label class="form-label small mb-1">Motivo de la suspensión</label>
+          <textarea class="form-control form-control-sm mb-2" rows="2" data-susp-motivo
+            placeholder="Ej.: viaje familiar, tratamiento médico, pausa acordada…"></textarea>
+          <label class="form-label small mb-1">Reactivar el (opcional)</label>
+          <input type="date" class="form-control form-control-sm mb-2" data-susp-hasta>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-warning" data-susp-confirmar>Confirmar suspensión</button>
+            <button class="btn btn-sm btn-outline-secondary" data-susp-cancelar>Cancelar</button>
+          </div>
+        </div>
+
+        <p class="small text-muted mt-2 mb-0">
+          <strong>Reiniciar contador:</strong> las ausencias previas dejan de contar para el escalamiento (queda registro de quién lo hizo).
+          <strong>Suspender:</strong> el alumno sale del panel mientras dure la pausa; no lo da de baja.
+        </p>
+      </div>
     </div>
   `
 
@@ -461,13 +492,52 @@ async function _openDetailPanel(alumno) {
     hideSave: true,
     cancelText: 'Cerrar',
     onOpen: (modalEl) => {
-      modalEl?.querySelectorAll('[data-wa-modal]').forEach((btn) => {
+      if (!modalEl) return
+
+      modalEl.querySelectorAll('[data-wa-modal]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const nivel = btn.getAttribute('data-nivel')
           btn.disabled = true
           AppModal.close?.()
           await _enviarWhatsApp(alumno.alumno_id, nivel)
         })
+      })
+
+      // Reiniciar contador
+      modalEl.querySelector('[data-accion-reiniciar]')?.addEventListener('click', async (e) => {
+        if (!window.confirm(`¿Reiniciar el contador de ausencias de ${alumno.alumno_nombre} a 0?\n\nLas ausencias registradas hasta hoy dejan de contar para el escalamiento.`)) return
+        e.currentTarget.disabled = true
+        try {
+          await reiniciarContadorAusencias({ alumnoId: alumno.alumno_id, motivo: 'Reinicio manual desde el panel de seguimiento' })
+          AppModal.close?.()
+          _toast(`Contador de ${alumno.alumno_nombre} reiniciado a 0.`, 'success')
+          await _loadData(); _render(); _attachEvents()
+        } catch (err) {
+          console.error(err)
+          _toast('No se pudo reiniciar el contador.', 'error')
+          e.currentTarget.disabled = false
+        }
+      })
+
+      // Suspender — mostrar el mini-formulario
+      const form = modalEl.querySelector('[data-form-suspender]')
+      modalEl.querySelector('[data-accion-suspender]')?.addEventListener('click', () => form?.classList.remove('d-none'))
+      modalEl.querySelector('[data-susp-cancelar]')?.addEventListener('click', () => form?.classList.add('d-none'))
+      modalEl.querySelector('[data-susp-confirmar]')?.addEventListener('click', async (e) => {
+        const motivo = modalEl.querySelector('[data-susp-motivo]')?.value.trim() || ''
+        const hasta = modalEl.querySelector('[data-susp-hasta]')?.value || null
+        if (!motivo) { _toast('Indicá el motivo de la suspensión.', 'warning'); return }
+        e.currentTarget.disabled = true
+        try {
+          await suspenderAlumno({ alumnoId: alumno.alumno_id, motivo, hasta })
+          AppModal.close?.()
+          _toast(`${alumno.alumno_nombre} quedó suspendido temporalmente${hasta ? ` hasta ${hasta}` : ''}.`, 'success')
+          await _loadData(); _render(); _attachEvents()
+        } catch (err) {
+          console.error(err)
+          _toast('No se pudo suspender al alumno.', 'error')
+          e.currentTarget.disabled = false
+        }
       })
     },
   })

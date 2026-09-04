@@ -6,6 +6,9 @@ export {
   fetchHistorialSeguimiento,
   registrarContacto,
   enviarSeguimientoAusentismo,
+  reiniciarContadorAusencias,
+  suspenderAlumno,
+  levantarSuspension,
   crearRetencion,
   levantarRetencion,
 } from './services/seguimientoAusentesService.js'

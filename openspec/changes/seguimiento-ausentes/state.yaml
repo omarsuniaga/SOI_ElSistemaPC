@@ -1,0 +1,68 @@
+change: seguimiento-ausentes
+title: Seguimiento de Alumnos Ausentes
+status: in-progress
+artifact_store: openspec
+execution_mode: interactive
+delivery_strategy: ask-on-risk
+
+phases:
+  proposal:
+    status: done
+    file: proposal.md
+    notes: >
+      3 correcciones pendientes de reflejar en diseño: (1) es un SPA Vite que llama
+      Supabase directo desde el cliente, NO hay API REST; pedagogico.router.js es un
+      router de vistas. (2) NO hacer backfill de periodo_id en las 1922 filas de
+      asistencias. (3) eliminar attendanceAlertsWidget.js es limpieza opcional, no
+      entregable central.
+  spec:
+    status: done
+    file: spec.md
+    notes: >
+      Hand-corregido tras el sub-agente: plantillas de mensaje restauradas al texto
+      canónico institucional (trato de usted, escalada de tono, N1/N2 al representante,
+      N3 doble mensaje). Contador redefinido a DÍAS de ausencia, no sesiones
+      (COUNT DISTINCT fecha con estado='ausente' y sin 'presente' ese día); si un
+      alumno falta a 2 clases el mismo día cuenta como 1. Columnas: dias_ausente
+      (drive nivel) + sesiones_ausente (solo panel detalle). security_invoker de la
+      vista quedó como decisión abierta para diseño.
+  design:
+    status: not-started
+    file: design.md
+    notes: >
+      Sub-agente sdd-design falló por límite de sesión (resets 4:10pm America/Santo_Domingo)
+      antes de escribir nada. Reanudar con el mismo prompt (ver historial de la sesión).
+      Debe resolver 3 decisiones abiertas con evidencia del código:
+      1. Mecanismo de reseteo del contador tras reincorporación (recomendado: campo
+         fecha_reincorporacion en la retención / marcador por alumno; la vista solo
+         cuenta asistencias con fecha > último marcador).
+      2. security_invoker de vw_seguimiento_ausentes: ACM/ADM necesitan ver a TODOS
+         los alumnos; revisar RLS de asistencias/alumnos. Patrón signage_v_* usa
+         security_invoker=false a propósito.
+      3. Resolución del rol ACM para RLS: reusar 20260827000000_user_portal_access_system.sql,
+         no inventar tabla de roles.
+  tasks:
+    status: not-started
+  apply:
+    status: not-started
+  verify:
+    status: not-started
+
+user_decisions:
+  - Contador = ausencias injustificadas acumuladas en el período académico vigente.
+  - "Contador por DÍA, no por sesión: 2 faltas el mismo día = 1."
+  - Niveles 1 (>=1) aviso cálido / 2 (>=2) institucional / 3 (>=3) retención de instrumento. Umbrales en seguimiento_reglas.
+  - Envío WhatsApp MANUAL con link wa.me (operador revisa y envía). NO automático por HERMES.
+  - Portal ACM opera (acciones), ADM consulta (solo lectura + KPIs).
+  - "Retención N3: tabla retenciones_instrumento keyed por alumno_id (NO depende del inventario instrumentos, 3 filas). + notificación wa.me al maestro. Representante recibe instrucciones para desbloquear firmando acta."
+
+key_findings:
+  - "BUG Fase 0: studentRiskDetectorService.js filtra estado==='A'/'J'/'T'/'P' pero la BD usa 'ausente'/'justificado'/'presente'."
+  - "attendanceAlertsWidget.js es código muerto: no montado + imports inexistentes."
+  - "asistencias.periodo_id NULL en las 1922 filas -> resolver período por fecha contra tabla periodos."
+  - "Contacto: cascada representantes.telefono_whatsapp -> alumnos.representante_tlf/madre_tlf_whatsapp/padre_tlf_whatsapp/familiar_telefono/contacto_emergencia_telefono = 236/278 (85%) activos contactables; 42 'sin contacto'."
+  - "phoneUtils.js exporta whatsappLink(phone, message) en linea ~85."
+  - "instrumentos: 3 filas, ninguna con alumno_id."
+  - "Riesgo abierto: doble canal de asistencia (tabla asistencias vs sesiones_clase.asistencia jsonb) - confirmar fuente autoritativa."
+
+artifact_pitch: https://claude.ai/code/artifact/867ddd69-013e-4806-872a-042ce6d20a07

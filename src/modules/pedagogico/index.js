@@ -3,6 +3,7 @@ export {
   resolverContactoAlumno,
   getPeriodoActivo,
   fetchSeguimientoAusentes,
+  fetchHistorialSeguimiento,
   registrarContacto,
   crearRetencion,
   levantarRetencion,

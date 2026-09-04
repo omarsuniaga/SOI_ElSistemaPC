@@ -198,7 +198,7 @@ export async function fetchSeguimientoAusentes({
   limit = 50,
   offset = 0,
 } = {}) {
-  let q = supabase.from('vw_seguimiento_ausentes').select('*')
+  let q = supabase.from('vw_seguimiento_ausentes').select('*', { count: 'exact' })
 
   if (nivel !== null) {
     q = q.eq('nivel', nivel)
@@ -231,6 +231,26 @@ export async function fetchSeguimientoAusentes({
     alumnos: data || [],
     totalCount: count || 0,
   }
+}
+
+/**
+ * Historial de contactos de ausentismo de un alumno (para el panel de detalle).
+ * @param {string} alumnoId
+ * @returns {Promise<Array>} filas de comunicaciones_seguimiento (origen='ausentismo'), más recientes primero
+ */
+export async function fetchHistorialSeguimiento(alumnoId) {
+  const { data, error } = await supabase
+    .from('comunicaciones_seguimiento')
+    .select('id, fecha, nivel, canal, resultado, estado, notas, proxima_accion, proxima_fecha')
+    .eq('alumno_id', alumnoId)
+    .eq('origen', 'ausentismo')
+    .order('fecha', { ascending: false })
+
+  if (error) {
+    console.error('[fetchHistorialSeguimiento]', error)
+    return []
+  }
+  return data || []
 }
 
 /**

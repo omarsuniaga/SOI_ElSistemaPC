@@ -42,6 +42,7 @@ const navGroups = [
     items: [
       { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
       { id: 'metricas', label: 'Dashboard Métricas', icon: 'bi-bar-chart-line' },
+      { id: 'pedagogico-seguimiento-ausentes', label: 'Alumnos Ausentes', icon: 'bi-exclamation-circle' },
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
     ],
   },

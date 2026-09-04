@@ -7,6 +7,8 @@ import { renderSeguimientoInstitucionalView }  from './views/seguimientoInstituc
 import { renderStudentCaseDetailView }         from './views/studentCaseDetailView.js'
 import { renderSeguimientoRulesView }          from './views/seguimientoRulesView.js'
 import { renderEvaluacionesDashboardView }     from './views/evaluacionesDashboardView.js'
+import { renderSeguimientoAusentesView }       from './views/seguimientoAusentesView.js'
+import { renderAusentismoDashboardView }       from './views/AusentismoDashboardView.js'
 
 export function registerRoutesPedagogico() {
   router.register('pedagogico-dashboard',                 (c) => renderDashboardPedagogicoView(c))
@@ -17,4 +19,6 @@ export function registerRoutesPedagogico() {
   router.register('pedagogico-caso',                      (c) => renderStudentCaseDetailView(c))
   router.register('pedagogico-seguimiento-reglas',        (c) => renderSeguimientoRulesView(c))
   router.register('pedagogico-evaluaciones',              (c) => renderEvaluacionesDashboardView(c))
+  router.register('pedagogico-seguimiento-ausentes',      (c) => renderSeguimientoAusentesView(c))
+  router.register('pedagogico-ausentismo-dashboard',      (c) => renderAusentismoDashboardView(c))
 }

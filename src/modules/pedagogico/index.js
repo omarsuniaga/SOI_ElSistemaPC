@@ -11,4 +11,8 @@ export {
   levantarSuspension,
   crearRetencion,
   levantarRetencion,
+  enviarRetencionNivel3,
+  reincorporarAlumno,
+  fetchKpisAusentismo,
+  fetchCasosCerrados,
 } from './services/seguimientoAusentesService.js'

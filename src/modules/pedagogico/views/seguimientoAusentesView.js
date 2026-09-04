@@ -6,6 +6,8 @@ import {
   fetchHistorialSeguimiento,
   resolverContactoAlumno,
   enviarSeguimientoAusentismo,
+  enviarRetencionNivel3,
+  reincorporarAlumno,
   reiniciarContadorAusencias,
   suspenderAlumno,
 } from '../services/seguimientoAusentesService.js'
@@ -386,7 +388,7 @@ async function _openDetailPanel(alumno) {
   const historicoRows = await fetchHistorialSeguimiento(alumno.alumno_id)
 
   const modalContent = `
-    <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+    <div style="overflow-y: auto;">
       <div class="row mb-4">
         <div class="col-md-6">
           <h5>Información del Alumno</h5>
@@ -458,11 +460,28 @@ async function _openDetailPanel(alumno) {
               <i class="bi bi-whatsapp me-1"></i>Nivel ${n}${n === alumno.nivel ? ' (actual)' : ''}
             </button>
           `).join('')}
-          <button class="btn btn-sm btn-outline-danger" disabled title="Disponible en Fase 3" data-action="retencion-nivel-3">
-            Retener instrumento
-          </button>
         </div>
         <p class="small text-muted mt-2 mb-0">Abre WhatsApp con el mensaje precargado. Revisalo antes de enviar; el contacto queda registrado.</p>
+      </div>
+
+      <div class="mb-4 border rounded p-3" style="border-color: var(--n3-line, #d98b9c) !important;">
+        <h5 class="mb-2"><i class="bi bi-music-note-list me-1"></i>Retención de instrumento (Nivel 3)</h5>
+        ${alumno.retencion_activa
+          ? `
+            <p class="small mb-2">Este alumno tiene el instrumento <strong>retenido</strong>.</p>
+            <button class="btn btn-sm btn-success" data-accion-reincorporar>
+              <i class="bi bi-check2-circle me-1"></i>Reincorporar alumno (acta firmada)
+            </button>
+            <p class="small text-muted mt-2 mb-0">Levanta la retención, reinicia el contador de ausencias y cierra el caso.</p>
+          `
+          : `
+            <button class="btn btn-sm" data-accion-retener style="background:#9f1239;color:#fff;border:0;">
+              <i class="bi bi-lock me-1"></i>Retener instrumento
+            </button>
+            <p class="small text-muted mt-2 mb-0">
+              Marca el instrumento como retenido y abre <strong>dos mensajes</strong>: al representante (cómo desbloquear) y al maestro (recoger el instrumento). Requiere confirmación.
+            </p>
+          `}
       </div>
 
       <div class="border-top pt-3">
@@ -499,11 +518,47 @@ async function _openDetailPanel(alumno) {
   AppModal.open({
     title: `Detalle: ${alumno.alumno_nombre}`,
     body: modalContent,
-    size: 'lg',
+    size: 'fullscreen',
     hideSave: true,
     cancelText: 'Cerrar',
     onOpen: (modalEl) => {
       if (!modalEl) return
+
+      // Retener instrumento (Nivel 3)
+      modalEl.querySelector('[data-accion-retener]')?.addEventListener('click', async (e) => {
+        if (!window.confirm(
+          `RETENCIÓN DE INSTRUMENTO\n\n${alumno.alumno_nombre} · ${alumno.instrumento_principal || 'instrumento'}\n${alumno.dias_ausente} días de ausencia acumulados.\n\nSe marcará el instrumento como retenido y se abrirán los mensajes al representante y al maestro.\n\n¿Confirmás?`,
+        )) return
+        e.currentTarget.disabled = true
+        try {
+          const { waRepresentante, waMaestro } = await enviarRetencionNivel3({ alumno })
+          if (waRepresentante) window.open(waRepresentante, '_blank', 'noopener')
+          if (waMaestro) setTimeout(() => window.open(waMaestro, '_blank', 'noopener'), 400)
+          AppModal.close?.()
+          _toast(`Instrumento de ${alumno.alumno_nombre} retenido. Revisá y enviá los 2 mensajes.`, 'success')
+          await _loadData(); _render(); _attachEvents()
+        } catch (err) {
+          console.error(err)
+          _toast(err.message === 'SIN_CONTACTO' ? 'El alumno no tiene teléfono de representante.' : 'No se pudo registrar la retención.', 'error')
+          e.currentTarget.disabled = false
+        }
+      })
+
+      // Reincorporar alumno
+      modalEl.querySelector('[data-accion-reincorporar]')?.addEventListener('click', async (e) => {
+        if (!window.confirm(`¿Reincorporar a ${alumno.alumno_nombre}?\n\nSe levanta la retención del instrumento, se reinicia su contador de ausencias y se cierra el caso.`)) return
+        e.currentTarget.disabled = true
+        try {
+          await reincorporarAlumno({ retencionId: alumno.retencion_id, alumno })
+          AppModal.close?.()
+          _toast(`${alumno.alumno_nombre} reincorporado. Contador reiniciado.`, 'success')
+          await _loadData(); _render(); _attachEvents()
+        } catch (err) {
+          console.error(err)
+          _toast('No se pudo reincorporar al alumno.', 'error')
+          e.currentTarget.disabled = false
+        }
+      })
 
       modalEl.querySelectorAll('[data-wa-modal]').forEach((btn) => {
         btn.addEventListener('click', async () => {

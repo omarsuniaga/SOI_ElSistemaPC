@@ -26,6 +26,10 @@ import {
   enviarSeguimientoAusentismo,
   reiniciarContadorAusencias,
   suspenderAlumno,
+  enviarRetencionNivel3,
+  reincorporarAlumno,
+  fetchKpisAusentismo,
+  fetchCasosCerrados,
   __clearPeriodoCache, // For testing only
 } from '../../../../src/modules/pedagogico/services/seguimientoAusentesService.js'
 
@@ -485,6 +489,93 @@ describe('DataAdapter CRUD Service Methods', () => {
       await expect(
         enviarSeguimientoAusentismo({ alumno: { ...alumno, contacto_telefono: null } }),
       ).rejects.toThrow('SIN_CONTACTO')
+    })
+  })
+
+  // ============ enviarRetencionNivel3 ============
+  describe('enviarRetencionNivel3', () => {
+    const alu = {
+      alumno_id: 'a9', alumno_nombre: 'Nico Ríos', instrumento_principal: 'Trompeta',
+      dias_ausente: 12, nivel: 3, contacto_telefono: '+18091234567', contacto_nombre: 'Rep',
+      maestro_nombre: 'Prof M', maestro_tlf: '8091112222', ultima_ausencia_fecha: '2026-09-01',
+    }
+
+    it('crea la retención y devuelve los dos links wa.me (representante + maestro)', async () => {
+      mockFrom.mockImplementation((table) => {
+        if (table === 'retenciones_instrumento') return mockQueryChain({ data: { id: 'ret-9', estado: 'retenido' } })
+        if (table === 'comunicaciones_seguimiento') return mockQueryChain({ data: { id: 'c9' } })
+        return mockQueryChain({ data: null })
+      })
+
+      const res = await enviarRetencionNivel3({ alumno: alu })
+      expect(res.retencion.id).toBe('ret-9')
+      expect(res.waRepresentante).toContain('wa.me/18091234567')
+      expect(res.waMaestro).toContain('wa.me/18091112222') // 8091112222 → +18091112222
+    })
+
+    it('lanza SIN_CONTACTO si no hay teléfono del representante', async () => {
+      await expect(enviarRetencionNivel3({ alumno: { ...alu, contacto_telefono: null } })).rejects.toThrow('SIN_CONTACTO')
+    })
+  })
+
+  // ============ reincorporarAlumno ============
+  describe('reincorporarAlumno', () => {
+    it('levanta la retención y registra el cierre', async () => {
+      mockFrom.mockImplementation((table) => {
+        if (table === 'retenciones_instrumento') return mockQueryChain({ data: { id: 'ret-9', estado: 'levantada' } })
+        return mockQueryChain({ data: { id: 'c10' } })
+      })
+      const res = await reincorporarAlumno({ retencionId: 'ret-9', alumno: { alumno_id: 'a9', alumno_nombre: 'Nico', contacto_nombre: 'Rep' } })
+      expect(res.estado).toBe('levantada')
+    })
+  })
+
+  // ============ fetchKpisAusentismo ============
+  describe('fetchKpisAusentismo', () => {
+    it('agrega niveles, sin-contacto y retenciones', async () => {
+      mockFrom.mockImplementation((table) => {
+        if (table === 'vw_seguimiento_ausentes') {
+          return { select: async () => ({ data: [
+            { nivel: 1, contacto_telefono: '+18090000000' },
+            { nivel: 1, contacto_telefono: null },
+            { nivel: 2, contacto_telefono: '+18090000000' },
+            { nivel: 3, contacto_telefono: '+18090000000' },
+          ] }) }
+        }
+        if (table === 'retenciones_instrumento') {
+          return { select: () => ({ eq: async () => ({ count: 2 }) }) }
+        }
+        if (table === 'comunicaciones_seguimiento') {
+          return { select: () => ({ eq: () => ({ gte: async () => ({ data: [{ fecha: 'x' }, { fecha: 'y' }] }) }) }) }
+        }
+        return mockQueryChain({ data: null })
+      })
+
+      const k = await fetchKpisAusentismo()
+      expect(k.nivel1).toBe(2)
+      expect(k.nivel2).toBe(1)
+      expect(k.nivel3).toBe(1)
+      expect(k.sinContacto).toBe(1)
+      expect(k.retencionesActivas).toBe(2)
+      expect(k.contactosUltimas72h).toBe(2)
+    })
+  })
+
+  // ============ fetchCasosCerrados ============
+  describe('fetchCasosCerrados', () => {
+    it('trae comunicaciones origen=ausentismo con resultado=resuelto', async () => {
+      let filters = {}
+      const chain = {
+        select() { return this }, eq(k, v) { filters[k] = v; return this },
+        in(k, v) { filters[k] = v; return this }, order() { return this },
+        limit() { return this }, gte(k, v) { filters.gte = v; return this }, lte() { return this },
+        then(res) { return Promise.resolve({ data: [{ id: 'x', resultado: 'resuelto' }] }).then(res) },
+      }
+      mockFrom.mockImplementation(() => chain)
+      const rows = await fetchCasosCerrados({ desde: '2026-08-01' })
+      expect(rows).toHaveLength(1)
+      expect(filters.origen).toBe('ausentismo')
+      expect(filters.resultado).toEqual(['resuelto'])
     })
   })
 

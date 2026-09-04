@@ -97,6 +97,12 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
   })),
   reiniciarContadorAusencias: vi.fn(async () => ({ id: 'r1' })),
   suspenderAlumno: vi.fn(async () => ({ id: 's1', estado: 'activa' })),
+  enviarRetencionNivel3: vi.fn(async () => ({
+    retencion: { id: 'ret-1' },
+    waRepresentante: 'https://wa.me/18091234567?text=retencion-rep',
+    waMaestro: 'https://wa.me/18091112222?text=retencion-maestro',
+  })),
+  reincorporarAlumno: vi.fn(async () => ({ id: 'ret-1', estado: 'levantada' })),
 }))
 
 // Mock shared components — shape matches the real modules (objects with static methods)
@@ -221,7 +227,7 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(arg.title).toContain('Juan Pérez')
   })
 
-  it('detail modal has WhatsApp buttons per nivel and retención still a stub', async () => {
+  it('detail modal has 3 WhatsApp buttons and a working "Retener instrumento" action', async () => {
     const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
 
     await renderSeguimientoAusentesView(container)
@@ -232,8 +238,54 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     const body = modalOpenMock.mock.calls[0][0].body
     const frag = new dom.window.DOMParser().parseFromString(`<div>${body}</div>`, 'text/html')
     expect(frag.querySelectorAll('button[data-wa-modal]').length).toBe(3)
-    const retencion = frag.querySelector('button[data-action="retencion-nivel-3"]')
-    expect(retencion?.hasAttribute('disabled')).toBe(true)
+    // a1 no tiene retención → aparece el botón de retener, no deshabilitado
+    const retener = frag.querySelector('button[data-accion-retener]')
+    expect(retener).toBeTruthy()
+    expect(retener.hasAttribute('disabled')).toBe(false)
+    expect(frag.querySelector('button[data-accion-reincorporar]')).toBeNull()
+  })
+
+  it('modal "Retener instrumento" confirms, calls enviarRetencionNivel3 and opens wa.me', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+    container.querySelector('[data-alumno-id="a1"]')?.click()
+    await new Promise((r) => setTimeout(r, 20))
+    const { body, onOpen } = modalOpenMock.mock.calls[0][0]
+    const host = document.createElement('div')
+    host.innerHTML = body
+    document.body.appendChild(host)
+    dom.window.confirm = vi.fn(() => true)
+    onOpen(host)
+
+    host.querySelector('[data-accion-retener]').click()
+    await new Promise((r) => setTimeout(r, 40))
+
+    expect(dom.window.confirm).toHaveBeenCalled()
+    expect(svc.enviarRetencionNivel3).toHaveBeenCalledWith(expect.objectContaining({ alumno: expect.objectContaining({ alumno_id: 'a1' }) }))
+    expect(dom.window.open).toHaveBeenCalled()
+  })
+
+  it('shows "Reincorporar" instead of "Retener" when retencion_activa', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    svc.fetchSeguimientoAusentes.mockResolvedValueOnce({
+      alumnos: [{
+        alumno_id: 'aR', alumno_nombre: 'Alu Retenido', instrumento_principal: 'Cello',
+        clase_nombres: 'X', maestro_id: 'm', maestro_nombre: 'M', maestro_tlf: '+18091112222',
+        dias_ausente: 12, dias_clase: 15, ultima_ausencia_fecha: '2026-09-01', nivel: 3,
+        contacto_nombre: 'Rep', contacto_telefono: '+18091234567', contacto_origen: 'representante_alumno',
+        ultimo_seguimiento_nivel: 3, ultimo_seguimiento_fecha: '2026-09-02', ultimo_seguimiento_resultado: 'contactado',
+        retencion_id: 'ret-1', retencion_activa: true, periodo_nombre: 'Semestre 2026-II',
+      }],
+      totalCount: 1,
+    })
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+    container.querySelector('[data-alumno-id="aR"]')?.click()
+    await new Promise((r) => setTimeout(r, 20))
+    const frag = new dom.window.DOMParser().parseFromString(`<div>${modalOpenMock.mock.calls[0][0].body}</div>`, 'text/html')
+    expect(frag.querySelector('button[data-accion-reincorporar]')).toBeTruthy()
+    expect(frag.querySelector('button[data-accion-retener]')).toBeNull()
   })
 
   it('opens HelpPanel.open when the help button is clicked', async () => {

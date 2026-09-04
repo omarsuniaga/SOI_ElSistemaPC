@@ -24,7 +24,8 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
         maestro_id: 'm1',
         maestro_nombre: 'Maestro López',
         dias_ausente: 3,
-        sesiones_ausente: 5,
+        dias_clase: 6,
+        mes_nombre: "septiembre 2026",
         ultima_ausencia_fecha: '2026-03-20',
         nivel: 3,
         contacto_nombre: 'María Pérez',
@@ -43,7 +44,8 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
         maestro_id: 'm2',
         maestro_nombre: 'Maestro Rodríguez',
         dias_ausente: 2,
-        sesiones_ausente: 3,
+        dias_clase: 4,
+        mes_nombre: "septiembre 2026",
         ultima_ausencia_fecha: '2026-03-18',
         nivel: 2,
         contacto_nombre: null,
@@ -62,7 +64,8 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
         maestro_id: 'm1',
         maestro_nombre: 'Maestro López',
         dias_ausente: 1,
-        sesiones_ausente: 2,
+        dias_clase: 3,
+        mes_nombre: "septiembre 2026",
         ultima_ausencia_fecha: '2026-03-19',
         nivel: 1,
         contacto_nombre: 'Pedro Martínez',
@@ -151,14 +154,25 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(nivel3Badge).toBeTruthy()
   })
 
-  it('should show días ausente count', async () => {
+  it('shows faltas as "ausente/con clase" del mes and no sessions count', async () => {
     const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
 
     await renderSeguimientoAusentesView(container)
 
-    const html = container.innerHTML
-    expect(html).toContain('3') // Juan has 3 días
-    expect(html).toContain('2') // Carlos has 2 días
+    const juanBadge = container.querySelector('[data-alumno-id="a1"] [data-nivel="3"]')
+    expect(juanBadge?.textContent.trim()).toBe('3/6')
+    expect(container.innerHTML).toContain('faltas del mes')
+    expect(container.innerHTML).not.toMatch(/sesiones|ses\./i)
+  })
+
+  it('no longer renders a separate N1/N2/N3 column per row', async () => {
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+
+    const row = container.querySelector('[data-alumno-id="a1"]')
+    // el único badge de la fila es el del contador (data-nivel); no hay un "N3" suelto
+    const badges = [...row.querySelectorAll('.badge')].map((b) => b.textContent.trim())
+    expect(badges).not.toContain('N3')
   })
 
   it('should show red chip "sin contacto" when contacto_telefono is null', async () => {

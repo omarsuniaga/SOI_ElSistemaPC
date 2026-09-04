@@ -34,6 +34,7 @@ const navGroups = [
       { id: 'salones', label: 'Salones & Espacios', icon: 'bi-door-open' },
       { id: 'asistencias', label: 'Control de Asistencias', icon: 'bi-calendar-check' },
       { id: 'admin-ausencias', label: 'Gestión de Ausencias', icon: 'bi-calendar-x' },
+      { id: 'pedagogico-ausentismo-dashboard', label: 'Ausentismo de Alumnos', icon: 'bi-person-exclamation' },
     ],
   },
   {

@@ -527,3 +527,150 @@ export async function levantarRetencion({
 
   return data
 }
+
+/**
+ * Nivel 3: retiene el instrumento del alumno y prepara los DOS mensajes de WhatsApp
+ * (al representante con instrucciones de desbloqueo, y al maestro con la orden de
+ * recoger el instrumento). Registra ambos contactos.
+ *
+ * @param {Object} opts
+ * @param {Object} opts.alumno - fila de vw_seguimiento_ausentes
+ * @param {string} [opts.notas]
+ * @returns {Promise<{ retencion, waRepresentante: string|null, waMaestro: string|null }>}
+ * @throws {Error} 'SIN_CONTACTO' si no hay teléfono del representante
+ */
+export async function enviarRetencionNivel3({ alumno, notas = '' } = {}) {
+  if (!alumno?.contacto_telefono) throw new Error('SIN_CONTACTO')
+
+  const retencion = await crearRetencion({
+    alumnoId: alumno.alumno_id,
+    instrumentoTexto: alumno.instrumento_principal || null,
+    notas: notas || `Retención por ${alumno.dias_ausente} días de ausencia acumulados.`,
+  })
+
+  // Mensaje al representante
+  const msgRep = construirMensajeAusentismo({ nivel: 3, destinatario: 'representante', alumno })
+  await registrarContacto({
+    alumnoId: alumno.alumno_id,
+    nivel: 3,
+    contactoTelefono: alumno.contacto_telefono,
+    contactoNombre: alumno.contacto_nombre || '',
+    notas: 'Nivel 3: retención de instrumento — instrucciones de desbloqueo al representante.',
+  }).catch((e) => { if (e.message !== 'CONTACTO_DUPLICADO') throw e })
+
+  // Mensaje al maestro (si tiene teléfono)
+  let waMaestro = null
+  const telMaestro = normalizarTelefonoRD(alumno.maestro_tlf)
+  if (telMaestro) {
+    const msgMaestro = construirMensajeAusentismo({ nivel: 3, destinatario: 'maestro', alumno })
+    waMaestro = whatsappLink(telMaestro, msgMaestro)
+    await supabase.from('comunicaciones_seguimiento').insert({
+      alumno_id: alumno.alumno_id,
+      canal: 'whatsapp',
+      fecha: new Date().toISOString(),
+      resultado: 'contactado',
+      estado: 'abierto',
+      requiere_seguimiento: true,
+      origen: 'ausentismo',
+      nivel: 3,
+      contacto_nombre: alumno.maestro_nombre || 'Maestro',
+      contacto_telefono: telMaestro,
+      notas: 'Nivel 3: orden de recogida del instrumento al maestro.',
+      responsable_id: await _uidActual(),
+    })
+  }
+
+  await supabase.from('retenciones_instrumento')
+    .update({ maestro_notificado_en: new Date().toISOString() })
+    .eq('id', retencion.id)
+
+  return {
+    retencion,
+    waRepresentante: whatsappLink(alumno.contacto_telefono, msgRep),
+    waMaestro,
+  }
+}
+
+/**
+ * Reincorpora al alumno: levanta la retención (lo que reinicia su contador vía
+ * fecha_reincorporacion) y registra el contacto de cierre.
+ *
+ * @param {Object} opts
+ * @param {string} opts.retencionId
+ * @param {Object} opts.alumno
+ * @param {string} [opts.notas]
+ * @returns {Promise<Object>} retención actualizada
+ */
+export async function reincorporarAlumno({ retencionId, alumno, notas = '' } = {}) {
+  const ret = await levantarRetencion({ retencionId, notas: notas || 'Reincorporación: acta de compromiso firmada.' })
+
+  try {
+    await supabase.from('comunicaciones_seguimiento').insert({
+      alumno_id: alumno.alumno_id,
+      canal: 'reunion',
+      fecha: new Date().toISOString(),
+      resultado: 'resuelto',
+      estado: 'cerrado',
+      requiere_seguimiento: false,
+      origen: 'ausentismo',
+      nivel: 3,
+      contacto_nombre: alumno.contacto_nombre || alumno.alumno_nombre,
+      notas: notas || 'Reincorporación tras retención de instrumento. Contador reiniciado.',
+      responsable_id: await _uidActual(),
+    })
+  } catch (e) {
+    console.warn('[reincorporarAlumno] log', e?.message)
+  }
+
+  return ret
+}
+
+/**
+ * KPIs del panel de ausentismo (para ADM). Lee la vista + retenciones_instrumento.
+ * @returns {Promise<Object>}
+ */
+export async function fetchKpisAusentismo() {
+  const [vista, retActivas, retLevantadas, contactos] = await Promise.all([
+    supabase.from('vw_seguimiento_ausentes').select('nivel, contacto_telefono'),
+    supabase.from('retenciones_instrumento').select('id', { count: 'exact', head: true }).eq('estado', 'retenido'),
+    supabase.from('retenciones_instrumento').select('id', { count: 'exact', head: true }).eq('estado', 'levantada'),
+    supabase.from('comunicaciones_seguimiento')
+      .select('fecha')
+      .eq('origen', 'ausentismo')
+      .gte('fecha', new Date(Date.now() - 72 * 3600 * 1000).toISOString()),
+  ])
+
+  const rows = vista.data || []
+  return {
+    nivel1: rows.filter((r) => r.nivel === 1).length,
+    nivel2: rows.filter((r) => r.nivel === 2).length,
+    nivel3: rows.filter((r) => r.nivel === 3).length,
+    sinContacto: rows.filter((r) => !r.contacto_telefono).length,
+    totalAusentes: rows.length,
+    retencionesActivas: retActivas.count || 0,
+    retencionesLevantadas: retLevantadas.count || 0,
+    contactosUltimas72h: (contactos.data || []).length,
+  }
+}
+
+/**
+ * Casos de ausentismo cerrados/resueltos, para el histórico de ADM.
+ * @param {Object} opts
+ * @param {string} [opts.desde] 'YYYY-MM-DD'
+ * @param {string} [opts.hasta] 'YYYY-MM-DD'
+ * @param {number} [opts.limit=200]
+ * @returns {Promise<Array>}
+ */
+export async function fetchCasosCerrados({ desde = null, hasta = null, limit = 200 } = {}) {
+  let q = supabase.from('comunicaciones_seguimiento')
+    .select('id, alumno_id, fecha, nivel, canal, resultado, estado, notas, contacto_nombre')
+    .eq('origen', 'ausentismo')
+    .in('resultado', ['resuelto'])
+    .order('fecha', { ascending: false })
+    .limit(limit)
+  if (desde) q = q.gte('fecha', desde)
+  if (hasta) q = q.lte('fecha', `${hasta}T23:59:59`)
+  const { data, error } = await q
+  if (error) { console.error('[fetchCasosCerrados]', error); return [] }
+  return data || []
+}

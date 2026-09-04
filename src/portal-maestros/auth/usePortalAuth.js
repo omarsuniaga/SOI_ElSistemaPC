@@ -49,7 +49,7 @@ export const usePortalAuth = {
       if (!_authListener) {
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
+        } = supabase.auth.onAuthStateChange((event, session) => {
           console.log(`[usePortalAuth] Evento de auth disparado: ${event}`)
 
           // Durante init(), el SIGNED_IN inicial lo maneja init() mismo.
@@ -73,27 +73,12 @@ export const usePortalAuth = {
               )
               window.location.reload()
             }
-          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            if (session?.user) {
-              const cached = getMaestroLocal()
-              if (!cached || cached.user_id !== session.user.id) {
-                console.log(
-                  '[usePortalAuth] Nueva sesión detectada. Sincronizando datos de maestro...',
-                )
-                try {
-                  const maestro = await detectarRolMaestro()
-                  if (maestro) {
-                    state.maestro = maestro
-                    notify()
-                  }
-                } catch (err) {
-                  console.warn(
-                    '[usePortalAuth] Error sincronizando maestro post-login:',
-                    err.message,
-                  )
-                }
-              }
-            }
+          } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+            // Supabase advierte que hacer llamadas async con el mismo cliente dentro
+            // de onAuthStateChange puede bloquear la cola de autenticación.
+            setTimeout(() => {
+              void syncMaestroAfterAuth(session)
+            }, 0)
           }
         })
         _authListener = subscription
@@ -155,3 +140,20 @@ export const usePortalAuth = {
 }
 
 export const logoutMaestro = usePortalAuth.logout
+
+async function syncMaestroAfterAuth(session) {
+  const cached = getMaestroLocal()
+  if (cached && cached.user_id === session.user.id) return
+
+  console.log('[usePortalAuth] Nueva sesión detectada. Sincronizando datos de maestro...')
+  try {
+    const maestro = await detectarRolMaestro()
+    if (maestro && maestro !== PENDING_APPROVAL_SENTINEL && !maestro.__pendingApproval) {
+      state.maestro = maestro
+      state.pendingApproval = false
+      notify()
+    }
+  } catch (err) {
+    console.warn('[usePortalAuth] Error sincronizando maestro post-login:', err.message)
+  }
+}

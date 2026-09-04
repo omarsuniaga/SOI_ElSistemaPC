@@ -1,4 +1,15 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { whatsappLink } from '../../../shared/utils/phoneUtils.js'
+import { construirMensajeAusentismo } from '../domain/plantillasAusentismo.js'
+
+async function _uidActual() {
+  try {
+    const { data } = await supabase.auth.getUser()
+    return data?.user?.id || null
+  } catch {
+    return null
+  }
+}
 
 /**
  * Normalize Dominican Republic phone number format to match SQL normalizar_tel_rd().
@@ -308,9 +319,7 @@ export async function registrarContacto({
     notas,
   }
 
-  if (responsableId) {
-    insertData.responsable_id = responsableId
-  }
+  insertData.responsable_id = responsableId || (await _uidActual())
 
   // For nivel 2, auto-set escalation deadline
   if (nivel === 2) {
@@ -332,6 +341,41 @@ export async function registrarContacto({
   }
 
   return data
+}
+
+/**
+ * Orquesta el envío del mensaje de seguimiento de un alumno:
+ * arma el texto del nivel, registra el contacto en comunicaciones_seguimiento
+ * y devuelve el link wa.me para que el operador lo abra y envíe.
+ *
+ * El registro se hace ANTES de devolver el link: si el registro falla
+ * (p. ej. duplicado en 120 min) NO se abre WhatsApp.
+ *
+ * @param {Object} opts
+ * @param {Object} opts.alumno - fila de vw_seguimiento_ausentes (incluye contacto_telefono, contacto_nombre, nivel)
+ * @param {1|2|3} [opts.nivel] - por defecto el nivel del alumno
+ * @param {'representante'|'maestro'} [opts.destinatario='representante']
+ * @returns {Promise<{ waUrl: string, mensaje: string, registro: Object }>}
+ * @throws {Error} 'SIN_CONTACTO' si no hay teléfono; 'CONTACTO_DUPLICADO' si ya se contactó en 120 min
+ */
+export async function enviarSeguimientoAusentismo({ alumno, nivel, destinatario = 'representante' } = {}) {
+  const nivelReal = nivel || alumno?.nivel
+  const telefono = alumno?.contacto_telefono
+  if (!telefono) {
+    throw new Error('SIN_CONTACTO')
+  }
+
+  const mensaje = construirMensajeAusentismo({ nivel: nivelReal, destinatario, alumno })
+
+  const registro = await registrarContacto({
+    alumnoId: alumno.alumno_id,
+    nivel: nivelReal,
+    contactoTelefono: telefono,
+    contactoNombre: alumno.contacto_nombre || '',
+    notas: `Mensaje de nivel ${nivelReal} enviado por WhatsApp (${destinatario}).`,
+  })
+
+  return { waUrl: whatsappLink(telefono, mensaje), mensaje, registro }
 }
 
 /**

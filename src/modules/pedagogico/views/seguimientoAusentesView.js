@@ -5,8 +5,8 @@ import {
   fetchSeguimientoAusentes,
   fetchHistorialSeguimiento,
   resolverContactoAlumno,
+  enviarSeguimientoAusentismo,
 } from '../services/seguimientoAusentesService.js'
-import { whatsappLink } from '../../../shared/utils/phoneUtils.js'
 
 const state = {
   alumnos: [],
@@ -192,11 +192,21 @@ function _renderAlumnoRow(alumno) {
   const ns = _nivelStyle(alumno.nivel)
   const badgeStyle = `background:${ns.bg};color:${ns.fg};`
 
+  const waBtn = alumno.contacto_telefono
+    ? `<button class="btn btn-sm w-100" data-wa data-nivel="${alumno.nivel}"
+         style="background:#25d366;color:#fff;border:0;"
+         title="Enviar el mensaje de nivel ${alumno.nivel} al representante por WhatsApp">
+         <i class="bi bi-whatsapp me-1"></i>Nivel ${alumno.nivel}
+       </button>`
+    : `<button class="btn btn-sm btn-outline-secondary w-100" disabled title="Sin teléfono de contacto registrado">
+         <i class="bi bi-whatsapp me-1"></i>Sin contacto
+       </button>`
+
   return `
     <div class="card mb-2" data-alumno-id="${alumno.alumno_id}" style="border-left: 4px solid ${ns.bg}; cursor: pointer;">
       <div class="card-body p-3">
-        <div class="row align-items-start g-3">
-          <div class="col-md-4">
+        <div class="row align-items-center g-3">
+          <div class="col-md-3">
             <p class="mb-0"><strong>${alumno.alumno_nombre}</strong></p>
             <small class="text-muted">${alumno.instrumento_principal}</small>
             <p class="small text-muted mb-0">${alumno.clase_nombres}</p>
@@ -206,8 +216,7 @@ function _renderAlumnoRow(alumno) {
               <div class="badge p-2 d-inline-block" data-nivel="${alumno.nivel}" style="font-size:1rem;${badgeStyle}">
                 ${alumno.dias_ausente}
               </div>
-              <p class="small text-muted mb-0">${alumno.dias_ausente} día${alumno.dias_ausente !== 1 ? 's' : ''}</p>
-              <p class="small text-muted mb-0">${alumno.sesiones_ausente} sesiones</p>
+              <p class="small text-muted mb-0">${alumno.dias_ausente} día${alumno.dias_ausente !== 1 ? 's' : ''} · ${alumno.sesiones_ausente} ses.</p>
             </div>
           </div>
           <div class="col-md-1">
@@ -218,15 +227,46 @@ function _renderAlumnoRow(alumno) {
               ? `<p class="small mb-0"><strong>${alumno.contacto_nombre || 'Contacto'}</strong></p><p class="small text-muted mb-0">${alumno.contacto_telefono}</p>`
               : '<span class="badge bg-danger" data-sin-contacto>Sin contacto</span>'}
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             ${alumno.ultimo_seguimiento_fecha
-              ? `<small class="text-muted">N${alumno.ultimo_seguimiento_nivel} • ${alumno.ultimo_seguimiento_fecha} • ${alumno.ultimo_seguimiento_resultado}</small>`
-              : '<small class="text-muted">—</small>'}
+              ? `<small class="text-muted" data-ult-seg>N${alumno.ultimo_seguimiento_nivel} • ${String(alumno.ultimo_seguimiento_fecha).slice(0, 10)} • ${alumno.ultimo_seguimiento_resultado || ''}</small>`
+              : '<small class="text-muted" data-ult-seg>Sin contactar</small>'}
+          </div>
+          <div class="col-md-2">
+            ${waBtn}
           </div>
         </div>
       </div>
     </div>
   `
+}
+
+function _toast(message, type = 'info') {
+  window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }))
+}
+
+async function _enviarWhatsApp(alumnoId, nivel) {
+  const alumno = state.alumnos.find((a) => a.alumno_id === alumnoId)
+  if (!alumno) return
+
+  try {
+    const { waUrl } = await enviarSeguimientoAusentismo({ alumno, nivel: Number(nivel) })
+    window.open(waUrl, '_blank', 'noopener')
+    _toast(`Mensaje de nivel ${nivel} abierto en WhatsApp y registrado como contacto.`, 'success')
+    // refrescar para que el "último seguimiento" de la fila se actualice
+    await _loadData()
+    _render()
+    _attachEvents()
+  } catch (err) {
+    if (err.message === 'CONTACTO_DUPLICADO') {
+      _toast('Ya se registró un contacto de este nivel en los últimos 120 minutos.', 'warning')
+    } else if (err.message === 'SIN_CONTACTO') {
+      _toast('Este alumno no tiene un teléfono de contacto válido.', 'error')
+    } else {
+      console.error('[enviarWhatsApp]', err)
+      _toast('No se pudo registrar el contacto. Intentá de nuevo.', 'error')
+    }
+  }
 }
 
 function _attachEvents() {
@@ -306,15 +346,22 @@ function _attachEvents() {
     })
   }
 
-  // Row click → detail panel
-  const rows = state.container.querySelectorAll('[data-alumno-id]')
-  rows.forEach((row) => {
+  // Botón de WhatsApp por fila (delegado; frena la apertura del panel)
+  state.container.querySelectorAll('[data-alumno-id]').forEach((row) => {
+    const alumnoId = row.getAttribute('data-alumno-id')
+
+    row.querySelector('[data-wa]')?.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      const btn = e.currentTarget
+      const nivel = btn.getAttribute('data-nivel')
+      btn.disabled = true
+      await _enviarWhatsApp(alumnoId, nivel)
+    })
+
+    // Click en el resto de la fila → panel de detalle
     row.addEventListener('click', async () => {
-      const alumnoId = row.getAttribute('data-alumno-id')
       const alumno = state.alumnos.find((a) => a.alumno_id === alumnoId)
-      if (alumno) {
-        await _openDetailPanel(alumno)
-      }
+      if (alumno) await _openDetailPanel(alumno)
     })
   })
 }
@@ -388,18 +435,21 @@ async function _openDetailPanel(alumno) {
       </div>
 
       <div class="mb-4">
-        <h5>Acciones (Fase 2+)</h5>
-        <div class="gap-2 d-flex">
-          <button class="btn btn-sm btn-outline-primary" disabled title="Disponible en la próxima fase" data-action="contacto-nivel-1">
-            Contactar Nivel 1
-          </button>
-          <button class="btn btn-sm btn-outline-warning" disabled title="Disponible en la próxima fase" data-action="contacto-nivel-2">
-            Contactar Nivel 2
-          </button>
-          <button class="btn btn-sm btn-outline-danger" disabled title="Disponible en la próxima fase" data-action="retencion-nivel-3">
-            Retener Instrumento
+        <h5>Enviar mensaje por WhatsApp</h5>
+        <div class="gap-2 d-flex flex-wrap">
+          ${[1, 2, 3].map((n) => `
+            <button class="btn btn-sm" data-wa-modal data-nivel="${n}"
+              style="background:#25d366;color:#fff;border:0;${!alumno.contacto_telefono ? 'opacity:.5;pointer-events:none;' : ''}"
+              ${!alumno.contacto_telefono ? 'disabled' : ''}
+              title="${alumno.contacto_telefono ? `Mensaje de nivel ${n} al representante` : 'Sin teléfono de contacto'}">
+              <i class="bi bi-whatsapp me-1"></i>Nivel ${n}${n === alumno.nivel ? ' (actual)' : ''}
+            </button>
+          `).join('')}
+          <button class="btn btn-sm btn-outline-danger" disabled title="Disponible en Fase 3" data-action="retencion-nivel-3">
+            Retener instrumento
           </button>
         </div>
+        <p class="small text-muted mt-2 mb-0">Abre WhatsApp con el mensaje precargado. Revisalo antes de enviar; el contacto queda registrado.</p>
       </div>
     </div>
   `
@@ -410,5 +460,15 @@ async function _openDetailPanel(alumno) {
     size: 'lg',
     hideSave: true,
     cancelText: 'Cerrar',
+    onOpen: (modalEl) => {
+      modalEl?.querySelectorAll('[data-wa-modal]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const nivel = btn.getAttribute('data-nivel')
+          btn.disabled = true
+          AppModal.close?.()
+          await _enviarWhatsApp(alumno.alumno_id, nivel)
+        })
+      })
+    },
   })
 }

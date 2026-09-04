@@ -11,6 +11,9 @@ vi.mock('../../../../src/lib/supabaseClient.js', () => ({
   supabase: {
     from: (...args) => mockFrom(...args),
     rpc: (...args) => mockRpc(...args),
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: { id: 'user-1' } } })),
+    },
   },
 }))
 
@@ -20,6 +23,7 @@ import {
   registrarContacto,
   crearRetencion,
   levantarRetencion,
+  enviarSeguimientoAusentismo,
   __clearPeriodoCache, // For testing only
 } from '../../../../src/modules/pedagogico/services/seguimientoAusentesService.js'
 
@@ -441,6 +445,44 @@ describe('DataAdapter CRUD Service Methods', () => {
       expect(result.estado).toBe('levantada')
       expect(result.acta_firmada_en).toBeTruthy()
       expect(result.fecha_reincorporacion).toBeTruthy()
+    })
+  })
+
+  // ============ enviarSeguimientoAusentismo ============
+  describe('enviarSeguimientoAusentismo', () => {
+    const alumno = {
+      alumno_id: 'a1',
+      alumno_nombre: 'Lucía Peña',
+      instrumento_principal: 'Flauta',
+      dias_ausente: 2,
+      nivel: 2,
+      contacto_telefono: '+18091234567',
+      contacto_nombre: 'Rep Peña',
+      ultima_ausencia_fecha: '2026-09-01',
+      maestro_nombre: 'Prof X',
+    }
+
+    it('arma el mensaje del nivel, registra el contacto y devuelve el link wa.me', async () => {
+      mockFrom.mockImplementation((table) => {
+        if (table === 'comunicaciones_seguimiento') {
+          return mockQueryChain({ data: { id: 'c1', nivel: 2, origen: 'ausentismo' } })
+        }
+        return mockQueryChain({ data: null })
+      })
+
+      const res = await enviarSeguimientoAusentismo({ alumno })
+
+      expect(res.mensaje).toContain('Lucía Peña')
+      expect(res.mensaje).toContain('2 inasistencias sin justificar')
+      expect(res.waUrl).toContain('wa.me/18091234567')
+      expect(res.waUrl).toContain('text=')
+      expect(res.registro.id).toBe('c1')
+    })
+
+    it('lanza SIN_CONTACTO si el alumno no tiene teléfono', async () => {
+      await expect(
+        enviarSeguimientoAusentismo({ alumno: { ...alumno, contacto_telefono: null } }),
+      ).rejects.toThrow('SIN_CONTACTO')
     })
   })
 })

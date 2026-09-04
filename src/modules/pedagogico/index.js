@@ -5,6 +5,7 @@ export {
   fetchSeguimientoAusentes,
   fetchHistorialSeguimiento,
   registrarContacto,
+  enviarSeguimientoAusentismo,
   crearRetencion,
   levantarRetencion,
 } from './services/seguimientoAusentesService.js'

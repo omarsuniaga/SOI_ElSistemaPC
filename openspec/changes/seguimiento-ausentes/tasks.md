@@ -868,24 +868,26 @@ npm run test:run -- tests/unit/modules/pedagogico/views/seguimientoAusentesView.
 
 ---
 
-## FASE 2 (Deferred): Contact Action Handler
+## FASE 2 — Contact Action Handler — HECHO (parcial)
 
-**Scope**: Implement the "Contactar Nivel N" action. On click, open WhatsApp link with pre-filled template, record comunicaciones row, enforce 120-min duplicate guard, auto-escalate nivel 2.
+**Scope**: botón de WhatsApp por fila (y en el panel de detalle) que abre wa.me con el mensaje del nivel y registra el contacto.
 
-**Acceptance Criteria** (from spec, not yet implemented):
-- [ ] Contact action writes comunicaciones row with nivel, origen='ausentismo'
-- [ ] 120-min duplicate guard blocks second contact at same nivel
-- [ ] Nivel 2 auto-sets `proxima_accion='contacto_nivel_3'` and `proxima_fecha=now()+7 days`
-- [ ] WhatsApp link opens wa.me with template message
-- [ ] Template variables interpolated client-side
-- [ ] RLS: ACM role only
+**Acceptance Criteria**:
+- [x] Contact action writes comunicaciones row with nivel, origen='ausentismo'
+- [x] 120-min duplicate guard blocks second contact at same nivel (toast de aviso)
+- [x] Nivel 2 auto-sets `proxima_accion='contacto_nivel_3'` and `proxima_fecha=now()+7 days`
+- [x] WhatsApp link opens wa.me with template message (`window.open`)
+- [x] Template variables interpolated client-side (`plantillasAusentismo.js`)
+- [x] responsable_id = auth.uid() del operador
+- [ ] RLS: ACM role only — la escritura hoy la permite cualquier `authenticated` (política de `comunicaciones_seguimiento` preexistente); endurecer si el Depto lo pide
+- [ ] Plantillas en `document_templates` (hoy inline en `plantillasAusentismo.js`; migrar en Fase 4 con el editor)
+- [ ] Nivel 3 desde el botón sólo manda el mensaje al representante; el mensaje al maestro + marcar retención = Fase 3
 
-**Estimated Lines**: ~200
-
-**Files (TBD in Fase 2 tasks)**:
-- `src/modules/pedagogico/actions/ContactoAusentismoAction.js` (handler)
-- `src/modules/pedagogico/views/seguimientoAusentesView.js` (update: enable buttons, call action)
-- `tests/unit/pedagogico/actions/ContactoAusentismoAction.test.js` (tests)
+**Archivos**:
+- `src/modules/pedagogico/domain/plantillasAusentismo.js` (nuevo) — 4 plantillas + `construirMensajeAusentismo`
+- `src/modules/pedagogico/services/seguimientoAusentesService.js` — `enviarSeguimientoAusentismo()`, `_uidActual()`, `registrarContacto` ahora rellena responsable_id
+- `src/modules/pedagogico/views/seguimientoAusentesView.js` — botón WA por fila + en el modal, toasts, refresh
+- Tests: `plantillasAusentismo.test.js` (nuevo, 6), `seguimientoAusentesService.crud.test.js` (+2), `seguimientoAusentesView.test.js` (+4)
 
 **Dependencies**: Fase 1a + 1b complete
 

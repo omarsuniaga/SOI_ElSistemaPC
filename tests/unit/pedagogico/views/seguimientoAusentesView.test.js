@@ -87,6 +87,11 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
     }
   }),
   fetchHistorialSeguimiento: vi.fn(async () => []),
+  enviarSeguimientoAusentismo: vi.fn(async ({ alumno, nivel }) => ({
+    waUrl: `https://wa.me/18091234567?text=nivel-${nivel || alumno.nivel}`,
+    mensaje: 'mensaje de prueba',
+    registro: { id: 'c1', nivel: nivel || alumno.nivel },
+  })),
 }))
 
 // Mock shared components — shape matches the real modules (objects with static methods)
@@ -109,6 +114,8 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     global.document = dom.window.document
     global.window = dom.window
     global.HTMLElement = dom.window.HTMLElement
+    global.CustomEvent = dom.window.CustomEvent
+    dom.window.open = vi.fn()
 
     container = document.getElementById('app')
   })
@@ -198,7 +205,7 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(arg.title).toContain('Juan Pérez')
   })
 
-  it('should render action buttons as disabled stubs in the detail modal body', async () => {
+  it('detail modal has WhatsApp buttons per nivel and retención still a stub', async () => {
     const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
 
     await renderSeguimientoAusentesView(container)
@@ -208,9 +215,9 @@ describe('seguimientoAusentesView (T1b.1)', () => {
 
     const body = modalOpenMock.mock.calls[0][0].body
     const frag = new dom.window.DOMParser().parseFromString(`<div>${body}</div>`, 'text/html')
-    const actionButtons = frag.querySelectorAll('button[data-action]')
-    expect(actionButtons.length).toBeGreaterThan(0)
-    actionButtons.forEach((b) => expect(b.hasAttribute('disabled')).toBe(true))
+    expect(frag.querySelectorAll('button[data-wa-modal]').length).toBe(3)
+    const retencion = frag.querySelector('button[data-action="retencion-nivel-3"]')
+    expect(retencion?.hasAttribute('disabled')).toBe(true)
   })
 
   it('opens HelpPanel.open when the help button is clicked', async () => {
@@ -218,6 +225,51 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     await renderSeguimientoAusentesView(container)
     container.querySelector('#btn-help-ausentes')?.click()
     expect(helpOpenMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('row WhatsApp button sends the level message and opens wa.me', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+
+    await renderSeguimientoAusentesView(container)
+
+    const waBtn = container.querySelector('[data-alumno-id="a1"] [data-wa]')
+    expect(waBtn).toBeTruthy()
+    expect(waBtn.getAttribute('data-nivel')).toBe('3')
+
+    waBtn.click()
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    expect(svc.enviarSeguimientoAusentismo).toHaveBeenCalledWith(
+      expect.objectContaining({ nivel: 3, alumno: expect.objectContaining({ alumno_id: 'a1' }) }),
+    )
+    expect(dom.window.open).toHaveBeenCalledWith(expect.stringContaining('wa.me'), '_blank', 'noopener')
+  })
+
+  it('row WhatsApp button is disabled when the alumno has no contact', async () => {
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+
+    const row = container.querySelector('[data-alumno-id="a2"]')
+    expect(row.querySelector('[data-wa]')).toBeNull()
+    const disabled = row.querySelector('button[disabled]')
+    expect(disabled?.textContent).toContain('Sin contacto')
+  })
+
+  it('shows a warning toast when the contact is a duplicate within 120 min', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    svc.enviarSeguimientoAusentismo.mockRejectedValueOnce(new Error('CONTACTO_DUPLICADO'))
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+
+    const toastSpy = vi.fn()
+    dom.window.addEventListener('showToast', toastSpy)
+
+    await renderSeguimientoAusentesView(container)
+    container.querySelector('[data-alumno-id="a1"] [data-wa]').click()
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    expect(toastSpy).toHaveBeenCalled()
+    expect(toastSpy.mock.calls[0][0].detail.type).toBe('warning')
   })
 
   it('should filter by nivel when nivel select changes', async () => {

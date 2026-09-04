@@ -110,7 +110,7 @@ function _render() {
       ` : ''}
 
       <!-- Filtros -->
-      <div class="mb-3 p-2 bg-light rounded">
+      <div class="mb-3 p-2 bg-body-tertiary border rounded">
         <div class="row g-2">
           <div class="col-md-4">
             <div class="input-group input-group-sm">
@@ -177,16 +177,23 @@ function _abrirAyuda() {
   })
 }
 
+// Colores de nivel: saturados, legibles sobre fondo claro y oscuro (no dependen del tema).
+const NIVEL_STYLE = {
+  1: { bg: '#b7791f', fg: '#fff' },
+  2: { bg: '#c2410c', fg: '#fff' },
+  3: { bg: '#9f1239', fg: '#fff' },
+}
+
+function _nivelStyle(nivel) {
+  return NIVEL_STYLE[nivel] || { bg: 'var(--bs-secondary)', fg: '#fff' }
+}
+
 function _renderAlumnoRow(alumno) {
-  const nivelColors = {
-    1: 'warning',
-    2: 'danger',
-    3: 'danger',
-  }
-  const nivelColor = nivelColors[alumno.nivel] || 'secondary'
+  const ns = _nivelStyle(alumno.nivel)
+  const badgeStyle = `background:${ns.bg};color:${ns.fg};`
 
   return `
-    <div class="card cursor-pointer mb-2" data-alumno-id="${alumno.alumno_id}" style="border-left: 4px solid ${nivelColor === 'warning' ? '#ffc107' : '#dc3545'}; cursor: pointer;">
+    <div class="card mb-2" data-alumno-id="${alumno.alumno_id}" style="border-left: 4px solid ${ns.bg}; cursor: pointer;">
       <div class="card-body p-3">
         <div class="row align-items-start g-3">
           <div class="col-md-4">
@@ -196,7 +203,7 @@ function _renderAlumnoRow(alumno) {
           </div>
           <div class="col-md-2">
             <div class="text-center">
-              <div class="badge bg-${nivelColor} p-2 d-inline-block" data-nivel="${alumno.nivel}" style="font-size:1rem;">
+              <div class="badge p-2 d-inline-block" data-nivel="${alumno.nivel}" style="font-size:1rem;${badgeStyle}">
                 ${alumno.dias_ausente}
               </div>
               <p class="small text-muted mb-0">${alumno.dias_ausente} día${alumno.dias_ausente !== 1 ? 's' : ''}</p>
@@ -204,7 +211,7 @@ function _renderAlumnoRow(alumno) {
             </div>
           </div>
           <div class="col-md-1">
-            <span class="badge bg-${nivelColor}">N${alumno.nivel}</span>
+            <span class="badge" style="${badgeStyle}">N${alumno.nivel}</span>
           </div>
           <div class="col-md-2">
             ${alumno.contacto_telefono

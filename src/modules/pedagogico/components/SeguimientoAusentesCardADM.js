@@ -43,7 +43,7 @@ export function renderSeguimientoAusentesCardADM(data = null) {
                 <h4 class="mb-0">${stats.nivel1 || '0'}</h4>
                 <small class="text-muted">Alumnos con aviso</small>
               </div>
-              <div class="badge bg-warning text-dark p-3" style="font-size: 1.5rem;">
+              <div class="badge p-3" style="font-size: 1.5rem;background:#b7791f;color:#fff;">
                 <i class="bi bi-exclamation-circle"></i>
               </div>
             </div>
@@ -61,7 +61,7 @@ export function renderSeguimientoAusentesCardADM(data = null) {
                 <h4 class="mb-0">${stats.nivel2 || '0'}</h4>
                 <small class="text-muted">Comunicación formal</small>
               </div>
-              <div class="badge bg-danger text-white p-3" style="font-size: 1.5rem;">
+              <div class="badge p-3" style="font-size: 1.5rem;background:#c2410c;color:#fff;">
                 <i class="bi bi-exclamation-triangle"></i>
               </div>
             </div>
@@ -79,7 +79,7 @@ export function renderSeguimientoAusentesCardADM(data = null) {
                 <h4 class="mb-0">${stats.nivel3 || '0'}</h4>
                 <small class="text-muted">Retención activa</small>
               </div>
-              <div class="badge bg-danger text-white p-3" style="font-size: 1.5rem;">
+              <div class="badge p-3" style="font-size: 1.5rem;background:#9f1239;color:#fff;">
                 <i class="bi bi-exclamation-circle-fill"></i>
               </div>
             </div>

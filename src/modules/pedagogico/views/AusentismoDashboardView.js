@@ -115,7 +115,7 @@ function _render() {
 
       <!-- Casos Cerrados Stub -->
       <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-light">
+        <div class="card-header bg-body-tertiary">
           <h5 class="mb-0">Casos Cerrados Recientemente</h5>
         </div>
         <div class="card-body">
@@ -137,7 +137,7 @@ function _render() {
 
       <!-- Analytics Stub -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-light">
+        <div class="card-header bg-body-tertiary">
           <h5 class="mb-0">Análisis & Tendencias</h5>
         </div>
         <div class="card-body">
@@ -158,9 +158,9 @@ function _render() {
       </div>
 
       <!-- Read-Only Note -->
-      <div class="alert alert-light border mt-4 small">
-        <i class="bi bi-shield-lock me-2"></i>
-        <strong>Acceso de lectura:</strong> Este panel es de solo lectura. Las acciones de contacto y retención se realizan desde la vista de coordinación académica.
+      <div class="d-flex align-items-center gap-2 bg-body-tertiary border rounded p-2 mt-4 small text-body-secondary">
+        <i class="bi bi-shield-lock"></i>
+        <span><strong>Acceso de lectura:</strong> Este panel es de solo lectura. Las acciones de contacto y retención se realizan desde la vista de coordinación académica.</span>
       </div>
     </div>
   `

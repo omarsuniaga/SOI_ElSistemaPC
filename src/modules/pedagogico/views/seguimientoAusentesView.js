@@ -162,27 +162,19 @@ function _render() {
     </div>
   `
 
-  // Render HelpPanel
-  const helpBtn = state.container.querySelector('#btn-help-ausentes')
-  if (helpBtn) {
-    const helpPanel = new HelpPanel({
-      trigger: helpBtn,
-      title: 'Seguimiento de Ausentes',
-      content: `
-        <div>
-          <p><strong>¿Qué es el contador de ausencias?</strong></p>
-          <p>El contador es el número de <strong>DÍAS</strong> (no sesiones) que el alumno acumula con inasistencias sin justificar en el período actual. Cada día con ausencia cuenta una vez, aunque el alumno falte a varias clases en el mismo día.</p>
-          <p><strong>Niveles de escalamiento:</strong></p>
-          <ul>
-            <li><strong>Nivel 1:</strong> Aviso preventivo. Se contacta al representante para entender la situación.</li>
-            <li><strong>Nivel 2:</strong> Comunicación institucional con fecha límite. Requiere respuesta de la familia.</li>
-            <li><strong>Nivel 3:</strong> Retención de instrumento. El alumno debe reincorporarse formalmente.</li>
-          </ul>
-          <p>Los umbrales (1, 2, 3 días) son configurables por el Departamento Académico.</p>
-        </div>
-      `,
-    })
-  }
+}
+
+function _abrirAyuda() {
+  HelpPanel.open({
+    title: 'Seguimiento de Ausentes',
+    intro: 'El contador es la cantidad de DÍAS (no sesiones) con inasistencias sin justificar que el alumno acumula en el período actual. Si falta a varias clases el mismo día, cuenta una sola vez.',
+    sections: [
+      { icon: 'bi-1-circle-fill', title: 'Nivel 1 — Aviso preventivo', description: 'Se contacta al representante para entender la situación.', color: '#d99a2b' },
+      { icon: 'bi-2-circle-fill', title: 'Nivel 2 — Comunicación institucional', description: 'Mensaje formal con fecha límite. Requiere respuesta de la familia.', color: '#c2560f' },
+      { icon: 'bi-3-circle-fill', title: 'Nivel 3 — Retención de instrumento', description: 'El instrumento queda retenido. El alumno se reincorpora firmando un acta de compromiso.', color: '#9a1f3a' },
+      { icon: 'bi-sliders', title: 'Umbrales configurables', description: 'La cantidad de días de cada nivel la define el Departamento Académico en seguimiento_reglas.', color: '#6b7280' },
+    ],
+  })
 }
 
 function _renderAlumnoRow(alumno) {
@@ -231,6 +223,9 @@ function _renderAlumnoRow(alumno) {
 }
 
 function _attachEvents() {
+  // Ayuda
+  state.container.querySelector('#btn-help-ausentes')?.addEventListener('click', _abrirAyuda)
+
   // Debounced search
   const busquedaInput = state.container.querySelector('#busqueda-ausente')
   if (busquedaInput) {
@@ -402,12 +397,11 @@ async function _openDetailPanel(alumno) {
     </div>
   `
 
-  const modal = new AppModal({
+  AppModal.open({
     title: `Detalle: ${alumno.alumno_nombre}`,
     body: modalContent,
     size: 'lg',
-    footer: '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>',
+    hideSave: true,
+    cancelText: 'Cerrar',
   })
-
-  await modal.show()
 }

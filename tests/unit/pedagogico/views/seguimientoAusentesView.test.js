@@ -89,30 +89,14 @@ vi.mock('../../../../src/modules/pedagogico/services/seguimientoAusentesService.
   fetchHistorialSeguimiento: vi.fn(async () => []),
 }))
 
-// Mock shared components
+// Mock shared components — shape matches the real modules (objects with static methods)
+const helpOpenMock = vi.fn()
+const modalOpenMock = vi.fn()
 vi.mock('../../../../src/shared/components/HelpPanel.js', () => ({
-  HelpPanel: class HelpPanel {
-    constructor(options) {
-      this.options = options
-    }
-    render() {
-      return `<div class="help-panel">${this.options.content}</div>`
-    }
-  },
+  HelpPanel: { open: (...a) => helpOpenMock(...a), close: vi.fn() },
 }))
-
 vi.mock('../../../../src/shared/components/AppModal.js', () => ({
-  AppModal: class AppModal {
-    constructor(options) {
-      this.options = options
-    }
-    show() {
-      return Promise.resolve()
-    }
-    hide() {
-      return Promise.resolve()
-    }
-  },
+  AppModal: { open: (...a) => modalOpenMock(...a), close: vi.fn() },
 }))
 
 let container
@@ -120,6 +104,7 @@ let dom
 
 describe('seguimientoAusentesView (T1b.1)', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     dom = new JSDOM('<!DOCTYPE html><html><body><div id="app"></div></body></html>')
     global.document = dom.window.document
     global.window = dom.window
@@ -197,7 +182,7 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(paginationInfo?.textContent).toContain('Mostrando')
   })
 
-  it('should open detail panel when alumno row is clicked', async () => {
+  it('should open detail panel via AppModal.open when alumno row is clicked', async () => {
     const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
 
     await renderSeguimientoAusentesView(container)
@@ -205,32 +190,34 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     const row = container.querySelector('[data-alumno-id="a1"]')
     expect(row).toBeTruthy()
 
-    // Clicking row should trigger modal (mocked, so just verify row is clickable)
     row?.click()
-
-    // Modal promise resolves, so we should have attempted to show it
     await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(modalOpenMock).toHaveBeenCalledTimes(1)
+    const arg = modalOpenMock.mock.calls[0][0]
+    expect(arg.title).toContain('Juan Pérez')
   })
 
-  it('should render action buttons as disabled stubs', async () => {
+  it('should render action buttons as disabled stubs in the detail modal body', async () => {
     const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
 
     await renderSeguimientoAusentesView(container)
 
-    // The buttons will be in the modal HTML content that's passed to AppModal
-    // Since AppModal is mocked, we can't directly query them, but we can verify
-    // the view renders without errors and row is clickable
-    const row = container.querySelector('[data-alumno-id="a1"]')
-    expect(row).toBeTruthy()
+    container.querySelector('[data-alumno-id="a1"]')?.click()
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-    // Verify row is clickable and doesn't throw
-    try {
-      row?.click()
-      // After click, modal should attempt to show (mocked as async)
-      await new Promise((resolve) => setTimeout(resolve, 50))
-    } catch (err) {
-      expect.fail('Row click should not throw error')
-    }
+    const body = modalOpenMock.mock.calls[0][0].body
+    const frag = new dom.window.DOMParser().parseFromString(`<div>${body}</div>`, 'text/html')
+    const actionButtons = frag.querySelectorAll('button[data-action]')
+    expect(actionButtons.length).toBeGreaterThan(0)
+    actionButtons.forEach((b) => expect(b.hasAttribute('disabled')).toBe(true))
+  })
+
+  it('opens HelpPanel.open when the help button is clicked', async () => {
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+    container.querySelector('#btn-help-ausentes')?.click()
+    expect(helpOpenMock).toHaveBeenCalledTimes(1)
   })
 
   it('should filter by nivel when nivel select changes', async () => {

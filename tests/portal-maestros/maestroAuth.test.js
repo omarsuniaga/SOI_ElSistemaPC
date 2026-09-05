@@ -70,8 +70,8 @@ describe('maestroAuth', () => {
 
     const result = await loginMaestro('x@x.com', 'pass')
     expect(result.success).toBe(false)
-    // El código intenta crear automáticamente un registro en maestros, pero falla
-    expect(result.error).toContain('vincular')
+    // Perfil activo sin fila en `maestros`: falla cerrado y pide completar la vinculación
+    expect(result.error).toContain('vinculación')
   })
 
   it('loginMaestro retorna success con maestro si existe en tabla', async () => {

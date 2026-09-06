@@ -4,6 +4,7 @@
  */
 import * as cajaApi from '../api/cajaApi.js'
 import { generateMinutaPdf } from '../pdf/minutaPdf.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 
@@ -34,7 +35,7 @@ function minutaCard(minuta) {
     + visibilidadBadge(minuta.visibilidad)
     + '<span style="font-size:0.75rem;color:#94a3b8">' + fmtDate(minuta.fecha_reunion) + '</span>'
     + '</div>'
-    + '<p style="margin:0 0 0.25rem;font-size:0.9375rem;font-weight:600;color:#0f172a">' + (minuta.titulo || 'Sin titulo') + '</p>'
+    + '<p style="margin:0 0 0.25rem;font-size:0.9375rem;font-weight:600;color:#0f172a">' + escapeHTML(minuta.titulo || 'Sin titulo') + '</p>'
     + '<p style="margin:0;font-size:0.75rem;color:#64748b">' + acuerdosCount + ' acuerdos</p>'
     + '</div>'
     + '<button data-mid="' + minuta.id + '" class="btn-dl-minuta" '

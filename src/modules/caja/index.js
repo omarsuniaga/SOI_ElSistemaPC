@@ -6,6 +6,7 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import * as cajaApi from './api/cajaApi.js'
 import { initRouter, navigate, teardownRouter } from './caja.router.js'
+import { escapeHTML } from '../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 const TEAL = '#0d9488'
@@ -129,7 +130,7 @@ export function initCajaModule(app, session) {
     '</div>' +
     '<div class="fin-topbar-actions">' +
     '<span class="fin-user">' +
-    userEmail +
+    escapeHTML(userEmail) +
     '</span>' +
     '<button id="btn-theme" class="fin-topbar-btn" type="button" title="Cambiar tema" aria-label="Cambiar tema">' +
     '<i class="bi ' +

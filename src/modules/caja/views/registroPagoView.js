@@ -6,6 +6,7 @@
 import * as cajaApi from '../api/cajaApi.js'
 import { cuotaEsLiquidable, calcularMoraInfo } from '../domain/cuota.js'
 import { distribuirPago, METODOS_PAGO, buildPago } from '../domain/pago.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtMoney(centavos) {
   return '$' + (Number(centavos || 0) / 100).toFixed(2)
@@ -14,7 +15,7 @@ function fmtMoney(centavos) {
 function estadoBadge(estado) {
   const map = { pendiente: ['#fef9c3','#713f12'], vencida: ['#ffedd5','#9a3412'], en_mora: ['#fee2e2','#7f1d1d'] }
   const [bg, text] = map[estado] || ['#f1f5f9','#475569']
-  return '<span style="background:' + bg + ';color:' + text + ';font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px">' + estado + '</span>'
+  return '<span style="background:' + bg + ';color:' + text + ';font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px">' + escapeHTML(estado) + '</span>'
 }
 
 export async function render(container, session) {
@@ -29,8 +30,8 @@ export async function render(container, session) {
     const rows = familias.map(f =>
       '<button class="familia-btn" data-id="' + f.id + '"'
       + ' style="text-align:left;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:0.75rem 1rem;cursor:pointer;margin-bottom:0.375rem">'
-      + '<div style="font-weight:600;color:#0f172a">' + f.nombre_familia + '</div>'
-      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + (f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente_centavos) + '</div>'
+      + '<div style="font-weight:600;color:#0f172a">' + escapeHTML(f.nombre_familia) + '</div>'
+      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + escapeHTML(f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente_centavos) + '</div>'
       + '</button>'
     ).join('')
 
@@ -74,8 +75,8 @@ export async function render(container, session) {
           return '<label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;margin-bottom:0.375rem">'
             + '<input type="checkbox" class="cuota-check" data-id="' + c.id + '" data-monto="' + c.monto_final_centavos + '" style="width:16px;height:16px">'
             + '<div style="flex:1">'
-            + '<div style="font-size:0.875rem;font-weight:500;color:#0f172a">' + c.concepto + ' ' + c.ciclo_mes + '/' + c.ciclo_anio + '</div>'
-            + '<div style="font-size:0.75rem;color:#64748b">Vence: ' + c.fecha_vencimiento + moraStr + '</div>'
+            + '<div style="font-size:0.875rem;font-weight:500;color:#0f172a">' + escapeHTML(c.concepto) + ' ' + escapeHTML(c.ciclo_mes) + '/' + escapeHTML(c.ciclo_anio) + '</div>'
+            + '<div style="font-size:0.75rem;color:#64748b">Vence: ' + escapeHTML(c.fecha_vencimiento) + moraStr + '</div>'
             + '</div>' + estadoBadge(c.estado) + ' '
             + '<span style="font-weight:700;color:#0f172a">' + fmtMoney(c.monto_final_centavos) + '</span>'
             + '</label>'
@@ -85,7 +86,7 @@ export async function render(container, session) {
       '<div style="padding:1.5rem;max-width:700px">'
       + '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">'
       + '<button id="btn-back1" style="background:none;border:none;cursor:pointer;color:#059669"><i class="bi bi-arrow-left"></i></button>'
-      + '<h2 style="margin:0;font-size:1.125rem;font-weight:700;color:#0f172a">' + selectedFamilia.nombre_familia + '</h2>'
+      + '<h2 style="margin:0;font-size:1.125rem;font-weight:700;color:#0f172a">' + escapeHTML(selectedFamilia.nombre_familia) + '</h2>'
       + '</div>'
       + '<div style="background:#fff;border-radius:12px;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
       + '<p style="margin:0 0 0.75rem;font-size:0.875rem;font-weight:600;color:#374151">Paso 2: Seleccionar cuotas a pagar</p>'
@@ -193,7 +194,7 @@ export async function render(container, session) {
       + '<div style="width:64px;height:64px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">'
       + '<i class="bi bi-check-lg" style="font-size:1.75rem;color:#059669"></i></div>'
       + '<h3 style="margin:0 0 0.5rem;font-size:1.25rem;font-weight:700;color:#0f172a">Pago registrado</h3>'
-      + '<p style="margin:0 0 1.5rem;color:#64748b">' + fmtMoney(monto_centavos) + ' via ' + metodo + ' - ' + selectedFamilia.nombre_familia + '</p>'
+      + '<p style="margin:0 0 1.5rem;color:#64748b">' + fmtMoney(monto_centavos) + ' via ' + escapeHTML(metodo) + ' - ' + escapeHTML(selectedFamilia.nombre_familia) + '</p>'
       + '<button id="btn-nuevo-pago" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:0.5rem 1.5rem;font-weight:600;cursor:pointer">Registrar otro pago</button>'
       + '</div></div>'
     container.querySelector('#btn-nuevo-pago').addEventListener('click', () => {

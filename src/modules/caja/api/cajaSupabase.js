@@ -205,21 +205,27 @@ export async function asignarAccesorio(asignacionData) {
 
   if (asigRes.error) return handleResult(asigRes)
 
-  // Decrement stock
-  await supabase
-    .rpc('fn_decrementar_stock', {
-      p_accesorio_id: asignacionData.accesorio_id,
-      p_cantidad: asignacionData.cantidad,
-    })
-    .catch(() =>
-      // Fallback: direct update if RPC not available
-      supabase
+  // Descuento atómico de stock vía fn_decrementar_stock (no baja de 0).
+  const { error: stockError } = await supabase.rpc('fn_decrementar_stock', {
+    p_accesorio_id: asignacionData.accesorio_id,
+    p_cantidad: asignacionData.cantidad,
+  })
+  if (stockError) {
+    // Fallback read-modify-write: la RPC resuelve con { error }, no rechaza, así
+    // que hay que comprobar .error en vez de .catch(). supabase-js v2 no tiene
+    // .raw(), por eso se lee el valor actual y se reescribe.
+    const { data: accActual } = await supabase
+      .from('accesorios')
+      .select('stock_actual')
+      .eq('id', asignacionData.accesorio_id)
+      .single()
+    if (accActual) {
+      await supabase
         .from('accesorios')
-        .update({
-          stock_actual: supabase.raw(`stock_actual - ${asignacionData.cantidad}`),
-        })
-        .eq('id', asignacionData.accesorio_id),
-    )
+        .update({ stock_actual: Math.max(0, (accActual.stock_actual || 0) - asignacionData.cantidad) })
+        .eq('id', asignacionData.accesorio_id)
+    }
+  }
 
   // Notify representante if approval required
   if (asignacionData.aprobacion_requerida && asignacionData.familia_id) {

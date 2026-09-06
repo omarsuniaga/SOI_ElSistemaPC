@@ -5,6 +5,7 @@
  */
 import * as cajaApi from '../api/cajaApi.js'
 import { generateCierreCaja } from '../pdf/cierreCajaDiario.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 
@@ -21,7 +22,7 @@ function metodoRow(metodo, data) {
   return '<div style="display:flex;justify-content:space-between;align-items:center;'
     + 'padding:0.75rem 0;border-bottom:1px solid #f1f5f9">'
     + '<div>'
-    + '<span style="font-size:0.875rem;font-weight:600;color:#0f172a">' + metodo + '</span>'
+    + '<span style="font-size:0.875rem;font-weight:600;color:#0f172a">' + escapeHTML(metodo) + '</span>'
     + '<span style="display:block;font-size:0.75rem;color:#94a3b8">' + (data.count || 0) + ' transacciones</span>'
     + '</div>'
     + '<span style="font-size:1rem;font-weight:700;color:' + VERDE + '">' + fmtMoney(data.total) + '</span>'

@@ -4,6 +4,7 @@
  * Allows Katherine to create and manage recovery campaigns, view participations.
  */
 import * as cajaApi from '../api/cajaApi.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 const EMERALD_LIGHT = '#d1fae5'
@@ -34,15 +35,15 @@ function campanaCard(campana) {
     + '<div style="flex:1;min-width:0">'
     + '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem">'
     + estadoBadge(campana)
-    + '<span style="font-size:1rem;font-weight:700;color:#0f172a">' + campana.nombre + '</span>'
+    + '<span style="font-size:1rem;font-weight:700;color:#0f172a">' + escapeHTML(campana.nombre) + '</span>'
     + '</div>'
-    + (campana.descripcion ? '<p style="margin:0 0 0.5rem;font-size:0.8125rem;color:#475569">' + campana.descripcion + '</p>' : '')
+    + (campana.descripcion ? '<p style="margin:0 0 0.5rem;font-size:0.8125rem;color:#475569">' + escapeHTML(campana.descripcion) + '</p>' : '')
     + '<div style="display:flex;gap:1.25rem;flex-wrap:wrap;font-size:0.75rem;color:#64748b">'
     + '<span><i class="bi bi-calendar-event me-1"></i>' + fmtDate(campana.fecha_inicio) + ' — ' + fmtDate(campana.fecha_fin) + '</span>'
-    + (campana.incentivo ? '<span><i class="bi bi-gift me-1"></i>' + campana.incentivo + '</span>' : '')
+    + (campana.incentivo ? '<span><i class="bi bi-gift me-1"></i>' + escapeHTML(campana.incentivo) + '</span>' : '')
     + '</div>'
     + '</div>'
-    + '<button class="btn-ver-participaciones" data-id="' + campana.id + '" data-nombre="' + campana.nombre + '"'
+    + '<button class="btn-ver-participaciones" data-id="' + campana.id + '" data-nombre="' + escapeHTML(campana.nombre) + '"'
     + ' style="flex-shrink:0;background:' + EMERALD_LIGHT + ';border:1px solid ' + EMERALD_BORDER + ';color:#065f46;'
     + 'border-radius:8px;padding:0.375rem 0.75rem;font-size:0.8125rem;font-weight:600;cursor:pointer;white-space:nowrap">'
     + '<i class="bi bi-people me-1"></i>Ver participantes</button>'
@@ -97,7 +98,7 @@ function participacionesOverlay(nombre, participaciones, familias) {
     : participaciones.map(p => {
         const nomFam = p.familias?.nombre_familia || p.familia_id
         return '<tr>'
-          + '<td style="padding:0.6rem 0.75rem;font-size:0.8125rem;color:#0f172a">' + nomFam + '</td>'
+          + '<td style="padding:0.6rem 0.75rem;font-size:0.8125rem;color:#0f172a">' + escapeHTML(nomFam) + '</td>'
           + '<td style="padding:0.6rem 0.75rem;text-align:center">'
           + (p.aceptada ? '<span style="color:' + VERDE + ';font-weight:700">Si</span>' : '<span style="color:#94a3b8">No</span>')
           + '</td>'
@@ -106,13 +107,13 @@ function participacionesOverlay(nombre, participaciones, familias) {
       }).join('')
 
   const familiaOptions = familias.map(f =>
-    '<option value="' + f.id + '">' + f.nombre_familia + '</option>'
+    '<option value="' + f.id + '">' + escapeHTML(f.nombre_familia) + '</option>'
   ).join('')
 
   return '<div id="participaciones-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem">'
     + '<div style="background:#fff;border-radius:16px;width:100%;max-width:680px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
     + '<div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">'
-    + '<h3 style="margin:0;font-size:1rem;font-weight:700;color:#0f172a">Participantes: ' + nombre + '</h3>'
+    + '<h3 style="margin:0;font-size:1rem;font-weight:700;color:#0f172a">Participantes: ' + escapeHTML(nombre) + '</h3>'
     + '<button id="btn-close-overlay" style="background:none;border:none;cursor:pointer;font-size:1.25rem;color:#94a3b8;line-height:1">&#x2715;</button>'
     + '</div>'
     + '<div style="overflow-y:auto;flex:1;padding:1.25rem">'
@@ -291,7 +292,7 @@ export async function render(container, session) {
       const tbody = overlayEl.querySelector('#participaciones-tbody')
       const nomFam = familias.find(f => f.id === familia_id)?.nombre_familia || familia_id
       const newRow = document.createElement('tr')
-      newRow.innerHTML = '<td style="padding:0.6rem 0.75rem;font-size:0.8125rem;color:#0f172a">' + nomFam + '</td>'
+      newRow.innerHTML = '<td style="padding:0.6rem 0.75rem;font-size:0.8125rem;color:#0f172a">' + escapeHTML(nomFam) + '</td>'
         + '<td style="padding:0.6rem 0.75rem;text-align:center"><span style="color:' + VERDE + ';font-weight:700">Si</span></td>'
         + '<td style="padding:0.6rem 0.75rem;text-align:right;font-size:0.8125rem">$0.00</td>'
       const emptyMsg = tbody.querySelector('td[colspan]')

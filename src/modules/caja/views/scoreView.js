@@ -5,6 +5,7 @@
  * Level distribution bar chart is CSS-only (no canvas).
  */
 import * as cajaApi from '../api/cajaApi.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 
@@ -93,9 +94,9 @@ export async function render(container, session) {
       + '<div style="flex:1;min-width:0">'
       + '<p style="margin:0;font-size:0.875rem;font-weight:600;color:#0f172a;'
       + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
-      + (f.nombre || f.codigo || '-') + '</p>'
+      + escapeHTML(f.nombre || f.codigo || '-') + '</p>'
       + '<p style="margin:0;font-size:0.75rem;color:#64748b">'
-      + (f.representante_nombre || f.representante || '-') + '</p>'
+      + escapeHTML(f.representante_nombre || f.representante || '-') + '</p>'
       + scoreBar(f.score)
       + '</div>'
       + '<div style="text-align:right;flex-shrink:0">'

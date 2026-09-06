@@ -4,6 +4,7 @@
  */
 
 import * as cajaApi from '../api/cajaApi.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtDate(iso) {
   if (!iso) return '-'
@@ -13,7 +14,7 @@ function fmtDate(iso) {
 function prioridadBadge(p) {
   const map = { alta: ['#fee2e2','#7f1d1d'], media: ['#fef9c3','#713f12'], baja: ['#f0fdf4','#065f46'] }
   const [bg, text] = map[p || 'baja'] || ['#f8fafc','#475569']
-  return '<span style="background:' + bg + ';color:' + text + ';font-size:0.65rem;font-weight:600;padding:0.1rem 0.4rem;border-radius:6px">' + (p || 'baja') + '</span>'
+  return '<span style="background:' + bg + ';color:' + text + ';font-size:0.65rem;font-weight:600;padding:0.1rem 0.4rem;border-radius:6px">' + escapeHTML(p || 'baja') + '</span>'
 }
 
 function navigate(hash) {
@@ -47,10 +48,10 @@ export async function render(container, session) {
         : items.map(t =>
             '<div style="background:#fff;border-radius:10px;padding:0.875rem;margin-bottom:0.5rem;box-shadow:0 1px 2px rgba(0,0,0,0.06)">'
             + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">'
-            + '<p style="margin:0;font-size:0.875rem;font-weight:600;color:#0f172a;flex:1">' + t.titulo + '</p>'
+            + '<p style="margin:0;font-size:0.875rem;font-weight:600;color:#0f172a;flex:1">' + escapeHTML(t.titulo) + '</p>'
             + prioridadBadge(t.prioridad)
             + '</div>'
-            + (t.descripcion ? '<p style="margin:0 0 0.5rem;font-size:0.75rem;color:#64748b">' + t.descripcion + '</p>' : '')
+            + (t.descripcion ? '<p style="margin:0 0 0.5rem;font-size:0.75rem;color:#64748b">' + escapeHTML(t.descripcion) + '</p>' : '')
             + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.375rem">'
             + '<span style="font-size:0.7rem;color:#94a3b8"><i class="bi bi-calendar"></i> ' + fmtDate(t.fecha_vencimiento) + '</span>'
             + (t.familia_id ? '<button class="btn-tarea-familia" data-familia="' + t.familia_id + '" style="font-size:0.7rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:0.1rem 0.375rem;cursor:pointer;color:#065f46"><i class="bi bi-people"></i> Familia</button>' : '')

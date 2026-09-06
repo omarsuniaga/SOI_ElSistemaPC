@@ -4,6 +4,7 @@
  */
 
 import * as cajaApi from '../api/cajaApi.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtDate(iso) {
   if (!iso) return '-'
@@ -13,11 +14,11 @@ function fmtDate(iso) {
 function prioridadBadge(p) {
   const map = { critica: ['#fee2e2','#7f1d1d'], alta: ['#ffedd5','#9a3412'], normal: ['#f0fdf4','#065f46'], baja: ['#f8fafc','#475569'] }
   const [bg, text] = map[p] || ['#f8fafc','#475569']
-  return '<span style="background:' + bg + ';color:' + text + ';font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px">' + p + '</span>'
+  return '<span style="background:' + bg + ';color:' + text + ';font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px">' + escapeHTML(p) + '</span>'
 }
 
 function tipoBadge(tipo) {
-  return '<span style="background:#eff6ff;color:#1e40af;font-size:0.7rem;font-weight:500;padding:0.15rem 0.5rem;border-radius:6px">' + (tipo || '').replace('_', ' ') + '</span>'
+  return '<span style="background:#eff6ff;color:#1e40af;font-size:0.7rem;font-weight:500;padding:0.15rem 0.5rem;border-radius:6px">' + escapeHTML((tipo || '').replace('_', ' ')) + '</span>'
 }
 
 export async function render(container, session, _params, onUnreadCount) {
@@ -53,8 +54,8 @@ export async function render(container, session, _params, onUnreadCount) {
             + tipoBadge(n.tipo) + ' ' + prioridadBadge(n.prioridad)
             + (n.estado_portal === 'no_leida' ? '<span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;margin-left:0.25rem"></span>' : '')
             + '</div>'
-            + '<p style="margin:0 0 0.25rem;font-size:0.875rem;font-weight:600;color:#0f172a">' + (n.titulo || '-') + '</p>'
-            + '<p style="margin:0;font-size:0.8125rem;color:#475569">' + (n.cuerpo || '') + '</p>'
+            + '<p style="margin:0 0 0.25rem;font-size:0.875rem;font-weight:600;color:#0f172a">' + escapeHTML(n.titulo || '-') + '</p>'
+            + '<p style="margin:0;font-size:0.8125rem;color:#475569">' + escapeHTML(n.cuerpo || '') + '</p>'
             + '</div>'
             + '<div style="text-align:right;flex-shrink:0">'
             + '<p style="margin:0 0 0.375rem;font-size:0.7rem;color:#94a3b8">' + fmtDate(n.created_at) + '</p>'
@@ -63,7 +64,7 @@ export async function render(container, session, _params, onUnreadCount) {
               : '<span style="font-size:0.7rem;color:#94a3b8">Leida</span>')
             + '</div>'
             + '</div>'
-            + (n.respuesta_padre ? '<div style="margin-top:0.625rem;padding:0.5rem 0.75rem;background:#f0fdf4;border-radius:6px;font-size:0.75rem;color:#065f46"><i class="bi bi-reply"></i> ' + n.respuesta_padre + '</div>' : '')
+            + (n.respuesta_padre ? '<div style="margin-top:0.625rem;padding:0.5rem 0.75rem;background:#f0fdf4;border-radius:6px;font-size:0.75rem;color:#065f46"><i class="bi bi-reply"></i> ' + escapeHTML(n.respuesta_padre) + '</div>' : '')
             + '</div>'
           ).join('')
         + '</div>'

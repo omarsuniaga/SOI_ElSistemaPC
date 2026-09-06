@@ -325,9 +325,11 @@ export async function renderPeriodosView(container) {
   const btnNuevo = container.querySelector('#btn-nuevo-periodo')
   const btnExportarCSV = container.querySelector('#btnExportarCSVPeriodos')
 
+  let searchDebounceTimer
   searchInput?.addEventListener('input', (e) => {
     currentFilters.search = e.target.value.trim()
-    renderGrid()
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = setTimeout(renderGrid, 200)
   })
 
   filterEstadoPeriodo?.addEventListener('change', (e) => {
@@ -338,6 +340,7 @@ export async function renderPeriodosView(container) {
 
   selectOrdenarPeriodos?.addEventListener('change', (e) => {
     currentFilters.sort = e.target.value
+    updateFiltrosBadge()
     renderGrid()
   })
 
@@ -368,6 +371,7 @@ export async function renderPeriodosView(container) {
     const badge = container.querySelector('#filtrosBadgeCountPeriodos')
     let count = 0
     if (currentFilters.estado !== 'todos') count++
+    if (currentFilters.sort !== 'inicio_desc') count++
     if (badge) {
       badge.textContent = count
       badge.classList.toggle('d-none', count === 0)
@@ -397,6 +401,7 @@ export async function renderPeriodosView(container) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
     showToast('Exportación CSV completada')
   })
 

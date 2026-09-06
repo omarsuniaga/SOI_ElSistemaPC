@@ -43,6 +43,7 @@ const NAV_CATALOGO = [
 ]
 
 const NAV_ITEMS = NAV_CATALOGO.filter((item) => item.visible)
+const NAV_DEFAULT = NAV_ITEMS[0]?.hash || '#/pagos/nuevo'
 
 // ---------------------------------------------------------------------------
 // Push Notification setup
@@ -161,7 +162,7 @@ export function initCajaModule(app, session) {
 
   // Active nav style tracking
   function updateActiveNav() {
-    const currentHash = window.location.hash || '#/dashboard'
+    const currentHash = window.location.hash || NAV_DEFAULT
     app.querySelectorAll('.caja-nav-btn').forEach((btn) => {
       const isActive =
         currentHash.startsWith(btn.dataset.hash) ||
@@ -229,8 +230,8 @@ export function initCajaModule(app, session) {
     }
   })
 
-  // Navigate to default route
-  const initialHash = window.location.hash || '#/dashboard'
+  // Navigate to default route (primer item visible del menú)
+  const initialHash = window.location.hash || NAV_DEFAULT
   navigate(initialHash)
   updateActiveNav()
 }

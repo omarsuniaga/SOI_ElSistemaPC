@@ -101,9 +101,10 @@ SELECT
 
   -- Badge semafórico del estado financiero del alumno
   CASE
+    WHEN COALESCE(a.activo, false) = false           THEN 'inactivo'
     WHEN COALESCE(a.exento_mensualidad, false) = true THEN 'exento'
-    WHEN COALESCE(cr.cuotas_vencidas_count, 0) > 0 THEN 'mora'
-    WHEN COALESCE(cr.cuotas_pendientes_count, 0) > 0 THEN 'debe'
+    WHEN COALESCE(cr.cuotas_vencidas_count, 0) > 0    THEN 'mora'
+    WHEN COALESCE(cr.cuotas_pendientes_count, 0) > 0  THEN 'debe'
     ELSE 'al_dia'
   END AS estado_pago
 

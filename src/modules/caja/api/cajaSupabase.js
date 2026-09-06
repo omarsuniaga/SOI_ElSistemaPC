@@ -125,28 +125,30 @@ export async function getPagosByFamilia(familia_id) {
 
 /**
  * Registers a payment atomically via fn_registrar_pago_transaccional: locks
- * the familia row (FOR UPDATE), distributes the payment oldest-first across
- * the selected cuotas (partial payments tracked via monto_pagado_centavos,
- * audited per-cuota in aplicaciones_pago), and credits any surplus to the
- * wallet — all inside a single DB transaction. This closes the read-modify-
- * write race that existed when these three writes were separate client
- * calls (G-01: two cajeros paying the same familia concurrently).
+ * the familia row (FOR UPDATE), imputes the payment oldest-first (first the
+ * cuotas the cajero selected, then the rest of the familia's open cuotas),
+ * tracks partial payments via monto_pagado_centavos, audits each application
+ * in aplicaciones_pago, and — if the amount still exceeds the familia's total
+ * debt — rejects the whole payment (no orphan surplus, no wallet). All inside
+ * one DB transaction (G-01: two cajeros paying the same familia concurrently).
  *
- * cuotaIds is the cajero's selection; the server decides how much of the
- * payment each one actually receives (it may cover fewer if the payment
- * doesn't reach them all, oldest-first).
+ * `pagoData.fecha_pago` (optional, YYYY-MM-DD) is the accounting date used for
+ * mora calculation — pass it for retroactive bank transfers; defaults to today.
  */
 export async function registrarPago(pagoData, cuotaIds) {
-  const { familia_id, monto_centavos, metodo_pago, referencia, notas } = pagoData
+  const { familia_id, monto_centavos, metodo_pago, referencia, notas, fecha_pago } = pagoData
 
-  const result = await supabase.rpc('fn_registrar_pago_transaccional', {
+  const params = {
     p_familia_id: familia_id,
     p_monto_centavos: monto_centavos,
     p_metodo_pago: metodo_pago,
     p_referencia: referencia ?? null,
     p_notas: notas ?? null,
     p_cuota_ids: cuotaIds,
-  })
+  }
+  if (fecha_pago) params.p_fecha_pago = fecha_pago
+
+  const result = await supabase.rpc('fn_registrar_pago_transaccional', params)
 
   return handleResult(result)
 }

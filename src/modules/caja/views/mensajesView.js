@@ -4,6 +4,7 @@
  * Two-panel layout: left = hilo list, right = messages for selected hilo.
  */
 import * as cajaApi from '../api/cajaApi.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 
@@ -55,7 +56,7 @@ export async function render(container, session) {
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.25rem">'
       + '<p style="margin:0;font-size:0.875rem;font-weight:600;color:#0f172a;'
       + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'
-      + (hilo.titulo || 'Hilo sin titulo') + '</p>'
+      + escapeHTML(hilo.titulo || 'Hilo sin titulo') + '</p>'
       + (hilo.tipo ? tipoBadge(hilo.tipo) : '')
       + '</div>'
       + '<p style="margin:0;font-size:0.75rem;color:#94a3b8">' + fmtDate(hilo.created_at) + '</p>'
@@ -68,9 +69,9 @@ export async function render(container, session) {
       + '<div style="max-width:70%;background:' + (isOwn ? VERDE : '#f1f5f9') + ';'
       + 'color:' + (isOwn ? '#fff' : '#0f172a') + ';'
       + 'border-radius:12px;padding:0.625rem 0.875rem">'
-      + '<p style="margin:0 0 0.25rem;font-size:0.8125rem">' + (msg.contenido || '') + '</p>'
+      + '<p style="margin:0 0 0.25rem;font-size:0.8125rem">' + escapeHTML(msg.contenido || '') + '</p>'
       + '<p style="margin:0;font-size:0.6875rem;opacity:0.7">'
-      + (msg.autor_nombre || msg.rol_autor || 'Usuario') + ' &bull; ' + fmtDateTime(msg.created_at) + '</p>'
+      + escapeHTML(msg.autor_nombre || msg.rol_autor || 'Usuario') + ' &bull; ' + fmtDateTime(msg.created_at) + '</p>'
       + '</div></div>'
   }
 
@@ -108,8 +109,8 @@ export async function render(container, session) {
 
     panel.innerHTML =
       '<div style="padding:1rem;border-bottom:1px solid #e2e8f0;background:#fafafa">'
-      + '<p style="margin:0;font-size:0.9375rem;font-weight:700;color:#0f172a">' + (hilo?.titulo || '-') + '</p>'
-      + '<p style="margin:0;font-size:0.75rem;color:#64748b">' + (hilo?.tema || '') + '</p>'
+      + '<p style="margin:0;font-size:0.9375rem;font-weight:700;color:#0f172a">' + escapeHTML(hilo?.titulo || '-') + '</p>'
+      + '<p style="margin:0;font-size:0.75rem;color:#64748b">' + escapeHTML(hilo?.tema || '') + '</p>'
       + '</div>'
       + '<div id="msgs-scroll" style="flex:1;overflow-y:auto;padding:1rem">'
       + (msgs.length === 0

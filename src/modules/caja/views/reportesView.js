@@ -14,6 +14,7 @@ import { generateCierreCaja } from '../pdf/cierreCajaDiario.js'
 import { generateEstadoCuenta } from '../pdf/estadoCuentaFamiliar.js'
 import { generateReporteMora } from '../pdf/reporteMora.js'
 import { generateImpactoSocial } from '../pdf/reporteImpactoSocial.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
 
@@ -62,7 +63,7 @@ export async function render(container, session) {
                 + cierreMetodos.map(([m, d]) =>
                     '<div style="display:flex;justify-content:space-between;font-size:0.8125rem;'
                     + 'padding:0.25rem 0;border-bottom:1px solid #f1f5f9;color:#475569">'
-                    + '<span>' + m + '</span><span style="font-weight:600">' + fmtMoney(d.total) + '</span></div>'
+                    + '<span>' + escapeHTML(m) + '</span><span style="font-weight:600">' + fmtMoney(d.total) + '</span></div>'
                   ).join('')
                 + '</div>'
               : '<p style="font-size:0.875rem;color:#94a3b8">Sin pagos registrados hoy</p>')
@@ -74,7 +75,7 @@ export async function render(container, session) {
 
   // --- Card 2: Estado de cuenta familiar ---
   const familiaOptions = familiaList.map(f =>
-    '<option value="' + f.id + '">' + (f.nombre || f.codigo || f.id) + '</option>'
+    '<option value="' + f.id + '">' + escapeHTML(f.nombre || f.codigo || f.id) + '</option>'
   ).join('')
 
   const estadoCardBody =
@@ -161,7 +162,7 @@ export async function render(container, session) {
 
     estadoPreview.innerHTML =
       '<div style="font-size:0.8125rem;color:#475569">'
-      + '<p style="margin:0"><b>' + (familia?.nombre || '-') + '</b></p>'
+      + '<p style="margin:0"><b>' + escapeHTML(familia?.nombre || '-') + '</b></p>'
       + '<p style="margin:0">Cuotas: ' + fmtMoney(statement.resumen.totalCuotas)
       + ' | Pagado: ' + fmtMoney(statement.resumen.totalPagado)
       + ' | Pendiente: <b style="color:' + (statement.resumen.saldoPendiente > 0 ? '#ef4444' : VERDE) + '">'

@@ -4,6 +4,7 @@
  */
 
 import * as cajaApi from '../api/cajaApi.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtMoney(centavos) {
   return '$' + (Number(centavos || 0) / 100).toFixed(2)
@@ -42,7 +43,7 @@ export async function render(container, session, params) {
       : (wallet.movimientos || []).map(m =>
           '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 0;border-bottom:1px solid #f1f5f9">'
           + '<div>'
-          + '<p style="margin:0;font-size:0.875rem;font-weight:500;color:#0f172a">' + (m.descripcion || m.origen || '-') + '</p>'
+          + '<p style="margin:0;font-size:0.875rem;font-weight:500;color:#0f172a">' + escapeHTML(m.descripcion || m.origen || '-') + '</p>'
           + '<p style="margin:0.125rem 0 0;font-size:0.75rem;color:#94a3b8">' + fmtDate(m.created_at) + '</p>'
           + '</div>'
           + '<div style="text-align:right">'
@@ -71,12 +72,12 @@ export async function render(container, session, params) {
       '<div style="padding:1.5rem;max-width:700px">'
       + '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">'
       + '<button id="btn-back" style="background:none;border:none;cursor:pointer;color:#059669"><i class="bi bi-arrow-left"></i></button>'
-      + '<h2 style="margin:0;font-size:1.125rem;font-weight:700;color:#0f172a">Wallet - ' + (familia.nombre_familia || 'Familia') + '</h2>'
+      + '<h2 style="margin:0;font-size:1.125rem;font-weight:700;color:#0f172a">Wallet - ' + escapeHTML(familia.nombre_familia || 'Familia') + '</h2>'
       + '</div>'
       + '<div style="background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border-radius:16px;padding:2rem;text-align:center;margin-bottom:1.5rem">'
       + '<p style="margin:0 0 0.25rem;font-size:0.875rem;opacity:0.85">Saldo disponible</p>'
       + '<p style="margin:0;font-size:2.5rem;font-weight:800">' + fmtMoney(wallet.saldo) + '</p>'
-      + '<p style="margin:0.5rem 0 0;font-size:0.75rem;opacity:0.7">Modo: ' + (wallet.config?.modo || '-') + ' &bull; Alerta min: ' + fmtMoney(wallet.config?.saldo_minimo_alerta_centavos || 0) + '</p>'
+      + '<p style="margin:0.5rem 0 0;font-size:0.75rem;opacity:0.7">Modo: ' + escapeHTML(wallet.config?.modo || '-') + ' &bull; Alerta min: ' + fmtMoney(wallet.config?.saldo_minimo_alerta_centavos || 0) + '</p>'
       + '</div>'
       + '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">'

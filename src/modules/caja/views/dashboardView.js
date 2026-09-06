@@ -5,6 +5,7 @@
 
 import * as cajaApi from '../api/cajaApi.js'
 import { isStockBajo } from '../domain/accesorio.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtMoney(centavos) {
   return '$' + (Number(centavos || 0) / 100).toFixed(2)
@@ -56,8 +57,8 @@ export async function render(container, session) {
 
   function alertaRow(n) {
     return '<div style="padding:0.75rem 1rem;background:#fff5f5;border:1px solid #fecaca;border-radius:8px;margin-bottom:0.5rem">'
-      + '<p style="margin:0 0 0.125rem;font-size:0.875rem;font-weight:600;color:#7f1d1d">' + (n.titulo || '-') + '</p>'
-      + '<p style="margin:0;font-size:0.75rem;color:#991b1b">' + (n.cuerpo || '') + '</p></div>'
+      + '<p style="margin:0 0 0.125rem;font-size:0.875rem;font-weight:600;color:#7f1d1d">' + escapeHTML(n.titulo || '-') + '</p>'
+      + '<p style="margin:0;font-size:0.75rem;color:#991b1b">' + escapeHTML(n.cuerpo || '') + '</p></div>'
   }
   const alertasHtml = notifsCrit.length === 0 ? '' :
     '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:1.5rem">'
@@ -66,7 +67,7 @@ export async function render(container, session) {
 
   function stockItem(acc) {
     return '<div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:0.5rem 0.875rem;margin:0.25rem;display:inline-block">'
-      + '<b style="color:#7e22ce">' + acc.nombre + '</b> <span style="color:#a78bfa">' + acc.stock_actual + '/' + acc.stock_minimo + '</span></div>'
+      + '<b style="color:#7e22ce">' + escapeHTML(acc.nombre) + '</b> <span style="color:#a78bfa">' + escapeHTML(acc.stock_actual) + '/' + escapeHTML(acc.stock_minimo) + '</span></div>'
   }
   const stockHtml = stockBajoList.length === 0 ? '' :
     '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:1.5rem">'
@@ -75,8 +76,8 @@ export async function render(container, session) {
 
   function pagoRow(p) {
     const hora = p.created_at ? new Date(p.created_at).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) : '-'
-    return '<tr><td style="padding:0.625rem 0.75rem;font-weight:500">' + (p.familia_nombre || p.familia_id || '-') + '</td>'
-      + '<td style="padding:0.625rem 0.75rem;color:#475569">' + (p.metodo_pago || '-') + '</td>'
+    return '<tr><td style="padding:0.625rem 0.75rem;font-weight:500">' + escapeHTML(p.familia_nombre || p.familia_id || '-') + '</td>'
+      + '<td style="padding:0.625rem 0.75rem;color:#475569">' + escapeHTML(p.metodo_pago || '-') + '</td>'
       + '<td style="padding:0.625rem 0.75rem;text-align:right;color:#059669;font-weight:700">' + fmtMoney(p.monto_centavos) + '</td>'
       + '<td style="padding:0.625rem 0.75rem;color:#94a3b8">' + hora + '</td></tr>'
   }

@@ -5,6 +5,7 @@
 
 import * as cajaApi from '../api/cajaApi.js'
 import { clasificarNivel } from '../domain/score.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtMoney(centavos) {
   return '$' + (Number(centavos || 0) / 100).toFixed(2)
@@ -36,8 +37,8 @@ export async function renderList(container, session) {
     return list.map(f =>
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem;border-bottom:1px solid #f1f5f9;gap:0.75rem">'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-weight:600;color:#0f172a;font-size:0.9375rem">' + f.nombre_familia + nivelBadge(f.nivel || 'C') + '</div>'
-      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + (f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente_centavos) + '</div>'
+      + '<div style="font-weight:600;color:#0f172a;font-size:0.9375rem">' + escapeHTML(f.nombre_familia) + nivelBadge(f.nivel || 'C') + '</div>'
+      + '<div style="font-size:0.75rem;color:#64748b;margin-top:0.125rem">' + escapeHTML(f.rep_nombre || '') + ' &bull; Pendiente: ' + fmtMoney(f.saldo_pendiente_centavos) + '</div>'
       + '</div>'
       + '<div style="display:flex;gap:0.375rem;flex-shrink:0">'
       + '<button class="btn-ver-familia" data-id="' + f.id + '" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.625rem;font-size:0.75rem;cursor:pointer">Ver</button>'
@@ -94,11 +95,11 @@ export async function renderDetail(container, session, familiaId) {
 
   const cuotasRows = (cuotas || []).slice(0, 10).map(c =>
     '<tr style="border-bottom:1px solid #f1f5f9">'
-    + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + c.concepto + ' ' + c.ciclo_mes + '/' + c.ciclo_anio + '</td>'
-    + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + c.fecha_vencimiento + '</td>'
+    + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + escapeHTML(c.concepto) + ' ' + escapeHTML(c.ciclo_mes) + '/' + escapeHTML(c.ciclo_anio) + '</td>'
+    + '<td style="padding:0.5rem 0.75rem;font-size:0.8125rem">' + escapeHTML(c.fecha_vencimiento) + '</td>'
     + '<td style="padding:0.5rem 0.75rem;text-align:right;font-size:0.8125rem;font-weight:600">' + fmtMoney(c.monto_final_centavos) + '</td>'
     + '<td style="padding:0.5rem 0.75rem">'
-    + '<span style="font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px;' + (c.estado === 'pagada' ? 'background:#d1fae5;color:#065f46' : c.estado === 'en_mora' ? 'background:#fee2e2;color:#7f1d1d' : 'background:#fef9c3;color:#713f12') + '">' + c.estado + '</span>'
+    + '<span style="font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:6px;' + (c.estado === 'pagada' ? 'background:#d1fae5;color:#065f46' : c.estado === 'en_mora' ? 'background:#fee2e2;color:#7f1d1d' : 'background:#fef9c3;color:#713f12') + '">' + escapeHTML(c.estado) + '</span>'
     + '</td></tr>'
   ).join('')
 
@@ -106,14 +107,14 @@ export async function renderDetail(container, session, familiaId) {
     '<div style="padding:1.5rem;max-width:900px">'
     + '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">'
     + '<button id="btn-back-list" style="background:none;border:none;cursor:pointer;color:#059669"><i class="bi bi-arrow-left"></i></button>'
-    + '<h2 style="margin:0;font-size:1.125rem;font-weight:700;color:#0f172a">' + (familia.nombre_familia || '-') + nivelBadge(nivel) + '</h2>'
+    + '<h2 style="margin:0;font-size:1.125rem;font-weight:700;color:#0f172a">' + escapeHTML(familia.nombre_familia || '-') + nivelBadge(nivel) + '</h2>'
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">'
     + '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
     + '<h3 style="margin:0 0 0.75rem;font-size:0.875rem;font-weight:700;color:#64748b;text-transform:uppercase">Representante</h3>'
-    + '<p style="margin:0;font-weight:600;color:#0f172a">' + (representante?.nombre || '-') + '</p>'
-    + '<p style="margin:0.25rem 0 0;font-size:0.8125rem;color:#64748b">' + (representante?.telefono_whatsapp || '') + '</p>'
-    + '<p style="margin:0.125rem 0 0;font-size:0.8125rem;color:#64748b">' + (representante?.email || '') + '</p>'
+    + '<p style="margin:0;font-weight:600;color:#0f172a">' + escapeHTML(representante?.nombre || '-') + '</p>'
+    + '<p style="margin:0.25rem 0 0;font-size:0.8125rem;color:#64748b">' + escapeHTML(representante?.telefono_whatsapp || '') + '</p>'
+    + '<p style="margin:0.125rem 0 0;font-size:0.8125rem;color:#64748b">' + escapeHTML(representante?.email || '') + '</p>'
     + '</div>'
     + '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
     + '<h3 style="margin:0 0 0.75rem;font-size:0.875rem;font-weight:700;color:#64748b;text-transform:uppercase">Wallet</h3>'

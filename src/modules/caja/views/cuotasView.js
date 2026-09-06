@@ -5,6 +5,7 @@
 
 import * as cajaApi from '../api/cajaApi.js'
 import { calcularMoraInfo } from '../domain/cuota.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtMoney(centavos) {
   return '$' + (Number(centavos || 0) / 100).toFixed(2)
@@ -68,8 +69,8 @@ export async function render(container, session) {
       : famFiltradas.map(f =>
           '<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer" class="fam-row" data-id="' + f.id + '">'
           + '<td style="padding:0.75rem">'
-          + '<div style="font-weight:600;color:#0f172a;font-size:0.875rem">' + f.nombre_familia + '</div>'
-          + '<div style="font-size:0.75rem;color:#64748b">' + (f.rep_nombre || '') + '</div>'
+          + '<div style="font-weight:600;color:#0f172a;font-size:0.875rem">' + escapeHTML(f.nombre_familia) + '</div>'
+          + '<div style="font-size:0.75rem;color:#64748b">' + escapeHTML(f.rep_nombre || '') + '</div>'
           + '</td>'
           + '<td style="padding:0.75rem;text-align:center;font-size:0.8125rem">' + (f.cuotas_pendientes || 0) + '</td>'
           + '<td style="padding:0.75rem;text-align:right;font-weight:600;color:#ef4444;font-size:0.875rem">' + fmtMoney(f.saldo_pendiente_centavos) + '</td>'

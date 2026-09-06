@@ -5,6 +5,7 @@
 
 import * as cajaApi from '../api/cajaApi.js'
 import { isStockBajo } from '../domain/accesorio.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function fmtMoney(val) {
   return '$' + Number(val || 0).toFixed(2)
@@ -33,19 +34,19 @@ export async function render(container, session) {
       '<div style="background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem">'
       + '<div>'
-      + '<p style="margin:0;font-weight:700;color:#0f172a">' + acc.nombre + '</p>'
-      + '<p style="margin:0.25rem 0 0;font-size:0.75rem;color:#64748b">' + (acc.categoria || '') + '</p>'
+      + '<p style="margin:0;font-weight:700;color:#0f172a">' + escapeHTML(acc.nombre) + '</p>'
+      + '<p style="margin:0.25rem 0 0;font-size:0.75rem;color:#64748b">' + escapeHTML(acc.categoria || '') + '</p>'
       + '</div>'
       + stockBadge(acc)
       + '</div>'
-      + '<p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#475569">' + (acc.descripcion || '') + '</p>'
+      + '<p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#475569">' + escapeHTML(acc.descripcion || '') + '</p>'
       + '<div style="display:flex;align-items:center;justify-content:space-between">'
       + '<span style="font-size:1rem;font-weight:700;color:#059669">' + fmtMoney(acc.precio_unitario) + '</span>'
       + '<button class="btn-asignar" data-id="' + acc.id + '" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:0.375rem 0.875rem;font-size:0.8125rem;font-weight:600;cursor:pointer">Asignar</button>'
       + '</div>'
       + (acc.links_externos && acc.links_externos.length > 0
         ? '<div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9">'
-          + acc.links_externos.map(l => '<a href="' + l.url + '" target="_blank" rel="noopener" style="font-size:0.75rem;color:#059669;text-decoration:none;margin-right:0.75rem"><i class="bi bi-box-arrow-up-right"></i> ' + l.nombre + '</a>').join('')
+          + acc.links_externos.map(l => '<a href="' + escapeHTML(l.url) + '" target="_blank" rel="noopener" style="font-size:0.75rem;color:#059669;text-decoration:none;margin-right:0.75rem"><i class="bi bi-box-arrow-up-right"></i> ' + escapeHTML(l.nombre) + '</a>').join('')
           + '</div>'
         : '')
       + '</div>'
@@ -56,11 +57,11 @@ export async function render(container, session) {
       + '<h3 style="margin:0 0 0.75rem;font-size:0.9375rem;font-weight:700;color:#0f172a"><i class="bi bi-exclamation-triangle-fill" style="color:#8b5cf6"></i> Items con stock bajo</h3>'
       + stockBajoList.map(acc =>
           '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #f8f5ff">'
-          + '<span style="font-size:0.875rem;font-weight:500;color:#0f172a">' + acc.nombre + '</span>'
+          + '<span style="font-size:0.875rem;font-weight:500;color:#0f172a">' + escapeHTML(acc.nombre) + '</span>'
           + '<div style="display:flex;align-items:center;gap:0.75rem">'
           + '<span style="font-size:0.8125rem;color:#7e22ce">Stock: ' + acc.stock_actual + ' / Min: ' + acc.stock_minimo + '</span>'
           + (acc.links_externos && acc.links_externos.length > 0
-            ? '<a href="' + acc.links_externos[0].url + '" target="_blank" style="font-size:0.75rem;color:#059669;text-decoration:none"><i class="bi bi-cart"></i> Reponer</a>'
+            ? '<a href="' + escapeHTML(acc.links_externos[0].url) + '" target="_blank" rel="noopener" style="font-size:0.75rem;color:#059669;text-decoration:none"><i class="bi bi-cart"></i> Reponer</a>'
             : '')
           + '</div>'
           + '</div>'
@@ -91,7 +92,7 @@ export async function render(container, session) {
         if (!acc) return
         const modal = container.querySelector('#asignar-modal')
         modal.querySelector('#modal-body').innerHTML =
-          '<p style="margin:0 0 0.75rem;font-size:0.875rem;font-weight:600;color:#374151">' + acc.nombre + ' - ' + fmtMoney(acc.precio_unitario) + '</p>'
+          '<p style="margin:0 0 0.75rem;font-size:0.875rem;font-weight:600;color:#374151">' + escapeHTML(acc.nombre) + ' - ' + fmtMoney(acc.precio_unitario) + '</p>'
           + '<label style="display:block;font-size:0.8125rem;font-weight:500;color:#374151;margin-bottom:0.375rem">ID Alumno</label>'
           + '<input id="modal-alumno" type="text" placeholder="ID del alumno..." style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:0.5rem 0.75rem;font-size:0.875rem;margin-bottom:0.75rem">'
           + '<label style="display:block;font-size:0.8125rem;font-weight:500;color:#374151;margin-bottom:0.375rem">Cantidad</label>'

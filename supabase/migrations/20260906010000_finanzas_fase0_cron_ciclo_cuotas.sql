@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Migración: 20260905010000_finanzas_fase0_cron_ciclo_cuotas.sql
+-- Migración: 20260906010000_finanzas_fase0_cron_ciclo_cuotas.sql
 -- Módulo 1: Cobro de Mensualidades — Fase 0
 -- Propósito: Automatizar la generación del ciclo mensual de cuotas usando pg_cron.
 -- ==============================================================================

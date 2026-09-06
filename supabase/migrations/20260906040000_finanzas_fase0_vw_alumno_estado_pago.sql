@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Migración: 20260905040000_finanzas_fase0_vw_alumno_estado_pago.sql
+-- Migración: 20260906040000_finanzas_fase0_vw_alumno_estado_pago.sql
 -- Módulo 1: Cobro de Mensualidades — Fase 0
 -- Propósito: Vista de lectura unificada para búsqueda en ventanilla (#/cobro).
 --            Resuelve contacto con fallback y calcula saldo/mora consolidado.

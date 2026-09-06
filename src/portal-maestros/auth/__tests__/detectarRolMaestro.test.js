@@ -150,6 +150,30 @@ describe('detectarRolMaestro()', () => {
     expect(supabase.auth.signOut).toHaveBeenCalledOnce()
   })
 
+  it('falla cerrado cuando profiles no puede consultarse', async () => {
+    mockSession()
+    mockTables({
+      profiles: { data: null, error: { message: 'RLS denied' } },
+    })
+
+    const result = await detectarRolMaestro()
+
+    expect(result).toBeNull()
+    expect(supabase.auth.signOut).toHaveBeenCalledOnce()
+  })
+
+  it('rechaza roles no autorizados aunque la metadata diga maestro', async () => {
+    mockSession()
+    mockTables({
+      profiles: { data: { rol: 'user', estado: 'activo' }, error: null },
+    })
+
+    const result = await detectarRolMaestro()
+
+    expect(result).toBeNull()
+    expect(supabase.auth.signOut).toHaveBeenCalledOnce()
+  })
+
   // ── Estado activo ────────────────────────────────────────────────────────
 
   it('retorna el maestro desde caché cuando estado=activo y hay caché válida', async () => {

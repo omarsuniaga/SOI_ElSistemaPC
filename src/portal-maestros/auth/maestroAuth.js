@@ -80,19 +80,23 @@ export async function loginMaestro(email, password, options = {}) {
   // PRIMARY SOURCE: profiles.rol / profiles.estado (autoritativo — admin puede haberlo cambiado)
   let userRole = null
   let userStatus = null
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('rol, estado')
     .eq('id', data.user.id)
     .maybeSingle()
 
-  if (profile?.rol) {
-    userRole = profile.rol
-    userStatus = profile.estado
-  } else {
-    // FALLBACK: auth metadata (puede estar desactualizado, pero es mejor que nada)
-    userRole = data.user.user_metadata?.rol || data.user.user_metadata?.role
+  if (profileError || !profile) {
+    await supabase.auth.signOut()
+    return {
+      success: false,
+      code: 'PROFILE_LOOKUP_FAILED',
+      error: 'No pudimos verificar los permisos de tu cuenta. Intentá nuevamente.',
+    }
   }
+
+  userRole = profile.rol
+  userStatus = profile.estado
 
   if (userStatus === 'pendiente') {
     await supabase.auth.signOut()
@@ -120,16 +124,6 @@ export async function loginMaestro(email, password, options = {}) {
   }
 
   if (userRole === 'admin') {
-    // Garantizar que el row del admin en profiles tenga rol='admin' y estado='activo'
-    // Esto permite que el RPC approve_maestro_profile lo reconozca como admin
-    await supabase.from('profiles').upsert({
-      id: data.user.id,
-      email: data.user.email,
-      nombre_completo: data.user.user_metadata?.full_name || 'Administrador',
-      rol: 'admin',
-      estado: 'activo',
-    }, { onConflict: 'id', ignoreDuplicates: false })
-
     // Si el admin también tiene perfil de maestro, usar sus datos reales
     // para que getMisClases() y las queries de sesiones usen el ID correcto
     const { data: maestroRow } = await supabase
@@ -160,59 +154,29 @@ export async function loginMaestro(email, password, options = {}) {
     return { success: false, error: 'No tienes acceso de maestro en este sistema.' }
   }
 
-  // Buscar maestro: primero por user_id, luego por correo (maestro pre-existente)
-  let maestro = null
-  const { data: byUserId } = await supabase
+  // La aprobación administrativa debe dejar creada y vinculada esta fila.
+  const { data: maestro, error: maestroError } = await supabase
     .from('maestros')
     .select('*')
     .eq('user_id', data.user.id)
     .maybeSingle()
 
-  if (byUserId) {
-    maestro = byUserId
-  } else {
-    // Fallback: maestro existía antes del registro — matchear por correo y linkar
-    const { data: byEmail } = await supabase
-      .from('maestros')
-      .select('*')
-      .or(`correo.eq.${data.user.email},email.eq.${data.user.email}`)
-      .maybeSingle()
-
-    if (byEmail) {
-      // Linkar el user_id para futuros logins sin necesidad de fallback
-      await supabase
-        .from('maestros')
-        .update({ user_id: data.user.id })
-        .eq('id', byEmail.id)
-      maestro = { ...byEmail, user_id: data.user.id }
+  if (maestroError) {
+    await supabase.auth.signOut()
+    return {
+      success: false,
+      code: 'MAESTRO_LOOKUP_FAILED',
+      error: 'No pudimos consultar tu acreditación de maestro. Intentá nuevamente.',
     }
   }
 
   if (!maestro) {
-    // Último recurso: crear row en maestros con datos del perfil
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('nombre_completo, resena')
-      .eq('id', data.user.id)
-      .maybeSingle()
-
-    const { data: nuevoMaestro } = await supabase
-      .from('maestros')
-      .insert({
-        user_id: data.user.id,
-        nombre_completo: profileData?.nombre_completo || data.user.user_metadata?.full_name || data.user.email,
-        correo: data.user.email,
-        instrumento: data.user.user_metadata?.instrumento || '',
-        activo: true,
-      })
-      .select()
-      .single()
-
-    if (!nuevoMaestro) {
-      await supabase.auth.signOut()
-      return { success: false, error: 'No se pudo vincular tu cuenta. Contactá al administrador.' }
+    await supabase.auth.signOut()
+    return {
+      success: false,
+      code: 'MAESTRO_PROFILE_NOT_LINKED',
+      error: 'Tu cuenta está activa, pero falta completar su vinculación. Contactá al administrador.',
     }
-    maestro = nuevoMaestro
   }
 
   // Guardar en localStorage + marcar sesión persistente (30 días por defecto)
@@ -240,19 +204,20 @@ export async function detectarRolMaestro() {
     // PRIMARY SOURCE: profiles.rol / profiles.estado (autoritativo — admin puede haberlo cambiado)
     let userRole = null
     let userStatus = null
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('rol, estado')
       .eq('id', session.user.id)
       .maybeSingle()
 
-    if (profile?.rol) {
-      userRole = profile.rol
-      userStatus = profile.estado
-    } else {
-      // FALLBACK: auth metadata (puede estar desactualizado)
-      userRole = session.user.user_metadata?.rol || session.user.user_metadata?.role
+    if (profileError || !profile) {
+      clearMaestroLocal()
+      await supabase.auth.signOut()
+      return null
     }
+
+    userRole = profile.rol
+    userStatus = profile.estado
 
     if (userStatus === 'pendiente') {
       // Cuenta registrada pero no aprobada aún.
@@ -264,6 +229,12 @@ export async function detectarRolMaestro() {
 
     if (userStatus && userStatus !== 'activo') {
       // Cuenta rechazada u otro estado no activo → sign out completo
+      clearMaestroLocal()
+      await supabase.auth.signOut()
+      return null
+    }
+
+    if (userRole !== 'admin' && userRole !== 'maestro') {
       clearMaestroLocal()
       await supabase.auth.signOut()
       return null

@@ -94,4 +94,42 @@ describe('maestroAuth', () => {
     expect(result).toMatchObject({ success: true, maestro })
     expect(localStorage.getItem('portal-maestros:maestro')).toContain('Ada Lovelace')
   })
+
+  it('fails closed when the authoritative profile cannot be read', async () => {
+    supabase.auth.signInWithPassword.mockResolvedValue({
+      data: {
+        user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'admin' } },
+        session: { access_token: 't' },
+      },
+      error: null,
+    })
+    mockTable({
+      profiles: { data: null, error: { message: 'RLS denied' } },
+    })
+
+    const result = await loginMaestro('teacher@test.com', 'secret')
+
+    expect(result).toMatchObject({ success: false, code: 'PROFILE_LOOKUP_FAILED' })
+    expect(supabase.auth.signOut).toHaveBeenCalled()
+    expect(supabase.from).not.toHaveBeenCalledWith('maestros')
+  })
+
+  it('reports an approved maestro whose institutional row is not linked', async () => {
+    supabase.auth.signInWithPassword.mockResolvedValue({
+      data: {
+        user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } },
+        session: { access_token: 't' },
+      },
+      error: null,
+    })
+    mockTable({
+      profiles: { data: { rol: 'maestro', estado: 'activo' }, error: null },
+      maestros: { data: null, error: null },
+    })
+
+    const result = await loginMaestro('teacher@test.com', 'secret')
+
+    expect(result).toMatchObject({ success: false, code: 'MAESTRO_PROFILE_NOT_LINKED' })
+    expect(supabase.auth.signOut).toHaveBeenCalled()
+  })
 })

@@ -59,6 +59,25 @@ describe('periodosApi', () => {
 
       await expect(getPeriodos()).rejects.toThrow('No se pudieron cargar los períodos')
     })
+
+    it('conserva el detalle y el código del error de Supabase', async () => {
+      const chain = mockChain()
+      chain.order.mockResolvedValue({ data: null, error: { message: 'permission denied', code: '42501' } })
+      supabase.from.mockReturnValue(chain)
+
+      await expect(getPeriodos()).rejects.toMatchObject({
+        message: expect.stringContaining('permission denied'),
+        code: '42501',
+      })
+    })
+
+    it('devuelve un arreglo vacío cuando data es null sin error', async () => {
+      const chain = mockChain()
+      chain.order.mockResolvedValue({ data: null, error: null })
+      supabase.from.mockReturnValue(chain)
+
+      await expect(getPeriodos()).resolves.toEqual([])
+    })
   })
 
   describe('getPeriodoActivo', () => {

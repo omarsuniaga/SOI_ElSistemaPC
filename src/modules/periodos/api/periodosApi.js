@@ -9,8 +9,15 @@ export async function getPeriodos() {
     .select('*')
     .order('fecha_inicio', { ascending: false })
 
-  if (error) throw new Error('No se pudieron cargar los períodos')
-  return data
+  if (error) {
+    // Conservar el detalle: un fallo de red o de permisos no es lo mismo que
+    // "no hay períodos" (RLS devuelve cero filas sin error, y ese caso lo
+    // explica la vista con explicarListaVacia).
+    const err = new Error(`No se pudieron cargar los períodos: ${error.message}`)
+    err.code = error.code
+    throw err
+  }
+  return data ?? []
 }
 
 /**

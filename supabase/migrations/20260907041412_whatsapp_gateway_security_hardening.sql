@@ -16,6 +16,16 @@ CREATE POLICY wa_queue_service_role_all ON public.hermes_whatsapp_queue
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 REVOKE INSERT, UPDATE, DELETE ON public.hermes_whatsapp_queue FROM anon, authenticated;
 
+-- The health table exposes phone_number and connection status. The earlier
+-- migration created it with an "authenticated USING (true)" read policy;
+-- tighten it to admins only. fn_hermes_gateway_get_live_status keeps its own
+-- gate for the RPC path.
+DROP POLICY IF EXISTS hgh_authenticated_read ON public.hermes_gateway_health;
+DROP POLICY IF EXISTS hgh_admin_read ON public.hermes_gateway_health;
+CREATE POLICY hgh_admin_read ON public.hermes_gateway_health
+  FOR SELECT TO authenticated USING (public.es_admin());
+REVOKE INSERT, UPDATE, DELETE ON public.hermes_gateway_health FROM anon, authenticated;
+
 -- The configuration table contains the gateway endpoint and must remain admin
 -- only even if the earlier open-policy migration was already applied.
 DROP POLICY IF EXISTS allow_all_wa_config ON public.hermes_whatsapp_config;

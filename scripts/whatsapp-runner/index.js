@@ -59,16 +59,48 @@ let reconnectAttempt = 0
 let currentQr = null
 let qrExpiresAt = null
 let runnerLock = null
+let heartbeatTimer = null
+
+// process.kill(pid, 0) no mata: solo prueba existencia. ESRCH -> muerto;
+// EPERM -> vivo pero de otro usuario. Cualquier otra cosa la tratamos como vivo.
+function isPidAlive(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error.code === 'EPERM'
+  }
+}
 
 async function acquireRunnerLock() {
   await fs.mkdir(path.dirname(LOCK_FILE), { recursive: true })
   try {
     runnerLock = await fs.open(LOCK_FILE, 'wx')
-    await runnerLock.writeFile(JSON.stringify({ pid: process.pid, hostname: os.hostname(), startedAt: new Date().toISOString() }))
   } catch (error) {
-    if (error.code === 'EEXIST') throw new Error(`Ya existe un runner activo para la instancia ${INSTANCE_NAME} (${LOCK_FILE}).`)
-    throw error
+    if (error.code !== 'EEXIST') throw error
+    // El lock ya existe: puede ser un runner vivo o un lock huérfano de un crash.
+    let owner = null
+    try {
+      owner = JSON.parse(await fs.readFile(LOCK_FILE, 'utf8'))
+    } catch {
+      owner = null
+    }
+    let alive
+    if (!owner) {
+      alive = false // lock corrupto/vacío -> reclamar
+    } else if (owner.hostname === os.hostname() && Number.isInteger(owner.pid)) {
+      alive = isPidAlive(owner.pid)
+    } else {
+      alive = true // otro host o pid inválido: no podemos verificar, no reclamamos
+    }
+    if (alive) {
+      throw new Error(`Ya existe un runner activo para la instancia ${INSTANCE_NAME} (pid ${owner?.pid ?? '?'}, ${LOCK_FILE}).`)
+    }
+    console.warn(`⚠️ Lock huérfano detectado (${owner?.pid ? `pid ${owner.pid} sin proceso` : 'lock corrupto'}); reclamando ${LOCK_FILE}.`)
+    await fs.unlink(LOCK_FILE).catch(() => {})
+    runnerLock = await fs.open(LOCK_FILE, 'wx')
   }
+  await runnerLock.writeFile(JSON.stringify({ pid: process.pid, hostname: os.hostname(), startedAt: new Date().toISOString() }))
 }
 
 async function releaseRunnerLock() {
@@ -90,6 +122,25 @@ async function updateHeartbeat(status, metadata = {}) {
     p_metadata: metadata,
   })
   if (error) console.error('❌ Error actualizando heartbeat:', error.message)
+}
+
+// fn_hermes_gateway_get_live_status marca 'disconnected' si el último latido
+// tiene más de 60s. Sin un latido periódico, un runner estable conectado se
+// vería como caído en la vista ADM al minuto de conectarse.
+function startHeartbeatLoop() {
+  stopHeartbeatLoop()
+  heartbeatTimer = setInterval(() => {
+    if (!currentSock?.user) return
+    updateHeartbeat('connected').catch(() => {})
+    gatewayServer?.broadcast(gatewaySnapshot())
+  }, 20000)
+}
+
+function stopHeartbeatLoop() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
+  }
 }
 
 async function acquireWorkerLease() {
@@ -249,6 +300,7 @@ async function startWhatsApp() {
         clearInterval(queueInterval)
         queueInterval = null
       }
+      stopHeartbeatLoop()
       await releaseWorkerLease()
       currentSock = null
       currentQr = null
@@ -265,6 +317,7 @@ async function startWhatsApp() {
       qrExpiresAt = null
       await updateHeartbeat('connected')
       gatewayServer?.broadcast(gatewaySnapshot())
+      startHeartbeatLoop()
       console.log('\n✅ [CONEXIÓN ESTABLECIDA] ¡WhatsApp Institucional conectado exitosamente!')
       iniciarDespachadorCola()
     }
@@ -390,6 +443,7 @@ process.on('unhandledRejection', (reason) => {
 
 for (const signal of ['SIGTERM', 'SIGINT']) {
   process.once(signal, async () => {
+    stopHeartbeatLoop()
     await releaseWorkerLease()
     await releaseRunnerLock()
     process.exit(0)

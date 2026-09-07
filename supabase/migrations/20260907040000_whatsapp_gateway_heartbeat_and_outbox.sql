@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration: 20260812000006_whatsapp_gateway_heartbeat_and_outbox.sql
+-- Migration: 20260907040000_whatsapp_gateway_heartbeat_and_outbox.sql
 -- Description: Tablas y RPCs para el Heartbeat en vivo y Outbox real del Gateway WhatsApp
+-- Nota: renombrada desde 20260812000006 (colisión de versión con
+--       shadow_capability_persistence, que ya estaba aplicada). Nunca se había
+--       aplicado. Debe ir ANTES de 20260907041412_whatsapp_gateway_security_hardening.
 -- ============================================================================
 
 -- 1. Tabla de salud y latido en vivo del worker Baileys / Evolution API

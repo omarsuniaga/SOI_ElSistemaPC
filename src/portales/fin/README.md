@@ -12,7 +12,7 @@ Servido en **`/fin`** (`/soi-finanzas` queda como alias legacy). Entry: `fin.htm
 
 | Recurso | Para qué |
 |---|---|
-| `fn_registrar_pago_transaccional(p_familia_id, p_monto_centavos, p_metodo_pago, p_referencia, p_notas, p_cuota_ids, p_fecha_pago DEFAULT)` | Registro de pago atómico. `RETURNS pagos`. Imputa FIFO, mora contra fecha contable, rechaza excedente sin cuota. Rol `admin`/`finanzas`. |
+| `fn_registrar_pago_transaccional(p_familia_id, p_monto_centavos, p_metodo_pago, p_referencia, p_notas, p_cuota_ids, p_fecha_pago DEFAULT)` | Registro de pago atómico. `RETURNS pagos`. Imputa FIFO, mora contra fecha contable, el excedente se acredita al wallet de la familia. Rol `admin`/`finanzas`. |
 | `fn_generar_ciclo_cuotas(p_mes, p_anio, p_monto_centavos DEFAULT 60000)` | Generación mensual de cuotas (RD$600). Respeta `exento_mensualidad` y `becas`. Cron el día 1. |
 | Vista `vw_alumno_estado_pago` | Modelo de lectura por alumno: contacto en cascada, saldo, `estado_pago` (`inactivo`\|`exento`\|`mora`\|`debe`\|`al_dia`). Disponible para el rediseño de `CuotasView`. |
 | `pagos.fecha_pago`, `alumnos.exento_mensualidad` | Columnas de soporte (Fase 0). |

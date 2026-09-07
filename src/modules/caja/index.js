@@ -5,7 +5,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import * as cajaApi from './api/cajaApi.js'
-import { initRouter, navigate, teardownRouter } from './caja.router.js'
+import { initRouter, navigate, teardownRouter, currentRoute } from './caja.router.js'
 import { escapeHTML } from '../../shared/utils/sanitize.js'
 
 const VERDE = '#059669'
@@ -28,22 +28,21 @@ function toggleFinTheme() {
 // `visible: true`. Estado del cableado de cada uno: docs/PORTAL_FIN_MENU_AUDITORIA.md
 // Orden y bloqueos de reactivación: docs/PORTAL_FIN_BACKLOG.md
 const NAV_CATALOGO = [
-  { hash: '#/pagos/nuevo',    icon: 'bi-plus-circle-fill', label: 'Registrar Pago',      visible: true },
-  { hash: '#/cierre',         icon: 'bi-cash-stack',       label: 'Cierre de Caja',      visible: true },
-  { hash: '#/dashboard',      icon: 'bi-speedometer2',     label: 'Dashboard',           visible: false },
-  { hash: '#/familias',       icon: 'bi-people-fill',      label: 'Familias',            visible: false },
-  { hash: '#/cuotas',         icon: 'bi-receipt',          label: 'Cuotas',              visible: false },
-  { hash: '#/accesorios',     icon: 'bi-box-seam-fill',    label: 'Tiendita',            visible: false },
-  { hash: '#/notificaciones', icon: 'bi-bell-fill',        label: 'Notificaciones',      visible: false, badge: true },
-  { hash: '#/hermes',         icon: 'bi-robot',            label: 'Tareas del Director',  visible: false },
-  { hash: '#/reportes',       icon: 'bi-bar-chart-fill',   label: 'Reportes',            visible: false },
-  { hash: '#/mensajes',       icon: 'bi-chat-dots-fill',   label: 'Mensajes',            visible: false },
-  { hash: '#/campanas',       icon: 'bi-megaphone-fill',   label: 'Campañas',            visible: false },
-  { hash: '#/score',          icon: 'bi-trophy-fill',      label: 'Score Familias',      visible: false, adminOnly: true },
+  { route: '/pagos/nuevo',    icon: 'bi-plus-circle-fill', label: 'Registrar Pago',      visible: true },
+  { route: '/cierre',         icon: 'bi-cash-stack',       label: 'Cierre de Caja',      visible: true },
+  { route: '/dashboard',      icon: 'bi-speedometer2',     label: 'Dashboard',           visible: false },
+  { route: '/familias',       icon: 'bi-people-fill',      label: 'Familias',            visible: false },
+  { route: '/cuotas',         icon: 'bi-receipt',          label: 'Cuotas',              visible: false },
+  { route: '/accesorios',     icon: 'bi-box-seam-fill',    label: 'Tiendita',            visible: false },
+  { route: '/notificaciones', icon: 'bi-bell-fill',        label: 'Notificaciones',      visible: false, badge: true },
+  { route: '/hermes',         icon: 'bi-robot',            label: 'Tareas del Director',  visible: false },
+  { route: '/reportes',       icon: 'bi-bar-chart-fill',   label: 'Reportes',            visible: false },
+  { route: '/mensajes',       icon: 'bi-chat-dots-fill',   label: 'Mensajes',            visible: false },
+  { route: '/campanas',       icon: 'bi-megaphone-fill',   label: 'Campañas',            visible: false },
+  { route: '/score',          icon: 'bi-trophy-fill',      label: 'Score Familias',      visible: false, adminOnly: true },
 ]
 
 const NAV_ITEMS = NAV_CATALOGO.filter((item) => item.visible)
-const NAV_DEFAULT = NAV_ITEMS[0]?.hash || '#/pagos/nuevo'
 
 // ---------------------------------------------------------------------------
 // Push Notification setup
@@ -110,8 +109,8 @@ export function initCajaModule(app, session) {
     // adminOnly items: show for admins with a small label, hide for non-admins
     if (item.adminOnly && !isAdmin) return ''
     return (
-      '<button class="caja-nav-btn" data-hash="' +
-      item.hash +
+      '<button class="caja-nav-btn" data-route="' +
+      item.route +
       '"' +
       ' style="display:flex;align-items:center;gap:0.625rem;width:100%;border:none;background:none;' +
       'padding:0.625rem 1rem;border-radius:8px;cursor:pointer;font-size:0.875rem;color:#475569;text-align:left;position:relative">' +
@@ -162,22 +161,21 @@ export function initCajaModule(app, session) {
 
   // Active nav style tracking
   function updateActiveNav() {
-    const currentHash = window.location.hash || NAV_DEFAULT
+    const ruta = currentRoute()
     app.querySelectorAll('.caja-nav-btn').forEach((btn) => {
-      const isActive =
-        currentHash.startsWith(btn.dataset.hash) ||
-        (btn.dataset.hash === '#/familias' && currentHash.startsWith('#/familias/'))
+      const r = btn.dataset.route
+      const isActive = ruta === r || ruta.startsWith(r + '/')
       btn.classList.toggle('fin-nav-active', isActive)
     })
   }
 
   app.querySelectorAll('.caja-nav-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      navigate(btn.dataset.hash)
+      navigate(btn.dataset.route)
       updateActiveNav()
     })
   })
-  window.addEventListener('hashchange', updateActiveNav)
+  window.addEventListener('popstate', updateActiveNav)
   updateActiveNav()
 
   app.querySelector('#btn-theme')?.addEventListener('click', () => {
@@ -230,8 +228,8 @@ export function initCajaModule(app, session) {
     }
   })
 
-  // Navigate to default route (primer item visible del menú)
-  const initialHash = window.location.hash || NAV_DEFAULT
-  navigate(initialHash)
+  // Ruta inicial: la de la URL (deep-link a /fin/algo). En /fin a secas,
+  // currentRoute() ya devuelve la ruta por defecto del router.
+  navigate(currentRoute())
   updateActiveNav()
 }

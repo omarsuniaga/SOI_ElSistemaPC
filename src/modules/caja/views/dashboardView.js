@@ -103,10 +103,10 @@ export async function render(container, session) {
     + '</div></div>'
 
   container.querySelector('#btn-dash-pago')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('caja:navigate', { detail: '#/pagos/nuevo' }))
+    window.dispatchEvent(new CustomEvent('caja:navigate', { detail: '/pagos/nuevo' }))
   })
   container.querySelector('#btn-dash-mora')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('caja:navigate', { detail: '#/cuotas' }))
+    window.dispatchEvent(new CustomEvent('caja:navigate', { detail: '/cuotas' }))
   })
 
   return { teardown() {} }

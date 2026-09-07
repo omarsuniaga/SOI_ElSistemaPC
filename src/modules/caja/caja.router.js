@@ -1,5 +1,11 @@
 /**
- * caja.router.js - Hash-based SPA router for the Caja module
+ * caja.router.js - Router del módulo Caja basado en History API.
+ *
+ * El portal se monta en `/fin` (ver public/_redirects y vite.config.js), así que
+ * las URLs son limpias: /fin/pagos/nuevo, /fin/cierre, /fin/familias/:id … Sin `#`.
+ *
+ * `navigate()` y el evento `caja:navigate` toleran rutas con `#` inicial por
+ * compatibilidad, pero lo nuevo debe pasar la ruta limpia ('/pagos/nuevo').
  */
 
 import { render as dashboardRender }         from './views/dashboardView.js'
@@ -18,20 +24,34 @@ import { render as cierreRender }            from './views/cierresCajaView.js'
 import { render as campanasRender }          from './views/campanasView.js'
 import { renderTareasView as hermesRender }  from '../hermes/views/tareasView.js'
 
+export const BASE_PATH = '/fin'
+const DEFAULT_ROUTE = '/pagos/nuevo'
+
 let _currentTeardown = null
 let _contentEl = null
 let _session = null
 let _notifBadgeCallback = null
 
-function parseHash(hash) {
-  const clean = (hash || '#/dashboard').replace(/^#/, '')
-  const segments = clean.split('/')
-  const route = '/' + segments.slice(1).join('/')
-  return { raw: clean, segments, route }
+/**
+ * Normaliza cualquier entrada de navegación a la ruta canónica interna
+ * ('/pagos/nuevo'). Acepta '/pagos/nuevo', 'pagos/nuevo', '#/pagos/nuevo',
+ * '/fin/pagos/nuevo'.
+ */
+function normalizeRoute(input) {
+  let r = String(input || '').trim().replace(/^#/, '')
+  if (r.startsWith(BASE_PATH)) r = r.slice(BASE_PATH.length)
+  if (!r.startsWith('/')) r = '/' + r
+  r = r.replace(/\/+$/, '')
+  return r === '' || r === '/' ? DEFAULT_ROUTE : r
+}
+
+/** Ruta interna actual, leída de la URL del navegador. */
+export function currentRoute() {
+  return normalizeRoute(window.location.pathname || BASE_PATH)
 }
 
 function matchRoute(route) {
-  if (route === '/dashboard' || route === '/') return { view: 'dashboard', params: {} }
+  if (route === '/dashboard') return { view: 'dashboard', params: {} }
   if (route === '/familias') return { view: 'familias-list', params: {} }
   if (/^\/familias\/(.+)$/.test(route)) return { view: 'familias-detail', params: { familiaId: route.split('/')[2] } }
   if (route === '/cuotas') return { view: 'cuotas', params: {} }
@@ -47,13 +67,12 @@ function matchRoute(route) {
   if (route === '/reportes') return { view: 'reportes', params: {} }
   if (route === '/cierre')    return { view: 'cierre',    params: {} }
   if (route === '/campanas')  return { view: 'campanas',  params: {} }
-  return { view: 'dashboard', params: {} }
+  return { view: 'pagos-nuevo', params: {} }
 }
 
 async function loadView(matched) {
   if (!_contentEl || !_session) return
 
-  // Teardown previous view
   if (_currentTeardown) {
     try { _currentTeardown() } catch (_e) {}
     _currentTeardown = null
@@ -82,10 +101,8 @@ async function loadView(matched) {
   _currentTeardown = result?.teardown || null
 }
 
-function handleHashChange() {
-  const { route } = parseHash(window.location.hash)
-  const matched = matchRoute(route)
-  loadView(matched)
+function handleRouteChange() {
+  loadView(matchRoute(currentRoute()))
 }
 
 export function initRouter(contentEl, session, notifBadgeCallback) {
@@ -93,26 +110,25 @@ export function initRouter(contentEl, session, notifBadgeCallback) {
   _session = session
   _notifBadgeCallback = notifBadgeCallback || null
 
-  window.addEventListener('hashchange', handleHashChange)
+  window.addEventListener('popstate', handleRouteChange)
 
-  // Listen for internal navigation events from views
-  window.addEventListener('caja:navigate', (e) => {
-    navigate(e.detail)
-  })
+  // Navegación interna emitida por las vistas.
+  window.addEventListener('caja:navigate', (e) => navigate(e.detail))
 }
 
-export function navigate(hash) {
-  const normalizedHash = hash.startsWith('#') ? hash : '#' + hash
-  if (window.location.hash === normalizedHash) {
-    // Force reload of same route
-    handleHashChange()
+export function navigate(to) {
+  const route = normalizeRoute(to)
+  const url = BASE_PATH + route
+  if (window.location.pathname === url) {
+    handleRouteChange() // recargar la misma ruta
   } else {
-    window.location.hash = normalizedHash
+    window.history.pushState(null, '', url)
+    handleRouteChange()
   }
 }
 
 export function teardownRouter() {
-  window.removeEventListener('hashchange', handleHashChange)
+  window.removeEventListener('popstate', handleRouteChange)
   if (_currentTeardown) {
     try { _currentTeardown() } catch (_e) {}
     _currentTeardown = null

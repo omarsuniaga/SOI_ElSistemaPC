@@ -106,10 +106,10 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-semibold text-white mt-2 tracking-tight">
-            Familias & Cuentas 360°
+            Padres & Tutores (Cuentas 360°)
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Perfil financiero consolidado, cálculo transparente del ISP y trazabilidad de alumnos por hogar.
+            Perfil financiero consolidado, cálculo transparente del ISP y trazabilidad de alumnos por tutor.
           </p>
         </div>
 
@@ -119,11 +119,11 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Registrar Familia</span>
+            <span>Registrar Padre / Tutor</span>
           </button>
           <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-300 flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-400" />
-            <span>{familias.length} Familias</span>
+            <span>{familias.length} Cuentas de Tutores</span>
           </div>
         </div>
       </div>

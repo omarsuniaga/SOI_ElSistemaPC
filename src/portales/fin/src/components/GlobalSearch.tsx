@@ -522,11 +522,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
                               </div>
 
                               <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                {family && (
-                                  <span>Familia: <strong className="text-zinc-300">{family.apellidos}</strong></span>
-                                )}
-                                {family && <span>·</span>}
-                                <span>Rep: <strong className="text-zinc-300">{a.representante_nombre || family?.representante_principal?.nombre_completo || 'N/A'}</strong></span>
+                                <span>Tutor: <strong className="text-zinc-300">{a.representante_nombre || family?.representante_principal?.nombre_completo || family?.apellidos || 'N/A'}</strong></span>
                                 {(a.representante_tlf || family?.telefono_principal) && (
                                   <>
                                     <span>·</span>

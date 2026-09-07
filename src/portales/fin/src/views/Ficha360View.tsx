@@ -340,7 +340,7 @@ export const Ficha360View: React.FC = () => {
 
                   <div className="text-[11px] text-zinc-400 space-y-1 font-mono pt-1">
                     <div className="flex justify-between">
-                      <span>Familia: <strong className="text-zinc-200">{familia?.apellidos}</strong></span>
+                      <span>Tutor: <strong className="text-zinc-200">{familia?.representante_principal?.nombre_completo || familia?.apellidos || 'Sin tutor'}</strong></span>
                       <span>Crédito: <strong className="text-emerald-400">{formatDOP(familia?.credito_favor_centavos || 0)}</strong></span>
                     </div>
                     {familia?.isp?.ventana_pago_sugerida && (

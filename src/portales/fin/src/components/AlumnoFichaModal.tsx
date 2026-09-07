@@ -246,12 +246,12 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
     if (res.success) {
       setCreditoFeedback({
         tipo: 'success',
-        mensaje: `✓ Crédito de ${formatDOP(Math.round(montoNum * 100))} acreditado a la familia.`
+        mensaje: `✓ Crédito de ${formatDOP(Math.round(montoNum * 100))} acreditado a la cuenta del Padre / Tutor.`
       });
       setMostrarFormCredito(false);
       setTimeout(() => setCreditoFeedback(null), 5000);
     } else {
-      setCreditoFeedback({ tipo: 'error', mensaje: res.error || 'Error al acreditar a la familia.' });
+      setCreditoFeedback({ tipo: 'error', mensaje: res.error || 'Error al acreditar a la cuenta del tutor.' });
     }
   };
 
@@ -298,7 +298,7 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                 <span>·</span>
                 <span>{alumno.nivel}</span>
                 <span>·</span>
-                <span>Familia: <strong className="text-zinc-200">{familia?.apellidos || 'Sin familia asignada'}</strong> ({familia?.codigo_familia || 'FAM-N/D'})</span>
+                <span>Padre / Tutor: <strong className="text-zinc-200">{familia?.representante_principal?.nombre_completo || familia?.apellidos || 'Sin tutor asignado'}</strong> ({familia?.codigo_familia || 'TUT-N/D'})</span>
               </p>
             </div>
 
@@ -562,9 +562,9 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                     <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                       <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                         <Coins className="w-3.5 h-3.5" />
-                        <span>Abonar Crédito a Favor · Familia {familia?.apellidos || alumno.nombre_completo.split(' ')[0]}</span>
+                        <span>Abonar Saldo a Favor · Tutor: {familia?.representante_principal?.nombre_completo || familia?.apellidos || alumno.nombre_completo.split(' ')[0]}</span>
                       </span>
-                      <span className="text-[10px] text-zinc-400 font-mono">Billetera Familiar</span>
+                      <span className="text-[10px] text-zinc-400 font-mono">Saldo a Favor</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

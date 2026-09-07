@@ -78,7 +78,10 @@ export class SupabasePaymentTransactionAdapter implements IPaymentTransactionPor
             p_monto_centavos: payload.payment.montoTotal.cents,
             p_metodo_pago: payload.payment.metodoPago,
             p_referencia: payload.payment.referenciaBancaria || payload.payment.numeroRecibo,
-            p_notas: payload.payment.observaciones || `Recibo: ${payload.payment.numeroRecibo}`
+            p_notas: payload.payment.observaciones || `Recibo: ${payload.payment.numeroRecibo}`,
+            // Fecha contable/bancaria real — para asentar transferencias retroactivas
+            // sin castigar con mora. La RPC calcula los días de atraso contra esto.
+            p_fecha_pago: payload.payment.fechaPago
           }
         );
 

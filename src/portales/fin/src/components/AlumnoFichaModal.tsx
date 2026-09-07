@@ -48,7 +48,7 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
   const {
     cuotas,
     familias,
-    activosInstrumentos,
+    activos: activosInstrumentos,
     contratosComodato,
     fichasLutheria,
     alumnos: todosAlumnos

@@ -1,98 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { 
-  FileText, 
-  Plus, 
-  Calendar, 
+  CreditCard, 
+  Search, 
+  ChevronRight, 
+  ChevronDown, 
+  RefreshCw, 
+  AlertCircle, 
+  Star, 
   CheckCircle2, 
-  AlertTriangle, 
-  Clock, 
-  Sparkles, 
-  Filter, 
-  Search,
-  Layers,
-  CreditCard,
-  Settings,
-  MessageSquare
+  Sparkles,
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { formatDOP } from '../lib/financialMath';
+import { useAlumnosCartera, AlumnoCarteraRow, CuotaRow } from '../hooks/useAlumnosCartera';
 import { useWhatsAppReminders } from '../hooks/useWhatsAppReminders';
 import { WhatsAppCooldownButton } from '../components/WhatsAppCooldownButton';
 import { WhatsAppReminderModal } from '../components/WhatsAppReminderModal';
-import { WhatsAppReminderConfigModal } from '../components/WhatsAppReminderConfigModal';
-import { Cuota } from '../types';
+import { AlumnoFichaModal } from '../components/AlumnoFichaModal';
+import { Alumno, Cuota } from '../types';
 
 interface CuotasViewProps {
   setActiveView?: (view: string) => void;
 }
 
+type TabType = 'pendientes' | 'al_dia' | 'retirados' | 'todos';
+
 export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
-  const { cuotas, familias, alumnos, periodoActivo, generarCuotasMensuales, iniciarCobroFamilia } = useFinance();
+  const { 
+    familias, 
+    alumnos: financeAlumnos, 
+    periodoActivo, 
+    generarCuotasMensuales, 
+    iniciarCobroFamilia 
+  } = useFinance();
+
+  const {
+    alumnos: carteraRows,
+    isLoading,
+    isOnline,
+    isReadCacheDegraded,
+    lastSyncTimestamp,
+    errorMessage,
+    refresh,
+    getCuotasByAlumno
+  } = useAlumnosCartera();
+
+  const [activeTab, setActiveTab] = useState<TabType>('pendientes');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAgingBucket, setSelectedAgingBucket] = useState<string>('all');
   const [genMessage, setGenMessage] = useState<string | null>(null);
 
-  // WhatsApp Reminders state
+  const [expandedAlumnoIds, setExpandedAlumnoIds] = useState<Set<string>>(new Set());
+  const [alumnoCuotasMap, setAlumnoCuotasMap] = useState<Record<string, CuotaRow[]>>({});
+  const [loadingCuotasMap, setLoadingCuotasMap] = useState<Record<string, boolean>>({});
+
+  const [selectedAlumnoForFicha, setSelectedAlumnoForFicha] = useState<Alumno | null>(null);
+
   const {
     config,
-    saveConfig,
     getCuotaCooldownState,
     registrarEnvio,
     resetearCooldown
   } = useWhatsAppReminders();
 
   const [selectedCuotaForReminder, setSelectedCuotaForReminder] = useState<Cuota | null>(null);
-  const [showConfigModal, setShowConfigModal] = useState<boolean>(false);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
-
-  const handleCobrarCuota = (famId: string, cuotaId: string) => {
-    iniciarCobroFamilia(famId, cuotaId);
-    if (setActiveView) {
-      setActiveView('registro_pago');
-    }
-  };
 
   const today = new Date();
 
-  // Aging calculation
-  const getDaysOverdue = (vencimientoStr: string) => {
+  const getDaysOverdue = (vencimientoStr: string | null | undefined) => {
+    if (!vencimientoStr) return 0;
     const vDate = new Date(vencimientoStr);
     const diffTime = today.getTime() - vDate.getTime();
     return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   };
 
-  const getAgingBucket = (cuota: any) => {
-    if (cuota.estado === 'pagada') return 'pagada';
-    const days = getDaysOverdue(cuota.fecha_vencimiento);
-    if (days === 0) return 'al_dia';
-    if (days <= 15) return '1-15';
-    if (days <= 45) return '16-45';
-    if (days <= 90) return '46-90';
-    return '+90';
+  const handleToggleExpand = async (alumnoId: string) => {
+    const nextSet = new Set(expandedAlumnoIds);
+    if (nextSet.has(alumnoId)) {
+      nextSet.delete(alumnoId);
+      setExpandedAlumnoIds(nextSet);
+      return;
+    }
+
+    nextSet.add(alumnoId);
+    setExpandedAlumnoIds(nextSet);
+
+    if (!alumnoCuotasMap[alumnoId]) {
+      setLoadingCuotasMap(prev => ({ ...prev, [alumnoId]: true }));
+      try {
+        const rows = await getCuotasByAlumno(alumnoId);
+        setAlumnoCuotasMap(prev => ({ ...prev, [alumnoId]: rows }));
+      } finally {
+        setLoadingCuotasMap(prev => ({ ...prev, [alumnoId]: false }));
+      }
+    }
   };
 
-  // Aging Metrics
-  const cuotasAlDia = cuotas.filter(c => c.estado === 'pendiente' && getAgingBucket(c) === 'al_dia');
-  const cuotas1_15 = cuotas.filter(c => c.estado === 'pendiente' && getAgingBucket(c) === '1-15');
-  const cuotas16_45 = cuotas.filter(c => c.estado === 'pendiente' && getAgingBucket(c) === '16-45');
-  const cuotas46_90 = cuotas.filter(c => c.estado === 'pendiente' && getAgingBucket(c) === '46-90');
-  const cuotasMas90 = cuotas.filter(c => c.estado === 'pendiente' && getAgingBucket(c) === '+90');
+  const handleOpenFicha = (row: AlumnoCarteraRow) => {
+    const existing = financeAlumnos.find(a => a.id === row.alumno_id);
+    if (existing) {
+      setSelectedAlumnoForFicha(existing);
+    } else {
+      const fallbackAlumno: Alumno = {
+        id: row.alumno_id || '',
+        nombre_completo: row.alumno_nombre || 'Estudiante',
+        instrumento_principal: row.instrumento_principal || 'Violín',
+        nivel: 'Iniciación',
+        familia_id: row.familia_id || '',
+        fecha_ingreso: '2026-01-15',
+        exento_mensualidad: Boolean(row.exento_mensualidad),
+        activo: Boolean(row.alumno_activo),
+        representante_nombre: row.contacto_nombre || undefined,
+        representante_cedula: row.contacto_cedula || undefined,
+        representante_tlf: row.contacto_telefono || undefined,
+        correo_representante: row.contacto_email || undefined,
+      };
+      setSelectedAlumnoForFicha(fallbackAlumno);
+    }
+  };
 
-  const filteredCuotas = cuotas.filter(c => {
-    const term = searchTerm.toLowerCase();
-    const matchSearch = c.alumno_nombre.toLowerCase().includes(term) ||
-      c.arancel_concepto.toLowerCase().includes(term) ||
-      c.periodo.includes(term);
-
-    if (!matchSearch) return false;
-    if (selectedAgingBucket === 'all') return true;
-    return getAgingBucket(c) === selectedAgingBucket;
-  });
+  const handleCobrarAlumno = (row: AlumnoCarteraRow) => {
+    if (row.familia_id) {
+      iniciarCobroFamilia(row.familia_id);
+    }
+    if (setActiveView) {
+      setActiveView('registro_pago');
+    }
+  };
 
   const handleGenerarMes = () => {
     const res = generarCuotasMensuales(periodoActivo);
-    setGenMessage(`Generación de cuotas ${periodoActivo}: ${res.generadas} cuota(s) creadas, ${res.omitidas} omitidas (ya emitidas o beca 100%).`);
+    setGenMessage(`Generación de cuotas ${periodoActivo}: ${res.generadas} cuota(s) creadas, ${res.omitidas} omitidas.`);
     setTimeout(() => setGenMessage(null), 5000);
+    refresh();
   };
 
   const handleSendReminder = (params: {
@@ -114,47 +156,135 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
     });
 
     setReminderToast(
-      `✓ Recordatorio de Vuelta #${record.total_vueltas} registrado para ${selectedCuotaForReminder.alumno_nombre}. Cronómetro circular de ${config.cooldown_horas}h iniciado.`
+      `✓ Recordatorio de Vuelta #${record.total_vueltas} registrado para ${selectedCuotaForReminder.alumno_nombre}.`
     );
     setTimeout(() => setReminderToast(null), 6000);
   };
 
-  // Find family & student for selected cuota
+  const filteredAlumnos = useMemo(() => {
+    return carteraRows.filter(row => {
+      if (activeTab === 'pendientes') {
+        if (row.estado_pago !== 'debe' && row.estado_pago !== 'mora') return false;
+      } else if (activeTab === 'al_dia') {
+        if (row.estado_pago !== 'al_dia' && row.estado_pago !== 'exento') return false;
+      } else if (activeTab === 'retirados') {
+        if (!(row.estado_pago === 'inactivo' && (row.saldo_pendiente_centavos || 0) > 0)) return false;
+      }
+
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchNombre = (row.alumno_nombre || '').toLowerCase().includes(term);
+        const matchContacto = (row.contacto_nombre || '').toLowerCase().includes(term);
+        const matchFamilia = (row.nombre_familia || '').toLowerCase().includes(term);
+        const matchCedula = (row.contacto_cedula || '').toLowerCase().includes(term);
+        if (!matchNombre && !matchContacto && !matchFamilia && !matchCedula) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [carteraRows, activeTab, searchTerm]);
+
+  const countPendientes = useMemo(() => {
+    return carteraRows.filter(r => r.estado_pago === 'debe' || r.estado_pago === 'mora').length;
+  }, [carteraRows]);
+
+  const countAlDia = useMemo(() => {
+    return carteraRows.filter(r => r.estado_pago === 'al_dia' || r.estado_pago === 'exento').length;
+  }, [carteraRows]);
+
+  const countRetirados = useMemo(() => {
+    return carteraRows.filter(r => r.estado_pago === 'inactivo' && (r.saldo_pendiente_centavos || 0) > 0).length;
+  }, [carteraRows]);
+
+  const renderSemaforo = (estado: string | null | undefined) => {
+    switch (estado) {
+      case 'al_dia':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            Al Día
+          </span>
+        );
+      case 'exento':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+            Exento
+          </span>
+        );
+      case 'debe':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            Pendiente
+          </span>
+        );
+      case 'mora':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+            En Mora
+          </span>
+        );
+      case 'inactivo':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+            Retirado
+          </span>
+        );
+    }
+  };
+
   const activeReminderFamily = selectedCuotaForReminder
     ? familias.find(f => f.id === selectedCuotaForReminder.familia_id)
     : undefined;
 
   const activeReminderStudent = selectedCuotaForReminder
-    ? alumnos.find(a => a.id === selectedCuotaForReminder.alumno_id)
+    ? financeAlumnos.find(a => a.id === selectedCuotaForReminder.alumno_id)
     : undefined;
 
   return (
     <div className="space-y-6">
       
-      {/* Bento Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-indigo-500/20">
-              Facturación & Cartera
+              Cartera & Mensualidades
             </span>
+            {isReadCacheDegraded && (
+              <span className="px-2.5 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                Modo Caché
+              </span>
+            )}
+            {isOnline && (
+              <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                Supabase En Línea
+              </span>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-semibold text-white mt-2 tracking-tight">
-            Gestión de Cuotas & Aging de Cartera
+            Gestión de Cuotas por Alumno
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Estructura de facturación de aranceles, aplicación de becas automáticas y recordatorios de WhatsApp con cooldown radial.
+            Vista consolidada alumno-céntrica sobre <span className="font-mono text-zinc-300">vw_alumno_estado_pago</span>. Una fila por alumno con semáforo oficial.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setShowConfigModal(true)}
-            className="flex items-center gap-2 px-3.5 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 rounded-2xl text-xs font-semibold shadow-md transition-all cursor-pointer"
-            title="Configurar cadencia y plantillas de WhatsApp"
+            onClick={() => refresh()}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-3.5 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 rounded-2xl text-xs font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50"
+            title="Refrescar cartera desde Supabase"
           >
-            <Settings className="w-4 h-4 text-zinc-400" />
-            <span className="hidden sm:inline">WhatsApp ({config.cooldown_horas}h)</span>
+            <RefreshCw className={`w-4 h-4 text-zinc-400 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
+            <span className="hidden sm:inline">Refrescar</span>
           </button>
 
           <button
@@ -164,7 +294,7 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
             className="flex items-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-semibold shadow-lg shadow-emerald-950/50 transition-all hover:scale-102 cursor-pointer"
           >
             <CreditCard className="w-4 h-4" />
-            <span>Registrar Pago</span>
+            <span>Ventanilla de Cobro</span>
           </button>
           
           <button
@@ -184,6 +314,13 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
         </div>
       )}
 
+      {errorMessage && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-400 flex items-center gap-2.5 shadow-lg">
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       {reminderToast && (
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-xs text-emerald-400 flex items-center gap-2.5 shadow-lg animate-in slide-in-from-top-2">
           <MessageSquare className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -191,197 +328,371 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
         </div>
       )}
 
-      {/* Aging Analysis Cards (Bento Tiles) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        
-        <div 
-          onClick={() => setSelectedAgingBucket('al_dia')}
-          className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-            selectedAgingBucket === 'al_dia' ? 'bg-emerald-950/30 border-emerald-500 shadow-xl' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+      {/* Tabs bar */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-3">
+        <button
+          onClick={() => setActiveTab('pendientes')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'pendientes'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
           }`}
         >
-          <div className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">Corriente (Al Día)</div>
-          <div className="text-base sm:text-lg font-mono font-bold text-white mt-2">
-            {formatDOP(cuotasAlDia.reduce((a, c) => a + c.saldo_centavos, 0))}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono mt-1">{cuotasAlDia.length} cuotas</div>
-        </div>
+          <span>Pendientes de Cobro</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+            activeTab === 'pendientes' ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400'
+          }`}>
+            {countPendientes}
+          </span>
+        </button>
 
-        <div 
-          onClick={() => setSelectedAgingBucket('1-15')}
-          className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-            selectedAgingBucket === '1-15' ? 'bg-amber-950/30 border-amber-500 shadow-xl' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+        <button
+          onClick={() => setActiveTab('al_dia')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'al_dia'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
           }`}
         >
-          <div className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider">1 a 15 Días</div>
-          <div className="text-base sm:text-lg font-mono font-bold text-white mt-2">
-            {formatDOP(cuotas1_15.reduce((a, c) => a + c.saldo_centavos, 0))}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono mt-1">{cuotas1_15.length} cuotas</div>
-        </div>
+          <span>Al Día / Becados</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+            activeTab === 'al_dia' ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'
+          }`}>
+            {countAlDia}
+          </span>
+        </button>
 
-        <div 
-          onClick={() => setSelectedAgingBucket('16-45')}
-          className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-            selectedAgingBucket === '16-45' ? 'bg-orange-950/30 border-orange-500 shadow-xl' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+        <button
+          onClick={() => setActiveTab('retirados')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'retirados'
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-lg'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
           }`}
         >
-          <div className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">16 a 45 Días</div>
-          <div className="text-base sm:text-lg font-mono font-bold text-white mt-2">
-            {formatDOP(cuotas16_45.reduce((a, c) => a + c.saldo_centavos, 0))}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono mt-1">{cuotas16_45.length} cuotas</div>
-        </div>
+          <span>Deudas de Retirados</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+            activeTab === 'retirados' ? 'bg-rose-500 text-white' : 'bg-zinc-800 text-zinc-400'
+          }`}>
+            {countRetirados}
+          </span>
+        </button>
 
-        <div 
-          onClick={() => setSelectedAgingBucket('46-90')}
-          className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-            selectedAgingBucket === '46-90' ? 'bg-rose-950/40 border-rose-500 shadow-xl' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+        <button
+          onClick={() => setActiveTab('todos')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'todos'
+              ? 'bg-indigo-600 text-white border border-indigo-500 shadow-lg'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
           }`}
         >
-          <div className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-wider">46 a 90 Días</div>
-          <div className="text-base sm:text-lg font-mono font-bold text-white mt-2">
-            {formatDOP(cuotas46_90.reduce((a, c) => a + c.saldo_centavos, 0))}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono mt-1">{cuotas46_90.length} cuotas</div>
-        </div>
-
-        <div 
-          onClick={() => setSelectedAgingBucket('+90')}
-          className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-            selectedAgingBucket === '+90' ? 'bg-rose-950/70 border-rose-400 shadow-xl' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-          }`}
-        >
-          <div className="text-[10px] font-mono font-bold text-rose-300 uppercase tracking-wider">+90 Días (Crítico)</div>
-          <div className="text-base sm:text-lg font-mono font-bold text-rose-300 mt-2">
-            {formatDOP(cuotasMas90.reduce((a, c) => a + c.saldo_centavos, 0))}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono mt-1">{cuotasMas90.length} cuotas</div>
-        </div>
-
-        <div 
-          onClick={() => setSelectedAgingBucket('all')}
-          className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-            selectedAgingBucket === 'all' ? 'bg-indigo-600 text-white border-indigo-500 shadow-xl' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-white'
-          }`}
-        >
-          <div className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-80">Ver Todos</div>
-          <div className="text-base sm:text-lg font-mono font-bold mt-2">
-            {cuotas.length} Cuotas
-          </div>
-          <div className="text-[10px] opacity-70 font-mono mt-1">Total cartera</div>
-        </div>
-
+          <span>Todos los Alumnos</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+            activeTab === 'todos' ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400'
+          }`}>
+            {carteraRows.length}
+          </span>
+        </button>
       </div>
 
-      {/* Search and Table */}
+      {/* Main Table Container */}
       <div className="bg-zinc-900 rounded-[2.5rem] border border-zinc-800 shadow-xl overflow-hidden">
+        
+        {/* Omnibox Search */}
         <div className="p-5 border-b border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-2.5" />
+          <div className="relative w-full sm:w-96">
+            <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Filtrar por alumno, concepto, período..."
+              placeholder="Buscar por alumno, representante, cédula o familia..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs font-medium text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs font-medium text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-all"
             />
           </div>
+          
           <div className="text-xs text-zinc-400 font-mono">
-            Mostrando <strong className="text-white">{filteredCuotas.length}</strong> cuotas
+            {isLoading ? (
+              <span className="flex items-center gap-2 text-indigo-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando cartera...
+              </span>
+            ) : (
+              <span>Mostrando <strong className="text-white">{filteredAlumnos.length}</strong> alumnos ({lastSyncTimestamp ? `Sinc: ${lastSyncTimestamp}` : ''})</span>
+            )}
           </div>
         </div>
 
+        {/* Alumno-Centric Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-zinc-950/80 text-zinc-400 font-mono text-[11px] uppercase tracking-wider border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-5">Alumno</th>
-                <th className="py-3 px-5">Concepto / Arancel</th>
-                <th className="py-3 px-5">Período</th>
-                <th className="py-3 px-5">Bruto</th>
-                <th className="py-3 px-5">Beca / Desc.</th>
-                <th className="py-3 px-5">Neto Facturado</th>
-                <th className="py-3 px-5">Saldo Pendiente</th>
-                <th className="py-3 px-5">Vencimiento</th>
-                <th className="py-3 px-5">Estado</th>
-                <th className="py-3 px-5 text-right">Acción / Recordatorio</th>
+                <th className="py-3 px-4 w-10"></th>
+                <th className="py-3 px-4">Alumno</th>
+                <th className="py-3 px-4">Contacto / Familia</th>
+                <th className="py-3 px-4">Saldo Pendiente</th>
+                <th className="py-3 px-4">Vencimiento</th>
+                <th className="py-3 px-4">Estado</th>
+                <th className="py-3 px-4 text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/80">
-              {filteredCuotas.map(cuota => {
-                const days = getDaysOverdue(cuota.fecha_vencimiento);
-                const cooldownState = getCuotaCooldownState(cuota.id);
+              {filteredAlumnos.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-zinc-500">
+                    {isLoading ? 'Cargando información de cartera...' : 'No se encontraron registros de alumnos para este filtro.'}
+                  </td>
+                </tr>
+              ) : (
+                filteredAlumnos.map(row => {
+                  const isExpanded = expandedAlumnoIds.has(row.alumno_id || '');
+                  const cuotasList = row.alumno_id ? alumnoCuotasMap[row.alumno_id] : undefined;
+                  const isCuotasLoading = row.alumno_id ? loadingCuotasMap[row.alumno_id] : false;
+                  
+                  const pendingCount = row.cuotas_pendientes_count || 0;
+                  const overdueCount = row.cuotas_vencidas_count || 0;
+                  const saldoCents = row.saldo_pendiente_centavos || 0;
+                  const daysOverdue = getDaysOverdue(row.fecha_mas_antigua_vencida);
 
-                return (
-                  <tr key={cuota.id} className="hover:bg-zinc-950/40 transition-colors">
-                    <td className="py-3.5 px-5 font-semibold text-white">
-                      {cuota.alumno_nombre}
-                    </td>
-                    <td className="py-3.5 px-5 text-zinc-300">
-                      {cuota.arancel_concepto}
-                    </td>
-                    <td className="py-3.5 px-5 font-mono font-medium text-indigo-400">
-                      {cuota.periodo}
-                    </td>
-                    <td className="py-3.5 px-5 text-zinc-400 font-mono">
-                      {formatDOP(cuota.monto_bruto_centavos)}
-                    </td>
-                    <td className="py-3.5 px-5 text-emerald-400 font-mono font-medium">
-                      {cuota.descuento_beca_centavos > 0 ? `-${formatDOP(cuota.descuento_beca_centavos)}` : 'RD$ 0.00'}
-                    </td>
-                    <td className="py-3.5 px-5 font-mono font-semibold text-white">
-                      {formatDOP(cuota.monto_neto_centavos)}
-                    </td>
-                    <td className="py-3.5 px-5 font-mono">
-                      <span className={`font-bold ${cuota.saldo_centavos > 0 ? 'text-rose-400' : 'text-zinc-500'}`}>
-                        {formatDOP(cuota.saldo_centavos)}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-5 font-mono">
-                      <div className="text-zinc-300">{cuota.fecha_vencimiento}</div>
-                      {cuota.estado === 'pendiente' && days > 0 && (
-                        <span className="text-[10px] text-rose-400 font-bold block">
-                          {days} días de atraso
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
-                        cuota.estado === 'pagada' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        cuota.estado === 'parcial' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                        days > 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      }`}>
-                        {cuota.estado === 'pagada' ? 'Pagada' : days > 0 ? 'En Mora' : 'Pendiente'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-5 text-right">
-                      {cuota.saldo_centavos > 0 ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <WhatsAppCooldownButton
-                            cooldownState={cooldownState}
-                            onClick={() => setSelectedCuotaForReminder(cuota)}
-                          />
-                          
+                  return (
+                    <React.Fragment key={row.alumno_id || Math.random()}>
+                      <tr className="hover:bg-zinc-950/40 transition-colors">
+                        
+                        {/* Expand Button */}
+                        <td className="py-3.5 px-4 text-center">
                           <button
-                            onClick={() => handleCobrarCuota(cuota.familia_id, cuota.id)}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all hover:scale-[1.02] cursor-pointer shrink-0"
+                            onClick={() => handleToggleExpand(row.alumno_id || '')}
+                            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                            title={isExpanded ? 'Ocultar cuotas detalladas' : 'Ver cuotas del alumno'}
                           >
-                            <CreditCard className="w-3.5 h-3.5" />
-                            <span>Registrar Pago</span>
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-indigo-400" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
                           </button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-zinc-500 font-mono">Al Día</span>
+                        </td>
+
+                        {/* Alumno */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleOpenFicha(row)}
+                              className="font-bold text-white hover:text-indigo-400 transition-colors text-left cursor-pointer"
+                              title="Ver Ficha 360° del Alumno"
+                            >
+                              {row.alumno_nombre}
+                            </button>
+                            {pendingCount > 0 && (
+                              <span className="px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-md text-[10px] font-mono font-bold">
+                                {pendingCount} {pendingCount === 1 ? 'cuota' : 'cuotas'}
+                              </span>
+                            )}
+                            {row.exento_mensualidad && (
+                              <span className="px-2 py-0.5 bg-sky-500/10 text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-mono font-bold flex items-center gap-1">
+                                <Star className="w-3 h-3 text-sky-400" /> Exento
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-zinc-400 mt-0.5">
+                            {row.instrumento_principal}
+                          </div>
+                        </td>
+
+                        {/* Contacto / Familia */}
+                        <td className="py-3.5 px-4">
+                          <div className="text-zinc-200 font-medium">
+                            {row.contacto_nombre}
+                          </div>
+                          <div className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
+                            <span className="text-indigo-400/90">{row.nombre_familia}</span>
+                            {row.contacto_telefono && (
+                              <span>· {row.contacto_telefono}</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Saldo Pendiente */}
+                        <td className="py-3.5 px-4 font-mono">
+                          {saldoCents > 0 ? (
+                            <span className="font-bold text-rose-400 text-sm">
+                              {formatDOP(saldoCents)}
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-emerald-400 text-xs">
+                              Al Día (RD$ 0.00)
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Vencimiento */}
+                        <td className="py-3.5 px-4 font-mono">
+                          {overdueCount > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">
+                                🔴 {daysOverdue} días
+                              </span>
+                              <span className="text-[11px] text-zinc-400">
+                                ({row.fecha_mas_antigua_vencida})
+                              </span>
+                            </div>
+                          ) : pendingCount > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold">
+                              🟠 Próximo a vencer
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-500 font-mono">
+                              Sin deudas
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Estado Semafórico */}
+                        <td className="py-3.5 px-4">
+                          {renderSemaforo(row.estado_pago)}
+                        </td>
+
+                        {/* Acciones */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleCobrarAlumno(row)}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all hover:scale-[1.02] cursor-pointer shrink-0"
+                              title="Registrar Pago en Ventanilla"
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>Cobrar</span>
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+
+                      {/* Lazy Expanded Row: Detalle de Cuotas del Alumno */}
+                      {isExpanded && (
+                        <tr className="bg-zinc-950/60 border-t border-b border-indigo-500/20">
+                          <td colSpan={7} className="p-4 pl-12">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+                                  <span>Cuotas Liquidables de {row.alumno_nombre}</span>
+                                  {isCuotasLoading && (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-zinc-400 font-mono">
+                                  {cuotasList ? `${cuotasList.length} cuota(s) registradas` : 'Consultando...'}
+                                </div>
+                              </div>
+
+                              {isCuotasLoading ? (
+                                <div className="p-4 text-center text-xs text-zinc-500">
+                                  Cargando detalle de cuotas desde Supabase...
+                                </div>
+                              ) : !cuotasList || cuotasList.length === 0 ? (
+                                <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 text-xs text-zinc-400">
+                                  No hay cuotas pendientes ni en mora abiertas para este alumno.
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {cuotasList.map(c => {
+                                    const cSaldo = (c.monto_final_centavos || 0) - (c.monto_pagado_centavos || 0);
+                                    const cDays = getDaysOverdue(c.fecha_vencimiento);
+                                    const isBecada = c.estado === 'becada' || (c.descuento_centavos || 0) > 0;
+                                    
+                                    const domainCuota: Cuota = {
+                                      id: c.id,
+                                      alumno_id: c.alumno_id || '',
+                                      alumno_nombre: row.alumno_nombre || '',
+                                      representante_id: '',
+                                      familia_id: c.familia_id || '',
+                                      arancel_concepto: c.concepto || 'Mensualidad Musical',
+                                      periodo: `${c.ciclo_anio || 2026}-${String(c.ciclo_mes || 8).padStart(2, '0')}`,
+                                      ciclo_academico: `${c.ciclo_anio || 2026}-2027`,
+                                      monto_bruto_centavos: c.monto_base_centavos || 60000,
+                                      descuento_beca_centavos: c.descuento_centavos || 0,
+                                      monto_neto_centavos: c.monto_final_centavos || 60000,
+                                      monto_pagado_centavos: c.monto_pagado_centavos || 0,
+                                      saldo_centavos: cSaldo,
+                                      fecha_emision: c.fecha_generacion || '',
+                                      fecha_vencimiento: c.fecha_vencimiento || '',
+                                      estado: (c.estado as any) || 'pendiente',
+                                      es_prorrateada: false,
+                                      version: 1
+                                    };
+
+                                    const cooldownState = getCuotaCooldownState(c.id);
+
+                                    return (
+                                      <div 
+                                        key={c.id} 
+                                        className="p-3.5 bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col justify-between gap-3 shadow-md"
+                                      >
+                                        <div>
+                                          <div className="flex items-center justify-between gap-2">
+                                            <span className="font-semibold text-zinc-200 text-xs">
+                                              {c.concepto || 'Mensualidad'}
+                                            </span>
+                                            {isBecada && (
+                                              <span className="px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-md text-[10px] font-mono font-bold">
+                                                ⭐ Beca
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="text-[11px] text-zinc-400 font-mono mt-1">
+                                            Vence: {c.fecha_vencimiento} {cDays > 0 ? `(🔴 ${cDays}d)` : ''}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80">
+                                          <div>
+                                            <div className="text-[10px] text-zinc-500 font-mono">Saldo</div>
+                                            <div className="text-xs font-mono font-bold text-rose-400">
+                                              {formatDOP(cSaldo)}
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5">
+                                            <WhatsAppCooldownButton
+                                              cooldownState={cooldownState}
+                                              onClick={() => setSelectedCuotaForReminder(domainCuota)}
+                                            />
+
+                                            <button
+                                              onClick={() => handleCobrarAlumno(row)}
+                                              className="px-2.5 py-1 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                            >
+                                              <CreditCard className="w-3 h-3" />
+                                              <span>Pagar</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                  </tr>
-                );
-              })}
+
+                    </React.Fragment>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Modal Ficha 360 del Alumno */}
+      {selectedAlumnoForFicha && (
+        <AlumnoFichaModal
+          alumno={selectedAlumnoForFicha}
+          onClose={() => setSelectedAlumnoForFicha(null)}
+        />
+      )}
 
       {/* WhatsApp Reminder Composer Modal */}
       {selectedCuotaForReminder && (
@@ -394,15 +705,6 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
           onClose={() => setSelectedCuotaForReminder(null)}
           onSendReminder={handleSendReminder}
           onResetCooldown={() => resetearCooldown(selectedCuotaForReminder.id)}
-        />
-      )}
-
-      {/* WhatsApp Settings Modal */}
-      {showConfigModal && (
-        <WhatsAppReminderConfigModal
-          config={config}
-          onClose={() => setShowConfigModal(false)}
-          onSave={saveConfig}
         />
       )}
 

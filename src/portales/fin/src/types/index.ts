@@ -40,6 +40,8 @@ export interface Alumno {
   representante_cedula?: string;
   representante_tlf?: string;
   correo_representante?: string;
+  tiene_pasaporte?: boolean;
+  direccion?: string;
 }
 
 export interface Representante {

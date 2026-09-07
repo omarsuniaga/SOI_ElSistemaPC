@@ -32,7 +32,7 @@ export const Ficha360View: React.FC = () => {
     alumnos,
     familias,
     cuotas,
-    activosInstrumentos,
+    activos: activosInstrumentos,
     contratosComodato,
     fichasLutheria
   } = useFinance();

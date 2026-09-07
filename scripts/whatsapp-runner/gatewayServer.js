@@ -2,7 +2,7 @@ import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
 import { parseGatewayAuthMessage } from './gatewayProtocol.js'
 
-export function createGatewayServer({ port, key, allowedOrigins = [], authorizeToken, snapshot, onLogout }) {
+export function createGatewayServer({ port, host = '127.0.0.1', key, allowedOrigins = [], authorizeToken, snapshot, onLogout, onSessionBackup, onSessionRestore, onSessionDelete }) {
   const clients = new Set()
   const cors = (req, res) => {
     const origin = req.headers.origin || ''
@@ -29,7 +29,9 @@ export function createGatewayServer({ port, key, allowedOrigins = [], authorizeT
       res.end()
       return
     }
-    if (!(await isAuthorizedRequest(req))) {
+    const internal = req.headers['x-gateway-key'] === key
+    const sessionRoute = url.pathname.startsWith('/session/') || url.pathname === '/session'
+    if ((sessionRoute && !internal) || (!sessionRoute && !(internal || await isAuthorizedRequest(req)))) {
       res.writeHead(401)
       res.end(JSON.stringify({ error: 'No autorizado' }))
       return
@@ -51,6 +53,39 @@ export function createGatewayServer({ port, key, allowedOrigins = [], authorizeT
         const result = await onLogout()
         res.writeHead(200)
         res.end(JSON.stringify(result || { ok: true }))
+      } catch (error) {
+        res.writeHead(409)
+        res.end(JSON.stringify({ error: error.message }))
+      }
+      return
+    }
+    if (req.method === 'POST' && url.pathname === '/session/backup') {
+      try {
+        const result = await onSessionBackup()
+        res.writeHead(200)
+        res.end(JSON.stringify(result))
+      } catch (error) {
+        res.writeHead(409)
+        res.end(JSON.stringify({ error: error.message }))
+      }
+      return
+    }
+    if (req.method === 'POST' && url.pathname === '/session/restore') {
+      try {
+        const result = await onSessionRestore()
+        res.writeHead(200)
+        res.end(JSON.stringify(result))
+      } catch (error) {
+        res.writeHead(409)
+        res.end(JSON.stringify({ error: error.message }))
+      }
+      return
+    }
+    if (req.method === 'DELETE' && url.pathname === '/session') {
+      try {
+        const result = await onSessionDelete()
+        res.writeHead(200)
+        res.end(JSON.stringify(result))
       } catch (error) {
         res.writeHead(409)
         res.end(JSON.stringify({ error: error.message }))
@@ -93,6 +128,11 @@ export function createGatewayServer({ port, key, allowedOrigins = [], authorizeT
       socket.destroy()
       return
     }
+    const origin = request.headers.origin || ''
+    if (origin && !allowedOrigins.includes(origin)) {
+      socket.destroy()
+      return
+    }
     wss.handleUpgrade(request, socket, head, (client) => wss.emit('connection', client, request))
   })
 
@@ -105,7 +145,7 @@ export function createGatewayServer({ port, key, allowedOrigins = [], authorizeT
       }
     },
     listen(callback) {
-      server.listen(port, '127.0.0.1', callback)
+      server.listen(port, host, callback)
     },
     close() {
       for (const client of clients) client.close()

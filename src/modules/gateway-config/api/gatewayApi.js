@@ -9,10 +9,13 @@
 
 import { supabase } from '../../../lib/supabaseClient.js'
 import { config } from '../../../core/config/config.js'
+import { getSession as getPortalSession } from '../../../core/auth/sessionStorage.js'
 
 const DEFAULT_CONFIG = {
   id: '00000000-0000-0000-0000-000000000001',
-  gateway_url: 'https://gateway.elsistema.local/api',
+  // Local runner default. Production/Raspberry deployments must replace this
+  // with the private gateway address from the ADM configuration screen.
+  gateway_url: 'http://127.0.0.1:8787',
   instance_name: 'soi-main',
   numero_wid: '+1 (829) 555-0188',
   numero_nombre: 'El Sistema Punta Cana (Oficial)',
@@ -72,6 +75,10 @@ const mockQueue = [
   },
 ]
 
+export function obtenerGatewayConfigInicial() {
+  return { ...DEFAULT_CONFIG }
+}
+
 export async function obtenerGatewayConfig() {
   if (config.isDemoMode || !supabase) return { ...mockConfig }
 
@@ -90,18 +97,38 @@ export async function obtenerGatewayConfig() {
 }
 
 export async function obtenerGatewayAccessToken() {
-  if (config.isDemoMode || !supabase) return null
-  const { data, error } = await supabase.auth.getSession()
-  if (error) throw error
-  return data.session?.access_token || null
+  if (supabase) {
+    const { data, error } = await supabase.auth.getSession()
+    if (error) throw error
+    if (data.session?.access_token) return data.session.access_token
+  }
+
+  // The portal authentication layer stores the same Supabase token under
+  // auth-session. The runner validates it server-side, including admin role.
+  return getPortalSession()?.access_token || null
 }
 
 export async function cerrarSesionGateway(gatewayUrl) {
   const token = await obtenerGatewayAccessToken()
-  if (!token || !gatewayUrl) throw new Error('No hay una sesión administrativa o URL de gateway configurada')
+  if (!gatewayUrl) throw new Error('Configura la URL del servidor Baileys antes de vincular WhatsApp')
+  if (!token) throw new Error('Inicia sesión en el portal ADM con una cuenta administradora para vincular WhatsApp')
   const baseUrl = new URL(gatewayUrl).origin
   const response = await fetch(`${baseUrl}/logout`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.error || `Error HTTP ${response.status}`)
+  return body
+}
+
+export async function obtenerEstadoGateway(gatewayUrl) {
+  const token = await obtenerGatewayAccessToken()
+  if (!gatewayUrl) throw new Error('Configura la URL del servidor Baileys antes de vincular WhatsApp')
+  if (!token) throw new Error('Inicia sesión en el portal ADM con una cuenta administradora para vincular WhatsApp')
+
+  const baseUrl = new URL(gatewayUrl).origin
+  const response = await fetch(`${baseUrl}/health`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   const body = await response.json().catch(() => ({}))

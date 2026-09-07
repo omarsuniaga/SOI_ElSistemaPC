@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "verify": "node verify_runner.js",
+    "test": "node --test gatewayProtocol.test.js gatewayServer.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",

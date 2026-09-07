@@ -1,0 +1,23 @@
+[Unit]
+Description=SOI WhatsApp Baileys runner (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=soi-whatsapp
+Group=soi-whatsapp
+WorkingDirectory=/opt/SOI_ElSistemaPC/scripts/whatsapp-runner
+EnvironmentFile=/etc/soi/whatsapp-runner-%i.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/SOI_ElSistemaPC/scripts/whatsapp-runner/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/soi-whatsapp
+
+[Install]
+WantedBy=multi-user.target

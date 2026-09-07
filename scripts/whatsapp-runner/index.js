@@ -8,6 +8,7 @@ import pino from 'pino'
 import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 import { randomUUID } from 'crypto'
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import os from 'os'
 import path from 'path'
 import fs from 'fs/promises'
@@ -21,14 +22,18 @@ dotenv.config({ path: path.join(__dirname, '../../.env.local') })
 dotenv.config({ path: path.join(__dirname, '../../.env') })
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
-const SUPABASE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ''
 const INSTANCE_NAME = process.env.WHATSAPP_INSTANCE_NAME || 'soi-main'
 const GATEWAY_PORT = Number(process.env.WHATSAPP_GATEWAY_PORT || 8787)
+const GATEWAY_HOST = process.env.WHATSAPP_GATEWAY_HOST || '127.0.0.1'
 const GATEWAY_KEY = process.env.WHATSAPP_GATEWAY_INTERNAL_KEY || ''
 const ALLOWED_ORIGINS = (process.env.WHATSAPP_ALLOWED_ORIGINS || '').split(',').map((value) => value.trim()).filter(Boolean)
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || path.join(os.homedir(), '.soi', 'whatsapp', INSTANCE_NAME)
 const LOCK_FILE = process.env.WHATSAPP_LOCK_FILE || path.join(AUTH_DIR, '.runner.lock')
+const BACKUP_DIR = process.env.WHATSAPP_SESSION_BACKUP_DIR || path.join(os.homedir(), '.soi', 'whatsapp-backups', INSTANCE_NAME)
+const BACKUP_FILE = path.join(BACKUP_DIR, 'session.enc')
+const BACKUP_KEY = process.env.WHATSAPP_SESSION_BACKUP_KEY || ''
 const WORKER_ID = `${os.hostname()}-${process.pid}-${randomUUID()}`
 // Debe coincidir con el secret WHATSAPP_WEBHOOK_SECRET configurado en la función
 // whatsapp-webhook de Supabase — sin esto, este runner no puede reenviar mensajes
@@ -58,7 +63,78 @@ let reconnectTimer = null
 let reconnectAttempt = 0
 let currentQr = null
 let qrExpiresAt = null
+let gatewayPhase = 'disconnected'
 let runnerLock = null
+let manualSessionOperation = false
+
+function getBackupKey() {
+  if (!/^[a-f0-9]{64}$/i.test(BACKUP_KEY)) {
+    throw new Error('WHATSAPP_SESSION_BACKUP_KEY debe ser una clave hexadecimal de 64 caracteres')
+  }
+  return Buffer.from(BACKUP_KEY, 'hex')
+}
+
+async function listSessionFiles(directory, prefix = '') {
+  const result = []
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    if (entry.name === '.runner.lock') continue
+    const relative = path.join(prefix, entry.name)
+    const fullPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) result.push(...await listSessionFiles(fullPath, relative))
+    else if (entry.isFile()) result.push({ name: relative.replaceAll(path.sep, '/'), data: (await fs.readFile(fullPath)).toString('base64') })
+  }
+  return result
+}
+
+async function clearSessionFiles() {
+  await fs.mkdir(AUTH_DIR, { recursive: true, mode: 0o700 })
+  for (const entry of await fs.readdir(AUTH_DIR, { withFileTypes: true })) {
+    if (entry.name === '.runner.lock') continue
+    await fs.rm(path.join(AUTH_DIR, entry.name), { recursive: true, force: true })
+  }
+}
+
+async function backupSession() {
+  const key = getBackupKey()
+  const files = await listSessionFiles(AUTH_DIR)
+  if (!files.length) throw new Error('No hay credenciales Baileys para respaldar')
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify({ instance: INSTANCE_NAME, createdAt: new Date().toISOString(), files })), cipher.final()])
+  await fs.mkdir(BACKUP_DIR, { recursive: true, mode: 0o700 })
+  await fs.writeFile(BACKUP_FILE, JSON.stringify({ algorithm: 'aes-256-gcm', iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), payload: encrypted.toString('base64') }), { mode: 0o600 })
+  return { ok: true, instance: INSTANCE_NAME, fileCount: files.length, createdAt: new Date().toISOString() }
+}
+
+async function restoreSession() {
+  if (currentSock) throw new Error('Desconecta WhatsApp antes de restaurar una sesión')
+  const key = getBackupKey()
+  const backup = JSON.parse(await fs.readFile(BACKUP_FILE, 'utf8'))
+  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(backup.iv, 'base64'))
+  decipher.setAuthTag(Buffer.from(backup.tag, 'base64'))
+  const decoded = JSON.parse(Buffer.concat([decipher.update(Buffer.from(backup.payload, 'base64')), decipher.final()]).toString('utf8'))
+  if (decoded.instance !== INSTANCE_NAME || !Array.isArray(decoded.files)) throw new Error('El respaldo no corresponde a esta instancia')
+  await clearSessionFiles()
+  for (const file of decoded.files) {
+    const target = path.resolve(AUTH_DIR, file.name)
+    if (!target.startsWith(`${path.resolve(AUTH_DIR)}${path.sep}`)) throw new Error('Ruta inválida en respaldo de sesión')
+    await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 })
+    await fs.writeFile(target, Buffer.from(file.data, 'base64'), { mode: 0o600 })
+  }
+  return { ok: true, instance: INSTANCE_NAME, fileCount: decoded.files.length }
+}
+
+async function deleteSession() {
+  manualSessionOperation = true
+  if (currentSock) await currentSock.logout().catch(() => {})
+  currentSock = null
+  currentQr = null
+  qrExpiresAt = null
+  await clearSessionFiles()
+  await updateHeartbeat('disconnected', { reason: 'session_deleted' })
+  gatewayServer?.broadcast(gatewaySnapshot())
+  return { ok: true, instance: INSTANCE_NAME }
+}
 let heartbeatTimer = null
 
 // process.kill(pid, 0) no mata: solo prueba existencia. ESRCH -> muerto;
@@ -111,7 +187,7 @@ async function releaseRunnerLock() {
 }
 
 function gatewaySnapshot() {
-  return createGatewaySnapshot({ instanceName: INSTANCE_NAME, qr: currentQr, qrExpiresAt, connected: currentSock?.user })
+  return createGatewaySnapshot({ instanceName: INSTANCE_NAME, qr: currentQr, qrExpiresAt, connected: currentSock?.user, status: gatewayPhase })
 }
 
 async function updateHeartbeat(status, metadata = {}) {
@@ -185,6 +261,7 @@ let gatewayServer = null
 function startGatewayServer() {
   gatewayServer = createGatewayServer({
     port: GATEWAY_PORT,
+    host: GATEWAY_HOST,
     key: GATEWAY_KEY,
     allowedOrigins: ALLOWED_ORIGINS,
     authorizeToken: isAuthorizedToken,
@@ -196,9 +273,12 @@ function startGatewayServer() {
       qrExpiresAt = null
       return { ok: true }
     },
+    onSessionBackup: backupSession,
+    onSessionRestore: restoreSession,
+    onSessionDelete: deleteSession,
   })
   gatewayServer.listen(() => {
-    console.log(`🌐 Gateway API/WebSocket escuchando en 127.0.0.1:${GATEWAY_PORT}`)
+    console.log(`🌐 Gateway API/WebSocket escuchando en ${GATEWAY_HOST}:${GATEWAY_PORT}`)
   })
 }
 
@@ -285,6 +365,7 @@ async function startWhatsApp() {
     const { connection, lastDisconnect, qr } = update
 
     if (qr) {
+      gatewayPhase = 'qr_ready'
       currentQr = await QRCode.toDataURL(qr, { width: 360, margin: 2 })
       qrExpiresAt = Date.now() + 90000
       await updateHeartbeat('qr_ready', { qr_expires_at: new Date(qrExpiresAt).toISOString() })
@@ -293,7 +374,8 @@ async function startWhatsApp() {
 
     if (connection === 'close') {
       const statusCode = (lastDisconnect?.error instanceof Boom) ? lastDisconnect.error.output?.statusCode : 500
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut && !manualSessionOperation
+      gatewayPhase = statusCode === DisconnectReason.loggedOut ? 'session_expired' : 'disconnected'
       console.log(`⚠️ Conexión cerrada (${statusCode}). Reconectando en 4s: ${shouldReconnect}`)
 
       if (queueInterval) {
@@ -312,6 +394,8 @@ async function startWhatsApp() {
         scheduleReconnect()
       }
     } else if (connection === 'open') {
+      manualSessionOperation = false
+      gatewayPhase = 'connected'
       reconnectAttempt = 0
       currentQr = null
       qrExpiresAt = null

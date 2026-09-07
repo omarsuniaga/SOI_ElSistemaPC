@@ -26,7 +26,7 @@ const state = {
   filtroCola: 'todos',
   cargando: false,
   enviandoTest: false,
-  gatewayStatus: { connected: false, qr: null, qrExpiresAt: null },
+  gatewayStatus: { connected: false, status: 'disconnected', qr: null, qrExpiresAt: null },
   gatewaySocket: null,
 }
 
@@ -171,6 +171,7 @@ async function conectarGateway() {
 
   desconectarGateway()
   try {
+    await actualizarEstadoRemoto()
     if (typeof WebSocket === 'undefined') return
     const token = await gatewayApi.obtenerGatewayAccessToken()
     if (!token) return
@@ -193,9 +194,19 @@ async function conectarGateway() {
     socket.addEventListener('close', () => {
       if (state.gatewaySocket === socket) state.gatewaySocket = null
     })
+    socket.addEventListener('error', () => {
+      console.warn('[Gateway WhatsApp] No se pudo abrir el WebSocket del gateway.')
+    })
   } catch (error) {
+    state.gatewayStatus = { ...state.gatewayStatus, status: 'error', error: error.message }
+    actualizarModalVinculacion()
     console.warn('[Gateway WhatsApp] WebSocket no disponible:', error.message)
   }
+}
+
+async function actualizarEstadoRemoto() {
+  const payload = await gatewayApi.obtenerEstadoGateway(state.config?.gateway_url)
+  actualizarEstadoDesdeGateway(payload)
 }
 
 function desconectarGateway() {
@@ -209,8 +220,10 @@ function actualizarEstadoDesdeGateway(payload) {
   if (payload?.type !== 'gateway.status') return
   state.gatewayStatus = {
     connected: Boolean(payload.connected),
+    status: payload.status || (payload.connected ? 'connected' : payload.qr ? 'qr_ready' : 'disconnected'),
     qr: payload.qr || null,
     qrExpiresAt: payload.qrExpiresAt || null,
+    error: null,
   }
   actualizarModalVinculacion()
 }
@@ -225,7 +238,10 @@ async function cargarDatos(container) {
       gatewayApi.obtenerColaMensajes(25),
       gatewayApi.obtenerDedupHoras(),
     ])
-    state.config = cfg
+    // A fresh installation has no database row yet. Keep a local, usable
+    // gateway configuration so the QR flow can reach the local runner; saving
+    // the form persists it through crearGatewayConfig().
+    state.config = cfg || gatewayApi.obtenerGatewayConfigInicial()
     state.stats = stats
     state.queue = queue
     state.dedupHoras = dedupHoras
@@ -416,7 +432,8 @@ function render(container) {
 
                 <div class="col-md-6">
                   <label class="form-label fw-bold text-muted mb-1">URL del Servidor Baileys</label>
-                  <input type="text" id="inp-gateway-url" class="form-control form-control-sm" value="${esc(config?.gateway_url || 'https://gateway.elsistema.local/api')}" />
+                  <input type="url" id="inp-gateway-url" class="form-control form-control-sm" value="${esc(config?.gateway_url || 'http://127.0.0.1:8787')}" placeholder="http://127.0.0.1:8787" />
+                  <div class="form-text">Usa la IP y puerto reales del runner; no agregues <code>/events</code> ni <code>/api</code>.</div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold text-muted mb-1">Nombre de Instancia</label>
@@ -579,22 +596,41 @@ function abrirVinculacionWhatsApp() {
     cancelText: 'Cerrar',
     body: renderVinculacionBody(),
     onShow: (body) => {
-      body.querySelector('#btn-refresh-wa-qr')?.addEventListener('click', actualizarModalVinculacion)
+      actualizarEstadoRemoto().catch((error) => {
+        state.gatewayStatus = { ...state.gatewayStatus, status: 'error', error: error.message }
+        actualizarModalVinculacion()
+      })
+      body.querySelector('#btn-refresh-wa-qr')?.addEventListener('click', async () => {
+        try {
+          await actualizarEstadoRemoto()
+        } catch (error) {
+          state.gatewayStatus = { ...state.gatewayStatus, status: 'error', error: error.message }
+          actualizarModalVinculacion()
+        }
+      })
       body.querySelector('#btn-logout-wa')?.addEventListener('click', cerrarSesionDesdeModal)
     },
   })
 }
 
 function renderVinculacionBody() {
-  const { connected, qr, qrExpiresAt } = state.gatewayStatus
+  const { connected, status, qr, qrExpiresAt, error } = state.gatewayStatus
+  const statusCopy = {
+    disconnected: ['secondary', 'hourglass-split', 'WhatsApp está desconectado. Inicia el vínculo para generar un QR.'],
+    qr_ready: ['warning', 'qr-code', 'Escanea el código desde el teléfono institucional.'],
+    connecting: ['warning', 'arrow-repeat', 'Conectando con WhatsApp…'],
+    connected: ['success', 'check-circle', 'WhatsApp está conectado y listo para operar.'],
+    session_expired: ['danger', 'exclamation-triangle', 'La sesión expiró. Debes vincular WhatsApp nuevamente.'],
+    error: ['danger', 'exclamation-triangle', `No se pudo consultar el gateway. ${esc(error || 'Verifica la URL, el host, CORS y que el runner esté encendido.')}`],
+  }[status] || ['secondary', 'hourglass-split', 'Esperando estado del gateway Baileys…']
   const expires = qrExpiresAt
     ? new Date(qrExpiresAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
     : null
   return `
     <div class="gateway-link-panel text-center">
-      <div id="wa-link-state" class="alert ${connected ? 'alert-success' : qr ? 'alert-warning' : 'alert-secondary'} mb-3">
-        <i class="bi ${connected ? 'bi-check-circle' : qr ? 'bi-qr-code' : 'bi-hourglass-split'} me-2"></i>
-        ${connected ? 'WhatsApp está conectado y listo para operar.' : qr ? `Escanea el código desde el teléfono institucional. Expira a las ${expires}.` : 'Esperando QR del gateway Baileys…'}
+      <div id="wa-link-state" class="alert alert-${statusCopy[0]} mb-3">
+        <i class="bi bi-${statusCopy[1]} me-2"></i>
+        ${qr ? `${statusCopy[2]} El QR expira a las ${expires}.` : statusCopy[2]}
       </div>
       <div id="wa-link-qr" class="gateway-qr-frame mb-3">
         ${qr ? `<img src="${esc(qr)}" alt="Código QR temporal para vincular WhatsApp" />` : '<i class="bi bi-qr-code fs-1 text-muted"></i><p class="small text-muted mb-0 mt-2">El QR aparecerá aquí cuando el gateway lo genere.</p>'}
@@ -621,7 +657,14 @@ function actualizarModalVinculacion() {
   const body = document.querySelector('#app-global-modal .app-modal-body')
   if (!body?.querySelector('#wa-link-qr')) return
   body.innerHTML = renderVinculacionBody()
-  body.querySelector('#btn-refresh-wa-qr')?.addEventListener('click', actualizarModalVinculacion)
+  body.querySelector('#btn-refresh-wa-qr')?.addEventListener('click', async () => {
+    try {
+      await actualizarEstadoRemoto()
+    } catch (error) {
+      state.gatewayStatus = { ...state.gatewayStatus, status: 'error', error: error.message }
+      actualizarModalVinculacion()
+    }
+  })
   body.querySelector('#btn-logout-wa')?.addEventListener('click', cerrarSesionDesdeModal)
 }
 

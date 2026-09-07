@@ -1,10 +1,11 @@
-export function createGatewaySnapshot({ instanceName, qr, qrExpiresAt, connected }) {
+export function createGatewaySnapshot({ instanceName, qr, qrExpiresAt, connected, status = connected ? 'connected' : 'disconnected' }) {
   return {
     type: 'gateway.status',
     instanceName,
     qr: qr && qrExpiresAt > Date.now() ? qr : null,
     qrExpiresAt: qr && qrExpiresAt > Date.now() ? qrExpiresAt : null,
     connected: Boolean(connected),
+    status,
   }
 }
 

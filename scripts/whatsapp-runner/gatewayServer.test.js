@@ -15,6 +15,9 @@ async function startFixture() {
       logoutCalls += 1
       return { ok: true }
     },
+    onSessionBackup: async () => ({ ok: true, fileCount: 1 }),
+    onSessionRestore: async () => ({ ok: true, fileCount: 1 }),
+    onSessionDelete: async () => ({ ok: true }),
   })
   await new Promise((resolve) => gateway.listen(resolve))
   const port = gateway.server.address().port
@@ -67,4 +70,36 @@ test('closes unauthenticated WebSocket connections', async (t) => {
     socket.once('error', reject)
   })
   assert.equal(closeCode, 1008)
+})
+
+test('rejects browser WebSocket origins outside the allowlist', async (t) => {
+  const fixture = await startFixture()
+  t.after(() => fixture.gateway.close())
+
+  const socket = new WebSocket(`ws://127.0.0.1:${fixture.port}/events`, {
+    headers: { Origin: 'https://untrusted.example' },
+  })
+  const outcome = await new Promise((resolve) => {
+    socket.once('error', () => resolve('rejected'))
+    socket.once('open', () => resolve('opened'))
+  })
+  assert.equal(outcome, 'rejected')
+})
+
+test('reserves session management for the internal gateway key', async (t) => {
+  const fixture = await startFixture()
+  t.after(() => fixture.gateway.close())
+
+  const denied = await fetch(`http://127.0.0.1:${fixture.port}/session/backup`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer admin-token' },
+  })
+  assert.equal(denied.status, 401)
+
+  const allowed = await fetch(`http://127.0.0.1:${fixture.port}/session/backup`, {
+    method: 'POST',
+    headers: { 'x-gateway-key': 'internal-test-key' },
+  })
+  assert.equal(allowed.status, 200)
+  assert.equal((await allowed.json()).fileCount, 1)
 })

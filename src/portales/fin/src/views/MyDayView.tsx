@@ -15,7 +15,8 @@ import {
   Calendar,
   Layers,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  Guitar
 } from 'lucide-react';
 import { formatDOP } from '../lib/financialMath';
 import { computeEstadoGastoFijo } from '../lib/gastosFijos';
@@ -40,6 +41,7 @@ export const MyDayView: React.FC<MyDayViewProps> = ({ onOpenQuickPayment, setAct
     solicitudesNecesidades,
     nomina,
     cierresCaja,
+    contratosComodato,
     serviceBalanceStatus,
     authoritativeServiceBalances,
     serviceBalanceErrorMessage,
@@ -69,6 +71,12 @@ export const MyDayView: React.FC<MyDayViewProps> = ({ onOpenQuickPayment, setAct
   const cuotasVencidasCriticas = cuotas.filter(c => c.estado === 'pendiente' && new Date(c.fecha_vencimiento) < new Date());
 
   const cajaCerradaHoy = cierresCaja.some(c => c.fecha === today && c.estado === 'cerrado');
+  const comodatosPorVencer = contratosComodato.filter(c => {
+    if (c.estado !== 'vigente' || !c.fecha_termino) return false;
+    const diffDias = Math.ceil((new Date(c.fecha_termino).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+    return diffDias <= 30;
+  });
+
   const upcomingServiceBalances = [...authoritativeServiceBalances]
     .sort((a, b) => (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31'))
     .slice(0, 4);
@@ -210,6 +218,35 @@ export const MyDayView: React.FC<MyDayViewProps> = ({ onOpenQuickPayment, setAct
             className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 shadow-lg shadow-rose-900/40"
           >
             <span>Gestionar Gastos Fijos</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Comodatos por vencer alert */}
+      {comodatosPorVencer.length > 0 && (
+        <div className="bg-amber-950/30 border border-amber-500/30 rounded-[2rem] p-5 text-amber-200 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-xs">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-amber-500/20 border border-amber-500/30 rounded-2xl text-amber-300 shrink-0">
+              <Guitar className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-amber-100 flex items-center gap-2">
+                <span>Contratos de Comodato de Instrumentos por Vencer</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider">
+                  {comodatosPorVencer.length} por renovar
+                </span>
+              </div>
+              <p className="text-xs text-amber-300/80 mt-1">
+                {comodatosPorVencer.map(c => `${c.tipo_instrumento} (${c.codigo_patrimonial})`).slice(0, 3).join(', ')} vencen en los próximos 30 días. Requieren revisión técnica o renovación de contrato.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveView('lutheria')}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 shadow-lg shadow-amber-950/40 cursor-pointer"
+          >
+            <span>Ver Comodatos en Luthería</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

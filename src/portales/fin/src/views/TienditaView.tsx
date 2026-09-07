@@ -23,6 +23,7 @@ import {
   Building2, 
   Store, 
   RefreshCw, 
+  Receipt,
   HelpCircle, 
   ChevronDown, 
   ChevronUp, 
@@ -59,7 +60,9 @@ export const TienditaView: React.FC = () => {
     currentUser, 
     solicitudesNecesidades, 
     partidas, 
-    crearTareaInstitucional 
+    proveedores,
+    crearTareaInstitucional,
+    crearFacturaGasto 
   } = useFinance();
 
   // Gestión dinámica de tasa de cambio
@@ -226,6 +229,7 @@ export const TienditaView: React.FC = () => {
   const selectedSolicitud = solicitudesNecesidades.find(s => s.id === selectedSolicitudId) || solicitudesNecesidades[0];
 
   // Partida presupuestaria vinculada a la solicitud
+  const [quoteToInvoiceSuccess, setQuoteToInvoiceSuccess] = useState<string | null>(null);
   const matchedPartida = useMemo(() => {
     return partidas.find(p => p.centro_costo === (selectedSolicitud?.area || 'ACM')) || partidas[0];
   }, [partidas, selectedSolicitud]);
@@ -1003,9 +1007,16 @@ export const TienditaView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: COTIZACIONES DE SUPLIDORES LOCALES RD */}
+      {/* TAB 3: COTIZADOR & COMPARADOR CON SUPLIDORES LOCALES */}
       {activeTab === 'local_quote' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
+          {quoteToInvoiceSuccess && (
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-xs text-emerald-400 flex items-center gap-2 shadow-lg">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{quoteToInvoiceSuccess}</span>
+            </div>
+          )}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario de Entrada de Cotización Local */}
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -1167,9 +1178,43 @@ export const TienditaView: React.FC = () => {
                       Nota: {quote.notes}
                     </div>
                   )}
+
+                  <div className="pt-2 border-t border-zinc-900 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const matchingProv = proveedores.find(p => p.rnc_cedula === quote.rnc) || proveedores[0];
+                        const montoBrutoCentavos = Math.round(quote.quantity * quote.unitPriceDop * 100);
+                        const itbisCentavos = Math.round((quote.itbisDop || 0) * 100);
+                        const res = crearFacturaGasto({
+                          proveedor_id: matchingProv ? matchingProv.id : 'prv-001',
+                          proveedor_nombre: matchingProv ? matchingProv.nombre_comercial : quote.supplierName,
+                          numero_factura: quote.quotationNumber || `COT-${Date.now()}`,
+                          ncf: 'B0100000000',
+                          concepto: `Compra Suministros: ${quote.itemDescription} (${quote.quantity} unids)`,
+                          centro_costo: 'LOG',
+                          partida_presupuestaria_id: partidas[0]?.id || 'par-001',
+                          monto_bruto_centavos: montoBrutoCentavos,
+                          itbis_centavos: itbisCentavos,
+                          retencion_centavos: 0,
+                          fecha_emision: new Date().toISOString().split('T')[0],
+                          fecha_vencimiento: quote.validityDate || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
+                        });
+                        if (res.success) {
+                          setQuoteToInvoiceSuccess(`✓ Cotización convertida en Cuenta por Pagar (Factura ${quote.quotationNumber}). Comprometida en Cuentas por Pagar.`);
+                          setTimeout(() => setQuoteToInvoiceSuccess(null), 6000);
+                        }
+                      }}
+                      className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                      <span>Convertir en Cuenta por Pagar (CXP)</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
+          </div>
           </div>
         </div>
       )}

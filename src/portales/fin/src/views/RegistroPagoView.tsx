@@ -46,6 +46,10 @@ export const RegistroPagoView: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRecibosHoy, setShowRecibosHoy] = useState(false);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pagosHoyList = pagos.filter(p => p.fecha_pago === todayStr || p.fecha_registro?.startsWith(todayStr));
 
   // Auto-select if selectedFamiliaIdForPayment was set
   useEffect(() => {
@@ -200,12 +204,74 @@ export const RegistroPagoView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowRecibosHoy(!showRecibosHoy)}
+            className={`px-4 py-2 border rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+              showRecibosHoy 
+                ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' 
+                : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-indigo-400" />
+            <span>Recibos Hoy ({pagosHoyList.length})</span>
+          </button>
           <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-400 flex items-center gap-2">
             <Wallet className="w-4 h-4 text-emerald-400" />
             <span>Motor FIFO Activo</span>
           </div>
         </div>
       </div>
+
+      {showRecibosHoy && (
+        <div className="bg-zinc-900 rounded-[2.5rem] p-6 border border-zinc-800 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Recibos Emitidos en Ventanilla Hoy</h2>
+            </div>
+            <span className="text-xs font-mono text-emerald-400 font-bold">
+              Total Cobrado: {formatDOP(pagosHoyList.reduce((acc, p) => acc + p.monto_total_centavos, 0))}
+            </span>
+          </div>
+
+          {pagosHoyList.length === 0 ? (
+            <div className="text-center py-8 text-xs text-zinc-500">
+              Aún no se han registrado cobros en el día de hoy.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {pagosHoyList.map(pago => (
+                <div key={pago.id} className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2 text-xs">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="font-mono font-bold text-indigo-400 text-xs">{pago.numero_recibo}</span>
+                      <div className="font-semibold text-white mt-0.5">{pago.representante_nombre}</div>
+                    </div>
+                    <span className="font-mono font-bold text-emerald-400 text-sm">
+                      {formatDOP(pago.monto_total_centavos)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-zinc-400 font-mono">
+                    <span className="capitalize">{pago.metodo_pago}</span>
+                    <span>{pago.fecha_pago}</span>
+                  </div>
+                  <div className="pt-2 border-t border-zinc-900 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReciboGenerado(pago)}
+                      className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Printer className="w-3 h-3 text-indigo-400" />
+                      <span>Ver / Reimprimir</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         

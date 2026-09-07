@@ -16,7 +16,12 @@ import {
   Wrench,
   ChevronRight,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Award,
+  PlusCircle,
+  Coins,
+  CreditCard,
+  Plus
 } from 'lucide-react';
 import { formatDOP } from '../lib/financialMath';
 import {
@@ -30,11 +35,29 @@ import {
 } from '../lib/alumno360';
 import { Alumno } from '../types';
 
-export const Ficha360View: React.FC = () => {
+interface Ficha360ViewProps {
+  setActiveView?: (view: string) => void;
+}
+
+const PRESET_MOTIVOS_BECA = [
+  'Mérito artístico y rendimiento pedagógico excepcional',
+  'Situación de vulnerabilidad socioeconómica familiar',
+  'Monitor o tutor del instrumento / apoyo pedagógico en cátedra',
+  'Familia numerosa con múltiples hermanos en la academia',
+  'Convenio de patrocinio directo con donante institucional',
+  'Exoneración extraordinaria por apoyo a eventos y ensambles institucionales',
+];
+
+export const Ficha360View: React.FC<Ficha360ViewProps> = ({ setActiveView }) => {
   const {
     alumnos,
     familias,
     cuotas,
+    becas,
+    iniciarCobroFamilia,
+    crearSolicitudBeca,
+    crearCargoCuota,
+    agregarCreditoWallet
   } = useFinance();
 
   const [selectedAlumnoId, setSelectedAlumnoId] = useState<string>(alumnos[0]?.id || 'alu-001');
@@ -42,6 +65,27 @@ export const Ficha360View: React.FC = () => {
   const [resumen, setResumen] = useState<ResumenAcademico | null>(null);
   const [instrumentos, setInstrumentos] = useState<InstrumentoComodato[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Estados de formularios de acción rápida
+  const [mostrarFormBeca, setMostrarFormBeca] = useState(false);
+  const [porcentajeBeca, setPorcentajeBeca] = useState<number>(100);
+  const [motivoCategoriaBeca, setMotivoCategoriaBeca] = useState<string>(PRESET_MOTIVOS_BECA[0]);
+  const [motivoDetalleBeca, setMotivoDetalleBeca] = useState<string>('');
+  const [autoAprobarBeca, setAutoAprobarBeca] = useState<boolean>(true);
+  const [isSubmittingBeca, setIsSubmittingBeca] = useState<boolean>(false);
+
+  const [mostrarFormCargo, setMostrarFormCargo] = useState(false);
+  const [conceptoCargo, setConceptoCargo] = useState('Reposición de Cuerda (Violín)');
+  const [montoCargoDop, setMontoCargoDop] = useState('350');
+  const [notaCargo, setNotaCargo] = useState('');
+  const [isSubmittingCargo, setIsSubmittingCargo] = useState(false);
+
+  const [mostrarFormCredito, setMostrarFormCredito] = useState(false);
+  const [montoCreditoDop, setMontoCreditoDop] = useState('150');
+  const [descripcionCredito, setDescripcionCredito] = useState('Abono por saldo de fotocopias / material');
+  const [isSubmittingCredito, setIsSubmittingCredito] = useState(false);
+
+  const [feedbackNotice, setFeedbackNotice] = useState<{ tipo: 'success' | 'error'; mensaje: string } | null>(null);
 
   const alumno = alumnos.find(a => a.id === selectedAlumnoId) || alumnos[0];
 
@@ -108,6 +152,125 @@ export const Ficha360View: React.FC = () => {
     a.nivel.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleGuardarBeca = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (porcentajeBeca <= 0 || porcentajeBeca > 100) {
+      setFeedbackNotice({ tipo: 'error', mensaje: 'El porcentaje de beca debe estar entre 1% y 100%.' });
+      return;
+    }
+
+    setIsSubmittingBeca(true);
+    setFeedbackNotice(null);
+
+    const motivoCompleto = motivoDetalleBeca.trim()
+      ? `${motivoCategoriaBeca}. Justificación: ${motivoDetalleBeca.trim()}`
+      : motivoCategoriaBeca;
+
+    const res = await crearSolicitudBeca({
+      alumno_id: alumno.id,
+      porcentaje: porcentajeBeca,
+      motivo_socioeconomico: motivoCompleto,
+      autoAprobar: autoAprobarBeca,
+    });
+
+    setIsSubmittingBeca(false);
+    if (res.success) {
+      setFeedbackNotice({
+        tipo: 'success',
+        mensaje: `✓ Beca del ${porcentajeBeca}% ${autoAprobarBeca ? 'asignada y aprobada' : 'solicitada'} exitosamente.`
+      });
+      setMostrarFormBeca(false);
+      setMotivoDetalleBeca('');
+      setTimeout(() => setFeedbackNotice(null), 5000);
+    } else {
+      setFeedbackNotice({ tipo: 'error', mensaje: res.error || 'Error al procesar la beca.' });
+    }
+  };
+
+  const handleCrearCargo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const montoNum = parseFloat(montoCargoDop);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      setFeedbackNotice({ tipo: 'error', mensaje: 'Indique un monto válido mayor a RD$ 0.00.' });
+      return;
+    }
+    if (!conceptoCargo.trim()) {
+      setFeedbackNotice({ tipo: 'error', mensaje: 'El concepto del cargo es obligatorio.' });
+      return;
+    }
+
+    setIsSubmittingCargo(true);
+    setFeedbackNotice(null);
+
+    const res = await crearCargoCuota({
+      alumno_id: alumno.id,
+      concepto: conceptoCargo.trim(),
+      monto_centavos: Math.round(montoNum * 100),
+      observaciones: notaCargo.trim() || undefined,
+    });
+
+    setIsSubmittingCargo(false);
+    if (res.success) {
+      setFeedbackNotice({
+        tipo: 'success',
+        mensaje: `✓ Cargo de ${formatDOP(Math.round(montoNum * 100))} agregado a la cuenta del alumno.`
+      });
+      setMostrarFormCargo(false);
+      setNotaCargo('');
+      setTimeout(() => setFeedbackNotice(null), 5000);
+    } else {
+      setFeedbackNotice({ tipo: 'error', mensaje: res.error || 'Error al registrar el cargo.' });
+    }
+  };
+
+  const handleAgregarCredito = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!alumno.familia_id) {
+      setFeedbackNotice({ tipo: 'error', mensaje: 'El alumno no tiene un tutor asignado.' });
+      return;
+    }
+    const montoNum = parseFloat(montoCreditoDop);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      setFeedbackNotice({ tipo: 'error', mensaje: 'Indique un monto de crédito válido mayor a RD$ 0.00.' });
+      return;
+    }
+    if (!descripcionCredito.trim()) {
+      setFeedbackNotice({ tipo: 'error', mensaje: 'La descripción del abono es obligatoria.' });
+      return;
+    }
+
+    setIsSubmittingCredito(true);
+    setFeedbackNotice(null);
+
+    const res = await agregarCreditoWallet({
+      familia_id: alumno.familia_id,
+      monto_centavos: Math.round(montoNum * 100),
+      descripcion: descripcionCredito.trim(),
+      origen: 'ajuste',
+    });
+
+    setIsSubmittingCredito(false);
+    if (res.success) {
+      setFeedbackNotice({
+        tipo: 'success',
+        mensaje: `✓ Crédito de ${formatDOP(Math.round(montoNum * 100))} abonado a favor del tutor.`
+      });
+      setMostrarFormCredito(false);
+      setTimeout(() => setFeedbackNotice(null), 5000);
+    } else {
+      setFeedbackNotice({ tipo: 'error', mensaje: res.error || 'Error al abonar el crédito.' });
+    }
+  };
+
+  const handleCobrarDirecto = () => {
+    if (alumno.familia_id) {
+      iniciarCobroFamilia(alumno.familia_id);
+    }
+    if (setActiveView) {
+      setActiveView('registro_pago');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header View */}
@@ -151,6 +314,16 @@ export const Ficha360View: React.FC = () => {
         </div>
       </div>
 
+      {feedbackNotice && (
+        <div className={`p-4 rounded-2xl text-xs flex items-center gap-2.5 shadow-lg ${
+          feedbackNotice.tipo === 'success' 
+            ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
+            : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+        }`}>
+          <span>{feedbackNotice.mensaje}</span>
+        </div>
+      )}
+
       {/* Main Grid: Selector Left, 360 Dashboard Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
@@ -172,6 +345,7 @@ export const Ficha360View: React.FC = () => {
               {filteredAlumnos.map(a => {
                 const isSelected = a.id === selectedAlumnoId;
                 const fam = familias.find(f => f.id === a.familia_id);
+                const tutorClean = fam?.representante_principal?.nombre_completo || fam?.apellidos?.replace(/^Familia\s+/i, '') || 'Padre / Tutor';
                 return (
                   <div
                     key={a.id}
@@ -186,7 +360,7 @@ export const Ficha360View: React.FC = () => {
                       <div>
                         <div className="font-semibold text-xs text-white">{a.nombre_completo}</div>
                         <div className="text-[11px] text-zinc-400 mt-0.5">{a.instrumento_principal} · {a.nivel}</div>
-                        <div className="text-[10px] text-zinc-500 mt-1 font-mono">Familia {fam?.apellidos || 'N/D'}</div>
+                        <div className="text-[10px] text-zinc-500 mt-1 font-mono">Tutor: {tutorClean}</div>
                       </div>
                       <ChevronRight className={`w-4 h-4 mt-1 transition-transform ${isSelected ? 'text-indigo-400 translate-x-1' : 'text-zinc-600'}`} />
                     </div>
@@ -201,7 +375,7 @@ export const Ficha360View: React.FC = () => {
         <div className="lg:col-span-8 space-y-5">
 
           {/* Hero Student Banner */}
-          <div className="bg-gradient-to-r from-zinc-900 via-indigo-950/40 to-zinc-900 p-6 sm:p-7 rounded-[2.5rem] border border-indigo-500/30 shadow-2xl">
+          <div className="bg-gradient-to-r from-zinc-900 via-indigo-950/40 to-zinc-900 p-6 sm:p-7 rounded-[2.5rem] border border-indigo-500/30 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -230,6 +404,262 @@ export const Ficha360View: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Quick Action Buttons Toolbar */}
+            <div className="pt-3 border-t border-zinc-800/80 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarFormBeca(!mostrarFormBeca);
+                  setMostrarFormCargo(false);
+                  setMostrarFormCredito(false);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  mostrarFormBeca
+                    ? 'bg-amber-500 text-black font-bold'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>Asignar Beca</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarFormCargo(!mostrarFormCargo);
+                  setMostrarFormBeca(false);
+                  setMostrarFormCredito(false);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  mostrarFormCargo
+                    ? 'bg-indigo-600 text-white font-bold'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
+                }`}
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Agregar Cargo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarFormCredito(!mostrarFormCredito);
+                  setMostrarFormBeca(false);
+                  setMostrarFormCargo(false);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  mostrarFormCredito
+                    ? 'bg-emerald-600 text-white font-bold'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
+                }`}
+              >
+                <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Abonar Crédito Wallet</span>
+              </button>
+
+              {solvencia.saldoPendienteCentavos > 0 && (
+                <button
+                  type="button"
+                  onClick={handleCobrarDirecto}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-950/40 ml-auto transition-all cursor-pointer"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Cobrar Saldo</span>
+                </button>
+              )}
+            </div>
+
+            {/* Sub-form: Beca */}
+            {mostrarFormBeca && (
+              <form onSubmit={handleGuardarBeca} className="p-4 bg-zinc-950 rounded-2xl border border-amber-500/30 space-y-3 text-xs">
+                <div className="flex items-center justify-between font-bold text-amber-400">
+                  <span>Asignar Beca a {alumno.nombre_completo}</span>
+                  <span className="text-[10px] font-mono">100% Auditada</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Porcentaje de Cobertura</label>
+                    <div className="flex gap-2">
+                      {[100, 75, 50, 25].map(pct => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setPorcentajeBeca(pct)}
+                          className={`flex-1 py-1.5 rounded-lg font-mono font-bold text-xs border cursor-pointer ${
+                            porcentajeBeca === pct
+                              ? 'bg-amber-500 text-black border-amber-400'
+                              : 'bg-zinc-900 text-zinc-300 border-zinc-800'
+                          }`}
+                        >
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Motivo Institucional</label>
+                    <select
+                      value={motivoCategoriaBeca}
+                      onChange={e => setMotivoCategoriaBeca(e.target.value)}
+                      className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200"
+                    >
+                      {PRESET_MOTIVOS_BECA.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-zinc-400 mb-1">Justificación o Detalle Adicional</label>
+                  <input
+                    type="text"
+                    value={motivoDetalleBeca}
+                    onChange={e => setMotivoDetalleBeca(e.target.value)}
+                    placeholder="Detalles sobre evaluación socioeconómica o mérito..."
+                    className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200"
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-zinc-900">
+                  <label className="flex items-center gap-2 text-zinc-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoAprobarBeca}
+                      onChange={e => setAutoAprobarBeca(e.target.checked)}
+                      className="rounded accent-amber-500"
+                    />
+                    <span>Aprobar de inmediato con rol directivo</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMostrarFormBeca(false)}
+                      className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-xl"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingBeca}
+                      className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSubmittingBeca ? 'Guardando...' : 'Confirmar Beca'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* Sub-form: Cargo */}
+            {mostrarFormCargo && (
+              <form onSubmit={handleCrearCargo} className="p-4 bg-zinc-950 rounded-2xl border border-indigo-500/30 space-y-3 text-xs">
+                <div className="flex items-center justify-between font-bold text-indigo-300">
+                  <span>Agregar Cargo Extraordinario (Cuerda, Libro, Accesorio)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Concepto del Cargo</label>
+                    <input
+                      type="text"
+                      required
+                      value={conceptoCargo}
+                      onChange={e => setConceptoCargo(e.target.value)}
+                      placeholder="Ej. Reposición de Cuerda Mi..."
+                      className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Monto (RD$)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      step="1"
+                      value={montoCargoDop}
+                      onChange={e => setMontoCargoDop(e.target.value)}
+                      className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl font-mono text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-zinc-400 mb-1">Nota u Observación (Opcional)</label>
+                  <input
+                    type="text"
+                    value={notaCargo}
+                    onChange={e => setNotaCargo(e.target.value)}
+                    placeholder="Detalles sobre rotura, taller de luthería o evento..."
+                    className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormCargo(false)}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingCargo}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmittingCargo ? 'Emitiendo...' : 'Emitir Cargo a Cuota'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Sub-form: Credito Wallet */}
+            {mostrarFormCredito && (
+              <form onSubmit={handleAgregarCredito} className="p-4 bg-zinc-950 rounded-2xl border border-emerald-500/30 space-y-3 text-xs">
+                <div className="flex items-center justify-between font-bold text-emerald-400">
+                  <span>Abonar Saldo a Favor a Wallet del Tutor</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Monto a Abonar (RD$)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      step="1"
+                      value={montoCreditoDop}
+                      onChange={e => setMontoCreditoDop(e.target.value)}
+                      className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl font-mono text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Descripción / Motivo</label>
+                    <input
+                      type="text"
+                      required
+                      value={descripcionCredito}
+                      onChange={e => setDescripcionCredito(e.target.value)}
+                      placeholder="Ej. Saldo de fotocopias..."
+                      className="w-full p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormCredito(false)}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingCredito}
+                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmittingCredito ? 'Abonando...' : 'Acreditar Saldo'}
+                  </button>
+                </div>
+              </form>
+            )}
+
           </div>
 
           {loading ? (

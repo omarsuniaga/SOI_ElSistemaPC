@@ -39,7 +39,8 @@ export const LutheriaInventarioView: React.FC = () => {
     representantes,
     crearFichaLutheria,
     aprobarFichaLutheria,
-    crearContratoComodato
+    crearContratoComodato,
+    crearCargoCuota
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState<'taller' | 'comodatos' | 'deposito'>('taller');
@@ -69,6 +70,8 @@ export const LutheriaInventarioView: React.FC = () => {
   const [formRepuestos, setFormRepuestos] = useState<Array<{ cantidad: number; descripcion: string; costo_unitario: number }>>([
     { cantidad: 1, descripcion: '', costo_unitario: 0 }
   ]);
+
+  const [formCargarAlAlumno, setFormCargarAlAlumno] = useState(false);
 
   // Form states for New Comodato FIN-F19b
   const [comodatoAlumnoId, setComodatoAlumnoId] = useState(alumnos[0]?.id || '');
@@ -114,7 +117,7 @@ export const LutheriaInventarioView: React.FC = () => {
     return formRepuestos.reduce((acc, r) => acc + (Number(r.cantidad || 0) * Number(r.costo_unitario || 0)), 0);
   };
 
-  const handleSubmitFicha = (e: React.FormEvent) => {
+  const handleSubmitFicha = async (e: React.FormEvent) => {
     e.preventDefault();
     const repuestosFormatted = formRepuestos
       .filter(r => r.descripcion.trim() !== '')
@@ -124,6 +127,8 @@ export const LutheriaInventarioView: React.FC = () => {
         costo_unitario_centavos: Math.round(Number(r.costo_unitario) * 100),
         costo_total_centavos: Math.round(Number(r.cantidad) * Number(r.costo_unitario) * 100)
       }));
+
+    const totalCostoRepuestosCentavos = repuestosFormatted.reduce((acc, r) => acc + r.costo_total_centavos, 0);
 
     const res = crearFichaLutheria({
       codigo_patrimonial: formCodigo,
@@ -140,13 +145,32 @@ export const LutheriaInventarioView: React.FC = () => {
     });
 
     if (res.success && res.ficha) {
+      let cargoGeneradoMsg = '';
+      if (formCargarAlAlumno && formAlumno.trim() && totalCostoRepuestosCentavos > 0) {
+        const matchingAlumno = alumnos.find(a => 
+          a.nombre_completo.toLowerCase().includes(formAlumno.trim().toLowerCase())
+        );
+        if (matchingAlumno) {
+          const resCargo = await crearCargoCuota({
+            alumno_id: matchingAlumno.id,
+            concepto: `Repuestos Luthería (${res.ficha.numero_ficha})`,
+            monto_centavos: totalCostoRepuestosCentavos,
+            observaciones: `Imputación de repuestos por ficha de taller ${res.ficha.numero_ficha}: ${repuestosFormatted.map(r => `${r.cantidad}x ${r.descripcion}`).join(', ')}`
+          });
+          if (resCargo.success) {
+            cargoGeneradoMsg = ` Cargo de ${formatDOP(totalCostoRepuestosCentavos)} emitido a la cuenta de ${matchingAlumno.nombre_completo}.`;
+          }
+        }
+      }
+
       setShowFichaModal(false);
-      setNotice(`Ficha ${res.ficha.numero_ficha} creada con éxito.${res.ficha.requiere_aprobacion_financiera ? ' Requiere aprobación financiera (>= RD$3,000).' : ''}`);
-      setTimeout(() => setNotice(null), 6000);
+      setNotice(`Ficha ${res.ficha.numero_ficha} creada con éxito.${cargoGeneradoMsg}${res.ficha.requiere_aprobacion_financiera ? ' Requiere aprobación financiera (>= RD$3,000).' : ''}`);
+      setTimeout(() => setNotice(null), 7000);
       // Reset form
       setFormReporte('');
       setFormEvaluacion('');
       setFormTrabajos('');
+      setFormCargarAlAlumno(false);
       setFormRepuestos([{ cantidad: 1, descripcion: '', costo_unitario: 0 }]);
     }
   };
@@ -924,6 +948,24 @@ export const LutheriaInventarioView: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {calculateFormTotalCost() > 0 && formAlumno.trim() && (
+                  <div className="p-3 bg-indigo-950/40 rounded-xl border border-indigo-500/30 flex items-center justify-between">
+                    <div className="text-xs">
+                      <span className="font-bold text-indigo-300 block">Cobro al Alumno</span>
+                      <span className="text-zinc-400 text-[11px]">Generar cuota de cobro automático por reposición de repuestos</span>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formCargarAlAlumno}
+                        onChange={e => setFormCargarAlAlumno(e.target.checked)}
+                        className="rounded accent-indigo-500 w-4 h-4"
+                      />
+                      <span>Cargar a cuenta</span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Submit Buttons */}

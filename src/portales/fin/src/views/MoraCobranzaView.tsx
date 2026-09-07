@@ -24,6 +24,7 @@ interface MoraCobranzaViewProps {
 
 export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveView }) => {
   const { familias, cuotas, compromisos, crearCompromisoPago, iniciarCobroFamilia } = useFinance();
+  const [activeTab, setActiveTab] = useState<'etapas' | 'convenios'>('etapas');
   const [selectedFamilyForAgreement, setSelectedFamilyForAgreement] = useState<string | null>(null);
   const [agreementAmount, setAgreementAmount] = useState<string>('');
   const [agreementDate, setAgreementDate] = useState<string>('');
@@ -125,7 +126,118 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
         </div>
       )}
 
+      {/* Tab Switcher */}
+      <div className="bg-zinc-900 p-1.5 rounded-2xl border border-zinc-800 flex flex-wrap gap-1.5 text-xs font-semibold">
+        <button
+          onClick={() => setActiveTab('etapas')}
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'etapas'
+              ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <AlertCircle className="w-4 h-4 text-amber-400" />
+          <span>Segmentación por Etapas de Mora ({familiasConMora.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('convenios')}
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'convenios'
+              ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <Handshake className="w-4 h-4 text-emerald-400" />
+          <span>Convenios & Acuerdos Formales ({compromisos.length})</span>
+        </button>
+      </div>
+
+      {activeTab === 'convenios' && (
+        <div className="bg-zinc-900 rounded-[2.5rem] border border-zinc-800 shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-white">Convenios & Acuerdos de Pago Vigentes</h2>
+              <p className="text-xs text-zinc-400 mt-0.5">Seguimiento a reestructuraciones acordadas con los representantes.</p>
+            </div>
+            <span className="text-xs font-mono font-bold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
+              {compromisos.length} convenios
+            </span>
+          </div>
+
+          {compromisos.length === 0 ? (
+            <div className="p-12 text-center text-xs text-zinc-500">
+              No hay convenios de pago formalizados actualmente.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-950/80 text-zinc-400 font-mono text-[11px] uppercase tracking-wider border-b border-zinc-800">
+                  <tr>
+                    <th className="py-3 px-5">Tutor / Familia</th>
+                    <th className="py-3 px-5">Monto Acordado</th>
+                    <th className="py-3 px-5">Fecha Pacto</th>
+                    <th className="py-3 px-5">Fecha Límite</th>
+                    <th className="py-3 px-5">Condiciones Pactadas</th>
+                    <th className="py-3 px-5">Estado</th>
+                    <th className="py-3 px-5 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/80">
+                  {compromisos.map(comp => {
+                    const fam = familias.find(f => f.id === comp.familia_id);
+                    const tutorName = fam?.representante_principal?.nombre_completo || fam?.apellidos?.replace(/^Familia\s+/i, '') || 'Tutor sin nombre';
+                    const diasRestantes = Math.ceil((new Date(comp.fecha_limite).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                    return (
+                      <tr key={comp.id} className="hover:bg-zinc-950/40 transition-colors">
+                        <td className="py-3.5 px-5">
+                          <div className="font-semibold text-white">{tutorName}</div>
+                          <div className="text-[10px] text-zinc-400">{fam?.telefono_principal || 'Sin teléfono'}</div>
+                        </td>
+                        <td className="py-3.5 px-5 font-mono font-bold text-amber-400">
+                          {formatDOP(comp.monto_comprometido_centavos)}
+                        </td>
+                        <td className="py-3.5 px-5 font-mono text-zinc-400">
+                          {comp.fecha_compromiso}
+                        </td>
+                        <td className="py-3.5 px-5 font-mono">
+                          <span className={`${diasRestantes < 0 ? 'text-rose-400 font-bold' : diasRestantes <= 3 ? 'text-amber-400 font-bold' : 'text-zinc-300'}`}>
+                            {comp.fecha_limite} {diasRestantes < 0 ? `(vencido hace ${Math.abs(diasRestantes)}d)` : `(${diasRestantes}d)`}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 max-w-xs text-zinc-300 text-[11px]">
+                          {comp.acuerdo_texto}
+                        </td>
+                        <td className="py-3.5 px-5">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
+                            comp.estado === 'cumplido' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            comp.estado === 'incumplido' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                            'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {comp.estado}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-right">
+                          <button
+                            onClick={() => handleCobrarFamilia(comp.familia_id)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm ml-auto cursor-pointer"
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>Cobrar</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Delinquency Segmentation Tiers (Bento 3-Column Grid) */}
+      {activeTab === 'etapas' && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* Tier 1: Seguimiento Preventivo */}
@@ -294,6 +406,7 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
         </div>
 
       </div>
+      )}
 
       {/* Payment Agreement Form Modal */}
       {selectedFamilyForAgreement && (

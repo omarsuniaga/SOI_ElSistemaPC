@@ -44,7 +44,7 @@ const MainLayout: React.FC = () => {
       case 'ficha_360':
       case 'ficha360':
       case 'alumnos_360':
-        return <Ficha360View />;
+        return <Ficha360View setActiveView={setActiveView} />;
       case 'cuotas':
         return <CuotasView setActiveView={setActiveView} />;
       case 'mora_cobranza':

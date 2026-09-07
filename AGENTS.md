@@ -51,7 +51,25 @@ Este archivo es la fuente de verdad para humanos y agentes de IA (Claude, Gemini
 - **Continuous Tool Chaining:** Read, edit, build, test, and commit consecutively to completion. Report only final synthesis and outcomes.
 - **Zero Question Loops:** Do not ask permission to proceed, write files, or run tests. Execute directly. Only pause for user input on true business domain ambiguities or irreversible destructive operations.
 
-## 7. Engineering Disciplines & Skills
+## 7. External Agent Workers (Orchestration)
+
+- **Claude Code es el orquestador.** Descompone el trabajo, delega piezas a agentes
+  externos, revisa TODO lo que devuelven y es el único que mergea, corre comandos
+  de prod o toca secretos.
+- **Workers disponibles** (ver `scripts/ai/README.md`) — ambos con las suscripciones
+  Pro existentes, sin API keys:
+  - `scripts/ai/codex-run.sh` — Codex / `gpt-5`. Edición de código precisa, debugging,
+    tests, loop TDD red→green, code review de segunda opinión.
+  - `scripts/ai/antigravity-run.sh` — Antigravity (`agy`) / `gemini-3.1-pro`. Lectura de
+    gran contexto, docs, guías de migración, prosa larga en español, y **borradores SDD**
+    (`proposal` / `spec` / `design` / `tasks`) que el orquestador revisa antes de usar.
+- **Split**: TDD → Gemini redacta escenarios, Codex/orquestador corren el loop.
+  Migraciones → Gemini redacta el plan, Codex/orquestador ejecutan.
+- **Límite de datos**: los wrappers rechazan `.env*`, keys, `auth.json`, sesiones
+  Baileys, PDFs y CSVs con datos personales. `.codexignore` cerca el acceso a
+  filesystem del agente Codex.
+
+## 8. Engineering Disciplines & Skills
 
 - **Domain Modeling (`.agent/skills/domain-modeling`):** Respetar el vocabulario canónico de `CONTEXT.md` y prevenir la deriva sinonímica en código y UI.
 - **Codebase Design (`.agent/skills/codebase-design`):** Construir módulos profundos sobre costuras (*seams*) limpias que aíslen la UI de la persistencia.

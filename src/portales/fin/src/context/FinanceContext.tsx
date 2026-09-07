@@ -141,6 +141,21 @@ interface FinanceContextType {
     autoAprobar?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
   
+  crearCargoCuota: (params: {
+    alumno_id: string;
+    concepto: string;
+    monto_centavos: number;
+    fecha_vencimiento?: string;
+    observaciones?: string;
+  }) => Promise<{ success: boolean; cuota?: Cuota; error?: string }>;
+
+  agregarCreditoWallet: (params: {
+    familia_id: string;
+    monto_centavos: number;
+    descripcion: string;
+    origen?: 'ajuste' | 'pago' | 'patrocinio' | 'beca' | 'accesorio';
+  }) => Promise<{ success: boolean; nuevoSaldoCentavos?: number; error?: string }>;
+
   aprobarFacturaGasto: (factura_id: string) => { success: boolean; error?: string };
   registrarPagoFacturaGasto: (factura_id: string, metodo: MetodoPago, referencia: string) => { success: boolean; error?: string };
   crearFacturaGasto: (params: {
@@ -1536,6 +1551,132 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const crearCargoCuota = async (params: {
+    alumno_id: string;
+    concepto: string;
+    monto_centavos: number;
+    fecha_vencimiento?: string;
+    observaciones?: string;
+  }): Promise<{ success: boolean; cuota?: Cuota; error?: string }> => {
+    const alumno = alumnos.find(a => a.id === params.alumno_id);
+    if (!alumno) return { success: false, error: 'Alumno no encontrado' };
+
+    const familia = familias.find(f => f.id === alumno.familia_id);
+    const rep = familia?.representante_principal;
+    const today = new Date().toISOString().split('T')[0];
+    const vencimiento = params.fecha_vencimiento || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0];
+
+    try {
+      const bodyPayload = {
+        alumno_id: alumno.id,
+        familia_id: alumno.familia_id,
+        concepto: params.concepto,
+        monto_base_centavos: params.monto_centavos,
+        monto_final_centavos: params.monto_centavos,
+        monto_pagado_centavos: 0,
+        estado: 'pendiente' as const,
+        ciclo_anio: new Date().getFullYear(),
+        ciclo_mes: new Date().getMonth() + 1,
+        fecha_generacion: today,
+        fecha_vencimiento: vencimiento,
+        metadatos: params.observaciones ? { observaciones: params.observaciones } : null,
+      };
+
+      const [row] = await supabaseRest<any[]>('cuotas', {
+        method: 'POST',
+        body: bodyPayload,
+        prefer: 'return=representation',
+      });
+
+      const nuevaCuota: Cuota = {
+        id: row.id,
+        alumno_id: row.alumno_id,
+        alumno_nombre: alumno.nombre_completo,
+        representante_id: rep?.id || alumno.familia_id,
+        familia_id: row.familia_id,
+        arancel_concepto: row.concepto,
+        periodo: `${row.ciclo_anio}-${String(row.ciclo_mes).padStart(2, '0')}`,
+        ciclo_academico: `${row.ciclo_anio}-${row.ciclo_anio + 1}`,
+        monto_bruto_centavos: row.monto_base_centavos,
+        descuento_beca_centavos: 0,
+        monto_neto_centavos: row.monto_final_centavos,
+        monto_pagado_centavos: 0,
+        saldo_centavos: row.monto_final_centavos,
+        fecha_emision: row.fecha_generacion,
+        fecha_vencimiento: row.fecha_vencimiento,
+        estado: 'pendiente',
+        es_prorrateada: false,
+        version: 1,
+      };
+
+      setCuotas(prev => [nuevaCuota, ...prev]);
+
+      // Actualizar saldo pendiente de la familia localmente
+      if (familia) {
+        setFamilias(prev => prev.map(f => {
+          if (f.id === familia.id) {
+            return {
+              ...f,
+              saldo_pendiente_centavos: f.saldo_pendiente_centavos + params.monto_centavos,
+            };
+          }
+          return f;
+        }));
+      }
+
+      return { success: true, cuota: nuevaCuota };
+    } catch (err: any) {
+      console.error('[crearCargoCuota Error]', err);
+      return { success: false, error: err?.message || 'Error al emitir el cargo en cuotas.' };
+    }
+  };
+
+  const agregarCreditoWallet = async (params: {
+    familia_id: string;
+    monto_centavos: number;
+    descripcion: string;
+    origen?: 'ajuste' | 'pago' | 'patrocinio' | 'beca' | 'accesorio';
+  }): Promise<{ success: boolean; nuevoSaldoCentavos?: number; error?: string }> => {
+    const familia = familias.find(f => f.id === params.familia_id);
+    if (!familia) return { success: false, error: 'Familia no encontrada' };
+
+    const saldoAnterior = familia.credito_favor_centavos || 0;
+    const nuevoSaldo = saldoAnterior + params.monto_centavos;
+
+    try {
+      const bodyPayload = {
+        familia_id: params.familia_id,
+        monto_centavos: params.monto_centavos,
+        saldo_resultante_centavos: nuevoSaldo,
+        tipo: 'credito' as const,
+        origen: (params.origen || 'ajuste') as any,
+        descripcion: params.descripcion,
+      };
+
+      await supabaseRest<any[]>('wallet_movimientos', {
+        method: 'POST',
+        body: bodyPayload,
+        prefer: 'return=representation',
+      });
+
+      // Actualizar crédito a favor de la familia localmente
+      setFamilias(prev => prev.map(f => {
+        if (f.id === params.familia_id) {
+          return {
+            ...f,
+            credito_favor_centavos: nuevoSaldo,
+          };
+        }
+        return f;
+      }));
+
+      return { success: true, nuevoSaldoCentavos: nuevoSaldo };
+    } catch (err: any) {
+      console.error('[agregarCreditoWallet Error]', err);
+      return { success: false, error: err?.message || 'Error al registrar crédito en la wallet familiar.' };
+    }
+  };
+
   const crearFacturaGasto = (params: {
     proveedor_id: string;
     proveedor_nombre: string;
@@ -2792,6 +2933,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         crearCompromisoPago,
         aprobarBeca,
         crearSolicitudBeca,
+        crearCargoCuota,
+        agregarCreditoWallet,
         aprobarFacturaGasto,
         registrarPagoFacturaGasto,
         crearFacturaGasto,

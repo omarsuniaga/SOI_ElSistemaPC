@@ -22,7 +22,11 @@ import {
   CheckCircle2,
   Plus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  DollarSign,
+  ArrowUpRight,
+  PlusCircle,
+  Coins
 } from 'lucide-react';
 import { formatDOP, getISPEtiqueta } from '../lib/financialMath';
 import {
@@ -69,7 +73,9 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
     alumnos: todosAlumnos,
     becas,
     crearSolicitudBeca,
-    aprobarBeca
+    aprobarBeca,
+    crearCargoCuota,
+    agregarCreditoWallet
   } = useFinance();
 
   const [resumen, setResumen] = useState<ResumenAcademico | null>(null);
@@ -86,6 +92,21 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
   const [autoAprobarBeca, setAutoAprobarBeca] = useState<boolean>(true);
   const [isSubmittingBeca, setIsSubmittingBeca] = useState<boolean>(false);
   const [becaFeedback, setBecaFeedback] = useState<{ tipo: 'success' | 'error'; mensaje: string } | null>(null);
+
+  // Estados para Cargo Extraordinario (reposición, cuerdas, accesorios)
+  const [mostrarFormCargo, setMostrarFormCargo] = useState(false);
+  const [conceptoCargo, setConceptoCargo] = useState('Reposición de Cuerda (Violín)');
+  const [montoCargoDop, setMontoCargoDop] = useState('350');
+  const [notaCargo, setNotaCargo] = useState('');
+  const [isSubmittingCargo, setIsSubmittingCargo] = useState(false);
+  const [cargoFeedback, setCargoFeedback] = useState<{ tipo: 'success' | 'error'; mensaje: string } | null>(null);
+
+  // Estados para Abono de Crédito a Favor (fotocopias, donación, saldo a favor)
+  const [mostrarFormCredito, setMostrarFormCredito] = useState(false);
+  const [montoCreditoDop, setMontoCreditoDop] = useState('150');
+  const [descripcionCredito, setDescripcionCredito] = useState('Abono por saldo de fotocopias / material');
+  const [isSubmittingCredito, setIsSubmittingCredito] = useState(false);
+  const [creditoFeedback, setCreditoFeedback] = useState<{ tipo: 'success' | 'error'; mensaje: string } | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -157,6 +178,81 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
     await aprobarBeca(becaId, false);
     setBecaFeedback({ tipo: 'success', mensaje: '✓ Beca revocada exitosamente.' });
     setTimeout(() => setBecaFeedback(null), 5000);
+  };
+
+  const handleCrearCargo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const montoNum = parseFloat(montoCargoDop);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      setCargoFeedback({ tipo: 'error', mensaje: 'Indique un monto válido mayor a RD$ 0.00.' });
+      return;
+    }
+    if (!conceptoCargo.trim()) {
+      setCargoFeedback({ tipo: 'error', mensaje: 'El concepto del cargo es obligatorio.' });
+      return;
+    }
+
+    setIsSubmittingCargo(true);
+    setCargoFeedback(null);
+
+    const res = await crearCargoCuota({
+      alumno_id: alumno.id,
+      concepto: conceptoCargo.trim(),
+      monto_centavos: Math.round(montoNum * 100),
+      observaciones: notaCargo.trim() || undefined,
+    });
+
+    setIsSubmittingCargo(false);
+    if (res.success) {
+      setCargoFeedback({
+        tipo: 'success',
+        mensaje: `✓ Cargo de ${formatDOP(Math.round(montoNum * 100))} agregado a la cuenta del alumno.`
+      });
+      setMostrarFormCargo(false);
+      setNotaCargo('');
+      setTimeout(() => setCargoFeedback(null), 5000);
+    } else {
+      setCargoFeedback({ tipo: 'error', mensaje: res.error || 'Error al registrar el cargo.' });
+    }
+  };
+
+  const handleAgregarCredito = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!alumno.familia_id) {
+      setCreditoFeedback({ tipo: 'error', mensaje: 'El alumno no tiene una familia asignada.' });
+      return;
+    }
+    const montoNum = parseFloat(montoCreditoDop);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      setCreditoFeedback({ tipo: 'error', mensaje: 'Indique un monto de crédito válido mayor a RD$ 0.00.' });
+      return;
+    }
+    if (!descripcionCredito.trim()) {
+      setCreditoFeedback({ tipo: 'error', mensaje: 'La descripción del abono es obligatoria.' });
+      return;
+    }
+
+    setIsSubmittingCredito(true);
+    setCreditoFeedback(null);
+
+    const res = await agregarCreditoWallet({
+      familia_id: alumno.familia_id,
+      monto_centavos: Math.round(montoNum * 100),
+      descripcion: descripcionCredito.trim(),
+      origen: 'ajuste',
+    });
+
+    setIsSubmittingCredito(false);
+    if (res.success) {
+      setCreditoFeedback({
+        tipo: 'success',
+        mensaje: `✓ Crédito de ${formatDOP(Math.round(montoNum * 100))} acreditado a la familia.`
+      });
+      setMostrarFormCredito(false);
+      setTimeout(() => setCreditoFeedback(null), 5000);
+    } else {
+      setCreditoFeedback({ tipo: 'error', mensaje: res.error || 'Error al acreditar a la familia.' });
+    }
   };
 
   // Luthería y Comodato
@@ -422,9 +518,20 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                 </div>
 
                 <div className="text-[11px] text-zinc-400 space-y-1 font-mono pt-1">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Estado Cartera: <strong className="text-zinc-200 capitalize">{familia?.estado_cartera || 'Normal'}</strong></span>
-                    <span>Crédito a Favor: <strong className="text-emerald-400">{formatDOP(familia?.credito_favor_centavos || 0)}</strong></span>
+                    <div className="flex items-center gap-1.5">
+                      <span>Crédito a Favor: <strong className="text-emerald-400">{formatDOP(familia?.credito_favor_centavos || 0)}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarFormCredito(!mostrarFormCredito)}
+                        className="px-2 py-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-[10px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                        title="Abonar crédito a favor de la familia (fotocopias, donación, saldo positivo)"
+                      >
+                        <Coins className="w-3 h-3" />
+                        <span>{mostrarFormCredito ? 'Cerrar' : '+ Abonar'}</span>
+                      </button>
+                    </div>
                   </div>
                   {familia?.isp?.ventana_pago_sugerida && (
                     <div className="text-zinc-400 text-[10px]">
@@ -432,6 +539,102 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Feedback Crédito Wallet */}
+                {creditoFeedback && (
+                  <div className={`p-2.5 rounded-xl text-xs font-mono flex items-center gap-2 ${
+                    creditoFeedback.tipo === 'success'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                  }`}>
+                    {creditoFeedback.tipo === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                    )}
+                    <span>{creditoFeedback.mensaje}</span>
+                  </div>
+                )}
+
+                {/* Formulario Inline para Abonar Crédito a Favor */}
+                {mostrarFormCredito && (
+                  <form onSubmit={handleAgregarCredito} className="p-3.5 bg-zinc-900/95 rounded-2xl border border-emerald-500/30 space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                      <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>Abonar Crédito a Favor · Familia {familia?.apellidos || alumno.nombre_completo.split(' ')[0]}</span>
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-mono">Billetera Familiar</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-zinc-300 font-medium block">
+                          Monto a Favor (RD$): <span className="text-emerald-400">*</span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2 text-zinc-500 font-mono text-xs">RD$</span>
+                          <input
+                            type="number"
+                            step="1"
+                            min="1"
+                            required
+                            value={montoCreditoDop}
+                            onChange={e => setMontoCreditoDop(e.target.value)}
+                            className="w-full pl-10 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 font-bold"
+                            placeholder="150"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-zinc-300 font-medium block">
+                          Concepto o Motivo: <span className="text-emerald-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={descripcionCredito}
+                          onChange={e => setDescripcionCredito(e.target.value)}
+                          placeholder="Ej: Saldo de fotocopias / reintegro"
+                          className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        Saldo resultante: <strong className="text-emerald-300">{formatDOP((familia?.credito_favor_centavos || 0) + (parseFloat(montoCreditoDop) || 0) * 100)}</strong>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMostrarFormCredito(false)}
+                          className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition-colors cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingCredito}
+                          className="px-3.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-950/40"
+                        >
+                          {isSubmittingCredito ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Acreditando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              <span>Acreditar Saldo</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
 
                 {/* Subsección: Beneficio de Beca y Justificación */}
                 <div className="pt-3 mt-2 border-t border-zinc-800/80 space-y-2.5">
@@ -704,6 +907,171 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                     <span>No tiene instrumento institucional asignado en inventario.</span>
                   </div>
                 )}
+
+                {/* Subsección: Cargo Extraordinario / Reposición de Cuerda / Accesorios */}
+                <div className="pt-3 mt-2 border-t border-zinc-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
+                      <Wrench className="w-3.5 h-3.5" />
+                      <span>Cargos de Taller & Accesorios</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setMostrarFormCargo(!mostrarFormCargo)}
+                      className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                      title="Agregar cargo extraordinario a la cuenta del alumno (cuerda rota, puente, método, etc.)"
+                    >
+                      {mostrarFormCargo ? (
+                        <>
+                          <ChevronUp className="w-3 h-3" />
+                          <span>Cerrar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-3 h-3" />
+                          <span>+ Cargo (Cuerda / Daño)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Feedback Cargo Cuota */}
+                  {cargoFeedback && (
+                    <div className={`p-2.5 rounded-xl text-xs font-mono flex items-center gap-2 ${
+                      cargoFeedback.tipo === 'success'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                    }`}>
+                      {cargoFeedback.tipo === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>{cargoFeedback.mensaje}</span>
+                    </div>
+                  )}
+
+                  {/* Formulario Inline para Crear Cargo Extraordinario */}
+                  {mostrarFormCargo && (
+                    <form onSubmit={handleCrearCargo} className="p-3.5 bg-zinc-900/95 rounded-2xl border border-amber-500/30 space-y-3 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                        <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <Wrench className="w-3.5 h-3.5" />
+                          <span>Emitir Cargo Extraordinario a {alumno.nombre_completo.split(' ')[0]}</span>
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono">Cuota Pendiente</span>
+                      </div>
+
+                      {/* Botones de plantilla rápida */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase tracking-wider font-mono text-zinc-400 font-bold block">
+                          Plantillas Rápidas:
+                        </label>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {[
+                            { concepto: 'Reposición de Cuerda (Violín)', monto: '350' },
+                            { concepto: 'Ajuste de Clavijas y Puente', monto: '500' },
+                            { concepto: 'Reposición de Cerda / Encordado Arco', monto: '650' },
+                            { concepto: 'Método Suzuki Vol. 1 (Físico)', monto: '400' },
+                          ].map(p => (
+                            <button
+                              key={p.concepto}
+                              type="button"
+                              onClick={() => {
+                                setConceptoCargo(p.concepto);
+                                setMontoCargoDop(p.monto);
+                              }}
+                              className="px-2 py-0.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-[10px] text-zinc-300 font-mono transition-colors cursor-pointer"
+                            >
+                              {p.concepto.split(' ')[0]} {p.concepto.split(' ')[1]} (${p.monto})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-zinc-300 font-medium block">
+                            Concepto del Cargo: <span className="text-amber-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={conceptoCargo}
+                            onChange={e => setConceptoCargo(e.target.value)}
+                            placeholder="Ej: Reposición de cuerda Mi"
+                            className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-zinc-300 font-medium block">
+                            Monto a Cobrar (RD$): <span className="text-amber-400">*</span>
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-2 text-zinc-500 font-mono text-xs">RD$</span>
+                            <input
+                              type="number"
+                              step="1"
+                              min="1"
+                              required
+                              value={montoCargoDop}
+                              onChange={e => setMontoCargoDop(e.target.value)}
+                              className="w-full pl-10 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-amber-400 focus:outline-none focus:border-amber-500 font-bold"
+                              placeholder="350"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-zinc-300 font-medium block">
+                          Observación / Diagnóstico del Taller:
+                        </label>
+                        <input
+                          type="text"
+                          value={notaCargo}
+                          onChange={e => setNotaCargo(e.target.value)}
+                          placeholder="Ej: Rotura accidental de cuerda Mi durante ensayo general..."
+                          className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          Total a emitir: <strong className="text-amber-300">{formatDOP((parseFloat(montoCargoDop) || 0) * 100)}</strong>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setMostrarFormCargo(false)}
+                            className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition-colors cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isSubmittingCargo}
+                            className="px-3.5 py-1 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-xs transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shadow-md shadow-amber-950/40"
+                          >
+                            {isSubmittingCargo ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Emitiendo...</span>
+                              </>
+                            ) : (
+                              <>
+                                <PlusCircle className="w-3.5 h-3.5" />
+                                <span>Emitir Cargo</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  )}
+                </div>
               </div>
             </div>
 

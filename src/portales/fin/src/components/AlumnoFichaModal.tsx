@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinance } from '../context/FinanceContext';
 import {
   X,
@@ -171,8 +172,8 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
     a.instrumento_principal.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  return (
-    <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-zinc-900 rounded-[2.5rem] max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-zinc-800 space-y-6 max-h-[92vh] overflow-y-auto my-auto">
 
         {/* Encabezado con selector rápido de demo */}
@@ -768,4 +769,6 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

@@ -61,7 +61,7 @@ export const CANONICAL_SOI_MANIFEST: CanonicalMapping[] = [
     resourceType: 'rpc',
     status: 'MAPPED_AND_ACTIVE',
     keyFieldsOrSignature: 'fn_registrar_pago_transaccional(p_familia_id uuid, p_monto_centavos bigint, p_metodo_pago text, p_referencia text, p_notas text, p_cuota_ids uuid[], p_fecha_pago date DEFAULT CURRENT_DATE) RETURNS pagos',
-    notes: 'ACID payment registration. Imputa FIFO (cuotas seleccionadas y luego el resto de la familia), calcula mora contra p_fecha_pago, rechaza excedente sin cuota. Rol admin/finanzas. Se llama por PostgREST con params nombrados — el orden no importa.'
+    notes: 'ACID payment registration. Imputa FIFO (cuotas seleccionadas y luego el resto de la familia), calcula mora contra p_fecha_pago, el excedente se acredita al wallet de la familia. Rol admin/finanzas. Se llama por PostgREST con params nombrados — el orden no importa.'
   },
   {
     domainConcept: 'Fee Cycle Billing Generator',

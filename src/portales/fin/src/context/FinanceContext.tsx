@@ -86,6 +86,7 @@ interface FinanceContextType {
   solicitudesNecesidades: SolicitudNecesidad[];
   nomina: LineaNomina[];
   activos: ActivoInstrumento[];
+  activosInstrumentos: ActivoInstrumento[]; // alias de `activos`
   fichasLutheria: FichaDiagnosticoLutheria[];
   contratosComodato: ContratoComodato[];
   evaluacionesPrueba: EvaluacionPeriodoPrueba[];
@@ -2753,6 +2754,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         solicitudesNecesidades,
         nomina,
         activos,
+        activosInstrumentos: activos, // alias usado por Ficha360View / AlumnoFichaModal
         fichasLutheria,
         contratosComodato,
         evaluacionesPrueba,

@@ -138,7 +138,7 @@ export class SupabaseFeeRepository implements IFeeRepository {
       cicloMes: c.ciclo_mes || 1,
       cicloAnio: c.ciclo_anio || 2026,
       periodo: `${c.ciclo_anio || 2026}-${String(c.ciclo_mes || 1).padStart(2, '0')}`,
-      metadatos: c.metadatos || {}
+      metadatos: (c.metadatos as Record<string, unknown>) || {}
     });
   }
 }

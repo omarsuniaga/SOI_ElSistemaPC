@@ -41,6 +41,55 @@ let cuotas = [
   { id: 'cuota-014', familia_id: 'fam-004', alumno_id: 'alum-005', concepto: 'mensualidad', monto_base_centavos: 15000, monto_final_centavos: 15000, estado: 'pendiente', fecha_vencimiento: '2026-06-05', ciclo_mes: 6, ciclo_anio: 2026 },
 ]
 
+// Alumnos — espejo mínimo de public.alumnos para el modelo de lectura de ventanilla.
+const alumnos = [
+  { id: 'alum-001', nombre_completo: 'Sofía García',   instrumento_principal: 'Violín', activo: true,  exento_mensualidad: false, familia_id: 'fam-001' },
+  { id: 'alum-002', nombre_completo: 'Mateo López',    instrumento_principal: 'Piano',  activo: true,  exento_mensualidad: false, familia_id: 'fam-002' },
+  { id: 'alum-003', nombre_completo: 'Valentina López', instrumento_principal: 'Flauta', activo: true,  exento_mensualidad: true,  familia_id: 'fam-002' },
+  { id: 'alum-004', nombre_completo: 'Lucas Rodríguez', instrumento_principal: 'Cello',  activo: true,  exento_mensualidad: false, familia_id: 'fam-003' },
+  { id: 'alum-005', nombre_completo: 'Emma Martínez',  instrumento_principal: 'Viola',  activo: true,  exento_mensualidad: false, familia_id: 'fam-004' },
+  { id: 'alum-006', nombre_completo: 'Diego Martínez',  instrumento_principal: 'Violín', activo: false, exento_mensualidad: false, familia_id: 'fam-004' },
+]
+
+const ESTADOS_ABIERTOS = ['pendiente', 'vencida', 'en_mora']
+
+/** Reproduce la fila de vw_alumno_estado_pago para un alumno del mock. */
+function vistaAlumnoEstadoPago(al) {
+  const fam = familias.find(f => f.id === al.familia_id)
+  const rep = representantes[al.familia_id]
+  const abiertas = cuotas
+    .filter(c => c.alumno_id === al.id && ESTADOS_ABIERTOS.includes(c.estado))
+    .sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento))
+  const hoy = new Date()
+  const vencidas = abiertas.filter(c => new Date(c.fecha_vencimiento) < hoy)
+  const saldo = abiertas.reduce((s, c) => s + (c.monto_final_centavos - (c.monto_pagado_centavos || 0)), 0)
+
+  let estado_pago = 'al_dia'
+  if (!al.activo) estado_pago = 'inactivo'
+  else if (al.exento_mensualidad) estado_pago = 'exento'
+  else if (vencidas.length > 0) estado_pago = 'mora'
+  else if (abiertas.length > 0) estado_pago = 'debe'
+
+  return {
+    alumno_id: al.id,
+    alumno_nombre: al.nombre_completo,
+    instrumento_principal: al.instrumento_principal,
+    alumno_activo: al.activo,
+    exento_mensualidad: al.exento_mensualidad,
+    familia_id: al.familia_id,
+    nombre_familia: fam?.nombre_familia ?? 'Sin Familia',
+    contacto_nombre: rep?.nombre ?? 'Representante no registrado',
+    contacto_cedula: rep?.cedula ?? '',
+    contacto_telefono: rep?.telefono_whatsapp ?? '',
+    contacto_email: rep?.email ?? '',
+    cuotas_pendientes_count: abiertas.length,
+    cuotas_vencidas_count: vencidas.length,
+    saldo_pendiente_centavos: saldo,
+    fecha_mas_antigua_vencida: abiertas[0]?.fecha_vencimiento ?? null,
+    estado_pago,
+  }
+}
+
 let pagos = [
   { id: 'pago-001', familia_id: 'fam-003', cuota_ids: ['cuota-007'], monto_centavos: 12000, metodo_pago: 'transferencia', cajero_id: 'user-cajero-001', notas: '', created_at: '2026-06-03T10:00:00Z', referencia: 'TRF-20260603-001' },
 ]
@@ -145,6 +194,44 @@ export async function getCuotasByFamilia(familia_id) {
   await delay()
   const result = cuotas.filter(c => c.familia_id === familia_id).sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento))
   return { data: result, error: null }
+}
+
+// ---------------------------------------------------------------------------
+// Ventanilla — cobro por alumno (modelo de lectura vw_alumno_estado_pago)
+// ---------------------------------------------------------------------------
+
+export async function buscarAlumnos(q, { incluirRetirados = false, limit = 30 } = {}) {
+  await delay()
+  const term = String(q || '').trim().toLowerCase()
+  if (term.length < 2) return { data: [], error: null }
+  let data = alumnos
+    .map(vistaAlumnoEstadoPago)
+    .filter(v =>
+      v.alumno_nombre.toLowerCase().includes(term) ||
+      (v.contacto_nombre || '').toLowerCase().includes(term) ||
+      (v.nombre_familia || '').toLowerCase().includes(term),
+    )
+  if (!incluirRetirados) data = data.filter(v => v.estado_pago !== 'inactivo')
+  data.sort((a, b) => a.alumno_nombre.localeCompare(b.alumno_nombre))
+  return { data: data.slice(0, limit), error: null }
+}
+
+export async function getCuotasByAlumno(alumnoId, { soloLiquidables = true } = {}) {
+  await delay()
+  let data = cuotas.filter(c => c.alumno_id === alumnoId)
+  if (soloLiquidables) data = data.filter(c => ESTADOS_ABIERTOS.includes(c.estado))
+  data = [...data].sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento))
+  return { data, error: null }
+}
+
+export async function listarAlumnosPorEstado(estado, { soloActivos = false, soloConSaldo = false, limit = 500 } = {}) {
+  await delay()
+  const estados = Array.isArray(estado) ? estado : [estado]
+  let data = alumnos.map(vistaAlumnoEstadoPago).filter(v => estados.includes(v.estado_pago))
+  if (soloActivos) data = data.filter(v => v.alumno_activo)
+  if (soloConSaldo) data = data.filter(v => v.saldo_pendiente_centavos > 0)
+  data.sort((a, b) => a.alumno_nombre.localeCompare(b.alumno_nombre))
+  return { data: data.slice(0, limit), error: null }
 }
 
 export async function getPagosByFamilia(familia_id) {

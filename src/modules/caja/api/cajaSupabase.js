@@ -111,6 +111,69 @@ export async function getCuotasByFamilia(familia_id) {
 }
 
 // ---------------------------------------------------------------------------
+// Ventanilla — cobro por alumno
+// Lee vw_alumno_estado_pago (contacto en cascada + saldo + estado_pago:
+// 'inactivo' | 'exento' | 'mora' | 'debe' | 'al_dia').
+// ---------------------------------------------------------------------------
+
+const ESTADOS_CUOTA_ABIERTA = ['pendiente', 'vencida', 'en_mora']
+
+/**
+ * Búsqueda de ventanilla: por nombre de alumno, de representante o de familia.
+ * @param {string} q  término (mínimo 2 caracteres)
+ * @param {{ incluirRetirados?: boolean, limit?: number }} [opts]
+ */
+export async function buscarAlumnos(q, { incluirRetirados = false, limit = 30 } = {}) {
+  // Sin comas/paréntesis/wildcards: rompen el filtro .or() de PostgREST.
+  const term = String(q || '').trim().replace(/[,()%_]/g, ' ').trim()
+  if (term.length < 2) return { data: [], error: null }
+  const like = `%${term}%`
+
+  let query = supabase
+    .from('vw_alumno_estado_pago')
+    .select('*')
+    .or(`alumno_nombre.ilike.${like},contacto_nombre.ilike.${like},nombre_familia.ilike.${like}`)
+    .order('alumno_nombre')
+    .limit(limit)
+  if (!incluirRetirados) query = query.neq('estado_pago', 'inactivo')
+
+  return handleResult(await query)
+}
+
+/**
+ * Cuotas de un alumno. Por defecto solo las liquidables (pendiente/vencida/en_mora),
+ * más viejas primero.
+ */
+export async function getCuotasByAlumno(alumnoId, { soloLiquidables = true } = {}) {
+  let query = supabase
+    .from('cuotas')
+    .select('*')
+    .eq('alumno_id', alumnoId)
+    .order('fecha_vencimiento')
+  if (soloLiquidables) query = query.in('estado', ESTADOS_CUOTA_ABIERTA)
+  return handleResult(await query)
+}
+
+/**
+ * Lista alumnos por estado del semáforo de pago.
+ * @param {string|string[]} estado  'al_dia' | 'debe' | 'mora' | 'exento' | 'inactivo'
+ * @param {{ soloActivos?: boolean, soloConSaldo?: boolean, limit?: number }} [opts]
+ *        soloConSaldo: útil para "deudas de retirados" (estado 'inactivo' + saldo > 0).
+ */
+export async function listarAlumnosPorEstado(estado, { soloActivos = false, soloConSaldo = false, limit = 500 } = {}) {
+  const estados = Array.isArray(estado) ? estado : [estado]
+  let query = supabase
+    .from('vw_alumno_estado_pago')
+    .select('*')
+    .in('estado_pago', estados)
+    .order('alumno_nombre')
+    .limit(limit)
+  if (soloActivos) query = query.eq('alumno_activo', true)
+  if (soloConSaldo) query = query.gt('saldo_pendiente_centavos', 0)
+  return handleResult(await query)
+}
+
+// ---------------------------------------------------------------------------
 // Pagos
 // ---------------------------------------------------------------------------
 

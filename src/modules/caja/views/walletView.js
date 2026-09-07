@@ -88,7 +88,7 @@ export async function render(container, session, params) {
       + formHtml
       + '</div></div>'
 
-    container.querySelector('#btn-back')?.addEventListener('click', () => navigate('#/familias/' + familiaId))
+    container.querySelector('#btn-back')?.addEventListener('click', () => navigate('/familias/' + familiaId))
     container.querySelector('#btn-nuevo-mov')?.addEventListener('click', () => { showForm = true; renderMain() })
     container.querySelector('#btn-mov-cancel')?.addEventListener('click', () => { showForm = false; renderMain() })
     container.querySelector('#btn-mov-confirm')?.addEventListener('click', async () => {

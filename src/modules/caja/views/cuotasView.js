@@ -105,7 +105,7 @@ export async function render(container, session) {
       })
     })
     container.querySelectorAll('.fam-row').forEach(row => {
-      row.addEventListener('click', () => navigate('#/familias/' + row.dataset.id))
+      row.addEventListener('click', () => navigate('/familias/' + row.dataset.id))
     })
   }
 

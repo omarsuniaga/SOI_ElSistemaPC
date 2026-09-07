@@ -69,10 +69,10 @@ export async function renderList(container, session) {
 
   function bindButtons() {
     container.querySelectorAll('.btn-ver-familia').forEach(btn => {
-      btn.addEventListener('click', () => navigate('#/familias/' + btn.dataset.id))
+      btn.addEventListener('click', () => navigate('/familias/' + btn.dataset.id))
     })
     container.querySelectorAll('.btn-pago-familia').forEach(btn => {
-      btn.addEventListener('click', () => navigate('#/pagos/nuevo'))
+      btn.addEventListener('click', () => navigate('/pagos/nuevo'))
     })
   }
   bindButtons()
@@ -138,9 +138,9 @@ export async function renderDetail(container, session, familiaId) {
     + '</div>'
     + '</div>'
 
-  container.querySelector('#btn-back-list')?.addEventListener('click', () => navigate('#/familias'))
-  container.querySelector('#btn-ver-wallet')?.addEventListener('click', () => navigate('#/wallet/' + familiaId))
-  container.querySelector('#btn-reg-pago')?.addEventListener('click', () => navigate('#/pagos/nuevo'))
+  container.querySelector('#btn-back-list')?.addEventListener('click', () => navigate('/familias'))
+  container.querySelector('#btn-ver-wallet')?.addEventListener('click', () => navigate('/wallet/' + familiaId))
+  container.querySelector('#btn-reg-pago')?.addEventListener('click', () => navigate('/pagos/nuevo'))
 
   return { teardown() {} }
 }

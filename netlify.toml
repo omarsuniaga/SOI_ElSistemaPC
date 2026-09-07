@@ -54,6 +54,19 @@
   to = "/index.html"
   status = 404
 
+# Portal FIN — router por path (History API), sin hash. Cualquier /fin/algo
+# sirve fin.html y el router del cliente resuelve la vista. Debe ir ANTES del
+# catch-all /* (netlify.toml se procesa antes que public/_redirects).
+[[redirects]]
+  from = "/fin"
+  to = "/fin.html"
+  status = 200
+
+[[redirects]]
+  from = "/fin/*"
+  to = "/fin.html"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

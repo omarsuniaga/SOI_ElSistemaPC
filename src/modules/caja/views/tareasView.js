@@ -128,7 +128,7 @@ export async function render(container, session) {
     })
 
     container.querySelectorAll('.btn-tarea-familia').forEach(btn => {
-      btn.addEventListener('click', () => navigate('#/familias/' + btn.dataset.familia))
+      btn.addEventListener('click', () => navigate('/familias/' + btn.dataset.familia))
     })
   }
 

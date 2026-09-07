@@ -77,3 +77,4 @@ public/signage/build.js
 .tmp-supabase-cli-home/
 
 historico-clases-prof-ana-*.pdf
+scripts/inventario/out/

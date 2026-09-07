@@ -24,6 +24,9 @@ import {
   computePctAsistencia,
   computeResumenSolvencia,
   ResumenAcademico,
+  fetchInstrumentosComodato,
+  computeResumenInstrumentos,
+  InstrumentoComodato,
 } from '../lib/alumno360';
 import { Alumno } from '../types';
 
@@ -32,14 +35,12 @@ export const Ficha360View: React.FC = () => {
     alumnos,
     familias,
     cuotas,
-    activos: activosInstrumentos,
-    contratosComodato,
-    fichasLutheria
   } = useFinance();
 
   const [selectedAlumnoId, setSelectedAlumnoId] = useState<string>(alumnos[0]?.id || 'alu-001');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [resumen, setResumen] = useState<ResumenAcademico | null>(null);
+  const [instrumentos, setInstrumentos] = useState<InstrumentoComodato[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   const alumno = alumnos.find(a => a.id === selectedAlumnoId) || alumnos[0];
@@ -48,6 +49,15 @@ export const Ficha360View: React.FC = () => {
     if (!alumno) return;
     let cancelado = false;
     setLoading(true);
+
+    fetchInstrumentosComodato(alumno.id)
+      .then(list => {
+        if (!cancelado) setInstrumentos(list);
+      })
+      .catch(() => {
+        if (!cancelado) setInstrumentos([]);
+      });
+
     fetchResumenAcademico(alumno.id)
       .then(r => {
         if (!cancelado) setResumen(r);
@@ -90,11 +100,7 @@ export const Ficha360View: React.FC = () => {
   const solvencia = computeResumenSolvencia(cuotasAlumno);
   const pctAsistencia = resumen ? computePctAsistencia(resumen) : (alumno.instrumento_principal === 'Violín' ? 96 : 75);
 
-  const comodato = contratosComodato.find(c => c.alumno_id === alumno.id || c.nombre_estudiante.toLowerCase().includes(alumno.nombre_completo.toLowerCase()));
-  const activo = comodato
-    ? activosInstrumentos.find(a => a.id === comodato.id || a.codigo_inventario === comodato.codigo_patrimonial)
-    : activosInstrumentos.find(a => a.alumno_asignado_nombre?.toLowerCase().includes(alumno.nombre_completo.toLowerCase()));
-  const fichaReparacion = fichasLutheria.find(f => f.alumno_asociado_nombre?.toLowerCase().includes(alumno.nombre_completo.toLowerCase()));
+  const resumenInstrumentos = computeResumenInstrumentos(instrumentos);
 
   const filteredAlumnos = alumnos.filter(a =>
     a.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -351,47 +357,66 @@ export const Ficha360View: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 4. Luthería */}
+                {/* 4. Luthería & Comodato */}
                 <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 space-y-3 shadow-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-amber-400">
                       <Guitar className="w-4 h-4" />
                       <span className="text-[10px] font-mono uppercase tracking-widest font-bold">4. Luthería & Comodato</span>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase border ${
-                      activo?.estado_uso === 'en_reparacion'
-                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 animate-pulse'
-                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                    }`}>
-                      {activo?.estado_uso === 'en_reparacion' ? 'En Taller LUT' : (comodato ? 'Comodato Activo' : 'Asignado')}
-                    </span>
-                  </div>
-
-                  <div className="flex items-baseline justify-between">
-                    <div className="text-base font-bold text-white">
-                      {activo?.marca || 'Yamaha'} {activo?.modelo || activo?.tipo_instrumento || 'V5 4/4'}
-                    </div>
-                    <span className="text-xs font-mono text-amber-400 font-bold">
-                      {activo?.codigo_inventario || 'VIO-042'}
-                    </span>
-                  </div>
-
-                  <div className="p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800 text-xs space-y-1">
-                    <div className="flex justify-between text-zinc-300 font-mono text-[11px]">
-                      <span>Serie: <strong>{activo?.numero_serie || 'YVN-8849201'}</strong></span>
-                      <span>Estado: <strong className="capitalize text-emerald-400">{activo?.estado_conservacion || 'excelente'}</strong></span>
-                    </div>
-                    {fichaReparacion ? (
-                      <div className="text-[11px] text-amber-300 flex items-center gap-1.5 pt-1 border-t border-zinc-800">
-                        <Wrench className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                        <span>Diagnóstico: {fichaReparacion.reporte_usuario}</span>
-                      </div>
-                    ) : (
-                      <div className="text-[10px] text-zinc-500 font-mono pt-0.5">
-                        Contrato: {comodato?.numero_contrato || 'COM-2026-042'} · Entrega en regla
-                      </div>
+                    {resumenInstrumentos.total > 0 && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase border ${
+                        resumenInstrumentos.algunoEnReparacion
+                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 animate-pulse'
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      }`}>
+                        {resumenInstrumentos.algunoEnReparacion
+                          ? 'En Taller LUT'
+                          : `${resumenInstrumentos.total} en comodato`}
+                      </span>
                     )}
                   </div>
+
+                  {instrumentos.length === 0 ? (
+                    <div className="p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800 text-[11px] text-zinc-500 font-mono">
+                      Sin instrumento en comodato registrado para este alumno.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {instrumentos.map(inst => (
+                        <div key={inst.comodatoId} className="p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800 text-xs space-y-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <div className="font-bold text-white capitalize">
+                              {[inst.marca, inst.modelo].filter(Boolean).join(' ') || inst.tipoInstrumento}
+                            </div>
+                            <span className="text-xs font-mono text-amber-400 font-bold shrink-0">{inst.codigoInventario}</span>
+                          </div>
+                          <div className="flex justify-between text-zinc-400 font-mono text-[11px]">
+                            <span className="capitalize">{inst.tipoInstrumento}{inst.numeroSerie ? ` · Serie ${inst.numeroSerie}` : ''}</span>
+                            {inst.estadoConservacion && (
+                              <span>Estado: <strong className="capitalize text-emerald-400">{inst.estadoConservacion}</strong></span>
+                            )}
+                          </div>
+                          <div className="flex justify-between text-zinc-500 font-mono text-[10px]">
+                            <span>
+                              {inst.tipoComodato ? `Comodato ${inst.tipoComodato}` : 'Comodato'}
+                              {inst.fechaEntrega ? ` · desde ${inst.fechaEntrega}` : ''}
+                            </span>
+                            {inst.fechaVencimiento && <span>Vence {inst.fechaVencimiento}</span>}
+                          </div>
+                          {inst.enReparacion && (
+                            <div className="text-[11px] text-amber-300 flex items-center gap-1.5 pt-1 border-t border-zinc-800">
+                              <Wrench className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                              <span>
+                                En taller LUT{inst.reparacionFechaIngreso ? ` (ingreso ${inst.reparacionFechaIngreso})` : ''}
+                                {inst.reparacionDescripcion ? `: ${inst.reparacionDescripcion}` : ''}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -1,5 +1,13 @@
 import { describe, test, expect } from 'vitest';
-import { computePctAsistencia, computeResumenSolvencia, ResumenAcademico } from '../alumno360';
+import {
+  computePctAsistencia,
+  computeResumenSolvencia,
+  ResumenAcademico,
+  mapInstrumentoComodato,
+  computeResumenInstrumentos,
+  InstrumentoComodatoRow,
+  InstrumentoComodato,
+} from '../alumno360';
 import { Cuota } from '../../types';
 
 function baseResumen(overrides: Partial<ResumenAcademico> = {}): ResumenAcademico {
@@ -100,5 +108,116 @@ describe('computeResumenSolvencia', () => {
     expect(res.cuotasPendientes).toBe(1);
     expect(res.saldoPendienteCentavos).toBe(40000);
     expect(res.tieneCuotasVencidas).toBe(false);
+  });
+});
+
+function makeInstrumentoRow(overrides: Partial<InstrumentoComodatoRow> = {}): InstrumentoComodatoRow {
+  return {
+    comodato_id: 'com-1',
+    tipo_comodato: 'escolar',
+    fecha_entrega: '2026-03-01',
+    fecha_vencimiento: '2026-12-15',
+    comodato_estado: 'activo',
+    contrato_firmado_url: null,
+    activo_id: 'act-1',
+    codigo_inventario: 'VIO-042',
+    tipo_instrumento: 'Violín',
+    marca: 'Yamaha',
+    modelo: 'V5 4/4',
+    numero_serie: 'YVN-8849201',
+    estado_conservacion: 'excelente',
+    estado_uso: 'prestado',
+    ubicacion: 'Sede Central',
+    en_reparacion: false,
+    reparacion_estado: null,
+    reparacion_descripcion: null,
+    reparacion_fecha_ingreso: null,
+    ...overrides,
+  };
+}
+
+describe('mapInstrumentoComodato', () => {
+  test('renombra snake_case del RPC a camelCase', () => {
+    const m = mapInstrumentoComodato(makeInstrumentoRow());
+    expect(m.comodatoId).toBe('com-1');
+    expect(m.codigoInventario).toBe('VIO-042');
+    expect(m.tipoInstrumento).toBe('Violín');
+    expect(m.numeroSerie).toBe('YVN-8849201');
+    expect(m.fechaVencimiento).toBe('2026-12-15');
+    expect(m.enReparacion).toBe(false);
+  });
+
+  test('en_reparacion nulo/ausente -> false (nunca undefined)', () => {
+    const m = mapInstrumentoComodato(makeInstrumentoRow({ en_reparacion: null as unknown as boolean }));
+    expect(m.enReparacion).toBe(false);
+  });
+
+  test('instrumento en taller: propaga estado y descripción de la reparación', () => {
+    const m = mapInstrumentoComodato(
+      makeInstrumentoRow({
+        en_reparacion: true,
+        estado_uso: 'en_reparacion',
+        reparacion_estado: 'en_reparacion',
+        reparacion_descripcion: 'Ajuste de puente y cuerdas nuevas',
+        reparacion_fecha_ingreso: '2026-08-20',
+      }),
+    );
+    expect(m.enReparacion).toBe(true);
+    expect(m.reparacionEstado).toBe('en_reparacion');
+    expect(m.reparacionDescripcion).toBe('Ajuste de puente y cuerdas nuevas');
+    expect(m.reparacionFechaIngreso).toBe('2026-08-20');
+  });
+
+  test('campos opcionales nulos quedan como null, no como string vacío', () => {
+    const m = mapInstrumentoComodato(makeInstrumentoRow({ marca: null, modelo: null, numero_serie: null }));
+    expect(m.marca).toBeNull();
+    expect(m.modelo).toBeNull();
+    expect(m.numeroSerie).toBeNull();
+  });
+});
+
+function makeInstrumento(overrides: Partial<InstrumentoComodato> = {}): InstrumentoComodato {
+  return { ...mapInstrumentoComodato(makeInstrumentoRow()), ...overrides };
+}
+
+describe('computeResumenInstrumentos', () => {
+  test('sin instrumentos -> total 0, nada en taller, sin vencimiento', () => {
+    const r = computeResumenInstrumentos([]);
+    expect(r.total).toBe(0);
+    expect(r.algunoEnReparacion).toBe(false);
+    expect(r.proximoVencimiento).toBeNull();
+  });
+
+  test('cuenta todos los comodatos activos', () => {
+    const r = computeResumenInstrumentos([
+      makeInstrumento({ comodatoId: 'c1', fechaVencimiento: '2026-12-15' }),
+      makeInstrumento({ comodatoId: 'c2', fechaVencimiento: '2026-10-01' }),
+    ]);
+    expect(r.total).toBe(2);
+  });
+
+  test('algunoEnReparacion true si al menos un instrumento está en taller', () => {
+    const r = computeResumenInstrumentos([
+      makeInstrumento({ comodatoId: 'c1', enReparacion: false }),
+      makeInstrumento({ comodatoId: 'c2', enReparacion: true }),
+    ]);
+    expect(r.algunoEnReparacion).toBe(true);
+  });
+
+  test('proximoVencimiento = la fecha más temprana entre los comodatos', () => {
+    const r = computeResumenInstrumentos([
+      makeInstrumento({ comodatoId: 'c1', fechaVencimiento: '2026-12-15' }),
+      makeInstrumento({ comodatoId: 'c2', fechaVencimiento: '2026-10-01' }),
+      makeInstrumento({ comodatoId: 'c3', fechaVencimiento: null }),
+    ]);
+    expect(r.proximoVencimiento).toBe('2026-10-01');
+  });
+
+  test('todos sin fecha de vencimiento -> proximoVencimiento null', () => {
+    const r = computeResumenInstrumentos([
+      makeInstrumento({ comodatoId: 'c1', fechaVencimiento: null }),
+      makeInstrumento({ comodatoId: 'c2', fechaVencimiento: null }),
+    ]);
+    expect(r.proximoVencimiento).toBeNull();
   });
 });

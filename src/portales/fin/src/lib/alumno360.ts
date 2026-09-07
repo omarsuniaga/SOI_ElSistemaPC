@@ -86,6 +86,105 @@ export interface ResumenSolvencia {
   tieneCuotasVencidas: boolean;
 }
 
+// ── Instrumentos en comodato ────────────────────────────────────────────────
+// Los instrumentos asignados al alumno viven en `comodatos_activos` +
+// `inventario_activos` (los gestiona el módulo LUT / inventario). El RPC
+// `fn_alumno_instrumentos_comodato` devuelve una fila por comodato activo, con
+// los datos del instrumento y el estado de reparación abierta si la hay.
+
+export interface InstrumentoComodatoRow {
+  comodato_id: string;
+  tipo_comodato: string | null;
+  fecha_entrega: string | null;
+  fecha_vencimiento: string | null;
+  comodato_estado: string;
+  contrato_firmado_url: string | null;
+  activo_id: string;
+  codigo_inventario: string;
+  tipo_instrumento: string;
+  marca: string | null;
+  modelo: string | null;
+  numero_serie: string | null;
+  estado_conservacion: string | null;
+  estado_uso: string | null;
+  ubicacion: string | null;
+  en_reparacion: boolean;
+  reparacion_estado: string | null;
+  reparacion_descripcion: string | null;
+  reparacion_fecha_ingreso: string | null;
+}
+
+export interface InstrumentoComodato {
+  comodatoId: string;
+  tipoComodato: string | null;
+  fechaEntrega: string | null;
+  fechaVencimiento: string | null;
+  comodatoEstado: string;
+  contratoFirmadoUrl: string | null;
+  activoId: string;
+  codigoInventario: string;
+  tipoInstrumento: string;
+  marca: string | null;
+  modelo: string | null;
+  numeroSerie: string | null;
+  estadoConservacion: string | null;
+  estadoUso: string | null;
+  ubicacion: string | null;
+  enReparacion: boolean;
+  reparacionEstado: string | null;
+  reparacionDescripcion: string | null;
+  reparacionFechaIngreso: string | null;
+}
+
+export function mapInstrumentoComodato(row: InstrumentoComodatoRow): InstrumentoComodato {
+  return {
+    comodatoId: row.comodato_id,
+    tipoComodato: row.tipo_comodato ?? null,
+    fechaEntrega: row.fecha_entrega ?? null,
+    fechaVencimiento: row.fecha_vencimiento ?? null,
+    comodatoEstado: row.comodato_estado,
+    contratoFirmadoUrl: row.contrato_firmado_url ?? null,
+    activoId: row.activo_id,
+    codigoInventario: row.codigo_inventario,
+    tipoInstrumento: row.tipo_instrumento,
+    marca: row.marca ?? null,
+    modelo: row.modelo ?? null,
+    numeroSerie: row.numero_serie ?? null,
+    estadoConservacion: row.estado_conservacion ?? null,
+    estadoUso: row.estado_uso ?? null,
+    ubicacion: row.ubicacion ?? null,
+    enReparacion: row.en_reparacion === true,
+    reparacionEstado: row.reparacion_estado ?? null,
+    reparacionDescripcion: row.reparacion_descripcion ?? null,
+    reparacionFechaIngreso: row.reparacion_fecha_ingreso ?? null,
+  };
+}
+
+export interface ResumenInstrumentos {
+  total: number;
+  algunoEnReparacion: boolean;
+  proximoVencimiento: string | null;
+}
+
+export function computeResumenInstrumentos(items: InstrumentoComodato[]): ResumenInstrumentos {
+  const vencimientos = items
+    .map(i => i.fechaVencimiento)
+    .filter((f): f is string => !!f)
+    .sort();
+  return {
+    total: items.length,
+    algunoEnReparacion: items.some(i => i.enReparacion),
+    proximoVencimiento: vencimientos[0] ?? null,
+  };
+}
+
+export async function fetchInstrumentosComodato(alumnoId: string): Promise<InstrumentoComodato[]> {
+  const rows = await supabaseRpc<InstrumentoComodatoRow[]>('fn_alumno_instrumentos_comodato', {
+    p_alumno_id: alumnoId,
+  });
+  return Array.isArray(rows) ? rows.map(mapInstrumentoComodato) : [];
+}
+
 /** Sin cuotas registradas para el alumno -> totalCuotas=0, distinto de "0 pendientes porque ya pagó todo". */
 export function computeResumenSolvencia(cuotas: Cuota[]): ResumenSolvencia {
   if (cuotas.length === 0) {

@@ -60,16 +60,16 @@ export const CANONICAL_SOI_MANIFEST: CanonicalMapping[] = [
     soiResource: 'public.fn_registrar_pago_transaccional',
     resourceType: 'rpc',
     status: 'MAPPED_AND_ACTIVE',
-    keyFieldsOrSignature: 'fn_registrar_pago_transaccional(p_familia_id uuid, p_cuota_ids uuid[], p_monto_centavos bigint, p_metodo_pago text, p_referencia text, p_notas text)',
-    notes: 'Authoritative backend ACID stored procedure for atomic payment registration'
+    keyFieldsOrSignature: 'fn_registrar_pago_transaccional(p_familia_id uuid, p_monto_centavos bigint, p_metodo_pago text, p_referencia text, p_notas text, p_cuota_ids uuid[], p_fecha_pago date DEFAULT CURRENT_DATE) RETURNS pagos',
+    notes: 'ACID payment registration. Imputa FIFO (cuotas seleccionadas y luego el resto de la familia), calcula mora contra p_fecha_pago, rechaza excedente sin cuota. Rol admin/finanzas. Se llama por PostgREST con params nombrados — el orden no importa.'
   },
   {
     domainConcept: 'Fee Cycle Billing Generator',
     soiResource: 'public.fn_generar_ciclo_cuotas',
     resourceType: 'rpc',
     status: 'MAPPED_AND_ACTIVE',
-    keyFieldsOrSignature: 'fn_generar_ciclo_cuotas(p_mes int, p_anio int, p_monto_centavos bigint)',
-    notes: 'Batch monthly billing generation procedure'
+    keyFieldsOrSignature: 'fn_generar_ciclo_cuotas(p_mes int, p_anio int, p_monto_centavos bigint DEFAULT 60000) RETURNS int',
+    notes: 'Generación mensual de cuotas. Omite alumnos inactivos y exentos (alumnos.exento_mensualidad); aplica descuento por becas.porcentaje. Cron el día 1 (job finanzas_generar_ciclo_cuotas_mensual). La sobrecarga de 2 args se eliminó (era ambigua vía PostgREST).'
   },
   {
     domainConcept: 'Scholarships (Becas)',

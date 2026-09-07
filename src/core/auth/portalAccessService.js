@@ -12,7 +12,7 @@ export const DEFAULT_PORTAL_CATALOG = [
   { portal_id: 'SUPERADMIN', nombre: 'SuperAdmin Master', ruta: '/adm.html', roles_default: ['superadmin'], icono: 'bi-shield-lock-fill' },
   { portal_id: 'ADM', nombre: 'Portal Administración', ruta: '/adm.html', roles_default: ['superadmin', 'admin', 'coordinacion_academica'], icono: 'bi-briefcase-fill' },
   { portal_id: 'ACM', nombre: 'Portal Académico', ruta: '/acm.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-mortarboard-fill' },
-  { portal_id: 'FIN', nombre: 'Portal Finanzas SOI', ruta: '/soi-finanzas.html', roles_default: ['superadmin', 'admin', 'finanzas'], icono: 'bi-cash-coin' },
+  { portal_id: 'FIN', nombre: 'Portal Finanzas SOI', ruta: '/fin.html', roles_default: ['superadmin', 'admin', 'finanzas'], icono: 'bi-cash-coin' },
   { portal_id: 'CAL', nombre: 'Portal Calendario', ruta: '/calendario.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica', 'maestro', 'monitor', 'operaciones'], icono: 'bi-calendar3' },
   { portal_id: 'MAE', nombre: 'Portal Docente', ruta: '/index.html', roles_default: ['superadmin', 'admin', 'maestro', 'monitor'], icono: 'bi-person-video3' },
   { portal_id: 'COM', nombre: 'Portal Comunicaciones', ruta: '/com.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-megaphone-fill' },

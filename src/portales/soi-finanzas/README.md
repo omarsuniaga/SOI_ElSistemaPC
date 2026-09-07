@@ -1,20 +1,16 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# `soi-finanzas` — prototipo React, ARCHIVADO (no es el portal de finanzas en producción)
 
-# Run and deploy your AI Studio app
+> **Decisión de arquitectura 2026-09-07 (Opción A).**
+> Este árbol es un **prototipo generado con Google AI Studio**: React + TypeScript + Tailwind,
+> con estado en memoria/borrador (`src/data/initialData.ts`, `FinanceContext`) y **sin conexión
+> real a Supabase** en la mayoría de sus módulos.
+>
+> El **portal de finanzas en producción es `fin`** → [`src/modules/caja/`](../../modules/caja/),
+> vanilla JS, servido en `/fin`, conectado a la base real (`cajaApi.js`, vista
+> `vw_alumno_estado_pago`, RPC `fn_registrar_pago_transaccional`).
+>
+> **No se construye sobre este árbol.** Se conserva como referencia de diseño y posible base
+> para un ERP financiero más completo (nómina, conciliación bancaria, presupuesto) en el futuro.
+> La ruta `/soi-finanzas` sigue existiendo pero no se linkea desde ningún portal.
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/07aaa0da-29b1-40bd-85e4-aa9d5d88a379
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Contexto completo: `docs/PORTAL_FIN_MENU_AUDITORIA.md`, `docs/PORTAL_FIN_BACKLOG.md`.

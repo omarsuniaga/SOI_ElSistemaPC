@@ -16,7 +16,12 @@ import {
   FileText,
   Wrench,
   Sparkles,
-  Search
+  Search,
+  Award,
+  CheckCircle2,
+  Plus,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { formatDOP } from '../lib/financialMath';
 import {
@@ -40,6 +45,15 @@ const ESTADO_LABEL: Record<string, string> = {
   DIFICULTAD: 'Con dificultad / Requiere refuerzo',
 };
 
+const PRESET_MOTIVOS_BECA = [
+  'Mérito artístico y rendimiento pedagógico excepcional',
+  'Situación de vulnerabilidad socioeconómica familiar',
+  'Monitor o tutor del instrumento / apoyo pedagógico en cátedra',
+  'Familia numerosa con múltiples hermanos en la academia',
+  'Convenio de patrocinio directo con donante institucional',
+  'Exoneración extraordinaria por apoyo a eventos y ensambles institucionales',
+];
+
 export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
   alumno,
   onClose,
@@ -51,7 +65,10 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
     activos: activosInstrumentos,
     contratosComodato,
     fichasLutheria,
-    alumnos: todosAlumnos
+    alumnos: todosAlumnos,
+    becas,
+    crearSolicitudBeca,
+    aprobarBeca
   } = useFinance();
 
   const [resumen, setResumen] = useState<ResumenAcademico | null>(null);
@@ -59,6 +76,15 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [mostrarSelector, setMostrarSelector] = useState(false);
+
+  // Estados para gestión de beca
+  const [mostrarFormBeca, setMostrarFormBeca] = useState(false);
+  const [porcentajeBeca, setPorcentajeBeca] = useState<number>(100);
+  const [motivoCategoriaBeca, setMotivoCategoriaBeca] = useState<string>(PRESET_MOTIVOS_BECA[0]);
+  const [motivoDetalleBeca, setMotivoDetalleBeca] = useState<string>('');
+  const [autoAprobarBeca, setAutoAprobarBeca] = useState<boolean>(true);
+  const [isSubmittingBeca, setIsSubmittingBeca] = useState<boolean>(false);
+  const [becaFeedback, setBecaFeedback] = useState<{ tipo: 'success' | 'error'; mensaje: string } | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -79,11 +105,58 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
     };
   }, [alumno.id]);
 
-  // Finanzas y Familia
+  // Finanzas, Familia y Beca
   const familia = familias.find(f => f.id === alumno.familia_id);
   const cuotasAlumno = cuotas.filter(c => c.alumno_id === alumno.id);
   const solvencia = computeResumenSolvencia(cuotasAlumno);
   const pctAsistencia = resumen ? computePctAsistencia(resumen) : null;
+
+  // Beca activa o más reciente del alumno
+  const becasDelAlumno = becas.filter(b => b.alumno_id === alumno.id);
+  const becaActiva = becasDelAlumno.find(b => b.activa || b.estado === 'activo');
+  const becaReciente = becaActiva || becasDelAlumno[0] || null;
+
+  const handleGuardarBeca = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (porcentajeBeca <= 0 || porcentajeBeca > 100) {
+      setBecaFeedback({ tipo: 'error', mensaje: 'El porcentaje de beca debe estar entre 1% y 100%.' });
+      return;
+    }
+
+    setIsSubmittingBeca(true);
+    setBecaFeedback(null);
+
+    const motivoCompleto = motivoDetalleBeca.trim()
+      ? `${motivoCategoriaBeca}. Justificación: ${motivoDetalleBeca.trim()}`
+      : motivoCategoriaBeca;
+
+    const res = await crearSolicitudBeca({
+      alumno_id: alumno.id,
+      porcentaje: porcentajeBeca,
+      motivo_socioeconomico: motivoCompleto,
+      autoAprobar: autoAprobarBeca,
+    });
+
+    setIsSubmittingBeca(false);
+    if (res.success) {
+      setBecaFeedback({
+        tipo: 'success',
+        mensaje: `✓ Beca del ${porcentajeBeca}% ${autoAprobarBeca ? 'asignada y aprobada' : 'solicitada'} exitosamente.`
+      });
+      setMostrarFormBeca(false);
+      setMotivoDetalleBeca('');
+      setTimeout(() => setBecaFeedback(null), 5000);
+    } else {
+      setBecaFeedback({ tipo: 'error', mensaje: res.error || 'Error al procesar la beca.' });
+    }
+  };
+
+  const handleRevocarBeca = async (becaId: string) => {
+    if (!window.confirm('¿Está seguro de que desea revocar la beca activa de este alumno?')) return;
+    await aprobarBeca(becaId, false);
+    setBecaFeedback({ tipo: 'success', mensaje: '✓ Beca revocada exitosamente.' });
+    setTimeout(() => setBecaFeedback(null), 5000);
+  };
 
   // Luthería y Comodato
   const comodato = contratosComodato.find(c => c.alumno_id === alumno.id || c.nombre_estudiante.toLowerCase().includes(alumno.nombre_completo.toLowerCase()));
@@ -106,10 +179,20 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
         <div className="border-b border-zinc-800 pb-4 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-indigo-500/20 flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3" /> Ficha 360° Ejecutiva
                 </span>
+                {becaActiva ? (
+                  <span className="px-3 py-1 bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-wider rounded-full border border-amber-500/30 flex items-center gap-1.5">
+                    <Award className="w-3 h-3 text-amber-400" />
+                    <span>Becado ({becaActiva.porcentaje}%)</span>
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 bg-zinc-800/80 text-zinc-400 text-[10px] font-medium rounded-full border border-zinc-700/50 flex items-center gap-1">
+                    <span>Sin beca</span>
+                  </span>
+                )}
                 <span className="text-[10px] font-mono text-zinc-400">ID: {alumno.id.slice(0, 8)}</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-white mt-1 tracking-tight">{alumno.nombre_completo}</h2>
@@ -345,6 +428,226 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                     <div className="text-zinc-400 text-[10px]">
                       Patrón de pago: Días {familia.isp.ventana_pago_sugerida.inicio_dia} al {familia.isp.ventana_pago_sugerida.fin_dia} del mes ({familia.isp.ventana_pago_sugerida.patron})
                     </div>
+                  )}
+                </div>
+
+                {/* Subsección: Beneficio de Beca y Justificación */}
+                <div className="pt-3 mt-2 border-t border-zinc-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
+                      <Award className="w-3.5 h-3.5" />
+                      <span>Beca & Beneficio Social</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {becaActiva && (
+                        <button
+                          type="button"
+                          onClick={() => handleRevocarBeca(becaActiva.id)}
+                          className="text-[10px] text-rose-400 hover:text-rose-300 font-mono transition-colors cursor-pointer"
+                        >
+                          Revocar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMostrarFormBeca(!mostrarFormBeca);
+                          if (!mostrarFormBeca && becaActiva) {
+                            setPorcentajeBeca(becaActiva.porcentaje);
+                          }
+                        }}
+                        className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        {mostrarFormBeca ? (
+                          <>
+                            <ChevronUp className="w-3 h-3" />
+                            <span>Cerrar</span>
+                          </>
+                        ) : (
+                          <>
+                            {becaActiva ? <Award className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                            <span>{becaActiva ? 'Modificar Beca' : 'Becar Alumno'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Feedback toast inline */}
+                  {becaFeedback && (
+                    <div className={`p-2.5 rounded-xl text-xs font-mono flex items-center gap-2 ${
+                      becaFeedback.tipo === 'success'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                    }`}>
+                      {becaFeedback.tipo === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>{becaFeedback.mensaje}</span>
+                    </div>
+                  )}
+
+                  {/* Detalle de Beca Activa o Reciente */}
+                  {!mostrarFormBeca && (
+                    <div>
+                      {becaReciente ? (
+                        <div className="p-3 bg-zinc-900/90 rounded-2xl border border-zinc-800/90 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-white flex items-center gap-1.5">
+                              <span>Exoneración: <strong>{becaReciente.porcentaje}%</strong></span>
+                              <span className={`text-[10px] px-2 py-0.2 rounded-full font-mono font-bold uppercase border ${
+                                becaReciente.activa
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                  : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                              }`}>
+                                {becaReciente.activa ? 'Activa' : 'Inactiva'}
+                              </span>
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-400">
+                              Desde: {becaReciente.fecha_inicio}
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] text-zinc-300">
+                            <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-mono">Nota / Justificación:</span>
+                            <p className="mt-0.5 text-zinc-200 italic bg-zinc-950/60 p-2 rounded-xl border border-zinc-800/60 leading-relaxed">
+                              "{becaReciente.motivo || becaReciente.motivo_socioeconomico || 'Sin nota de justificación'}"
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 bg-zinc-900/40 rounded-2xl border border-zinc-800/50 text-[11px] text-zinc-400 flex items-center justify-between">
+                          <span>Alumno sin beca asignada en el ciclo actual.</span>
+                          <span className="text-zinc-400 font-mono text-[10px]">100% arancel regular</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Formulario Inline para Becar / Asignar Justificación */}
+                  {mostrarFormBeca && (
+                    <form onSubmit={handleGuardarBeca} className="p-3.5 bg-zinc-900/95 rounded-2xl border border-amber-500/30 space-y-3 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                        <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Configurar Beca para {alumno.nombre_completo.split(' ')[0]}</span>
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {autoAprobarBeca ? 'Aprobación Inmediata' : 'Pendiente de Aprobación'}
+                        </span>
+                      </div>
+
+                      {/* Selector de Porcentaje */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <label className="text-zinc-300 font-medium">Porcentaje de Exoneración:</label>
+                          <span className="font-mono font-bold text-amber-400 text-sm">{porcentajeBeca}%</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {[25, 50, 75, 100].map(pct => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => setPorcentajeBeca(pct)}
+                              className={`flex-1 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                                porcentajeBeca === pct
+                                  ? 'bg-amber-500 text-black shadow-md shadow-amber-950/40'
+                                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700'
+                              }`}
+                            >
+                              {pct}%
+                            </button>
+                          ))}
+                        </div>
+
+                        <input
+                          type="range"
+                          min="5"
+                          max="100"
+                          step="5"
+                          value={porcentajeBeca}
+                          onChange={e => setPorcentajeBeca(Number(e.target.value))}
+                          className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-400 mt-1"
+                        />
+                      </div>
+
+                      {/* Categoría Predefinida */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-zinc-300 font-medium block">
+                          Criterio / Categoría de Beca:
+                        </label>
+                        <select
+                          value={motivoCategoriaBeca}
+                          onChange={e => setMotivoCategoriaBeca(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-amber-500 cursor-pointer"
+                        >
+                          {PRESET_MOTIVOS_BECA.map((motivo, idx) => (
+                            <option key={idx} value={motivo} className="bg-zinc-900 text-zinc-200">
+                              {motivo}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Justificación / Nota detallada */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-zinc-300 font-medium block">
+                          Nota o Justificación Explicativa: <span className="text-amber-400">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          required
+                          value={motivoDetalleBeca}
+                          onChange={e => setMotivoDetalleBeca(e.target.value)}
+                          placeholder="Explique detalladamente por qué el alumno califica para esta beca (condición socioeconómica, logros, respaldo familiar)..."
+                          className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
+                        />
+                      </div>
+
+                      {/* Opción Auto-aprobar */}
+                      <div className="flex items-center justify-between pt-1">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
+                          <input
+                            type="checkbox"
+                            checked={autoAprobarBeca}
+                            onChange={e => setAutoAprobarBeca(e.target.checked)}
+                            className="rounded bg-zinc-950 border-zinc-700 text-amber-500 focus:ring-amber-500/20"
+                          />
+                          <span>Aprobar y activar inmediatamente</span>
+                        </label>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setMostrarFormBeca(false)}
+                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition-colors cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isSubmittingBeca || !motivoDetalleBeca.trim()}
+                            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 shadow-md shadow-amber-950/40"
+                          >
+                            {isSubmittingBeca ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Guardando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Award className="w-3.5 h-3.5" />
+                                <span>Guardar Beca</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </form>
                   )}
                 </div>
               </div>

@@ -138,6 +138,7 @@ interface FinanceContextType {
     alumno_id: string;
     porcentaje: number;
     motivo_socioeconomico: string;
+    autoAprobar?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
   
   aprobarFacturaGasto: (factura_id: string) => { success: boolean; error?: string };
@@ -1484,22 +1485,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     alumno_id: string;
     porcentaje: number;
     motivo_socioeconomico: string;
+    autoAprobar?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
     const alumno = alumnos.find(a => a.id === params.alumno_id);
     if (!alumno) return { success: false, error: 'Alumno no encontrado' };
 
     try {
+      const bodyPayload: any = {
+        alumno_id: alumno.id,
+        familia_id: alumno.familia_id,
+        porcentaje: params.porcentaje,
+        motivo: params.motivo_socioeconomico,
+        fecha_inicio: `${periodoActivo}-01`,
+      };
+
+      if (params.autoAprobar) {
+        bodyPayload.activa = true;
+        bodyPayload.aprobado_por = currentUser.id;
+      }
+
       const [row] = await supabaseRest<any[]>('becas', {
         method: 'POST',
-        body: {
-          alumno_id: alumno.id,
-          familia_id: alumno.familia_id,
-          porcentaje: params.porcentaje,
-          motivo: params.motivo_socioeconomico,
-          fecha_inicio: `${periodoActivo}-01`,
-        },
+        body: bodyPayload,
         prefer: 'return=representation',
       });
+
+      const esActiva = row.activa ?? Boolean(params.autoAprobar);
+      const aprobadoPor = row.aprobado_por || (params.autoAprobar ? currentUser.id : undefined);
 
       const nuevaBeca: Beca = {
         id: row.id,
@@ -1508,11 +1520,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         familia_id: row.familia_id,
         porcentaje: row.porcentaje,
         motivo: row.motivo,
-        aprobado_por: row.aprobado_por || undefined,
-        activa: row.activa,
+        aprobado_por: aprobadoPor,
+        activa: esActiva,
         fecha_inicio: row.fecha_inicio,
         fecha_fin: row.fecha_fin || undefined,
-        estado: 'solicitado',
+        estado: esActiva ? 'activo' : 'solicitado',
         tipo: Number(row.porcentaje) >= 100 ? 'total' : 'parcial_porcentaje',
         motivo_socioeconomico: row.motivo,
       };

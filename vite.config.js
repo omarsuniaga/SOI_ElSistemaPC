@@ -52,7 +52,7 @@ export default defineConfig({
           index:        'index.html',
           admin:        'admin.html',
           audiciones:   'audiciones.html',
-          'soi-finanzas': 'soi-finanzas.html',
+          fin:          'fin.html',
           acm:          'acm.html',
           adm:          'adm.html',
           com:          'com.html',
@@ -111,7 +111,7 @@ export default defineConfig({
     // or Tailwind's CSS pipeline. @vitejs/plugin-react's default `include` is
     // /\.[tj]sx?$/, which matches every .js file in the project unless narrowed.
     react({
-      include: /[\\/]portales[\\/](soi-finanzas|calendario)[\\/].*\.[tj]sx?$/,
+      include: /[\\/]portales[\\/](fin|calendario)[\\/].*\.[tj]sx?$/,
     }),
     tailwindcss(),
     {
@@ -130,9 +130,8 @@ export default defineConfig({
           const portalPrefixes = [
             { prefix: '/admin', file: '/adm.html' },
             { prefix: '/adm', file: '/adm.html' },
-            // /fin (portal vanilla eliminado) -> redirige al portal de finanzas React
-            { prefix: '/fin', file: '/soi-finanzas.html' },
-            { prefix: '/soi-finanzas', file: '/soi-finanzas.html' },
+            { prefix: '/fin', file: '/fin.html' },
+            { prefix: '/soi-finanzas', file: '/fin.html' }, // alias legacy
             { prefix: '/acm', file: '/acm.html' },
             { prefix: '/com', file: '/com.html' },
             { prefix: '/tecnico', file: '/tecnico.html' },

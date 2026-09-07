@@ -54,27 +54,27 @@
   to = "/index.html"
   status = 404
 
-# El portal FIN vanilla (fin.html / src/modules/caja) se eliminó — el portal de
-# finanzas es soi-finanzas (React). /fin queda como alias para no romper enlaces.
-# Debe ir ANTES del catch-all /* (netlify.toml se procesa antes que public/_redirects).
+# Portal de finanzas (React, src/portales/fin). Router por path — cualquier
+# /fin/algo sirve fin.html. Debe ir ANTES del catch-all /* (netlify.toml se
+# procesa antes que public/_redirects). /soi-finanzas queda como alias legacy.
 [[redirects]]
   from = "/fin"
-  to = "/soi-finanzas.html"
+  to = "/fin.html"
   status = 200
 
 [[redirects]]
   from = "/fin/*"
-  to = "/soi-finanzas.html"
+  to = "/fin.html"
   status = 200
 
 [[redirects]]
   from = "/soi-finanzas"
-  to = "/soi-finanzas.html"
+  to = "/fin.html"
   status = 200
 
 [[redirects]]
   from = "/soi-finanzas/*"
-  to = "/soi-finanzas.html"
+  to = "/fin.html"
   status = 200
 
 [[redirects]]

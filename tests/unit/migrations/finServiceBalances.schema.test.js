@@ -12,7 +12,7 @@ const refreshFunction = readFileSync(
   'utf8',
 )
 const myDayView = readFileSync(
-  resolve(ROOT, 'src/portales/soi-finanzas/src/views/MyDayView.tsx'),
+  resolve(ROOT, 'src/portales/fin/src/views/MyDayView.tsx'),
   'utf8',
 )
 

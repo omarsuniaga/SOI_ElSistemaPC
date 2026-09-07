@@ -120,6 +120,12 @@ for (const r of revisar) {
 
 fs.writeFileSync(OUT_SQL, L.join('\n') + '\n');
 fs.writeFileSync(path.join(__dirname, 'out/fase2-revisar.json'), JSON.stringify(revisar, null, 2));
+
+// ops estructuradas para aplicar vía supabase-js (service role)
+const ops = [];
+for (const u of updConservacion) ops.push({ codigo: u.codigo, set: { estado_conservacion: u.a }, guard: { estado_conservacion: 'mantenimiento' } });
+for (const u of updAsignacion) ops.push({ codigo: u.codigo, set: { asignado_a_texto: u.tipo === 'baja' ? null : (u.alumno || u.nombre_xlsx), estado_uso: u.estado_uso } });
+fs.writeFileSync(path.join(__dirname, 'out/fase2-ops.json'), JSON.stringify(ops, null, 2));
 console.log('Migración Fase 2:', OUT_SQL);
 console.log(`  conservacion: ${updConservacion.length}  |  asignación: ${updAsignacion.length}  |  revisar: ${revisar.length}`);
 console.log('  revisar:', revisar.map((r) => `${r.codigo}:${r.nombre_xlsx}→${r.alumno}(${r.score})`).join('  '));

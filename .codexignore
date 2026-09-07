@@ -1,0 +1,30 @@
+# Paths hidden from the Codex agent's filesystem access.
+# Mirrors .geminiignore. Secrets and personal data must never reach an external model.
+
+# Secrets / credentials
+.env
+.env.*
+*.local
+*.pem
+*.key
+*.p12
+*.pfx
+**/auth.json
+.codex/
+.gemini/
+scripts/whatsapp-runner/auth_info_baileys/
+**/auth_info_baileys/
+*.baileys-store.json
+
+# Personal data (students / applicants)
+*.pdf
+listado-alumnos-*
+postulados-*
+mojibake-log-*.csv
+
+# Bulk noise / generated
+node_modules/
+dist/
+coverage/
+eslint-report.json
+package-lock.json

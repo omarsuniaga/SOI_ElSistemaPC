@@ -16,7 +16,7 @@ import {
   X,
   CreditCard
 } from 'lucide-react';
-import { formatDOP } from '../lib/financialMath';
+import { formatDOP, getISPEtiqueta } from '../lib/financialMath';
 
 interface MoraCobranzaViewProps {
   setActiveView?: (view: string) => void;
@@ -114,7 +114,7 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
         </div>
         <p className="text-zinc-400 text-[11px] leading-relaxed">
           El estado de morosidad constituye una alerta de seguimiento y nunca autoriza a suspender a un menor de sus clases o retirar su instrumento.
-          Ante dificultades severas, el protocolo FIN-P13 exige proponer convenios escalonados o evaluar la postulación a la Beca Social FUNEYCA.
+          Ante dificultades severas, la política institucional exige proponer convenios escalonados o evaluar la postulación a la Beca Social FUNEYCA.
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
       {/* Delinquency Segmentation Tiers (Bento 3-Column Grid) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* Tier 1: Seguimiento Preventivo (Cat C) */}
+        {/* Tier 1: Seguimiento Preventivo */}
         <div className="bg-zinc-900 rounded-[2.5rem] p-6 border border-zinc-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div>
@@ -151,7 +151,14 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
                   Rep: {fam.representante_principal?.nombre_completo} · Tel: {fam.telefono_principal}
                 </div>
                 <div className="pt-2 border-t border-zinc-800/80 flex justify-between items-center">
-                  <span className="text-[10px] font-mono text-amber-400 font-bold">ISP: {fam.isp.valor} (Cat. C)</span>
+                  {(() => {
+                    const etq = getISPEtiqueta(fam.isp?.categoria);
+                    return (
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${etq.badgeClass}`} title={etq.descripcion}>
+                        {etq.titulo} ({fam.isp?.valor ?? 100} pts)
+                      </span>
+                    );
+                  })()}
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleCobrarFamilia(fam.id)}
@@ -179,7 +186,7 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
           </div>
         </div>
 
-        {/* Tier 2: Atención & Mora Temprana (Cat D) */}
+        {/* Tier 2: Atención & Mora Temprana */}
         <div className="bg-zinc-900 rounded-[2.5rem] p-6 border border-zinc-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div>
@@ -202,7 +209,14 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
                   Contacto: {fam.representante_principal?.nombre_completo} ({fam.telefono_principal})
                 </div>
                 <div className="pt-2 border-t border-zinc-800/80 flex justify-between items-center">
-                  <span className="text-[10px] font-mono text-orange-400 font-bold">ISP: {fam.isp.valor} (Cat. D)</span>
+                  {(() => {
+                    const etq = getISPEtiqueta(fam.isp?.categoria);
+                    return (
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${etq.badgeClass}`} title={etq.descripcion}>
+                        {etq.titulo} ({fam.isp?.valor ?? 100} pts)
+                      </span>
+                    );
+                  })()}
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleCobrarFamilia(fam.id)}
@@ -225,7 +239,7 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
           </div>
         </div>
 
-        {/* Tier 3: Mora Crítica & Casos Especiales (Cat E) */}
+        {/* Tier 3: Mora Crítica & Casos Especiales */}
         <div className="bg-zinc-900 rounded-[2.5rem] p-6 border border-zinc-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div>
@@ -248,6 +262,14 @@ export const MoraCobranzaView: React.FC<MoraCobranzaViewProps> = ({ setActiveVie
                   {fam.notas_cobranza || 'Caso especial que requiere evaluación para asignación de Beca Social o convenio de cuota única.'}
                 </p>
                 <div className="pt-2 border-t border-zinc-800/80 flex justify-between items-center">
+                  {(() => {
+                    const etq = getISPEtiqueta(fam.isp?.categoria);
+                    return (
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${etq.badgeClass}`} title={etq.descripcion}>
+                        {etq.titulo} ({fam.isp?.valor ?? 100} pts)
+                      </span>
+                    );
+                  })()}
                   <span className="text-[10px] font-mono text-rose-400 font-bold">Visto Bueno DIR</span>
                   <div className="flex items-center gap-1.5">
                     <button

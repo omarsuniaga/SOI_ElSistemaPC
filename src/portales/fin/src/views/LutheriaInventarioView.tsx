@@ -201,7 +201,7 @@ export const LutheriaInventarioView: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                Luthería, Depósito & Comodatos (FIN-P18 / FIN-P19 / OPR-P10)
+                Préstamos de Instrumentos, Luthería & Taller
               </h1>
               <p className="text-xs text-zinc-400">
                 Gobernanza del taller de mantenimiento, control ambiental de sede y contratos de préstamo patrimonial.

@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Tag
 } from 'lucide-react';
-import { formatDOP } from '../lib/financialMath';
+import { formatDOP, getISPEtiqueta } from '../lib/financialMath';
 import { AlumnoFichaModal } from './AlumnoFichaModal';
 import { Alumno } from '../types';
 
@@ -574,14 +574,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
                               <span className="font-mono text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-md">
                                 {f.codigo_familia}
                               </span>
-                              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
-                                f.isp.categoria === 'A' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                f.isp.categoria === 'B' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                                f.isp.categoria === 'C' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                              }`}>
-                                ISP Cat. {f.isp.categoria}
-                              </span>
+                              {(() => {
+                                const etq = getISPEtiqueta(f.isp?.categoria);
+                                return (
+                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${etq.badgeClass}`} title={etq.descripcion}>
+                                    {etq.titulo} ({f.isp?.valor ?? 100} pts)
+                                  </span>
+                                );
+                              })()}
                             </div>
 
                             <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-1">

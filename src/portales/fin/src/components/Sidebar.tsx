@@ -95,27 +95,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'Ingresos & Cartera 360°',
       items: [
-        { id: 'ficha_360', alias: 'ficha360', label: 'Ficha 360° Alumno (Directiva)', icon: Sparkles, badge: '360°', badgeClass: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold' },
+        { id: 'ficha_360', alias: 'ficha360', label: 'Ficha 360° Alumno', icon: Sparkles, badge: '360°', badgeClass: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold' },
         { id: 'registro_pago', alias: 'registro-pago', label: 'Cobranza & Registro', icon: CreditCard, highlight: true },
         { id: 'familias', label: 'Familias & Cuentas 360°', icon: Users },
-        { id: 'cuotas', label: 'Cuotas & Aging Cartera', icon: FileText, badge: cuotasVencidasCount > 0 ? `${cuotasVencidasCount}` : undefined, badgeClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
-        { id: 'mora_cobranza', alias: 'mora', label: 'Gestión de Mora (FIN-P13)', icon: AlertCircle },
+        { id: 'cuotas', label: 'Cuotas & Cobros Pendientes', icon: FileText, badge: cuotasVencidasCount > 0 ? `${cuotasVencidasCount}` : undefined, badgeClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
+        { id: 'mora_cobranza', alias: 'mora', label: 'Seguimiento de Pagos & Mora', icon: AlertCircle },
         { id: 'becas', label: 'Becas & Exoneraciones', icon: Award },
       ]
     },
     {
       title: 'Egresos, Compras & Activos',
       items: [
-        { id: 'tiendita', alias: 'procurement', label: 'Tiendita (Procurement Store)', icon: ShoppingBag, badge: 'IA', badgeClass: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' },
+        { id: 'tiendita', alias: 'procurement', label: 'Tiendita & Suministros', icon: ShoppingBag, badge: 'IA', badgeClass: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' },
         { id: 'facturas', label: 'Cuentas por Pagar', icon: Receipt, badge: facturasPorAprobar > 0 ? `${facturasPorAprobar}` : undefined, badgeClass: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' },
         { id: 'gastos_fijos', alias: 'servicios_fijos', label: 'Gastos Fijos Mensuales', icon: Calendar, badge: gastosFijosAlertaCount > 0 ? `${gastosFijosAlertaCount}` : undefined, badgeClass: 'bg-rose-500 text-white font-bold animate-pulse' },
-        { id: 'lutheria', alias: 'lutheria_inventario', label: 'Luthería & Comodatos (OPR)', icon: Guitar },
+        { id: 'lutheria', alias: 'lutheria_inventario', label: 'Préstamos de Instrumentos & Taller', icon: Guitar },
       ]
     },
     {
       title: 'Tesorería & Cajas',
       items: [
-        { id: 'caja_diaria', alias: 'caja', label: 'Caja Diaria & Cierre (FIN-P14)', icon: Coins },
+        { id: 'caja_diaria', alias: 'caja', label: 'Caja Diaria & Cierre de Efectivo', icon: Coins },
         { id: 'bancos', label: 'Bancos & Conciliación', icon: Landmark, badge: transaccionesPendientes > 0 ? `${transaccionesPendientes}` : undefined, badgeClass: 'bg-sky-500/10 text-sky-400 border border-sky-500/20' },
       ]
     },
@@ -123,13 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Presupuesto & Nómina',
       items: [
         { id: 'presupuesto', label: 'Presupuesto & Partidas', icon: PieChart },
-        { id: 'nomina', label: 'Nómina Docente (INV-12)', icon: Briefcase, badge: nominaPendiente > 0 ? `${nominaPendiente}` : undefined, badgeClass: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
+        { id: 'nomina', label: 'Nómina Docente', icon: Briefcase, badge: nominaPendiente > 0 ? `${nominaPendiente}` : undefined, badgeClass: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
       ]
     },
     {
       title: 'Auditoría & Integraciones',
       items: [
-        { id: 'contabilidad', alias: 'asientos', label: 'Libro Diario & 14 Invariantes', icon: BookOpen },
+        { id: 'contabilidad', alias: 'asientos', label: 'Libro Diario & Contabilidad', icon: BookOpen },
         { id: 'supabase_settings', alias: 'supabase', label: 'Supabase & Diagnóstico', icon: Database, badge: 'RLS', badgeClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
       ]
     }

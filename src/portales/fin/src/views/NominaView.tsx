@@ -142,7 +142,7 @@ export const NominaView: React.FC = () => {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mt-1 tracking-tight">
-            Nómina Docente, Cátedras & Período de Prueba (FIN-P09 / FIN-F09b)
+            Nómina Docente, Cátedras & Período de Prueba
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
             Cálculo de honorarios, retenciones de ley (TSS/ISR), dispersión bancaria y evaluación de los 3 meses de prueba.

@@ -20,7 +20,7 @@ import {
   CreditCard,
   UserPlus
 } from 'lucide-react';
-import { formatDOP } from '../lib/financialMath';
+import { formatDOP, getISPEtiqueta } from '../lib/financialMath';
 import { Familia, Alumno } from '../types';
 import { AlumnoFichaModal } from '../components/AlumnoFichaModal';
 
@@ -177,7 +177,7 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
                 <th className="py-3 px-5">Alumnos Inscritos</th>
                 <th className="py-3 px-5">Saldo Pendiente</th>
                 <th className="py-3 px-5">Wallet Crédito</th>
-                <th className="py-3 px-5 text-center">Índice Solvencia (ISP)</th>
+                <th className="py-3 px-5 text-center">Historial de Pago</th>
                 <th className="py-3 px-5 text-right">Acción</th>
               </tr>
             </thead>
@@ -214,15 +214,17 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
                       </span>
                     </td>
                     <td className="py-3.5 px-5 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
-                        fam.isp.categoria === 'A' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        fam.isp.categoria === 'B' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                        fam.isp.categoria === 'C' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                        fam.isp.categoria === 'D' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                        fam.isp.categoria === 'E' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                      }`}>
-                        Cat. {fam.isp.categoria} ({fam.isp.valor} pts)
-                      </span>
+                      {(() => {
+                        const etq = getISPEtiqueta(fam.isp?.categoria);
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${etq.badgeClass}`}
+                            title={etq.descripcion}
+                          >
+                            {etq.titulo} ({fam.isp?.valor ?? 100} pts)
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 px-5 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -298,24 +300,29 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
               </div>
             </div>
 
-            {/* ISP Deep-Dive Breakdown */}
+            {/* Historial y Puntualidad de Pago */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-950 to-amber-950/20 border border-amber-500/20 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-xs text-amber-300 uppercase tracking-wider">
-                    Desglose Matemático del ISP (Índice de Solvencia)
+                    Historial de Puntualidad y Pagos
                   </h3>
                   <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Normalizado por cobertura de datos ({Math.round(selectedFamily.isp.cobertura_datos * 100)}% de datos disponibles).
+                    Evaluación continua de cumplimiento ({Math.round(selectedFamily.isp.cobertura_datos * 100)}% de datos registrados).
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="text-xl font-bold font-mono text-amber-400">
                     {selectedFamily.isp.valor} <span className="text-xs text-zinc-500">/ 100</span>
                   </span>
-                  <span className="block text-[10px] font-mono font-bold text-amber-300">
-                    Categoría {selectedFamily.isp.categoria}
-                  </span>
+                  {(() => {
+                    const etq = getISPEtiqueta(selectedFamily.isp?.categoria);
+                    return (
+                      <span className="block text-[10px] font-mono font-bold text-amber-300">
+                        Nivel: {etq.titulo}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 

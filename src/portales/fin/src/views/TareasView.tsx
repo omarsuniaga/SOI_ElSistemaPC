@@ -337,13 +337,13 @@ export const TareasView: React.FC = () => {
             onClick={() => handleQuickRoutine('cierre')}
             className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl border border-zinc-700/80 transition-colors font-medium flex items-center gap-1.5"
           >
-            <span>🏦 Cierre de Caja (FIN-P14)</span>
+            <span>🏦 Cierre de Caja Diario</span>
           </button>
           <button
             onClick={() => handleQuickRoutine('mora')}
             className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl border border-zinc-700/80 transition-colors font-medium flex items-center gap-1.5"
           >
-            <span>🤝 Cobranza & Mora (FIN-P13)</span>
+            <span>🤝 Cobranza & Seguimiento de Mora</span>
           </button>
           <button
             onClick={() => handleQuickRoutine('backfill')}
@@ -370,7 +370,7 @@ export const TareasView: React.FC = () => {
             { id: 'director', label: 'Tareas del Director (DIR)', count: directorCount },
             { id: 'hermes', label: 'HERMES Inter-Dept', count: hermesCount },
             { id: 'rutina', label: 'Rutinas Operativas FIN', count: tareas.filter(t => t.categoria === 'rutina' && t.estado !== 'completada').length },
-            { id: 'cobranza', label: 'Cobranza & Mora (FIN-P13)', count: tareas.filter(t => t.categoria === 'cobranza' && t.estado !== 'completada').length },
+            { id: 'cobranza', label: 'Cobranza & Seguimiento de Mora', count: tareas.filter(t => t.categoria === 'cobranza' && t.estado !== 'completada').length },
             { id: 'auditoria', label: 'Auditoría & Normativa', count: tareas.filter(t => t.categoria === 'auditoria' && t.estado !== 'completada').length },
           ].map(tab => (
             <button
@@ -897,7 +897,7 @@ export const TareasView: React.FC = () => {
                     <option value="hermes">HERMES (Inter-Dept)</option>
                     <option value="director">Tareas del Director (DIR)</option>
                     <option value="rutina">Rutina Operativa FIN</option>
-                    <option value="cobranza">Cobranza & Mora (FIN-P13)</option>
+                    <option value="cobranza">Cobranza & Seguimiento de Mora</option>
                     <option value="auditoria">Auditoría & Normativa</option>
                   </select>
                 </div>

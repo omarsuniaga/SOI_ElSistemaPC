@@ -191,10 +191,10 @@ export const CajaDiariaView: React.FC = () => {
             <div className="pt-2">
               <button
                 onClick={handleCerrarCaja}
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-semibold text-xs shadow-xl shadow-indigo-950/50 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-semibold text-xs shadow-xl shadow-indigo-950/50 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FileCheck className="w-4 h-4 text-emerald-300" />
-                <span>Firmar y Cerrar Jornada (FIN-P14)</span>
+                <span>Firmar y Cerrar Caja del Día</span>
               </button>
             </div>
           </div>

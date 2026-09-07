@@ -23,7 +23,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { formatDOP } from '../lib/financialMath';
+import { formatDOP, getISPEtiqueta } from '../lib/financialMath';
 import {
   fetchResumenAcademico,
   computePctAsistencia,
@@ -396,18 +396,19 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-emerald-400">
                     <Wallet className="w-4 h-4" />
-                    <span className="text-[10px] font-mono uppercase tracking-widest font-bold">3. Solvencia & Scoring de Pago</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest font-bold">3. Solvencia & Historial de Pago</span>
                   </div>
-                  {familia?.isp && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase border ${
-                      familia.isp.categoria === 'A' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                      familia.isp.categoria === 'B' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                      familia.isp.categoria === 'C' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                      'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                    }`}>
-                      ISP: Cat. {familia.isp.categoria} ({familia.isp.valor} pts)
-                    </span>
-                  )}
+                  {familia?.isp && (() => {
+                    const etq = getISPEtiqueta(familia.isp?.categoria);
+                    return (
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase border ${etq.badgeClass}`}
+                        title={etq.descripcion}
+                      >
+                        {etq.titulo} ({familia.isp.valor} pts)
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex items-baseline justify-between">

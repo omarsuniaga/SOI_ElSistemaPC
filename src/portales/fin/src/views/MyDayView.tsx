@@ -303,9 +303,9 @@ export const MyDayView: React.FC<MyDayViewProps> = ({ onOpenQuickPayment, setAct
           </div>
           <button
             onClick={() => setActiveView('mora_cobranza')}
-            className="mt-4 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center justify-between w-full"
+            className="mt-4 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center justify-between w-full cursor-pointer"
           >
-            <span>Gestión Humanizada (FIN-P13)</span>
+            <span>Gestión y Convenios de Pago</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>

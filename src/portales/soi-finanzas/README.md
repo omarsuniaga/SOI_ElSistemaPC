@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Portal de Finanzas SOI (`soi-finanzas`)
 
-# Run and deploy your AI Studio app
+**Portal de finanzas de la institución.** React + TypeScript + Tailwind.
+Servido en `/soi-finanzas` (y `/fin` como alias). Entry: `soi-finanzas.html` → `src/main.tsx`.
 
-This contains everything you need to run your app locally.
+> **Decisión de arquitectura 2026-09-07 (Opción B).** Este es el portal de finanzas activo.
+> El portal vanilla-JS anterior (`fin.html` / `src/modules/caja/`) **se eliminó** — su
+> historia queda en git.
 
-View your app in AI Studio: https://ai.studio/apps/07aaa0da-29b1-40bd-85e4-aa9d5d88a379
+## Estado
 
-## Run Locally
+Este árbol nació como prototipo de Google AI Studio con estado en memoria
+(`src/data/initialData.ts`, `FinanceContext`). **Trabajo en curso: conectar el data-layer a
+Supabase real.**
 
-**Prerequisites:**  Node.js
+El **backend ya está listo en producción** (proyecto `zmhmdvmyeyswunurcyow`), construido en la
+Fase 0 del módulo de cobro:
 
+| Recurso | Para qué |
+|---|---|
+| Vista `vw_alumno_estado_pago` | Modelo de lectura por alumno: contacto en cascada, saldo, `estado_pago` (`inactivo`\|`exento`\|`mora`\|`debe`\|`al_dia`) |
+| RPC `fn_registrar_pago_transaccional(...)` | Registro de pago atómico (imputa FIFO, mora contra fecha contable, rechaza excedente) |
+| RPC `fn_generar_ciclo_cuotas(mes, anio, 60000)` | Generación mensual de cuotas (RD$600, respeta exentos y becas). Cron el día 1. |
+| `pagos.fecha_pago`, `alumnos.exento_mensualidad` | Columnas de soporte |
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Contexto: `docs/PORTAL_FIN_MENU_AUDITORIA.md`, `docs/PORTAL_FIN_BACKLOG.md`,
+`docs/planning/SPEC_REDISENO_CUOTAS_ALUMNOS.md`.
+
+## Correr local
+
+```
+npm install
+npm run dev        # http://localhost:5173/soi-finanzas
+```

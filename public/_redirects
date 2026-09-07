@@ -1,8 +1,8 @@
 /adm/*         /adm.html         200
 /admin/*       /adm.html         200
 /acm/*         /acm.html         200
-/fin           /fin.html         200
-/fin/*         /fin.html         200
+/fin           /soi-finanzas.html  200
+/fin/*         /soi-finanzas.html  200
 /soi-finanzas/* /soi-finanzas.html 200
 /com/*         /com.html         200
 /tecnico/*     /tecnico.html     200

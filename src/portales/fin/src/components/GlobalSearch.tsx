@@ -83,7 +83,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
   // Filtered Results
   const results = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    if (!cleanQuery) return { familias: [], facturas: [], asientos: [], pagos: [], totalCount: 0 };
+    if (!cleanQuery) return { alumnos: [], familias: [], facturas: [], asientos: [], pagos: [], totalCount: 0 };
 
     // 1. Familias
     const matchedFamilias = familias.filter(f => {
@@ -168,19 +168,19 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
     const list: Array<{ type: string; id: string; view: string; item: any }> = [];
 
     if (selectedCategory === 'all' || selectedCategory === 'alumnos') {
-      results.alumnos.forEach(a => list.push({ type: 'alumno', id: a.id, view: 'alumno_modal', item: a }));
+      (results.alumnos || []).forEach(a => list.push({ type: 'alumno', id: a.id, view: 'alumno_modal', item: a }));
     }
     if (selectedCategory === 'all' || selectedCategory === 'familias') {
-      results.familias.forEach(f => list.push({ type: 'familia', id: f.id, view: 'familias', item: f }));
+      (results.familias || []).forEach(f => list.push({ type: 'familia', id: f.id, view: 'familias', item: f }));
     }
     if (selectedCategory === 'all' || selectedCategory === 'facturas') {
-      results.facturas.forEach(fg => list.push({ type: 'factura', id: fg.id, view: 'facturas', item: fg }));
+      (results.facturas || []).forEach(fg => list.push({ type: 'factura', id: fg.id, view: 'facturas', item: fg }));
     }
     if (selectedCategory === 'all' || selectedCategory === 'asientos') {
-      results.asientos.forEach(as => list.push({ type: 'asiento', id: as.id, view: 'contabilidad', item: as }));
+      (results.asientos || []).forEach(as => list.push({ type: 'asiento', id: as.id, view: 'contabilidad', item: as }));
     }
     if (selectedCategory === 'all' || selectedCategory === 'pagos') {
-      results.pagos.forEach(p => list.push({ type: 'pago', id: p.id, view: 'cuotas', item: p }));
+      (results.pagos || []).forEach(p => list.push({ type: 'pago', id: p.id, view: 'cuotas', item: p }));
     }
 
     return list;

@@ -5,6 +5,8 @@ import {
   ResumenAcademico,
   mapInstrumentoComodato,
   computeResumenInstrumentos,
+  separarInstrumentosComodato,
+  fetchInstrumentosComodato,
   InstrumentoComodatoRow,
   InstrumentoComodato,
 } from '../alumno360';
@@ -221,3 +223,51 @@ describe('computeResumenInstrumentos', () => {
     expect(r.proximoVencimiento).toBeNull();
   });
 });
+
+describe('separarInstrumentosComodato', () => {
+  test('separa comodatos activos de concluidos/devueltos', () => {
+    const items = [
+      makeInstrumento({ comodatoId: 'c1', comodatoEstado: 'activo', codigoInventario: 'ESPCVLA24JA' }),
+      makeInstrumento({ comodatoId: 'c2', comodatoEstado: 'vigente', codigoInventario: 'INST-01' }),
+      makeInstrumento({ comodatoId: 'c3', comodatoEstado: 'devuelto', codigoInventario: 'ESPCVLN29SG' }),
+      makeInstrumento({ comodatoId: 'c4', comodatoEstado: 'finalizado', codigoInventario: 'INST-02' }),
+    ];
+
+    const { activos, historial } = separarInstrumentosComodato(items);
+    expect(activos).toHaveLength(2);
+    expect(activos.map(a => a.codigoInventario)).toEqual(['ESPCVLA24JA', 'INST-01']);
+    expect(historial).toHaveLength(2);
+    expect(historial.map(h => h.codigoInventario)).toEqual(['ESPCVLN29SG', 'INST-02']);
+  });
+
+  test('lista vacía devuelve arrays vacíos', () => {
+    const { activos, historial } = separarInstrumentosComodato([]);
+    expect(activos).toEqual([]);
+    expect(historial).toEqual([]);
+  });
+});
+
+describe('fetchInstrumentosComodato - Alexandra Vielma', () => {
+  test('recupera instrumento activo (Viola ESPCVLA24JA) e historial (Violín ESPCVLN29SG) desde fallback local', async () => {
+    const alexandraId = 'e50bb137-f582-4ee2-901a-97f089c0658f';
+    const instrumentos = await fetchInstrumentosComodato(alexandraId);
+
+    expect(instrumentos.length).toBeGreaterThanOrEqual(2);
+
+    const { activos, historial } = separarInstrumentosComodato(instrumentos);
+
+    // Instrumento activo
+    expect(activos).toHaveLength(1);
+    expect(activos[0].codigoInventario).toBe('ESPCVLA24JA');
+    expect(activos[0].tipoInstrumento).toContain('Viola');
+    expect(activos[0].numeroSerie).toBe('2202001116');
+    expect(activos[0].comodatoEstado).toBe('activo');
+
+    // Instrumento histórico
+    expect(historial).toHaveLength(1);
+    expect(historial[0].codigoInventario).toBe('ESPCVLN29SG');
+    expect(historial[0].tipoInstrumento).toContain('Violín');
+    expect(historial[0].comodatoEstado).toBe('devuelto');
+  });
+});
+

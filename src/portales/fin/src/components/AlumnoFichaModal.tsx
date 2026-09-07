@@ -26,7 +26,8 @@ import {
   DollarSign,
   ArrowUpRight,
   PlusCircle,
-  Coins
+  Coins,
+  History
 } from 'lucide-react';
 import { formatDOP, getISPEtiqueta } from '../lib/financialMath';
 import {
@@ -36,6 +37,7 @@ import {
   ResumenAcademico,
   fetchInstrumentosComodato,
   computeResumenInstrumentos,
+  separarInstrumentosComodato,
   InstrumentoComodato,
 } from '../lib/alumno360';
 import { Alumno } from '../types';
@@ -108,6 +110,9 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
   const [descripcionCredito, setDescripcionCredito] = useState('Abono por saldo de fotocopias / material');
   const [isSubmittingCredito, setIsSubmittingCredito] = useState(false);
   const [creditoFeedback, setCreditoFeedback] = useState<{ tipo: 'success' | 'error'; mensaje: string } | null>(null);
+
+  // Estado para expandir/colapsar historial de instrumentos
+  const [mostrarHistorialInstrumentos, setMostrarHistorialInstrumentos] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -890,49 +895,117 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                   )}
                 </div>
 
-                {instrumentos.length === 0 ? (
-                  <div className="flex items-start gap-2 text-zinc-400 text-xs pt-2">
-                    <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>No tiene instrumento institucional en comodato registrado.</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
-                    {instrumentos.map(inst => (
-                      <div key={inst.comodatoId} className="p-3 bg-zinc-900/90 rounded-2xl border border-zinc-800/80 text-xs space-y-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <div className="text-sm font-bold text-white capitalize">
-                            {[inst.marca, inst.modelo].filter(Boolean).join(' ') || inst.tipoInstrumento}
-                          </div>
-                          <span className="text-xs font-mono text-amber-400 font-bold shrink-0">{inst.codigoInventario}</span>
+                {(() => {
+                  const { activos, historial } = separarInstrumentosComodato(instrumentos);
+
+                  if (instrumentos.length === 0) {
+                    return (
+                      <div className="flex items-start gap-2 text-zinc-400 text-xs pt-2">
+                        <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>No tiene instrumento institucional en comodato registrado.</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {/* Instrumento(s) Activo(s) */}
+                      {activos.length === 0 ? (
+                        <div className="p-3 bg-zinc-900/60 rounded-2xl border border-zinc-800 text-xs text-zinc-400 flex items-center gap-2">
+                          <Guitar className="w-4 h-4 text-zinc-500 shrink-0" />
+                          <span>Sin comodato activo en este momento.</span>
                         </div>
-                        <div className="flex justify-between text-zinc-300 font-mono text-[11px]">
-                          <span className="capitalize">
-                            {inst.tipoInstrumento}{inst.numeroSerie ? ` · Serie ${inst.numeroSerie}` : ''}
-                          </span>
-                          {inst.estadoConservacion && (
-                            <span>Conservación: <strong className="capitalize text-emerald-400">{inst.estadoConservacion}</strong></span>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>Instrumento Asignado Actualmente</span>
+                          </div>
+                          {activos.map(inst => (
+                            <div key={inst.comodatoId} className="p-3 bg-zinc-900/90 rounded-2xl border border-emerald-500/30 text-xs space-y-1 shadow-sm">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <div className="text-sm font-bold text-white capitalize">
+                                  {[inst.marca, inst.modelo].filter(Boolean).join(' ') || inst.tipoInstrumento}
+                                </div>
+                                <span className="text-xs font-mono text-emerald-400 font-bold shrink-0">{inst.codigoInventario}</span>
+                              </div>
+                              <div className="flex justify-between text-zinc-300 font-mono text-[11px]">
+                                <span className="capitalize">
+                                  {inst.tipoInstrumento}{inst.numeroSerie ? ` · Serie ${inst.numeroSerie}` : ''}
+                                </span>
+                                {inst.estadoConservacion && (
+                                  <span>Conservación: <strong className="capitalize text-emerald-400">{inst.estadoConservacion}</strong></span>
+                                )}
+                              </div>
+                              <div className="flex justify-between text-zinc-400 font-mono text-[10px]">
+                                <span>
+                                  {inst.tipoComodato ? `Comodato ${inst.tipoComodato}` : 'Comodato Activo'}
+                                  {inst.fechaEntrega ? ` · desde ${inst.fechaEntrega}` : ''}
+                                </span>
+                                {inst.fechaVencimiento && <span>Vence {inst.fechaVencimiento}</span>}
+                              </div>
+                              {inst.enReparacion && (
+                                <div className="text-[11px] text-amber-300 flex items-center gap-1.5 pt-1 border-t border-zinc-800">
+                                  <Wrench className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                                  <span>
+                                    En taller LUT{inst.reparacionFechaIngreso ? ` (ingreso ${inst.reparacionFechaIngreso})` : ''}
+                                    {inst.reparacionDescripcion ? `: ${inst.reparacionDescripcion}` : ''}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Historial de Instrumentos Asignados */}
+                      {historial.length > 0 && (
+                        <div className="pt-2 border-t border-zinc-800/80">
+                          <button
+                            type="button"
+                            onClick={() => setMostrarHistorialInstrumentos(!mostrarHistorialInstrumentos)}
+                            className="w-full flex items-center justify-between py-1 text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <History className="w-3.5 h-3.5 text-zinc-400" />
+                              <span className="font-semibold text-[11px]">Historial de Instrumentos Anteriores ({historial.length})</span>
+                            </span>
+                            {mostrarHistorialInstrumentos ? (
+                              <ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                            )}
+                          </button>
+
+                          {mostrarHistorialInstrumentos && (
+                            <div className="space-y-2 mt-2 max-h-[180px] overflow-y-auto pr-1 animate-in fade-in duration-200">
+                              {historial.map(inst => (
+                                <div key={inst.comodatoId} className="p-2.5 bg-zinc-900/50 rounded-xl border border-zinc-800/60 text-xs space-y-1">
+                                  <div className="flex items-baseline justify-between gap-2">
+                                    <div className="font-semibold text-zinc-300 capitalize text-[12px]">
+                                      {[inst.marca, inst.modelo].filter(Boolean).join(' ') || inst.tipoInstrumento}
+                                    </div>
+                                    <span className="text-[11px] font-mono text-zinc-400 font-medium shrink-0">{inst.codigoInventario}</span>
+                                  </div>
+                                  <div className="flex justify-between text-zinc-400 font-mono text-[10px]">
+                                    <span className="capitalize">{inst.tipoInstrumento}{inst.numeroSerie ? ` · Serie ${inst.numeroSerie}` : ''}</span>
+                                    <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 uppercase font-bold text-[9px]">
+                                      {inst.comodatoEstado === 'devuelto' ? 'Devuelto / Concluido' : inst.comodatoEstado}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-zinc-500 font-mono text-[10px]">
+                                    <span>Asignado: {inst.fechaEntrega || '—'}</span>
+                                    <span>Concluido: {inst.fechaVencimiento || '—'}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        <div className="flex justify-between text-zinc-400 font-mono text-[10px]">
-                          <span>
-                            {inst.tipoComodato ? `Comodato ${inst.tipoComodato}` : 'Comodato'}
-                            {inst.fechaEntrega ? ` · desde ${inst.fechaEntrega}` : ''}
-                          </span>
-                          {inst.fechaVencimiento && <span>Vence {inst.fechaVencimiento}</span>}
-                        </div>
-                        {inst.enReparacion && (
-                          <div className="text-[11px] text-amber-300 flex items-center gap-1.5 pt-1 border-t border-zinc-800">
-                            <Wrench className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                            <span>
-                              En taller LUT{inst.reparacionFechaIngreso ? ` (ingreso ${inst.reparacionFechaIngreso})` : ''}
-                              {inst.reparacionDescripcion ? `: ${inst.reparacionDescripcion}` : ''}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Subsección: Cargo Extraordinario / Reposición de Cuerda / Accesorios */}
                 <div className="pt-3 mt-2 border-t border-zinc-800/80 space-y-2.5">

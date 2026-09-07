@@ -6,6 +6,7 @@
 
 import { supabaseRpc } from '../infrastructure/supabase/SupabaseRestClient';
 import { Cuota } from '../types';
+import { INITIAL_CONTRATOS_COMODATO, INITIAL_ACTIVOS } from '../data/initialData';
 
 export interface ResumenAcademico {
   totalSesiones: number;
@@ -178,11 +179,59 @@ export function computeResumenInstrumentos(items: InstrumentoComodato[]): Resume
   };
 }
 
+export function separarInstrumentosComodato(items: InstrumentoComodato[]): {
+  activos: InstrumentoComodato[];
+  historial: InstrumentoComodato[];
+} {
+  const activos = items.filter(i => i.comodatoEstado.toLowerCase() === 'activo' || i.comodatoEstado.toLowerCase() === 'vigente');
+  const historial = items.filter(i => i.comodatoEstado.toLowerCase() !== 'activo' && i.comodatoEstado.toLowerCase() !== 'vigente');
+  return { activos, historial };
+}
+
 export async function fetchInstrumentosComodato(alumnoId: string): Promise<InstrumentoComodato[]> {
-  const rows = await supabaseRpc<InstrumentoComodatoRow[]>('fn_alumno_instrumentos_comodato', {
-    p_alumno_id: alumnoId,
-  });
-  return Array.isArray(rows) ? rows.map(mapInstrumentoComodato) : [];
+  let rpcRows: InstrumentoComodatoRow[] | null = null;
+  try {
+    rpcRows = await supabaseRpc<InstrumentoComodatoRow[]>('fn_alumno_instrumentos_comodato', {
+      p_alumno_id: alumnoId,
+    });
+  } catch (err) {
+    console.warn('[fetchInstrumentosComodato] RPC falló o no disponible, usando fallback local:', err);
+  }
+
+  if (Array.isArray(rpcRows) && rpcRows.length > 0) {
+    return rpcRows.map(mapInstrumentoComodato);
+  }
+
+  // Fallback Mock-First: buscar contratos del alumno en INITIAL_CONTRATOS_COMODATO
+  const contratos = INITIAL_CONTRATOS_COMODATO.filter(c => c.alumno_id === alumnoId);
+  if (contratos.length > 0) {
+    return contratos.map(c => {
+      const activo = INITIAL_ACTIVOS.find(a => a.codigo_inventario === c.codigo_patrimonial);
+      return {
+        comodatoId: c.id,
+        tipoComodato: 'Comodato Instrumental',
+        fechaEntrega: c.fecha_inicio,
+        fechaVencimiento: c.fecha_termino,
+        comodatoEstado: c.estado === 'vigente' ? 'activo' : c.estado,
+        contratoFirmadoUrl: null,
+        activoId: activo?.id ?? `act-${c.codigo_patrimonial}`,
+        codigoInventario: c.codigo_patrimonial,
+        tipoInstrumento: c.tipo_instrumento,
+        marca: activo?.marca ?? (c.marca_modelo ? c.marca_modelo.split(' ')[0] : null),
+        modelo: activo?.modelo ?? (c.marca_modelo ? c.marca_modelo.split(' ').slice(1).join(' ') : null),
+        numeroSerie: c.numero_serie || activo?.numero_serie || null,
+        estadoConservacion: activo?.estado_conservacion ?? 'bueno',
+        estadoUso: activo?.estado_uso ?? (c.estado === 'vigente' ? 'en_comodato' : 'disponible'),
+        ubicacion: 'Sede Bávaro / Res. Alumno',
+        enReparacion: activo?.estado_uso === 'en_reparacion',
+        reparacionEstado: null,
+        reparacionDescripcion: null,
+        reparacionFechaIngreso: null,
+      };
+    });
+  }
+
+  return [];
 }
 
 /** Sin cuotas registradas para el alumno -> totalCuotas=0, distinto de "0 pendientes porque ya pagó todo". */

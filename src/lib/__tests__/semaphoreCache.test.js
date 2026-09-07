@@ -53,14 +53,12 @@ describe('SemaphoreCache', () => {
       expect(cache.get('node-1')).toBe('green')
     })
 
-    it('should return null for expired entry', (done) => {
+    it('should return null for expired entry', async () => {
       const shortTtl = new SemaphoreCache({ ttl: 50 })
       shortTtl.set('node-1', 'green')
 
-      setTimeout(() => {
-        expect(shortTtl.get('node-1')).toBeNull()
-        done()
-      }, 100)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(shortTtl.get('node-1')).toBeNull()
     })
   })
 
@@ -74,14 +72,12 @@ describe('SemaphoreCache', () => {
       expect(cache.has('node-1')).toBe(false)
     })
 
-    it('should return false for expired key', (done) => {
+    it('should return false for expired key', async () => {
       const shortTtl = new SemaphoreCache({ ttl: 50 })
       shortTtl.set('node-1', 'green')
 
-      setTimeout(() => {
-        expect(shortTtl.has('node-1')).toBe(false)
-        done()
-      }, 100)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(shortTtl.has('node-1')).toBe(false)
     })
   })
 
@@ -119,14 +115,12 @@ describe('SemaphoreCache', () => {
       expect(cache.size()).toBe(0)
     })
 
-    it('should not count expired entries', (done) => {
+    it('should not count expired entries', async () => {
       const shortTtl = new SemaphoreCache({ ttl: 50 })
       shortTtl.set('node-1', 'green')
 
-      setTimeout(() => {
-        expect(shortTtl.size()).toBe(0)
-        done()
-      }, 100)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(shortTtl.size()).toBe(0)
     })
   })
 

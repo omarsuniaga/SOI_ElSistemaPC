@@ -44,6 +44,32 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
+.gateway-info-lead {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid rgba(13, 202, 240, 0.25);
+  border-radius: 0.75rem;
+  background: rgba(13, 202, 240, 0.06);
+}
+
+.gateway-info-lead > i { color: #0dcaf0; font-size: 1.5rem; }
+.gateway-info-item { display: flex; flex-direction: column; gap: 0.3rem; height: 100%; padding: 0.9rem; border: 1px solid var(--bs-border-color, #e2e8f0); border-radius: 0.75rem; }
+.gateway-info-item > i { color: var(--bs-primary, #0d6efd); font-size: 1.25rem; }
+.gateway-info-item span, .gateway-care-list small { color: var(--bs-secondary-color, #6c757d); font-size: 0.82rem; line-height: 1.45; }
+.gateway-info-actions { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; border-radius: 0.75rem; background: var(--bs-tertiary-bg, #f8f9fa); }
+.gateway-care-panel { max-width: 800px; margin: 0 auto; }
+.gateway-care-list { display: grid; gap: 0.7rem; }
+.gateway-care-list > div { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.8rem; border: 1px solid var(--bs-border-color, #e2e8f0); border-radius: 0.7rem; }
+.gateway-care-list i { font-size: 1.05rem; margin-top: 0.1rem; }
+.gateway-care-list span { display: flex; flex-direction: column; gap: 0.2rem; }
+
+@media (max-width: 576px) {
+  .gateway-info-actions { align-items: stretch; flex-direction: column; }
+  .gateway-info-actions .btn { width: 100%; }
+}
+
 .gateway-status-pill {
   display: inline-flex;
   align-items: center;
@@ -96,6 +122,32 @@
 .queue-table td {
   font-size: 0.825rem;
   vertical-align: middle;
+}
+
+.gateway-link-panel {
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.gateway-qr-frame {
+  min-height: 290px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 1rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.gateway-qr-frame img {
+  display: block;
+  width: min(100%, 280px);
+  height: auto;
+  image-rendering: pixelated;
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
 }
 
 /* Dark Mode Elevation */

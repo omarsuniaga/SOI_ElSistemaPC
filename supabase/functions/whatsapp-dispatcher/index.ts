@@ -1,171 +1,42 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// Compatibility endpoint only. The Baileys runner in scripts/whatsapp-runner
+// is the single sender and owns queue claiming, ACK tracking and retries.
+const DISPATCHER_INTERNAL_KEY = Deno.env.get('WHATSAPP_DISPATCHER_INTERNAL_KEY') ?? ''
+const ALLOWED_ORIGINS = (Deno.env.get('WHATSAPP_ALLOWED_ORIGINS') ?? '').split(',').map((value) => value.trim()).filter(Boolean)
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') ?? ''
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-whatsapp-dispatcher-key',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  }
+  if (origin && ALLOWED_ORIGINS.includes(origin)) headers['Access-Control-Allow-Origin'] = origin
+  return headers
 }
 
-function json(body: unknown, status = 200) {
+function json(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
   })
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS })
+    return new Response('ok', { headers: corsHeaders(req) })
   }
   if (req.method !== 'POST') {
-    return json({ error: 'Método no permitido' }, 405)
+    return json(req, { error: 'Método no permitido' }, 405)
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-  // ── 0. Kill switch global (lee de system_config) ─────────────────────
-  const { data: killSwitch, error: killSwitchError } = await supabase
-    .from('system_config')
-    .select('value')
-    .eq('key', 'whatsapp_ingest_enabled')
-    .maybeSingle()
-
-  if (killSwitchError) {
-    console.error('[WhatsApp Dispatcher] Error leyendo system_config:', killSwitchError.message)
-  } else if (killSwitch?.value === 'false') {
-    console.log('[WhatsApp Dispatcher] whatsapp_ingest_enabled=false. No se despacha nada.')
-    return json({ status: 'skipped', reason: 'whatsapp_ingest_enabled=false' })
+  // This compatibility endpoint is server-to-server only. It deliberately
+  // performs no queue claim or message delivery.
+  if (!DISPATCHER_INTERNAL_KEY || req.headers.get('x-whatsapp-dispatcher-key') !== DISPATCHER_INTERNAL_KEY) {
+    return json(req, { error: 'No autorizado' }, 401)
   }
 
-  try {
-    // 1. Obtener configuración activa del Gateway
-    const { data: config, error: cfgError } = await supabase
-      .from('hermes_whatsapp_config')
-      .select('*')
-      .eq('activo', true)
-      .single()
-
-    if (cfgError || !config) {
-      return json({ status: 'skipped', reason: 'No hay configuración activa del Gateway WhatsApp' })
-    }
-
-    const gatewayUrl = config.gateway_url?.replace(/\/$/, '')
-    const apiKey = config.api_key
-    const instanceName = config.instance_name || 'soi-main'
-    const batchSize = config.batch_size || 10
-    const jitterMin = (config.jitter_min_seg || 8) * 1000
-    const jitterMax = (config.jitter_max_seg || 20) * 1000
-
-    // 2. Verificar estado de salud del Gateway (GET /instance/connectionState/<instance>)
-    let isWorkerConnected = false
-    try {
-      const stateRes = await fetch(`${gatewayUrl}/instance/connectionState/${instanceName}`, {
-        headers: { 'apikey': apiKey },
-      })
-      if (stateRes.ok) {
-        const stateData = await stateRes.json()
-        const stateStr = stateData?.instance?.state || stateData?.state || 'disconnected'
-        isWorkerConnected = stateStr === 'open' || stateStr === 'connected'
-
-        // Registrar Heartbeat en Base de Datos
-        await supabase.rpc('fn_hermes_gateway_heartbeat', {
-          p_instance_name: instanceName,
-          p_status: isWorkerConnected ? 'connected' : 'disconnected',
-          p_phone: config.numero_wid,
-          p_metadata: stateData,
-        })
-      }
-    } catch (healthErr) {
-      console.warn('[WhatsApp Dispatcher] Error al chequear salud del worker:', healthErr)
-    }
-
-    if (!isWorkerConnected) {
-      return json({
-        status: 'worker_offline',
-        message: 'El contenedor Baileys/Evolution API no se encuentra conectado a WhatsApp Web.',
-      })
-    }
-
-    // 3. Claim only messages approved by the database policy gate.
-    const { data: pendingMessages, error: queueError } = await supabase
-      .rpc('fn_whatsapp_reclamar_pendientes', { p_limite: batchSize })
-
-    if (queueError || !pendingMessages || pendingMessages.length === 0) {
-      return json({ status: 'idle', message: 'No hay mensajes pendientes en la cola' })
-    }
-
-    const results: Array<{ id: string; jid: string; success: boolean; error?: string }> = []
-
-    // 4. Despachar cada mensaje con Jitter para protección Anti-Ban
-    for (let i = 0; i < pendingMessages.length; i++) {
-      const msg = pendingMessages[i]
-
-      // Limpiar formato del número telefónico (+1829... -> 1829...)
-      const cleanNumber = String(msg.jid).replace(/\D/g, '')
-
-      try {
-        // Nota: fn_whatsapp_reclamar_pendientes ya marcó estado='procesando' e incrementó intentos.
-        // Enviar vía REST API a Evolution API
-        const sendRes = await fetch(`${gatewayUrl}/message/sendText/${instanceName}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': apiKey,
-          },
-          body: JSON.stringify({
-            number: cleanNumber,
-            text: msg.mensaje,
-          }),
-        })
-
-        if (!sendRes.ok) {
-          const errBody = await sendRes.text()
-          throw new Error(`HTTP ${sendRes.status}: ${errBody}`)
-        }
-
-        // Marcar como enviado
-        await supabase
-          .from('hermes_whatsapp_queue')
-          .update({
-            estado: 'enviado',
-            procesado_at: new Date().toISOString(),
-            error_msg: null,
-          })
-          .eq('id', msg.id)
-
-        results.push({ id: msg.id, jid: msg.jid, success: true })
-      } catch (sendErr: any) {
-        await supabase
-          .from('hermes_whatsapp_queue')
-          .update({
-            estado: 'fallido',
-            error_msg: sendErr?.message || 'Error desconocido al enviar',
-          })
-          .eq('id', msg.id)
-
-        results.push({ id: msg.id, jid: msg.jid, success: false, error: sendErr?.message })
-      }
-
-      // Jitter sleep si no es el último mensaje
-      if (i < pendingMessages.length - 1) {
-        const jitter = Math.floor(Math.random() * (jitterMax - jitterMin + 1)) + jitterMin
-        await sleep(jitter)
-      }
-    }
-
-    return json({
-      status: 'processed',
-      dispatched: results.filter((r) => r.success).length,
-      failed: results.filter((r) => !r.success).length,
-      details: results,
-    })
-  } catch (globalErr: any) {
-    return json({ error: globalErr?.message || 'Error interno del despachador' }, 500)
-  }
+  return json(req, {
+    status: 'runner_owned',
+    message: 'El runner Baileys es el único sender. Esta función no reclama ni envía mensajes.',
+  })
 })

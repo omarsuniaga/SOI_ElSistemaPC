@@ -35,7 +35,8 @@ describe('WhatsApp Gateway — Telemetría Anti-Ban, Heartbeat y Cola Outbox', (
     expect(enqueued).toBeTruthy()
     expect(enqueued.jid).toBe(testJid)
     expect(enqueued.mensaje).toBe(testMsg)
-    expect(enqueued.estado).toBe('enviado')
+    expect(enqueued.estado).toBe('pendiente')
+    expect(enqueued.procesado_at).toBeNull()
 
     const queue = await gatewayApi.obtenerColaMensajes(10)
     const found = queue.find((q) => q.jid === testJid)

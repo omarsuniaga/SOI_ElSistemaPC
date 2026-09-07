@@ -90,4 +90,23 @@ describe('GatewayConfigView — Panel de Control del Gateway WhatsApp (Baileys)'
     const updatedBtn = container.querySelector('[data-queue-filter="pendiente"]')
     expect(updatedBtn.classList.contains('btn-warning')).toBe(true)
   })
+
+  it('muestra el acceso profesional para vincular WhatsApp mediante QR', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+
+    await renderGatewayConfigView(container)
+
+    const linkBtn = container.querySelector('#btn-vincular-gw')
+    expect(linkBtn).toBeTruthy()
+    expect(linkBtn.textContent).toContain('Vincular WhatsApp')
+
+    linkBtn.click()
+
+    const modal = document.querySelector('#app-global-modal')
+    expect(modal).toBeTruthy()
+    expect(modal.textContent).toContain('Vincular WhatsApp Institucional')
+    expect(modal.querySelector('#wa-link-qr')).toBeTruthy()
+    expect(modal.querySelector('#btn-refresh-wa-qr')).toBeTruthy()
+  })
 })

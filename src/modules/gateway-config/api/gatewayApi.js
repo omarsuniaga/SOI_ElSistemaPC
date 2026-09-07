@@ -13,7 +13,6 @@ import { config } from '../../../core/config/config.js'
 const DEFAULT_CONFIG = {
   id: '00000000-0000-0000-0000-000000000001',
   gateway_url: 'https://gateway.elsistema.local/api',
-  api_key: '***REDACTED-ROTATED***',
   instance_name: 'soi-main',
   numero_wid: '+1 (829) 555-0188',
   numero_nombre: 'El Sistema Punta Cana (Oficial)',
@@ -30,8 +29,17 @@ const DEFAULT_CONFIG = {
   activo: true,
 }
 
+// Never select or return api_key to the browser. Gateway credentials belong to
+// the server-side dispatcher, not to the ADM renderer.
+const SAFE_CONFIG_COLUMNS = [
+  'id', 'gateway_url', 'instance_name', 'numero_wid', 'numero_nombre',
+  'cap_diario', 'cap_horario', 'jitter_min_seg', 'jitter_max_seg',
+  'batch_size', 'batch_cooldown_seg', 'warmup_inicio', 'warmup_dias',
+  'warmup_desde', 'consentimiento_registrado', 'activo', 'created_at', 'updated_at',
+].join(', ')
+
 let mockConfig = { ...DEFAULT_CONFIG }
-let mockQueue = [
+const mockQueue = [
   {
     id: 'q-1',
     jid: '+1 (829) 555-0101',
@@ -70,17 +78,35 @@ export async function obtenerGatewayConfig() {
   try {
     const { data, error } = await supabase
       .from('hermes_whatsapp_config')
-      .select('*')
+      .select(SAFE_CONFIG_COLUMNS)
       .eq('activo', true)
       .single()
 
-    if (error && error.code !== 'PGRST116') {
-      return { ...mockConfig }
-    }
+    if (error && error.code !== 'PGRST116') throw error
     return data || null
-  } catch {
-    return { ...mockConfig }
+  } catch (error) {
+    throw new Error(`No se pudo cargar la configuración de WhatsApp: ${error.message}`)
   }
+}
+
+export async function obtenerGatewayAccessToken() {
+  if (config.isDemoMode || !supabase) return null
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw error
+  return data.session?.access_token || null
+}
+
+export async function cerrarSesionGateway(gatewayUrl) {
+  const token = await obtenerGatewayAccessToken()
+  if (!token || !gatewayUrl) throw new Error('No hay una sesión administrativa o URL de gateway configurada')
+  const baseUrl = new URL(gatewayUrl).origin
+  const response = await fetch(`${baseUrl}/logout`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.error || `Error HTTP ${response.status}`)
+  return body
 }
 
 export async function actualizarGatewayConfig(updates = {}) {
@@ -99,14 +125,13 @@ export async function actualizarGatewayConfig(updates = {}) {
       .from('hermes_whatsapp_config')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', cfg.id)
-      .select()
+      .select(SAFE_CONFIG_COLUMNS)
       .single()
 
     if (error) throw error
     return data
-  } catch {
-    mockConfig = { ...mockConfig, ...updates, updated_at: new Date().toISOString() }
-    return { ...mockConfig }
+  } catch (error) {
+    throw new Error(`No se pudo actualizar la configuración de WhatsApp: ${error.message}`)
   }
 }
 
@@ -122,14 +147,13 @@ export async function crearGatewayConfig(payload = {}) {
     const { data, error } = await supabase
       .from('hermes_whatsapp_config')
       .insert([merged])
-      .select()
+      .select(SAFE_CONFIG_COLUMNS)
       .single()
 
     if (error) throw error
     return data
-  } catch {
-    mockConfig = { ...merged, id: `gw-${Date.now()}` }
-    return { ...mockConfig }
+  } catch (error) {
+    throw new Error(`No se pudo crear la configuración de WhatsApp: ${error.message}`)
   }
 }
 
@@ -181,8 +205,6 @@ export async function obtenerGatewayStats() {
 
       const live = liveStatusRes?.data || null
       const isAlive = live ? Boolean(live.is_alive) : false
-      const liveStatus = isAlive ? 'online' : 'offline'
-
       return {
         enviadosHoy: enviadosRes.count ?? 0,
         capHoy,
@@ -197,8 +219,8 @@ export async function obtenerGatewayStats() {
         jitterText: `${gwConfig.jitter_min_seg || 8}s – ${gwConfig.jitter_max_seg || 20}s`,
         rateLimitHora: gwConfig.cap_horario || 40,
       }
-    } catch {
-      // Fallback a mock stats
+    } catch (error) {
+      throw new Error(`No se pudieron cargar las métricas de WhatsApp: ${error.message}`)
     }
   }
 
@@ -261,11 +283,10 @@ export async function obtenerColaMensajes(limite = 20) {
         .order('created_at', { ascending: false })
         .limit(limite)
 
-      if (!error && Array.isArray(data) && data.length > 0) {
-        return data
-      }
-    } catch {
-      // Fallback a mock queue
+      if (error) throw error
+      return Array.isArray(data) ? data : []
+    } catch (error) {
+      throw new Error(`No se pudo cargar la cola de WhatsApp: ${error.message}`)
     }
   }
 
@@ -279,30 +300,24 @@ export async function enviarMensajePrueba(jid, mensaje) {
     id: `q-test-${Date.now()}`,
     jid: String(jid).trim(),
     mensaje: String(mensaje).trim(),
-    estado: 'enviado',
-    intentos: 1,
+    estado: 'pendiente',
+    intentos: 0,
     error_msg: null,
     created_at: new Date().toISOString(),
-    procesado_at: new Date().toISOString(),
+    procesado_at: null,
   }
 
   if (!config.isDemoMode && supabase) {
     try {
-      const { data, error } = await supabase
-        .from('hermes_whatsapp_queue')
-        .insert([{
-          jid: nuevoItem.jid,
-          mensaje: nuevoItem.mensaje,
-          estado: 'enviado',
-          intentos: 1,
-          procesado_at: new Date().toISOString(),
-        }])
-        .select()
-        .single()
+      const { data, error } = await supabase.rpc('fn_hermes_queue_whatsapp', {
+        p_jid: nuevoItem.jid,
+        p_mensaje: nuevoItem.mensaje,
+      })
 
-      if (!error && data) return data
-    } catch {
-      // Continuar con mock
+      if (error) throw error
+      return { ...nuevoItem, id: data, created_at: new Date().toISOString() }
+    } catch (error) {
+      throw new Error(`No se pudo encolar el mensaje de prueba: ${error.message}`)
     }
   }
 
@@ -313,24 +328,20 @@ export async function enviarMensajePrueba(jid, mensaje) {
 export async function reintentarMensajeCola(id) {
   if (!config.isDemoMode && supabase) {
     try {
-      const { data, error } = await supabase
-        .from('hermes_whatsapp_queue')
-        .update({ estado: 'pendiente', intentos: 0, error_msg: null })
-        .eq('id', id)
-        .select()
-        .single()
+      const { data, error } = await supabase.rpc('fn_hermes_reintentar_mensaje', { p_id: id })
 
-      if (!error && data) return data
-    } catch {
-      // Fallback
+      if (error) throw error
+      return data || null
+    } catch (error) {
+      throw new Error(`No se pudo reintentar el mensaje: ${error.message}`)
     }
   }
 
   const item = mockQueue.find((q) => q.id === id)
   if (item) {
-    item.estado = 'enviado'
+    item.estado = 'pendiente'
     item.error_msg = null
-    item.procesado_at = new Date().toISOString()
+    item.procesado_at = null
   }
   return item
 }

@@ -11,6 +11,7 @@
 import '../styles/gatewayConfig.css'
 import * as gatewayApi from '../api/gatewayApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) =>
@@ -25,16 +26,30 @@ const state = {
   filtroCola: 'todos',
   cargando: false,
   enviandoTest: false,
+  gatewayStatus: { connected: false, qr: null, qrExpiresAt: null },
+  gatewaySocket: null,
 }
 
 export async function renderGatewayConfigView(container) {
   const ac = new AbortController()
   await cargarDatos(container)
+  conectarGateway()
 
   const onClick = async (e) => {
     // Refrescar
     if (e.target.closest('#btn-refrescar-gw')) {
       return cargarDatos(container)
+    }
+
+    // Información y advertencias operativas
+    if (e.target.closest('#btn-info-gw')) {
+      abrirInfoWhatsApp()
+      return
+    }
+
+    if (e.target.closest('#btn-vincular-gw')) {
+      abrirVinculacionWhatsApp()
+      return
     }
 
     // Auto-inicializar
@@ -143,7 +158,61 @@ export async function renderGatewayConfigView(container) {
   }
 
   container.addEventListener('click', onClick, { signal: ac.signal })
-  return { teardown: () => ac.abort() }
+  return {
+    teardown: () => {
+      ac.abort()
+      desconectarGateway()
+    },
+  }
+}
+
+async function conectarGateway() {
+  if (!state.config?.gateway_url) return
+
+  desconectarGateway()
+  try {
+    if (typeof WebSocket === 'undefined') return
+    const token = await gatewayApi.obtenerGatewayAccessToken()
+    if (!token) return
+
+    const gateway = new URL(state.config.gateway_url)
+    gateway.protocol = gateway.protocol === 'https:' ? 'wss:' : 'ws:'
+    gateway.pathname = '/events'
+    gateway.search = ''
+    const socket = new WebSocket(gateway.toString())
+    state.gatewaySocket = socket
+    socket.addEventListener('open', () => socket.send(JSON.stringify({ type: 'auth', token })))
+    socket.addEventListener('message', (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        actualizarEstadoDesdeGateway(payload)
+      } catch {
+        // The next heartbeat remains authoritative if an event is malformed.
+      }
+    })
+    socket.addEventListener('close', () => {
+      if (state.gatewaySocket === socket) state.gatewaySocket = null
+    })
+  } catch (error) {
+    console.warn('[Gateway WhatsApp] WebSocket no disponible:', error.message)
+  }
+}
+
+function desconectarGateway() {
+  if (state.gatewaySocket) {
+    state.gatewaySocket.close()
+    state.gatewaySocket = null
+  }
+}
+
+function actualizarEstadoDesdeGateway(payload) {
+  if (payload?.type !== 'gateway.status') return
+  state.gatewayStatus = {
+    connected: Boolean(payload.connected),
+    qr: payload.qr || null,
+    qrExpiresAt: payload.qrExpiresAt || null,
+  }
+  actualizarModalVinculacion()
 }
 
 async function cargarDatos(container) {
@@ -182,7 +251,7 @@ function renderLoading(container) {
 }
 
 function render(container) {
-  const { config, stats, queue, dedupHoras, filtroCola, cargando, enviandoTest } = state
+  const { config, stats, queue, dedupHoras, filtroCola, cargando, enviandoTest, gatewayStatus } = state
   const isOnline = stats?.status === 'online' && config?.activo
   const pctConsumo = stats ? Math.round((stats.enviadosHoy / Math.max(1, stats.capHoy)) * 100) : 0
 
@@ -211,6 +280,12 @@ function render(container) {
           <p class="text-muted mb-0 small">Subsistema 4 · Control de Envíos Institucionales, Blindaje Anti-Ban y Cola de Mensajería</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+          <button id="btn-vincular-gw" class="btn btn-success btn-sm" type="button">
+            <i class="bi bi-qr-code me-1"></i> ${gatewayStatus.qr ? 'QR disponible' : 'Vincular WhatsApp'}
+          </button>
+          <button id="btn-info-gw" class="btn btn-outline-info btn-sm" type="button">
+            <i class="bi bi-info-circle me-1"></i> INFO
+          </button>
           <button id="btn-init-gw" class="btn btn-outline-success btn-sm">
             <i class="bi bi-magic me-1"></i> Configuración Recomendada
           </button>
@@ -438,6 +513,116 @@ function render(container) {
         </div>
       </div>
     </div>`
+}
+
+function abrirInfoWhatsApp() {
+  AppModal.open({
+    title: '<i class="bi bi-whatsapp me-2"></i>WhatsApp Institucional',
+    size: 'lg',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: `
+      <div class="gateway-info-panel">
+        <div class="gateway-info-lead">
+          <i class="bi bi-shield-check"></i>
+          <div><h6 class="mb-1">Canal institucional controlado</h6>
+            <p class="mb-0 text-muted">Este módulo administra el gateway de WhatsApp, la cola de salida y las políticas de protección para evitar envíos accidentales o abusivos.</p>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-4"><div class="gateway-info-item"><i class="bi bi-link-45deg"></i><strong>Vinculación</strong><span>El teléfono se vincula desde WhatsApp como dispositivo vinculado.</span></div></div>
+          <div class="col-md-4"><div class="gateway-info-item"><i class="bi bi-hourglass-split"></i><strong>Cola controlada</strong><span>Los mensajes deben pasar por las reglas de aprobación, horario y ritmo.</span></div></div>
+          <div class="col-md-4"><div class="gateway-info-item"><i class="bi bi-person-lock"></i><strong>Acceso restringido</strong><span>Solo personal autorizado debe operar el número institucional.</span></div></div>
+        </div>
+        <div class="gateway-info-actions mt-4">
+          <div><strong>Antes de vincular o enviar mensajes</strong><p class="small text-muted mb-0">Lee las precauciones operativas para proteger la cuenta y los datos de las familias.</p></div>
+          <button type="button" class="btn btn-warning" id="btn-open-wa-care"><i class="bi bi-exclamation-triangle me-1"></i> CUIDADO</button>
+        </div>
+      </div>`,
+    onShow: (body) => {
+      body.querySelector('#btn-open-wa-care')?.addEventListener('click', abrirCuidadoWhatsApp)
+    },
+  })
+}
+
+function abrirCuidadoWhatsApp() {
+  AppModal.open({
+    title: '<i class="bi bi-exclamation-triangle-fill me-2"></i>CUIDADO · Operación de WhatsApp',
+    size: 'lg',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    headerActions: '<button type="button" class="btn btn-sm btn-light" id="btn-back-wa-info"><i class="bi bi-arrow-left me-1"></i> INFO</button>',
+    body: `
+      <div class="gateway-care-panel">
+        <div class="alert alert-danger d-flex gap-2 align-items-start"><i class="bi bi-shield-exclamation fs-5"></i><div><strong>Estas reglas protegen la cuenta institucional.</strong><br><span>No las omitas aunque el mensaje parezca urgente.</span></div></div>
+        <div class="gateway-care-list">
+          <div><i class="bi bi-x-circle-fill text-danger"></i><span><strong>No compartas el QR</strong><small>Trátalo como una llave temporal. No lo publiques, fotografíes ni lo envíes por chats.</small></span></div>
+          <div><i class="bi bi-x-circle-fill text-danger"></i><span><strong>No guardes credenciales en el navegador</strong><small>Tokens, claves API y sesión Baileys deben permanecer en el gateway seguro, nunca en localStorage.</small></span></div>
+          <div><i class="bi bi-x-circle-fill text-danger"></i><span><strong>No envíes campañas sin consentimiento</strong><small>Respeta opt-out, límites de frecuencia, horarios silenciosos y las reglas anti-abuso.</small></span></div>
+          <div><i class="bi bi-x-circle-fill text-danger"></i><span><strong>No abras varias sesiones del mismo gateway</strong><small>Evita dos workers escribiendo sobre la misma sesión; puede producir carreras, desconexiones o pérdida de credenciales.</small></span></div>
+          <div><i class="bi bi-check-circle-fill text-success"></i><span><strong>Usa el botón de prueba con un número autorizado</strong><small>Verifica destinatario, mensaje y finalidad antes de confirmar cualquier envío.</small></span></div>
+          <div><i class="bi bi-check-circle-fill text-success"></i><span><strong>Reporta desconexiones y bloqueos</strong><small>No intentes reconectar repetidamente ni regeneres QR de forma masiva; registra el incidente.</small></span></div>
+        </div>
+        <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>WhatsApp puede cambiar el protocolo o limitar cuentas automatizadas. Baileys debe operar con límites conservadores y supervisión administrativa.</p>
+      </div>`,
+    onShow: (body) => {
+      body.closest('#app-global-modal')?.querySelector('#btn-back-wa-info')?.addEventListener('click', abrirInfoWhatsApp)
+    },
+  })
+}
+
+function abrirVinculacionWhatsApp() {
+  AppModal.open({
+    title: '<i class="bi bi-qr-code me-2"></i>Vincular WhatsApp Institucional',
+    size: 'md',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: renderVinculacionBody(),
+    onShow: (body) => {
+      body.querySelector('#btn-refresh-wa-qr')?.addEventListener('click', actualizarModalVinculacion)
+      body.querySelector('#btn-logout-wa')?.addEventListener('click', cerrarSesionDesdeModal)
+    },
+  })
+}
+
+function renderVinculacionBody() {
+  const { connected, qr, qrExpiresAt } = state.gatewayStatus
+  const expires = qrExpiresAt
+    ? new Date(qrExpiresAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
+    : null
+  return `
+    <div class="gateway-link-panel text-center">
+      <div id="wa-link-state" class="alert ${connected ? 'alert-success' : qr ? 'alert-warning' : 'alert-secondary'} mb-3">
+        <i class="bi ${connected ? 'bi-check-circle' : qr ? 'bi-qr-code' : 'bi-hourglass-split'} me-2"></i>
+        ${connected ? 'WhatsApp está conectado y listo para operar.' : qr ? `Escanea el código desde el teléfono institucional. Expira a las ${expires}.` : 'Esperando QR del gateway Baileys…'}
+      </div>
+      <div id="wa-link-qr" class="gateway-qr-frame mb-3">
+        ${qr ? `<img src="${esc(qr)}" alt="Código QR temporal para vincular WhatsApp" />` : '<i class="bi bi-qr-code fs-1 text-muted"></i><p class="small text-muted mb-0 mt-2">El QR aparecerá aquí cuando el gateway lo genere.</p>'}
+      </div>
+      <p class="small text-muted mb-3">Abre WhatsApp en el teléfono institucional → Dispositivos vinculados → Vincular un dispositivo.</p>
+      <div class="d-flex justify-content-center gap-2">
+        <button id="btn-refresh-wa-qr" type="button" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar estado</button>
+        ${connected ? '<button id="btn-logout-wa" type="button" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</button>' : ''}
+      </div>
+    </div>`
+}
+
+async function cerrarSesionDesdeModal() {
+  if (!confirm('¿Cerrar la sesión de WhatsApp? Será necesario escanear un nuevo QR.')) return
+  try {
+    await gatewayApi.cerrarSesionGateway(state.config?.gateway_url)
+    AppToast.success('Sesión cerrada. Generando un nuevo QR…')
+  } catch (error) {
+    AppToast.error(`No se pudo cerrar la sesión: ${error.message}`)
+  }
+}
+
+function actualizarModalVinculacion() {
+  const body = document.querySelector('#app-global-modal .app-modal-body')
+  if (!body?.querySelector('#wa-link-qr')) return
+  body.innerHTML = renderVinculacionBody()
+  body.querySelector('#btn-refresh-wa-qr')?.addEventListener('click', actualizarModalVinculacion)
+  body.querySelector('#btn-logout-wa')?.addEventListener('click', cerrarSesionDesdeModal)
 }
 
 function renderQueueItem(item) {

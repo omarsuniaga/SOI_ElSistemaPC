@@ -20,12 +20,14 @@ import {
   Tag
 } from 'lucide-react';
 import { formatDOP } from '../lib/financialMath';
+import { AlumnoFichaModal } from './AlumnoFichaModal';
+import { Alumno } from '../types';
 
 interface GlobalSearchProps {
   setActiveView: (view: string) => void;
 }
 
-type SearchCategory = 'all' | 'familias' | 'facturas' | 'asientos' | 'pagos';
+type SearchCategory = 'all' | 'alumnos' | 'familias' | 'facturas' | 'asientos' | 'pagos';
 
 export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => {
   const { 
@@ -41,6 +43,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<SearchCategory>('all');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [selectedAlumnoForFicha, setSelectedAlumnoForFicha] = useState<Alumno | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,7 +108,15 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
       return { ...f, alumnos: familyAlumnos };
     });
 
-    // 2. Facturas de Gasto
+    // 2. Alumnos
+    const matchedAlumnos = alumnos.filter(a => {
+      return a.nombre_completo.toLowerCase().includes(cleanQuery) ||
+        a.instrumento_principal.toLowerCase().includes(cleanQuery) ||
+        (a.representante_nombre && a.representante_nombre.toLowerCase().includes(cleanQuery)) ||
+        (a.representante_cedula && a.representante_cedula.includes(cleanQuery));
+    });
+
+    // 3. Facturas de Gasto
     const matchedFacturas = facturasGasto.filter(fg => {
       return fg.numero_factura.toLowerCase().includes(cleanQuery) ||
         (fg.ncf && fg.ncf.toLowerCase().includes(cleanQuery)) ||
@@ -115,7 +126,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
         (fg.solicitado_por_nombre && fg.solicitado_por_nombre.toLowerCase().includes(cleanQuery));
     });
 
-    // 3. Asientos Contables
+    // 4. Asientos Contables
     const matchedAsientos = asientos.filter(as => {
       const matchNum = as.numero.toString().includes(cleanQuery) ||
         `asi-${as.numero}`.includes(cleanQuery) ||
@@ -131,7 +142,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
       return matchNum || matchDesc || matchPeriod || matchLine;
     });
 
-    // 4. Pagos y Recibos
+    // 5. Pagos y Recibos
     const matchedPagos = pagos.filter(p => {
       return p.numero_recibo.toLowerCase().includes(cleanQuery) ||
         p.familia_nombre.toLowerCase().includes(cleanQuery) ||
@@ -140,9 +151,10 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
         (p.observaciones && p.observaciones.toLowerCase().includes(cleanQuery));
     });
 
-    const totalCount = matchedFamilias.length + matchedFacturas.length + matchedAsientos.length + matchedPagos.length;
+    const totalCount = matchedAlumnos.length + matchedFamilias.length + matchedFacturas.length + matchedAsientos.length + matchedPagos.length;
 
     return {
+      alumnos: matchedAlumnos,
       familias: matchedFamilias,
       facturas: matchedFacturas,
       asientos: matchedAsientos,
@@ -155,6 +167,9 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
   const flatItems = useMemo(() => {
     const list: Array<{ type: string; id: string; view: string; item: any }> = [];
 
+    if (selectedCategory === 'all' || selectedCategory === 'alumnos') {
+      results.alumnos.forEach(a => list.push({ type: 'alumno', id: a.id, view: 'alumno_modal', item: a }));
+    }
     if (selectedCategory === 'all' || selectedCategory === 'familias') {
       results.familias.forEach(f => list.push({ type: 'familia', id: f.id, view: 'familias', item: f }));
     }
@@ -184,13 +199,24 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (flatItems.length > 0 && flatItems[highlightedIndex]) {
-        handleSelectItem(flatItems[highlightedIndex].view);
+        const selected = flatItems[highlightedIndex];
+        if (selected.type === 'alumno' && selected.item) {
+          handleSelectAlumno(selected.item);
+        } else {
+          handleSelectItem(selected.view);
+        }
       }
     }
   };
 
   const handleSelectItem = (view: string) => {
     setActiveView(view);
+    setIsOpen(false);
+    setQuery('');
+  };
+
+  const handleSelectAlumno = (alumno: Alumno) => {
+    setSelectedAlumnoForFicha(alumno);
     setIsOpen(false);
     setQuery('');
   };
@@ -263,6 +289,19 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
               >
                 <span>Todo</span>
                 {query && <span className="text-[10px] opacity-80 font-mono">({results.totalCount})</span>}
+              </button>
+
+              <button
+                onClick={() => setSelectedCategory('alumnos')}
+                className={`px-3 py-1.5 rounded-xl font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                  selectedCategory === 'alumnos'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>Alumnos</span>
+                {query && <span className="text-[10px] opacity-80 font-mono">({results.alumnos.length})</span>}
               </button>
 
               <button
@@ -445,13 +484,78 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
                   </div>
                 )}
 
+                {/* Section: Alumnos */}
+                {(selectedCategory === 'all' || selectedCategory === 'alumnos') && results.alumnos.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-2 text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
+                        Alumnos ({results.alumnos.length})
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {results.alumnos.slice(0, 5).map((a) => {
+                        const family = familias.find(f => f.id === a.familia_id);
+                        return (
+                          <div
+                            key={a.id}
+                            onClick={() => handleSelectAlumno(a)}
+                            className="p-3 bg-zinc-950/80 hover:bg-zinc-800/90 border border-zinc-800/80 hover:border-indigo-500/50 rounded-2xl transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                          >
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-white group-hover:text-indigo-300 transition-colors text-xs">
+                                  {a.nombre_completo}
+                                </span>
+                                <span className="font-mono text-[10px] px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-md font-medium">
+                                  {a.instrumento_principal}
+                                </span>
+                                <span className="font-mono text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-md">
+                                  {a.nivel}
+                                </span>
+                                {a.exento_mensualidad && (
+                                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                    Becado
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                {family && (
+                                  <span>Familia: <strong className="text-zinc-300">{family.apellidos}</strong></span>
+                                )}
+                                {family && <span>·</span>}
+                                <span>Rep: <strong className="text-zinc-300">{a.representante_nombre || family?.representante_principal?.nombre_completo || 'N/A'}</strong></span>
+                                {(a.representante_tlf || family?.telefono_principal) && (
+                                  <>
+                                    <span>·</span>
+                                    <span>Tel: {a.representante_tlf || family?.telefono_principal}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-800/60">
+                              <div className="px-3 py-1.5 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 group-hover:bg-indigo-600 group-hover:text-white text-[11px] font-semibold transition-all flex items-center gap-1.5 shadow-sm">
+                                <span>Abrir Ficha 360°</span>
+                                <ArrowRight className="w-3 h-3" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Section: Familias */}
                 {(selectedCategory === 'all' || selectedCategory === 'familias') && results.familias.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-2 text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
                       <span className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-indigo-400" />
-                        Familias & Alumnos ({results.familias.length})
+                        Familias ({results.familias.length})
                       </span>
                     </div>
 
@@ -480,15 +584,30 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
                               </span>
                             </div>
 
-                            <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-1">
                               <span>Rep: <strong className="text-zinc-300">{f.representante_principal?.nombre_completo || 'N/A'}</strong></span>
                               <span>·</span>
                               <span>Tel: {f.telefono_principal}</span>
                               {f.alumnos.length > 0 && (
                                 <>
                                   <span>·</span>
-                                  <span className="text-indigo-400 font-medium">
-                                    Alumnos: {f.alumnos.map(a => `${a.nombre_completo} (${a.instrumento_principal})`).join(', ')}
+                                  <span className="flex items-center flex-wrap gap-1">
+                                    <span className="text-zinc-400">Alumnos:</span>
+                                    {f.alumnos.map(a => (
+                                      <button
+                                        key={a.id}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSelectAlumno(a);
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-400 text-indigo-300 hover:text-white font-medium text-[10px] transition-colors cursor-pointer"
+                                        title="Click para ver Ficha 360° del alumno"
+                                      >
+                                        <GraduationCap className="w-2.5 h-2.5 text-indigo-400" />
+                                        <span>{a.nombre_completo} ({a.instrumento_principal})</span>
+                                      </button>
+                                    ))}
                                   </span>
                                 </>
                               )}
@@ -722,6 +841,15 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
           </div>
 
         </div>
+      )}
+
+      {/* Alumno 360 Ficha Modal */}
+      {selectedAlumnoForFicha && (
+        <AlumnoFichaModal
+          alumno={selectedAlumnoForFicha}
+          onClose={() => setSelectedAlumnoForFicha(null)}
+          onSelectOtroAlumno={(otro) => setSelectedAlumnoForFicha(otro)}
+        />
       )}
 
     </div>

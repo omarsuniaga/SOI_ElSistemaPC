@@ -52,7 +52,6 @@ export default defineConfig({
           index:        'index.html',
           admin:        'admin.html',
           audiciones:   'audiciones.html',
-          fin:          'fin.html',
           'soi-finanzas': 'soi-finanzas.html',
           acm:          'acm.html',
           adm:          'adm.html',
@@ -131,7 +130,8 @@ export default defineConfig({
           const portalPrefixes = [
             { prefix: '/admin', file: '/adm.html' },
             { prefix: '/adm', file: '/adm.html' },
-            { prefix: '/fin', file: '/fin.html' },
+            // /fin (portal vanilla eliminado) -> redirige al portal de finanzas React
+            { prefix: '/fin', file: '/soi-finanzas.html' },
             { prefix: '/soi-finanzas', file: '/soi-finanzas.html' },
             { prefix: '/acm', file: '/acm.html' },
             { prefix: '/com', file: '/com.html' },

@@ -297,8 +297,15 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                 <span className="font-semibold text-indigo-300">{alumno.instrumento_principal}</span>
                 <span>·</span>
                 <span>{alumno.nivel}</span>
-                <span>·</span>
-                <span>Padre / Tutor: <strong className="text-zinc-200">{familia?.representante_principal?.nombre_completo || familia?.apellidos || 'Sin tutor asignado'}</strong> ({familia?.codigo_familia || 'TUT-N/D'})</span>
+                {(() => {
+                  const tutorNombre = familia?.representante_principal?.nombre_completo || familia?.apellidos?.replace(/^Familia\s+/i, '') || alumno.representante_nombre;
+                  return tutorNombre ? (
+                    <>
+                      <span>·</span>
+                      <span>Tutor: <strong className="text-zinc-200">{tutorNombre}</strong></span>
+                    </>
+                  ) : null;
+                })()}
               </p>
             </div>
 
@@ -562,7 +569,7 @@ export const AlumnoFichaModal: React.FC<AlumnoFichaModalProps> = ({
                     <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                       <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                         <Coins className="w-3.5 h-3.5" />
-                        <span>Abonar Saldo a Favor · Tutor: {familia?.representante_principal?.nombre_completo || familia?.apellidos || alumno.nombre_completo.split(' ')[0]}</span>
+                        <span>Abonar Saldo a Favor · Tutor: {familia?.representante_principal?.nombre_completo || familia?.apellidos?.replace(/^Familia\s+/i, '') || alumno.nombre_completo.split(' ')[0]}</span>
                       </span>
                       <span className="text-[10px] text-zinc-400 font-mono">Saldo a Favor</span>
                     </div>

@@ -264,11 +264,10 @@ export const RegistroPagoView: React.FC = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="font-semibold text-xs text-white flex items-center gap-2">
-                            <span>Familia {fam.apellidos}</span>
-                            <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">({fam.codigo_familia})</span>
+                            <span>{fam.representante_principal?.nombre_completo || fam.apellidos?.replace(/^Familia\s+/i, '') || 'Padre / Tutor'}</span>
                           </div>
-                          <div className="text-[11px] text-zinc-400 mt-1">
-                            Rep: {fam.representante_principal?.nombre_completo || 'Sin registro'} · Tel: {fam.telefono_principal}
+                          <div className="text-[11px] text-zinc-400 mt-0.5">
+                            {fam.telefono_principal && <span>Tel: {fam.telefono_principal}</span>}
                           </div>
                           <div className="text-[11px] text-zinc-400 mt-2 flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium text-zinc-500 text-[10px]">Alumnos:</span>

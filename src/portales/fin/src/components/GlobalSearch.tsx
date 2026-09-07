@@ -545,85 +545,85 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ setActiveView }) => 
                   </div>
                 )}
 
-                {/* Section: Familias */}
+                {/* Section: Padres & Tutores */}
                 {(selectedCategory === 'all' || selectedCategory === 'familias') && results.familias.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-2 text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
                       <span className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-indigo-400" />
-                        Familias ({results.familias.length})
+                        Padres & Tutores ({results.familias.length})
                       </span>
                     </div>
 
                     <div className="space-y-1.5">
-                      {results.familias.slice(0, 4).map((f) => (
-                        <div
-                          key={f.id}
-                          onClick={() => handleSelectItem('familias')}
-                          className="p-3 bg-zinc-950/80 hover:bg-zinc-800/90 border border-zinc-800/80 hover:border-indigo-500/40 rounded-2xl transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                        >
-                          <div className="space-y-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-white group-hover:text-indigo-300 transition-colors text-xs">
-                                Familia {f.apellidos}
-                              </span>
-                              <span className="font-mono text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-md">
-                                {f.codigo_familia}
-                              </span>
-                              {(() => {
-                                const etq = getISPEtiqueta(f.isp?.categoria);
-                                return (
-                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${etq.badgeClass}`} title={etq.descripcion}>
-                                    {etq.titulo} ({f.isp?.valor ?? 100} pts)
-                                  </span>
-                                );
-                              })()}
-                            </div>
+                      {results.familias.slice(0, 4).map((f) => {
+                        const tutorNombre = f.representante_principal?.nombre_completo || f.apellidos?.replace(/^Familia\s+/i, '') || 'Tutor';
+                        return (
+                          <div
+                            key={f.id}
+                            onClick={() => handleSelectItem('familias')}
+                            className="p-3 bg-zinc-950/80 hover:bg-zinc-800/90 border border-zinc-800/80 hover:border-indigo-500/40 rounded-2xl transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                          >
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-white group-hover:text-indigo-300 transition-colors text-xs">
+                                  {tutorNombre}
+                                </span>
+                                {(() => {
+                                  const etq = getISPEtiqueta(f.isp?.categoria);
+                                  return (
+                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${etq.badgeClass}`} title={etq.descripcion}>
+                                      {etq.titulo} ({f.isp?.valor ?? 100} pts)
+                                    </span>
+                                  );
+                                })()}
+                              </div>
 
-                            <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <span>Rep: <strong className="text-zinc-300">{f.representante_principal?.nombre_completo || 'N/A'}</strong></span>
-                              <span>·</span>
-                              <span>Tel: {f.telefono_principal}</span>
-                              {f.alumnos.length > 0 && (
-                                <>
-                                  <span>·</span>
-                                  <span className="flex items-center flex-wrap gap-1">
-                                    <span className="text-zinc-400">Alumnos:</span>
-                                    {f.alumnos.map(a => (
-                                      <button
-                                        key={a.id}
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleSelectAlumno(a);
-                                        }}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-400 text-indigo-300 hover:text-white font-medium text-[10px] transition-colors cursor-pointer"
-                                        title="Click para ver Ficha 360° del alumno"
-                                      >
-                                        <GraduationCap className="w-2.5 h-2.5 text-indigo-400" />
-                                        <span>{a.nombre_completo} ({a.instrumento_principal})</span>
-                                      </button>
-                                    ))}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-800/60">
-                            <div className="text-right">
-                              <div className="text-[10px] font-mono text-zinc-500">Saldo Pendiente</div>
-                              <div className={`text-xs font-mono font-bold ${f.saldo_pendiente_centavos > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                {formatDOP(f.saldo_pendiente_centavos)}
+                              <div className="text-[11px] text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                {f.telefono_principal && (
+                                  <span>Tel: {f.telefono_principal}</span>
+                                )}
+                                {f.alumnos.length > 0 && (
+                                  <>
+                                    <span>·</span>
+                                    <span className="flex items-center flex-wrap gap-1">
+                                      <span className="text-zinc-400">Alumnos:</span>
+                                      {f.alumnos.map(a => (
+                                        <button
+                                          key={a.id}
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSelectAlumno(a);
+                                          }}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-400 text-indigo-300 hover:text-white font-medium text-[10px] transition-colors cursor-pointer"
+                                          title="Click para ver Ficha 360° del alumno"
+                                        >
+                                          <GraduationCap className="w-2.5 h-2.5 text-indigo-400" />
+                                          <span>{a.nombre_completo} ({a.instrumento_principal})</span>
+                                        </button>
+                                      ))}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
-                            <div className="px-2.5 py-1 rounded-xl bg-zinc-900 text-zinc-300 group-hover:bg-indigo-600 group-hover:text-white text-[11px] font-semibold transition-colors flex items-center gap-1">
-                              <span>Ver</span>
-                              <ArrowRight className="w-3 h-3" />
+
+                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-800/60">
+                              <div className="text-right">
+                                <div className="text-[10px] font-mono text-zinc-500">Saldo Pendiente</div>
+                                <div className={`text-xs font-mono font-bold ${f.saldo_pendiente_centavos > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                  {formatDOP(f.saldo_pendiente_centavos)}
+                                </div>
+                              </div>
+                              <div className="px-2.5 py-1 rounded-xl bg-zinc-900 text-zinc-300 group-hover:bg-indigo-600 group-hover:text-white text-[11px] font-semibold transition-colors flex items-center gap-1">
+                                <span>Ver</span>
+                                <ArrowRight className="w-3 h-3" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

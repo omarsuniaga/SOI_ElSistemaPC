@@ -172,9 +172,9 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
           <table className="w-full text-left text-xs">
             <thead className="bg-zinc-950/80 text-zinc-400 font-mono text-[11px] uppercase tracking-wider border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-5">Familia / Código</th>
-                <th className="py-3 px-5">Representante Legal</th>
-                <th className="py-3 px-5">Alumnos Inscritos</th>
+                <th className="py-3 px-5">Padre / Tutor</th>
+                <th className="py-3 px-5">Contacto Principal</th>
+                <th className="py-3 px-5">Alumnos a Cargo</th>
                 <th className="py-3 px-5">Saldo Pendiente</th>
                 <th className="py-3 px-5">Wallet Crédito</th>
                 <th className="py-3 px-5 text-center">Historial de Pago</th>
@@ -184,15 +184,16 @@ export const FamiliasView: React.FC<FamiliasViewProps> = ({ setActiveView }) => 
             <tbody className="divide-y divide-zinc-800/80">
               {filtered.map(fam => {
                 const famAlumnos = alumnos.filter(a => a.familia_id === fam.id);
+                const tutorNombre = fam.representante_principal?.nombre_completo || fam.apellidos?.replace(/^Familia\s+/i, '') || 'Tutor sin nombre';
                 return (
                   <tr key={fam.id} className="hover:bg-zinc-950/40 transition-colors">
                     <td className="py-3.5 px-5">
-                      <div className="font-semibold text-white text-xs sm:text-sm">Familia {fam.apellidos}</div>
-                      <div className="text-[10px] font-mono text-indigo-400">{fam.codigo_familia}</div>
+                      <div className="font-semibold text-white text-xs sm:text-sm">{tutorNombre}</div>
+                      <div className="text-[10px] text-zinc-400">{fam.representante_principal?.parentesco || 'Tutor legal'}</div>
                     </td>
                     <td className="py-3.5 px-5">
-                      <div className="font-medium text-zinc-200">{fam.representante_principal?.nombre_completo || 'Sin representante asignado'}</div>
-                      <div className="text-[10px] text-zinc-500 font-mono">{fam.telefono_principal}</div>
+                      <div className="font-medium text-zinc-200">{fam.telefono_principal || 'Sin teléfono'}</div>
+                      <div className="text-[10px] text-zinc-500 font-mono">{fam.email_principal}</div>
                     </td>
                     <td className="py-3.5 px-5">
                       <div className="flex flex-wrap gap-1.5">

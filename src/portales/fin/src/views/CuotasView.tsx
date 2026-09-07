@@ -429,7 +429,7 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
               <tr>
                 <th className="py-3 px-4 w-10"></th>
                 <th className="py-3 px-4">Alumno</th>
-                <th className="py-3 px-4">Contacto / Familia</th>
+                <th className="py-3 px-4">Padre / Tutor</th>
                 <th className="py-3 px-4">Saldo Pendiente</th>
                 <th className="py-3 px-4">Vencimiento</th>
                 <th className="py-3 px-4">Estado</th>
@@ -499,17 +499,16 @@ export const CuotasView: React.FC<CuotasViewProps> = ({ setActiveView }) => {
                           </div>
                         </td>
 
-                        {/* Contacto / Familia */}
+                        {/* Padre / Tutor */}
                         <td className="py-3.5 px-4">
                           <div className="text-zinc-200 font-medium">
-                            {row.contacto_nombre}
+                            {row.contacto_nombre || row.nombre_familia?.replace(/^Familia\s+/i, '') || 'Sin tutor asignado'}
                           </div>
-                          <div className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
-                            <span className="text-indigo-400/90">{row.nombre_familia}</span>
-                            {row.contacto_telefono && (
-                              <span>· {row.contacto_telefono}</span>
-                            )}
-                          </div>
+                          {row.contacto_telefono && (
+                            <div className="text-[11px] text-zinc-400 mt-0.5 font-mono">
+                              Tel: {row.contacto_telefono}
+                            </div>
+                          )}
                         </td>
 
                         {/* Saldo Pendiente */}

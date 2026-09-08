@@ -147,27 +147,40 @@ export async function renderGatewayConfigView(container) {
 }
 
 async function cargarDatos(container) {
-  try {
-    state.cargando = true
-    renderLoading(container)
-    const [cfg, stats, queue, dedupHoras] = await Promise.all([
-      gatewayApi.obtenerGatewayConfig(),
-      gatewayApi.obtenerGatewayStats(),
-      gatewayApi.obtenerColaMensajes(25),
-      gatewayApi.obtenerDedupHoras(),
-    ])
-    state.config = cfg
-    state.stats = stats
-    state.queue = queue
-    state.dedupHoras = dedupHoras
-    state.cargando = false
-    render(container)
-  } catch (err) {
-    state.cargando = false
+  state.cargando = true
+  renderLoading(container)
+
+  // allSettled: un blip transitorio en una lectura no debe tirar el panel
+  // entero. Se renderiza lo que haya y se avisa de lo que falló.
+  const [cfgR, statsR, queueR, dedupR] = await Promise.allSettled([
+    gatewayApi.obtenerGatewayConfig(),
+    gatewayApi.obtenerGatewayStats(),
+    gatewayApi.obtenerColaMensajes(25),
+    gatewayApi.obtenerDedupHoras(),
+  ])
+
+  if (cfgR.status === 'fulfilled') state.config = cfgR.value
+  if (statsR.status === 'fulfilled') state.stats = statsR.value
+  if (queueR.status === 'fulfilled') state.queue = queueR.value ?? []
+  if (dedupR.status === 'fulfilled') state.dedupHoras = dedupR.value
+
+  const fallos = [cfgR, statsR, queueR, dedupR].filter((r) => r.status === 'rejected')
+  state.cargando = false
+
+  if (fallos.length === 4) {
     container.innerHTML = `
       <div class="alert alert-danger m-3">
-        <i class="bi bi-exclamation-octagon me-2"></i> Error al cargar Gateway: ${esc(err.message)}
+        <i class="bi bi-exclamation-octagon me-2"></i> Error al cargar Gateway: ${esc(fallos[0].reason?.message || 'error desconocido')}
       </div>`
+    return
+  }
+
+  render(container)
+  if (fallos.length > 0) {
+    container.insertAdjacentHTML('afterbegin', `
+      <div class="alert alert-warning m-3 py-2 small">
+        <i class="bi bi-exclamation-triangle me-1"></i> Algunos datos no cargaron; mostrando lo disponible. Refrescá para reintentar.
+      </div>`)
   }
 }
 

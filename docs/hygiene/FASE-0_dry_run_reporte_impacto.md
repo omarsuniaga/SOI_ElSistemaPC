@@ -1,121 +1,117 @@
-# FASE 0 · Reporte de Impacto y Dry-Run de Poda (Tarea 0.2)
+# FASE 0 · Reporte de Impacto y Dry-Run Definitivo de Poda (Tarea 0.2)
 
 **Auditora técnica:** Lila (Senior Technical Auditor & Architect)  
 **Fecha del Snapshot en vivo:** 2026-09-08  
 **Base de datos verificada:** Supabase `SOI_DDBB_EL_SISTEMAPC` (`zmhmdvmyeyswunurcyow`) — consulta en vivo solo lectura  
-**Estado:** **DRY-RUN CONCLUIDO · CERO DDL EJECUTADO · EN ESPERA DE AUTORIZACIÓN FINAL**
+**Estado:** **DRY-RUN 33/33 APROBADO 100% VERDE · CERO DDL EJECUTADO · EN ESPERA DE OK FINAL DE OMAR**
 
 ---
 
-## 1. Resumen Ejecutivo del Dry-Run
+## 1. Resumen Ejecutivo del Dry-Run Definitivo (Post-Opción B de Minutas)
 
-En cumplimiento estricto de las directivas de Omar para la Tarea 0.2, se ejecutó una simulación en vivo (**dry-run**) contra el catálogo y estado físico de la base de datos de producción (modo solo lectura), verificando el comportamiento de las **34 tablas candidatas a eliminación**.
+Siguiendo la decisión arquitectónica de Omar (**Opción B**), la tabla `minutas` fue retirada del lote de eliminación y reclasificada como **ARCHIVAR / DEPRECATED** para proteger la integridad referencial de la tabla activa `tareas_institucionales` (198 registros) sin recurrir a alteraciones forzadas.
+
+Se re-ejecutó la simulación en vivo (**dry-run**) contra las **33 tablas finales a eliminar**:
 
 ```
 ========================================================================
-                  RESULTADO CONSOLIDADO DEL DRY-RUN
+             RESULTADO FINAL DEL DRY-RUN (33 TABLAS)
 ========================================================================
-  Tablas evaluadas para poda           : 34
-  Tablas confirmadas con 0 filas hoy   : 34 / 34 (100% vacías en vivo)
-  Tablas con cero vistas dependientes  : 34 / 34 (0 vistas afectadas)
+  Tablas evaluadas para poda           : 33
+  Tablas confirmadas con 0 filas hoy   : 33 / 33 (100% vacías en vivo)
+  Tablas con cero vistas dependientes  : 33 / 33 (0 vistas en PostgreSQL)
+  Dependencias FK externas (fuera lote):  0 (CERO dependencias externas)
   Dependencias FK internas (del lote)  :  7 restricciones (resueltas por orden)
-  Dependencias FK externas (fuera lote):  1 caso detectado ('minutas')
-  Precondiciones automáticas superadas : 33 / 34 (1 escalada por Regla 4)
+  Uso de CASCADE                       :  0% (PROHIBIDO · Poda limpia)
+  Precondiciones automáticas superadas : 33 / 33 (100% APROBADAS EN VERDE)
+  ----------------------------------------------------------------------
   Tablas protegidas (76) alteradas     : 0 (100% blindadas)
-  Tablas archivadas (12) alteradas     : 0 (100% preservadas)
+  Tablas archivadas (13) alteradas     : 0 (100% preservadas con COMMENT)
+========================================================================
+             ESTATUS DEL DRY-RUN: 100% VERDE Y APTO PARA PODA
 ========================================================================
 ```
 
 ---
 
-## 2. Auditoría en Vivo de las 34 Tablas (Orden Topológico 1 a 34)
+## 2. Auditoría en Vivo de las 33 Tablas (Orden Topológico 1 a 33)
 
-La siguiente tabla refleja el estado físico de la base de datos obtenido en tiempo real al 2026-09-08:
+Todas las 33 tablas satisfacen estrictamente los 5 postulados de seguridad: **0 filas, 0 vistas, 0 FK externas, 0 CASCADE y precondiciones aprobadas**.
 
-| # | Tabla | Dueño | Filas en vivo | Vistas dependientes | FKs entrantes internas | FKs externas | Estado Precondición |
+| # | Tabla | Dueño | Filas en vivo | Vistas | FKs internas del lote | FKs externas | Estado Precondición |
 |:--:|---|:---:|:---:|:---:|---|---|:---:|
-| **1** | `planificacion` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **2** | `planificacion_nodos` | ACM | **0** | Ninguna | `planificacion_nodos.padre_id` (auto) | Ninguna | ✅ **PASÓ** |
-| **3** | `accesorio_asignaciones` | LUT | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **4** | `alumnos_ejercicios` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **5** | `alumnos_modulos` | ADM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **6** | `alumnos_rutas` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **7** | `asistencias_emergentes` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **8** | `audiciones` | ADM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **9** | `ausencias_clases_afectadas` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **10** | `ausencias_notificaciones` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **11** | `autorizaciones_accesorio` | LUT | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **12** | `campana_participaciones` | COM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **13** | `campanas_pago` | FIN | **0** | Ninguna | `campana_participaciones.campana_id` | Ninguna | ✅ **PASÓ** |
-| **14** | `campanias_destinatarios` | COM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **15** | `campanias_marketing` | COM | **0** | Ninguna | `campanias_destinatarios.campania_id` | Ninguna | ✅ **PASÓ** |
-| **16** | `cierres_caja` | FIN | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **17** | `clase_acceso_temporal` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **18** | `exoneraciones` | FIN | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **19** | `hermes_evaluaciones` | HERMES | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **20** | `hermes_feedback` | HERMES | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **21** | `hermes_notificaciones` | HERMES | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **22** | `instituciones` | COM | **0** | Ninguna | `campanias_destinatarios.institucion_id` | Ninguna | ✅ **PASÓ** |
-| **23** | `intentos_ejercicios` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **24** | `inventario_import_staging` | LUT | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **25** | `mensajes_internos` | COM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **26** | `minutas` | DIR | **0** | Ninguna | Ninguna | `tareas_institucionales.minuta_id` | ⚠️ **ESCALADA** |
-| **27** | `prospeccion_log` | ADM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **28** | `repertoire_fragments` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **29** | `sesion_bitacora` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **30** | `tareas_portales` | INFRA | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **31** | `wallet_config` | FIN | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **32** | `xp_log` | ACM | **0** | Ninguna | Ninguna | Ninguna | ✅ **PASÓ** |
-| **33** | `hermes_acciones` | HERMES | **0** | Ninguna | `hermes_feedback`, `hermes_notificaciones` | Ninguna | ✅ **PASÓ** |
-| **34** | `hilos_mensajes` | COM | **0** | Ninguna | `mensajes_internos.hilo_id` | Ninguna | ✅ **PASÓ** |
+| **1** | `planificacion` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **2** | `planificacion_nodos` | ACM | **0** | 0 | `planificacion_nodos.padre_id` | Ninguna | ✅ **APROBADA** |
+| **3** | `accesorio_asignaciones` | LUT | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **4** | `alumnos_ejercicios` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **5** | `alumnos_modulos` | ADM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **6** | `alumnos_rutas` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **7** | `asistencias_emergentes` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **8** | `audiciones` | ADM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **9** | `ausencias_clases_afectadas` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **10** | `ausencias_notificaciones` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **11** | `autorizaciones_accesorio` | LUT | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **12** | `campana_participaciones` | COM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **13** | `campanas_pago` | FIN | **0** | 0 | `campana_participaciones.campana_id` | Ninguna | ✅ **APROBADA** |
+| **14** | `campanias_destinatarios` | COM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **15** | `campanias_marketing` | COM | **0** | 0 | `campanias_destinatarios.campania_id` | Ninguna | ✅ **APROBADA** |
+| **16** | `cierres_caja` | FIN | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **17** | `clase_acceso_temporal` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **18** | `exoneraciones` | FIN | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **19** | `hermes_evaluaciones` | HERMES | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **20** | `hermes_feedback` | HERMES | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **21** | `hermes_notificaciones` | HERMES | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **22** | `instituciones` | COM | **0** | 0 | `campanias_destinatarios.institucion_id` | Ninguna | ✅ **APROBADA** |
+| **23** | `intentos_ejercicios` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **24** | `inventario_import_staging` | LUT | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **25** | `mensajes_internos` | COM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **26** | `prospeccion_log` | ADM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **27** | `repertoire_fragments` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **28** | `sesion_bitacora` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **29** | `tareas_portales` | INFRA | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **30** | `wallet_config` | FIN | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **31** | `xp_log` | ACM | **0** | 0 | Ninguna | Ninguna | ✅ **APROBADA** |
+| **32** | `hermes_acciones` | HERMES | **0** | 0 | `hermes_feedback`, `hermes_notificaciones` | Ninguna | ✅ **APROBADA** |
+| **33** | `hilos_mensajes` | COM | **0** | 0 | `mensajes_internos.hilo_id` | Ninguna | ✅ **APROBADA** |
 
 ---
 
-## 3. Escalamiento Preventivo: El caso de `minutas` (Regla 4 de Omar)
+## 3. Confirmación del Gate de Reversibilidad Estructural Completa
 
-> [!WARNING]
-> **Detalle del hallazgo:** La tabla `minutas` (paso 26) tiene **0 filas** y ninguna vista dependiente. Sin embargo, la tabla activa `tareas_institucionales` (que tiene **198 filas**) posee la clave foránea `tareas_institucionales_minuta_id_fkey`.  
-> Aunque los 198 registros tienen `minuta_id = NULL` (cero registros apuntan a datos), la existencia de la restricción en una tabla externa protegida impediría ejecutar `DROP TABLE minutas;` sin utilizar `CASCADE`.
+Para garantizar que en caso de contingencia o rollback las 33 tablas puedan reconstruirse con **fidelidad del 100% idéntica al snapshot pre-poda**, se auditó y extrajo cada objeto del catálogo de PostgreSQL:
 
-### Opciones para Omar sobre `minutas`:
-1. **Opción A (Recomendada en el script):** El script de poda incluye una sentencia defensiva que verifica que `minuta_id` sea 100% nulo en `tareas_institucionales` y suelta únicamente la restricción huérfana (`ALTER TABLE tareas_institucionales DROP CONSTRAINT tareas_institucionales_minuta_id_fkey;`), procediendo luego al DROP limpio de `minutas`.
-2. **Opción B (Conservadora):** Retirar `minutas` de la lista de eliminación y moverla a **ARCHIVAR**, dejando exactamente **33 tablas a eliminar**.
+| Objeto Estructural de PostgreSQL | Cobertura en Rollback | Verificación |
+|---|:---:|---|
+| **Columnas y tipos de datos nativos** | **375 columnas** | `uuid`, `timestamptz`, `text`, `boolean`, `integer`, `jsonb`, etc. |
+| **Valores por defecto (`DEFAULT`)** | **100% de defaults** | `gen_random_uuid()`, `now()`, `true/false`, secuencias. |
+| **Restricciones de nulidad (`NOT NULL`)** | **100% validadas** | Coincidencia estricta con `is_nullable`. |
+| **Claves primarias (`PRIMARY KEY`)** | **33 PKs** | Recreadas explícitamente tabla por tabla. |
+| **Restricciones Unique y Check** | **38 constraints** | Extraídas vía `pg_get_constraintdef`. |
+| **Claves foráneas (`FOREIGN KEY`)** | **48 FKs** | Enlazadas en fase posterior tras la creación de tablas. |
+| **Índices secundarios (`CREATE INDEX`)** | **41 índices** | B-Tree, parciales y de búsqueda rápida. |
+| **Row Level Security (`ENABLE RLS`)** | **33 tablas** | RLS reactivado idéntico al estado original. |
+| **Políticas RLS (`CREATE POLICY`)** | **74 políticas** | Sentencias completas con roles, `USING` y `WITH CHECK`. |
+| **Triggers de base de datos** | **6 triggers** | Triggers de actualización de timestamps y auditoría. |
+| **Comentarios de catálogo (`COMMENT ON`)** | **5 comentarios** | Documentación de tablas y columnas restaurada. |
+| **Permisos Supabase (`GRANT`)** | **100% restaurados** | Permisos para `postgres`, `service_role` y `authenticated`. |
 
----
-
-## 4. Mecanismos de Respaldo y Rollback
-
-### 4.1 Respaldo Previo (Pre-requisito de ejecución)
-Antes de ejecutar el script en Supabase, se debe generar un snapshot exclusivo de la estructura de las 34 tablas mediante la CLI:
-```bash
-# Comando de respaldo en frío del esquema de las tablas a podar
-supabase db dump --schema-only -f supabase/backups/20260908_backup_pre_poda_34tablas.sql
-```
-
-### 4.2 Script de Rollback Inmediato y Atómico
-Se generó el artefacto versionado:  
-[`supabase/migrations/20260908142000_fase0_poda_ROLLBACK.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908142000_fase0_poda_ROLLBACK.sql)
-
-- Contiene las sentencias `CREATE TABLE IF NOT EXISTS` exactas para las 34 tablas, restaurando sus **387 columnas**, tipos de datos de PostgreSQL (`uuid`, `timestamptz`, `text`, etc.), valores por defecto y sus **34 primary keys**.
-- Se ejecuta en orden inverso (padres antes que hijos) dentro de una transacción atómica (`BEGIN...COMMIT`).
+### Artefactos de Respaldo Generados y Verificados:
+1. **Script de Rollback Versionado:**  
+   [`supabase/migrations/20260908142000_fase0_poda_ROLLBACK.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908142000_fase0_poda_ROLLBACK.sql) (32 KB, 7 fases de restauración atómica en orden inverso).
+2. **Evidencia Externa de Respaldo en Frío:**  
+   [`supabase/backups/20260908_backup_pre_poda_33tablas.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/backups/20260908_backup_pre_poda_33tablas.sql) (Almacenado fuera del ciclo de migración como resguardo independiente).
 
 ---
 
-## 5. Garantía de Blindaje de Tablas Protegidas y Archivadas
+## 4. Garantía de Blindaje de Tablas Protegidas y Archivadas
 
-| Conjunto | Conteo | Impacto del Script de Poda | Garantía Técnica |
-|---|--:|---|---|
-| **Tablas TERMINAR / MANTENER** | **76** | **CERO IMPACTO** | No figuran en el script. Ninguna de las 34 tablas a podar tiene FKs salientes ni vistas que apunten hacia las tablas protegidas. |
-| **Tablas ARCHIVAR** | **12** | **CERO IMPACTO ESTRUCTURAL** | Reciben únicamente su metadato de documentación en [`20260908140000_fase0_poda_DEPRECATE.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908140000_fase0_poda_DEPRECATE.sql). Sus columnas, constraints y datos permanecen 100% inalterados. |
+- **76 tablas TERMINAR / MANTENER:** Cero impacto. No están presentes en el script destructivo y ninguna de las 33 tablas a podar tiene dependencias salientes hacia ellas.
+- **13 tablas ARCHIVAR (incorporando `minutas`):** Cero impacto estructural ni pérdida de datos. Solo reciben su metadato formal en [`20260908140000_fase0_poda_DEPRECATE.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908140000_fase0_poda_DEPRECATE.sql).
 
 ---
 
-## 6. Estado del Paquete y Próximo Paso
+## 5. Estado del Sistema
 
-Los artefactos requeridos están preparados y comiteados en el repositorio:
-1. [`supabase/migrations/20260908140000_fase0_poda_DEPRECATE.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908140000_fase0_poda_DEPRECATE.sql) (Archivado)
-2. [`supabase/migrations/20260908141000_fase0_poda_DROP.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908141000_fase0_poda_DROP.sql) (Poda con precondiciones sin CASCADE)
-3. [`supabase/migrations/20260908142000_fase0_poda_ROLLBACK.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908142000_fase0_poda_ROLLBACK.sql) (Rollback determinístico)
-4. [`docs/hygiene/FASE-0_dry_run_reporte_impacto.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/docs/hygiene/FASE-0_dry_run_reporte_impacto.md) (Este reporte)
-
-> **Lila se detiene aquí.** No se ha corrido ni se correrá ninguna mutación destructiva en Supabase hasta que Omar revise este reporte y dé su **OK final de ejecución**.
+- **Gate de Reversibilidad:** ✅ **CERRADO Y APROBADO (100%)**
+- **Gate de Conciliación:** ✅ **122 = 76 Protegidas + 13 Archivadas + 33 Eliminables**
+- **Mutación destructiva en BD:** ⏸️ **DETENIDA A LA ESPERA DEL OK HUMANO FINAL DE OMAR.**

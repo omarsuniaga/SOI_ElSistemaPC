@@ -6,8 +6,8 @@
 -- Auditoría técnica: Lila (Senior Technical Auditor & Architect)
 -- Estatus: PRESERVACIÓN ESTRUCTURAL (No se elimina ninguna fila ni objeto)
 -- Propósito: Documentar formalmente en el catálogo de PostgreSQL (pg_description)
---            el estado de archivado/deprecación para prevenir que nuevos
---            desarrollos se acoplen a estos esquemas.
+--            el estado de archivado/deprecación de las 13 tablas seleccionadas
+--            para prevenir que nuevos desarrollos se acoplen a estos esquemas.
 -- ==============================================================================
 
 BEGIN;
@@ -71,5 +71,10 @@ COMMENT ON TABLE public.rachas IS
 -- Justificación: Infraestructura institucional reservada para orquestación Hermes.
 COMMENT ON TABLE public.protocolos IS 
 '-- DEPRECATED: infraestructura base para Hermes en reserva 2026-09 (Owner: DIR/HERMES)';
+
+-- 13. minutas (Owner: DIR)
+-- Justificación: FK entrante desde tareas_institucionales (198 registros); archivada para evitar alterar tabla activa (Opción B de Omar).
+COMMENT ON TABLE public.minutas IS 
+'-- DEPRECATED: conservada por integridad referencial desde tareas_institucionales 2026-09 (Owner: DIR)';
 
 COMMIT;

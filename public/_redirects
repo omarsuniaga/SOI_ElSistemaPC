@@ -11,6 +11,6 @@
 /calendario/*  /calendario.html  200
 /audiciones/*  /audiciones.html  200
 /luteria/*     /luteria.html     200
-/lut/*         /lut.html         200
+/lut/*         /luteria.html         200
 /simulador/*   /simulador.html   200
 /*             /index.html       200

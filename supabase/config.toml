@@ -385,6 +385,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# SDD whatsapp-gateway-multidepto · F2: la app Electron se autentica con su
+# device token (Authorization: Bearer), no con un JWT de Supabase.
+[functions.whatsapp-gateway]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

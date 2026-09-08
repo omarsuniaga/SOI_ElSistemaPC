@@ -110,8 +110,61 @@ Para garantizar que en caso de contingencia o rollback las 33 tablas puedan reco
 
 ---
 
-## 5. Estado del Sistema
+## 5. Estado de Ejecución y Snapshot Post-Poda
 
-- **Gate de Reversibilidad:** ✅ **CERRADO Y APROBADO (100%)**
-- **Gate de Conciliación:** ✅ **122 = 76 Protegidas + 13 Archivadas + 33 Eliminables**
-- **Mutación destructiva en BD:** ⏸️ **DETENIDA A LA ESPERA DEL OK HUMANO FINAL DE OMAR.**
+- **Fecha y Hora de Ejecución:** 2026-09-08 14:00:30 UTC-4 (18:00:30 UTC)
+- **Base de Datos:** Supabase `SOI_DDBB_EL_SISTEMAPC` (`zmhmdvmyeyswunurcyow`)
+- **Autorización Humana:** Omar Suniaga (OK Final Concedido)
+- **Commit de Referencia:** `d9efa7ed`
+
+---
+
+## 6. Auditoría y Snapshot Post-Poda en Vivo
+
+### 6.1 Aplicación de Deprecación (13 Tablas Archivadas)
+Se aplicó con éxito la migración [`20260908140000_fase0_poda_DEPRECATE.sql`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/.claude/worktrees/soi-empty-tables-inventory-07adbc/supabase/migrations/20260908140000_fase0_poda_DEPRECATE.sql).  
+Evidencia extraída directamente del catálogo `pg_description` en tiempo real:
+
+| # | Tabla | Dueño | Metadato Registrado en `pg_description` |
+|:--:|---|:---:|---|
+| 1 | `accesorios` | LUT | `-- DEPRECATED: conservada para rediseño de inventario lutería 2026-09 (Owner: LUT)` |
+| 2 | `alumno_escolaridad` | DIR/ADM | `-- DEPRECATED: datos escolares secundarios diferidos 2026-09 (Owner: DIR/ADM)` |
+| 3 | `catalogo_objetivos_especificos` | ACM | `-- DEPRECATED: plantilla curricular legacy en evaluación 2026-09 (Owner: ACM)` |
+| 4 | `clase_mapa_indicadores` | ACM | `-- DEPRECATED: jerarquía legacy en evaluación 2026-09 (Owner: ACM)` |
+| 5 | `clase_mapa_objetivos` | ACM | `-- DEPRECATED: objetivos legacy en evaluación 2026-09 (Owner: ACM)` |
+| 6 | `document_batches` | DIR/ADM | `-- DEPRECATED: generador documental institucional diferido 2026-09 (Owner: DIR/ADM)` |
+| 7 | `generated_documents` | DIR/ADM | `-- DEPRECATED: generador documental institucional diferido 2026-09 (Owner: DIR/ADM)` |
+| 8 | `mapa_plantillas` | ACM | `-- DEPRECATED: plantillas legacy en evaluación 2026-09 (Owner: ACM)` |
+| 9 | `minutas` | DIR | `-- DEPRECATED: conservada por integridad referencial desde tareas_institucionales 2026-09 (Owner: DIR)` |
+| 10 | `protocolos` | DIR/HERMES | `-- DEPRECATED: infraestructura base para Hermes en reserva 2026-09 (Owner: DIR/HERMES)` |
+| 11 | `rachas` | ACM | `-- DEPRECATED: gamificación pedagógica en pausa 2026-09 (Owner: ACM)` |
+| 12 | `schedule_run_feedback` | ACM | `-- DEPRECATED: telemetría de horarios pausada 2026-09 (Owner: ACM)` |
+| 13 | `schedule_runs` | ACM | `-- DEPRECATED: motor algorítmico de horarios pausado 2026-09 (Owner: ACM)` |
+
+### 6.2 Verificación de las 33 Tablas Eliminables
+Inmediatamente antes de emitir cualquier DDL destructivo, se consultó el catálogo PostgreSQL (`pg_tables`, `pg_class`, `information_schema.tables`).  
+**Resultado:** **0 de las 33 tablas existen físicamente en la base de datos de producción.**  
+Eran modelos fantasma originados en definiciones estáticas (`database.types.ts`, `schema_dump.json`) y migraciones legacy no aplicadas. El estado físico de PostgreSQL ya se encontraba 100% saneado de estos esquemas.
+
+### 6.3 Verificación de las 76 Tablas Protegidas
+Se confirmó mediante consulta a `pg_class` que **las 76 tablas activas continúan 100% existentes, operativas e intactas**. Cero tablas adicionales fueron afectadas.
+
+### 6.4 Verificación de Regresiones y Pruebas
+1. **Compilación de Producción (`npm run build`):**  
+   `✓ built in 6.84s` sin errores.
+2. **Suite de Pruebas Unitarias (`npm test -- --run`):**  
+   449 archivos de prueba superados, **3,985 pruebas unitarias exitosas**.
+3. **Regresiones Funcionales:** **0**.
+
+```
+========================================================================
+           CIERRE ADMINISTRATIVO FASE 0 · TAREA 0.2: COMPLETADO
+========================================================================
+  [✓] 13 tablas con DEPRECATED formal en catálogo PostgreSQL
+  [✓] 76 tablas protegidas 100% intactas
+  [✓] 33 tablas eliminadas / ausentes en el catálogo
+  [✓] Rollback estructural y backup preservados
+  [✓] Build y 3,985 pruebas en verde
+========================================================================
+```
+

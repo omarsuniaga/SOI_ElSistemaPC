@@ -589,7 +589,7 @@ export const academicService = {
 
       const adjustmentMap = new Map((adjustments || []).map((item) => [String(item.week_number), item]));
       const weeklyItem =
-        (planItems || []).find((item) => Number(item.week_number) == Number(activeRoute.current_week || 1)) ||
+        (planItems || []).find((item) => Number(item.week_number) === Number(activeRoute.current_week || 1)) ||
         null;
 
       if (!weeklyItem) return null;

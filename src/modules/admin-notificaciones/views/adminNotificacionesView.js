@@ -15,6 +15,7 @@
  *  - Transiciones atómicas in-place con desvanecimiento (cero lag de recarga).
  */
 
+import '../styles/centro-actividad.css'
 import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros, fetchNotificacionesEnviadas } from '../api/adminNotifApi.js'
 import { aprobarAusencia, rechazarAusencia } from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
@@ -22,573 +23,6 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import { resetAdminNotifBadge } from '../realtimeService.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
-
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-function _injectStyles() {
-  if (document.getElementById('anv-styles')) return
-  const style = document.createElement('style')
-  style.id = 'anv-styles'
-  style.textContent = `
-    .anv-root {
-      padding: 1.25rem 1rem 5rem;
-      max-width: 680px;
-      margin: 0 auto;
-    }
-
-    /* ── Header ── */
-    .anv-header {
-      margin-bottom: 1.5rem;
-    }
-
-    .anv-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .anv-title-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .anv-icon-wrap {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 0.75rem;
-      background: rgba(99,102,241,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .anv-icon-wrap i {
-      font-size: 1.2rem;
-      color: #6366f1;
-    }
-
-    .anv-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .anv-subtitle {
-      font-size: 0.8rem;
-      opacity: 0.5;
-      margin: 0;
-      padding-left: calc(2.5rem + 0.75rem);
-    }
-
-    /* ── KPI Widgets (Glassmorphism) ── */
-    .anv-kpis {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-      margin-top: 1.25rem;
-    }
-
-    .anv-kpi-card {
-      background: rgba(255, 255, 255, 0.45);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      border-radius: 1rem;
-      padding: 0.85rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
-    }
-
-    .anv-kpi-card:hover {
-      transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.7);
-      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.08);
-      border-color: rgba(99, 102, 241, 0.3);
-    }
-
-    .anv-kpi-card.active {
-      background: rgba(99, 102, 241, 0.08);
-      border-color: #6366f1;
-      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12);
-    }
-
-    .anv-kpi-num {
-      font-size: 1.6rem;
-      font-weight: 800;
-      line-height: 1;
-      color: var(--bs-body-color);
-    }
-
-    .anv-kpi-card.criticas .anv-kpi-num { color: #ef4444; }
-    .anv-kpi-card.compliance .anv-kpi-num { color: #f59e0b; }
-    .anv-kpi-card.novedades .anv-kpi-num { color: #3b82f6; }
-
-    .anv-kpi-label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      opacity: 0.6;
-    }
-
-    /* ── Search Bar ── */
-    .anv-search-container {
-      margin-bottom: 1.25rem;
-      position: relative;
-    }
-
-    .anv-search-input {
-      width: 100%;
-      padding: 0.65rem 1rem 0.65rem 2.5rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--bs-body-color);
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-    }
-
-    .anv-search-input:focus {
-      outline: none;
-      background: #fff;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-
-    .anv-search-icon {
-      position: absolute;
-      left: 0.95rem;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.9rem;
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
-    /* ── Filters ── */
-    .anv-filters {
-      display: flex;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-
-    .anv-filter-btn {
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      border: 1px solid var(--bs-border-color, rgba(0,0,0,0.15));
-      background: transparent;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--bs-body-color);
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .anv-filter-btn.active {
-      background: #6366f1;
-      border-color: #6366f1;
-      color: #fff;
-    }
-
-    .anv-filter-btn:not(.active):hover {
-      background: var(--bs-tertiary-bg, rgba(0,0,0,0.05));
-    }
-
-    .anv-filter-count {
-      background: rgba(255,255,255,0.25);
-      border-radius: 999px;
-      font-size: 0.65rem;
-      padding: 0.05rem 0.4rem;
-      min-width: 1.2rem;
-      text-align: center;
-    }
-
-    .anv-filter-btn:not(.active) .anv-filter-count {
-      background: var(--bs-tertiary-bg, rgba(0,0,0,0.08));
-      color: var(--bs-body-color);
-    }
-
-    /* ── Action bar ── */
-    .anv-action-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
-
-    .anv-showing {
-      font-size: 0.75rem;
-      opacity: 0.5;
-    }
-
-    .anv-refresh-btn {
-      background: transparent;
-      border: 1px solid var(--bs-border-color, rgba(0,0,0,0.12));
-      border-radius: 0.5rem;
-      padding: 0.25rem 0.65rem;
-      font-size: 0.75rem;
-      cursor: pointer;
-      color: var(--bs-body-color);
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: background 0.15s;
-    }
-    .anv-refresh-btn:hover { background: var(--bs-tertiary-bg); }
-    .anv-refresh-btn.spinning i { animation: anv-spin 0.7s linear infinite; }
-    
-    .animate-pulse {
-      animation: pulse-ring 1.5s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
-    }
-
-    @keyframes pulse-ring {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
-    }
-
-    @keyframes anv-spin { to { transform: rotate(360deg); } }
-
-    /* ── Timeline ── */
-    .anv-timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      position: relative;
-    }
-
-    /* Vertical line */
-    .anv-timeline::before {
-      content: '';
-      position: absolute;
-      left: 1.125rem;
-      top: 0.5rem;
-      bottom: 0.5rem;
-      width: 2px;
-      background: var(--bs-border-color, rgba(0,0,0,0.08));
-      border-radius: 1px;
-    }
-
-    /* ── Event card ── */
-    .anv-event {
-      display: flex;
-      gap: 0.85rem;
-      padding: 0.75rem 0;
-      position: relative;
-      animation: anv-fadein 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @keyframes anv-fadein {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .anv-event-dot {
-      width: 2.25rem;
-      height: 2.25rem;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 0.95rem;
-      position: relative;
-      z-index: 1;
-      border: 2px solid var(--bs-body-bg, #fff);
-    }
-
-    .anv-event-body {
-      flex: 1;
-      min-width: 0;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--bs-border-color, rgba(0,0,0,0.06));
-    }
-
-    .anv-event:last-child .anv-event-body {
-      border-bottom: none;
-    }
-
-    .anv-event-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.15rem;
-    }
-
-    .anv-event-titulo {
-      font-size: 0.85rem;
-      font-weight: 600;
-      line-height: 1.4;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .anv-event-time {
-      font-size: 0.7rem;
-      opacity: 0.45;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .anv-event-sub {
-      font-size: 0.77rem;
-      opacity: 0.6;
-      margin-bottom: 0.35rem;
-    }
-
-    .anv-event-motivo {
-      font-size: 0.76rem;
-      opacity: 0.55;
-      font-style: italic;
-      margin-bottom: 0.4rem;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-
-    /* ── Category chip ── */
-    .anv-cat-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      margin-bottom: 0.3rem;
-    }
-
-    /* ── Priority indicator ── */
-    .anv-event[data-priority="alta"]   .anv-event-titulo { color: #ef4444; }
-    .anv-event[data-priority="media"]  .anv-event-titulo { color: #f59e0b; }
-
-    /* ── Suplentes recomendados ── */
-    .anv-suplentes-box {
-      margin-top: 0.65rem;
-      padding: 0.65rem 0.8rem;
-      background: rgba(99, 102, 241, 0.04);
-      border: 1px dashed rgba(99, 102, 241, 0.2);
-      border-radius: 0.75rem;
-    }
-
-    .anv-suplentes-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #4f46e5;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      margin-bottom: 0.4rem;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .anv-suplentes-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-
-    .anv-suplente-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(0,0,0,0.04);
-      padding: 0.3rem 0.5rem;
-      border-radius: 0.5rem;
-      font-size: 0.74rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.01);
-    }
-
-    .anv-suplente-info {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .anv-suplente-name {
-      font-weight: 600;
-      color: var(--bs-body-color);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .anv-suplente-email {
-      font-size: 0.65rem;
-      opacity: 0.5;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .anv-suplente-btn {
-      padding: 0.2rem 0.5rem;
-      border-radius: 0.35rem;
-      border: none;
-      background: rgba(99,102,241,0.08);
-      color: #6366f1;
-      font-size: 0.68rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 0.2rem;
-    }
-
-    .anv-suplente-btn:hover {
-      background: #6366f1;
-      color: #fff;
-    }
-
-    .anv-suplente-btn.notified {
-      background: rgba(34,197,94,0.12);
-      color: #16a34a;
-      pointer-events: none;
-    }
-
-    /* ── Inline actions ── */
-    .anv-inline-actions {
-      display: flex;
-      gap: 0.4rem;
-      margin-top: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .anv-action-btn {
-      padding: 0.28rem 0.75rem;
-      border-radius: 0.5rem;
-      border: none;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: opacity 0.15s, transform 0.1s;
-    }
-    .anv-action-btn:active  { transform: scale(0.96); }
-    .anv-action-btn:disabled { opacity: 0.4; pointer-events: none; }
-
-    .anv-btn-approve {
-      background: rgba(34,197,94,0.12);
-      color: #16a34a;
-    }
-    .anv-btn-approve:hover { background: rgba(34,197,94,0.22); }
-
-    .anv-btn-reject {
-      background: rgba(239,68,68,0.1);
-      color: #dc2626;
-    }
-    .anv-btn-reject:hover { background: rgba(239,68,68,0.2); }
-
-    .anv-btn-goto {
-      background: rgba(99,102,241,0.1);
-      color: #6366f1;
-    }
-    .anv-btn-goto:hover { background: rgba(99,102,241,0.2); }
-
-    /* ── Estado chip (post-decision) ── */
-    .anv-estado-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.15rem 0.55rem;
-      border-radius: 999px;
-      margin-top: 0.4rem;
-    }
-
-    /* ── Empty / Error / Loading ── */
-    .anv-center {
-      text-align: center;
-      padding: 3.5rem 1.5rem;
-    }
-    .anv-center-icon {
-      font-size: 3rem;
-      opacity: 0.2;
-      margin-bottom: 0.75rem;
-    }
-    .anv-center-title {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-    }
-    .anv-center-sub {
-      font-size: 0.8rem;
-      opacity: 0.5;
-    }
-
-    .anv-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      padding: 3rem 1rem;
-      opacity: 0.6;
-      font-size: 0.88rem;
-    }
-    .anv-spinner {
-      width: 1.4rem;
-      height: 1.4rem;
-      border: 2px solid currentColor;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: anv-spin 0.7s linear infinite;
-    }
-
-    /* ── Dark mode ── */
-    [data-bs-theme="dark"] .anv-event-dot,
-    [data-portal-theme="dark"] .anv-event-dot {
-      border-color: var(--bs-body-bg, #1e1e2e);
-    }
-
-    [data-bs-theme="dark"] .anv-kpi-card,
-    [data-portal-theme="dark"] .anv-kpi-card {
-      background: rgba(30, 30, 46, 0.45);
-      border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    [data-bs-theme="dark"] .anv-suplente-item,
-    [data-portal-theme="dark"] .anv-suplente-item {
-      background: rgba(30, 30, 46, 0.6);
-      border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    [data-bs-theme="dark"] .anv-search-input,
-    [data-portal-theme="dark"] .anv-search-input {
-      background: rgba(30, 30, 46, 0.6);
-      border-color: rgba(255, 255, 255, 0.05);
-    }
-  `
-  document.head.appendChild(style)
-}
 
 // ── Category config ───────────────────────────────────────────────────────────
 
@@ -600,10 +34,10 @@ const CATEGORIES = [
 ]
 
 const CAT_COLORS = {
-  ausencia:   { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444' },
-  compliance: { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
-  alumno:     { bg: 'rgba(59,130,246,0.1)',  color: '#3b82f6' },
-  maestro:    { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444' },
+  ausencia:   { bg: 'var(--soi-color-danger-light, rgba(239,68,68,0.12))',   color: 'var(--bs-danger, #ef4444)' },
+  compliance: { bg: 'var(--soi-color-warning-light, rgba(245,158,11,0.12))', color: 'var(--bs-warning, #f59e0b)' },
+  alumno:     { bg: 'var(--soi-color-primary-light, rgba(37,99,235,0.12))',  color: 'var(--bs-primary, #2563eb)' },
+  maestro:    { bg: 'var(--soi-color-danger-light, rgba(239,68,68,0.12))',   color: 'var(--bs-danger, #ef4444)' },
 }
 
 const CAT_LABELS = {
@@ -614,16 +48,14 @@ const CAT_LABELS = {
 }
 
 const ESTADO_CONFIG = {
-  aprobada:  { label: 'Aprobada',  bg: 'rgba(34,197,94,0.12)',   color: '#16a34a', icon: 'bi-check-circle-fill' },
-  rechazada: { label: 'Rechazada', bg: 'rgba(239,68,68,0.12)',   color: '#dc2626', icon: 'bi-x-circle-fill' },
-  pendiente: { label: 'Pendiente', bg: 'rgba(245,158,11,0.12)',  color: '#d97706', icon: 'bi-hourglass-split' },
+  aprobada:  { label: 'Aprobada',  bg: 'var(--soi-color-success-light, rgba(16,185,129,0.15))', color: 'var(--bs-success, #10b981)', icon: 'bi-check-circle-fill' },
+  rechazada: { label: 'Rechazada', bg: 'var(--soi-color-danger-light, rgba(239,68,68,0.15))',   color: 'var(--bs-danger, #ef4444)',   icon: 'bi-x-circle-fill' },
+  pendiente: { label: 'Pendiente', bg: 'var(--soi-color-warning-light, rgba(245,158,11,0.15))', color: 'var(--bs-warning, #f59e0b)', icon: 'bi-hourglass-split' },
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
 export async function renderAdminNotificacionesView(container) {
-  _injectStyles()
-
   let _allEvents  = []
   let _activeFilter = 'all'
   let _searchText = ''
@@ -639,7 +71,7 @@ export async function renderAdminNotificacionesView(container) {
               <h2 class="anv-title">Centro de Actividad</h2>
             </div>
             <div class="d-flex gap-2">
-              <button id="anv-btn-historial" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white;">
+              <button id="anv-btn-historial" class="btn btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-2 anv-btn-header">
                 <i class="bi bi-clock-history"></i>
                 <span>Historial</span>
               </button>
@@ -647,7 +79,7 @@ export async function renderAdminNotificacionesView(container) {
                 <i class="bi bi-send-fill"></i>
                 <span>Enviar notificación</span>
               </button>
-              <button id="anv-btn-help" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white;">
+              <button id="anv-btn-help" class="btn btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-2 anv-btn-header">
                 <i class="bi bi-question-circle-fill"></i>
                 <span>Guía</span>
               </button>
@@ -687,7 +119,7 @@ export async function renderAdminNotificacionesView(container) {
         <div class="anv-action-bar">
           <span class="anv-showing" id="anv-showing"></span>
           <div class="d-flex align-items-center gap-2">
-            <button class="anv-refresh-btn" id="anv-btn-enable-push" style="display:none;" title="Activar notificaciones de escritorio para este dispositivo">
+            <button class="anv-refresh-btn d-none" id="anv-btn-enable-push" title="Activar notificaciones de escritorio para este dispositivo">
               <i class="bi bi-bell"></i> <span>Activar Notificaciones</span>
             </button>
             <button class="anv-refresh-btn" id="anv-refresh-btn">
@@ -843,7 +275,7 @@ export async function renderAdminNotificacionesView(container) {
     el.dataset.priority = event.priority
     el.dataset.category = event.category
 
-    const cat = CAT_COLORS[event.category] || { bg: 'rgba(99,102,241,0.12)', color: '#6366f1' }
+    const cat = CAT_COLORS[event.category] || { bg: 'var(--soi-color-primary-light, rgba(37,99,235,0.12))', color: 'var(--bs-primary, #2563eb)' }
     const catLabel = CAT_LABELS[event.category] || event.category
 
     // Post-decision state chip for resolved events (ausencias and maestros)
@@ -853,7 +285,7 @@ export async function renderAdminNotificacionesView(container) {
       const ec = ESTADO_CONFIG[estadoKey]
       if (ec) {
         estadoChipHTML = `
-          <span class="anv-estado-chip" style="background:${ec.bg};color:${ec.color}">
+          <span class="anv-estado-chip anv-estado-${estadoKey}" data-estado="${estadoKey}">
             <i class="bi ${ec.icon}"></i> ${ec.label === 'Aprobada' && event.source === 'maestro' ? 'Aprobado' : (ec.label === 'Rechazada' && event.source === 'maestro' ? 'Rechazado' : ec.label)}
           </span>
         `
@@ -929,11 +361,11 @@ export async function renderAdminNotificacionesView(container) {
     }
 
     el.innerHTML = `
-      <div class="anv-event-dot" style="background:${cat.bg}">
-        <i class="bi ${event.icon}" style="color:${event.iconColor}"></i>
+      <div class="anv-event-dot" data-category="${event.category}">
+        <i class="bi ${event.icon}" style="color:${event.iconColor || 'inherit'}"></i>
       </div>
       <div class="anv-event-body">
-        <span class="anv-cat-chip" style="background:${cat.bg};color:${cat.color}">
+        <span class="anv-cat-chip anv-cat-${event.category}" data-cat="${event.category}">
           ${escapeHTML(catLabel)}
         </span>
         <div class="anv-event-top">
@@ -983,7 +415,7 @@ export async function renderAdminNotificacionesView(container) {
         el.querySelectorAll('[data-action="approve"],[data-action="reject"],[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = true)
         
         if (action === 'approve') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML = '<span class="anv-spinner anv-spinner-sm"></span>'
           try {
             await aprobarAusencia(event.sourceId, '')
             window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Ausencia aprobada con éxito', type: 'success' } }))
@@ -993,10 +425,9 @@ export async function renderAdminNotificacionesView(container) {
             event.estado = 'aprobada'
             event.priority = 'info'
             event.icon = 'bi-calendar-check-fill'
-            event.iconColor = '#22c55e'
+            event.iconColor = 'var(--bs-success, #10b981)'
 
             const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
             el.replaceWith(freshEl)
 
             _renderKPIs()
@@ -1008,7 +439,7 @@ export async function renderAdminNotificacionesView(container) {
             btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
           }
         } else if (action === 'reject') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML = '<span class="anv-spinner anv-spinner-sm"></span>'
           try {
             await rechazarAusencia(event.sourceId, '')
             window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Ausencia rechazada con éxito', type: 'success' } }))
@@ -1018,10 +449,9 @@ export async function renderAdminNotificacionesView(container) {
             event.estado = 'rechazada'
             event.priority = 'info'
             event.icon = 'bi-calendar-minus-fill'
-            event.iconColor = '#ef4444'
+            event.iconColor = 'var(--bs-danger, #ef4444)'
 
             const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
             el.replaceWith(freshEl)
 
             _renderKPIs()
@@ -1033,7 +463,7 @@ export async function renderAdminNotificacionesView(container) {
             btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
           }
         } else if (action === 'approve-maestro') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML = '<span class="anv-spinner anv-spinner-sm"></span>'
           try {
             const { error } = await supabase
               .from('profiles')
@@ -1049,11 +479,10 @@ export async function renderAdminNotificacionesView(container) {
             event.estado = 'activo'
             event.priority = 'info'
             event.icon = 'bi-person-check-fill'
-            event.iconColor = '#22c55e'
+            event.iconColor = 'var(--bs-success, #10b981)'
             event.titulo = `Maestro registrado aprobado: ${event.titulo.replace('Nuevo maestro registrado esperando aprobación: ', '')}`
 
             const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
             el.replaceWith(freshEl)
 
             _renderKPIs()
@@ -1063,7 +492,7 @@ export async function renderAdminNotificacionesView(container) {
             btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
           }
         } else if (action === 'reject-maestro') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML = '<span class="anv-spinner anv-spinner-sm"></span>'
           try {
             const { error } = await supabase
               .from('profiles')
@@ -1079,11 +508,10 @@ export async function renderAdminNotificacionesView(container) {
             event.estado = 'rechazado'
             event.priority = 'info'
             event.icon = 'bi-person-dash-fill'
-            event.iconColor = '#ef4444'
+            event.iconColor = 'var(--bs-danger, #ef4444)'
             event.titulo = `Maestro registrado rechazado: ${event.titulo.replace('Nuevo maestro registrado esperando aprobación: ', '')}`
 
             const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
             el.replaceWith(freshEl)
 
             _renderKPIs()
@@ -1191,34 +619,6 @@ export async function renderAdminNotificacionesView(container) {
 
   function _openHelpGuideModal() {
     const helpContent = `
-      <style>
-        .anv-help-body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          color: var(--bs-body-color, #212529);
-        }
-        .anv-help-section {
-          background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.03);
-          border: 1px solid rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15);
-          border-radius: 12px;
-          padding: 1.25rem;
-          margin-bottom: 1rem;
-          transition: transform 0.2s;
-        }
-        .anv-help-section:hover {
-          transform: translateY(-2px);
-          border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
-        }
-        .anv-help-icon {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 8px;
-          font-size: 1.1rem;
-          margin-right: 0.75rem;
-        }
-      </style>
       <div class="anv-help-body container-fluid">
         <p class="small text-muted mb-4">Esta guía te orientará en el uso del <strong>Centro de Actividad</strong>, el motor inteligente y predictivo de gobernanza y control operativo escolar.</p>
         
@@ -1296,7 +696,7 @@ export async function renderAdminNotificacionesView(container) {
         <div class="mb-3">
           <label class="form-label fw-semibold">Destinatarios</label>
           <select class="form-select" id="sn-destinatarios" multiple size="5">
-            <option value="__all__" style="font-weight:700">📢 Todos los maestros activos</option>
+            <option value="__all__" class="fw-bold">📢 Todos los maestros activos</option>
             ${opcionesMaestros}
           </select>
           <div class="form-text">Ctrl+click para seleccionar varios. "Todos" hace envío masivo.</div>
@@ -1406,7 +806,7 @@ export async function renderAdminNotificacionesView(container) {
       AppModal.open({
         title: '<i class="bi bi-clock-history me-2"></i>Historial de notificaciones enviadas',
         body: `<div class="text-center py-4 text-muted">
-          <i class="bi bi-inbox fs-1 d-block mb-2" style="opacity:0.3"></i>
+          <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
           <p class="mb-0">Todavía no se enviaron notificaciones.</p>
         </div>`,
         hideSave: true,
@@ -1422,18 +822,18 @@ export async function renderAdminNotificacionesView(container) {
     }
 
     const rows = entries.map(e => `
-      <div class="border rounded p-3 mb-2" style="font-size:0.875rem;">
+      <div class="border rounded p-3 mb-2 small">
         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-          <strong class="text-truncate" style="max-width:70%;">${escapeHTML(e.titulo || '(sin título)')}</strong>
+          <strong class="text-truncate anv-historial-title">${escapeHTML(e.titulo || '(sin título)')}</strong>
           <span class="badge bg-secondary flex-shrink-0">${escapeHTML(e.recipientCount)} destinatario${e.recipientCount !== 1 ? 's' : ''}</span>
         </div>
-        <p class="text-muted mb-1" style="white-space:pre-wrap;word-break:break-word;">${escapeHTML(e.mensaje || '')}</p>
+        <p class="text-muted mb-1 text-break">${escapeHTML(e.mensaje || '')}</p>
         <small class="text-muted"><i class="bi bi-clock me-1"></i>${escapeHTML(fmtDate(e.created_at))}</small>
       </div>`).join('')
 
     AppModal.open({
       title: `<i class="bi bi-clock-history me-2"></i>Historial <span class="badge bg-secondary ms-1">${entries.length}</span>`,
-      body: `<div style="max-height:420px;overflow-y:auto;">${rows}</div>`,
+      body: `<div class="anv-modal-scroll">${rows}</div>`,
       hideSave: true,
       cancelText: 'Cerrar',
     })
@@ -1450,17 +850,20 @@ export async function renderAdminNotificacionesView(container) {
   const pushBtn = container.querySelector('#anv-btn-enable-push')
   if (pushBtn && 'Notification' in window) {
     if (Notification.permission === 'default') {
-      pushBtn.style.display = 'inline-flex'
+      pushBtn.classList.remove('d-none')
+      pushBtn.classList.add('d-inline-flex')
       pushBtn.addEventListener('click', async () => {
         try {
           const perm = await Notification.requestPermission()
           if (perm === 'granted') {
-            pushBtn.style.display = 'none'
+            pushBtn.classList.add('d-none')
+            pushBtn.classList.remove('d-inline-flex')
             window.dispatchEvent(new CustomEvent('showToast', {
               detail: { message: 'Notificaciones de escritorio activadas correctamente.', type: 'success' }
             }))
           } else {
-            pushBtn.style.display = 'none'
+            pushBtn.classList.add('d-none')
+            pushBtn.classList.remove('d-inline-flex')
           }
         } catch (err) {
           console.warn('[Notification] requestPermission error:', err)

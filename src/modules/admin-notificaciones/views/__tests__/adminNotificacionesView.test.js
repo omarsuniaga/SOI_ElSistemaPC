@@ -210,4 +210,27 @@ describe('adminNotificacionesView Interface & Interactions', () => {
     expect(container.innerHTML).toContain('&lt;b onmouseover="alert(2)"&gt;')
     expect(container.innerHTML).toContain('&lt;svg onload="alert(3)"&gt;')
   })
+
+  it('does not inject inline styles into document.head and uses V9 semantic classes (CDA2)', async () => {
+    await renderAdminNotificacionesView(container)
+
+    // Verify _injectStyles style tag is NOT present
+    expect(document.getElementById('anv-styles')).toBeNull()
+
+    // Verify header buttons use anv-btn-header class instead of inline styles
+    const historialBtn = container.querySelector('#anv-btn-historial')
+    const helpBtn = container.querySelector('#anv-btn-help')
+    expect(historialBtn.classList.contains('anv-btn-header')).toBe(true)
+    expect(helpBtn.classList.contains('anv-btn-header')).toBe(true)
+    expect(historialBtn.getAttribute('style')).toBeNull()
+    expect(helpBtn.getAttribute('style')).toBeNull()
+
+    // Verify event dot and category chip use data attributes and V9 classes
+    const eventEl = container.querySelector('.anv-event')
+    const dotEl = eventEl.querySelector('.anv-event-dot')
+    const chipEl = eventEl.querySelector('.anv-cat-chip')
+    expect(dotEl.dataset.category).toBe('ausencia')
+    expect(chipEl.dataset.cat).toBe('ausencia')
+    expect(chipEl.getAttribute('style')).toBeNull()
+  })
 })

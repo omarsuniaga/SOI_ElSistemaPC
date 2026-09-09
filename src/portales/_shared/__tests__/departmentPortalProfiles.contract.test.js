@@ -30,7 +30,7 @@ describe('department portal profile contracts', () => {
     expect(profile).toMatchObject({
       brandText: 'SOI · Académica',
       brandIcon: 'bi-easel',
-      allowedRoles: ['admin'],
+      allowedRoles: ['admin', 'superadmin', 'coordinacion_academica'],
       defaultRoute: 'clases-hoy',
       hermesDept: 'ACM',
     })

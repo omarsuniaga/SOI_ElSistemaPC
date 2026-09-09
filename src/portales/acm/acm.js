@@ -3,8 +3,7 @@
  * Lente sobre los módulos académicos/pedagógicos: gestión de clases, salones, horarios,
  * programas, planificación, progresos, observaciones y tareas Hermes del depto ACM.
  *
- * Gating: rol 'admin' por ahora (los roles finos como 'coordinador_academico' se
- * agregarán cuando se asignen a personas reales).
+ * Gating: roles administrativos y coordinación académica del departamento.
  */
 
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
@@ -69,7 +68,7 @@ bootAdminPortal({
   brandIcon: 'bi-easel',
   navGroups,
   registrars: allRegistrars,
-  allowedRoles: ['admin'],
+  allowedRoles: ['admin', 'superadmin', 'coordinacion_academica'],
   defaultRoute: 'clases-hoy',
   hermesDept: 'ACM',
 }).catch((err) => {

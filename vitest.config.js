@@ -6,6 +6,9 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.test.{js,ts}', 'tests/**/*.test.{js,ts}'],
     exclude: [],
+    pool: 'forks',
+    maxWorkers: 3,
+    minWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

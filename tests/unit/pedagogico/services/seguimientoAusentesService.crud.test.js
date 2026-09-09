@@ -47,11 +47,14 @@ describe('DataAdapter CRUD Service Methods', () => {
       is: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
       range: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue(resolveValue),
+      maybeSingle: vi.fn().mockResolvedValue(resolveValue),
     }
     return chain
   }
@@ -102,6 +105,7 @@ describe('DataAdapter CRUD Service Methods', () => {
         if (table === 'periodos') {
           const chain = createChain({ data: null, error: null })
           chain.single = vi.fn().mockResolvedValue({ data: null, error: null })
+          chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
           return chain
         }
         return mockQueryChain({ data: null })
@@ -559,23 +563,62 @@ describe('DataAdapter CRUD Service Methods', () => {
       expect(k.retencionesActivas).toBe(2)
       expect(k.contactosUltimas72h).toBe(2)
     })
+
+    it('propagate errors when database queries fail in fetchKpisAusentismo', async () => {
+      mockFrom.mockImplementation((table) => {
+        if (table === 'vw_seguimiento_ausentes') {
+          return { select: async () => ({ data: null, error: new Error('RLS error in view') }) }
+        }
+        if (table === 'retenciones_instrumento') {
+          return { select: () => ({ eq: async () => ({ count: 0, error: null }) }) }
+        }
+        if (table === 'comunicaciones_seguimiento') {
+          return { select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) }
+        }
+        return mockQueryChain({ data: null })
+      })
+
+      await expect(fetchKpisAusentismo()).rejects.toThrow('RLS error in view')
+    })
   })
 
   // ============ fetchCasosCerrados ============
   describe('fetchCasosCerrados', () => {
-    it('trae comunicaciones origen=ausentismo con resultado=resuelto', async () => {
+    it('trae comunicaciones origen=ausentismo con resultado=resuelto y mapea alumno_nombre', async () => {
       let filters = {}
       const chain = {
         select() { return this }, eq(k, v) { filters[k] = v; return this },
         in(k, v) { filters[k] = v; return this }, order() { return this },
         limit() { return this }, gte(k, v) { filters.gte = v; return this }, lte() { return this },
-        then(res) { return Promise.resolve({ data: [{ id: 'x', resultado: 'resuelto' }] }).then(res) },
+        then(res) {
+          return Promise.resolve({
+            data: [{ id: 'x', resultado: 'resuelto', alumnos: { nombre_completo: 'Juan Perez' } }],
+            error: null,
+          }).then(res)
+        },
       }
       mockFrom.mockImplementation(() => chain)
       const rows = await fetchCasosCerrados({ desde: '2026-08-01' })
       expect(rows).toHaveLength(1)
+      expect(rows[0].alumno_nombre).toBe('Juan Perez')
       expect(filters.origen).toBe('ausentismo')
       expect(filters.resultado).toEqual(['resuelto'])
+    })
+
+    it('propagate errors when fetchCasosCerrados fails', async () => {
+      const chain = {
+        select() { return this }, eq() { return this },
+        in() { return this }, order() { return this },
+        limit() { return this },
+        then(res) {
+          return Promise.resolve({
+            data: null,
+            error: new Error('Failed to fetch closed cases'),
+          }).then(res)
+        },
+      }
+      mockFrom.mockImplementation(() => chain)
+      await expect(fetchCasosCerrados()).rejects.toThrow('Failed to fetch closed cases')
     })
   })
 

@@ -1,0 +1,46 @@
+﻿/**
+ * ausentismo.css - Estilos V9 para el modulo pedagogico (Dashboard Ausentismo ADM)
+ * Tokens semanticos, ritmo visual y componentes especificos sin inline styles.
+ */
+
+.ausentismo-kpi-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.08)) !important;
+  background-color: var(--bs-card-bg, rgba(255, 255, 255, 0.03));
+}
+
+.ausentismo-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Nivel 3 acento jerarquico */
+.ausentismo-kpi-card.kpi-nivel-3 {
+  border-left: 4px solid var(--bs-danger, #dc3545) !important;
+}
+
+.ausentismo-kpi-card.kpi-nivel-3.has-urgent-cases {
+  box-shadow: 0 0 0 1px var(--bs-danger, #dc3545), 0 4px 12px rgba(220, 53, 69, 0.15) !important;
+}
+
+/* Iconos sutiles con tinte suave V9 */
+.ausentismo-icon-badge {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 1.15rem;
+}
+
+/* Grafico embudo / barras SVG */
+.ausentismo-chart-container {
+  border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 0.5rem;
+  background-color: var(--bs-card-bg, rgba(255, 255, 255, 0.02));
+}
+
+.ausentismo-funnel-bar {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}

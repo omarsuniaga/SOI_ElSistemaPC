@@ -1,9 +1,8 @@
 import '../styles/alumnos.css'
 import { router } from '../../../core/router/router.js'
-import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
-import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
+import { calcularCompletitud } from '../domain/completitudAlumno.js'
 
-import { formatPhone, normalizePhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
+import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm } from '../components/AlumnoForm.js'
@@ -14,38 +13,21 @@ import {
   obtenerAlumnos,
   crearAlumno,
   actualizarAlumno,
-  PARENTESCOS,
   getParentescoLabel,
   obtenerAlumnosFiltradosYOrdenados,
 } from '../api/alumnosApi.js'
 import { descargarPdfListadoAlumnos } from '../domain/generarPdfInscripcion.js'
-import { calcularEdad } from '../domain/calcularEdad.js'
 import { detectarCandidatosDe } from '../domain/duplicadosAlumnos.js'
 import {
   formatDate,
   escapeHTML,
-  isValidEmail,
   formatGenero,
-  getGeneroIcon,
-  getEstadoClass,
-  getEstadoLabel,
-  getInitials,
 } from '../utils/alumnosUtils.js'
 import { getInstrumentoIcon } from '../../clases/utils/clasesUtils.js'
 import { agruparAlumnosPorPrograma } from '../domain/agruparAlumnosPorPrograma.js'
 
 // D03: AbortController for SPA event-listener cleanup
 let _abortController = null
-
-const VALIDATION = {
-  nombreMax: 100,
-  emailMax: 100,
-  cedulaMax: 20,
-  telefonoMax: 20,
-  acudienteMax: 100,
-  direccionMax: 255,
-  sectionMax: 100,
-}
 
 function renderLoading(container) {
   container.innerHTML = `

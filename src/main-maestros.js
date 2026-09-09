@@ -144,10 +144,8 @@ import './portal-maestros/styles/index.css'
 import { initErrorReporter, reportError } from './services/errorReporter.js'
 import { initAnalytics } from './services/analyticsService.js'
 import { initRateLimit } from './middleware/rateLimit.js'
-import { initCSRF } from './middleware/csrfProtection.js'
 import { initWebVitals } from './services/webVitals.js'
 
-initCSRF()
 initRateLimit({ windowMs: 60000, max: 100 })
 initAnalytics({ enabled: false, consent: false })
 initWebVitals({ debug: false })

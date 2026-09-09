@@ -9,17 +9,17 @@ import { supabase } from '../../lib/supabaseClient.js'
  * Catálogo estático de respaldo en caso de que la red falle.
  */
 export const DEFAULT_PORTAL_CATALOG = [
-  { portal_id: 'SUPERADMIN', nombre: 'SuperAdmin Master', ruta: '/adm.html', roles_default: ['superadmin'], icono: 'bi-shield-lock-fill' },
-  { portal_id: 'ADM', nombre: 'Portal Administración', ruta: '/adm.html', roles_default: ['superadmin', 'admin', 'coordinacion_academica'], icono: 'bi-briefcase-fill' },
-  { portal_id: 'ACM', nombre: 'Portal Académico', ruta: '/acm.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-mortarboard-fill' },
-  { portal_id: 'FIN', nombre: 'Portal Finanzas SOI', ruta: '/fin.html', roles_default: ['superadmin', 'admin', 'finanzas'], icono: 'bi-cash-coin' },
-  { portal_id: 'CAL', nombre: 'Portal Calendario', ruta: '/calendario.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica', 'maestro', 'monitor', 'operaciones'], icono: 'bi-calendar3' },
-  { portal_id: 'MAE', nombre: 'Portal Docente', ruta: '/index.html', roles_default: ['superadmin', 'admin', 'maestro', 'monitor'], icono: 'bi-person-video3' },
-  { portal_id: 'COM', nombre: 'Portal Comunicaciones', ruta: '/com.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-megaphone-fill' },
-  { portal_id: 'TEC', nombre: 'Portal Técnico', ruta: '/tecnico.html', roles_default: ['superadmin', 'admin', 'operaciones'], icono: 'bi-wrench-adjustable' },
-  { portal_id: 'LUT', nombre: 'Portal Lutería', ruta: '/luteria.html', roles_default: ['superadmin', 'admin', 'operaciones'], icono: 'bi-music-note-beamed' },
-  { portal_id: 'SIM', nombre: 'Portal Simulador', ruta: '/simulador.html', roles_default: ['superadmin', 'admin'], icono: 'bi-sliders' },
-  { portal_id: 'AUD', nombre: 'Portal Audiciones', ruta: '/audiciones.html', roles_default: ['superadmin', 'admin', 'jurado', 'direccion'], icono: 'bi-award-fill' }
+  { portal_id: 'SUPERADMIN', nombre: 'SuperAdmin Master', ruta: '/adm.html', roles_default: ['superadmin'], icono: 'bi-shield-lock-fill', activo: true },
+  { portal_id: 'ADM', nombre: 'Portal Administración', ruta: '/adm.html', roles_default: ['superadmin', 'admin', 'coordinacion_academica'], icono: 'bi-briefcase-fill', activo: true },
+  { portal_id: 'ACM', nombre: 'Portal Académico', ruta: '/acm.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-mortarboard-fill', activo: true },
+  { portal_id: 'FIN', nombre: 'Portal Finanzas SOI', ruta: '/fin.html', roles_default: ['superadmin', 'admin', 'finanzas'], icono: 'bi-cash-coin', activo: true },
+  { portal_id: 'CAL', nombre: 'Portal Calendario', ruta: '/calendario.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica', 'maestro', 'monitor', 'operaciones'], icono: 'bi-calendar3', activo: true },
+  { portal_id: 'MAE', nombre: 'Portal Docente', ruta: '/index.html', roles_default: ['superadmin', 'admin', 'maestro', 'monitor'], icono: 'bi-person-video3', activo: true },
+  { portal_id: 'COM', nombre: 'Portal Comunicaciones', ruta: '/com.html', roles_default: ['superadmin', 'admin', 'direccion', 'coordinacion_academica'], icono: 'bi-megaphone-fill', activo: false },
+  { portal_id: 'TEC', nombre: 'Portal Técnico', ruta: '/tecnico.html', roles_default: ['superadmin', 'admin', 'operaciones'], icono: 'bi-wrench-adjustable', activo: false },
+  { portal_id: 'LUT', nombre: 'Portal Lutería', ruta: '/luteria.html', roles_default: ['superadmin', 'admin', 'operaciones'], icono: 'bi-music-note-beamed', activo: true },
+  { portal_id: 'SIM', nombre: 'Portal Simulador', ruta: '/simulador.html', roles_default: ['superadmin', 'admin'], icono: 'bi-sliders', activo: true },
+  { portal_id: 'AUD', nombre: 'Portal Audiciones', ruta: '/audiciones.html', roles_default: ['superadmin', 'admin', 'jurado', 'direccion'], icono: 'bi-award-fill', activo: false }
 ]
 
 /**
@@ -86,7 +86,7 @@ async function getFallbackAuthorizedPortales(userId) {
       .maybeSingle()
 
     const rol = profile?.rol || 'user'
-    if (rol === 'superadmin') return DEFAULT_PORTAL_CATALOG
+    if (rol === 'superadmin') return DEFAULT_PORTAL_CATALOG.filter(p => p.activo !== false)
 
     // Consultar asignaciones explícitas en user_portal_access
     const { data: accessData } = await supabase

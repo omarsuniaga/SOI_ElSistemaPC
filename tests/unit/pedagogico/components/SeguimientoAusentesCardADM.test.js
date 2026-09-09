@@ -126,4 +126,56 @@ describe('SeguimientoAusentesCardADM (T1b.3)', () => {
     const actionButtons = container.querySelectorAll('button[data-action]')
     expect(actionButtons.length).toBe(0)
   })
+
+  it('should render 2 semantic blocks: Escalamiento (3 cards) and Retención/Contacto (4 cards)', async () => {
+    const { renderSeguimientoAusentesCardADM } = await import('../../../../src/modules/pedagogico/components/SeguimientoAusentesCardADM.js')
+    const html = renderSeguimientoAusentesCardADM({
+      nivel1: 5, nivel2: 3, nivel3: 2, contactados72h: 4, totalContactos: 10,
+      sinContacto: 2, retencionesActivas: 2, retencionesLevantadas: 1,
+    })
+    container.innerHTML = html
+
+    expect(container.textContent).toContain('Escalamiento de Casos')
+    expect(container.textContent).toContain('Retención & Gestión de Contacto')
+
+    const escalamientoCards = container.querySelectorAll('[data-kpi^="nivel-"]')
+    expect(escalamientoCards.length).toBe(3)
+
+    const sinContactoCard = container.querySelector('[data-kpi="sin-contacto"]')
+    expect(sinContactoCard).toBeTruthy()
+    expect(sinContactoCard?.textContent).toContain('2')
+  })
+
+  it('should apply data-driven semantic colors without false positives for zeros (VD3)', async () => {
+    const { renderSeguimientoAusentesCardADM } = await import('../../../../src/modules/pedagogico/components/SeguimientoAusentesCardADM.js')
+
+    // Zero retentions, zero contacts -> should have neutral body-secondary styling, NOT red alarm or green success
+    const htmlZero = renderSeguimientoAusentesCardADM({
+      nivel1: 0, nivel2: 0, nivel3: 0, contactados72h: 0, totalContactos: 0,
+      sinContacto: 0, retencionesActivas: 0, retencionesLevantadas: 0,
+    })
+    container.innerHTML = htmlZero
+
+    const retActivasZero = container.querySelector('[data-kpi="retenciones-activas"]')
+    expect(retActivasZero?.querySelector('.ausentismo-icon-badge')?.classList.contains('bg-body-secondary')).toBe(true)
+
+    const retLevantadasZero = container.querySelector('[data-kpi="retenciones-levantadas"]')
+    expect(retLevantadasZero?.querySelector('.ausentismo-icon-badge')?.classList.contains('bg-body-secondary')).toBe(true)
+
+    const contactadosZero = container.querySelector('[data-kpi="contactados"]')
+    expect(contactadosZero?.querySelector('.ausentismo-icon-badge')?.classList.contains('bg-body-secondary')).toBe(true)
+  })
+
+  it('should prominently highlight Level 3 with ACCIÓN badge when active (VD2)', async () => {
+    const { renderSeguimientoAusentesCardADM } = await import('../../../../src/modules/pedagogico/components/SeguimientoAusentesCardADM.js')
+    const html = renderSeguimientoAusentesCardADM({
+      nivel1: 2, nivel2: 1, nivel3: 4, contactados72h: 1, totalContactos: 7,
+      sinContacto: 1, retencionesActivas: 4, retencionesLevantadas: 0,
+    })
+    container.innerHTML = html
+
+    const nivel3Card = container.querySelector('[data-kpi="nivel-3"]')
+    expect(nivel3Card?.classList.contains('has-urgent-cases')).toBe(true)
+    expect(nivel3Card?.textContent).toContain('ACCIÓN')
+  })
 })

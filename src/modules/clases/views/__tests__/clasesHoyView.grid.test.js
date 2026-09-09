@@ -29,6 +29,10 @@ import { renderClasesHoyView } from '../clasesHoyView.js'
 import { obtenerClasesDelDia } from '../../api/clasesHoyApi.js'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 describe('clasesHoyView - 4 Cards Per Row on Desktop', () => {
   let container

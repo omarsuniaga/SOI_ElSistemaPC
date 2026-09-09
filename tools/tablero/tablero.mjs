@@ -127,7 +127,7 @@ function parseIntake(rows) {
  */
 function parseProgreso(rows) {
   return rows.map((r) => {
-    const id = (r.topic.match(/^tablero\/(.+?)\/progress$/) || [])[1] || r.topic
+    const id = (r.topic.match(/^tablero\/(.+?)\/progress(?:\/.+)?$/) || [])[1] || r.topic
     const txt = limpiar(r.content)
     const primera = txt.split('\n').find((l) => l.trim()) || ''
     const rama = (txt.match(/\b(?:rama|branch)[:\s]+`?([\w./-]+\/[\w./-]+)`?/i) || txt.match(/`([\w./-]+\/[\w./-]+)`/) || [])[1] || ''
@@ -260,7 +260,7 @@ function parseBacklog(content) {
         'LIBRE'
       meta.tareas.push({
         id: id || '—',
-        area: get('área', 'area', 'carril'),
+        area: get('ámbito', 'ambito', 'área', 'area', 'carril'),
         prioridadRaw: get('prio', 'prioridad'),
         prioridad: prioridadDe(get('prio', 'prioridad', 'estado')),
         titulo: tareaTxt || get('nota', 'descripción', 'descripcion'),
@@ -294,7 +294,7 @@ function parseLanes(content) {
       }
       return ''
     }
-    const area = get('área', 'area', 'carril')
+    const area = get('ámbito', 'ambito', 'área', 'area', 'carril')
     if (!area) continue
     out.push({
       area,

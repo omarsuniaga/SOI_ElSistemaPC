@@ -1,399 +1,514 @@
-# Mecanismo multi-agente SOI — especificación técnica
+# Mecanismo multi-agente SOI — v1.0
 
-> Estado: propuesta · Autor: Claude-Code · Fecha: 2026-09-09
-> Canónico en Engram: `coordination/mecanismo` (este archivo es el espejo versionado).
-> Complementa y detalla: `coordination/soi-multi-agent-protocol` (#2589), `coordination/modelo-de-trabajo` (#3545).
-
----
-
-## 1. Propósito
-
-Un sistema de trabajo continuo en el que varios agentes LLM (AI-Anti / Antigravity, AI-Codex, Claude-Code) **mejoran el SOI de forma autónoma y coordinada**: detectan fallas y deuda, las publican en un backlog compartido, y las resuelven una por una en ramas aisladas que un humano (Omar) integra.
-
-El mecanismo debe garantizar:
-
-1. **Cero colisión de archivos** entre agentes trabajando en paralelo.
-2. **Cero pérdida de estado** por el modelo de escritura de Engram (upsert).
-3. **Coherencia**: cada cambio sigue el contexto del sistema; si el agente no lo tiene, lo busca o pregunta, nunca improvisa.
-4. **Trazabilidad**: de cada cambio se puede reconstruir qué falla resolvía, por qué, quién y en qué PR.
-5. **Distribución de carga según presupuesto de tokens** de cada agente.
-6. **Un único punto de integración** (Omar) — ningún agente mergea.
+> **Estado: PROPUESTA PARA ADOPCIÓN.** No entra en vigor hasta que Omar la apruebe con
+> versión + commit + fecha, y cada agente acuse haberla leído. Mientras tanto rige
+> SOI-MAP (`coordination/soi-multi-agent-protocol`, #2589).
+>
+> Autor: Claude-Code · Fecha: 2026-09-09 · Canónico en Engram: `coordination/mecanismo`.
+> Incorpora la contrarrevisión `coordination/mecanismo/contrarrevision-ai-codex/claude-code/*` (#3559)
+> sobre la revisión de AI-Codex (#3549), sobre el borrador previo (commit 0a07307d).
+> Base normativa previa: SOI-MAP #2589, corrección de coordinación #2588.
 
 ---
 
-## 2. Principios (heredados de SOI-MAP + nuevos)
+## 0. TL;DR — cómo se usa esto
 
-| # | Principio | Origen |
-|---|-----------|--------|
-| P1 | Proyecto Engram único: `soi_elsistemapc`. Nunca la raíz. | SOI-MAP |
-| P2 | Un ÁREA = un dueño a la vez (candado blando). | SOI-MAP |
-| P3 | Cada agente su rama; nadie mergea a `master`. Omar es el único integrador. | SOI-MAP |
-| P4 | Antes de crear un concepto nuevo, buscar en Engram si ya existe. Conectar, no duplicar. | SOI-MAP |
-| P5 | **Regla anti-clobber**: ningún agente escribe en un topic compartido con una nota parcial. Cada agente escribe en su propio topic; el coordinador consolida. | nuevo (§8) |
-| P6 | **Contexto obligatorio antes de actuar**: leer protocolo + carriles + backlog + topic-fuente de la tarea. | nuevo (§6) |
-| P7 | **Ante la duda, preguntar**: si el agente no puede resolver de forma coherente con el sistema, escribe la duda y para. No improvisa. | nuevo (§6.5) |
-| P8 | **Presupuesto primero**: el agente declara su presupuesto de tokens al inicio de cada iteración; el reparto de carga lo respeta. | nuevo (§7) |
+- **Omar** abre el visor: `node tools/tablero/tablero.mjs --watch`. Ahí ve el tablero, los
+  carriles, la actividad de cada agente, y **los prompts para copiar**.
+- Al arrancar un lote, Omar **publica la asignación de ámbitos** (§4) y **pega el prompt de contexto + el prompt de loop** (§9, botones de copiar en el visor) a AI-Anti y AI-Codex.
+- Los agentes corren un **loop continuo**: leen el contexto → eligen/reclaman una tarea de su ámbito → la aíslan en un worktree → la resuelven (toca **UI/UX, tests, lógica, base de datos, lo que la tarea pida**) → abren un PR → repiten. Si no hay tareas, escanean su ámbito y **proponen** nuevas.
+- **Omar mergea** los PR (en orden, §11). Ningún agente mergea.
+- **Omar puede pasarle a Claude-Code la ruta de una vista** ("evaluá `/adm/x`"): Claude la audita, mete los hallazgos como tareas en el tablero, y el agente dueño de ese ámbito las toma (§13).
+
+---
+
+## 1. Propósito y garantías
+
+Sistema de trabajo continuo donde AI-Anti (Antigravity), AI-Codex y Claude-Code
+**mejoran el SOI de forma coordinada**: detectan fallas y deuda en cualquier capa
+(UI/UX, tests, lógica de negocio, base de datos, build/CI, docs), las publican como
+tareas, y las resuelven en ramas aisladas que Omar integra.
+
+**Objetivos (verificables), no garantías absolutas:**
+1. Evitar escritura concurrente sobre un mismo checkout de código.
+2. Detectar reclamaciones incompatibles (rutas de archivo solapadas) **antes** de implementar.
+3. Conservar evidencia recuperable de cada transición — **Git + PR es la fuente de verdad del código**.
+4. Que la ausencia de cualquier agente (incluido Claude-Code) **no detenga** el trabajo de los demás ámbitos.
+5. Trazabilidad: de cada cambio se reconstruye qué falla resolvía, por qué, quién, en qué PR.
+6. Repartir carga según capacidad real (permisos, herramientas, WIP, riesgo), no según porcentajes inventados.
+
+**Lo que NO se garantiza** (y por qué): exclusión estricta con `mem_save` (Engram no
+tiene lock ni CAS); ausencia de conflictos semánticos (dos archivos distintos pueden
+romper el mismo contrato); pérdida cero sin respaldo verificado. Ningún resumen
+agregado (`lanes`, `backlog`, visor) basta para liberar un ámbito.
+
+---
+
+## 2. Principios
+
+| # | Principio |
+|---|-----------|
+| P1 | Proyecto Engram único: `soi_elsistemapc`. Nunca la raíz. |
+| P2 | **La coordinación es una función, no una identidad.** Nadie es indispensable. |
+| P3 | Un ÁMBITO = un dueño a la vez. La propiedad la da la **asignación de lote de Omar**, no una fila LIBRE en un tablero. |
+| P4 | Cada agente su rama. **Nadie mergea.** Omar es el único integrador y el único que decide lo destructivo. |
+| P5 | Antes de crear un concepto nuevo, buscar en Engram si ya existe. Conectar, no duplicar. |
+| P6 | **Contexto obligatorio antes de actuar** (§8): protocolo + asignación + backlog + topic-fuente de la tarea, con `mem_get_observation` (las búsquedas truncan). |
+| P7 | **Ante la duda, preguntar.** Si el agente no puede resolver de forma coherente con el sistema, escribe la duda y para. No improvisa. |
+| P8 | **Regla anti-clobber**: cada topic compartido tiene un único escritor; cada agente escribe sólo su propio `progress`; el intake es de un solo productor. |
+| P9 | **Evidencia antes de estado**: EN-REVIEW se publica *después* de verificar commit + push + PR. |
+| P10 | **Presión de retorno**: terminar e integrar tiene prioridad sobre producir. Hay límites de WIP (§11). |
 
 ---
 
 ## 3. Actores
 
-### 3.1 Claude-Code — Coordinador + INTEGRACIÓN
-- **Escribe** (exclusivo): `coordination/lanes`, `tablero/reparaciones`.
-- **Tría**: lee `tablero/intake/*` cada pasada, convierte hallazgos en tareas del backlog, limpia el intake procesado.
-- **Ejecuta** el área INTEGRACIÓN (shared/core): `src/lib/*`, `adminPortalShell`, `allRegistrars`, `vite.config`, `*.html`, `supabase/migrations/*`, CI, `tareasApi/Mock/Supabase`.
-- **Puente git de Codex**: commitea y abre PR de los drafts que produce AI-Codex.
-- Capacidad git: completa (worktrees, ramas, commits, PR).
+### 3.1 Omar — Integrador y asignador
+- Publica la **asignación de ámbitos** de cada lote (§4).
+- **Mergea** los PR, en el orden de §11. Único que lo hace.
+- Decide todo lo destructivo o ambiguo: DDL/DROP, cambios de comportamiento en prod, veredictos de arquitectura, habilitar cualquier automatización.
+- Resuelve traspasos y recuperaciones cuando un dueño no responde.
+- Puede pasarle a Claude-Code una **ruta de vista** para evaluación (§13).
+- Designa un responsable de respaldos de Engram y una prueba de restauración antes de depender del mecanismo para trabajo no supervisado.
 
-### 3.2 AI-Anti (Antigravity) — Agente de loop completo
-- **Beat**: UI/UX de portales. Refactor a `docs/UI_THEME_IMPLEMENTATION_STANDARD_V9.md`, componetización de vistas monolíticas, accesibilidad, responsive, empty states, eliminación de `style=` inline.
-- **Escribe**: `tablero/<id>/progress` (el suyo), `tablero/intake/ai-anti`.
-- Capacidad git: completa. Trabaja en worktree propio.
+### 3.2 Claude-Code
+- **Ejecutor** del ámbito que Omar le asigne (por defecto: INTEGRACIÓN + coordinación).
+- **Consolida** `coordination/lanes` y `tablero/reparaciones` como *resúmenes* — esto **no** otorga propiedad ni bloquea trabajo ya asignado. Si Claude no está, otro agente o el propio Omar puede consolidar.
+- **Evalúa rutas** que Omar le pase y convierte los hallazgos en tareas (§13).
+- **Receptor** de los borradores de AI-Codex (§3.4).
+- Git: completo.
 
-### 3.3 AI-Codex (Codex CLI) — Descubrimiento + Drafts
-- **Beat**: correctness. Mutaciones Supabase sin verificación de filas, `.single()` sobre conjuntos no unitarios, error swallowing, dead code, `==`, gaps de cobertura de tests, validación de inputs, N+1.
-- **Restricción dura**: NO puede operar git — hay una ACL `Deny Write,Delete` sobre `.git` para la identidad `msi\codexsandboxoffline`. No puede crear ramas, commits ni refs. Sí puede editar archivos del working tree.
-- **Modo de trabajo**: escanea su beat, publica hallazgos en `tablero/intake/ai-codex`, y opcionalmente deja **borradores de archivos** en un worktree que Claude-Code o AI-Anti commitean.
-- **Escribe** (Engram): `tablero/<id>/progress` (cuando draftea), `tablero/intake/ai-codex`.
-- Si Omar corrige la ACL o Codex corre su git desde una terminal con permisos normales → pasa a agente de loop completo.
+### 3.3 AI-Anti (Antigravity)
+- **Ejecutor de loop completo.** Especialidad (preferencia, no propiedad): vistas de portales y UI/UX. Pero **dentro de su ámbito asignado toca lo que la tarea pida** — un fix de UI que necesita cambiar una consulta, un test, una migración: lo hace, declarando esas rutas.
+- Git: completo. Worktree propio.
 
-### 3.4 Omar — Puente humano + Integrador único
-- Pasa los prompts a los agentes (desde el visor, botón copiar).
-- Pregunta el presupuesto de tokens antes de repartir lotes.
-- **Mergea** los PR (en orden de prioridad). Es el único que lo hace.
-- Al mergear: marca el área como `LIBRE` en `coordination/lanes` (o avisa a Claude-Code).
-- Decide todo lo destructivo o ambiguo: DROP/DDL, cambios de comportamiento en prod, veredictos de arquitectura.
-- Mantiene el repo principal limpio (o los agentes usan worktrees y lo ignoran).
-
----
-
-## 4. Sustrato de datos: Engram
-
-Engram es la capa de **memoria + coordinación**. Modelo de almacenamiento relevante:
-
-- Cada `topic_key` tiene **una sola versión vigente** (`observations.content`, TEXT). `mem_save` sobre un `topic_key` existente hace **upsert**: reemplaza el contenido. `revision_count` cuenta revisiones pero **no** se pueden leer las anteriores por API.
-- `mem_search` / MCP **truncan** el contenido. Para el texto completo: `mem_get_observation(id)`.
-- Consecuencia crítica → **P5 (anti-clobber)**: si dos agentes hacen `mem_save` sobre el mismo `topic_key` con notas parciales, el segundo borra lo del primero. Por eso el diseño usa **un topic por agente/tarea** y consolidación por el coordinador.
-
-### 4.1 Catálogo de topics
-
-| topic_key | Propósito | Escritor(es) | Formato | Semántica de escritura |
-|-----------|-----------|--------------|---------|------------------------|
-| `coordination/soi-multi-agent-protocol` | El protocolo base. Se lee, no se toca. | (congelado) | prosa | — |
-| `coordination/mecanismo` | Este documento (canónico). | Claude-Code | markdown | reemplazo completo |
-| `coordination/lanes` | Candado por ÁREA: quién trabaja qué ahora. | **solo Claude-Code** | tabla markdown (ver §4.2) | reemplazo completo, siempre la tabla entera |
-| `coordination/modelo-de-trabajo` | Resumen operativo de alto nivel. | Claude-Code | markdown | reemplazo completo |
-| `tablero/reparaciones` | El backlog: QUÉ hay que arreglar. | **solo Claude-Code** | markdown con tablas (ver §4.3) | reemplazo completo, siempre el backlog entero |
-| `tablero/<id>/progress` | Bitácora de la tarea `<id>` (ej. `tablero/lc1/progress`). | el agente dueño de `<id>` | markdown libre + campos clave (ver §4.4) | reemplazo completo por su propio dueño; nadie más escribe |
-| `tablero/intake/<agente>` | Cola de hallazgos crudos de un agente (`ai-anti`, `ai-codex`, `claude-code`). | ese agente | lista append-only (ver §4.5) | **append**: releer, agregar al final, guardar todo |
-| `audit/<nombre>` | Resultados de auditorías (fuente de tareas). | quien audita | markdown | reemplazo completo |
-| `fase-0/tablas-vacias-inventario` | Inventario BD FASE 0. | (archivo) | markdown | — |
-
-### 4.2 Schema de `coordination/lanes`
-
-Tabla markdown. Una fila por ÁREA. El coordinador la reescribe **entera** en cada cambio.
-
-```
-| Área | Estado | Dueño | Rama / worktree | Nota |
-|------|--------|-------|-----------------|------|
-| <nombre de área> | LIBRE \| EN-CURSO \| EN-REVIEW | <agente o —> | <rama> @ <ruta worktree> | <texto libre> |
-```
-
-Áreas canónicas: `INTEGRACIÓN`, `BD/api`, `Pedagógico/ausentismo`, `Testing infra`, `ACM`, `FIN`, `DIR`, `Hermes`, `Portales`, `Tooling`. (Ampliable; agregar fila, no renombrar sin migrar.)
-
-### 4.3 Schema de `tablero/reparaciones`
-
-Markdown. Secciones `##` por estado. Tablas con encabezados reconocidos por el visor: `ID`, `Área`, `Prio`, `Estado`, `Tarea`, `Agente`, `Origen`.
-
-- `## 🔵 EN-CURSO / EN-REVIEW` — tareas tomadas.
-- `## 🟢 LIBRE` — tomables ahora.
-- `## ⏸ Espera Omar` — LIBRE pero necesitan un insumo humano.
-- `## ✅ CERRADA` — párrafo con IDs cerrados (referencia al PR).
-
-Cada tarea LIBRE **debe** tener: `ID`, `Área`, `Prio` (ALTA/MEDIA/BAJA), descripción con **archivo\:línea**, el **porqué**, y el **topic-fuente** (`audit/...`, `#nnnn`).
-
-### 4.4 Campos clave de `tablero/<id>/progress`
-
-Markdown libre, pero la **primera línea** y ciertos marcadores son parseados por el visor:
-
-```
-<ID> <ESTADO> [<Agente>/<AAAA-MM-DD>]. Rama: <rama>. <resumen de una línea>
-PRESUPUESTO: alto | medio | bajo        (línea propia, actualizada cada iteración)
-
-## <fecha> — <qué se hizo / qué se descubrió>
-...
-## Bloqueos / dudas
-...
-## Qué falta
-...
-```
-
-`<ESTADO>` ∈ `EN-CURSO | EN-REVIEW | BLOQUEADO | CERRADA`.
-
-### 4.5 Schema de `tablero/intake/<agente>`
-
-Lista **append-only**. El agente relee el contenido, agrega líneas al final, guarda todo. Una línea por hallazgo:
-
-```
-[AAAA-MM-DD] <área> · <ALTA|MEDIA|BAJA> · <archivo:línea> · <qué está mal> · <por qué> · <fix propuesto> · <estado: NUEVO|TRIADO:<id>>
-```
-
-El coordinador marca `TRIADO:<id>` cuando lo pasa al backlog, y periódicamente poda las líneas `TRIADO`.
+### 3.4 AI-Codex (Codex CLI)
+- **Descubrimiento + borradores.** Especialidad: correctness (mutaciones sin verificar, `.single()` frágil, dead code, cobertura, validación, N+1).
+- **Restricción dura**: ACL `Deny Write,Delete` sobre `.git` para `msi\codexsandboxoffline`. No crea ramas/commits/refs. **No se sortea** con otra identidad, otra ubicación de metadata, ni un puente que ejecute comandos arbitrarios.
+- **No toma carriles.** Cada encargo de borrador designa un **receptor autorizado** (Anti o Claude) que conserva la propiedad del ámbito y la responsabilidad de entrega.
+- Entrega un **manifiesto**: `base_sha`, rutas, diff/borrador, hashes, pruebas hechas, limitaciones. El receptor verifica que `base_sha` sigue vigente, revisa el diff, corre los checks faltantes, y recién entonces commit + PR. Un solo borrador pendiente de recepción a la vez.
+- Autonomía git de Codex requiere un entorno separado, provisionado y aprobado por Omar. Hasta entonces: análisis sí, ciclo git no.
 
 ---
 
-## 5. Sustrato de código: Git
+## 4. Asignación de ámbitos (lo que autoriza)
 
-- **Rama base de todo**: `feat/planificacion-clases-rediseño` (la de integración de facto). `origin/master` está congelada — **no** se usa.
-- **Aislamiento**: cada agente trabaja en su propio **git worktree** bajo `.claude/worktrees/<nombre>`, con `node_modules` como junction al del repo principal. Nunca en el checkout principal (suele estar sucio con trabajo sin integrar).
-- **Rama por tarea**: `<agente>/<id>-<slug>` (ej. `anti/AUS1-ausentismo-dashboard`).
+Antes de cada lote, **Omar publica** en el topic `coordination/lanes` (que Claude-Code
+consolida) una tabla de ámbitos **no solapados**:
+
+```
+| Ámbito | Rutas (glob) | Dueño | owner_instance | base_sha | Estado |
+|--------|--------------|-------|----------------|----------|--------|
+| ui/portales      | src/portales/**, src/modules/*/views/**, src/modules/*/components/** | AI-Anti | <id de sesión> | <sha remoto de integración> | ACTIVO |
+| correctness/api  | src/modules/*/api/**, src/**/services/** | (Codex draftea → Claude recibe) | ... | ... | ACTIVO |
+| integracion      | src/lib/**, src/portales/_shared/**, src/core/router/**, vite.config.js, vitest.config.js, *.html (entrada), supabase/migrations/**, src/**/database.types.ts, .github/workflows/** | Claude-Code | ... | ... | ACTIVO |
+```
+
+Reglas:
+- **Los globs de dos ámbitos activos no pueden solapar.** Si un trabajo necesita cruzar
+  ámbitos, se pausa y se pide a Omar una asignación nueva.
+- La asignación **identifica la instancia** (`owner_instance`): dos sesiones del mismo
+  agente **no** son un único escritor. Sólo la instancia nombrada ejecuta.
+- La asignación fija el `base_sha` de integración del lote.
+- INTEGRACIÓN se subdivide cuando hace falta: `shell/routing`, `persistencia-compartida`,
+  `CI/build`, `esquema-BD`.
+- **Lista fija de archivos que son siempre INTEGRACIÓN** (un solo dueño, nunca concurrentes,
+  aunque un `paths[]` no solape exacto): `src/lib/*`, `src/portales/_shared/adminPortalShell.js`,
+  `src/portales/_shared/allRegistrars.js`, `src/core/router/*`, `vite.config.js`,
+  `vitest.config.js`, los `*.html` de entrada, `supabase/migrations/*`,
+  `src/**/database.types.ts`, `supabase/migrations/schema_reference.sql`, `.github/workflows/*`.
+
+---
+
+## 5. Sustrato de datos: Engram
+
+- Cada `topic_key` tiene **una sola versión vigente**. `mem_save` hace **upsert** (reemplaza).
+  `revision_count` cuenta revisiones pero **no** hay lectura del historial por API.
+- `mem_search` / MCP **truncan**. Texto completo: `mem_get_observation(id)`.
+- **No asumir**: CAS, append atómico, orden global, historial recuperable, ni que
+  `mem_search` enumere todos los eventos.
+- **Identidad del almacén**: `~/.engram/engram.db`, proyecto `soi_elsistemapc`. Todos los
+  participantes verifican que leen ese proyecto y unos eventos testigo. Copias locales
+  divergentes **no** otorgan asignaciones.
+
+### 5.1 Catálogo de topics
+
+| topic_key | Propósito | Escritor(es) | Escritura |
+|-----------|-----------|--------------|-----------|
+| `coordination/soi-multi-agent-protocol` | Protocolo base (SOI-MAP). Se lee, no se toca. | congelado | — |
+| `coordination/mecanismo` | Índice canónico de esta versión (apunta al commit del doc). | Claude-Code | reemplazo |
+| `coordination/lanes` | Asignación de ámbitos + estado. Autoriza. | **Omar publica; Claude-Code consolida** | reemplazo completo, tabla entera |
+| `tablero/reparaciones` | El backlog: QUÉ hay que arreglar. | **un solo consolidador** (Claude-Code por defecto; Omar u otro si Claude no está) | reemplazo completo, backlog entero |
+| `tablero/<task_id>/progress/<owner_instance>` | Bitácora de la instancia dueña de esa tarea. | esa instancia, y sólo ella | reemplazo por su dueño |
+| `tablero/intake/<agente>` | Cola de hallazgos crudos de UN productor. | ese agente, nadie más | append: releer + agregar al final + guardar |
+| `tablero/intake/<agente>/acuses` | Respuestas del triador a ese intake. | el consolidador | append |
+| `coordination/rutas-evaluadas/<slug>` | Informe de evaluación de una ruta que pasó Omar (§13). | Claude-Code | reemplazo |
+| `audit/<nombre>` | Resultados de auditorías (fuente de tareas). | quien audita | reemplazo |
+
+### 5.2 Schema de una tarea (fila del backlog)
+
+Encabezados que el visor reconoce: `ID`, `Ámbito`, `Prio`, `Estado`, `Tarea`, `paths`, `base_sha`, `parent`, `slice`, `depends_on`, `Dueño`, `Origen`.
+
+Toda tarea LIBRE debe tener: `ID` canónico, `Ámbito`, `Prio` (ALTA/MEDIA/BAJA con
+severidad = impacto×alcance), descripción con **archivo:línea**, el **porqué**, el
+**topic-fuente**, `paths[]` (rutas que se van a tocar), y un **criterio de aceptación**.
+
+### 5.3 Estados de tarea (7)
+
+```
+LIBRE → EN-CURSO → LISTA-PARA-PR → EN-REVIEW → CERRADA
+  │         │            │              │
+  │         └─ BLOQUEADA ─┘              └─ (Omar pide cambios) → EN-CURSO
+  │                                      └─ (PR cerrado sin merge) → CANCELADA
+  └─ (creada por el dueño del ámbito o por evaluación §13)
+```
+
+- **BLOQUEADA** lleva `reason_code`, `blocked_by`, `next_action`, responsable de desbloqueo.
+  No es tomable. "Espera Omar" = `BLOQUEADA(reason: decision-omar)`.
+- **El merge de un slice cierra ESE slice, no el padre.** El padre pasa a CERRADA cuando se
+  verifican todos sus criterios de aceptación.
+- **Estado de tarea**, **estado de reserva** y **disponibilidad del ejecutor** son campos
+  distintos. El visor no los infiere de un mismo rótulo.
+
+---
+
+## 6. Sustrato de código: Git
+
+- **Rama base de todo**: `feat/planificacion-clases-rediseño` (integración de facto).
+  `origin/master` está congelada — **no se usa**.
+- **Aislamiento**: cada ejecutor autorizado trabaja en su propio **git worktree** bajo
+  `.claude/worktrees/<nombre>`. Se crea con **una sola operación** desde el SHA remoto:
+  `git worktree add -b <agente>/<task_id>-<slug> <ruta> <base_sha>` — sin checkout intermedio
+  de la rama base.
+- Registrar `base_sha` + versión del lockfile de dependencias.
+- `node_modules` puede compartirse **solo lectura** (junction). Si un agente necesita
+  instalar o cambiar el lockfile → worktree con dependencias propias.
+- **Nunca** limpiar, stashear ni resetear trabajo ajeno como paso automático.
 - **PR**: siempre `base = feat/planificacion-clases-rediseño`. Un PR por tarea o por slice.
-- **Tamaño**: si el diff estimado supera ~400 líneas → partir en slices, un PR por slice (chained).
-- **Integración**: solo Omar mergea. Al mergear, el área vuelve a `LIBRE`.
+  Lleva `task_id`, `parent_task`, `slice_id`, `depends_on`, `base_sha`, `head_sha`.
+- Diff estimado > ~400 líneas → partir en slices, PRs encadenados. Un slice dependiente
+  espera el merge de su predecesor y parte de la base actualizada.
 
 ---
 
-## 6. El ciclo del agente
+## 7. Capacidad y reparto de carga
 
-Pseudocódigo del bucle que corre cada agente de loop (Anti; Codex igual pero sin los pasos git).
+- El "presupuesto de tokens" **NO es un gate**. Cada agente reporta en su `progress`:
+  `CONTEXTO: alto | medio | bajo | DESCONOCIDO` (con fuente + timestamp; si no hay contador
+  verificable → DESCONOCIDO, no inventar %).
+- El routing usa, en orden: **capacidad comprobada** (leer / editar / probar / git / PR),
+  **WIP activo**, **tamaño y riesgo** del slice.
+- Regla dura: **todo slice deja un checkpoint recuperable**. Agotar el contexto produce un
+  checkpoint incompleto identificable, **nunca** "slice terminado". La reserva de cierre no
+  se sustituye por "terminar como se pueda".
+- Omar (o el consolidador) pregunta la capacidad antes de repartir un lote y asigna lo
+  pesado a quien tiene margen.
+
+---
+
+## 8. Poner un agente en contexto
+
+Todo agente, al **arrancar** y tras cualquier **compactación/pausa**, ejecuta:
 
 ```
+mem_context()                                          # sesiones recientes
+mem_get_observation( mem_search "coordination/soi-multi-agent-protocol" )   # #2589
+mem_get_observation( mem_search "coordination/mecanismo" )                  # esta versión — índice
+   → y el doc que referencia: docs/coordination/MECANISMO_MULTIAGENTE_SOI.md
+mem_get_observation( mem_search "coordination/lanes" )                      # tu ámbito y base_sha
+mem_get_observation( mem_search "tablero/reparaciones" )                    # el backlog
+# si vas a tomar una tarea concreta:
+mem_get_observation( <topic-fuente de la tarea> )                          # audit/..., #nnnn
+mem_get_observation( mem_search "tablero/<task_id>/progress/<tu-instancia>" ) # ¿ya empezaste?
+```
+
+**Mapa de dónde vive cada cosa en Engram** (esto va también en el visor, con botón de copiar):
+
+| Necesitás… | Buscá el topic_key |
+|------------|--------------------|
+| Las reglas del juego | `coordination/soi-multi-agent-protocol`, `coordination/mecanismo` |
+| Qué ámbito es tuyo / cuál es la base | `coordination/lanes` |
+| Qué hay para hacer | `tablero/reparaciones` |
+| Tu propio avance | `tablero/<task_id>/progress/<tu-instancia>` |
+| Publicar un hallazgo | `tablero/intake/<tu-nombre>` (append) |
+| El detalle de una tarea | su `Origen`: `audit/soi-lila-2026-09`, `audit/ausentismo-dashboard-2026-09`, `coordination/rutas-evaluadas/<slug>`, o un `#nnnn` |
+| El inventario de la BD | `fase-0/tablas-vacias-inventario` |
+| Por qué no dependemos de Claude | `roadmap/columna-vertebral-y-coordinacion` (#2588) |
+| Bloqueos de entorno conocidos | `coordination/bloqueo-git-2026-09-09` |
+
+Si una fuente falta, se declara la limitación. **No se inventa su contenido.**
+
+---
+
+## 9. El loop del agente
+
+```
+CONTEXTO (§8)
 loop:
-  # 6.1 CONTEXTO
-  protocolo := mem_get_observation( mem_search("coordination/soi-multi-agent-protocol") )
-  mecanismo := mem_get_observation( mem_search("coordination/mecanismo") )
-  lanes     := mem_get_observation( mem_search("coordination/lanes") )
-  backlog   := mem_get_observation( mem_search("tablero/reparaciones") )
+  # A. REFRESCAR
+  releer coordination/lanes y tablero/reparaciones.
+  budget := "CONTEXTO: alto|medio|bajo|DESCONOCIDO"
 
-  # 6.2 PRESUPUESTO
-  budget := estimar_presupuesto()            # alto | medio | bajo
-  # se escribirá en el progress al reclamar (6.4) o al reportar (6.7)
-
-  # 6.3 ELEGIR
+  # B. ELEGIR
   candidatas := backlog.LIBRE
-               .filter(t -> t.area == mi_beat OR (mi_beat==INTEGRACION AND t.area∈INTEGRACION))
-               .filter(t -> lanes[t.area].estado == LIBRE)
-               .filter(t -> not t.espera_omar)
-               .sort_by(prioridad DESC)
-  # filtro por presupuesto:
-  if budget == bajo:    candidatas := candidatas.filter(t -> t.tamaño == puntual)
-  if budget == medio:   candidatas := candidatas.filter(t -> t.tamaño <= un_slice)
-
-  if candidatas.empty:
-     goto 6.8 DESCUBRIMIENTO
+                .filter(t -> t.ámbito == mi_ámbito_asignado)
+                .filter(t -> t.paths ∩ (paths de toda tarea activa) == ∅)   # + lista fija INTEGRACIÓN
+                .filter(t -> t.estado != BLOQUEADA)
+                .sort_by(prioridad, luego dependencias satisfechas, luego antigüedad)
+  if budget == bajo:  candidatas := sólo las de 1 archivo / mecánicas
+  if WIP(yo) >= 1 slice activo  OR  PRs_equipo_listos >= 3:
+       → no tomar nada nuevo; ir a REVISAR/CORREGIR/PREPARAR-MERGE
+  if candidatas.empty:  goto DESCUBRIR
 
   tarea := candidatas.first
 
-  # 6.4 RECLAMAR  (nunca escribir en coordination/lanes — P5)
-  rama := "<agente>/<tarea.id>-<slug>"
-  mem_save("tablero/<tarea.id>/progress",
-           "<tarea.id> EN-CURSO [<agente>/<hoy>]. Rama: <rama>. <plan 2-3 líneas>\nPRESUPUESTO: <budget>")
-  # el coordinador verá el progress y actualizará coordination/lanes
+  # C. RECLAMAR  (primera acción, antes de tocar archivos)
+  mem_save("tablero/<tarea.id>/progress/<mi_instancia>",
+     "<tarea.id> EN-CURSO [<agente>/<mi_instancia>/<hoy>]. Rama: <rama>. base_sha: <sha>. paths: <lista>.\nCONTEXTO: <budget>\n## Plan\n<2-4 líneas>")
+  releer backlog + progress de otras tareas → ¿alguien declaró paths que solapan los míos?
+     sí → estado EN-DISPUTA en mi progress, NO toco archivos, consulto. goto loop.
 
-  # 6.5 AISLAR + ANALIZAR
-  git worktree add ../soi-<agente>-<tarea.id> feat/planificacion-clases-rediseño
-  cd  ../soi-<agente>-<tarea.id>
-  git switch -c <rama>
-  if fallo(git):
-     mem_save("tablero/<tarea.id>/progress", ... "BLOQUEADO: <motivo>")
-     goto 6.9 PARAR
-  fuente := mem_get_observation( tarea.topic_fuente )
-  confirmar_diagnostico_contra_codigo(tarea, fuente)   # grep exhaustivo, BD solo-lectura
-  if not entiendo_como_resolver_coherentemente:
-     mem_save("tablero/<tarea.id>/progress", ... "## Dudas: <preguntas concretas>")
-     goto 6.9 PARAR                                     # P7 — no improvisar
+  # D. AISLAR
+  git worktree add -b <rama> ../soi-<agente>-<tarea.id> <base_sha_remoto>
+  cd ../soi-<agente>-<tarea.id>
+  registrar base_sha + lockfile
+  if fallo:  progress → BLOQUEADA(reason: entorno); reportar a Omar; PARAR
 
-  # 6.6 RESOLVER
-  if diff_estimado > 400 líneas: tarea := slice_1(tarea)
-  para cada cambio:
-     if hay_tests_que_corren: TDD (test rojo -> fix -> test verde)
-     editar SOLO archivos de tarea.area
-  lint(archivos_tocados)
-  # nada destructivo en BD sin Decisión+Dueño de Omar
+  # E. ANALIZAR
+  fuente := mem_get_observation(tarea.origen)
+  confirmar el diagnóstico contra el código real (grep exhaustivo; BD sólo lectura)
+  registrar baseline: SHA + comandos de test/lint + resultados actuales
+  if no sé resolverlo coherente con el sistema:
+     progress → "## Duda: <preguntas concretas>"; PARAR (P7)
 
-  # 6.7 ENTREGAR
-  mem_save("tablero/<tarea.id>/progress",
-           "<tarea.id> EN-REVIEW [<agente>/<hoy>]. Rama: <rama>. PR #<n>.\nPRESUPUESTO: <budget>\n## Hecho: ...\n## Qué falta: ...")
-  git commit ; git push ; gh pr create --base feat/planificacion-clases-rediseño
+  # F. RESOLVER  (toca lo que la tarea pida: UI, test, lógica, BD, build…)
+  if diff_estimado > 400:  tarea := slice_1
+  para cada cambio:  editar SÓLO archivos dentro de mi ámbito / paths declarados
+      si hay tests que corren:  TDD (rojo → verde)
+  una prueba antes-verde que regresa  →  DETIENE la entrega hasta resolverla (sin excepción "trivial")
+  fallos preexistentes  →  registrar + excepción explícita del gate afectado
+  lint del alcance
+  NADA destructivo en BD (DDL/DROP) ni cambio de comportamiento en prod sin Decisión+Dueño de Omar
+
+  # G. ENTREGAR  (evidencia antes de estado — P9)
+  progress → LISTA-PARA-PR
+  verificar criterio de aceptación → git commit → git push → crear/obtener PR
+     (idempotente: antes de crear, chequear si el commit/PR ya existe)
+  verificar URL del PR + base + head SHA
+  progress → EN-REVIEW  con: PR #, head_sha, criterio verificado, "## Qué falta"
   # NO merge
 
-  # 6.8 volver
+  # H. después de rebase o cambio de base:  repetir los checks afectados
+
   goto loop
 
-DESCUBRIMIENTO (6.8):
-  escanear mi_beat en busca de: fallas, deuda técnica, violaciones de estándar,
-    oportunidades de refactor/UX/perf.
-  para cada hallazgo:
-     append a "tablero/intake/<agente>":  "[hoy] <área> · <sev> · <archivo:línea> · <qué> · <porqué> · <fix> · NUEVO"
-  goto 6.3   # quizás el coordinador ya trió algo
+DESCUBRIR:
+  refrescar tareas + asignación + hallazgos relacionados
+  escanear mi ámbito, base_sha declarado, pasada acotada: máx 5 hallazgos nuevos o 30 min
+  registrar también "sin hallazgos accionables" con ámbito + base_sha
+  deduplicar por módulo / símbolo / síntoma / invariante  (archivo:línea es sólo un localizador)
+  para cada hallazgo nuevo:
+     append a "tablero/intake/<agente>":
+       "[hoy] <ámbito> · <ALTA|MEDIA|BAJA> · <archivo:línea> · <qué> · <porqué> · <fix propuesto> · <paths> · <criterio de aceptación> · NUEVO"
+  # AUTO-PROMOCIÓN: si el hallazgo tiene repro/evidencia + impacto + paths + criterio,
+  #   NO es cross-cutting, NO es destructivo, y NO necesita decisión de Omar
+  #   → el dueño del ámbito lo agrega él mismo al backlog como tarea LISTA.
+  # Lo demás (cross-cutting / ambiguo / destructivo / cambio de comportamiento) → queda en
+  #   intake para triage/decisión.
+  umbral: 10 hallazgos NUEVO pendientes de un mismo productor → suspender descubrimiento general
+  incidente grave → avisar a Omar de inmediato (publicar en Engram NO notifica)
+  resumir la pasada y volver a REFRESCAR (sin polling activo)
 
-PARAR (6.9):
-  reportar a Omar (canal humano) el motivo.
-  mem_session_summary(...)
-  fin.
+PARAR:
+  reportar a Omar el motivo (canal humano)
+  dejar cada progress en estado claro (EN-REVIEW+PR, BLOQUEADA+motivo, o EN-CURSO+"qué falta")
+  mem_session_summary(Goal / Discoveries / Accomplished / Next Steps / Relevant Files)
 ```
 
-### 6.x Condiciones de parada (cualquier agente)
-
-- No quedan tareas tomables (ni en modo descubrimiento hay más que reportar).
+### 9.x Condiciones de parada
+- No hay tareas tomables ni hallazgos que reportar.
 - No se puede crear rama/worktree.
-- Una tarea necesita una decisión de Omar.
-- Un fix requeriría tocar otra área (fuera del carril).
-- Un test que estaba verde se rompe y no es trivial.
-- El presupuesto de tokens cae a **bajo** a mitad de tarea → cerrar el slice actual como se pueda, guardar progress detallado, `mem_session_summary`, parar.
+- Una tarea necesita decisión de Omar.
+- Un fix requeriría salir del ámbito asignado.
+- Una prueba antes-verde se rompe y no es trivial.
+- `CONTEXTO` cae a **bajo** a mitad de tarea → cerrar el slice con checkpoint recuperable,
+  `progress` detallado, `mem_session_summary`, parar.
 
 ---
 
-## 7. Presupuesto de tokens y reparto de carga
+## 10. Recuperación de dueño y traspaso
 
-### 7.1 Reporte
-Cada agente, al inicio de cada iteración y al entregar, escribe en su `progress` una línea:
-```
-PRESUPUESTO: alto | medio | bajo
-```
-- **alto** — > ~60 % de contexto/tokens libres.
-- **medio** — ~30–60 %.
-- **bajo** — < ~30 %.
-
-(El agente lo estima de su propia ventana; no hay API. Si el runtime expone un contador, usarlo.)
-
-### 7.2 Reglas de routing
-| Presupuesto | Qué puede tomar |
-|-------------|-----------------|
-| alto | refactor grande / multi-archivo / slice completo / descubrimiento profundo de un área entera |
-| medio | tarea de 1–2 archivos / un slice acotado / triage |
-| bajo | fix puntual (1 archivo, mecánico) **o** cerrar y documentar lo en curso; luego `mem_session_summary` y terminar |
-
-### 7.3 Quién decide
-- El **agente** se auto-filtra en 6.3 según su presupuesto.
-- **Omar** (o Claude-Code), antes de pasar un lote de tareas, pregunta "¿cómo van de tokens?" y reparte: lo pesado al que tiene **alto**, lo liviano al que tiene **medio/bajo**.
-- El **visor** lee `PRESUPUESTO:` de cada `progress` y lo muestra en la tira de actividad, para que Omar lo vea de un vistazo.
+- Toda reclamación fija `next_check_at`. Si vence: estado → **REQUIERE-CONFIRMACIÓN**
+  (no LIBRE). El visor lo muestra como tal.
+- Antes de retomar tras pausa/compactación, el dueño **verifica que su asignación sigue
+  vigente** (misma `owner_instance`, mismo lote).
+- **Un PR abierto se cierra, reemplaza o transfiere explícitamente antes de liberar la
+  reserva.** Nunca se libera una tarea EN-REVIEW por silencio.
+- Traspaso ordinario: acuse de cese + manifiesto de entrega del dueño anterior.
+- Si el dueño no responde: **Omar** inventaría rama, PR y trabajo sin pushear, y registra
+  la resolución. Una `owner_instance`/lote nuevo invalida instrucciones viejas a nivel de
+  protocolo (no es fencing técnico).
 
 ---
 
-## 8. Regla anti-clobber (detalle)
+## 11. Presión de retorno (WIP y orden de integración)
 
-**Problema.** `mem_save(topic, contenido)` reemplaza. Si un agente hace `mem_save("coordination/lanes", "Tomé el área X")`, borra toda la tabla de carriles. Pasó dos veces (con `fase-0/tablero-tareas` y con `coordination/lanes`).
-
-**Solución.**
-1. **Topics compartidos** (`coordination/lanes`, `tablero/reparaciones`) → **un solo escritor**: Claude-Code. Siempre reescribe el documento completo.
-2. **Estado propio de cada agente** → su topic `tablero/<id>/progress` (uno por tarea/agente). Nadie más lo toca.
-3. **Cola de entrada** → `tablero/intake/<agente>`, **append-only**: releer, agregar al final, guardar todo. Sin escritores concurrentes en un mismo intake.
-4. **Consolidación** → Claude-Code lee los `progress` y los `intake`, y actualiza los topics compartidos. El visor deriva la "Actividad de agentes" directamente de los `progress` (no depende de que nadie mantenga una tabla).
-
----
-
-## 9. Máquinas de estados
-
-### 9.1 Tarea
-```
-        crea el coordinador (desde intake/auditoría)
-                     │
-                     ▼
-   ┌────────────► LIBRE ──────────────────────────┐
-   │                 │ agente reclama (6.4)       │ Omar necesita dar un insumo
-   │                 ▼                            ▼
-   │             EN-CURSO                    (LIBRE · "espera Omar")
-   │                 │ agente abre PR (6.7)       │ Omar da el insumo
-   │                 ▼                            └────────► LIBRE
-   │             EN-REVIEW
-   │        Omar mergea │        Omar pide cambios │
-   │                 ▼         └──────► EN-CURSO ──┘
-   │             CERRADA
-   └── (si el agente abandona / se bloquea sin PR → el coordinador la devuelve a LIBRE)
-```
-
-### 9.2 Carril (área)
-```
-LIBRE ──(coordinador registra reclamo de un agente)──► EN-CURSO
-EN-CURSO ──(hay PR abierto para el área)──► EN-REVIEW
-EN-REVIEW ──(Omar mergea)──► LIBRE
-EN-CURSO/EN-REVIEW ──(agente abandona)──► LIBRE   [coordinador]
-```
-Invariante: **como máximo un agente** por área en estado ≠ LIBRE. Excepción: área `INTEGRACIÓN` puede tener varias tareas del mismo dueño (Claude-Code), nunca de dueños distintos.
+- **Límite**: 1 slice de implementación activo por ejecutor; **~3 PRs listos para revisión
+  en todo el equipo**. Al alcanzar la cola: priorizar revisión, correcciones y preparación
+  de merges — **no** iniciar mejoras nuevas.
+- **Orden de integración** (lo aplica Omar): (1) incidentes autorizados; (2) dependencias
+  en orden topológico; (3) dentro de ellas, prioridad y antigüedad.
+- Tras cada cambio de base, se re-valida cada candidato afectado.
+- **Auto-merge deshabilitado.** Sólo una decisión explícita de Omar puede habilitar una
+  cola automatizada, con criterios de aprobación y checks — sin confundir tests verdes con
+  autorización.
 
 ---
 
-## 10. Pipeline de intake (compartir una falla)
+## 12. El visor (`tools/tablero/tablero.mjs`)
 
-```
- agente en modo descubrimiento
-        │  append línea NUEVO
-        ▼
- tablero/intake/<agente>
-        │  Claude-Code lee cada pasada
-        ▼
- triage:  ¿es real? ¿duplica una tarea/hallazgo existente (buscar en Engram)?
-        │  sí, nueva → asignar ID + área + prioridad
-        ▼
- tablero/reparaciones (## LIBRE)      ── y marcar la línea de intake como TRIADO:<id>
-        │
-        ▼
- (podado periódico de líneas TRIADO)
-```
-
-- **SLA de triage**: Claude-Code procesa el intake al menos una vez por sesión de coordinación.
-- **De-dup**: antes de crear la tarea, `mem_search` del área + palabras clave, para no duplicar (P4).
-- Un hallazgo de severidad **ALTA** puede saltar a EN-CURSO en la misma pasada si hay un agente libre con presupuesto alto en esa área.
+- **Solo lectura** sobre `~/.engram/engram.db` (`node:sqlite`, sin deps). No escribe en Engram.
+- **Modo oscuro forzado.**
+- **Lee**: `tablero/reparaciones`, `coordination/lanes`, todos los `tablero/%/progress/%`,
+  todos los `tablero/intake/%`.
+- **Muestra**:
+  - Kanban por estado (Libre / En curso / Lista-para-PR / En review / Cerrada), con chips de
+    ámbito / prioridad / dueño / rama.
+  - **Carriles**: la asignación de ámbitos.
+  - **Actividad de agentes**: derivada de los `progress` — id, estado, agente, instancia,
+    rama, `CONTEXTO`, timestamp.
+  - **Intake pendiente de triage**: líneas `NUEVO` de los `tablero/intake/*`.
+  - **Guía de Omar** (§0 + §14) y **prompts para copiar**: contexto, loop, evaluación de ruta.
+  - **Mapa de topic_keys** (§8).
+  - Timestamp de lectura + errores de parseo. Ante contenido inválido o desacuerdo entre
+    eventos y agregados: muestra **DESCONOCIDO / EN-DISPUTA**, nunca LIBRE por defecto.
+- **Uso**: `node tools/tablero/tablero.mjs --watch` (regenera cada 15 s; la página se
+  auto-recarga).
 
 ---
 
-## 11. El visor (`tools/tablero/tablero.mjs`)
+## 13. Flujo "Omar pasa una ruta para evaluar"
 
-- **Read-only** sobre `~/.engram/engram.db` (`node:sqlite`, sin deps). No escribe en Engram.
-- **Lee**: `tablero/reparaciones`, `coordination/lanes`, todos los `tablero/%/progress`.
-- **Deriva**: la tira "Actividad de agentes" (id, estado, agente, rama, presupuesto, timestamp) a partir de los `progress` — resiliente al clobber.
-- **Muestra**: kanban por estado (Libre/En curso/En review/Cerrada), carriles, actividad, pendientes de Omar, el protocolo, la tabla de topic_keys y el prompt copiable.
-- **Uso**: `node tools/tablero/tablero.mjs --watch` en el escritorio de Omar (regenera cada 15 s, la página se auto-recarga).
-- Modo oscuro forzado.
-- Pendiente: sección "Intake pendiente de triage" (lee `tablero/intake/*`, líneas `NUEVO`).
+Cuando Omar le dice a Claude-Code *"evaluá `http://localhost:5173/adm/<x>`"* (o una ruta,
+un módulo, un archivo):
+
+1. **Claude-Code audita** la ruta: localiza la vista + componentes + servicios + tablas que
+   toca; revisa correctness, arquitectura, UI/UX vs `docs/UI_THEME_IMPLEMENTATION_STANDARD_V9.md`,
+   a11y, tests, y la BD viva (sólo lectura) si aplica. (Igual que se hizo con el dashboard de
+   ausentismo, ver `audit/ausentismo-dashboard-2026-09` #3538.)
+2. **Publica el informe** en `coordination/rutas-evaluadas/<slug>` — con severidad, archivo:línea,
+   porqué y fix propuesto por hallazgo.
+3. **Crea las tareas** en `tablero/reparaciones`: una por sub-slice coherente (datos / tema /
+   UX, o lo que corresponda), con `Ámbito`, `Prio`, `paths[]`, `criterio de aceptación` y
+   `Origen: coordination/rutas-evaluadas/<slug>`.
+4. **Asigna el ámbito** si hace falta uno nuevo (o lo pide a Omar) y avisa: el agente dueño
+   de ese ámbito toma la tarea en su siguiente iteración del loop.
+5. Si hay un incidente ALTA (XSS, pérdida de datos, no-op silencioso) → Claude-Code lo marca
+   y avisa a Omar de inmediato para que priorice.
+
+Resultado: Omar tira una URL y, sin más intervención, aparece la tarea en el tablero y un
+agente la levanta.
 
 ---
 
-## 12. Ciclo de vida de una sesión de agente
+## 14. Guía operativa de Omar (buenas prácticas)
 
-1. **Arranque**: `mem_context` + leer los 4 topics de contexto (§6.1).
-2. **Trabajo**: el bucle de §6.
-3. **Cierre** (obligatorio antes de "listo"): `mem_session_summary` con Goal / Discoveries / Accomplished / Next Steps / Relevant Files. Deja el `progress` de cada tarea tocada en un estado claro (EN-REVIEW con PR, o BLOQUEADO con motivo, o EN-CURSO con "qué falta").
-4. **Post-compactación**: si el runtime compacta, `mem_session_summary` con el resumen compactado + `mem_context` antes de seguir.
+**Al empezar una jornada / lote:**
+1. Abrir el visor: `node tools/tablero/tablero.mjs --watch`.
+2. Revisar la cola de PRs. **Mergear primero** lo que está listo (orden §11) antes de pedir
+   trabajo nuevo — si no, la cola crece y bloquea ámbitos.
+3. Al mergear un PR: marcar su reserva liberada en `coordination/lanes` (o pedírselo a
+   Claude-Code).
+4. Publicar/actualizar la **asignación de ámbitos** del lote (§4): ámbitos no solapados,
+   dueño, `owner_instance`, `base_sha`.
+5. Copiar del visor y pegar a cada agente: **el prompt de contexto** + **el prompt de loop**.
+6. Preguntar a cada agente su `CONTEXTO` (alto/medio/bajo) antes de cargarle un ámbito grande.
+
+**Durante:**
+- Mirar el visor. La tira "Actividad de agentes" dice quién va por dónde y con cuánto contexto.
+- La tira "Intake pendiente" dice qué hallazgos esperan que alguien los convierta en tarea.
+- Si ves un `EN-REVIEW` con PR → revisá y mergeá o pedí cambios. No lo dejes colgado.
+- Si un agente reporta un incidente grave → atendelo antes que cualquier mejora.
+
+**Para evaluar una vista concreta:**
+- Decile a Claude-Code: *"evaluá `<ruta>`"*. Sale el informe + las tareas + el aviso si hay algo ALTA (§13).
+
+**Nunca:**
+- Mergear a `origin/master` (está congelada; la integración es `feat/planificacion-clases-rediseño`).
+- Dejar que dos agentes trabajen el mismo ámbito o el mismo archivo.
+- Habilitar auto-merge sin una decisión explícita y criterios escritos.
+- Pedirle a Codex que haga commits (no puede; que draftee y otro entrega).
 
 ---
 
-## 13. Manejo de fallas del mecanismo
+## 15. Manejo de fallas del mecanismo
 
 | Falla | Detección | Recuperación |
 |-------|-----------|--------------|
-| Agente reclama y desaparece sin PR | `progress` en EN-CURSO sin actualizar > N horas; carril bloqueado | Claude-Code devuelve la tarea a LIBRE, marca el carril LIBRE, nota en el `progress` |
-| Clobber de un topic compartido | El visor muestra 0 carriles / backlog raro; o `revision_count` saltó | Claude-Code restaura desde su copia local / memoria + reafirma P5 al agente culpable |
-| PR con conflicto | `gh pr view` mergeable=CONFLICTING | El dueño rebasa su rama sobre `feat/planificacion-clases-rediseño` y re-pushea; si no puede, Claude-Code |
-| Codex sin git | ya conocido (§3.3) | Codex drafts → Claude-Code/Anti commitean; o Omar ajusta la ACL |
-| Repo principal sucio bloquea ramas | `git switch` falla por working tree | Todos usan worktrees; Omar `git stash push -u -m` del trabajo suelto |
-| Dos agentes tras la misma tarea | Dos `progress` para el mismo `<id>` | Gana el timestamp más viejo; el otro elige otra tarea; Claude-Code arbitra en `lanes` |
-| Presupuesto agotado a mitad | El agente lo detecta en 6.x | Cierra el slice, `progress` detallado con "qué falta", `mem_session_summary`, para. Otro agente retoma desde el `progress` |
-| Tarea mal especificada (sin archivo\:línea / sin porqué) | El agente no puede confirmar el diagnóstico | Escribe la duda en `progress`, para; Claude-Code completa la tarea en el backlog |
+| Dos sesiones del mismo agente, mismo ámbito | dos `progress/<instancia>` distintos para el mismo `task_id` | gana la `owner_instance` de la asignación de lote; la otra para. No es prevenible técnicamente — por eso la asignación nombra la instancia |
+| Dos tareas tocan el mismo archivo | `paths` solapados al reclamar (paso C) | EN-DISPUTA, nadie toca archivos, Omar reasigna o secuencia |
+| Claude-Code ausente días | intake crece; PRs sin consolidar | los ámbitos con dueño siguen; auto-promoción de hallazgos bien formados; Omar u otro agente consolida `lanes`/`backlog` |
+| Dueño vuelve tras traspaso | `owner_instance`/lote no coincide | el dueño verifica antes de retomar; si ya se transfirió, para |
+| Productor publica mientras hay triage | — | intake tiene un solo escritor; el triador acusa en `tablero/intake/<agente>/acuses`, nunca edita el intake |
+| Visor atrasado / no lee todo | timestamp de lectura viejo; errores de parseo | muestra DESCONOCIDO/EN-DISPUTA, nunca LIBRE; no se reclama sobre esa base |
+| PR creado, falla el guardado en Engram | `progress` sin la transición pero el PR existe | el PR lleva `task_id`; se reconcilia al reanudar; no se crea PR duplicado (idempotencia) |
+| Slice mergeado, padre incompleto | criterios de aceptación del padre sin verificar | el merge cierra el slice; el padre sigue EN-CURSO hasta verificar todo |
+| Cola de PRs llena + incidente | WIP en el tope | incidentes van primero en el orden de integración; se avisa a Omar directo |
+| Codex draftea sobre un SHA viejo | `base_sha` del manifiesto ≠ HEAD de integración | el receptor rebasa el borrador o lo devuelve; no commitea a ciegas |
+| Corrupción/pérdida de Engram | `revision_count` anómalo, tabla inconsistente | suspender asignaciones del ámbito afectado; recuperar desde respaldo identificado (SQLite Online Backup API, no copiar el archivo vivo); reconciliar con PRs/progress; no restaurar hechos desde recuerdos |
 
 ---
 
-## 14. Qué NO hace el mecanismo (límites explícitos)
+## 16. Qué NO hace el mecanismo (límites)
 
 - No mergea nada automáticamente. Omar siempre.
 - No ejecuta DDL/DROP ni cambios de comportamiento en prod sin Decisión+Dueño de Omar.
 - No toca `origin/master`.
-- No coordina por archivos ni por locks de SO — solo por el registro de áreas en Engram (candado blando) + ramas.
-- No garantiza serialización estricta: dos agentes en áreas distintas trabajan de verdad en paralelo; el aislamiento lo dan las áreas + worktrees + PR.
+- No coordina por locks de SO — sólo por la asignación de ámbitos en Engram + ramas + PR.
+- No garantiza serialización estricta: dos agentes en ámbitos disjuntos trabajan en paralelo
+  de verdad.
+- No convierte a 3 agentes en una plataforma distribuida: no hay elección de líder, ni
+  leases automáticos, ni event-sourcing con orden global. Son convenciones con riesgos
+  residuales que Omar acepta.
 
 ---
 
-## 15. Glosario
+## 17. Adopción
 
-- **Área / carril (lane)**: partición del sistema con un dueño a la vez. Unidad del candado blando.
-- **Beat**: el área de mejora continua asignada por defecto a un agente.
-- **Backlog**: `tablero/reparaciones` — la lista de tareas.
-- **Intake**: cola de hallazgos crudos por agente, antes del triage.
-- **Triage**: convertir un hallazgo de intake en una tarea del backlog (ID + área + prioridad).
-- **Coordinador**: Claude-Code. Único escritor de los topics compartidos.
+1. Este documento es **PROPUESTA** hasta que Omar lo apruebe.
+2. La aprobación fija **versión + commit + fecha de entrada en vigor** en `coordination/mecanismo`.
+3. Cambios incompatibles futuros enumeran las reglas sustituidas y requieren **acuse de cada
+   ejecutor** antes de iniciar otro lote.
+4. Ante conflicto de versiones, se detiene el ámbito afectado y se consulta — sin sobrescribir
+   SOI-MAP.
+5. **Antes de activar el loop autónomo** hay que:
+   - B1. Que Omar publique la asignación de ámbitos del primer lote (§4).
+   - B2. Cerrar los ~6 PRs abiertos de la ronda anterior o migrarlos a este esquema.
+   - B3. Correr los 10 escenarios de §15 como prueba de escritorio contra esta versión, con
+     un revisor distinto del autor, y que cada uno muestre *dueño único autorizado o pausa
+     explícita + evidencia conservada + ruta de recuperación*.
+6. Diferido a "antes de escalar a 3 agentes en paralelo": mapa de rutas/contratos más fino,
+   respaldo verificado + prueba de restauración, revisión fresca obligatoria por otro agente
+   en cada PR.
+
+---
+
+## 18. Glosario
+
+- **Ámbito**: partición del código con globs de rutas y un dueño a la vez. Unidad de la
+  asignación de lote. Autoriza.
+- **Especialidad / beat**: la clase de trabajo que un agente hace mejor (UI/UX, correctness).
+  Es preferencia, **no** propiedad.
+- **owner_instance**: identificador de la sesión concreta que ejecuta un ámbito. Dos sesiones
+  del mismo agente no son la misma instancia.
+- **base_sha**: el commit remoto de integración sobre el que se creó una rama / se draftea.
+- **paths[]**: las rutas de archivo que una tarea declara que va a tocar. Base del chequeo
+  de solapamiento.
+- **Backlog**: `tablero/reparaciones`.
+- **Intake**: cola de hallazgos crudos de un productor, antes del triage/auto-promoción.
+- **Consolidador**: quien mantiene los resúmenes (`lanes`, `backlog`). Por defecto Claude-Code;
+  no es indispensable.
 - **Integrador**: Omar. Único que mergea.
-- **Modo descubrimiento**: lo que hace un agente cuando no hay tarea LIBRE en su área — escanear y reportar.
-- **Presupuesto**: nivel de tokens/contexto libre de un agente (alto/medio/bajo).
+- **Manifiesto**: el paquete que AI-Codex entrega a un receptor (base_sha, diff, pruebas, límites).
+- **Checkpoint recuperable**: estado guardado que permite a otro agente retomar la tarea.
 - **Clobber**: sobrescritura destructiva de un topic por el upsert de Engram.
-- **Worktree**: checkout git aislado bajo `.claude/worktrees/`.

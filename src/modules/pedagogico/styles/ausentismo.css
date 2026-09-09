@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ausentismo.css - Estilos V9 para el modulo pedagogico (Dashboard Ausentismo ADM)
  * Tokens semanticos, ritmo visual y componentes especificos sin inline styles.
  */
@@ -12,6 +12,16 @@
 .ausentismo-kpi-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15) !important;
+}
+
+.ausentismo-kpi-card[data-kpi] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ausentismo-kpi-card[data-kpi]:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
 }
 
 /* Nivel 3 acento jerarquico */

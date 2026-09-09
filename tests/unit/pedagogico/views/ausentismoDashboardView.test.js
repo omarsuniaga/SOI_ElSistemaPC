@@ -191,4 +191,22 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
       hasta: '2026-12-15',
     }))
   })
+
+  it('navigates to pedagogico-seguimiento-ausentes from banner button and KPI cards', async () => {
+    const { router } = await import('../../../../src/core/router/router.js')
+    const navSpy = vi.spyOn(router, 'navigate').mockImplementation(() => {})
+
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    const btnVer = container.querySelector('#btn-ver-alumnos-ausentes')
+    expect(btnVer).toBeTruthy()
+    btnVer.click()
+    expect(navSpy).toHaveBeenCalledWith('pedagogico-seguimiento-ausentes')
+
+    const nivel3Card = container.querySelector('[data-kpi="nivel-3"]')
+    expect(nivel3Card).toBeTruthy()
+    nivel3Card.click()
+    expect(navSpy).toHaveBeenCalledWith('pedagogico-seguimiento-ausentes', { nivel: 3 })
+  })
 })

@@ -19,6 +19,6 @@ export function registerRoutesPedagogico() {
   router.register('pedagogico-caso',                      (c) => renderStudentCaseDetailView(c))
   router.register('pedagogico-seguimiento-reglas',        (c) => renderSeguimientoRulesView(c))
   router.register('pedagogico-evaluaciones',              (c) => renderEvaluacionesDashboardView(c))
-  router.register('pedagogico-seguimiento-ausentes',      (c) => renderSeguimientoAusentesView(c))
-  router.register('pedagogico-ausentismo-dashboard',      (c) => renderAusentismoDashboardView(c))
+  router.register('pedagogico-seguimiento-ausentes',      (c, params) => renderSeguimientoAusentesView(c, params))
+  router.register('pedagogico-ausentismo-dashboard',      (c, params) => renderAusentismoDashboardView(c, params))
 }

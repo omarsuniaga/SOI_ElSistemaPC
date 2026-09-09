@@ -28,9 +28,16 @@ const state = {
   maestros: [],
 }
 
-export async function renderSeguimientoAusentesView(container) {
+export async function renderSeguimientoAusentesView(container, params = {}) {
   if (!container) return
   state.container = container
+  if (params.nivel !== undefined) {
+    state.filtroNivel = params.nivel !== null && params.nivel !== '' ? Number(params.nivel) : null
+  }
+  if (params.soloSinContacto !== undefined) {
+    state.soloSinContacto = Boolean(params.soloSinContacto)
+  }
+  state.offset = 0
   container.innerHTML = _renderLoading()
 
   try {

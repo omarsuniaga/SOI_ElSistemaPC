@@ -12,6 +12,7 @@ import { renderSeguimientoAusentesCardADM } from '../components/SeguimientoAusen
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import { router } from '../../../core/router/router.js'
 import '../styles/ausentismo.css'
 
 const PAGE_SIZE = 25
@@ -206,9 +207,18 @@ function _render() {
         </button>
       </div>
 
-      <div class="d-flex align-items-center gap-2 bg-body-tertiary border rounded p-2 mb-4 small text-body-secondary" role="note">
-        <i class="bi bi-shield-lock text-secondary"></i>
-        <span><strong>Acceso de lectura (ADM):</strong> Las acciones de contacto, seguimiento y levantamiento de retención se gestionan desde el panel de Coordinación Académica.</span>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-body-tertiary border rounded p-3 mb-4 small" role="note">
+        <div class="d-flex align-items-center gap-2 text-body-secondary flex-grow-1">
+          <i class="bi bi-shield-lock text-secondary fs-5"></i>
+          <div>
+            <strong>Acceso de supervisión (ADM):</strong> Las métricas se actualizan en tiempo real. Para gestionar contactos, actas o llamadas, consultá la nómina detallada.
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" id="btn-ver-alumnos-ausentes" data-nav="pedagogico-seguimiento-ausentes">
+          <i class="bi bi-people-fill"></i>
+          <span>Ver nómina detallada de alumnos (${k.totalAusentes ?? 0})</span>
+          <i class="bi bi-arrow-right"></i>
+        </button>
       </div>
 
       <!-- Métricas clave agrupadas 3+3 (VD1, VD2, VD3, VD8, VD9) -->
@@ -459,6 +469,29 @@ function _attachEvents() {
     if (desdeInput) desdeInput.value = ''
     if (hastaInput) hastaInput.value = ''
     await _refreshCasosOnly()
+  })
+
+  // Navegación a nómina detallada de alumnos ausentes
+  c.querySelector('#btn-ver-alumnos-ausentes')?.addEventListener('click', () => {
+    router.navigate('pedagogico-seguimiento-ausentes')
+  })
+
+  // Clic en KPI cards con data-kpi para navegar con filtro
+  c.querySelectorAll('[data-kpi-card][data-kpi]').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      const kpiType = e.currentTarget.getAttribute('data-kpi')
+      if (kpiType === 'nivel-1') {
+        router.navigate('pedagogico-seguimiento-ausentes', { nivel: 1 })
+      } else if (kpiType === 'nivel-2') {
+        router.navigate('pedagogico-seguimiento-ausentes', { nivel: 2 })
+      } else if (kpiType === 'nivel-3') {
+        router.navigate('pedagogico-seguimiento-ausentes', { nivel: 3 })
+      } else if (kpiType === 'sin-contacto') {
+        router.navigate('pedagogico-seguimiento-ausentes', { soloSinContacto: true })
+      } else {
+        router.navigate('pedagogico-seguimiento-ausentes')
+      }
+    })
   })
 
   // Exportar CSV

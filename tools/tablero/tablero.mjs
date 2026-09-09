@@ -500,15 +500,15 @@ function render(meta, lanes, progreso, src) {
 
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Backlog SOI · ${esc(TOPIC)}</title>
 <style>
+/* modo oscuro forzado — pensado para escritorios nocturnos */
 :root{
+  color-scheme:dark;
   --bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--line:#2a2f3a;--tx:#e6e8ec;--tx2:#9aa3b2;
   --alta:#ff5c5c;--media:#ffb020;--baja:#6b7280;--sin:#8b5cf6;
   --libre:#22c55e;--encurso:#38bdf8;--enreview:#a78bfa;--cerrada:#334155;
-}
-@media (prefers-color-scheme: light){
-  :root{--bg:#f6f7f9;--panel:#fff;--panel2:#f0f2f5;--line:#e3e6ea;--tx:#1a1d23;--tx2:#5b6472}
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}

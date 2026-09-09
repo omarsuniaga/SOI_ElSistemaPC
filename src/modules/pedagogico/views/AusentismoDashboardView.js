@@ -12,6 +12,7 @@ import { renderSeguimientoAusentesCardADM } from '../components/SeguimientoAusen
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import '../styles/ausentismo.css'
 
 const PAGE_SIZE = 25
 
@@ -88,12 +89,91 @@ function _statsForCards() {
     nivel3: k.nivel3 || 0,
     contactados72h: k.contactosUltimas72h || 0,
     totalContactos: k.totalAusentes || 0,
+    sinContacto: k.sinContacto || 0,
     retencionesActivas: k.retencionesActivas || 0,
     retencionesLevantadas: k.retencionesLevantadas || 0,
   }
 }
 
+function _renderFunnelChart() {
+  const k = state.kpis || {}
+  const n1 = Number(k.nivel1 || 0)
+  const n2 = Number(k.nivel2 || 0)
+  const n3 = Number(k.nivel3 || 0)
+  const maxVal = Math.max(1, n1, n2, n3)
+
+  const pct1 = Math.round((n1 / maxVal) * 100)
+  const pct2 = Math.round((n2 / maxVal) * 100)
+  const pct3 = Math.round((n3 / maxVal) * 100)
+
+  return `
+    <div class="card border-0 shadow-sm mb-4 ausentismo-chart-container">
+      <div class="card-header bg-body-tertiary d-flex align-items-center justify-content-between py-2 px-3 border-bottom">
+        <span class="small fw-bold text-uppercase text-body-secondary">
+          <i class="bi bi-funnel me-1 text-primary"></i>Embudo de Escalamiento Institucional
+        </span>
+        <span class="text-muted small">N1 Aviso &rarr; N2 Comunicación &rarr; N3 Retención</span>
+      </div>
+      <div class="card-body p-3">
+        <div class="row g-3 align-items-center">
+          <div class="col-12 col-md-7">
+            <!-- Barra Nivel 1 -->
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="fw-semibold text-warning-emphasis">Nivel 1 (Aviso preventivo)</span>
+                <span class="text-muted">${n1} alumnos</span>
+              </div>
+              <div class="progress bg-body-secondary" style="height: 10px;" role="progressbar" aria-valuenow="${pct1}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-warning ausentismo-funnel-bar" style="width: ${pct1}%;"></div>
+              </div>
+            </div>
+            <!-- Barra Nivel 2 -->
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="fw-semibold text-danger-emphasis">Nivel 2 (Comunicación formal)</span>
+                <span class="text-muted">${n2} alumnos</span>
+              </div>
+              <div class="progress bg-body-secondary" style="height: 10px;" role="progressbar" aria-valuenow="${pct2}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-danger bg-opacity-75 ausentismo-funnel-bar" style="width: ${pct2}%;"></div>
+              </div>
+            </div>
+            <!-- Barra Nivel 3 -->
+            <div>
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="fw-semibold text-danger">Nivel 3 (Retención de instrumento)</span>
+                <span class="fw-bold text-danger">${n3} alumnos</span>
+              </div>
+              <div class="progress bg-body-secondary" style="height: 10px;" role="progressbar" aria-valuenow="${pct3}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-danger ausentismo-funnel-bar" style="width: ${pct3}%;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-5 border-start-md ps-md-4">
+            <div class="d-flex flex-column gap-2 text-muted small">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-exclamation text-danger fs-5"></i>
+                <div>
+                  <strong class="text-body">${n3} retenciones</strong> activas o en trámite de restitución.
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-telephone-outbound text-info fs-5"></i>
+                <div>
+                  <strong class="text-body">${k.contactosUltimas72h || 0} alumnos</strong> contactados en los últimos 3 días.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
 function _render() {
+  const k = state.kpis || {}
+  const sinContacto = k.sinContacto || 0
+
   state.container.innerHTML = `
     <div class="page-container">
       <div class="d-flex align-items-center gap-3 mb-3">
@@ -101,8 +181,11 @@ function _render() {
           <i class="bi bi-graph-up fs-4"></i>
         </div>
         <div class="flex-grow-1">
-          <h1 class="page-title mb-0">Ausencias — Resumen del Período</h1>
-          <p class="text-muted small mb-0">${escapeHTML(state.periodo?.nombre || 'Período actual')} · ${state.kpis?.totalAusentes ?? 0} alumnos en seguimiento · ${state.kpis?.sinContacto ?? 0} sin contacto</p>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <h1 class="page-title mb-0">Ausencias — Resumen del Período</h1>
+            ${sinContacto > 0 ? `<span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-sm-2" title="Alumnos en seguimiento sin teléfono"><i class="bi bi-telephone-x me-1"></i>${sinContacto} sin contacto</span>` : ''}
+          </div>
+          <p class="text-muted small mb-0">${escapeHTML(state.periodo?.nombre || 'Período actual')} · ${k.totalAusentes ?? 0} alumnos en seguimiento</p>
         </div>
         <button class="btn-help-trigger" id="btn-help-ausentismo-adm" title="¿Cómo funciona este panel?" aria-label="Ayuda sobre ausentismo ADM">
           <i class="bi bi-question"></i>
@@ -114,13 +197,17 @@ function _render() {
         <span><strong>Acceso de lectura (ADM):</strong> Las acciones de contacto, seguimiento y levantamiento de retención se gestionan desde el panel de Coordinación Académica.</span>
       </div>
 
+      <!-- Métricas clave agrupadas 3+3 (VD1, VD2, VD3, VD8, VD9) -->
       <div class="mb-4" aria-live="polite">
-        <h2 class="h5 mb-3 fw-bold">Métricas clave</h2>
         ${renderSeguimientoAusentesCardADM(_statsForCards())}
       </div>
 
-      <div class="card border-0 shadow-sm mb-4" id="card-casos-cerrados">
-        <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <!-- Embudo visual de distribución (VD5) -->
+      ${_renderFunnelChart()}
+
+      <!-- Tabla de casos cerrados (VD6, VD7) -->
+      <div class="card border-0 shadow-sm mb-4 ausentismo-kpi-card" id="card-casos-cerrados">
+        <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
           <h2 class="h5 mb-0 fw-semibold">Casos cerrados (reincorporaciones y justificaciones)</h2>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input type="date" class="form-control form-control-sm w-auto" data-desde value="${escapeHTML(state.desde)}" aria-label="Fecha desde">
@@ -153,11 +240,11 @@ function _renderCasosBodyHTML() {
   if (total === 0) {
     return `
       <div class="text-center py-5 px-3" data-empty-state>
-        <div class="mb-2 text-secondary opacity-50">
+        <div class="mb-3 text-secondary opacity-50">
           <i class="bi bi-inbox fs-1"></i>
         </div>
-        <p class="fw-semibold text-body-secondary mb-1">Sin casos cerrados</p>
-        <p class="text-muted small mb-0">No se encontraron reincorporaciones ni justificaciones en el rango de fechas seleccionado.</p>
+        <p class="fw-semibold text-body-secondary mb-1">Aún no hay reincorporaciones ni justificaciones en este período</p>
+        <p class="text-muted small mb-0">Podés probar ampliando el rango de fechas con los filtros superiores o limpiando el filtro para ver todo el histórico.</p>
       </div>`
   }
 

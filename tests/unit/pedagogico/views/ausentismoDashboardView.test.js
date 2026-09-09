@@ -144,14 +144,31 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
     }))
   })
 
-  it('renders rich empty state when no cases match filter', async () => {
+  it('renders rich empty state with microcopy when no cases match filter (VD6)', async () => {
     const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
     svc.fetchCasosCerrados.mockResolvedValueOnce([])
     const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
     await renderAusentismoDashboardView(container)
 
     expect(container.querySelector('[data-empty-state]')).toBeTruthy()
-    expect(container.innerHTML).toContain('Sin casos cerrados')
+    expect(container.innerHTML).toContain('Aún no hay reincorporaciones ni justificaciones en este período')
     expect(container.querySelector('[data-csv]').hasAttribute('disabled')).toBe(true)
+  })
+
+  it('renders visual escalation funnel chart (VD5)', async () => {
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    expect(container.querySelector('.ausentismo-chart-container')).toBeTruthy()
+    expect(container.textContent).toContain('Embudo de Escalamiento Institucional')
+    const progressBars = container.querySelectorAll('.ausentismo-funnel-bar')
+    expect(progressBars.length).toBe(3)
+  })
+
+  it('prominently highlights sin contacto count in header (VD8)', async () => {
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    expect(container.innerHTML).toContain('3 sin contacto')
   })
 })

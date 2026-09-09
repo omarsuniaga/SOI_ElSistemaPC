@@ -42,10 +42,10 @@ export function renderSeguimientoAusentesCardADM(data = null) {
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <p class="text-muted small mb-0">Nivel 1</p>
-                <h4 class="mb-0">${stats.nivel1 || '0'}</h4>
+                <div class="h4 mb-0 fw-bold">${stats.nivel1 || '0'}</div>
                 <small class="text-muted">Alumnos con aviso</small>
               </div>
-              <div class="badge p-3" style="font-size: 1.5rem;background:#b7791f;color:#fff;">
+              <div class="badge rounded-3 p-3 fs-5 bg-warning-subtle text-warning-emphasis">
                 <i class="bi bi-exclamation-circle"></i>
               </div>
             </div>
@@ -60,10 +60,10 @@ export function renderSeguimientoAusentesCardADM(data = null) {
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <p class="text-muted small mb-0">Nivel 2</p>
-                <h4 class="mb-0">${stats.nivel2 || '0'}</h4>
+                <div class="h4 mb-0 fw-bold">${stats.nivel2 || '0'}</div>
                 <small class="text-muted">Comunicación formal</small>
               </div>
-              <div class="badge p-3" style="font-size: 1.5rem;background:#c2410c;color:#fff;">
+              <div class="badge rounded-3 p-3 fs-5 bg-danger-subtle text-danger-emphasis">
                 <i class="bi bi-exclamation-triangle"></i>
               </div>
             </div>
@@ -73,15 +73,15 @@ export function renderSeguimientoAusentesCardADM(data = null) {
 
       <!-- Nivel 3 Card -->
       <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-sm" data-kpi-card data-kpi="nivel-3">
+        <div class="card border-0 shadow-sm border-start border-danger border-3" data-kpi-card data-kpi="nivel-3">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <p class="text-muted small mb-0">Nivel 3</p>
-                <h4 class="mb-0">${stats.nivel3 || '0'}</h4>
+                <div class="h4 mb-0 fw-bold text-danger">${stats.nivel3 || '0'}</div>
                 <small class="text-muted">Retención activa</small>
               </div>
-              <div class="badge p-3" style="font-size: 1.5rem;background:#9f1239;color:#fff;">
+              <div class="badge rounded-3 p-3 fs-5 bg-danger text-white">
                 <i class="bi bi-exclamation-circle-fill"></i>
               </div>
             </div>
@@ -95,11 +95,11 @@ export function renderSeguimientoAusentesCardADM(data = null) {
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
               <div>
-                <p class="text-muted small mb-0">Contactados <72h</p>
-                <h4 class="mb-0">${contactadosPercentage}%</h4>
+                <p class="text-muted small mb-0">Contactados &lt;72h</p>
+                <div class="h4 mb-0 fw-bold">${contactadosPercentage}%</div>
                 <small class="text-muted">${stats.contactados72h || 0} de ${stats.totalContactos || 0}</small>
               </div>
-              <div class="badge bg-success text-white p-3" style="font-size: 1.5rem;">
+              <div class="badge rounded-3 p-3 fs-5 bg-success-subtle text-success-emphasis">
                 <i class="bi bi-check-circle"></i>
               </div>
             </div>
@@ -114,10 +114,10 @@ export function renderSeguimientoAusentesCardADM(data = null) {
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <p class="text-muted small mb-0">Retenciones Activas</p>
-                <h4 class="mb-0">${stats.retencionesActivas || '0'}</h4>
+                <div class="h4 mb-0 fw-bold">${stats.retencionesActivas || '0'}</div>
                 <small class="text-muted">En proceso</small>
               </div>
-              <div class="badge bg-danger text-white p-3" style="font-size: 1.5rem;">
+              <div class="badge rounded-3 p-3 fs-5 bg-danger-subtle text-danger-emphasis">
                 <i class="bi bi-shield-lock"></i>
               </div>
             </div>
@@ -132,10 +132,10 @@ export function renderSeguimientoAusentesCardADM(data = null) {
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <p class="text-muted small mb-0">Retenciones Levantadas</p>
-                <h4 class="mb-0">${stats.retencionesLevantadas || '0'}</h4>
+                <div class="h4 mb-0 fw-bold">${stats.retencionesLevantadas || '0'}</div>
                 <small class="text-muted">Este período</small>
               </div>
-              <div class="badge bg-success text-white p-3" style="font-size: 1.5rem;">
+              <div class="badge rounded-3 p-3 fs-5 bg-success-subtle text-success-emphasis">
                 <i class="bi bi-check2-all"></i>
               </div>
             </div>
@@ -144,24 +144,4 @@ export function renderSeguimientoAusentesCardADM(data = null) {
       </div>
     </div>
   `
-}
-
-/**
- * Component class for KPI cards (for async initialization)
- */
-export class SeguimientoAusentesCardADM {
-  constructor(options = {}) {
-    this.options = options
-    this.data = null
-  }
-
-  async load() {
-    // In real usage, this would fetch data from the service
-    // For tests, data is injected via options
-    return this.data
-  }
-
-  render() {
-    return renderSeguimientoAusentesCardADM(this.data)
-  }
 }

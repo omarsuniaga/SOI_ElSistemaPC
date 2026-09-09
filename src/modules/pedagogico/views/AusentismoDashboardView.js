@@ -74,7 +74,7 @@ function _render() {
 
   state.container.innerHTML = `
     <div class="page-container">
-      <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="d-flex align-items-center gap-3 mb-3">
         <div class="brand-badge bg-danger bg-opacity-10 text-danger rounded-3 d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
           <i class="bi bi-graph-up fs-4"></i>
         </div>
@@ -84,20 +84,25 @@ function _render() {
         </div>
       </div>
 
+      <div class="d-flex align-items-center gap-2 bg-body-tertiary border rounded p-2 mb-4 small text-body-secondary" role="note">
+        <i class="bi bi-shield-lock text-secondary"></i>
+        <span><strong>Acceso de lectura (ADM):</strong> Las acciones de contacto, seguimiento y levantamiento de retención se gestionan desde el panel de Coordinación Académica.</span>
+      </div>
+
       <div class="mb-4">
-        <h5 class="mb-3">Métricas clave</h5>
+        <h2 class="h5 mb-3 fw-bold">Métricas clave</h2>
         ${renderSeguimientoAusentesCardADM(_statsForCards())}
       </div>
 
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2">
-          <h5 class="mb-0">Casos cerrados (reincorporaciones y justificaciones)</h5>
+          <h2 class="h5 mb-0 fw-semibold">Casos cerrados (reincorporaciones y justificaciones)</h2>
           <div class="d-flex align-items-center gap-2 flex-wrap">
-            <input type="date" class="form-control form-control-sm" style="width:auto" data-desde value="${escapeHTML(state.desde)}">
+            <input type="date" class="form-control form-control-sm w-auto" data-desde value="${escapeHTML(state.desde)}" aria-label="Fecha desde">
             <span class="text-muted small">a</span>
-            <input type="date" class="form-control form-control-sm" style="width:auto" data-hasta value="${escapeHTML(state.hasta)}">
+            <input type="date" class="form-control form-control-sm w-auto" data-hasta value="${escapeHTML(state.hasta)}" aria-label="Fecha hasta">
             <button class="btn btn-sm btn-outline-secondary" data-filtrar>Filtrar</button>
-            <button class="btn btn-sm btn-outline-success" data-csv ${casos.length ? '' : 'disabled'}>
+            <button class="btn btn-sm btn-outline-secondary" data-csv ${casos.length ? '' : 'disabled'}>
               <i class="bi bi-download me-1"></i>CSV
             </button>
           </div>
@@ -130,11 +135,6 @@ function _render() {
               </table>
             </div>`}
         </div>
-      </div>
-
-      <div class="d-flex align-items-center gap-2 bg-body-tertiary border rounded p-2 mt-4 small text-body-secondary">
-        <i class="bi bi-shield-lock"></i>
-        <span><strong>Acceso de lectura:</strong> las acciones de contacto y retención se realizan desde el panel de Coordinación Académica.</span>
       </div>
     </div>`
 }

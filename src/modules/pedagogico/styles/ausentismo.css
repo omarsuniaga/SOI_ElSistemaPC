@@ -1,6 +1,6 @@
-/**
- * ausentismo.css — Estilos V9 para el módulo pedagógico (Dashboard Ausentismo ADM)
- * Tokens semánticos, ritmo visual y componentes específicos sin inline styles.
+ï»¿/**
+ * ausentismo.css - Estilos V9 para el modulo pedagogico (Dashboard Ausentismo ADM)
+ * Tokens semanticos, ritmo visual y componentes especificos sin inline styles.
  */
 
 .ausentismo-kpi-card {
@@ -14,7 +14,7 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Nivel 3 acento jerárquico */
+/* Nivel 3 acento jerarquico */
 .ausentismo-kpi-card.kpi-nivel-3 {
   border-left: 4px solid var(--bs-danger, #dc3545) !important;
 }
@@ -34,7 +34,7 @@
   font-size: 1.15rem;
 }
 
-/* Gráfico embudo / barras SVG */
+/* Grafico embudo / barras SVG */
 .ausentismo-chart-container {
   border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.08));
   border-radius: 0.5rem;

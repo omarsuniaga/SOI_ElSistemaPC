@@ -222,7 +222,10 @@ function _render() {
       <!-- Tabla de casos cerrados (VD6, VD7) -->
       <div class="card border-0 shadow-sm mb-4 ausentismo-kpi-card" id="card-casos-cerrados">
         <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-          <h2 class="h5 mb-0 fw-semibold">Casos cerrados (reincorporaciones y justificaciones)</h2>
+          <div>
+            <h2 class="h5 mb-0 fw-semibold">Histórico de reincorporaciones y resoluciones</h2>
+            <small class="text-muted">Alumnos que completaron el proceso de reincorporación y actas firmadas tras retención</small>
+          </div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input type="date" class="form-control form-control-sm w-auto" data-desde value="${escapeHTML(state.desde)}" aria-label="Fecha desde">
             <span class="text-muted small">a</span>
@@ -257,8 +260,9 @@ function _renderCasosBodyHTML() {
         <div class="mb-3 text-secondary opacity-50">
           <i class="bi bi-inbox fs-1"></i>
         </div>
-        <p class="fw-semibold text-body-secondary mb-1">Aún no hay reincorporaciones ni justificaciones en este período</p>
-        <p class="text-muted small mb-0">Podés probar ampliando el rango de fechas con los filtros superiores o limpiando el filtro para ver todo el histórico.</p>
+        <p class="fw-semibold text-body-secondary mb-1">Aún no hay reincorporaciones registradas en este período</p>
+        <p class="text-muted small mb-1">Las reincorporaciones se asientan cuando se firma el acta de compromiso tras una retención (Nivel 3).</p>
+        <p class="text-muted small mb-0"><em>Nota: Las justificaciones de faltas diarias en clase se gestionan y consultan en el módulo de Asistencias.</em></p>
       </div>`
   }
 
@@ -271,7 +275,7 @@ function _renderCasosBodyHTML() {
   return `
     <div class="table-responsive">
       <table class="table table-sm table-hover mb-0 align-middle">
-        <caption class="visually-hidden">Histórico de casos de ausentismo cerrados, justificados o reincorporados</caption>
+        <caption class="visually-hidden">Histórico de reincorporaciones y resoluciones de retención de alumnos</caption>
         <thead class="table-light">
           <tr>
             <th scope="col">Fecha</th>
@@ -363,8 +367,8 @@ function _abrirAyuda() {
       },
       {
         icon: 'bi-archive',
-        title: 'Casos Cerrados',
-        description: 'Historial de contactos que concluyeron en reincorporación, justificación o resolución del caso. Podés filtrar por rango de fechas y exportar a CSV.',
+        title: 'Reincorporaciones y Resoluciones',
+        description: 'Historial de alumnos que concluyeron el proceso de retención mediante firma de acta de compromiso o resolución de su caso. Podés filtrar por rango de fechas y exportar a CSV.',
       },
     ],
   })

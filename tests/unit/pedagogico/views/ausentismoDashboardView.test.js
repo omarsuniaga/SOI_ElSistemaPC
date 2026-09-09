@@ -151,7 +151,8 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
     await renderAusentismoDashboardView(container)
 
     expect(container.querySelector('[data-empty-state]')).toBeTruthy()
-    expect(container.innerHTML).toContain('Aún no hay reincorporaciones ni justificaciones en este período')
+    expect(container.innerHTML).toContain('Aún no hay reincorporaciones registradas en este período')
+    expect(container.innerHTML).toContain('Las justificaciones de faltas diarias en clase se gestionan y consultan en el módulo de Asistencias')
     expect(container.querySelector('[data-csv]').hasAttribute('disabled')).toBe(true)
   })
 

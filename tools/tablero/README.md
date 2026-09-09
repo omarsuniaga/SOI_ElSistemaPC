@@ -1,7 +1,12 @@
-# tablero — visor del tablero kanban de Engram
+# tablero — visor del backlog de reparaciones SOI (Engram → HTML kanban)
 
-Convierte el observation de Engram `fase-0/tablero-tareas` (texto ASCII, editado por
-varios agentes) en una página HTML kanban estilizada.
+Convierte los observations de Engram en una página HTML kanban estilizada, alineada
+a **SOI-MAP**:
+
+- `tablero/reparaciones` — el backlog (**QUÉ** hacer), en tablas markdown.
+- `coordination/lanes` — el candado por **ÁREA** (quién toca qué), si existe como tabla.
+- `tablero/<id>/progress` — el progreso real de cada agente (cada uno su topic → **a
+  prueba de clobber**). Se agrega en la tira "Actividad de agentes".
 
 ## Uso
 
@@ -11,30 +16,27 @@ node tools/tablero/tablero.mjs --no-open  # solo genera
 node tools/tablero/tablero.mjs --watch    # regenera cada 15s (la página se auto-recarga)
 ```
 
-Otras banderas:
-
 | Bandera | Qué hace |
 |---|---|
-| `--topic <key>` | otro topic_key (default `fase-0/tablero-tareas`) |
-| `--file <ruta.txt>` | parsea un `.txt` en vez de leer la BD |
+| `--topic <key>` | backlog (default `tablero/reparaciones`) |
+| `--lanes <key>` | registro de carriles (default `coordination/lanes`) |
+| `--file <ruta.md>` | parsea un `.md` en vez de leer la BD |
 | `--out <ruta.html>` | destino del HTML |
 | `--db <ruta>` | otra `engram.db` (default `~/.engram/engram.db`) |
 
 ## Cómo funciona
 
-1. Abre `~/.engram/engram.db` **en modo solo lectura** (`node:sqlite`, sin deps) y lee el
-   `content` más reciente del `observations` con ese `topic_key`.
-2. Parsea la estructura del tablero:
-   - `═ BLOQUE X · nombre ═` → columnas de agrupación (chip de color por bloque)
-   - `[ID] [PRIO] descripción` + línea de estado (`ESTADO · agente · fecha · entregable`)
-   - estado **inline** también (`... LIBRE — parte de [LA7].`)
-   - `─ LOG ─` → timeline al pie
-3. Renderiza un HTML autocontenido: 5 columnas (Libre / En curso / Parcial / Bloqueado /
-   Hecho), badges de prioridad, chips de bloque/agente/fecha, rutas del repo como `<code>`,
-   `#NN` como links a PRs, filtros por bloque y por prioridad ALTA.
+1. Abre `~/.engram/engram.db` **en modo solo lectura** (`node:sqlite`, sin deps).
+2. Parsea el backlog: secciones `##`, tablas markdown (`| ID | Área | Prio | Tarea | … |`),
+   la lista de CERRADA y el texto de protocolo.
+3. Deriva la actividad de agentes de todos los topics `tablero/%/progress`.
+4. Renderiza un HTML autocontenido: 4 columnas por estado SOI-MAP
+   (**Libre / En curso / En review / Cerrada**), badges de prioridad, chips de
+   área/agente/rama, rutas del repo como `<code>`, `#NN` → links a PRs, filtros por
+   área y por prioridad ALTA, tira de carriles + actividad arriba.
 
-No escribe nada en Engram. Para refrescar, volvé a correr el script (o usá `--watch`).
+No escribe nada en Engram. Refrescar = re-ejecutar (o `--watch`).
 
 ## Requisitos
 
-Node ≥ 22 (usa `node:sqlite`, estable desde Node 22.5; el repo corre Node 24).
+Node ≥ 22 (`node:sqlite`; el repo corre Node 24).

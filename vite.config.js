@@ -60,7 +60,6 @@ export default defineConfig({
           inventario:   'inventario.html',
           calendario:   'calendario.html',
           luteria:      'luteria.html',
-          lut:          'lut.html',
           simulador:    'simulador.html',
         },
       output: {
@@ -139,7 +138,7 @@ export default defineConfig({
             { prefix: '/calendario', file: '/calendario.html' },
             { prefix: '/audiciones', file: '/audiciones.html' },
             { prefix: '/luteria', file: '/luteria.html' },
-            { prefix: '/lut', file: '/lut.html' },
+            { prefix: '/lut', file: '/luteria.html' },
             { prefix: '/simulador', file: '/simulador.html' },
           ]
 

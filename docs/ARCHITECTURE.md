@@ -1,336 +1,157 @@
 ---
 doc_id: PORTAL-003
 doc_type: manual
-version: V9
+version: V10
 status: vigente
 department: SIS
 owner: Arquitecto SOI
 created_at: 2026-06-29
-last_reviewed: 2026-06-29
-next_review_due: 2026-12-26
+last_reviewed: 2026-09-08
+next_review_due: 2027-03-08
 review_cycle_days: 180
-canonical_path: 09_SOI_WEB_PORTAL\sistema-academico-pwa\docs\ARCHITECTURE.md
+canonical_path: docs/ARCHITECTURE.md
 origin_path: null
 destination_path: null
-supersedes: null
+supersedes: V9
 superseded_by: null
-change_reason: null
+change_reason: "Fase 0 (LA1) — Reescritura completa para alinear la documentación con la topología real del sistema (eliminación de servidor HTTP/Joi/Sentry ficticios; documentación de cliente Supabase directo, RLS, lens de portales y DataAdapters)"
 aliases:
   - PORTAL-003
 tags:
   - portal
   - web
+  - arquitectura
 related_docs:
-  - "[[00_HOME]]"
-  - "[[00_MOCS/MOC_SIS]]"
-  - "[[00_SISTEMA_MAESTRO/SOI_MASTER_BOOK_V9]]"
-  - "[[00_SISTEMA_MAESTRO/SOI_HERMES_CORE_V9]]"
+  - "CONTEXT.md"
+  - "AGENTS.md"
+  - "docs/hygiene/FASE-0_hallazgos.md"
 ---
 
-# System Architecture
+# Arquitectura del Sistema SOI (El Sistema Punta Cana)
 
-Portal Maestros is a Progressive Web App (PWA) with a modern, scalable architecture.
-
-## Overall Design
-
-```
-┌─────────────────────────────────────────────────────┐
-│           Browser (PWA)                              │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Vanilla JS + Vite (Reactive UI)                │  │
-│  │ - Portal Maestros (Teacher Interface)         │  │
-│  │ - Admin Panel                                   │  │
-│  └────────────────────────────────────────────────┘  │
-│           ↓                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Service Worker (Offline + Caching)             │  │
-│  │ - Local notification scheduling                │  │
-│  │ - Cache-first strategy for assets              │  │
-│  │ - Web Push handling                             │  │
-│  └────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-            ↓ (HTTPS)
-┌─────────────────────────────────────────────────────┐
-│        Supabase Backend                              │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ PostgreSQL Database                             │  │
-│  │ - Teachers table                                │  │
-│  │ - Students table                                │  │
-│  │ - Observations, Evaluations, etc.              │  │
-│  │ - Audit logs (all mutations)                   │  │
-│  └────────────────────────────────────────────────┘  │
-│           ↓                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Supabase Auth (JWT)                            │  │
-│  │ - Email/password login                         │  │
-│  │ - Session management                            │  │
-│  │ - WebAuthn support                              │  │
-│  └────────────────────────────────────────────────┘  │
-│           ↓                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Supabase Realtime (WebSocket)                  │  │
-│  │ - Live notifications                            │  │
-│  │ - Multi-user updates                             │  │
-│  └────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-```
+El Sistema Operativo Institucional (**SOI**) es una plataforma web modular diseñada para la gestión académica, operativa, patrimonial y financiera del Sistema de Orquestas Infantil y Juvenil de Punta Cana.
 
 ---
 
-## Layers
+## 1. Topología General
 
-### 1. Presentation Layer
+SOI opera como una **Single Page Application (SPA) multi-portal** servida estáticamente vía Vite (HTML5/ESM) que se comunica de forma **directa** con **Supabase Backend-as-a-Service (BaaS)** mediante PostgreSQL, Row-Level Security (RLS) y Edge Functions.
 
-**Files:** `src/portal-maestros/views/`, `src/portal-maestros/components/`
-
-- Vanilla JS (no framework) with semantic HTML
-- Responsive design (mobile-first)
-- Accessible (WCAG 2.1 AA)
-- Error Boundary component catches crashes
-
-### 2. Business Logic Layer
-
-**Files:** `src/portal-maestros/services/`
-
-Services encapsulate core logic:
-- `notificationService.js` — polling + deduplication
-- `lessonPlanService.js` — CRUD for lesson plans
-- `observationService.js` — recording and storage
-- `authService.js` — authentication flows
-
-### 3. Data Layer
-
-**Files:** `src/services/database.js`, `src/services/dataAdapter.js`
-
-- Supabase client
-- Query builders
-- Row-level security (RLS)
-- Real-time subscriptions
-- **DataAdapter Pattern**: Auto-switches between Mock (JSON) and Supabase
-
-### 4. Cross-Cutting Concerns
-
-**Files:** `src/services/`, `src/middleware/`
-
-- `errorReporter.js` — Sentry integration
-- `auditService.js` — Mutation logging
-- `analyticsService.js` — User tracking
-- `permissionCheck.js` — RBAC enforcement
-- `inputValidation.js` — Data validation
-- `rateLimit.js` — Rate limiting
-
----
-
-## Data Flow
-
-### Lesson Planning Workflow
+> ⚠️ **Aclaración Arquitectónica Fundamental:**  
+> SOI **NO** posee un servidor de aplicación intermedio (Node.js/Express, Joi ni middlewares de enrutamiento HTTP en servidor). Toda la persistencia, integridad relacional y validación de permisos de datos reside en la base de datos PostgreSQL mediante **RLS y RPCs transaccionales**.
 
 ```
-User clicks "Nueva Planificación"
-    ↓
-renderNewLessonView() called
-    ↓
-Form displayed with route/level selectors
-    ↓
-User fills objectives, activities, duration
-    ↓
-User clicks "Crear"
-    ↓
-inputValidation checks (client-side):
-  - Required fields present
-  - Duration is number > 0
-  - Text length reasonable
-    ↓
-lessonPlanService.createPlan() called
-    ↓
-HTTP POST /api/lessons/plans
-    ↓
-Server-side validation:
-  - Joi schema check
-  - User has permission (teacher role)
-  - Route/level exist
-    ↓
-auditService.log('CREATE', 'lesson_plan', id, changes)
-    ↓
-Database INSERT
-    ↓
-Response with plan ID
-    ↓
-UI updates: "Plan created ✅"
-```
-
-### Observation Recording Workflow
-
-```
-User clicks student name
-    ↓
-observationEditor displays
-    ↓
-User types observation
-    ↓
-@Mention detected: show student dropdown
-    ↓
-#Indicator detected: show indicator picker
-    ↓
-User clicks "Estructurar con IA" (optional)
-    ↓
-Text sent to Groq API
-    ↓
-AI response: structured [context, behavior, skill]
-    ↓
-User clicks "Guardar"
-    ↓
-inputValidation checks:
-  - Text not empty
-  - DOMPurify cleans HTML
-    ↓
-observationService.save()
-    ↓
-HTTP POST /api/observations
-    ↓
-Server validation + audit log
-    ↓
-Database INSERT
-    ↓
-notificationService updates UI
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                             CLIENTE WEB / PWA (Navegador)                      │
+│                                                                                │
+│  ┌─────────────────────────┐  ┌────────────────────────┐  ┌─────────────────┐  │
+│  │   Portal Administrativo │  │    Portal Académico    │  │  Portal Docente │  │
+│  │       (/adm.html)       │  │       (/acm.html)      │  │  (/index.html)  │  │
+│  └────────────┬────────────┘  └───────────┬────────────┘  └────────┬────────┘  │
+│               │                           │                        │           │
+│  ┌────────────┴───────────────────────────┴────────────────────────┴────────┐  │
+│  │                        Patrón "Lens" Multi-Portal                        │  │
+│  │  (adminPortalShell.js / portalAccessService.js / portalCatalog.js)       │  │
+│  └──────────────────────────────────────┬───────────────────────────────────┘  │
+│                                         │                                      │
+│  ┌──────────────────────────────────────┴───────────────────────────────────┐  │
+│  │                           Módulos de Negocio                             │  │
+│  │   src/modules/ (alumnos, clases, asistencias, finanzas, inventario, etc.)│  │
+│  └──────────────────────────────────────┬───────────────────────────────────┘  │
+│                                         │                                      │
+│  ┌──────────────────────────────────────┴───────────────────────────────────┐  │
+│  │                         Capa de Abstracción de Datos                     │  │
+│  │               DataAdapter Pattern (Real vs Demo/JSON Mock)               │  │
+│  │       src/modules/*/api/*Adapter.js  ──►  src/lib/supabaseClient.js      │  │
+│  └──────────────────────────────────────┬───────────────────────────────────┘  │
+└─────────────────────────────────────────┼──────────────────────────────────────┘
+                                          │ HTTPS (REST / RPC / Realtime)
+                                          ▼
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                           SUPABASE BACKEND (PostgreSQL)                        │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │                         Autenticación (GoTrue)                           │  │
+│  │  - JWT (Bearer) almacenado bajo la clave 'sb-soi-auth'                   │  │
+│  │  - Tabla pública profiles (id, email, rol, nombre, etc.)                 │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │                     Gobernanza y Autorización en BD                      │  │
+│  │  - Control de Portales: portal_catalog, user_portal_access               │  │
+│  │  - RPCs: get_user_portales, has_portal_access, set_user_portales         │  │
+│  │  - 560+ Políticas RLS (Row-Level Security) en tablas de dominio         │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │                      Funciones RPC Transaccionales                       │  │
+│  │  - Cobros y pagos atómicos (fn_registrar_pago_transaccional)             │  │
+│  │  - Asignación y conciliación de caja, asistencias y cuotas               │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │                             Edge Functions                               │  │
+│  │  - Procesamiento asíncrono, webhooks y automatizaciones de mensajería    │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Module Structure
+## 2. Capas de la Aplicación
 
-### Portal Maestros
+### 2.1 Presentación y Enrutamiento (UI & Router)
+- **Tecnología:** JavaScript Vanilla moderno (ESModules nativos), Tailwind CSS, Bootstrap 5 y componentes React aislados para interfaces complejas (ej. Ficha 360 y Finanzas en `src/portales/fin/`, Calendario).
+- **Arquitectura Multi-Portal ("Lens"):**  
+  En lugar de duplicar aplicaciones, cada punto de entrada (`/adm.html`, `/acm.html`, `/fin.html`, etc.) actúa como un *visor o lente temático* que inicializa una barra de navegación y un contenedor SPA, cargando únicamente las vistas correspondientes a dicho portal desde `src/modules/`.
+- **Router:** Sistema de enrutamiento SPA basado en hash y rutas jerárquicas con extracción de parámetros dinámicos (`core/router/router.js`).
 
-```
-portal-maestros/
-├── views/           # Page components
-│   ├── loginView.js
-│   ├── hoyView.js
-│   ├── planificacionView.js
-│   ├── observacionView.js
-│   ├── evaluacionView.js
-│   ├── asistenciaView.js
-│   ├── metricasView.js
-│   ├── rutaView.js
-│   └── configView.js
-├── components/      # Reusable UI
-│   ├── studentList.js
-│   ├── notificacionesPanel.js
-│   ├── lessonPlanForm.js
-│   ├── observationEditor.js
-│   └── ...
-├── services/        # Business logic
-│   ├── notificationService.js
-│   ├── pushService.js
-│   ├── lessonPlanService.js
-│   ├── observationService.js
-│   └── ...
-├── auth/            # Authentication
-│   ├── maestroAuth.js
-│   └── usePortalAuth.js
-├── router/          # SPA routing
-│   └── portalRouter.js
-├── styles/          # CSS modules
-│   └── portal.css
-└── utils/           # Helpers
-    ├── portalUtils.js
-    └── fuzzyMatch.js
-```
+### 2.2 Capa de Módulos (Domain Modules)
+Cada funcionalidad está empaquetada en su propio subdirectorio dentro de `src/modules/[nombre]/`:
+- `api/`: Lógica de comunicación con el backend (adaptadores y clientes Supabase).
+- `components/`: Elementos visuales reutilizables del módulo.
+- `views/`: Vistas o pantallas completas consumidas por el router.
+- `utils/` o `services/`: Validaciones y lógica de cálculo específica del módulo.
+
+### 2.3 Capa de Acceso a Datos: DataAdapter Pattern
+El proyecto adopta como estándar mandatorio el patrón **DataAdapter**:
+- Las vistas y componentes **no deben invocar directamente a Supabase**.
+- Cada módulo expone una fachada estrecha (`*Adapter.js`) que resuelve hacia:
+  - **Modo Real:** Módulos de consulta (`*Supabase.js`) utilizando el singleton `src/lib/supabaseClient.js`.
+  - **Modo Demo:** Módulos de prueba (`*Mock.js`) alimentados por fixtures estáticos en `src/assets/data/mocks/`.
+
+### 2.4 Control de Acceso y Seguridad (RBAC & RLS)
+- **Roles Canónicos:**  
+  Los roles reconocidos por el dominio SOI (definidos en `profiles` y `portalAccessService.js`) son:
+  - `superadmin`: Control total de la plataforma y administración de portales.
+  - `admin`: Administración operativa institucional.
+  - `direccion`: Dirección general y supervisión estratégica.
+  - `coordinacion_academica`: Gestión de nóminas, cátedras y clases.
+  - `maestro`: Registro de asistencias, planificaciones y evaluaciones de alumnos.
+  - `finanzas`: Gestión de cuotas, recaudación y arqueo de caja.
+  - `operaciones`: Logística, mantenimiento técnico y lutería.
+  - `jurado`: Evaluación en audiciones.
+- **Autorización de Portales:**
+  Orquestada por `src/core/auth/portalAccessService.js` consultando la tabla `portal_catalog` y validada en servidor mediante la función RPC `has_portal_access(p_portal_id, p_user_id)`.
+- **Seguridad de Datos:**
+  La integridad y privacidad están salvaguardadas en la base de datos mediante políticas **RLS (Row Level Security)** en PostgreSQL, evaluando el `auth.uid()` del token JWT contra los permisos de cada tabla.
 
 ---
 
-## Scaling Considerations
+## 3. Subsistemas y Workers Especializados
 
-### Database Indexing
+### 3.1 WhatsApp Runner (`scripts/whatsapp-runner/`)
+- **Propósito:** Automatización del envío y recepción de mensajes transaccionales y notificaciones vía WhatsApp (Baileys).
+- **Diseño Resiliente:**
+  - Inyección de dependencias (DI) y control de concurrencia mediante mutex asíncrono y bloqueos de ejecución (`runnerLock.js`).
+  - Arrendamiento cooperativo de tareas (`workerLease.js`) para prevenir el procesamiento duplicado de mensajes.
+  - Bucle de despacho (`dispatchLoop`) con timeout de confirmación (ACK) terminal y handoff de reintentos mediante reaper.
 
-**Current indexes:**
-- `observations (student_id, created_at)` — queries by student over time
-- `observations (maestro_id, created_at)` — queries by teacher
-- `evaluations (student_id, route_id)` — progress tracking
-- `audit_logs (user_id, created_at)` — audit queries
-- `notifications (user_id, leida, created_at)` — notification fetching
-
-### Caching Strategy
-
-- **Browser**: Service Worker caches assets (cache-first)
-- **HTTP Headers**: max-age=3600 for static assets
-- **Database Queries**: Results cached in localStorage for 5 minutes (with clear on mutation)
-
-### Real-Time Updates
-
-- Supabase Realtime for multi-user scenarios
-- WebSocket subscriptions on notification table
-- Client-side deduplication to prevent duplicates
+### 3.2 Ingesta de Mensajes Telegram (`soi-telegram-ingest`)
+- Webhook que almacena mensajes entrantes sin procesar.
+- Tarea cron con clasificación semántica mediante LLM (Groq) para derivar requerimientos a tareas operativas en `tareas_institucionales`.
 
 ---
 
-## Error Handling
+## 4. Filosofía de Desarrollo y Gobernanza de Código
 
-```javascript
-// Global error boundary
-window.addEventListener('error', (event) => {
-  errorReporter.captureException(event.error)
-  // Don't crash: show user-friendly message
-})
-
-// API errors
-try {
-  await api.post('/observations', data)
-} catch (error) {
-  if (error.status === 401) {
-    // Redirect to login
-  } else if (error.status === 429) {
-    // Rate limited: show message, retry later
-  } else {
-    // Generic error: log and show to user
-    reportError(error)
-  }
-}
-```
-
----
-
-## Technology Choices
-
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| **UI Framework** | Vanilla JS + Vite | Lightweight, no React overhead |
-| **Styling** | CSS Modules | Scoped styles, no conflicts |
-| **State** | Vanilla Store | Simple, no Redux needed |
-| **Testing** | Vitest | Fast, Jest-compatible |
-| **Backend** | Supabase | Built-in Auth, RLS, Realtime |
-| **PWA** | Service Worker | Offline-first, installable |
-
----
-
-## Security Architecture
-
-See [Security Model](./SECURITY.md) for detailed security implementation.
-
----
-
-## Performance Architecture
-
-See [Performance section in README](../README.md) for performance targets and optimization strategies.
-
----
-
-## Future Considerations
-
-- **CDN Integration**: For global distribution
-- **GraphQL**: For complex queries
-- **Worker Threads**: For heavy computations
-- **Micro-frontends**: If multiple teams work on it
-
----
-
-## Related Documentation
-
-- [Developer Guide](./DEVELOPER.md) — Setup and development
-- [API Reference](./API_REFERENCE.md) — Endpoints
-- [Security Model](./SECURITY.md) — Security details
-- [Deployment Guide](./DEPLOYMENT.md) — Production deployment
-
----
-
-*Last updated: May 10, 2026*
+- **Lenguaje Ubicuo:** Consulte estrictamente [`CONTEXT.md`](../CONTEXT.md) para garantizar la coherencia terminológica del dominio orquestal y pedagógico.
+- **Reglas para Agentes y Desarrolladores:** Consulte [`AGENTS.md`](../AGENTS.md) para directrices de commits convencionales (100% en inglés), diseño de módulos profundos (*deep modules*) y autonomía operativa.
+- **Modo Demo First:** Cualquier nueva pantalla o funcionalidad debe diseñarse asegurando compatibilidad con el entorno Mock antes de su despliegue en producción.

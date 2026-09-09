@@ -9,6 +9,7 @@ import {
   fetchCasosCerrados,
 } from '../services/seguimientoAusentesService.js'
 import { renderSeguimientoAusentesCardADM } from '../components/SeguimientoAusentesCardADM.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const state = {
   container: null,
@@ -30,7 +31,7 @@ export async function renderAusentismoDashboardView(container) {
     _attachEvents()
   } catch (err) {
     console.error('[AusentismoDashboard]', err)
-    container.innerHTML = `<div class="page-container"><div class="alert alert-warning">${err.message}</div></div>`
+    container.innerHTML = `<div class="page-container"><div class="alert alert-warning">${escapeHTML(err.message)}</div></div>`
   }
 }
 
@@ -79,7 +80,7 @@ function _render() {
         </div>
         <div class="flex-grow-1">
           <h1 class="page-title mb-0">Ausencias — Resumen del Período</h1>
-          <p class="text-muted small mb-0">${state.periodo?.nombre || 'Período actual'} · ${state.kpis?.totalAusentes ?? 0} alumnos en seguimiento · ${state.kpis?.sinContacto ?? 0} sin contacto</p>
+          <p class="text-muted small mb-0">${escapeHTML(state.periodo?.nombre || 'Período actual')} · ${state.kpis?.totalAusentes ?? 0} alumnos en seguimiento · ${state.kpis?.sinContacto ?? 0} sin contacto</p>
         </div>
       </div>
 
@@ -92,9 +93,9 @@ function _render() {
         <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2">
           <h5 class="mb-0">Casos cerrados (reincorporaciones y justificaciones)</h5>
           <div class="d-flex align-items-center gap-2 flex-wrap">
-            <input type="date" class="form-control form-control-sm" style="width:auto" data-desde value="${state.desde}">
+            <input type="date" class="form-control form-control-sm" style="width:auto" data-desde value="${escapeHTML(state.desde)}">
             <span class="text-muted small">a</span>
-            <input type="date" class="form-control form-control-sm" style="width:auto" data-hasta value="${state.hasta}">
+            <input type="date" class="form-control form-control-sm" style="width:auto" data-hasta value="${escapeHTML(state.hasta)}">
             <button class="btn btn-sm btn-outline-secondary" data-filtrar>Filtrar</button>
             <button class="btn btn-sm btn-outline-success" data-csv ${casos.length ? '' : 'disabled'}>
               <i class="bi bi-download me-1"></i>CSV
@@ -108,18 +109,23 @@ function _render() {
             <div class="table-responsive">
               <table class="table table-sm table-hover mb-0">
                 <thead class="table-light"><tr>
-                  <th>Fecha</th><th>Nivel</th><th>Canal</th><th>Resultado</th><th>Contacto</th><th>Notas</th>
+                  <th>Fecha</th><th>Alumno</th><th>Nivel</th><th>Canal</th><th>Resultado</th><th>Contacto</th><th>Notas</th>
                 </tr></thead>
                 <tbody>
-                  ${casos.map((c) => `
+                  ${casos.map((c) => {
+                    const alumnoNombre = c.alumno_nombre || c.alumnos?.nombre_completo || '—'
+                    const notasRaw = c.notas || '—'
+                    return `
                     <tr>
-                      <td class="small">${String(c.fecha || '').slice(0, 10)}</td>
-                      <td class="small">N${c.nivel ?? '—'}</td>
-                      <td class="small text-capitalize">${c.canal || '—'}</td>
-                      <td class="small">${c.resultado || '—'}</td>
-                      <td class="small">${c.contacto_nombre || '—'}</td>
-                      <td class="small text-truncate" style="max-width:280px" title="${(c.notas || '').replace(/"/g, '&quot;')}">${c.notas || '—'}</td>
-                    </tr>`).join('')}
+                      <td class="small">${escapeHTML(String(c.fecha || '').slice(0, 10))}</td>
+                      <td class="small fw-semibold">${escapeHTML(alumnoNombre)}</td>
+                      <td class="small">N${escapeHTML(c.nivel ?? '—')}</td>
+                      <td class="small text-capitalize">${escapeHTML(c.canal || '—')}</td>
+                      <td class="small">${escapeHTML(c.resultado || '—')}</td>
+                      <td class="small">${escapeHTML(c.contacto_nombre || '—')}</td>
+                      <td class="small text-truncate" style="max-width:280px" title="${escapeHTML(notasRaw)}">${escapeHTML(notasRaw)}</td>
+                    </tr>`
+                  }).join('')}
                 </tbody>
               </table>
             </div>`}
@@ -147,13 +153,16 @@ function _attachEvents() {
 function _exportCsv() {
   const rows = state.casos
   if (!rows.length) return
-  const head = ['fecha', 'nivel', 'canal', 'resultado', 'contacto', 'notas']
+  const head = ['fecha', 'alumno', 'nivel', 'canal', 'resultado', 'contacto', 'notas']
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
-  const body = rows.map((r) => [
-    String(r.fecha || '').slice(0, 10), r.nivel ?? '', r.canal ?? '', r.resultado ?? '', r.contacto_nombre ?? '', r.notas ?? '',
-  ].map(esc).join(','))
+  const body = rows.map((r) => {
+    const alumnoNombre = r.alumno_nombre || r.alumnos?.nombre_completo || ''
+    return [
+      String(r.fecha || '').slice(0, 10), alumnoNombre, r.nivel ?? '', r.canal ?? '', r.resultado ?? '', r.contacto_nombre ?? '', r.notas ?? '',
+    ].map(esc).join(',')
+  })
   const csv = [head.join(','), ...body].join('\r\n')
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = `casos-ausentismo-${new Date().toISOString().slice(0, 10)}.csv`

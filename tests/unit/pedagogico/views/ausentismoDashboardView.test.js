@@ -40,16 +40,42 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
     expect(container.querySelector('[data-kpi="nivel-3"]')?.textContent).toContain('2')
   })
 
-  it('renders the closed-cases table with rows and an enabled CSV button', async () => {
+  it('renders the closed-cases table with rows, alumno column, and an enabled CSV button', async () => {
     const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
     await renderAusentismoDashboardView(container)
     expect(container.querySelectorAll('tbody tr').length).toBe(2)
     expect(container.innerHTML).toContain('Reincorporado')
+    expect(container.innerHTML).toContain('<th>Alumno</th>')
     const csvBtn = container.querySelector('[data-csv]')
     expect(csvBtn.hasAttribute('disabled')).toBe(false)
   })
 
-  it('CSV button triggers a download', async () => {
+  it('escapes HTML to prevent stored XSS in notes and names', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    svc.fetchCasosCerrados.mockResolvedValueOnce([
+      {
+        id: 'c-xss',
+        fecha: '2026-09-01T10:00:00Z',
+        nivel: 1,
+        canal: '<script>bad()</script>',
+        resultado: 'resuelto',
+        contacto_nombre: '<img src=x onerror=alert(1)>',
+        alumno_nombre: '<b>Bold Student</b>',
+        notas: '<script>alert("xss")</script>',
+      },
+    ])
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    expect(container.innerHTML).not.toContain('<script>alert("xss")</script>')
+    expect(container.innerHTML).toContain('&lt;script&gt;alert("xss")&lt;/script&gt;')
+    expect(container.innerHTML).not.toContain('<img src=x')
+    expect(container.innerHTML).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(container.innerHTML).not.toContain('<b>Bold Student</b>')
+    expect(container.innerHTML).toContain('&lt;b&gt;Bold Student&lt;/b&gt;')
+  })
+
+  it('CSV button triggers a download with alumno included', async () => {
     const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
     await renderAusentismoDashboardView(container)
     const clickSpy = vi.spyOn(dom.window.HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})

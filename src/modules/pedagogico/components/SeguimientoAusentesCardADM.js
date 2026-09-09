@@ -29,7 +29,9 @@ export function renderSeguimientoAusentesCardADM(data = null) {
   const stats = data || defaultData
 
   const contactadosPercentage =
-    stats.totalContactos > 0 ? Math.round((stats.contactados72h / stats.totalContactos) * 100) : 0
+    stats.totalContactos > 0
+      ? Math.min(100, Math.round((stats.contactados72h / stats.totalContactos) * 100))
+      : 0
 
   return `
     <div class="row g-3">

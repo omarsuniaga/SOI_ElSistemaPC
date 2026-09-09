@@ -20,23 +20,19 @@ describe('resolverContactoAlumno - Contact Resolution Cascade', () => {
     vi.clearAllMocks()
   })
 
-  const mockQueryChain = (resolveValue) => ({
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue(resolveValue),
-      }),
-    }),
-  })
+  const mockQueryChain = (resolveValue) => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue(resolveValue),
+      maybeSingle: vi.fn().mockResolvedValue(resolveValue),
+    }
+    return chain
+  }
 
-  const mockQueryChainWithOrder = (resolveValue) => ({
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        order: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue(resolveValue),
-        }),
-      }),
-    }),
-  })
+  const mockQueryChainWithOrder = (resolveValue) => mockQueryChain(resolveValue)
 
   it('Tier 1: finds representante.telefono_whatsapp with alumno_id match', async () => {
     const alumnoId = 'alumno-1'

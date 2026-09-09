@@ -623,11 +623,6 @@ const ESTADO_CONFIG = {
 export async function renderAdminNotificacionesView(container) {
   _injectStyles()
 
-  // Solicitar permiso de notificaciones push
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission()
-  }
-
   let _allEvents  = []
   let _activeFilter = 'all'
   let _searchText = ''
@@ -690,9 +685,14 @@ export async function renderAdminNotificacionesView(container) {
 
         <div class="anv-action-bar">
           <span class="anv-showing" id="anv-showing"></span>
-          <button class="anv-refresh-btn" id="anv-refresh-btn">
-            <i class="bi bi-broadcast"></i> Conectando...
-          </button>
+          <div class="d-flex align-items-center gap-2">
+            <button class="anv-refresh-btn" id="anv-btn-enable-push" style="display:none;" title="Activar notificaciones de escritorio para este dispositivo">
+              <i class="bi bi-bell"></i> <span>Activar Notificaciones</span>
+            </button>
+            <button class="anv-refresh-btn" id="anv-refresh-btn">
+              <i class="bi bi-broadcast"></i> Conectando...
+            </button>
+          </div>
         </div>
 
         <div id="anv-body">
@@ -1444,6 +1444,29 @@ export async function renderAdminNotificacionesView(container) {
 
   // Reset badge al entrar a esta vista
   resetAdminNotifBadge()
+
+  // Control de permiso de notificaciones push bajo demanda (CDA3)
+  const pushBtn = container.querySelector('#anv-btn-enable-push')
+  if (pushBtn && 'Notification' in window) {
+    if (Notification.permission === 'default') {
+      pushBtn.style.display = 'inline-flex'
+      pushBtn.addEventListener('click', async () => {
+        try {
+          const perm = await Notification.requestPermission()
+          if (perm === 'granted') {
+            pushBtn.style.display = 'none'
+            window.dispatchEvent(new CustomEvent('showToast', {
+              detail: { message: 'Notificaciones de escritorio activadas correctamente.', type: 'success' }
+            }))
+          } else {
+            pushBtn.style.display = 'none'
+          }
+        } catch (err) {
+          console.warn('[Notification] requestPermission error:', err)
+        }
+      })
+    }
+  }
 
   // Conectar botón refresh
   container.querySelector('#anv-refresh-btn')?.addEventListener('click', () => _load(false))

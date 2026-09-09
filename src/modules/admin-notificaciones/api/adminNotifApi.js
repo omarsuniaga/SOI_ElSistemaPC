@@ -426,16 +426,9 @@ export async function fetchAdminFeed() {
     _fetchEarlyWarningRisks(),
   ])
 
-  let activeMaestros = []
-  if (activeMaestrosRes.status === 'fulfilled' && Array.isArray(activeMaestrosRes.value)) {
-    activeMaestros = activeMaestrosRes.value
-  } else {
-    try {
-      activeMaestros = await _fetchActiveMaestros()
-    } catch (e) {
-      console.warn('[adminNotifApi] fallback active maestros failed:', e)
-    }
-  }
+  const activeMaestros = (activeMaestrosRes.status === 'fulfilled' && Array.isArray(activeMaestrosRes.value))
+    ? activeMaestrosRes.value
+    : []
 
   const ausenciaItems = ausencias.status === 'fulfilled'
     ? ausencias.value.map(a => _ausenciaToEvent(a, activeMaestros))

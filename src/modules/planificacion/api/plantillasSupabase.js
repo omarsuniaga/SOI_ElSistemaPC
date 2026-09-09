@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { mutateOne } from '../../../lib/supabaseMutation.js'
 
 /**
  * PlantillasSupabase — Adaptador de Supabase para plantillas_dsl.
@@ -71,18 +72,15 @@ export async function crearPlantilla(plantilla) {
  * @returns {Promise<object>}
  */
 export async function actualizarPlantilla(id, cambios) {
-  const { data, error } = await supabase
-    .from('plantillas_dsl')
-    .update(cambios)
-    .eq('id', id)
-    .select()
-
-  if (error) {
+  try {
+    return await mutateOne(supabase.from('plantillas_dsl').update(cambios).eq('id', id), {
+      action: 'actualizar plantilla DSL',
+    })
+  } catch (error) {
+    if (error.code === 'NO_ROWS_AFFECTED') throw error
     console.error('Error actualizando plantilla:', error.message)
     throw new Error('No se pudo actualizar la plantilla')
   }
-
-  return data[0]
 }
 
 /**

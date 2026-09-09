@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { assertAffected } from '../../../lib/supabaseMutation.js'
 
 /**
  * Upsert coverage records (one per alumno+objetivo).
@@ -47,9 +48,12 @@ export async function obtenerCoberturaPorPlan(plan_id) {
  * Mark a list of cobertura rows as confirmed (confirmado=true).
  */
 export async function confirmarCobertura(ids) {
-  const { error } = await supabase
-    .from('cobertura_alumno_objetivo')
-    .update({ confirmado: true })
-    .in('id', ids)
-  if (error) throw error
+  if (!ids || !ids.length) return []
+  return assertAffected(
+    supabase
+      .from('cobertura_alumno_objetivo')
+      .update({ confirmado: true })
+      .in('id', ids),
+    { action: 'confirmar cobertura', min: ids.length },
+  )
 }

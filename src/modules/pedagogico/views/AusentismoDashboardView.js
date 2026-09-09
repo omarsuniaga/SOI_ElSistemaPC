@@ -33,6 +33,8 @@ export async function renderAusentismoDashboardView(container) {
   if (!container) return
   state.container = container
   state.page = 1
+  state.desde = ''
+  state.hasta = ''
   container.innerHTML = _renderLoading()
   try {
     await _loadData()
@@ -46,7 +48,19 @@ export async function renderAusentismoDashboardView(container) {
 
 async function _loadData() {
   state.loading = true
-  try { state.periodo = await getPeriodoActivo() } catch (err) { console.error(err) }
+  try {
+    state.periodo = await getPeriodoActivo()
+    if (state.periodo) {
+      if (!state.desde && state.periodo.fecha_inicio) {
+        state.desde = String(state.periodo.fecha_inicio).slice(0, 10)
+      }
+      if (!state.hasta && state.periodo.fecha_fin) {
+        state.hasta = String(state.periodo.fecha_fin).slice(0, 10)
+      }
+    }
+  } catch (err) {
+    console.error(err)
+  }
   const [kpis, casos] = await Promise.all([
     fetchKpisAusentismo().catch((e) => { console.error(e); return null }),
     fetchCasosCerrados({ desde: state.desde || null, hasta: state.hasta || null }).catch((e) => { console.error(e); return [] }),

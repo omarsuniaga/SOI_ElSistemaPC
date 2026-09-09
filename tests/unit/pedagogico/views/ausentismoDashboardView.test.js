@@ -171,4 +171,23 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
 
     expect(container.innerHTML).toContain('3 sin contacto')
   })
+
+  it('initializes default date range from periodo activo when available', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    svc.getPeriodoActivo.mockResolvedValueOnce({
+      id: 'p-fechas',
+      nombre: 'Semestre 2026-II',
+      fecha_inicio: '2026-08-01',
+      fecha_fin: '2026-12-15',
+    })
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    expect(container.querySelector('[data-desde]').value).toBe('2026-08-01')
+    expect(container.querySelector('[data-hasta]').value).toBe('2026-12-15')
+    expect(svc.fetchCasosCerrados).toHaveBeenCalledWith(expect.objectContaining({
+      desde: '2026-08-01',
+      hasta: '2026-12-15',
+    }))
+  })
 })

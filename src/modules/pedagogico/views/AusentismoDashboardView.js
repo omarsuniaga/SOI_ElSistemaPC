@@ -12,6 +12,7 @@ import { renderSeguimientoAusentesCardADM } from '../components/SeguimientoAusen
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import '../styles/ausentismo.css'
 
 const PAGE_SIZE = 25
 

@@ -170,7 +170,7 @@ function parseBacklog(content) {
   let headers = null
   let hintEstado = null
   let hintEsperaOmar = false
-  let protoLines = []
+  const protoLines = []
   let enProto = true
 
   for (let i = 0; i < lines.length; i++) {

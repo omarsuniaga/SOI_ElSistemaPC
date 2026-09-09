@@ -339,6 +339,122 @@ function lanesHtml(lanes, progreso) {
   return `<section class="lanes">${laneBlock}${progBlock}</section>`
 }
 
+// ---------------------------------------------------------------- instrucciones para agentes
+const AGENT_PROMPT = `Sos un agente del equipo SOI. Vas a tomar UNA tarea del backlog de reparaciones,
+analizarla contra el código real y resolverla, siguiendo el protocolo SOI-MAP.
+
+Proyecto Engram: soi_elsistemapc  (SIEMPRE ese; nunca la raíz)
+Tu identidad fija para firmar y para los carriles: <TU-NOMBRE>   (ej: Claude-Code | AI-Anti | AI-Codex)
+
+━━━ PASO 0 · LEER (obligatorio, en este orden) ━━━
+Usá mem_get_observation para el texto completo (mem_search / MCP truncan):
+  1. mem_search "coordination/soi-multi-agent-protocol"  → el protocolo. Leelo entero.
+  2. mem_search "coordination/lanes"                      → quién tiene cada ÁREA ahora.
+  3. mem_search "tablero/reparaciones"                    → el backlog: el QUÉ hay que hacer.
+Si tu tarea sale de una auditoría, leé también su topic fuente (ver tabla de topic_keys).
+
+━━━ PASO 1 · ELEGIR ━━━
+Tomá la tarea LIBRE de mayor prioridad cuya ÁREA esté LIBRE en coordination/lanes.
+  · Si el área está EN-CURSO / EN-REVIEW por otro agente → NO la toques. Elegí otra.
+  · Si la tarea dice "espera Omar" → no es tomable.
+  · Área INTEGRACIÓN (src/lib/*, adminPortalShell, allRegistrars, vite.config, *.html,
+    migraciones, CI, tareasApi*) → solo si está 100% LIBRE y nadie toca shared/core en paralelo.
+  · Si no queda ninguna tarea tomable → PARÁ y reportá. No inventes trabajo.
+
+━━━ PASO 2 · RECLAMAR ━━━
+NO edites coordination/lanes con una nota (el upsert de Engram pisa toda la tabla).
+En su lugar: mem_save en TU topic  tablero/<id-tarea>/progress  con:
+    "<id> EN-CURSO [<TU-NOMBRE>/<AAAA-MM-DD>]. Rama: <rama>. Plan: <2-3 líneas>."
+El coordinador (Claude-Code) consolida coordination/lanes.
+
+━━━ PASO 3 · AISLAR ━━━
+Trabajá en TU worktree (nunca en el checkout principal, que suele estar sucio):
+    git worktree add ../soi-<tu-nombre>-<id>  feat/planificacion-clases-rediseño
+    cd ../soi-<tu-nombre>-<id>
+    git switch -c <tu-nombre>/<id>-<slug>
+Base SIEMPRE feat/planificacion-clases-rediseño  (NO master: está congelada).
+Si NO podés crear rama/worktree (permisos, repo bloqueado) → reportá y PARÁ. No fuerces
+(no stash, no reset, no borrar locks — hay trabajo de otros sin commitear).
+
+━━━ PASO 4 · ANALIZAR ━━━
+Leé los archivos de la tarea. Confirmá el diagnóstico del backlog con el código real
+(grep exhaustivo, no asumas). Verificá contra la BD viva si aplica (solo lectura).
+Si el cambio supera ~400 líneas o toca varias áreas → partilo en slices y hacé solo el slice 1.
+
+━━━ PASO 5 · RESOLVER ━━━
+  · SOLO archivos del ÁREA de tu tarea. Nada compartido fuera de tu carril.
+  · Si el repo tiene tests que corren (vitest): TDD — test que falla → fix → test verde.
+  · Corré lint sobre lo que tocaste.
+  · NADA destructivo en BD (DROP/DDL) ni cambio de comportamiento en prod sin
+    Decisión + Dueño registrados por Omar.
+  · Seguí las convenciones del repo (ej. docs/UI_THEME_IMPLEMENTATION_STANDARD_V9.md para UI).
+
+━━━ PASO 6 · ENTREGAR ━━━
+  1. mem_save en tablero/<id>/progress: qué hiciste, archivos, hallazgos/gotchas, qué falta.
+  2. commit(s) con mensaje claro (Co-Authored-By si aplica).
+  3. git push  +  abrí PR contra feat/planificacion-clases-rediseño.
+  4. Actualizá tablero/<id>/progress → "EN-REVIEW · PR #<n>".
+NADIE mergea. Omar es el único integrador.
+
+━━━ PASO 7 · SIGUIENTE ━━━
+Volvé al PASO 1. Repetí hasta que no queden tareas tomables, entonces PARÁ y reportá.
+
+━━━ PARÁ Y REPORTÁ SI ━━━
+  · no quedan tareas tomables · no podés crear rama/worktree · una tarea necesita
+    decisión de Omar · un fix requiere tocar otra área · un test que estaba verde se rompe.
+
+━━━ REGLAS DE ORO (SOI-MAP) ━━━
+  · Un área, un dueño a la vez.   · Cada agente su rama.   · Nadie mergea a master.
+  · Antes de inventar un concepto, buscá en Engram si ya existe. Conectar, no duplicar.
+  · Guardá tu avance en TU topic tablero/<id>/progress, nunca pisando coordination/lanes.`
+
+const TOPIC_KEYS = [
+  ['coordination/soi-multi-agent-protocol', 'El protocolo. Cómo coexisten los agentes sin pisarse. LEER PRIMERO.', 'nadie (referencia)'],
+  ['coordination/lanes', 'Candado por ÁREA: quién trabaja qué ahora (LIBRE/EN-CURSO/EN-REVIEW).', 'solo el coordinador (Claude-Code)'],
+  ['tablero/reparaciones', 'El backlog: la lista de QUÉ hay que arreglar, con área y prioridad.', 'solo el coordinador'],
+  ['tablero/&lt;id&gt;/progress', 'Tu bitácora de la tarea &lt;id&gt; (ej. tablero/lc1/progress). Uno por agente/tarea.', 'el agente que toma esa tarea'],
+  ['coordination/bloqueo-git-2026-09-09', 'Bloqueos de entorno conocidos (repo sucio, ACL de Codex).', 'coordinador'],
+  ['audit/soi-lila-2026-09', 'Hallazgos de la auditoría "lila" — fuente de las tareas LC* / LA*.', '(archivo)'],
+  ['audit/ausentismo-dashboard-2026-09', 'Los 34 hallazgos del dashboard de ausentismo — fuente de AUS1.', '(archivo)'],
+  ['fase-0/tablas-vacias-inventario', 'Inventario de las 122 tablas vacías de la BD (FASE 0).', '(archivo)'],
+]
+
+function instruccionesHtml() {
+  const rows = TOPIC_KEYS.map(
+    ([k, q, w]) => `<tr><td><code>${k}</code></td><td>${q}</td><td class="tk-who">${esc(w)}</td></tr>`,
+  ).join('')
+  return `<section class="instr">
+  <details open>
+    <summary>👥 Cómo trabaja el equipo de agentes (SOI-MAP)</summary>
+    <div class="instr-body">
+      <ol class="pasos">
+        <li><b>Leer</b> — el agente lee, en orden: el protocolo, los carriles, el backlog. Siempre con <code>mem_get_observation</code> (las búsquedas truncan).</li>
+        <li><b>Elegir</b> — toma la tarea LIBRE de mayor prioridad cuya <b>área</b> esté LIBRE. Si el área ya tiene dueño, elige otra. Si no hay ninguna: para y reporta.</li>
+        <li><b>Reclamar</b> — escribe en <b>su propio</b> <code>tablero/&lt;id&gt;/progress</code> (NO en <code>coordination/lanes</code> — el upsert de Engram lo pisa). El coordinador consolida los carriles.</li>
+        <li><b>Aislar</b> — crea su <b>worktree</b> y su <b>rama</b> desde <code>feat/planificacion-clases-rediseño</code>. Nunca trabaja en el checkout principal.</li>
+        <li><b>Analizar</b> — confirma el diagnóstico del backlog contra el código real (grep, BD en solo lectura). Si es grande, lo parte en slices.</li>
+        <li><b>Resolver</b> — solo archivos de su área. TDD si hay tests. Lint. Nada destructivo en BD sin OK de Omar.</li>
+        <li><b>Entregar</b> — guarda progreso + commit + push + PR contra <code>feat/planificacion-clases-rediseño</code>. Marca su progress como <b>EN-REVIEW</b>. Nadie mergea: <b>Omar es el único integrador</b>.</li>
+        <li><b>Repetir</b> — vuelve al paso 2 hasta que no queden tareas tomables.</li>
+      </ol>
+      <p class="instr-nota">Un área = un dueño a la vez. Cada agente su rama. Antes de crear un concepto nuevo, buscar en Engram si ya existe (conectar, no duplicar).</p>
+
+      <h4>📌 Topic keys de Engram — qué leer y dónde escribir</h4>
+      <div style="overflow-x:auto">
+        <table class="tk">
+          <thead><tr><th>topic_key</th><th>qué es</th><th>quién escribe</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+
+      <h4>🤖 Prompt para pegar en un agente <button class="copy" data-copy="agent-prompt">copiar</button></h4>
+      <p class="instr-nota">Reemplazá <code>&lt;TU-NOMBRE&gt;</code> por la identidad del agente (Claude-Code / AI-Anti / AI-Codex). El agente elige la tarea del backlog.</p>
+      <pre id="agent-prompt" class="prompt">${esc(AGENT_PROMPT)}</pre>
+    </div>
+  </details>
+</section>`
+}
+
 function render(meta, lanes, progreso, src) {
   const porEstado = Object.fromEntries(COLS.map((c) => [c.k, []]))
   const otras = []
@@ -464,6 +580,21 @@ details.intro{margin:8px 20px;background:var(--panel);border:1px solid var(--lin
 details.intro summary{padding:11px 14px;cursor:pointer;font-weight:600;font-size:13px}
 details.intro pre{margin:0;padding:0 14px 14px;white-space:pre-wrap;font-size:11.5px;color:var(--tx2);font-family:ui-monospace,Menlo,Consolas,monospace}
 footer.pie{color:var(--tx2);font-size:11px;text-align:center;padding:20px}
+.instr{margin:8px 20px}
+.instr details{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.instr summary{padding:12px 15px;cursor:pointer;font-weight:700;font-size:14px}
+.instr-body{padding:4px 16px 18px}
+.instr-body h4{margin:18px 0 8px;font-size:13px}
+ol.pasos{margin:6px 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px}
+ol.pasos b{color:var(--tx)}
+.instr-nota{color:var(--tx2);font-size:11.5px;margin:6px 0}
+table.tk{border-collapse:collapse;width:100%;font-size:12px}
+table.tk th,table.tk td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+table.tk th{background:var(--panel2);font-size:11px;color:var(--tx2)}
+table.tk td.tk-who{color:var(--tx2);white-space:nowrap}
+pre.prompt{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:11.5px;line-height:1.45;white-space:pre-wrap;overflow-x:auto;font-family:ui-monospace,Menlo,Consolas,monospace;max-height:420px;overflow-y:auto}
+button.copy{background:var(--panel2);border:1px solid var(--line);color:var(--tx2);border-radius:6px;padding:2px 9px;font-size:11px;cursor:pointer;margin-left:6px;vertical-align:middle}
+button.copy.ok{color:var(--libre);border-color:var(--libre)}
 </style></head><body>
 <header class="top">
   <h1>🗂️ ${esc(meta.titulo || src.title || TOPIC)}</h1>
@@ -483,6 +614,7 @@ footer.pie{color:var(--tx2);font-size:11px;text-align:center;padding:20px}
 </header>
 ${lanesHtml(lanes, progreso)}
 <main id="board">${columnas}</main>
+${instruccionesHtml()}
 ${omarHtml}
 ${otrasHtml}
 <details class="intro"><summary>Protocolo / reglas del backlog (SOI-MAP)</summary><pre>${esc(meta.protocolo)}</pre></details>
@@ -498,6 +630,15 @@ document.getElementById('filtros').addEventListener('click',(e)=>{
     if(f.startsWith('area:')) show=c.dataset.area===f.split(':')[1];
     else if(f.startsWith('prio:')) show=c.dataset.prio===f.split(':')[1];
     c.style.display=show?'':'none';
+  });
+});
+document.querySelectorAll('button.copy').forEach(b=>{
+  b.addEventListener('click',async()=>{
+    const el=document.getElementById(b.dataset.copy); if(!el)return;
+    try{ await navigator.clipboard.writeText(el.innerText); }
+    catch(_){ const r=document.createRange(); r.selectNode(el); getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand('copy'); getSelection().removeAllRanges(); }
+    const t=b.textContent; b.textContent='copiado ✓'; b.classList.add('ok');
+    setTimeout(()=>{ b.textContent=t; b.classList.remove('ok'); },1500);
   });
 });
 ${WATCH ? "setTimeout(()=>location.reload(), 15000);" : ''}

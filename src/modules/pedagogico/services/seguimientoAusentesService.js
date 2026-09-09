@@ -73,7 +73,9 @@ export async function resolverContactoAlumno(alumnoId) {
     .from('representantes')
     .select('nombre, telefono_whatsapp')
     .eq('alumno_id', alumnoId)
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (repr1?.telefono_whatsapp) {
     const telefono = normalizarTelefonoRD(repr1.telefono_whatsapp)
@@ -178,7 +180,9 @@ export async function getPeriodoActivo() {
     .from('periodos')
     .select('id, nombre, fecha_inicio, fecha_fin')
     .eq('activo', true)
-    .single()
+    .order('fecha_inicio', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (error || !data) {
     throw new Error('No active periodo found')
@@ -548,46 +552,54 @@ export async function enviarRetencionNivel3({ alumno, notas = '' } = {}) {
     notas: notas || `Retención por ${alumno.dias_ausente} días de ausencia acumulados.`,
   })
 
-  // Mensaje al representante
-  const msgRep = construirMensajeAusentismo({ nivel: 3, destinatario: 'representante', alumno })
-  await registrarContacto({
-    alumnoId: alumno.alumno_id,
-    nivel: 3,
-    contactoTelefono: alumno.contacto_telefono,
-    contactoNombre: alumno.contacto_nombre || '',
-    notas: 'Nivel 3: retención de instrumento — instrucciones de desbloqueo al representante.',
-  }).catch((e) => { if (e.message !== 'CONTACTO_DUPLICADO') throw e })
-
-  // Mensaje al maestro (si tiene teléfono)
-  let waMaestro = null
-  const telMaestro = normalizarTelefonoRD(alumno.maestro_tlf)
-  if (telMaestro) {
-    const msgMaestro = construirMensajeAusentismo({ nivel: 3, destinatario: 'maestro', alumno })
-    waMaestro = whatsappLink(telMaestro, msgMaestro)
-    await supabase.from('comunicaciones_seguimiento').insert({
-      alumno_id: alumno.alumno_id,
-      canal: 'whatsapp',
-      fecha: new Date().toISOString(),
-      resultado: 'contactado',
-      estado: 'abierto',
-      requiere_seguimiento: true,
-      origen: 'ausentismo',
+  try {
+    // Mensaje al representante
+    const msgRep = construirMensajeAusentismo({ nivel: 3, destinatario: 'representante', alumno })
+    await registrarContacto({
+      alumnoId: alumno.alumno_id,
       nivel: 3,
-      contacto_nombre: alumno.maestro_nombre || 'Maestro',
-      contacto_telefono: telMaestro,
-      notas: 'Nivel 3: orden de recogida del instrumento al maestro.',
-      responsable_id: await _uidActual(),
+      contactoTelefono: alumno.contacto_telefono,
+      contactoNombre: alumno.contacto_nombre || '',
+      notas: 'Nivel 3: retención de instrumento — instrucciones de desbloqueo al representante.',
+    }).catch((e) => { if (e.message !== 'CONTACTO_DUPLICADO') throw e })
+
+    // Mensaje al maestro (si tiene teléfono)
+    let waMaestro = null
+    const telMaestro = normalizarTelefonoRD(alumno.maestro_tlf)
+    if (telMaestro) {
+      const msgMaestro = construirMensajeAusentismo({ nivel: 3, destinatario: 'maestro', alumno })
+      waMaestro = whatsappLink(telMaestro, msgMaestro)
+      await supabase.from('comunicaciones_seguimiento').insert({
+        alumno_id: alumno.alumno_id,
+        canal: 'whatsapp',
+        fecha: new Date().toISOString(),
+        resultado: 'contactado',
+        estado: 'abierto',
+        requiere_seguimiento: true,
+        origen: 'ausentismo',
+        nivel: 3,
+        contacto_nombre: alumno.maestro_nombre || 'Maestro',
+        contacto_telefono: telMaestro,
+        notas: 'Nivel 3: orden de recogida del instrumento al maestro.',
+        responsable_id: await _uidActual(),
+      })
+    }
+
+    await supabase.from('retenciones_instrumento')
+      .update({ maestro_notificado_en: new Date().toISOString() })
+      .eq('id', retencion.id)
+
+    return {
+      retencion,
+      waRepresentante: whatsappLink(alumno.contacto_telefono, msgRep),
+      waMaestro,
+    }
+  } catch (err) {
+    console.error('[enviarRetencionNivel3] Error during notification, compensating retention:', err)
+    await supabase.from('retenciones_instrumento').delete().eq('id', retencion.id).catch((delErr) => {
+      console.error('[enviarRetencionNivel3] Failed to delete orphaned retention:', delErr)
     })
-  }
-
-  await supabase.from('retenciones_instrumento')
-    .update({ maestro_notificado_en: new Date().toISOString() })
-    .eq('id', retencion.id)
-
-  return {
-    retencion,
-    waRepresentante: whatsappLink(alumno.contacto_telefono, msgRep),
-    waMaestro,
+    throw err
   }
 }
 
@@ -640,6 +652,23 @@ export async function fetchKpisAusentismo() {
       .gte('fecha', new Date(Date.now() - 72 * 3600 * 1000).toISOString()),
   ])
 
+  if (vista.error) {
+    console.error('[fetchKpisAusentismo] Error in vw_seguimiento_ausentes query:', vista.error)
+    throw vista.error
+  }
+  if (retActivas.error) {
+    console.error('[fetchKpisAusentismo] Error in retencionesActivas query:', retActivas.error)
+    throw retActivas.error
+  }
+  if (retLevantadas.error) {
+    console.error('[fetchKpisAusentismo] Error in retencionesLevantadas query:', retLevantadas.error)
+    throw retLevantadas.error
+  }
+  if (contactos.error) {
+    console.error('[fetchKpisAusentismo] Error in contactos query:', contactos.error)
+    throw contactos.error
+  }
+
   const rows = vista.data || []
   return {
     nivel1: rows.filter((r) => r.nivel === 1).length,
@@ -663,7 +692,7 @@ export async function fetchKpisAusentismo() {
  */
 export async function fetchCasosCerrados({ desde = null, hasta = null, limit = 200 } = {}) {
   let q = supabase.from('comunicaciones_seguimiento')
-    .select('id, alumno_id, fecha, nivel, canal, resultado, estado, notas, contacto_nombre')
+    .select('id, alumno_id, fecha, nivel, canal, resultado, estado, notas, contacto_nombre, alumnos:alumno_id(nombre_completo)')
     .eq('origen', 'ausentismo')
     .in('resultado', ['resuelto'])
     .order('fecha', { ascending: false })
@@ -671,6 +700,12 @@ export async function fetchCasosCerrados({ desde = null, hasta = null, limit = 2
   if (desde) q = q.gte('fecha', desde)
   if (hasta) q = q.lte('fecha', `${hasta}T23:59:59`)
   const { data, error } = await q
-  if (error) { console.error('[fetchCasosCerrados]', error); return [] }
-  return data || []
+  if (error) {
+    console.error('[fetchCasosCerrados]', error)
+    throw error
+  }
+  return (data || []).map((row) => ({
+    ...row,
+    alumno_nombre: row.alumnos?.nombre_completo || null,
+  }))
 }

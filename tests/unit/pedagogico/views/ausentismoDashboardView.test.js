@@ -40,16 +40,43 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
     expect(container.querySelector('[data-kpi="nivel-3"]')?.textContent).toContain('2')
   })
 
-  it('renders the closed-cases table with rows and an enabled CSV button', async () => {
+  it('renders the closed-cases table with rows, alumno column, and an enabled CSV button', async () => {
     const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
     await renderAusentismoDashboardView(container)
     expect(container.querySelectorAll('tbody tr').length).toBe(2)
     expect(container.innerHTML).toContain('Reincorporado')
+    expect(container.querySelector('th[scope="col"]')?.textContent).toBe('Fecha')
+    expect(Array.from(container.querySelectorAll('th')).map((th) => th.textContent.trim())).toContain('Alumno')
     const csvBtn = container.querySelector('[data-csv]')
     expect(csvBtn.hasAttribute('disabled')).toBe(false)
   })
 
-  it('CSV button triggers a download', async () => {
+  it('escapes HTML to prevent stored XSS in notes and names', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    svc.fetchCasosCerrados.mockResolvedValueOnce([
+      {
+        id: 'c-xss',
+        fecha: '2026-09-01T10:00:00Z',
+        nivel: 1,
+        canal: '<script>bad()</script>',
+        resultado: 'resuelto',
+        contacto_nombre: '<img src=x onerror=alert(1)>',
+        alumno_nombre: '<b>Bold Student</b>',
+        notas: '<script>alert("xss")</script>',
+      },
+    ])
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    expect(container.innerHTML).not.toContain('<script>alert("xss")</script>')
+    expect(container.innerHTML).toContain('&lt;script&gt;alert("xss")&lt;/script&gt;')
+    expect(container.innerHTML).not.toContain('<img src=x')
+    expect(container.innerHTML).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(container.innerHTML).not.toContain('<b>Bold Student</b>')
+    expect(container.innerHTML).toContain('&lt;b&gt;Bold Student&lt;/b&gt;')
+  })
+
+  it('CSV button triggers a download with alumno included', async () => {
     const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
     await renderAusentismoDashboardView(container)
     const clickSpy = vi.spyOn(dom.window.HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
@@ -58,13 +85,73 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
     expect(clickSpy).toHaveBeenCalled()
   })
 
-  it('date filter re-queries fetchCasosCerrados', async () => {
+  it('date filter re-queries fetchCasosCerrados non-destructively without wiping KPIs', async () => {
     const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
     const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
     await renderAusentismoDashboardView(container)
+    expect(container.querySelector('[data-kpi="nivel-1"]')?.textContent).toContain('10')
+
     container.querySelector('[data-desde]').value = '2026-08-01'
     container.querySelector('[data-filtrar]').click()
     await new Promise((r) => setTimeout(r, 30))
     expect(svc.fetchCasosCerrados).toHaveBeenLastCalledWith(expect.objectContaining({ desde: '2026-08-01' }))
+    // KPI cards remain intact after filtering
+    expect(container.querySelector('[data-kpi="nivel-1"]')?.textContent).toContain('10')
+  })
+
+  it('limpiar button resets date inputs and re-queries with empty dates', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    container.querySelector('[data-desde]').value = '2026-08-01'
+    container.querySelector('[data-hasta]').value = '2026-08-31'
+    container.querySelector('[data-limpiar]').click()
+    await new Promise((r) => setTimeout(r, 30))
+
+    expect(container.querySelector('[data-desde]').value).toBe('')
+    expect(container.querySelector('[data-hasta]').value).toBe('')
+    expect(svc.fetchCasosCerrados).toHaveBeenLastCalledWith(expect.objectContaining({ desde: null, hasta: null }))
+  })
+
+  it('opens HelpPanel when clicking help trigger', async () => {
+    const { HelpPanel } = await import('../../../../src/shared/components/HelpPanel.js')
+    const openSpy = vi.spyOn(HelpPanel, 'open').mockImplementation(() => {})
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    const helpBtn = container.querySelector('#btn-help-ausentismo-adm')
+    expect(helpBtn).toBeTruthy()
+    helpBtn.click()
+    expect(openSpy).toHaveBeenCalledWith(expect.objectContaining({
+      title: expect.stringContaining('Panel de Ausentismo (ADM)'),
+    }))
+  })
+
+  it('opens AppModal with case note when clicking note preview button', async () => {
+    const { AppModal } = await import('../../../../src/shared/components/AppModal.js')
+    const modalSpy = vi.spyOn(AppModal, 'open').mockImplementation(() => {})
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    const viewNoteBtn = container.querySelector('[data-view-note="0"]')
+    expect(viewNoteBtn).toBeTruthy()
+    viewNoteBtn.click()
+    expect(modalSpy).toHaveBeenCalledWith(expect.objectContaining({
+      title: expect.stringContaining('Detalle de Nota'),
+      body: expect.stringContaining('Justificó'),
+      size: 'md',
+    }))
+  })
+
+  it('renders rich empty state when no cases match filter', async () => {
+    const svc = await import('../../../../src/modules/pedagogico/services/seguimientoAusentesService.js')
+    svc.fetchCasosCerrados.mockResolvedValueOnce([])
+    const { renderAusentismoDashboardView } = await import('../../../../src/modules/pedagogico/views/AusentismoDashboardView.js')
+    await renderAusentismoDashboardView(container)
+
+    expect(container.querySelector('[data-empty-state]')).toBeTruthy()
+    expect(container.innerHTML).toContain('Sin casos cerrados')
+    expect(container.querySelector('[data-csv]').hasAttribute('disabled')).toBe(true)
   })
 })

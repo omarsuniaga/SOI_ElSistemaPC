@@ -21,6 +21,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import { resetAdminNotifBadge } from '../realtimeService.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -865,16 +866,16 @@ export async function renderAdminNotificacionesView(container) {
       suplentesHTML = `
         <div class="anv-suplentes-box">
           <div class="anv-suplentes-title">
-            <i class="bi bi-magic"></i> Suplentes Recomendados (${event.maestroInstrumento || 'Instrumento'})
+            <i class="bi bi-magic"></i> Suplentes Recomendados (${escapeHTML(event.maestroInstrumento || 'Instrumento')})
           </div>
           <div class="anv-suplentes-list">
             ${event.suplentesSugeridos.map(s => `
               <div class="anv-suplente-item">
                 <div class="anv-suplente-info">
-                  <span class="anv-suplente-name">${s.nombre_completo}</span>
-                  <span class="anv-suplente-email">${s.email}</span>
+                  <span class="anv-suplente-name">${escapeHTML(s.nombre_completo)}</span>
+                  <span class="anv-suplente-email">${escapeHTML(s.email)}</span>
                 </div>
-                <button class="anv-suplente-btn" data-action="notify-sub" data-sub-name="${s.nombre_completo}" data-sub-email="${s.email}">
+                <button class="anv-suplente-btn" data-action="notify-sub" data-sub-name="${escapeHTML(s.nombre_completo)}" data-sub-email="${escapeHTML(s.email)}">
                   <i class="bi bi-send-fill"></i> Proponer
                 </button>
               </div>
@@ -889,10 +890,10 @@ export async function renderAdminNotificacionesView(container) {
     if (event.actionable && event.source === 'ausencia') {
       actionsHTML = `
         <div class="anv-inline-actions">
-          <button class="anv-action-btn anv-btn-approve" data-action="approve" data-id="${event.sourceId}">
+          <button class="anv-action-btn anv-btn-approve" data-action="approve" data-id="${escapeHTML(event.sourceId)}">
             <i class="bi bi-check-circle"></i> Aprobar
           </button>
-          <button class="anv-action-btn anv-btn-reject" data-action="reject" data-id="${event.sourceId}">
+          <button class="anv-action-btn anv-btn-reject" data-action="reject" data-id="${escapeHTML(event.sourceId)}">
             <i class="bi bi-x-circle"></i> Rechazar
           </button>
           <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="admin-ausencias">
@@ -903,25 +904,25 @@ export async function renderAdminNotificacionesView(container) {
     } else if (event.actionable && event.source === 'maestro') {
       actionsHTML = `
         <div class="anv-inline-actions">
-          <button class="anv-action-btn anv-btn-approve" data-action="approve-maestro" data-id="${event.sourceId}">
+          <button class="anv-action-btn anv-btn-approve" data-action="approve-maestro" data-id="${escapeHTML(event.sourceId)}">
             <i class="bi bi-check-circle"></i> Aprobar
           </button>
-          <button class="anv-action-btn anv-btn-reject" data-action="reject-maestro" data-id="${event.sourceId}">
+          <button class="anv-action-btn anv-btn-reject" data-action="reject-maestro" data-id="${escapeHTML(event.sourceId)}">
             <i class="bi bi-x-circle"></i> Rechazar
           </button>
-          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}">
+          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${escapeHTML(event.actionRoute)}">
             <i class="bi bi-arrow-right-circle"></i> Ver Aprobaciones
           </button>
         </div>
       `
     } else if (event.actionRoute) {
       const paramsAttr = event.actionParams
-        ? ` data-params='${JSON.stringify(event.actionParams)}'`
+        ? ` data-params='${escapeHTML(JSON.stringify(event.actionParams))}'`
         : ''
       actionsHTML = `
         <div class="anv-inline-actions">
-          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}"${paramsAttr}>
-            <i class="bi bi-arrow-right-circle"></i> ${event.actionLabel || 'Ver'}
+          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${escapeHTML(event.actionRoute)}"${paramsAttr}>
+            <i class="bi bi-arrow-right-circle"></i> ${escapeHTML(event.actionLabel || 'Ver')}
           </button>
         </div>
       `
@@ -933,14 +934,14 @@ export async function renderAdminNotificacionesView(container) {
       </div>
       <div class="anv-event-body">
         <span class="anv-cat-chip" style="background:${cat.bg};color:${cat.color}">
-          ${catLabel}
+          ${escapeHTML(catLabel)}
         </span>
         <div class="anv-event-top">
-          <span class="anv-event-titulo">${event.titulo}</span>
-          <span class="anv-event-time">${event.timeAgo}</span>
+          <span class="anv-event-titulo">${escapeHTML(event.titulo)}</span>
+          <span class="anv-event-time">${escapeHTML(event.timeAgo)}</span>
         </div>
-        <div class="anv-event-sub">${event.subtitulo}</div>
-        ${event.motivo ? `<div class="anv-event-motivo">"${event.motivo}"</div>` : ''}
+        <div class="anv-event-sub">${escapeHTML(event.subtitulo)}</div>
+        ${event.motivo ? `<div class="anv-event-motivo">"${escapeHTML(event.motivo)}"</div>` : ''}
         ${suplentesHTML}
         ${estadoChipHTML}
         ${actionsHTML}
@@ -1179,7 +1180,7 @@ export async function renderAdminNotificacionesView(container) {
           <div class="anv-center">
             <div class="anv-center-icon"><i class="bi bi-exclamation-triangle"></i></div>
             <p class="anv-center-title">Error al cargar</p>
-            <p class="anv-center-sub">${err.message}</p>
+            <p class="anv-center-sub">${escapeHTML(err.message)}</p>
           </div>
         `
       }
@@ -1286,7 +1287,7 @@ export async function renderAdminNotificacionesView(container) {
     try { maestros = await fetchMaestrosParaNotificar() } catch { /* continúa con lista vacía */ }
 
     const opcionesMaestros = maestros.map(m =>
-      `<option value="${m.profile_id}">${m.nombre}</option>`
+      `<option value="${escapeHTML(m.profile_id)}">${escapeHTML(m.nombre)}</option>`
     ).join('')
 
     AppModal.open({
@@ -1367,7 +1368,7 @@ export async function renderAdminNotificacionesView(container) {
           sendBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Enviado'
           setTimeout(() => AppModal.open({ body: '' }), 1800) // close by reopening blank
         } catch (err) {
-          if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger py-2 mb-0">Error: ${err.message}</div>`
+          if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger py-2 mb-0">Error: ${escapeHTML(err.message)}</div>`
           sendBtn.disabled = false
           sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar'
         }
@@ -1394,7 +1395,7 @@ export async function renderAdminNotificacionesView(container) {
     } catch (err) {
       AppModal.open({
         title: 'Error',
-        body: `<div class="alert alert-danger">No se pudo cargar el historial: ${err.message}</div>`,
+        body: `<div class="alert alert-danger">No se pudo cargar el historial: ${escapeHTML(err.message)}</div>`,
         hideSave: true,
         cancelText: 'Cerrar',
       })
@@ -1423,11 +1424,11 @@ export async function renderAdminNotificacionesView(container) {
     const rows = entries.map(e => `
       <div class="border rounded p-3 mb-2" style="font-size:0.875rem;">
         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-          <strong class="text-truncate" style="max-width:70%;">${e.titulo || '(sin título)'}</strong>
-          <span class="badge bg-secondary flex-shrink-0">${e.recipientCount} destinatario${e.recipientCount !== 1 ? 's' : ''}</span>
+          <strong class="text-truncate" style="max-width:70%;">${escapeHTML(e.titulo || '(sin título)')}</strong>
+          <span class="badge bg-secondary flex-shrink-0">${escapeHTML(e.recipientCount)} destinatario${e.recipientCount !== 1 ? 's' : ''}</span>
         </div>
-        <p class="text-muted mb-1" style="white-space:pre-wrap;word-break:break-word;">${e.mensaje || ''}</p>
-        <small class="text-muted"><i class="bi bi-clock me-1"></i>${fmtDate(e.created_at)}</small>
+        <p class="text-muted mb-1" style="white-space:pre-wrap;word-break:break-word;">${escapeHTML(e.mensaje || '')}</p>
+        <small class="text-muted"><i class="bi bi-clock me-1"></i>${escapeHTML(fmtDate(e.created_at))}</small>
       </div>`).join('')
 
     AppModal.open({

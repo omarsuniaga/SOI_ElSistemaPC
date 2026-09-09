@@ -25,7 +25,9 @@ vi.mock('../../../../lib/supabaseClient.js', () => ({
         if (cb) cb('SUBSCRIBED')
         return {}
       })
-    }))
+    })),
+    getChannels: vi.fn(() => []),
+    removeChannel: vi.fn()
   }
 }))
 
@@ -168,5 +170,44 @@ describe('adminNotificacionesView Interface & Interactions', () => {
     // Las acciones inline de aprobación/rechazo desaparecen
     expect(container.querySelector('.anv-btn-approve')).toBeNull()
     expect(container.querySelector('.anv-btn-reject')).toBeNull()
+  })
+
+  it('sanitizes event fields to prevent XSS injection in the activity feed (CDA1)', async () => {
+    fetchAdminFeed.mockResolvedValueOnce([
+      {
+        id: 'xss:1',
+        source: 'ausencia',
+        sourceId: 'x1',
+        priority: 'alta',
+        actionable: true,
+        estado: 'pendiente',
+        icon: 'bi-shield-exclamation',
+        iconColor: '#ef4444',
+        category: 'ausencia',
+        titulo: '<script id="evil-script">window.hacked=true;</script>Charlie',
+        subtitulo: '<img src="x" onerror="alert(1)">Subtitulo',
+        motivo: '<b onmouseover="alert(2)">Motivo malicioso</b>',
+        timestamp: '2026-05-24T10:00:00Z',
+        timeAgo: 'hace 1 min',
+        maestroInstrumento: '<svg onload="alert(3)">Flauta',
+        suplentesSugeridos: [
+          { id: 's1', nombre_completo: '<script>evil()</script>John', email: 'john@hack.com' }
+        ]
+      }
+    ])
+
+    await renderAdminNotificacionesView(container)
+
+    // Verify script tags were NOT injected as executable DOM nodes
+    expect(container.querySelector('#evil-script')).toBeNull()
+    expect(container.querySelector('img[onerror]')).toBeNull()
+    expect(container.querySelector('svg[onload]')).toBeNull()
+    expect(container.querySelector('b[onmouseover]')).toBeNull()
+
+    // Verify escaped content is present as safe text
+    expect(container.innerHTML).toContain('&lt;script id="evil-script"&gt;')
+    expect(container.innerHTML).toContain('&lt;img src="x"')
+    expect(container.innerHTML).toContain('&lt;b onmouseover="alert(2)"&gt;')
+    expect(container.innerHTML).toContain('&lt;svg onload="alert(3)"&gt;')
   })
 })

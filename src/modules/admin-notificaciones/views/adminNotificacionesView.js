@@ -21,6 +21,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import { resetAdminNotifBadge } from '../realtimeService.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -865,16 +866,16 @@ export async function renderAdminNotificacionesView(container) {
       suplentesHTML = `
         <div class="anv-suplentes-box">
           <div class="anv-suplentes-title">
-            <i class="bi bi-magic"></i> Suplentes Recomendados (${event.maestroInstrumento || 'Instrumento'})
+            <i class="bi bi-magic"></i> Suplentes Recomendados (${escapeHTML(event.maestroInstrumento || 'Instrumento')})
           </div>
           <div class="anv-suplentes-list">
             ${event.suplentesSugeridos.map(s => `
               <div class="anv-suplente-item">
                 <div class="anv-suplente-info">
-                  <span class="anv-suplente-name">${s.nombre_completo}</span>
-                  <span class="anv-suplente-email">${s.email}</span>
+                  <span class="anv-suplente-name">${escapeHTML(s.nombre_completo)}</span>
+                  <span class="anv-suplente-email">${escapeHTML(s.email)}</span>
                 </div>
-                <button class="anv-suplente-btn" data-action="notify-sub" data-sub-name="${s.nombre_completo}" data-sub-email="${s.email}">
+                <button class="anv-suplente-btn" data-action="notify-sub" data-sub-name="${escapeHTML(s.nombre_completo)}" data-sub-email="${escapeHTML(s.email)}">
                   <i class="bi bi-send-fill"></i> Proponer
                 </button>
               </div>
@@ -921,7 +922,7 @@ export async function renderAdminNotificacionesView(container) {
       actionsHTML = `
         <div class="anv-inline-actions">
           <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}"${paramsAttr}>
-            <i class="bi bi-arrow-right-circle"></i> ${event.actionLabel || 'Ver'}
+            <i class="bi bi-arrow-right-circle"></i> ${escapeHTML(event.actionLabel || 'Ver')}
           </button>
         </div>
       `
@@ -929,18 +930,18 @@ export async function renderAdminNotificacionesView(container) {
 
     el.innerHTML = `
       <div class="anv-event-dot" style="background:${cat.bg}">
-        <i class="bi ${event.icon}" style="color:${event.iconColor}"></i>
+        <i class="bi ${escapeHTML(event.icon)}" style="color:${event.iconColor}"></i>
       </div>
       <div class="anv-event-body">
         <span class="anv-cat-chip" style="background:${cat.bg};color:${cat.color}">
-          ${catLabel}
+          ${escapeHTML(catLabel)}
         </span>
         <div class="anv-event-top">
-          <span class="anv-event-titulo">${event.titulo}</span>
-          <span class="anv-event-time">${event.timeAgo}</span>
+          <span class="anv-event-titulo">${escapeHTML(event.titulo)}</span>
+          <span class="anv-event-time">${escapeHTML(event.timeAgo)}</span>
         </div>
-        <div class="anv-event-sub">${event.subtitulo}</div>
-        ${event.motivo ? `<div class="anv-event-motivo">"${event.motivo}"</div>` : ''}
+        <div class="anv-event-sub">${escapeHTML(event.subtitulo)}</div>
+        ${event.motivo ? `<div class="anv-event-motivo">"${escapeHTML(event.motivo)}"</div>` : ''}
         ${suplentesHTML}
         ${estadoChipHTML}
         ${actionsHTML}
@@ -1179,7 +1180,7 @@ export async function renderAdminNotificacionesView(container) {
           <div class="anv-center">
             <div class="anv-center-icon"><i class="bi bi-exclamation-triangle"></i></div>
             <p class="anv-center-title">Error al cargar</p>
-            <p class="anv-center-sub">${err.message}</p>
+            <p class="anv-center-sub">${escapeHTML(err.message)}</p>
           </div>
         `
       }

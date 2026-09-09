@@ -169,4 +169,40 @@ describe('adminNotificacionesView Interface & Interactions', () => {
     expect(container.querySelector('.anv-btn-approve')).toBeNull()
     expect(container.querySelector('.anv-btn-reject')).toBeNull()
   })
+
+  it('CDA1 · escapa el contenido del feed — un payload en título/motivo/suplente NO se ejecuta como HTML', async () => {
+    const XSS = '<img src=x onerror="window.__xss=1">'
+    fetchAdminFeed.mockResolvedValue([
+      {
+        id: 'ausencia:evil',
+        source: 'ausencia',
+        sourceId: 'evil',
+        priority: 'alta',
+        actionable: true,
+        estado: 'pendiente',
+        icon: 'bi-calendar-x-fill',
+        iconColor: '#ef4444',
+        category: 'ausencia',
+        titulo: `Riesgo ${XSS}`,
+        subtitulo: `Sub ${XSS}`,
+        motivo: `Motivo ${XSS}`,
+        timestamp: '2026-05-24T10:00:00Z',
+        timeAgo: 'hace 1 min',
+        maestroInstrumento: `Sax ${XSS}`,
+        suplentesSugeridos: [
+          { id: 'm9', nombre_completo: `Nombre ${XSS}`, email: 'a@b.com' },
+        ],
+      },
+    ])
+    delete window.__xss
+
+    await renderAdminNotificacionesView(container)
+
+    // el payload no creó un <img> real ni disparó el handler
+    expect(window.__xss).toBeUndefined()
+    expect(container.querySelector('img[onerror]')).toBeNull()
+    // pero el texto sí se ve (escapado)
+    expect(container.querySelector('.anv-event-titulo').textContent).toContain('<img src=x onerror=')
+    expect(container.querySelector('.anv-suplente-name').textContent).toContain('<img')
+  })
 })

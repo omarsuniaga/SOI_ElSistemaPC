@@ -442,4 +442,20 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     expect(emptyState).toBeTruthy()
     expect(emptyState?.textContent).toContain('Sin alumnos')
   })
+
+  it('renders "Volver al Dashboard" button and navigates to pedagogico-ausentismo-dashboard on click', async () => {
+    const { router } = await import('../../../../src/core/router/router.js')
+    const navSpy = vi.spyOn(router, 'navigate').mockImplementation(() => {})
+
+    const { renderSeguimientoAusentesView } = await import('../../../../src/modules/pedagogico/views/seguimientoAusentesView.js')
+    await renderSeguimientoAusentesView(container)
+
+    const backBtn = container.querySelector('#btn-back-ausentismo-dashboard')
+    expect(backBtn).toBeTruthy()
+    expect(backBtn.textContent).toContain('Volver al Dashboard')
+
+    backBtn.click()
+    expect(navSpy).toHaveBeenCalledWith('pedagogico-ausentismo-dashboard')
+  })
 })
+

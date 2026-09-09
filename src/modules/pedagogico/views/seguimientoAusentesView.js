@@ -1,5 +1,6 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { router } from '../../../core/router/router.js'
 import {
   getPeriodoActivo,
   fetchSeguimientoAusentes,
@@ -99,6 +100,13 @@ function _render() {
 
   state.container.innerHTML = `
     <div class="page-container">
+      <div class="mb-3">
+        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" id="btn-back-ausentismo-dashboard" data-back="pedagogico-ausentismo-dashboard">
+          <i class="bi bi-arrow-left"></i>
+          <span>Volver al Dashboard</span>
+        </button>
+      </div>
+
       <div class="d-flex align-items-center gap-3 mb-4">
         <div class="brand-badge bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
           <i class="bi bi-exclamation-circle fs-4"></i>
@@ -291,6 +299,11 @@ async function _enviarWhatsApp(alumnoId, nivel) {
 }
 
 function _attachEvents() {
+  // Volver al dashboard de ausentismo
+  state.container.querySelector('#btn-back-ausentismo-dashboard')?.addEventListener('click', () => {
+    router.navigate('pedagogico-ausentismo-dashboard')
+  })
+
   // Ayuda
   state.container.querySelector('#btn-help-ausentes')?.addEventListener('click', _abrirAyuda)
 

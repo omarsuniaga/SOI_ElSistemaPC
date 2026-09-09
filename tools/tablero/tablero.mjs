@@ -62,12 +62,25 @@ function fromDb() {
   const db = new DatabaseSync(DB_PATH, { readOnly: true })
   const row = dbRow(db, TOPIC)
   const lanes = dbRow(db, LANES_TOPIC)
-  // progreso por tarea: cada agente escribe su propio topic → a prueba de upsert
+  // progreso por tarea: cada agente/instancia escribe su propio topic → a prueba de upsert
   const progreso = db
     .prepare(
       `SELECT topic_key, content, updated_at
          FROM observations
-        WHERE topic_key LIKE 'tablero/%/progress' AND deleted_at IS NULL
+        WHERE (topic_key LIKE 'tablero/%/progress' OR topic_key LIKE 'tablero/%/progress/%')
+          AND deleted_at IS NULL
+        ORDER BY updated_at DESC`,
+    )
+    .all()
+    .map((r) => ({ topic: r.topic_key, content: String(r.content), updated_at: r.updated_at }))
+  // intake: cola de hallazgos por productor (no los /acuses)
+  const intake = db
+    .prepare(
+      `SELECT topic_key, content, updated_at
+         FROM observations
+        WHERE topic_key LIKE 'tablero/intake/%'
+          AND topic_key NOT LIKE 'tablero/intake/%/acuses'
+          AND deleted_at IS NULL
         ORDER BY updated_at DESC`,
     )
     .all()
@@ -78,6 +91,7 @@ function fromDb() {
     src: { ...row, content: String(row.content) },
     lanesContent: lanes ? String(lanes.content) : '',
     progreso,
+    intake,
   }
 }
 
@@ -86,7 +100,25 @@ function fromFile() {
     src: { id: null, title: TOPIC, content: readFileSync(FILE, 'utf8'), revision_count: null, updated_at: null },
     lanesContent: '',
     progreso: [],
+    intake: [],
   }
+}
+
+/** Hallazgos NUEVO de los `tablero/intake/<agente>` — pendientes de triage. */
+function parseIntake(rows) {
+  const out = []
+  for (const r of rows) {
+    const agente = (r.topic.match(/^tablero\/intake\/([^/]+)/) || [])[1] || r.topic
+    for (const line of limpiar(r.content).split('\n')) {
+      const l = line.trim().replace(/^[-*]\s*/, '')
+      if (!/·/.test(l)) continue
+      if (/\bTRIADO\b|\bRESUELTO\b/i.test(l)) continue
+      const parts = l.split('·').map((s) => stripMd(s))
+      const sev = (parts.find((p) => /^(ALTA|MEDIA|BAJA)$/i.test(p)) || '').toUpperCase()
+      out.push({ agente, sev, texto: l, fecha: (l.match(/\d{4}-\d{2}-\d{2}/) || [''])[0] })
+    }
+  }
+  return out.sort((a, b) => ({ ALTA: 0, MEDIA: 1, BAJA: 2, '': 3 }[a.sev] - { ALTA: 0, MEDIA: 1, BAJA: 2, '': 3 }[b.sev]))
 }
 
 /**
@@ -130,7 +162,6 @@ function prioridadDe(txt) {
   return 'sin'
 }
 
-const ESTADOS = ['LIBRE', 'EN-CURSO', 'EN-REVIEW', 'CERRADA']
 function estadoDe(txt, fallback = null) {
   const t = String(txt || '').toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-')
   if (t.includes('EN-REVIEW') || t.includes('REVIEW')) return 'EN-REVIEW'
@@ -339,123 +370,196 @@ function lanesHtml(lanes, progreso) {
   return `<section class="lanes">${laneBlock}${progBlock}</section>`
 }
 
-// ---------------------------------------------------------------- instrucciones para agentes
-const AGENT_PROMPT = `Sos un agente del equipo SOI. Vas a tomar UNA tarea del backlog de reparaciones,
-analizarla contra el código real y resolverla, siguiendo el protocolo SOI-MAP.
+// ---------------------------------------------------------------- instrucciones (mecanismo v1.0)
+const MECANISMO_URL = 'docs/coordination/MECANISMO_MULTIAGENTE_SOI.md'
 
-Proyecto Engram: soi_elsistemapc  (SIEMPRE ese; nunca la raíz)
-Tu identidad fija para firmar y para los carriles: <TU-NOMBRE>   (ej: Claude-Code | AI-Anti | AI-Codex)
+const CONTEXT_PROMPT = `Ponete en contexto del equipo SOI antes de trabajar. Proyecto Engram: soi_elsistemapc (SIEMPRE ese).
+Tu identidad fija: <TU-NOMBRE>  ·  Tu instancia (id de esta sesión): <TU-INSTANCIA>
 
-━━━ PASO 0 · LEER (obligatorio, en este orden) ━━━
-Usá mem_get_observation para el texto completo (mem_search / MCP truncan):
-  1. mem_search "coordination/soi-multi-agent-protocol"  → el protocolo. Leelo entero.
-  2. mem_search "coordination/lanes"                      → quién tiene cada ÁREA ahora.
-  3. mem_search "tablero/reparaciones"                    → el backlog: el QUÉ hay que hacer.
-Si tu tarea sale de una auditoría, leé también su topic fuente (ver tabla de topic_keys).
+Leé con mem_get_observation (mem_search / MCP truncan — no alcanza con la búsqueda):
+  1. mem_context()
+  2. coordination/soi-multi-agent-protocol      → el protocolo base (SOI-MAP)
+  3. coordination/mecanismo                      → la versión vigente del mecanismo (índice)
+     y el doc que referencia: ${MECANISMO_URL}
+  4. coordination/lanes                          → tu ÁMBITO asignado + base_sha del lote
+  5. tablero/reparaciones                        → el backlog (qué hay para hacer)
+  6. roadmap/columna-vertebral-y-coordinacion    → por qué nadie depende de Claude
 
-━━━ PASO 1 · ELEGIR ━━━
-Tomá la tarea LIBRE de mayor prioridad cuya ÁREA esté LIBRE en coordination/lanes.
-  · Si el área está EN-CURSO / EN-REVIEW por otro agente → NO la toques. Elegí otra.
-  · Si la tarea dice "espera Omar" → no es tomable.
-  · Área INTEGRACIÓN (src/lib/*, adminPortalShell, allRegistrars, vite.config, *.html,
-    migraciones, CI, tareasApi*) → solo si está 100% LIBRE y nadie toca shared/core en paralelo.
-  · Si no queda ninguna tarea tomable → PARÁ y reportá. No inventes trabajo.
+Confirmá antes de seguir: (a) qué ámbito es tuyo y su base_sha; (b) que leés el proyecto
+soi_elsistemapc y no otro; (c) que entendés que NO mergeás y que Omar es el único integrador.
+Si algo falta, decilo — no inventes el contenido.`
 
-━━━ PASO 2 · RECLAMAR ━━━
-NO edites coordination/lanes con una nota (el upsert de Engram pisa toda la tabla).
-En su lugar: mem_save en TU topic  tablero/<id-tarea>/progress  con:
-    "<id> EN-CURSO [<TU-NOMBRE>/<AAAA-MM-DD>]. Rama: <rama>. Plan: <2-3 líneas>."
-El coordinador (Claude-Code) consolida coordination/lanes.
+const LOOP_PROMPT = `Sos <TU-NOMBRE>, instancia <TU-INSTANCIA>, del equipo SOI. Corré este LOOP de mejora continua
+del sistema hasta que no queden tareas tomables. Podés tocar UI/UX, tests, lógica, base de datos,
+build/CI, docs — lo que la tarea pida, SIEMPRE dentro de tu ámbito asignado.
 
-━━━ PASO 3 · AISLAR ━━━
-Trabajá en TU worktree (nunca en el checkout principal, que suele estar sucio):
-    git worktree add ../soi-<tu-nombre>-<id>  feat/planificacion-clases-rediseño
-    cd ../soi-<tu-nombre>-<id>
-    git switch -c <tu-nombre>/<id>-<slug>
-Base SIEMPRE feat/planificacion-clases-rediseño  (NO master: está congelada).
-Si NO podés crear rama/worktree (permisos, repo bloqueado) → reportá y PARÁ. No fuerces
-(no stash, no reset, no borrar locks — hay trabajo de otros sin commitear).
+Contexto: seguí primero el "Prompt de contexto". Doc completo: ${MECANISMO_URL}
 
-━━━ PASO 4 · ANALIZAR ━━━
-Leé los archivos de la tarea. Confirmá el diagnóstico del backlog con el código real
-(grep exhaustivo, no asumas). Verificá contra la BD viva si aplica (solo lectura).
-Si el cambio supera ~400 líneas o toca varias áreas → partilo en slices y hacé solo el slice 1.
+CADA ITERACIÓN:
 
-━━━ PASO 5 · RESOLVER ━━━
-  · SOLO archivos del ÁREA de tu tarea. Nada compartido fuera de tu carril.
-  · Si el repo tiene tests que corren (vitest): TDD — test que falla → fix → test verde.
-  · Corré lint sobre lo que tocaste.
-  · NADA destructivo en BD (DROP/DDL) ni cambio de comportamiento en prod sin
-    Decisión + Dueño registrados por Omar.
-  · Seguí las convenciones del repo (ej. docs/UI_THEME_IMPLEMENTATION_STANDARD_V9.md para UI).
+A. REFRESCAR — releé coordination/lanes y tablero/reparaciones.
+   Escribí tu CONTEXTO restante: alto | medio | bajo | DESCONOCIDO (pista, no gate).
 
-━━━ PASO 6 · ENTREGAR ━━━
-  1. mem_save en tablero/<id>/progress: qué hiciste, archivos, hallazgos/gotchas, qué falta.
-  2. commit(s) con mensaje claro (Co-Authored-By si aplica).
-  3. git push  +  abrí PR contra feat/planificacion-clases-rediseño.
-  4. Actualizá tablero/<id>/progress → "EN-REVIEW · PR #<n>".
-NADIE mergea. Omar es el único integrador.
+B. ELEGIR — tarea LIBRE de mayor prioridad de TU ámbito, cuyos paths[] NO solapen los de
+   ninguna tarea activa (ni la lista fija de archivos INTEGRACIÓN). No tomes BLOQUEADA.
+   · CONTEXTO bajo → sólo tareas de 1 archivo / mecánicas.
+   · Si ya tenés 1 slice activo, o el equipo tiene ≥3 PRs listos para revisión →
+     no tomes nada nuevo: revisá, corregí y prepar-merge lo que hay.
+   · Si no hay tarea tomable → DESCUBRIR (abajo).
 
-━━━ PASO 7 · SIGUIENTE ━━━
-Volvé al PASO 1. Repetí hasta que no queden tareas tomables, entonces PARÁ y reportá.
+C. RECLAMAR (primera acción, antes de tocar archivos) —
+   mem_save en  tablero/<task_id>/progress/<TU-INSTANCIA>  con:
+     "<task_id> EN-CURSO [<TU-NOMBRE>/<TU-INSTANCIA>/<hoy>]. Rama: <rama>. base_sha: <sha>. paths: <lista>.
+      CONTEXTO: <nivel>
+      ## Plan
+      <2-4 líneas>"
+   Releé el backlog + los progress de otras tareas: ¿alguien declaró paths que solapan?
+     sí → poné EN-DISPUTA en tu progress, NO toques archivos, consultá.
 
-━━━ PARÁ Y REPORTÁ SI ━━━
-  · no quedan tareas tomables · no podés crear rama/worktree · una tarea necesita
-    decisión de Omar · un fix requiere tocar otra área · un test que estaba verde se rompe.
+D. AISLAR — una sola operación desde el SHA remoto:
+     git worktree add -b <TU-NOMBRE>/<task_id>-<slug>  ../soi-<TU-NOMBRE>-<task_id>  <base_sha>
+     cd ../soi-<TU-NOMBRE>-<task_id>
+   Registrá base_sha + versión del lockfile. Si no podés → progress BLOQUEADA(entorno), reportá, PARÁ.
+   Nunca stash/reset/limpiar trabajo ajeno.
 
-━━━ REGLAS DE ORO (SOI-MAP) ━━━
-  · Un área, un dueño a la vez.   · Cada agente su rama.   · Nadie mergea a master.
-  · Antes de inventar un concepto, buscá en Engram si ya existe. Conectar, no duplicar.
-  · Guardá tu avance en TU topic tablero/<id>/progress, nunca pisando coordination/lanes.`
+E. ANALIZAR — leé el topic Origen de la tarea. Confirmá el diagnóstico contra el código real
+   (grep exhaustivo; BD sólo lectura). Registrá baseline: SHA + comandos de test/lint + resultados
+   actuales. Si no sabés resolverlo coherente con el sistema → escribí la duda en el progress y PARÁ.
 
-const TOPIC_KEYS = [
-  ['coordination/soi-multi-agent-protocol', 'El protocolo. Cómo coexisten los agentes sin pisarse. LEER PRIMERO.', 'nadie (referencia)'],
-  ['coordination/lanes', 'Candado por ÁREA: quién trabaja qué ahora (LIBRE/EN-CURSO/EN-REVIEW).', 'solo el coordinador (Claude-Code)'],
-  ['tablero/reparaciones', 'El backlog: la lista de QUÉ hay que arreglar, con área y prioridad.', 'solo el coordinador'],
-  ['tablero/&lt;id&gt;/progress', 'Tu bitácora de la tarea &lt;id&gt; (ej. tablero/lc1/progress). Uno por agente/tarea.', 'el agente que toma esa tarea'],
-  ['coordination/bloqueo-git-2026-09-09', 'Bloqueos de entorno conocidos (repo sucio, ACL de Codex).', 'coordinador'],
-  ['audit/soi-lila-2026-09', 'Hallazgos de la auditoría "lila" — fuente de las tareas LC* / LA*.', '(archivo)'],
-  ['audit/ausentismo-dashboard-2026-09', 'Los 34 hallazgos del dashboard de ausentismo — fuente de AUS1.', '(archivo)'],
-  ['fase-0/tablas-vacias-inventario', 'Inventario de las 122 tablas vacías de la BD (FASE 0).', '(archivo)'],
+F. RESOLVER — sólo archivos de tu ámbito / paths declarados. Diff > ~400 líneas → slice 1.
+   Si hay tests que corren: TDD (rojo → verde). Una prueba antes-verde que regresa DETIENE la entrega
+   (sin excepción "trivial"). Lint del alcance. Nada destructivo en BD sin Decisión+Dueño de Omar.
+   Convenciones del repo (ej. docs/UI_THEME_IMPLEMENTATION_STANDARD_V9.md para UI).
+
+G. ENTREGAR (evidencia antes de estado) —
+   progress → LISTA-PARA-PR
+   verificá criterio de aceptación → git commit → git push → creá/obtené el PR (idempotente: si ya
+   existe, no dupliques) → verificá URL + base + head SHA → recién ahí:
+   progress → EN-REVIEW con: PR #<n>, head_sha, criterio verificado, "## Qué falta".
+   NO mergees.
+
+H. Volvé a A.
+
+DESCUBRIR (cuando no hay tarea): refrescá primero. Escaneá tu ámbito sobre el base_sha declarado,
+pasada acotada: máx 5 hallazgos nuevos o 30 min. Registrá también "sin hallazgos accionables".
+Deduplicá por módulo/símbolo/síntoma (archivo:línea es sólo localizador).
+Por cada hallazgo → append a  tablero/intake/<TU-NOMBRE>:
+  "[hoy] · <ámbito> · <ALTA|MEDIA|BAJA> · <archivo:línea> · <qué> · <porqué> · <fix> · <paths> · <criterio> · NUEVO"
+AUTO-PROMOCIÓN: si el hallazgo tiene repro + impacto + paths + criterio, NO es cross-cutting, NO es
+destructivo y NO necesita decisión de Omar → agregalo vos mismo al backlog como tarea LISTA.
+Lo demás queda en el intake. Incidente grave → avisá a Omar de inmediato (Engram no notifica).
+
+PARÁ Y REPORTÁ SI: no hay tareas ni hallazgos · no podés crear rama/worktree · una tarea necesita
+decisión de Omar · un fix sale de tu ámbito · una prueba antes-verde se rompe y no es trivial ·
+tu CONTEXTO cae a bajo a mitad (cerrá el slice con checkpoint recuperable, mem_session_summary, pará).
+
+REGLAS DE ORO: un ámbito = un dueño · cada agente su rama · nadie mergea · buscá en Engram antes de
+inventar · guardá tu avance en TU progress, jamás pisando coordination/lanes.`
+
+const ROUTE_EVAL_PROMPT = `Claude-Code: evaluá la ruta / módulo / archivo:  <RUTA O ARCHIVO>
+
+1. Localizá la vista + componentes + servicios + tablas que toca.
+2. Auditá: correctness, arquitectura, UI/UX vs docs/UI_THEME_IMPLEMENTATION_STANDARD_V9.md,
+   accesibilidad, tests, y la BD viva (sólo lectura) si aplica.
+3. Publicá el informe en  coordination/rutas-evaluadas/<slug>  — severidad, archivo:línea,
+   porqué y fix propuesto por hallazgo.
+4. Creá las tareas en tablero/reparaciones: una por sub-slice coherente (datos / tema / UX / …),
+   con Ámbito, Prio, paths[], criterio de aceptación y Origen: coordination/rutas-evaluadas/<slug>.
+5. Si hay un incidente ALTA (XSS, pérdida de datos, no-op silencioso) → marcalo y avisame ya.`
+
+const OMAR_GUIA = [
+  ['Abrí el visor', 'node tools/tablero/tablero.mjs --watch — regenera solo, se auto-recarga.'],
+  ['Vaciá la cola de PRs primero', 'Mergeá lo que está EN-REVIEW y listo (orden: incidentes → dependencias → prioridad/antigüedad) ANTES de pedir trabajo nuevo. Si la cola crece, bloquea ámbitos.'],
+  ['Liberá la reserva al mergear', 'Marcá el ámbito del PR mergeado como libre en coordination/lanes (o pedíselo a Claude-Code).'],
+  ['Publicá la asignación de ámbitos', 'coordination/lanes: ámbitos NO solapados, dueño, owner_instance, base_sha del lote. Esto es lo que autoriza a trabajar.'],
+  ['Poné a los agentes en contexto', 'Copiá y pegá a cada agente: el "Prompt de contexto" + el "Prompt de loop". Reemplazan <TU-NOMBRE> y <TU-INSTANCIA>.'],
+  ['Preguntá capacidad antes de cargar', '"¿cómo vas de contexto?" — asigná lo pesado a quien tiene margen.'],
+  ['Mirá el visor durante el trabajo', 'Actividad de agentes = quién va por dónde. Intake pendiente = hallazgos por convertir en tarea. EN-REVIEW colgado = revisá y mergeá o pedí cambios.'],
+  ['Para evaluar una vista', 'Decime: "evaluá <ruta>". Sale el informe + las tareas + aviso si hay algo ALTA.'],
+  ['Nunca', 'mergear a origin/master (congelada) · dos agentes en el mismo ámbito/archivo · auto-merge sin decisión escrita · pedirle commits a Codex (no puede).'],
 ]
 
-function instruccionesHtml() {
-  const rows = TOPIC_KEYS.map(
+const TOPIC_KEYS = [
+  ['coordination/soi-multi-agent-protocol', 'El protocolo base (SOI-MAP). Se lee, no se toca.', 'congelado'],
+  ['coordination/mecanismo', 'Índice de la versión vigente del mecanismo (apunta al commit del doc).', 'Claude-Code'],
+  ['coordination/lanes', 'Asignación de ámbitos + base_sha del lote. AUTORIZA.', 'Omar publica · Claude-Code consolida'],
+  ['tablero/reparaciones', 'El backlog: QUÉ hay que arreglar, con ámbito, prioridad, paths.', 'un solo consolidador'],
+  ['tablero/&lt;task_id&gt;/progress/&lt;instancia&gt;', 'Tu bitácora de esa tarea. Estado, plan, CONTEXTO, qué falta.', 'esa instancia, y sólo ella'],
+  ['tablero/intake/&lt;agente&gt;', 'Tu cola de hallazgos crudos (append: releer + agregar + guardar).', 'ese agente, nadie más'],
+  ['coordination/rutas-evaluadas/&lt;slug&gt;', 'Informe de una ruta que Omar pasó para evaluar. Origen de tareas.', 'Claude-Code'],
+  ['audit/soi-lila-2026-09', 'Auditoría "lila" — fuente de las tareas LC* / LA*.', '(archivo)'],
+  ['audit/ausentismo-dashboard-2026-09', 'Los 34 hallazgos del dashboard de ausentismo — origen de AUS1.', '(archivo)'],
+  ['fase-0/tablas-vacias-inventario', 'Inventario de las 122 tablas vacías de la BD.', '(archivo)'],
+  ['roadmap/columna-vertebral-y-coordinacion', 'Por qué el equipo no depende de Claude (#2588).', '(archivo)'],
+  ['coordination/bloqueo-git-2026-09-09', 'Bloqueos de entorno conocidos (repo sucio, ACL de Codex).', '(archivo)'],
+]
+
+function intakeHtml(intake) {
+  if (!intake.length) return ''
+  const rows = intake
+    .slice(0, 40)
+    .map(
+      (h) => `<tr class="sev-${slug(h.sev) || 'sin'}">
+        <td>${esc(h.agente)}</td><td>${h.sev ? `<span class="prio prio-${slug(h.sev)}">${esc(h.sev)}</span>` : '—'}</td>
+        <td>${linkify(h.texto)}</td></tr>`,
+    )
+    .join('')
+  return `<h3>Intake pendiente de triage <small>hallazgos <code>NUEVO</code> de <code>tablero/intake/&lt;agente&gt;</code> — falta convertirlos en tarea</small></h3>
+    <div style="overflow-x:auto"><table class="tk"><thead><tr><th>productor</th><th>sev</th><th>hallazgo</th></tr></thead><tbody>${rows}</tbody></table></div>`
+}
+
+function copyBtn(id) {
+  return `<button class="copy" data-copy="${id}">copiar</button>`
+}
+
+function instruccionesHtml(intake) {
+  const tkRows = TOPIC_KEYS.map(
     ([k, q, w]) => `<tr><td><code>${k}</code></td><td>${q}</td><td class="tk-who">${esc(w)}</td></tr>`,
   ).join('')
+  const guia = OMAR_GUIA.map(([t, d]) => `<li><b>${esc(t)}</b> — ${linkify(d)}</li>`).join('')
   return `<section class="instr">
   <details open>
-    <summary>👥 Cómo trabaja el equipo de agentes (SOI-MAP)</summary>
+    <summary>🧭 Mecanismo v1.0 — cómo trabaja el equipo</summary>
     <div class="instr-body">
+      <p class="instr-nota">Doc completo: <code>${MECANISMO_URL}</code> · canónico en Engram <code>coordination/mecanismo</code>. <b>Estado: propuesta</b> — no vigente hasta que Omar la apruebe.</p>
+
+      <h4>👤 Guía de Omar (buenas prácticas)</h4>
+      <ol class="pasos">${guia}</ol>
+
+      <h4>🔄 El loop del agente</h4>
       <ol class="pasos">
-        <li><b>Leer</b> — el agente lee, en orden: el protocolo, los carriles, el backlog. Siempre con <code>mem_get_observation</code> (las búsquedas truncan).</li>
-        <li><b>Elegir</b> — toma la tarea LIBRE de mayor prioridad cuya <b>área</b> esté LIBRE. Si el área ya tiene dueño, elige otra. Si no hay ninguna: para y reporta.</li>
-        <li><b>Reclamar</b> — escribe en <b>su propio</b> <code>tablero/&lt;id&gt;/progress</code> (NO en <code>coordination/lanes</code> — el upsert de Engram lo pisa). El coordinador consolida los carriles.</li>
-        <li><b>Aislar</b> — crea su <b>worktree</b> y su <b>rama</b> desde <code>feat/planificacion-clases-rediseño</code>. Nunca trabaja en el checkout principal.</li>
-        <li><b>Analizar</b> — confirma el diagnóstico del backlog contra el código real (grep, BD en solo lectura). Si es grande, lo parte en slices.</li>
-        <li><b>Resolver</b> — solo archivos de su área. TDD si hay tests. Lint. Nada destructivo en BD sin OK de Omar.</li>
-        <li><b>Entregar</b> — guarda progreso + commit + push + PR contra <code>feat/planificacion-clases-rediseño</code>. Marca su progress como <b>EN-REVIEW</b>. Nadie mergea: <b>Omar es el único integrador</b>.</li>
-        <li><b>Repetir</b> — vuelve al paso 2 hasta que no queden tareas tomables.</li>
+        <li><b>Contexto</b> — protocolo + mecanismo + <code>coordination/lanes</code> (su ámbito + base_sha) + backlog, con <code>mem_get_observation</code>.</li>
+        <li><b>Elegir</b> — tarea LIBRE de <b>su ámbito</b> cuyos <code>paths[]</code> no solapen ninguna tarea activa. Si el equipo ya tiene 3 PRs en cola → sólo revisar/mergear.</li>
+        <li><b>Reclamar</b> — <code>tablero/&lt;task_id&gt;/progress/&lt;instancia&gt;</code> con paths + base_sha, <b>antes</b> de tocar archivos. Solapamiento → EN-DISPUTA.</li>
+        <li><b>Aislar</b> — <code>git worktree add -b … &lt;base_sha&gt;</code> en una operación.</li>
+        <li><b>Analizar</b> — confirmar el diagnóstico contra el código + registrar baseline. Ante la duda: preguntar, no improvisar.</li>
+        <li><b>Resolver</b> — UI/UX, tests, lógica, BD, build — lo que la tarea pida, dentro del ámbito. TDD + lint. Nada destructivo en BD sin Omar.</li>
+        <li><b>Entregar</b> — commit → push → PR → verificar → <b>recién ahí</b> EN-REVIEW. Nadie mergea.</li>
+        <li><b>Descubrir</b> — sin tareas: escanear el ámbito (máx 5 hallazgos / 30 min), publicar en <code>tablero/intake/&lt;agente&gt;</code>, auto-promover los bien formados.</li>
       </ol>
-      <p class="instr-nota">Un área = un dueño a la vez. Cada agente su rama. Antes de crear un concepto nuevo, buscar en Engram si ya existe (conectar, no duplicar).</p>
 
-      <h4>📌 Topic keys de Engram — qué leer y dónde escribir</h4>
-      <div style="overflow-x:auto">
-        <table class="tk">
-          <thead><tr><th>topic_key</th><th>qué es</th><th>quién escribe</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      <h4>📌 Topic keys de Engram — dónde vive cada cosa</h4>
+      <div style="overflow-x:auto"><table class="tk"><thead><tr><th>topic_key</th><th>qué es</th><th>quién escribe</th></tr></thead><tbody>${tkRows}</tbody></table></div>
 
-      <h4>🤖 Prompt para pegar en un agente <button class="copy" data-copy="agent-prompt">copiar</button></h4>
-      <p class="instr-nota">Reemplazá <code>&lt;TU-NOMBRE&gt;</code> por la identidad del agente (Claude-Code / AI-Anti / AI-Codex). El agente elige la tarea del backlog.</p>
-      <pre id="agent-prompt" class="prompt">${esc(AGENT_PROMPT)}</pre>
+      <h4>🧩 Prompt de contexto ${copyBtn('ctx-prompt')}</h4>
+      <p class="instr-nota">Se pega primero. Reemplazá <code>&lt;TU-NOMBRE&gt;</code> y <code>&lt;TU-INSTANCIA&gt;</code>.</p>
+      <pre id="ctx-prompt" class="prompt">${esc(CONTEXT_PROMPT)}</pre>
+
+      <h4>🔁 Prompt de loop ${copyBtn('loop-prompt')}</h4>
+      <p class="instr-nota">Se pega después del de contexto. El agente corre el loop hasta que no queden tareas.</p>
+      <pre id="loop-prompt" class="prompt">${esc(LOOP_PROMPT)}</pre>
+
+      <h4>🔍 Prompt "evaluá esta ruta" (para darle a Claude-Code) ${copyBtn('route-prompt')}</h4>
+      <p class="instr-nota">Reemplazá <code>&lt;RUTA O ARCHIVO&gt;</code>. Claude audita y mete las tareas en el tablero.</p>
+      <pre id="route-prompt" class="prompt">${esc(ROUTE_EVAL_PROMPT)}</pre>
+
+      ${intakeHtml(intake || [])}
     </div>
   </details>
 </section>`
 }
 
-function render(meta, lanes, progreso, src) {
+function render(meta, lanes, progreso, hallazgos, src) {
   const porEstado = Object.fromEntries(COLS.map((c) => [c.k, []]))
   const otras = []
   for (const t of meta.tareas) (porEstado[t.estado] || otras).push(t)
@@ -614,7 +718,7 @@ button.copy.ok{color:var(--libre);border-color:var(--libre)}
 </header>
 ${lanesHtml(lanes, progreso)}
 <main id="board">${columnas}</main>
-${instruccionesHtml()}
+${instruccionesHtml(hallazgos)}
 ${omarHtml}
 ${otrasHtml}
 <details class="intro"><summary>Protocolo / reglas del backlog (SOI-MAP)</summary><pre>${esc(meta.protocolo)}</pre></details>
@@ -648,13 +752,14 @@ ${WATCH ? "setTimeout(()=>location.reload(), 15000);" : ''}
 
 // ---------------------------------------------------------------- run
 function build() {
-  const { src, lanesContent, progreso } = FILE ? fromFile() : fromDb()
+  const { src, lanesContent, progreso, intake } = FILE ? fromFile() : fromDb()
   const meta = parseBacklog(src.content)
   const lanes = parseLanes(lanesContent)
   const prog = parseProgreso(progreso)
-  writeFileSync(OUT, render(meta, lanes, prog, src))
+  const hallazgos = parseIntake(intake || [])
+  writeFileSync(OUT, render(meta, lanes, prog, hallazgos, src))
   console.log(
-    `ok ${OUT}  (${meta.tareas.length} tareas, ${meta.cerradas.length} cerradas, ${lanes.length} carriles, ${prog.length} progress)`,
+    `ok ${OUT}  (${meta.tareas.length} tareas, ${meta.cerradas.length} cerradas, ${lanes.length} carriles, ${prog.length} progress, ${hallazgos.length} intake)`,
   )
   return OUT
 }

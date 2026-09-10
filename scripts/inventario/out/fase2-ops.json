@@ -1,0 +1,1036 @@
+[
+  {
+    "codigo": "22.095",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.097",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.101",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.102",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.103",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.106",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.107",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.110.",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.117",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.119",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.121",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22077",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22081",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22082",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22085",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22089",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22090",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22092",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22093",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22120",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22127",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22128",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "23.068",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "23055",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "23057",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "23058",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "23061",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "24087",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "24088",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "24090,",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "25175",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "25186",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "25190",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCCLT138IH",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCCLT139IH",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCCNO132IH",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCCTB12YA",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT09EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT50MU",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT54MU",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT55EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT56MU",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT59EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT61EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT62EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT63EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT64EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT65EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT66YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT67YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT68YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT69YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT70YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT71YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT72YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT73YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT74YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCFLT75YA",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCGTR88EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCTBN83EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLA130IH",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLA22EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLA23EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLC14EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLC15EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLC16EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLC17EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLC18EX",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN108AR",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN109AR",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN110AR",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN122IH",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN126IH",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN128IH",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN162GC",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN25SG",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN26SG",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN28SG",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN30RO",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN31RO",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN32RO",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN33RO",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN34RO",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN36RO",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN37RO",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN38EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN39EX",
+    "set": {
+      "estado_conservacion": "excelente"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN40AR",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN41EX",
+    "set": {
+      "estado_conservacion": "bueno"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "ESPCVLN48MA",
+    "set": {
+      "estado_conservacion": "regular"
+    },
+    "guard": {
+      "estado_conservacion": "mantenimiento"
+    }
+  },
+  {
+    "codigo": "22.094",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "22.095",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "en_reparacion"
+    }
+  },
+  {
+    "codigo": "22.109",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "en_reparacion"
+    }
+  },
+  {
+    "codigo": "22077",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "22078",
+    "set": {
+      "asignado_a_texto": "Audrey Diviche",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "22087",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "23055",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "23058",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "en_reparacion"
+    }
+  },
+  {
+    "codigo": "23060",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "23063",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "24089",
+    "set": {
+      "asignado_a_texto": "Isabella Baez Rosario",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "25183",
+    "set": {
+      "asignado_a_texto": "Angelita StJuste",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "25189",
+    "set": {
+      "asignado_a_texto": "Esteban Sano Sano Antuan",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "25190",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "en_reparacion"
+    }
+  },
+  {
+    "codigo": "25193",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "ESPCCLT111RO",
+    "set": {
+      "asignado_a_texto": "Ana Taveraz",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCCLT113RO",
+    "set": {
+      "asignado_a_texto": "Ashley Lebron",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCCLT115RO",
+    "set": {
+      "asignado_a_texto": "Geily Yosairy Diviche",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCCNO132IH",
+    "set": {
+      "asignado_a_texto": "Diafreisi Dumond",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCFLT169IH",
+    "set": {
+      "asignado_a_texto": "Zara Isabella Díaz Bodre",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCTPA85PA",
+    "set": {
+      "asignado_a_texto": "Jose Tomas Lorenzo Ogando",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLA21EX",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "ESPCVLC16EX",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "ESPCVLN108AR",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "ESPCVLN120IH",
+    "set": {
+      "asignado_a_texto": "Gabriela Marte",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLN121IH",
+    "set": {
+      "asignado_a_texto": "Dyakenson Lamerique",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLN123IH",
+    "set": {
+      "asignado_a_texto": "Montserrat Alejandra Peña",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLN124IH",
+    "set": {
+      "asignado_a_texto": "Amelie Fernández",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLN126IH",
+    "set": {
+      "asignado_a_texto": "Escarlet Martinez",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLN33RO",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  },
+  {
+    "codigo": "ESPCVLN34RO",
+    "set": {
+      "asignado_a_texto": "Alejandra Perez",
+      "estado_uso": "prestado"
+    }
+  },
+  {
+    "codigo": "ESPCVLN42MU",
+    "set": {
+      "asignado_a_texto": null,
+      "estado_uso": "disponible"
+    }
+  }
+]

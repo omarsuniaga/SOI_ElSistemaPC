@@ -160,8 +160,14 @@ export async function crearMedio(payload) {
 }
 
 export async function actualizarMedio(id, cambios) {
-  const { error } = await supabase.from('signage_media').update(cambios).eq('id', id)
+  const { data, error } = await supabase
+    .from('signage_media')
+    .update(cambios)
+    .eq('id', id)
+    .select('id')
+    .maybeSingle()
   if (error) throw new Error('No se pudo actualizar el medio: ' + error.message)
+  if (!data) throw new Error('No se encontró la diapositiva para actualizar')
 }
 
 export async function eliminarMedio(id, storagePath) {

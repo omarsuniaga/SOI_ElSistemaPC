@@ -138,20 +138,22 @@ export async function obtenerHistorialAusencias() {
 async function actualizarDecisionAusencia(id, estado, decisionNotas) {
   console.log('[ausenciaAprobacionApi] Actualizando ausencia:', { id, estado, decisionNotas });
 
-  // Actualizar solo el estado sin depender de columnas inexistentes
+  // Actualizar el estado asegurando verificación de filas afectadas (.select())
   let { data, error } = await supabase
     .from('ausencias_maestros')
     .update({ estado })
-    .eq('id', id);
+    .eq('id', id)
+    .select();
 
   // Si id es string numérico, intentar con Number(id)
-  if (error && !isNaN(Number(id))) {
+  if ((error || !data || data.length === 0) && !isNaN(Number(id))) {
     const retry = await supabase
       .from('ausencias_maestros')
       .update({ estado })
-      .eq('id', Number(id));
-    if (!retry.error) {
-      return { id, estado };
+      .eq('id', Number(id))
+      .select();
+    if (!retry.error && retry.data && retry.data.length > 0) {
+      return { id, estado, affectedRows: retry.data.length, data: retry.data[0] };
     }
   }
 
@@ -160,7 +162,11 @@ async function actualizarDecisionAusencia(id, estado, decisionNotas) {
     throw error;
   }
 
-  return { id, estado };
+  if (!data || data.length === 0) {
+    throw new Error(`No se pudo actualizar la ausencia con ID ${id} (registro no encontrado o denegado por RLS)`);
+  }
+
+  return { id, estado, affectedRows: data.length, data: data[0] };
 }
 
 export function aprobarAusencia(id, decisionNotas = '') {

@@ -91,13 +91,14 @@ Estado:              100% VERDE
 
 | Documento | Ubicación |
 |---|---|
-| **Production Baseline** | [01_PRODUCTION_BASELINE.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/01_PRODUCTION_BASELINE.md) |
-| **Security Definer Audit** | [02_SECURITY_DEFINER_AUDIT.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/02_SECURITY_DEFINER_AUDIT.md) |
-| **Mutation Integrity** | [03_MUTATION_INTEGRITY.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/03_MUTATION_INTEGRITY.md) |
-| **Portal Maestros Check** | [04_PORTAL_MAESTROS_RELEASE_CHECK.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/04_PORTAL_MAESTROS_RELEASE_CHECK.md) |
-| **SOP de Restauración** | [RESTORE_SOP.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/runbooks/RESTORE_SOP.md) |
-| **Contrato de Herencia** | [SOI_V2_INHERITANCE_CONTRACT.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md) |
-| **Informe de Cierre** | [SOI_V1_CLOSURE_REPORT.md](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V1_CLOSURE_REPORT.md) |
+| **Production Baseline** | [01_PRODUCTION_BASELINE.md](docs/release-v1/01_PRODUCTION_BASELINE.md) |
+| **Security Definer Audit** | [02_SECURITY_DEFINER_AUDIT.md](docs/release-v1/02_SECURITY_DEFINER_AUDIT.md) |
+| **Mutation Integrity** | [03_MUTATION_INTEGRITY.md](docs/release-v1/03_MUTATION_INTEGRITY.md) |
+| **Portal Maestros Check** | [04_PORTAL_MAESTROS_RELEASE_CHECK.md](docs/release-v1/04_PORTAL_MAESTROS_RELEASE_CHECK.md) |
+| **SOP de Restauración** | [RESTORE_SOP.md](docs/runbooks/RESTORE_SOP.md) |
+| **Contrato de Herencia** | [SOI_V2_INHERITANCE_CONTRACT.md](docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md) |
+| **Informe de Cierre** | [SOI_V1_CLOSURE_REPORT.md](docs/release-v1/SOI_V1_CLOSURE_REPORT.md) |
+| **Master Init Prompt Astra** | [ASTRA_MASTER_INIT_PROMPT.md](ASTRA_MASTER_INIT_PROMPT.md) |
 | **Evidence Pack Completo** | `docs/context-baseline/` (15 documentos de verdad arquitectónica) |
 
 ---
@@ -107,4 +108,4 @@ Estado:              100% VERDE
 ### Dictamen: **GO**
 
 Queda formalmente autorizado el inicio de los trabajos de arquitectura e implementación de **SOI 2.0**.
-Cualquier modificación futura debe partir de este baseline canónico y acatar el [Contrato de Herencia](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md).
+Cualquier modificación futura debe partir de este baseline canónico y acatar el [Contrato de Herencia](docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md).

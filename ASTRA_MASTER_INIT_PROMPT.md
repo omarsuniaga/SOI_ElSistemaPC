@@ -4,7 +4,7 @@
 > **Emisor:** Antigravity (Senior Technical Architect & Pair Partner) / Dirección del Proyecto  
 > **Fecha:** 10 de Septiembre de 2026  
 > **Línea Base Canónica Sellada:** `SOI v1.2 LTS` (`soi-v1.2-lts` @ `3a1ad56f`)  
-> **Documento Rector del Alcance Funcional:** [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/SOI_MASTER_SPEC_v2.0_UNIFICADO.md)
+> **Documento Rector del Alcance Funcional:** [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](SOI_MASTER_SPEC_v2.0_UNIFICADO.md)
 
 ---
 
@@ -44,7 +44,7 @@ Muchas tablas que parecen vacías sostienen vistas históricas o foreign keys. T
 
 ## 3. Contrato de Herencia Vinculante (El Cuadrante)
 
-Tu marco de decisión se rige estrictamente por las cuatro categorías de [`docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md):
+Tu marco de decisión se rige estrictamente por las cuatro categorías de [`docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`](docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md):
 
 ```
 ┌────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────┐
@@ -187,7 +187,12 @@ Astra tiene autonomía para diseñar la composición interna de los componentes,
 * **Tipado Estricto de TypeScript:** Modo estricto sin concesiones; prohibido el uso indiscriminado de `any`.
 * **Query & Cache Layer:** Gestión asíncrona de estado de servidor con políticas deterministas de invalidación y caché (TanStack Query v5).
 * **Estrategia Integral de Pruebas:** Pruebas unitarias para lógica de dominio, pruebas de integración para adaptadores y pruebas de caracterización para preservar las invariantes de v1.
-* **Presupuesto de Rendimiento:** Tiempo de respuesta P95 < 200ms en interacciones clave; optimización de bundles para dispositivos móviles.
+* **Presupuestos de Rendimiento Realistas:**
+  - *Feedback de UI / Navegación:* P95 < 200 ms.
+  - *Interacciones en caché / locales:* Casi instantáneas (< 50 ms).
+  - *Lecturas estándar de base de datos:* Objetivo P95 < 800 ms.
+  - *Mutaciones críticas:* Confirmación inmediata (*acknowledgement*) + feedback explícito de estado (`pending`, `success`, `error`).
+  - *APIs externas / Inferencia LLM:* Sin límite rígido de 200 ms; feedback progresivo / streaming.
 
 ### Stack de Referencia:
 * **Runtime & Bundler:** Node.js 20+ / Vite 6+
@@ -225,19 +230,26 @@ graph TD
 
 ---
 
-## 8. Tu Primera Acción
+## 8. Tu Primera Acción: SDD de SOI 2.0 y Plan Físico de Phase 0
 
-Astra, consulta en este orden estricto los documentos de verdad técnica:
-1. [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/SOI_MASTER_SPEC_v2.0_UNIFICADO.md) (Fuente canónica de alcance funcional).
-2. [`docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md) (Contrato vinculante de transición).
-3. [`docs/context-baseline/DATABASE_TRUTH.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/DATABASE_TRUTH.md) (Verdad empírica de PostgreSQL).
-4. [`docs/context-baseline/DOMAIN_INVARIANTS.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/DOMAIN_INVARIANTS.md) (Reglas de negocio e invariantes).
-5. [`docs/context-baseline/CHARACTERIZATION_TESTS.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/CHARACTERIZATION_TESTS.md) (Pruebas de comportamiento que deben preservarse).
+Astra, tu primera orden de trabajo **NO es programar código a ciegas**. Tu primera ejecución debe producir el **Spec-Driven Development (SDD) formal de SOI 2.0 y el plan físico ejecutable de Phase 0 — Foundation**, consultando previamente en este orden estricto los documentos de verdad técnica:
 
-Comienza presentando formalmente tu propuesta de arquitectura para la **Phase 0 — Foundation**:
-- Estructura de directorios del proyecto.
-- Arquitectura del Shell Unificado y Router con RBAC.
-- Estrategia del Design System y tokens.
-- Contrato base de los Repositorios/DataAdapters.
+1. [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](SOI_MASTER_SPEC_v2.0_UNIFICADO.md) (Fuente canónica de alcance funcional).
+2. [`docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`](docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md) (Contrato vinculante de transición).
+3. [`docs/context-baseline/DATABASE_TRUTH.md`](docs/context-baseline/DATABASE_TRUTH.md) (Verdad empírica de PostgreSQL).
+4. [`docs/context-baseline/DOMAIN_INVARIANTS.md`](docs/context-baseline/DOMAIN_INVARIANTS.md) (Reglas de negocio e invariantes).
+5. [`docs/context-baseline/CHARACTERIZATION_TESTS.md`](docs/context-baseline/CHARACTERIZATION_TESTS.md) (Pruebas de comportamiento que deben preservarse).
+
+### Entregables Exigidos en tu Primera Ejecución:
+1. **Estructura de Directorios:** Arquitectura física modular del nuevo árbol de frontend.
+2. **Shell Unificado & Routing:** Estrategia de routing declarativo con RBAC, guards y deep links.
+3. **Design System & Tokens:** Estrategia de tokens de diseño semánticos y biblioteca de componentes base.
+4. **Contratos Base de Repositorios:** Interfaces TypeScript para los DataAdapters primarios (con soporte a Modo Demo).
+5. **Estrategia PWA & Notificaciones:** Configuración de Service Worker y Web Push.
+6. **Query & Cache Strategy:** Políticas de invalidación y caching en TanStack Query v5.
+7. **Coexistencia y Seams con v1:** Mecanismo de convivencia sin colisión mientras v2 toma control progresivo.
+8. **Estrategia de Testing & Budgets:** Matriz de pruebas y presupuestos de rendimiento.
+
+Presenta este diseño para revisión humana. Una vez validado, quedas formalmente autorizado a crear el nuevo árbol de SOI 2.0 y arrancar la implementación de **Phase 0 — Foundation**.
 
 **El escenario es tuyo. Construyamos el futuro de El Sistema.**

@@ -4,7 +4,7 @@
 > **Emisor:** Antigravity (Senior Technical Architect & Pair Partner) / Dirección del Proyecto  
 > **Fecha:** 10 de Septiembre de 2026  
 > **Línea Base Canónica Sellada:** `SOI v1.2 LTS` (`soi-v1.2-lts` @ `3a1ad56f`)  
-> **Ámbito:** Construcción Integral de **SOI 2.0**
+> **Documento Rector del Alcance Funcional:** [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/SOI_MASTER_SPEC_v2.0_UNIFICADO.md)
 
 ---
 
@@ -68,13 +68,13 @@ Tu marco de decisión se rige estrictamente por las cuatro categorías de [`docs
 ### 3.2 REBUILD FREELY (Libertad Total de Producto)
 * **Design System Institucional:** Paleta semántica, tipografía, espaciado, elevación y componentes atómicos.
 * **Shell Unificado & Navegación:** Una sola SPA con enrutamiento declarativo limpio (HTML5 history sin `#`), eliminando los 11 portales inconexos.
-* **Arquitectura React + TypeScript:** Tipado estricto, gestión de estado predecible, Container-Presentational y queries asíncronas con caché.
+* **Arquitectura de Frontend:** Adopción plena de React 19 + TypeScript con separación clara entre domain/application/UI, componentes visuales puros y query/cache layer.
 * **Dashboards & Visualización:** Tableros directivos, métricas pedagógicas y semáforo de ausentismo rediseñados.
 * **Estados Deterministas:** Experiencias con feedback inline (`loading`, `error`, `empty`, `success`).
-* **Nuevas Capacidades 2.0:** Radar, CRM, Creative Studio.
+* **Nuevas Capacidades:** Implementación estructurada de los nuevos bounded contexts según el Master SPEC.
 
 ### 3.3 MAY REFACTOR (Modernización Desacoplada)
-* **Hermes 2.0:** Capa de integración agnóstica de LLMs (Groq, Anthropic, OpenAI, local) y canales de mensajería (WhatsApp, Telegram, Webhook), desacoplada de librerías propietarias.
+* **Hermes 2.0:** Capa de integración agnóstica de LLMs (Groq, Anthropic, OpenAI, local) y canales de mensajería (WhatsApp, Telegram, Email), desacoplada de librerías propietarias.
 * **DataAdapters:** Implementación estricta de repositorios con soporte transparente para Modo Demo (JSON).
 * **Flujo de Identidad:** Mapeo limpio entre `auth.users`, `profiles` y credenciales de roles.
 
@@ -113,102 +113,131 @@ componentes modulares y frameworks de UI.
 
 ---
 
-## 5. Catálogo Completo de Capacidades de SOI 2.0
+## 5. Capacidades Prioritarias de Arranque
 
-### MÓDULOS CORE MODERNIZADOS
+> ⚠️ **AVISO VINCULANTE DE ALCANCE:**  
+> La siguiente lista detalla las **capacidades prioritarias de arranque**. El catálogo y alcance funcional completo del sistema está definido de forma exhaustiva y exclusiva en [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/SOI_MASTER_SPEC_v2.0_UNIFICADO.md). Ningún módulo omitido en este resumen se considera descartado.
 
-1. **Shell Unificado & Autenticación Multi-Rol:**
-   - Control de acceso basado en roles (RBAC): `Dirección`, `Coordinación Académica`, `Profesor`, `Caja/Finanzas`, `Luthier`.
-   - Cambio de contexto fluido y rutas protegidas deterministas.
-2. **Padrón 360 del Estudiante:**
-   - Ficha consolidada con historial académico, asistencias, deudas/becas, tutores e instrumentos asignados.
-   - Búsqueda instantánea con debouncing y filtros avanzados.
-3. **Módulo Pedagógico & Asistencias:**
-   - Marcador P/A/J con guardado pesimista y feedback visual instantáneo.
-   - Tablero de Ausentismo con detección automática del semáforo preventivo (`AUS1d`: 3 faltas consecutivas).
-4. **Ventanilla de Caja & Finanzas (Cobranzas):**
-   - Cartera organizada por alumno y familia.
-   - Liquidación de cuotas bajo orden FIFO estricto y asignación de excedentes a wallet.
-   - Soporte de becas tardías y exoneraciones.
-5. **Lutería, Almacén & Comodatos:**
-   - Registro de activos con número de serie, estado físico y ubicación.
-   - Generación de contratos y actas de comodato digital.
-   - Taller: diagnóstico, órdenes de trabajo y seguimiento de reparaciones.
-6. **Diseñador & Explorador Curricular:**
-   - Visualización interactiva del árbol pedagógico institucional (4.163 indicadores organizados por cátedra, nivel y etapa).
-
----
-
-### NUEVAS CAPACIDADES ESTRATÉGICAS (SOI 2.0)
-
-```mermaid
-graph LR
-    A[SOI 2.0 CORE] --> B[RADAR: Retención Estudiantil]
-    A --> C[CRM: Admisiones & Becas]
-    A --> D[CREATIVE STUDIO: Particellas & Prensa]
-    A --> E[HERMES 2.0: Agentes & Canales]
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                TAXONOMÍA DE DOMINIOS                                    │
+│                                                                                        │
+│  1. CORE INSTITUCIONAL      → Shell Unificado, RBAC, Padrón 360, Caja FIFO, Lutería.   │
+│  2. PEDAGOGÍA & SEGUIMIENTO → Asistencias, Ausentismo V9, Casos Críticos y Retención.  │
+│  3. REPERTORIO              → Obras, partituras, particellas y avance orquestal.       │
+│  4. ADMISIONES              → Funnel de captación, audiciones, becas y matrícula.      │
+│  5. CRM INSTITUCIONAL       → Organizaciones externas, contactos, acuerdos, follow-up. │
+│  6. RADAR INTELIGENCIA      → Convocatorias, grants, patrocinios, watchlist y scoring. │
+│  7. COMUNICACIONES & STUDIO → Omnicanalidad, Campaign Composer y Creative Studio.      │
+│  8. MOTOR HERMES 2.0        → Agente cognitivo: Observe · Reason · Research · Act.     │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **RADAR (Sistema de Alerta Temprana y Retención):**
-   - Motor de inteligencia predictiva que cruza ausentismo reiterado, morosidad en cuotas y cambios de horario.
-   - Emite alertas proactivas a Coordinación para intervenir antes de que ocurra la deserción escolar.
-2. **CRM (Ciclo de Vida del Aspirante y Becas):**
-   - Gestión de convocatorias públicas, audiciones y pruebas de aptitud musical.
-   - Asignación transparente de becas (totales/parciales) y formalización digital de matrícula.
-3. **CREATIVE STUDIO (Gestión Artística y Comunicaciones):**
-   - Repositorio digital de partituras, particellas y arreglos orquestales.
-   - Generador automático de programas de mano para conciertos y presentaciones institucionales.
-   - Sala de prensa y comunicados oficiales para familias.
-4. **HERMES 2.0 (Motor Cognitivo de Agentes y Automatizaciones):**
-   - Arquitectura desacoplada: adaptadores para modelos LLM (Groq, Anthropic, OpenAI) y pasarelas de mensajería (WhatsApp Baileys, Telegram Bot, Email transaccional).
-   - Trazabilidad estricta de eventos: `soi_eventos` $\longrightarrow$ `soi_tareas` $\longrightarrow$ `soi_resultados_accion`.
+### 5.1 Definición Rigurosa por Bounded Context
+
+#### 📡 RADAR / INTELIGENCIA INSTITUCIONAL (§21 Master SPEC)
+* **Misión:** Detección proactiva de oportunidades externas para FUNEYCA / El Sistema (convocatorias, grants, patrocinadores, fundaciones, empresas, festivales, alianzas).
+* **Pipeline:** `Búsqueda programada → Descubrimiento (watchlist hash) → Extracción IA → Clasificación → Deduplicación → Match con Perfil Institucional → Scoring multicriterio (reglas + IA con citas) → Oportunidad → Seguimiento`.
+* **Entidades:** `external_organizations`, `opportunities`, `watchlist`, `perfil_institucional`, `radar_consultas`.
+* **Control Humano:** Toda oportunidad detectada pasa por validación humana antes de entrar en evaluación formal.
+
+#### 🤝 CRM INSTITUCIONAL (§20 Master SPEC)
+* **Misión:** Gestión estratégica de las relaciones institucionales con entidades externas (ONGs, embajadas, donantes de instrumentos, patrocinadores corporativos).
+* **Entidades:** `organizaciones_externas`, `contactos` (con `relationship_strength` 1-5 y `responsable_relacion_id`), `hilos` de conversación multicanal, `propuestas`, `acuerdos` y `compromisos` formales con fechas de vencimiento.
+* **Grafo de Relaciones:** Mapeo de conexiones (`Persona ─conoce→ Persona`, `Organización ─apoya→ Programa`).
+* **Follow-up Inteligente:** Hermes detecta falta de respuesta tras 7 días y sugiere un borrador al humano (máximo 2 intentos, regla estricta anti-acoso).
+
+#### 🎓 ADMISIONES / POSTULACIONES (§11 Master SPEC)
+* **Misión:** Gestión integral del embudo de aspirantes para nuevos ingresos.
+* **Flujo:** `Interesados / Pre-registro público → Agendamiento de citas → Audiciones y pruebas de aptitud musical → Evaluación socioeconómica y asignación de becas → Formalización de matrícula`.
+
+#### 🛡️ RETENCIÓN & SEGUIMIENTO ACADÉMICO (§10 Master SPEC)
+* **Misión:** Detección y contención del riesgo de abandono estudiantil en el ámbito pedagógico.
+* **Flujo:** Monitoreo continuo de ausencias consecutivas (`AUS1d`: 3 faltas) $\longrightarrow$ Detección de alumno crítico $\longrightarrow$ Apertura de caso $\longrightarrow$ Protocolo de intervención familiar $\longrightarrow$ Trazabilidad de resultado.
+
+#### 🎼 REPERTORIO Y PARTICIDAD (§16 & §22 Master SPEC)
+* **Misión:** Gestión del activo musical de la orquesta y coros.
+* **Capacidades:** Catálogo de obras y compositores, archivo digital de partituras y particellas, desglose de compases, evaluación del progreso técnico individual y por fila/sección, y semáforo de riesgo de preparación previo a conciertos.
+
+#### 🎨 CREATIVE STUDIO (§19.5 Master SPEC)
+* **Misión:** Generador asistido de piezas gráficas y comunicaciones visuales para eventos oficiales.
+* **Flujo:** `Evento confirmado en SOI → Datos oficiales → Hermes genera Creative Brief → Prompt profesional → Modelo generativo → Flyer multicanal → Revisión humana obligatoria → Publicación`.
+* **Formatos:** Variantes para Instagram Post / Story, Facebook, WhatsApp, Pantalla 16:9 e Impresión (programas de mano oficiales).
+* **Restricciones Éticas y de Marca:** Colores sobrios institucionales (azul marino profundo + dorado/ámbar). **Prohibido generar rostros de niños con IA**; solo se emplean fotos reales de alumnos con consentimiento `fotos` vigente.
+
+#### 🤖 HERMES 2.0 (§8 Master SPEC)
+* **Misión:** Motor cognitivo proactivo bajo el paradigma **OBSERVE · REASON · RESEARCH · ACT**.
+* **Capacidades:** Cruza el estado interno de la institución con información externa; orquesta tareas entre departamentos; requiere autorización humana (*Human-in-the-loop*) para toda acción externa o sensible.
+* **Trazabilidad:** Registro estricto del ciclo `soi_eventos` $\longrightarrow$ `soi_tareas` $\longrightarrow$ `soi_resultados_accion`.
+
+#### 📢 COMUNICACIONES OMNICANAL & CAMPAIGN COMPOSER (§19 Master SPEC)
+* **Misión:** Distribución de mensajes y campañas segmentadas por canal (WhatsApp, email, SMS, push e interno).
+* **Gobernanza:** Gestión obligatoria de `consentimientos` y procesamiento estricto de `opt-out` (BAJA). Envíos por WhatsApp respetan topes diarios para prevenir bloqueos de cuenta.
 
 ---
 
-## 6. Stack Tecnológico de Referencia
+## 6. Principios de Arquitectura y Stack Tecnológico
 
+Astra tiene autonomía para diseñar la composición interna de los componentes, pero debe cumplir los siguientes **principios de arquitectura no negociables**:
+
+* **Separación Estricta de Capas:** Dominio, aplicación y presentación deben estar desacoplados.
+* **Componentes Visuales Puros:** Cero lógica de negocio, cálculos de tarifas o llamadas de red dentro de componentes de renderizado.
+* **Repositorios / DataAdapters Tipados:** Todo acceso a persistencia pasa por adaptadores que implementan interfaces TypeScript estrictas y proveen soporte 100% funcional al Modo Demo (JSON).
+* **Boundaries Modulares Claros:** Cada módulo o feature debe ser autónomo (*Deep Module*).
+* **Tipado Estricto de TypeScript:** Modo estricto sin concesiones; prohibido el uso indiscriminado de `any`.
+* **Query & Cache Layer:** Gestión asíncrona de estado de servidor con políticas deterministas de invalidación y caché (TanStack Query v5).
+* **Estrategia Integral de Pruebas:** Pruebas unitarias para lógica de dominio, pruebas de integración para adaptadores y pruebas de caracterización para preservar las invariantes de v1.
+* **Presupuesto de Rendimiento:** Tiempo de respuesta P95 < 200ms en interacciones clave; optimización de bundles para dispositivos móviles.
+
+### Stack de Referencia:
 * **Runtime & Bundler:** Node.js 20+ / Vite 6+
-* **Framework:** React 19 / TypeScript 5.5+
-* **Routing:** TanStack Router o React Router v6+ (Data APIs, HTML5 History)
-* **Data Fetching & Cache:** TanStack Query v5
-* **Estilizado:** Tailwind CSS v4 / Vanilla Extract / CSS Modules (alineado a tokens V9)
-* **Testing:** Vitest + Testing Library + Playwright (E2E)
-* **Persistencia:** Supabase Client encapsulado detrás de `DataAdapter` / `Repository`
-* **PWA:** Vite PWA Plugin con Workbox para Service Workers y Web Push
+* **Frontend:** React 19 / TypeScript 5.5+
+* **Routing:** Enrutamiento declarativo moderno (HTML5 History API, sin `#`, compatible con deep links y RBAC)
+* **Estilos:** Tailwind CSS v4 o módulos CSS estructurados basados en tokens semánticos institucionales.
 
 ---
 
-## 7. Plan de Ejecución Sugerido (Roadmap de Arranque)
+## 7. Roadmap de Ejecución por Fases (Phases / Epics)
 
-1. **Sprint 0: Fundación Greenfield**
-   - Inicializar proyecto React + TypeScript con Vite.
-   - Establecer Design System base (tokens, componentes botones, inputs, layout, modales).
-   - Configurar Shell Unificado y Router principal con RBAC.
-   - Crear capa base de `DataAdapter` con abstracción Supabase / Modo Demo.
-2. **Sprint 1: Experiencia Docente & Asistencias (Ergonomía v1 Elevada)**
-   - Reconstruir el flujo `Hoy` y `Calendario` hacia Asistencia.
-   - Implementar marcador rápido P/A/J con guardado resiliente y borrador en IndexedDB.
-   - Configurar selector de accesibilidad tipográfica.
-   - Probar con la suite de caracterización de v1.
-3. **Sprint 2: Padrón 360 & Cartera de Alumnos**
-   - Ficha integral del alumno.
-   - Conexión de cobranzas alumno-céntrica con la RPC de pago FIFO.
-4. **Sprint 3: Inventario, Lutería & Árbol Curricular**
-   - Adaptador para los 4.163 indicadores y gestión de instrumentos en comodato.
-5. **Sprint 4: Capacidades Estratégicas 2.0**
-   - Diseñar e integrar Radar, CRM y Creative Studio.
-   - Desacoplar Hermes 2.0 como orquestador cognitivo.
+Para abordar la complejidad de forma sostenible, el proyecto se organiza en **Fases / Epics**:
+
+```mermaid
+graph TD
+    P0[Phase 0: Foundation & Shell] --> P1[Phase 1: Teacher Experience]
+    P1 --> P2[Phase 2: Academic Core & Retention]
+    P2 --> P3[Phase 3: Finance & Assets]
+    P3 --> P4[Phase 4: Repertoire]
+    P4 --> P5[Phase 5: Communications & CRM]
+    P5 --> P6[Phase 6: Institutional Intelligence / Radar]
+    P6 --> P7[Phase 7: Hermes Proactive Layer]
+    P7 --> P8[Phase 8: Public, Creative & Expansion]
+```
+
+* **Phase 0 — Foundation:** Proyecto Greenfield React + TypeScript + Vite, Design System institucional base, Shell Unificado, routing declarativo con RBAC y arquitectura base de DataAdapters.
+* **Phase 1 — Teacher Experience:** Experiencia de aula: flujos Hoy y Calendario hacia Asistencia, marcador rápido P/A/J con guardado pesimista y borrador offline (IndexedDB), selector de accesibilidad tipográfica, banner posponible y Push Notifications en PWA.
+* **Phase 2 — Academic Core & Retention:** Padrón 360 del estudiante, módulo de retención estudiantil (seguimiento de casos críticos) y tablero visual de ausentismo preventivo V9.
+* **Phase 3 — Finance & Assets:** Ventanilla de cobranzas alumno-céntrica, motor FIFO transaccional, wallet de saldos a favor, inventario de instrumentos, contratos de comodato y taller de lutería.
+* **Phase 4 — Repertoire:** Catálogo de obras, particellas digitales, seguimiento de compases por sección y evaluación de riesgo de preparación para conciertos.
+* **Phase 5 — Communications & Institutional CRM:** CRM de organizaciones externas, contactos, acuerdos, compromisos, seguimiento externo inteligente, Campaign Composer y cola omnicanal con gestión de consentimientos.
+* **Phase 6 — Institutional Intelligence / Radar:** Radar de oportunidades externas, watchlist con detección de cambios por hash, scoring multicriterio (reglas + IA con citas) y matching con el perfil institucional de FUNEYCA.
+* **Phase 7 — Hermes Proactive Layer:** Motor Observe · Reason · Research · Act, orquestación de tareas interdepartamentales, integración agnóstica de LLMs y canales, y trazabilidad completa de eventos a resultados verificables.
+* **Phase 8 — Public, Creative & Expansion:** Creative Studio (generador asistido de flyers multicanal y programas de mano con revisión humana), portal web público, admisiones abiertas y kit de réplica para nuevos núcleos.
 
 ---
 
 ## 8. Tu Primera Acción
 
-Astra, lee en este orden estricto los documentos canónicos:
-1. [`docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md)
-2. [`docs/context-baseline/DATABASE_TRUTH.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/DATABASE_TRUTH.md)
-3. [`docs/context-baseline/DOMAIN_INVARIANTS.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/DOMAIN_INVARIANTS.md)
-4. [`docs/context-baseline/CHARACTERIZATION_TESTS.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/CHARACTERIZATION_TESTS.md)
+Astra, consulta en este orden estricto los documentos de verdad técnica:
+1. [`SOI_MASTER_SPEC_v2.0_UNIFICADO.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/SOI_MASTER_SPEC_v2.0_UNIFICADO.md) (Fuente canónica de alcance funcional).
+2. [`docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md) (Contrato vinculante de transición).
+3. [`docs/context-baseline/DATABASE_TRUTH.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/DATABASE_TRUTH.md) (Verdad empírica de PostgreSQL).
+4. [`docs/context-baseline/DOMAIN_INVARIANTS.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/DOMAIN_INVARIANTS.md) (Reglas de negocio e invariantes).
+5. [`docs/context-baseline/CHARACTERIZATION_TESTS.md`](file:///C:/Users/omare/dev/SOI_ElSistemaPC/docs/context-baseline/CHARACTERIZATION_TESTS.md) (Pruebas de comportamiento que deben preservarse).
 
-Comienza presentando tu propuesta de **Estructura del Proyecto y Shell Unificado de SOI 2.0**.
+Comienza presentando formalmente tu propuesta de arquitectura para la **Phase 0 — Foundation**:
+- Estructura de directorios del proyecto.
+- Arquitectura del Shell Unificado y Router con RBAC.
+- Estrategia del Design System y tokens.
+- Contrato base de los Repositorios/DataAdapters.
 
 **El escenario es tuyo. Construyamos el futuro de El Sistema.**

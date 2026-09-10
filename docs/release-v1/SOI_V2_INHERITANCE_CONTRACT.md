@@ -109,10 +109,13 @@ Astra y el equipo de frontend tienen plena autonomía para diseñar y programar:
 * **Formularios y Validación:** Experiencias de captura de datos robustas, con feedback inline, estados `loading`, `error`, `empty` y `success` deterministas.
 * **Experiencia Mobile-First y Ergonomía Táctil:** Optimización para pantallas táctiles de docentes y personal operativo en aula.
 * **Centro de Notificaciones y Actividad:** Feed institucional en tiempo real, claro, seguro contra inyecciones y accionable.
-* **Nuevas Capacidades de SOI 2.0:** Diseño e implementación sin ataduras de los módulos estratégicos:
-  - **Radar**: Detección proactiva de riesgos y deserción.
-  - **CRM**: Gestión de aspirantes, audiciones, becas y matrículas.
-  - **Creative Studio**: Generación de contenidos, repertorio y comunicaciones institucionales.
+* **Nuevas Capacidades de SOI 2.0:** Diseño e implementación con estricto apego al Master SPEC v2.0:
+  - **Radar / Inteligencia Institucional:** Detección de convocatorias externas, grants, patrocinios, alianzas, watchlists y scoring de oportunidades.
+  - **CRM Institucional:** Organizaciones externas, contactos, acuerdos, compromisos y relaciones.
+  - **Admisiones & Postulaciones:** Funnel de aspirantes, audiciones, becas y matrícula.
+  - **Retención & Seguimiento Académico:** Detección proactiva de casos críticos y prevención del abandono escolar.
+  - **Repertorio:** Catálogo de obras, particellas y seguimiento del avance técnico/orquestal.
+  - **Creative Studio:** Generación de piezas gráficas multicanal (flyers, programas de mano) asistida por IA con revisión humana.
 
 ---
 

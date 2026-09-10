@@ -4,16 +4,17 @@
 
 ## 1. MUST READ (Obligatorio antes de proponer cambios o código)
 
-1. `SOI_MASTER_SPEC_v2.0_UNIFICADO.md`: Hipótesis funcional y especificación maestra del objetivo.
-2. `AGENTS.md`: Reglas de gobernanza, DataAdapter Pattern, convenciones de commit en inglés y Deep Modules.
-3. `CONTEXT.md`: Lenguaje ubicuo estricto del dominio orquestal (prevenir deriva sinonímica).
-4. `docs/context-baseline/DATABASE_TRUTH.md`: La única fuente de verdad sobre las 216 tablas reales de PostgreSQL.
-5. `database/schema_reference_2026-09-10.sql`: DDL completo de PostgreSQL 17.6 (esquema canónico).
-6. `docs/context-baseline/TABLE_USAGE_GRAPH.md`: Relación empírica entre tablas y código fuente.
-7. `docs/context-baseline/VERIFICATION_MATRIX.md`: Contraste empírico de las afirmaciones del Master SPEC.
-8. `docs/context-baseline/AUTHORIZATION_TRUTH.md`: Políticas RLS, funciones definer y brechas de seguridad.
-9. `docs/context-baseline/CHARACTERIZATION_TESTS.md`: Batería de pruebas que definen el comportamiento que no debe romperse.
-10. `docs/context-baseline/PRESERVE_REFACTOR_REBUILD.md`: Decisiones arquitectónicas por componente.
+1. `docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md`: Contrato vinculante de transición técnica (cuadrante de 4 categorías y principio de desacoplamiento de persistencia).
+2. `SOI_MASTER_SPEC_v2.0_UNIFICADO.md`: Hipótesis funcional y especificación maestra del objetivo.
+3. `AGENTS.md`: Reglas de gobernanza, DataAdapter Pattern, convenciones de commit en inglés y Deep Modules.
+4. `CONTEXT.md`: Lenguaje ubicuo estricto del dominio orquestal (prevenir deriva sinonímica).
+5. `docs/context-baseline/DATABASE_TRUTH.md`: La única fuente de verdad sobre las 216 tablas reales de PostgreSQL.
+6. `database/schema_reference_2026-09-10.sql`: DDL completo de PostgreSQL 17.6 (esquema canónico).
+7. `docs/context-baseline/TABLE_USAGE_GRAPH.md`: Relación empírica entre tablas y código fuente.
+8. `docs/context-baseline/VERIFICATION_MATRIX.md`: Contraste empírico de las afirmaciones del Master SPEC.
+9. `docs/context-baseline/AUTHORIZATION_TRUTH.md`: Políticas RLS, funciones definer y brechas de seguridad.
+10. `docs/context-baseline/CHARACTERIZATION_TESTS.md`: Batería de pruebas que definen el comportamiento que no debe romperse.
+11. `docs/context-baseline/PRESERVE_REFACTOR_REBUILD.md`: Decisiones arquitectónicas por componente.
 
 ## 2. READ WHEN RELEVANT (Lectura bajo demanda por dominio)
 

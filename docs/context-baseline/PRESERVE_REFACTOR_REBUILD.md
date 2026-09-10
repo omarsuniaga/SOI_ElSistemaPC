@@ -4,8 +4,8 @@
 
 | COMPONENT | CURRENT QUALITY | USER VALUE | DATA VALUE | COUPLING | TESTABILITY | SECURITY | DECISION | RATIONALE |
 |---|---|---|---|---|---|---|---|---|
-| **Portal Maestros (Shell + Hoy + Asistencia)** | Alta | Muy Alto (Crítico) | Muy Alto | Medio | Alta (tests vitest) | Buena (RLS scoped) | `PRESERVE` | Es el núcleo operacional con mayor adopción del sistema. Funciona diariamente. |
-| **Módulo Asistencias (`src/modules/asistencias`)** | Alta | Muy Alto | Muy Alto | Bajo | Alta | Buena | `PRESERVE` | 2.812 registros; DataAdapter sólido; lógica clara. |
+| **Portal Maestros (Ergonomía de Asistencia)** | Alta | Muy Alto (Crítico) | Muy Alto | Medio | Alta (tests vitest) | Buena (RLS scoped) | `PRESERVE_CONTRACT` / `REBUILD_UI` | Preservar estrictamente el recorrido mental: identificar clase del día $\to$ marcar P/A/J $\to$ guardar con confirmación fiable. Rutas, componentes y shell se reconstruyen libremente en React + TS. |
+| **Módulo Asistencias (`src/modules/asistencias`)** | Alta | Muy Alto | Muy Alto | Bajo | Alta | Buena | `PRESERVE_DATA_AND_RULES` | 2.812 registros; DataAdapter sólido; lógica clara. Consumir vía repositorios/adapters. |
 | **Módulo Finanzas / Cobro FIFO** | Media | Alto | Alto | Alto (UI React aislada) | Media | Media | `PRESERVE_AND_REFACTOR` | Lógica de base de datos transaccional impecable, pero UI React desconectada del shell general. |
 | **Módulo Lutería Taller** | Media | Medio | Bajo (1 orden) | Bajo | Baja | Buena | `PRESERVE_AND_REFACTOR` | Estructura de diagnóstico y órdenes bien diseñada; requiere integración UX y uso real. |
 | **Motor Hermes / Event Spine** | Alta | Muy Alto | Muy Alto (2.579 eventos) | Medio | Alta | Alta | `PRESERVE_AND_IMPROVE` | Excelente observabilidad; requiere cerrar la Brecha B (vincular acciones a eventos). |

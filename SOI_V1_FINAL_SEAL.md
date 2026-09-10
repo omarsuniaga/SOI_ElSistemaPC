@@ -4,7 +4,8 @@
 FINAL_STATUS: GO
 RELEASE_VERSION: SOI v1.2 LTS
 BASE_AUDITED_COMMIT: 2803124f
-RELEASE_COMMIT: 0496a3449cb9d5a6396f4a8616238da2d80d285b
+RELEASE_CONTENT_COMMIT: 0496a3449cb9d5a6396f4a8616238da2d80d285b
+SEAL_COMMIT: 3a1ad56f22c4f2531b5cc36d0df54756b181f3a4
 RELEASE_TAG: soi-v1.2-lts
 PRODUCTION_DEPLOY_COMMIT: a3af9c53
 DATABASE_MIGRATION_HEAD: 20260908150000_fase0_portal_catalog_desactivacion.sql
@@ -36,8 +37,9 @@ Para eliminar cualquier ambigüedad técnica y documental:
 |---|---|---|
 | **`PRODUCTION_DEPLOY_COMMIT`** | `a3af9c53` | Commit actualmente en ejecución en Netlify (origin/master). |
 | **`BASE_AUDITED_COMMIT`** | `2803124f` | HEAD de `feat/planificacion-clases-rediseño`, donde se auditó la taxonomía de los 48 commits intermedios de saneamiento/seguridad. |
-| **`RELEASE_COMMIT`** | `16aa0456` | Commit canónico sellado en rama `release/soi-v1-lts` que contiene el código fuente estabilizado, parches C1, migraciones de hardening, tests de seguridad y todo el Evidence Pack. |
-| **`RELEASE_TAG`** | `soi-v1.2-lts` | Tag git anotado que apunta directamente a `16aa0456944e3b715400ec75816f200c18405f5f`. |
+| **`RELEASE_CONTENT_COMMIT`** | `0496a344` | Árbol funcional y documental congelado en rama `release/soi-v1-lts` que contiene el código fuente estabilizado, parches C1, migraciones de hardening, tests de seguridad y contrato 2.0. |
+| **`SEAL_COMMIT`** | `3a1ad56f` | Commit de cierre que sella formalmente el acta y los metadatos de release. |
+| **`RELEASE_TAG`** | `soi-v1.2-lts` | Tag git anotado canónico que apunta a `SEAL_COMMIT` (`3a1ad56f22c4f2531b5cc36d0df54756b181f3a4`). |
 
 ---
 

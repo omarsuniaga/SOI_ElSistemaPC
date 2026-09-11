@@ -1,0 +1,161 @@
+{
+  "policies": [
+    {
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM sesiones_clase s\n  WHERE ((s.id = asistencias.sesion_clase_id) AND ((s.maestro_id = maestro_actual()) OR maestro_en_clase(s.clase_id)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "asistencias",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros gestionan sus asistencias",
+      "schemaname": "public",
+      "with_check": "(tiene_permiso('asistencias:write'::text) AND (EXISTS ( SELECT 1\n   FROM sesiones_clase s\n  WHERE ((s.id = asistencias.sesion_clase_id) AND ((s.maestro_id = maestro_actual()) OR maestro_en_clase(s.clase_id))))))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "asistencias",
+      "permissive": "PERMISSIVE",
+      "policyname": "asistencias_admin_insert",
+      "schemaname": "public",
+      "with_check": "(es_admin() OR (EXISTS ( SELECT 1\n   FROM sesiones_clase s\n  WHERE ((s.id = asistencias.sesion_clase_id) AND ((s.maestro_id = maestro_actual()) OR maestro_en_clase(s.clase_id))))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(es_admin() OR (EXISTS ( SELECT 1\n   FROM sesiones_clase s\n  WHERE ((s.id = asistencias.sesion_clase_id) AND ((s.maestro_id = maestro_actual()) OR maestro_en_clase(s.clase_id))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "asistencias",
+      "permissive": "PERMISSIVE",
+      "policyname": "asistencias_admin_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(es_admin() OR (EXISTS ( SELECT 1\n   FROM sesiones_clase s\n  WHERE ((s.id = asistencias.sesion_clase_id) AND ((s.maestro_id = maestro_actual()) OR maestro_en_clase(s.clase_id))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "asistencias",
+      "permissive": "PERMISSIVE",
+      "policyname": "asistencias_admin_update",
+      "schemaname": "public",
+      "with_check": "(es_admin() OR (EXISTS ( SELECT 1\n   FROM sesiones_clase s\n  WHERE ((s.id = asistencias.sesion_clase_id) AND ((s.maestro_id = maestro_actual()) OR maestro_en_clase(s.clase_id))))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(( SELECT is_super_admin() AS is_super_admin) = true)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "asistencias",
+      "permissive": "PERMISSIVE",
+      "policyname": "asistencias_superadmin_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(maestro_id = maestro_actual())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros pueden actualizar sus propias sesiones",
+      "schemaname": "public",
+      "with_check": "(maestro_id = maestro_actual())"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros pueden crear sesiones de sus clases",
+      "schemaname": "public",
+      "with_check": "(maestro_en_clase(clase_id) AND (maestro_id = maestro_actual()))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((maestro_id = maestro_actual()) OR maestro_en_clase(clase_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros ven sus sesiones",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "sesiones_admin_insert",
+      "schemaname": "public",
+      "with_check": "(es_admin() OR (maestro_id = maestro_actual()) OR maestro_en_clase(clase_id))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(es_admin() OR (maestro_id = maestro_actual()) OR maestro_en_clase(clase_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "sesiones_admin_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(es_admin() OR (maestro_id = maestro_actual()) OR maestro_en_clase(clase_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "sesiones_admin_update",
+      "schemaname": "public",
+      "with_check": "(es_admin() OR (maestro_id = maestro_actual()) OR maestro_en_clase(clase_id))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(maestro_id = maestro_actual())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "sesiones_clase_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(( SELECT is_super_admin() AS is_super_admin) = true)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "sesiones_clase",
+      "permissive": "PERMISSIVE",
+      "policyname": "sesiones_superadmin_delete",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "normalizer": "CREATE OR REPLACE FUNCTION public.normalizar_tel_rd(raw text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN d ~ '^1(809|829|849)[0-9]{7}$' THEN '+' || d\n    WHEN d ~ '^(809|829|849)[0-9]{7}$'  THEN '+1' || d\n    ELSE NULL\n  END\n  FROM (SELECT regexp_replace(coalesce(raw, ''), '[^0-9]', '', 'g') AS d) x\n$function$\n"
+}

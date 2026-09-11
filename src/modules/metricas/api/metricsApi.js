@@ -609,13 +609,13 @@ export async function getResumenCierreAcademico({ periodoId = null, fechaInicio,
     : 0
 
   return {
-    totales: {
-      clases: totalClases,
-      alumnos: alumnos.length,
-      contenidosTrabajados: totalContenido,
-      presentes: totalPresentes,
-      ausentes: totalAusentes,
-      justificados: totalJustificados,
+    resumen: {
+      totalClases: totalClases,
+      totalAlumnos: alumnos.length,
+      totalContenido: totalContenido,
+      totalPresentes: totalPresentes,
+      totalAusentes: totalAusentes,
+      totalJustificados: totalJustificados,
       tasaAsistenciaGlobal,
     },
     alumnos,
@@ -624,15 +624,15 @@ export async function getResumenCierreAcademico({ periodoId = null, fechaInicio,
 }
 
 export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin, observaciones = '', cerradoPor = null }) {
-  const resumen = await getResumenCierreAcademico({ periodoId, fechaInicio, fechaFin })
+  const cierre = await getResumenCierreAcademico({ periodoId, fechaInicio, fechaFin })
 
   const snapshot = {
     fechaCierre: new Date().toISOString(),
     periodoId,
     rango: { fechaInicio, fechaFin },
-    totales: resumen.totales,
-    alumnos: resumen.alumnos,
-    clases: resumen.clases,
+    resumen: cierre.resumen,
+    alumnos: cierre.alumnos,
+    clases: cierre.clases,
   }
 
   const { data: auditRow, error: auditError } = await supabase
@@ -644,7 +644,7 @@ export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin,
         fecha_fin: fechaFin,
         cerrado_por: cerradoPor,
         observaciones: observaciones?.trim() || null,
-        resumen: resumen.totales,
+        resumen: cierre.resumen,
         snapshot,
       },
     ])
@@ -666,7 +666,7 @@ export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin,
   return {
     cierreId: auditRow?.[0]?.id || null,
     snapshot,
-    resumen: resumen.totales,
+    resumen: cierre.resumen,
   }
 }
 

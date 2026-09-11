@@ -1,0 +1,153 @@
+{
+  "students": [
+    {
+      "id": "demo-alumno-1",
+      "name": "Alba Demo",
+      "instrument": "Violín",
+      "level": "N1",
+      "classId": "demo-clase-1",
+      "absences": 0,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-2",
+      "name": "Bruno Demo",
+      "instrument": "Viola",
+      "level": "N2",
+      "classId": "demo-clase-2",
+      "absences": 3,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-3",
+      "name": "Clara Demo",
+      "instrument": "Coro",
+      "level": "Inicial",
+      "classId": "demo-clase-3",
+      "absences": 0,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-4",
+      "name": "Diego Demo",
+      "instrument": "Violín",
+      "level": "N1",
+      "classId": null,
+      "absences": 0,
+      "contactVerified": false,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-5",
+      "name": "Elena Demo",
+      "instrument": "Viola",
+      "level": "N2",
+      "classId": "demo-clase-2",
+      "absences": 1,
+      "contactVerified": false,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-6",
+      "name": "Fabio Demo",
+      "instrument": "Violín",
+      "level": "N1",
+      "classId": "demo-clase-1",
+      "absences": 2,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-7",
+      "name": "Gabriela Demo",
+      "instrument": "Coro",
+      "level": "Inicial",
+      "classId": null,
+      "absences": 0,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-8",
+      "name": "Hugo Demo",
+      "instrument": "Violín",
+      "level": "N1",
+      "classId": "demo-clase-1",
+      "absences": 0,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-9",
+      "name": "Inés Demo",
+      "instrument": "Viola",
+      "level": "N2",
+      "classId": "demo-clase-2",
+      "absences": 0,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-10",
+      "name": "Joel Demo",
+      "instrument": "Coro",
+      "level": "Inicial",
+      "classId": "demo-clase-3",
+      "absences": 0,
+      "contactVerified": false,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-11",
+      "name": "Lara Demo",
+      "instrument": "Violín",
+      "level": "N1",
+      "classId": "demo-clase-1",
+      "absences": 0,
+      "contactVerified": true,
+      "status": "activo"
+    },
+    {
+      "id": "demo-alumno-12",
+      "name": "Mateo Demo",
+      "instrument": "Viola",
+      "level": "N2",
+      "classId": null,
+      "absences": 0,
+      "contactVerified": true,
+      "status": "inactivo"
+    }
+  ],
+  "classes": [
+    {
+      "id": "demo-clase-1",
+      "name": "Violín · N1",
+      "teacher": "Maestra de demostración A",
+      "day": "Lunes",
+      "time": "15:00–16:00",
+      "room": "Salón 1",
+      "capacity": 15
+    },
+    {
+      "id": "demo-clase-2",
+      "name": "Viola · N2",
+      "teacher": "Maestro de demostración B",
+      "day": "Martes",
+      "time": "16:00–17:00",
+      "room": "Salón 2",
+      "capacity": 12
+    },
+    {
+      "id": "demo-clase-3",
+      "name": "Coro infantil",
+      "teacher": "Maestra de demostración C",
+      "day": "Miércoles",
+      "time": "15:00–16:00",
+      "room": "Salón de ensayo",
+      "capacity": 30
+    }
+  ]
+}

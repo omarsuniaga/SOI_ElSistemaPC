@@ -75,7 +75,9 @@ describe('WhatsApp Gateway — Telemetría Anti-Ban, Heartbeat y Cola Outbox', (
 
     expect(initialized).toBeTruthy()
     expect(initialized.activo).toBe(true)
-    expect(initialized.instance_name).toBe('soi-main')
+    // SDD whatsapp-gateway-multidepto · F1: la instancia por defecto es la de ADM.
+    expect(initialized.instance_name).toBe('adm-gateway')
+    expect(initialized.departamento).toBe('ADM')
     expect(initialized.warmup_desde).toBe(new Date().toISOString().slice(0, 10))
   })
 })

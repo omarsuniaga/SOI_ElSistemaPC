@@ -56,3 +56,36 @@ Este archivo es la fuente de verdad para humanos y agentes de IA (Claude, Gemini
 - **Domain Modeling (`.agent/skills/domain-modeling`):** Respetar el vocabulario canónico de `CONTEXT.md` y prevenir la deriva sinonímica en código y UI.
 - **Codebase Design (`.agent/skills/codebase-design`):** Construir módulos profundos sobre costuras (*seams*) limpias que aíslen la UI de la persistencia.
 - **Diagnosing Bugs (`.agent/skills/diagnosing-bugs`):** Ciclo estricto de diagnóstico ante fallos: escribir primero un test fallando en Vitest (rojo) $\rightarrow$ formular hipótesis técnica $\rightarrow$ aplicar corrección quirúrgica $\rightarrow$ verificar resolución (verde) y prevenir regresiones.
+
+## 8. Política Estructural (VINCULANTE)
+
+Fuente completa: **[`docs/POLITICA_DE_DESARROLLO.md`](docs/POLITICA_DE_DESARROLLO.md)**.
+Origen del diagnóstico: [`docs/SOI_RUTA_A_REFERENCIA.md`](docs/SOI_RUTA_A_REFERENCIA.md).
+
+En septiembre de 2026 se midió el estado real: **247 tablas en producción, 123 completamente vacías**.
+El problema de SOI no es funcionalidad faltante sino **capacidad construida y no cerrada**.
+Estas seis reglas existen para que eso no se repita, y para empujar hacia una plataforma
+replicable en otras organizaciones musicales.
+
+- **R1 · Toda tabla nace con escritor y con fecha de primera fila.** La migración y el código
+  que escribe en ella viajan en el MISMO PR. Además, el PR declara quién produce la primera
+  fila real y cuándo. Si el escritor llega después, la tabla llega después.
+- **R2 · Cerrar el bucle.** Lo que detecta algo registra la acción y su resultado; lo que define
+  un catálogo incluye su captura de uso. Prohibido entregar la mitad emisora sin la receptora.
+- **R3 · Multi-institución desde el día uno.** Toda tabla de dominio nueva lleva `institucion_id`,
+  o una exención declarada en la migración: `-- policy:exento-institucion_id razón: <por qué>`.
+- **R4 · Configuración, no esquema.** Lo particular de FUNEYCA se configura; lo común se
+  estandariza. Prueba: ¿otra organización lo usaría cambiando datos, sin tocar código?
+- **R5 · Todo número trazable hasta su evidencia.** Ningún indicador se publica sin drill-down
+  a sus registros de origen.
+- **R6 · La persona decide; el sistema recomienda.** Ninguna automatización expulsa, sanciona
+  ni etiqueta a un alumno. Toda recomendación de Hermes lleva sus seis campos (qué ocurrió,
+  qué evidencia, por qué importa, qué acción, quién decide, cuándo revisar). Ninguna
+  comunicación sale sin consentimiento verificable.
+
+**Aplicación — trinquete, no muro.** El repo arrastra deuda; la política no exige perfección,
+exige **no retroceder**. `npm run policy:check` falla solo si la deuda **crece** respecto de
+`scripts/.structural-baseline.json`. Está integrada en `scripts/soi-verify-gate.sh`.
+
+**Excepciones** se declaran en el PR: `POLICY-EXCEPTION R<n>: <qué> — <por qué> — <cómo y cuándo se paga>`.
+Una excepción sin plan de pago es deuda silenciosa — el mecanismo exacto que produjo las 123 tablas vacías.

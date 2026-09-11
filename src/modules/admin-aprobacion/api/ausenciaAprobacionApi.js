@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js';
+import { mutateOne } from '../../../lib/supabaseMutation.js';
 
 async function _enriquecerConDatosDocentes(ausencias) {
   if (!ausencias || ausencias.length === 0) return [];
@@ -136,31 +137,21 @@ export async function obtenerHistorialAusencias() {
 }
 
 async function actualizarDecisionAusencia(id, estado, decisionNotas) {
-  console.log('[ausenciaAprobacionApi] Actualizando ausencia:', { id, estado, decisionNotas });
-
-  // Actualizar solo el estado sin depender de columnas inexistentes
-  let { data, error } = await supabase
-    .from('ausencias_maestros')
-    .update({ estado })
-    .eq('id', id);
-
-  // Si id es string numérico, intentar con Number(id)
-  if (error && !isNaN(Number(id))) {
-    const retry = await supabase
+  // `decision_notas` y `decidido_en` existen en la tabla real (migración
+  // 20260519_add_ausencia_workflow_fields). `mutateOne` fuerza `.select()` y
+  // lanza si la mutación no afecta ninguna fila (id inexistente o RLS),
+  // evitando el no-op silencioso que reportaba éxito falso (LC1).
+  return mutateOne(
+    supabase
       .from('ausencias_maestros')
-      .update({ estado })
-      .eq('id', Number(id));
-    if (!retry.error) {
-      return { id, estado };
-    }
-  }
-
-  if (error) {
-    console.error('[ausenciaAprobacionApi] Error en actualizarDecisionAusencia:', error);
-    throw error;
-  }
-
-  return { id, estado };
+      .update({
+        estado,
+        decision_notas: decisionNotas || null,
+        decidido_en: new Date().toISOString(),
+      })
+      .eq('id', id),
+    { action: estado === 'aprobada' ? 'aprobar ausencia' : 'rechazar ausencia' },
+  );
 }
 
 export function aprobarAusencia(id, decisionNotas = '') {

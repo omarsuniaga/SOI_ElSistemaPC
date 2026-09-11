@@ -10,6 +10,7 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
+import { mutateOne } from '../../../lib/supabaseMutation.js'
 
 const ESTADOS_VALIDOS = ['borrador', 'activo', 'archivado']
 
@@ -35,10 +36,10 @@ export async function asignarRutaAClase(claseId, routeVersionId) {
     .maybeSingle()
 
   if (existing?.id) {
-    await supabase
-      .from('class_curriculum_plan')
-      .update({ estado: 'archivado' })
-      .eq('id', existing.id)
+    await mutateOne(
+      supabase.from('class_curriculum_plan').update({ estado: 'archivado' }).eq('id', existing.id),
+      { action: 'archivar plan curricular previo' },
+    )
   }
 
   // Crear nueva ruta activa

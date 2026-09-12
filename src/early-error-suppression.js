@@ -87,6 +87,29 @@ window.addEventListener('error', (event) => {
   }
 }, true) // Capture phase to intercept early
 
+// ============================================
+// Wrap requestIdleCallback to catch unhandled extension errors
+// ============================================
+if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+  const originalRequestIdleCallback = window.requestIdleCallback
+  window.requestIdleCallback = function (callback, options) {
+    return originalRequestIdleCallback.call(
+      window,
+      function (deadline) {
+        try {
+          return callback(deadline)
+        } catch (err) {
+          if (isSuppressed(err)) {
+            return
+          }
+          throw err
+        }
+      },
+      options,
+    )
+  }
+}
+
 // NOTE: window.fetch monkey-patch REMOVED — was silently returning null on
 // suppressed errors, causing cascading bugs. Console/event suppression kept
 // for browser extension noise (chrome-extension://, content.js, polyfill).

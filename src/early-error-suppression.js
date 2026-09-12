@@ -23,6 +23,7 @@ const SUPPRESSED_PATTERNS = [
   // (reading 'startTime')" en reportAllChanges al navegar dentro del SPA.
   // No es código de la app (acá web-vitals se usa con PerformanceObserver a mano).
   'reportAllChanges',
+  "reading 'starttime'",
 ]
 
 /**

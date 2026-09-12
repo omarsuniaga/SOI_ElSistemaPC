@@ -791,17 +791,17 @@ function _renderClaseCardV2(c) {
 
         <!-- Footer / Acciones Rápidas -->
         <div class="clase-card-v2-footer">
-          <div class="d-flex gap-1 align-items-center min-w-0">
-            <button class="btn btn-outline-primary btn-sm py-1 px-2 d-inline-flex align-items-center" 
-                    data-action="ver-nomina" 
+          <div class="d-flex gap-1 align-items-center min-w-0" style="flex: 1 1 auto;">
+            <button class="btn btn-outline-primary btn-sm py-1 px-2 d-inline-flex align-items-center min-w-0"
+                    data-action="ver-nomina"
                     data-id="${c.id}"
                     style="font-size:0.74rem;"
                     title="Ver nómina de inscritos">
-              <i class="bi bi-people-fill me-1"></i>Nómina <span class="badge bg-primary-subtle text-primary border ms-1 px-1 py-0" style="font-size:0.68rem;">${totalAlumnos}</span>
+              <i class="bi bi-people-fill me-1 flex-shrink-0"></i><span class="text-truncate">Nómina</span> <span class="badge bg-primary-subtle text-primary border ms-1 px-1 py-0 flex-shrink-0" style="font-size:0.68rem;">${totalAlumnos}</span>
             </button>
           </div>
 
-          <div class="d-flex gap-1 align-items-center flex-shrink-0">
+          <div class="d-flex flex-wrap gap-1 align-items-center justify-content-end flex-shrink-0">
             <button class="btn btn-outline-secondary btn-sm clase-btn-action-icon"
                     data-action="pdf-clase"
                     data-id="${c.id}"

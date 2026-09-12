@@ -1081,8 +1081,11 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
           ? `Copia creada${originalSuspendida ? ' y original suspendida' : ''}. Queda en revisión hasta verificar maestro, salón y nómina.`
           : 'Clase creada con éxito.'
     )
+    // onSuccess/onSaved son alias del mismo callback de recarga en todos los
+    // call sites; invocar ambos duplicaba la recarga completa de la vista
+    // (5 queries + motor de conflictos) en cada guardado.
     if (_options.onSuccess) await _options.onSuccess()
-    if (_options.onSaved) await _options.onSaved()
+    else if (_options.onSaved) await _options.onSaved()
     return true
   } catch (err) {
     console.error('[claseModal] Error al guardar clase:', err)

@@ -1344,11 +1344,21 @@ body.dark-mode .clase-card-v2--inactiva {
 
 .clase-card-v2-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 0.35rem;
   padding-top: 0.55rem;
   border-top: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.08));
+  max-width: 100%;
+}
+
+.clase-card-v2-footer > div {
+  min-width: 0;
+}
+
+.clase-card-v2-footer .btn {
+  min-width: 0;
 }
 
 .clase-btn-action-icon {

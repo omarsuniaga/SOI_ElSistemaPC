@@ -1,6 +1,22 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { config } from '../../../core/config/config.js'
 import { timeToMinutes } from '../utils/clasesUtils.js'
 import { obtenerAsistenciasPorClasesFecha } from '../../asistencias/api/asistenciasApi.js'
+import { obtenerClasesDelDiaMock, justificarAusenciaMock } from './clasesHoyMock.js'
+
+/**
+ * Evalúa si el modo demo está activo (por flag de config, localStorage o ausencia de cliente Supabase).
+ * @returns {boolean}
+ */
+export function isDemoModeActive() {
+  if (config.isDemoMode) return true
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('demo_mode') === 'true') {
+      return true
+    }
+  } catch {}
+  return !supabase
+}
 
 // Valores reales de clase_horarios.dia (text con CHECK, acentuados) —
 // ver supabase/migrations 20260622_hermes_core / schema_reference.sql:215-227.
@@ -107,8 +123,27 @@ function estadoTemporal(horaInicio, horaFin, ahoraMin) {
  * salones ⋈ maestros, con nómina de alumnos matriculados por clase y KPIs
  * agregados. `diaFiltro` debe ser uno de los values de DIAS_SEMANA
  * (acentuado); si se omite usa el día real de hoy.
+ *
+ * Implementa el patrón DataAdapter: delega a Mock en modo demo o ante
+ * fallos de red con Supabase.
  */
 export async function obtenerClasesDelDia(diaFiltro = null) {
+  if (isDemoModeActive()) {
+    return await obtenerClasesDelDiaMock(diaFiltro)
+  }
+
+  try {
+    return await obtenerClasesDelDiaSupabase(diaFiltro)
+  } catch (error) {
+    console.warn(
+      '[clasesHoyApi] Fallo al consultar Supabase, activando fallback a Mock DataAdapter:',
+      error?.message || error,
+    )
+    return await obtenerClasesDelDiaMock(diaFiltro)
+  }
+}
+
+async function obtenerClasesDelDiaSupabase(diaFiltro = null) {
   const dia = diaFiltro || obtenerDiaActual()
 
   const { data: horarios, error } = await supabase
@@ -225,20 +260,36 @@ export async function obtenerClasesDelDia(diaFiltro = null) {
 }
 
 /**
- * Justifica la ausencia de un alumno delegando la persistencia a la RPC canónica.
+ * Justifica la ausencia de un alumno delegando la persistencia a la RPC canónica
+ * o al Mock DataAdapter en modo demo / fallback.
  */
 export async function justificarAusencia({ claseId, alumnoId, fecha, motivo }) {
-  const { data, error } = await supabase.rpc('registrar_justificacion_asistencia', {
-    p_clase_id: claseId,
-    p_alumno_id: alumnoId,
-    p_fecha: fecha,
-    p_motivo: motivo,
-  })
-
-  if (error) {
-    throw new Error(`No se pudo justificar la ausencia: ${error.message}`)
+  if (isDemoModeActive()) {
+    return await justificarAusenciaMock({ claseId, alumnoId, fecha, motivo })
   }
 
-  return data
+  try {
+    const { data, error } = await supabase.rpc('registrar_justificacion_asistencia', {
+      p_clase_id: claseId,
+      p_alumno_id: alumnoId,
+      p_fecha: fecha,
+      p_motivo: motivo,
+    })
+
+    if (error) {
+      throw new Error(`No se pudo justificar la ausencia: ${error.message}`)
+    }
+
+    return data
+  } catch (error) {
+    if (error?.message?.includes('fetch') || error?.name === 'TypeError') {
+      console.warn(
+        '[clasesHoyApi] Error de red en justificarAusencia, recurriendo a Mock DataAdapter:',
+        error?.message,
+      )
+      return await justificarAusenciaMock({ claseId, alumnoId, fecha, motivo })
+    }
+    throw error
+  }
 }
 

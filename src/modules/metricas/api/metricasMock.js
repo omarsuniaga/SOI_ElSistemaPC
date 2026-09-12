@@ -48,7 +48,7 @@ export async function getEstadisticasPeriodoActivo() {
 
 export async function getResumenCierreAcademico(params) {
   return {
-    totales: { clases: 120, alumnos: 270, contenidosTrabajados: 450, presentes: 1890, ausentes: 90, justificados: 60, tasaAsistenciaGlobal: 92.8 },
+    resumen: { totalClases: 120, totalAlumnos: 270, totalContenido: 450, totalPresentes: 1890, totalAusentes: 90, totalJustificados: 60, tasaAsistenciaGlobal: 92.8 },
     alumnos: [],
     clases: []
   }

@@ -609,13 +609,13 @@ export async function getResumenCierreAcademico({ periodoId = null, fechaInicio,
     : 0
 
   return {
-    totales: {
-      clases: totalClases,
-      alumnos: alumnos.length,
-      contenidosTrabajados: totalContenido,
-      presentes: totalPresentes,
-      ausentes: totalAusentes,
-      justificados: totalJustificados,
+    resumen: {
+      totalClases: totalClases,
+      totalAlumnos: alumnos.length,
+      totalContenido: totalContenido,
+      totalPresentes: totalPresentes,
+      totalAusentes: totalAusentes,
+      totalJustificados: totalJustificados,
       tasaAsistenciaGlobal,
     },
     alumnos,

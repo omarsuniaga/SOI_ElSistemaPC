@@ -623,51 +623,20 @@ export async function getResumenCierreAcademico({ periodoId = null, fechaInicio,
   }
 }
 
-export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin, observaciones = '', cerradoPor = null }) {
-  const cierre = await getResumenCierreAcademico({ periodoId, fechaInicio, fechaFin })
+export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin, observaciones = '' }) {
+  const { data, error } = await supabase.rpc('fn_cerrar_periodo_academico', {
+    p_periodo_id: periodoId,
+    p_fecha_inicio: fechaInicio ?? null,
+    p_fecha_fin: fechaFin ?? null,
+    p_observaciones: observaciones?.trim() || null,
+    p_forzar: false,
+  })
 
-  const snapshot = {
-    fechaCierre: new Date().toISOString(),
-    periodoId,
-    rango: { fechaInicio, fechaFin },
-    resumen: cierre.resumen,
-    alumnos: cierre.alumnos,
-    clases: cierre.clases,
+  if (error) throw new Error('No se pudo cerrar el período: ' + error.message)
+  if (data?.ok !== true || !data.snapshot_id) {
+    throw new Error('No se pudo confirmar el cierre. Consulte el historial antes de reintentar.')
   }
-
-  const { data: auditRow, error: auditError } = await supabase
-    .from('periodos_cierre_auditoria')
-    .insert([
-      {
-        periodo_id: periodoId,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-        cerrado_por: cerradoPor,
-        observaciones: observaciones?.trim() || null,
-        resumen: cierre.resumen,
-        snapshot,
-      },
-    ])
-    .select()
-
-  if (auditError) throw new Error('No se pudo registrar la auditoría de cierre: ' + auditError.message)
-
-  const { error: periodoError } = await supabase
-    .from('periodos')
-    .update({
-      cerrado: true,
-      activo: false,
-      cerrado_at: new Date().toISOString(),
-    })
-    .eq('id', periodoId)
-
-  if (periodoError) throw new Error('No se pudo actualizar el estado del período: ' + periodoError.message)
-
-  return {
-    cierreId: auditRow?.[0]?.id || null,
-    snapshot,
-    resumen: cierre.resumen,
-  }
+  return { cierreId: data.snapshot_id, snapshotId: data.snapshot_id, ...data }
 }
 
 export async function getHistorialCierresPeriodos(limitOrOptions = 20) {

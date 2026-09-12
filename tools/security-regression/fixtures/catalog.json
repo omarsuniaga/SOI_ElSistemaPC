@@ -1,0 +1,520 @@
+{
+  "policies": [
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alertas_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "alertas_log_authenticated_all",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM alumnos_clases ac\n  WHERE ((ac.alumno_id = alumnos.id) AND maestro_en_clase(ac.clase_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros ven alumnos de sus clases",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_admin_insert",
+      "schemaname": "public",
+      "with_check": "(( SELECT is_admin() AS is_admin) = true)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(es_admin() OR (EXISTS ( SELECT 1\n   FROM (alumnos_clases ac\n     JOIN clases c ON ((c.id = ac.clase_id)))\n  WHERE ((ac.alumno_id = alumnos.id) AND (c.maestro_principal_id = auth.uid())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(( SELECT is_admin() AS is_admin) = true)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_admin_update",
+      "schemaname": "public",
+      "with_check": "(( SELECT is_admin() AS is_admin) = true)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_insert_authenticated",
+      "schemaname": "public",
+      "with_check": "(maestro_actual() IS NOT NULL)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_read_all",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(( SELECT is_super_admin() AS is_super_admin) = true)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_superadmin_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_teacher_insert",
+      "schemaname": "public",
+      "with_check": "(( SELECT teacher_can_create_students() AS teacher_can_create_students) = true)"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(es_admin() OR (EXISTS ( SELECT 1\n   FROM (alumnos_clases ac\n     JOIN clases c ON ((c.id = ac.clase_id)))\n  WHERE ((ac.alumno_id = alumnos.id) AND (c.maestro_principal_id = auth.uid())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_update_own",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "maestro_en_clase(clase_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos_clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros ven sus inscripciones",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "es_admin()",
+      "roles": [
+        "public"
+      ],
+      "tablename": "alumnos_clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_clases_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((( SELECT is_admin() AS is_admin) = true) OR ((( SELECT profile_is_active() AS profile_is_active) = true) AND ((( SELECT is_teacher() AS is_teacher) = true) AND tiene_permiso('clases:enroll'::text) AND maestro_en_clase(clase_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos_clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_clases_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos_clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_clases_insert",
+      "schemaname": "public",
+      "with_check": "((( SELECT is_admin() AS is_admin) = true) OR ((( SELECT profile_is_active() AS profile_is_active) = true) AND ((( SELECT is_teacher() AS is_teacher) = true) AND tiene_permiso('clases:enroll'::text) AND maestro_en_clase(clase_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "alumnos_clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_clases_read_all",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "((( SELECT is_admin() AS is_admin) = true) OR ((( SELECT profile_is_active() AS profile_is_active) = true) AND ((( SELECT is_teacher() AS is_teacher) = true) AND tiene_permiso('clases:enroll'::text) AND maestro_en_clase(clase_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "alumnos_clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "alumnos_clases_update",
+      "schemaname": "public",
+      "with_check": "((( SELECT is_admin() AS is_admin) = true) OR ((( SELECT profile_is_active() AS profile_is_active) = true) AND ((( SELECT is_teacher() AS is_teacher) = true) AND tiene_permiso('clases:enroll'::text) AND maestro_en_clase(clase_id))))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir actualizar clase_horarios",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "public"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir crear clase_horarios",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir eliminar clase_horarios",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "es_admin()",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "clase_horarios_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "maestro_en_clase(clase_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "clase_horarios_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "clase_horarios_insert",
+      "schemaname": "public",
+      "with_check": "maestro_en_clase(clase_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "maestro_en_clase(clase_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "clase_horarios_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "maestro_en_clase(clase_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "clase_horarios",
+      "permissive": "PERMISSIVE",
+      "policyname": "clase_horarios_update",
+      "schemaname": "public",
+      "with_check": "maestro_en_clase(clase_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((maestro_principal_id = maestro_actual()) OR (maestro_suplente_id = maestro_actual()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "Maestros ven sus clases",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir actualizar clases",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "public"
+      ],
+      "tablename": "clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir crear clases",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir eliminar clases",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "Permitir leer todas las clases",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "es_admin()",
+      "roles": [
+        "public"
+      ],
+      "tablename": "clases",
+      "permissive": "PERMISSIVE",
+      "policyname": "clases_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "public"
+      ],
+      "tablename": "conversaciones_whatsapp",
+      "permissive": "PERMISSIVE",
+      "policyname": "allow_all_conversaciones",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(id = auth.uid())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "Usuarios ven su propio perfil",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "profiles_admin_insert",
+      "schemaname": "public",
+      "with_check": "es_admin()"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "es_admin()",
+      "roles": [
+        "public"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "profiles_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "es_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "profiles_admin_update",
+      "schemaname": "public",
+      "with_check": "es_admin()"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(( SELECT is_super_admin() AS is_super_admin) = true)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "profiles_superadmin_delete",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "es_admin",
+      "signature": "es_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION public.es_admin()\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nDECLARE\r\n  v_role TEXT;\r\nBEGIN\r\n  SELECT p.rol INTO v_role\r\n  FROM public.profiles p\r\n  WHERE p.id = auth.uid();\r\n  RETURN COALESCE(v_role IN ('admin', 'inventarista'), FALSE);\r\nEND;\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "fn_cerrar_periodo_academico",
+      "signature": "fn_cerrar_periodo_academico(uuid,date,date,uuid,text,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_cerrar_periodo_academico(p_periodo_id uuid, p_fecha_inicio date DEFAULT NULL::date, p_fecha_fin date DEFAULT NULL::date, p_cerrado_por uuid DEFAULT NULL::uuid, p_observaciones text DEFAULT NULL::text, p_forzar boolean DEFAULT false)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_periodo      record;\n  v_fecha_inicio date;\n  v_fecha_fin    date;\n  v_validacion   jsonb;\n  v_snapshot     jsonb;\n  v_resumen      jsonb;\n  v_result       jsonb;\nBEGIN\n  SELECT * INTO v_periodo FROM public.periodos WHERE id = p_periodo_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Periodo no encontrado';\n  END IF;\n\n  IF v_periodo.cerrado THEN\n    RAISE EXCEPTION 'El periodo ya esta cerrado';\n  END IF;\n\n  v_fecha_inicio := coalesce(p_fecha_inicio, v_periodo.fecha_inicio);\n  v_fecha_fin    := coalesce(p_fecha_fin,    v_periodo.fecha_fin);\n\n  v_validacion := public.fn_validar_cierre_periodo(p_periodo_id);\n\n  IF NOT (v_validacion->>'puede_cerrar')::boolean THEN\n    IF NOT p_forzar THEN\n      RAISE EXCEPTION 'No se puede cerrar: % de % sesiones sin registro completo (semaforo %). Corrija los registros o cierre con justificacion.',\n        v_validacion->>'incompletas', v_validacion->>'total_sesiones', v_validacion->>'semaforo';\n    END IF;\n\n    IF p_observaciones IS NULL OR btrim(p_observaciones) = '' THEN\n      RAISE EXCEPTION 'El cierre forzado requiere una justificacion escrita.';\n    END IF;\n  END IF;\n\n  SELECT jsonb_build_object(\n    'totalClases', count(distinct sc.clase_id),\n    'totalSesiones', count(*),\n    'totalAsistencias', count(a.id),\n    'totalPresentes', count(a.id) filter (where a.estado = 'presente'),\n    'totalAusentes', count(a.id) filter (where a.estado = 'ausente'),\n    'totalJustificados', count(a.id) filter (where a.estado = 'justificado'),\n    'tasaGlobalAsistencia',\n      case when count(a.id) > 0 then\n        round(((count(a.id) filter (where a.estado in ('presente','justificado')))::numeric\n               / count(a.id)::numeric) * 100, 2)\n      else null end\n  )\n  INTO v_resumen\n  FROM public.sesiones_clase sc\n  LEFT JOIN public.asistencias a ON a.sesion_clase_id = sc.id\n  WHERE sc.fecha BETWEEN v_fecha_inicio AND v_fecha_fin\n    AND sc.estado <> 'cancelada';\n\n  SELECT jsonb_build_object(\n    'resumen', v_resumen,\n    'validacion', v_validacion,\n    'cierre_forzado', NOT (v_validacion->>'puede_cerrar')::boolean,\n    'clases', coalesce(jsonb_agg(distinct jsonb_build_object(\n      'clase_id', sc.clase_id, 'sesion_id', sc.id,\n      'fecha', sc.fecha, 'estado', sc.estado)), '[]'::jsonb)\n  )\n  INTO v_snapshot\n  FROM public.sesiones_clase sc\n  WHERE sc.fecha BETWEEN v_fecha_inicio AND v_fecha_fin\n    AND sc.estado <> 'cancelada';\n\n  UPDATE public.periodos\n     SET cerrado = true, cerrado_at = now(), cerrado_por = p_cerrado_por,\n         observaciones_cierre = p_observaciones, updated_at = now()\n   WHERE id = p_periodo_id;\n\n  INSERT INTO public.periodos_cierre_auditoria (\n    periodo_id, fecha_inicio, fecha_fin, cerrado_por, observaciones, resumen, snapshot\n  ) VALUES (\n    p_periodo_id, v_fecha_inicio, v_fecha_fin, p_cerrado_por, p_observaciones,\n    v_resumen, v_snapshot\n  )\n  RETURNING jsonb_build_object(\n    'ok', true, 'periodo_id', periodo_id, 'snapshot_id', id,\n    'fecha_inicio', fecha_inicio, 'fecha_fin', fecha_fin,\n    'forzado', NOT (v_validacion->>'puede_cerrar')::boolean,\n    'validacion', v_validacion\n  ) INTO v_result;\n\n  RETURN v_result;\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "fn_fusionar_alumnos_duplicados",
+      "signature": "fn_fusionar_alumnos_duplicados(uuid,uuid,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_fusionar_alumnos_duplicados(p_principal_id uuid, p_obsoleto_id uuid, p_datos_fusion jsonb)\n RETURNS json\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_principal public.alumnos%ROWTYPE;\n  v_obsoleto  public.alumnos%ROWTYPE;\n  v_row_count integer := 0;\n  v_migradas  jsonb := '[]'::jsonb;\n  v_filas_migradas jsonb;\n  v_rec       record;\n  v_col       text;\n  v_tabla     text;\n  v_sql       text;\n  v_antes     integer;\n  v_despues   integer;\nBEGIN\n  -- ── 0. Validaciones ───────────────────────────────────────────────────────\n  IF p_principal_id IS NULL OR p_obsoleto_id IS NULL THEN\n    RAISE EXCEPTION 'Se requieren los dos ids de los alumnos a fusionar';\n  END IF;\n\n  IF p_principal_id = p_obsoleto_id THEN\n    RAISE EXCEPTION 'No se puede fusionar un alumno consigo mismo';\n  END IF;\n\n  SELECT * INTO v_principal FROM public.alumnos WHERE id = p_principal_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'El alumno principal (a conservar) no existe';\n  END IF;\n\n  SELECT * INTO v_obsoleto FROM public.alumnos WHERE id = p_obsoleto_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'El alumno obsoleto (a eliminar) no existe';\n  END IF;\n\n  -- ── 1. Actualizar el principal con los datos fusionados ──────────────────\n  UPDATE public.alumnos\n    SET\n      nombre_completo      = COALESCE((p_datos_fusion->>'nombre_completo')::text,      v_principal.nombre_completo),\n      genero               = COALESCE((p_datos_fusion->>'genero')::text,               v_principal.genero),\n      fecha_nacimiento     = COALESCE((p_datos_fusion->>'fecha_nacimiento')::date,     v_principal.fecha_nacimiento),\n      nacionalidad         = COALESCE((p_datos_fusion->>'nacionalidad')::text,         v_principal.nacionalidad),\n      municipio_residencia = COALESCE((p_datos_fusion->>'municipio_residencia')::text, v_principal.municipio_residencia),\n      direccion            = COALESCE((p_datos_fusion->>'direccion')::text,            v_principal.direccion),\n      correo_representante = COALESCE((p_datos_fusion->>'correo_representante')::text, v_principal.correo_representante),\n      representante_cedula = COALESCE((p_datos_fusion->>'representante_cedula')::text, v_principal.representante_cedula),\n      representante_tlf    = COALESCE((p_datos_fusion->>'representante_tlf')::text,    v_principal.representante_tlf),\n      representante_nombre = COALESCE((p_datos_fusion->>'representante_nombre')::text, v_principal.representante_nombre),\n      representante_parentesco = COALESCE((p_datos_fusion->>'representante_parentesco')::text, v_principal.representante_parentesco),\n      madre_nombre         = COALESCE((p_datos_fusion->>'madre_nombre')::text,         v_principal.madre_nombre),\n      madre_cedula         = COALESCE((p_datos_fusion->>'madre_cedula')::text,         v_principal.madre_cedula),\n      madre_tlf_whatsapp   = COALESCE((p_datos_fusion->>'madre_tlf_whatsapp')::text,   v_principal.madre_tlf_whatsapp),\n      padre_nombre         = COALESCE((p_datos_fusion->>'padre_nombre')::text,         v_principal.padre_nombre),\n      padre_cedula         = COALESCE((p_datos_fusion->>'padre_cedula')::text,         v_principal.padre_cedula),\n      padre_tlf_whatsapp   = COALESCE((p_datos_fusion->>'padre_tlf_whatsapp')::text,   v_principal.padre_tlf_whatsapp),\n      familiar_nombre      = COALESCE((p_datos_fusion->>'familiar_nombre')::text,      v_principal.familiar_nombre),\n      familiar_telefono    = COALESCE((p_datos_fusion->>'familiar_telefono')::text,    v_principal.familiar_telefono),\n      familiar_parentesco  = COALESCE((p_datos_fusion->>'familiar_parentesco')::text,  v_principal.familiar_parentesco),\n      contacto_emergencia_nombre   = COALESCE((p_datos_fusion->>'contacto_emergencia_nombre')::text,   v_principal.contacto_emergencia_nombre),\n      contacto_emergencia_telefono = COALESCE((p_datos_fusion->>'contacto_emergencia_telefono')::text, v_principal.contacto_emergencia_telefono),\n      contacto_emergencia_parentesco = COALESCE((p_datos_fusion->>'contacto_emergencia_parentesco')::text, v_principal.contacto_emergencia_parentesco),\n      instrumento_principal = COALESCE((p_datos_fusion->>'instrumento_principal')::text, v_principal.instrumento_principal),\n      instrumento_interes   = COALESCE((p_datos_fusion->>'instrumento_interes')::text,   v_principal.instrumento_interes),\n      nivel_lectura_musical = COALESCE((p_datos_fusion->>'nivel_lectura_musical')::text, v_principal.nivel_lectura_musical),\n      centro_estudios       = COALESCE((p_datos_fusion->>'centro_estudios')::text,       v_principal.centro_estudios),\n      grado_nivel           = COALESCE((p_datos_fusion->>'grado_nivel')::text,           v_principal.grado_nivel),\n      alergias_descripcion  = COALESCE((p_datos_fusion->>'alergias_descripcion')::text,  v_principal.alergias_descripcion),\n      condiciones_medicas   = COALESCE((p_datos_fusion->>'condiciones_medicas')::text,   v_principal.condiciones_medicas),\n      medicamentos          = COALESCE((p_datos_fusion->>'medicamentos')::text,          v_principal.medicamentos),\n      updated_at            = now()\n    WHERE id = p_principal_id;\n\n  GET DIAGNOSTICS v_row_count = ROW_COUNT;\n  IF v_row_count = 0 THEN\n    RAISE EXCEPTION 'No se pudo actualizar el alumno principal';\n  END IF;\n\n  -- ── 2. Migrar datos hijos: reasignar cada columna que apunta a alumnos ──\n  UPDATE public.alumnos_clases ac\n    SET alumno_id = p_principal_id\n    WHERE ac.alumno_id = p_obsoleto_id\n      AND NOT EXISTS (\n        SELECT 1 FROM public.alumnos_clases x\n        WHERE x.alumno_id = p_principal_id AND x.clase_id = ac.clase_id\n      );\n\n  DELETE FROM public.alumnos_clases\n    WHERE alumno_id = p_obsoleto_id;\n\n  -- Bucle dinámico SOLO sobre BASE TABLE (excluyendo vistas como vw_alertas_activas)\n  FOR v_rec IN\n    SELECT c.table_name, c.column_name\n    FROM information_schema.columns c\n    INNER JOIN information_schema.tables t\n      ON t.table_schema = c.table_schema\n     AND t.table_name = c.table_name\n    WHERE c.table_schema = 'public'\n      AND t.table_type = 'BASE TABLE'\n      AND c.column_name IN ('alumno_id', 'student_id')\n      AND c.table_name <> 'alumnos'\n      AND c.table_name <> 'alumnos_clases'\n    ORDER BY c.table_name\n  LOOP\n    v_tabla := v_rec.table_name;\n    v_col   := v_rec.column_name;\n\n    EXECUTE format('SELECT count(*) FROM public.%I WHERE %I = $1', v_tabla, v_col)\n      INTO v_antes USING p_obsoleto_id;\n\n    IF v_antes = 0 THEN\n      CONTINUE;\n    END IF;\n\n    EXECUTE format(\n      'UPDATE public.%I SET %I = $1 WHERE %I = $2 AND NOT EXISTS (SELECT 1 FROM public.%I x WHERE x.%I = $1)',\n      v_tabla, v_col, v_col, v_tabla, v_col\n    ) USING p_principal_id, p_obsoleto_id;\n\n    EXECUTE format('SELECT count(*) FROM public.%I WHERE %I = $1', v_tabla, v_col)\n      INTO v_despues USING p_obsoleto_id;\n\n    IF v_despues > 0 THEN\n      EXECUTE format('DELETE FROM public.%I WHERE %I = $1', v_tabla, v_col)\n        USING p_obsoleto_id;\n      v_row_count := v_row_count + v_despues;\n    END IF;\n\n    IF v_antes - v_despues > 0 THEN\n      v_migradas := v_migradas || jsonb_build_object(\n        'tabla', v_tabla,\n        'column', v_col,\n        'migradas', v_antes - v_despues\n      );\n    END IF;\n  END LOOP;\n\n  -- ── 3. Familia: adoptar la del obsoleto si el principal no tiene ─────────\n  IF v_principal.familia_id IS NULL AND v_obsoleto.familia_id IS NOT NULL THEN\n    UPDATE public.alumnos SET familia_id = v_obsoleto.familia_id\n      WHERE id = p_principal_id;\n  END IF;\n\n  -- ── 4. Eliminar el obsoleto (ya sin datos hijos) ─────────────────────────\n  DELETE FROM public.alumnos WHERE id = p_obsoleto_id;\n\n  GET DIAGNOSTICS v_row_count = ROW_COUNT;\n  IF v_row_count = 0 THEN\n    RAISE EXCEPTION 'No se pudo eliminar el registro obsoleto';\n  END IF;\n\n  RETURN json_build_object(\n    'success', true,\n    'principal_id', p_principal_id,\n    'obsoleto_id', p_obsoleto_id,\n    'eliminado', true,\n    'tablas_migradas', v_migradas\n  );\nEXCEPTION WHEN OTHERS THEN\n  RAISE;\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "get_user_department",
+      "signature": "get_user_department()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_user_department()\n RETURNS text\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\nAS $function$\nDECLARE\n  v_department text;\n  v_rol text;\nBEGIN\n  v_department := auth.jwt() -> 'app_metadata' ->> 'departamento';\n  IF v_department IS NOT NULL THEN\n    RETURN v_department;\n  END IF;\n\n  SELECT rol INTO v_rol FROM public.profiles WHERE id = auth.uid();\n\n  RETURN CASE v_rol\n    WHEN 'admin' THEN 'DIR'\n    WHEN 'superadmin' THEN 'DIR'\n    WHEN 'direccion' THEN 'DIR'\n    WHEN 'coordinacion_academica' THEN 'ACM'\n    WHEN 'finanzas' THEN 'FIN'\n    WHEN 'operaciones' THEN 'ADM'\n    ELSE 'TECNICO'\n  END;\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "get_user_role",
+      "signature": "get_user_role()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_user_role()\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\nAS $function$\r\n  SELECT rol::TEXT FROM public.profiles WHERE id = auth.uid();\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "maestro_actual",
+      "signature": "maestro_actual()",
+      "definition": "CREATE OR REPLACE FUNCTION public.maestro_actual()\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nBEGIN\n  RETURN (\n    SELECT id FROM public.maestros \n    WHERE user_id = auth.uid() \n       OR (user_id IS NULL AND id = auth.uid())\n  );\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "maestro_en_clase",
+      "signature": "maestro_en_clase(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.maestro_en_clase(p_clase_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\r\nBEGIN\r\n  RETURN EXISTS (\r\n    SELECT 1 FROM public.clases \r\n    WHERE id = p_clase_id \r\n    AND (maestro_principal_id = public.maestro_actual() OR maestro_suplente_id = public.maestro_actual())\r\n  );\r\nEND;\r\n$function$\n"
+    }
+  ]
+}

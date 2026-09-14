@@ -26,6 +26,7 @@ export function createRepertoireDemoAdapter() {
   const state = structuredClone(demoMontajes)
   const passages = []
   const groups = []
+  const sessionWorks = []
   return {
     canEditApplicability: false,
     async listMontajes() { return structuredClone(state) },
@@ -48,6 +49,9 @@ export function createRepertoireDemoAdapter() {
     async removeLinkedMeasures(groupId, measureIds) { const group = groups.find((item) => item.id === groupId); if (!group) throw new Error('Grupo no encontrado'); const before = group.measureIds.length; group.measureIds = group.measureIds.filter((id) => !measureIds.includes(id)); return { affected: before - group.measureIds.length } },
     async renameLinkedGroup(id, nombre) { const group = groups.find((item) => item.id === id); if (!group) throw new Error('Grupo no encontrado'); group.nombre = nombre; return structuredClone(group) },
     async breakLinkedGroup(id) { const index = groups.findIndex((item) => item.id === id); if (index < 0) throw new Error('Grupo no encontrado'); return groups.splice(index, 1)[0] },
+    async createSessionRepertoireWork(payload) { const work = { id: `demo-session-work-${sessionWorks.length + 1}`, sesion_id: payload.sessionId, montaje_id: payload.montajeId, montaje_fila_id: payload.filaId, pasaje_id: payload.passageId, focus_tags: payload.focusTags, notas: payload.notes, tempo_actual: payload.tempoActual, tempo_objetivo: payload.tempoObjetivo }; sessionWorks.push(work); return structuredClone(work) },
+    async addSessionRepertoireWorkMeasures(workId, measureIds) { const work = sessionWorks.find((item) => item.id === workId); if (!work) throw new Error('Trabajo de sesión no encontrado'); work.measureIds = [...new Set(measureIds)]; return structuredClone(work.measureIds) },
+    async listSessionRepertoireHistory() { return structuredClone(sessionWorks) },
     summarize(cells) { return aggregatePreparation(cells) }
   }
 }

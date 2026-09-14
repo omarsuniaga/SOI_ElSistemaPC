@@ -81,6 +81,8 @@ import { createStudentList } from '../components/attendance/StudentList.js'
 import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
+import { renderSessionRepertoirePanel } from '../components/SessionRepertoirePanel.js'
+import { createRepertoireDemoAdapter } from '../../modules/repertoire/demo/repertoireDemoAdapter.js'
 import { resolverPertenenciaClase } from '../services/suplenciaService.js'
 import { generateDailyReport, generateMonthlyAttendance } from '../services/reportService.js'
 // reportService dynamically imported on demand for performance
@@ -164,6 +166,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       rutaId: null,
       sesionExistenteData: sesion,
       router,
+      repertoireAdapter: createRepertoireDemoAdapter(),
     })
 
     return typeof cleanup === 'function' ? cleanup : undefined
@@ -175,7 +178,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
 
 export async function renderAsistenciaView(
   containerOrId,
-  { claseId, fecha, sesionId, router } = {},
+  { claseId, fecha, sesionId, router, repertoireAdapter = createRepertoireDemoAdapter() } = {},
 ) {
   // Resolve container: accept both DOM element and string ID
   const container =
@@ -442,6 +445,7 @@ export async function renderAsistenciaView(
       rutaId,
       sesionExistenteData,
       router,
+      repertoireAdapter,
     })
   } catch (err) {
     console.error('[asistenciaView] Error fatal:', err.message, err.stack)
@@ -467,6 +471,7 @@ function _renderVista(container, ctx) {
     rutaId,
     sesionExistenteData,
     router,
+    repertoireAdapter,
   } = ctx
   let sesionId = ctx.sesionId
   let isSessionRegistered =
@@ -1468,6 +1473,7 @@ function _renderVista(container, ctx) {
       </div>
 
       <div id="pm-academic-tools" style="margin-top:1.5rem; display:none;"></div>
+      <div id="pm-session-repertoire" style="margin-top:1.5rem;"></div>
 
       <!-- Barra de Acciones Fija (Por encima del menú inferior) -->
       <div class="pm-asist-actions-fixed">
@@ -1758,6 +1764,16 @@ function _renderVista(container, ctx) {
     getDslContent: () => editor.getValue(),
   })
   _cleanups.push(() => planificationCard.destroy())
+
+  let sessionRepertoirePanel
+  repertoireAdapter.listMontajes().then((montageOptions) => {
+    sessionRepertoirePanel = renderSessionRepertoirePanel(container.querySelector('#pm-session-repertoire'), {
+      sessionId: sesionId,
+      adapter: repertoireAdapter,
+      montajeOptions: montageOptions,
+    })
+    _cleanups.push(() => sessionRepertoirePanel.destroy())
+  }).catch((error) => console.warn('[asistencia] No se pudo cargar Repertorio trabajado:', error))
 
 
 
@@ -2627,7 +2643,7 @@ function _renderVista(container, ctx) {
         const btnDescartarBorrador = container.querySelector('#btn-descartar-borrador')
         if (btnDescartarBorrador) {
           btnDescartarBorrador.addEventListener('click', async () => {
-            if (confirm('¿Deseas descartar este borrador? La fecha se limpiará por completo.')) {
+            if (confirm('¿Desea descartar este borrador? La fecha se limpiará por completo.')) {
               try {
                 btnDescartarBorrador.disabled = true
                 btnDescartarBorrador.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Descartando...'

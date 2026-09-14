@@ -63,7 +63,7 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
   let longPressTriggered = false
   let syncMessage = { label: 'Listo', className: 'is-saved' }
   let activeStudentId = active?.alumnos?.[0]?.id || null
-  let passages = []
+  const passages = []
   let groups = []
   let action = null
   let linkedScope = null
@@ -155,7 +155,7 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
       const previous = new Map([...selected].map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
       for (const id of selected) active.compases.find((item) => item.id === id).estado_preparacion = state
       selected = new Set(); selectionMode = false; syncMessage = { label: 'Guardando…', className: 'is-pending' }; render()
-      try { await Promise.all([...previous.keys()].map((id) => adapter.updateMeasureState(id, state))); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' } } catch (error) { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }; render(); return }
+      try { await Promise.all([...previous.keys()].map((id) => adapter.updateMeasureState(id, state))); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }; render(); return }
       render()
     })
   }

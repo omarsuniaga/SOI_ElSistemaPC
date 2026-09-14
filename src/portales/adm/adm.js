@@ -55,14 +55,16 @@ const navGroups = [
       },
     ],
   },
-  {
-    id: 'bandeja',
-    label: 'Hermes & Tareas',
-    icon: 'bi-kanban',
-    items: [
-      { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
-    ],
-  },
+  // Oculto a pedido: "Hermes & Tareas" no hace falta todavía (no se borra,
+  // solo se saca del menú — la ruta 'hermes-tareas' sigue registrada).
+  // {
+  //   id: 'bandeja',
+  //   label: 'Hermes & Tareas',
+  //   icon: 'bi-kanban',
+  //   items: [
+  //     { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
+  //   ],
+  // },
   {
     id: 'sistema',
     label: 'Sistema & Accesos',

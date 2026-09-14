@@ -17,11 +17,11 @@ export async function generarSintesisPedagogicaIA(analisisData = {}) {
   const obrasListas = resumen.obrasDominadasConcierto || 4
   const pctPreparacion = Math.round((obrasListas / Math.max(totalObras, 1)) * 100)
 
-  let diagnostico = `Se auditaron ${resumen.totalSesionesAnalizadas || 38} sesiones de clase activas. El ${pctPreparacion}% del repertorio curricular programado se encuentra en fase avanzada de maduración técnica o listo para concierto. La cátedra de Violines y la fila orquestal Tutti muestran excelente sincronía rítmica y afinación colectiva.`
+  let diagnostico = `Se auditaron ${resumen.totalSesionesAnalizadas || 38} sesiones de clase activas. El ${pctPreparacion}% del repertorio curricular programado se encuentra en fase avanzada de maduración técnica o listo para presentación. Las cátedras con mayor volumen de sesiones muestran buena consistencia en el avance del contenido.`
 
-  let cuelloBotella = `Se identificaron ${retos.length || 3} puntos de refuerzo recurrentes en las bitácoras docentes: digitación y cambio de posición en cuerdas graves (Cátedra de Violonchelo), y distribución del arco en pasajes forte para la sección de violas.`
+  let cuelloBotella = `Se identificaron ${retos.length || 3} puntos de refuerzo recurrentes en las bitácoras docentes, concentrados principalmente en técnica instrumental/vocal y afinación o ensamble en las cátedras con menor tasa de dominio.`
 
-  let recomendacion = `1. Programar 1 sesión seccional extraordinaria de cuerdas graves (45 min) enfocada en relajación de hombro y afinación en primera posición.\n2. Iniciar grabaciones de control en audio para las ${obrasListas} obras dominadas previo al ensayo general de gala.\n3. Mantener el ritmo de avance en el método Suzuki Libros 1 al 3.`
+  let recomendacion = `1. Programar una sesión seccional de refuerzo (45 min) enfocada en los puntos críticos señalados por los docentes.\n2. Iniciar registros de control (audio/video) para las ${obrasListas} obras dominadas antes de la presentación o evaluación programada.\n3. Mantener el ritmo de avance curricular acordado por cátedra para el período.`
 
   return {
     salud_curricular: {

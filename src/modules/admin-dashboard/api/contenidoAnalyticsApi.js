@@ -270,10 +270,17 @@ export async function getAnalisisContenidoPedagogico({
 
 /**
  * Clasifica heurísticamente el texto pedagógico en áreas clave.
+ * Vocabulario deliberadamente cruzado entre familias instrumentales (cuerdas,
+ * viento, piano, guitarra, voz) para no sesgar la clasificación hacia una
+ * sola cátedra — la vista consume esto para cualquier instrumento/programa.
  */
 function clasificarFocoTecnico(texto, focoCounts) {
   const t = texto.toLowerCase()
-  if (t.includes('arco') || t.includes('dedo') || t.includes('postura') || t.includes('escala') || t.includes('digitacion')) {
+  if (
+    t.includes('arco') || t.includes('dedo') || t.includes('postura') || t.includes('escala') || t.includes('digitacion') ||
+    t.includes('embocadura') || t.includes('aliento') || t.includes('respiracion') || t.includes('pedal') ||
+    t.includes('muñeca') || t.includes('pulsacion') || t.includes('traste') || t.includes('diafragma')
+  ) {
     focoCounts['Técnica & Postura'] += 1
   } else if (t.includes('solfeo') || t.includes('lectura') || t.includes('ritmo') || t.includes('tiempo') || t.includes('metronomo')) {
     focoCounts['Lectura & Rítmica'] += 1

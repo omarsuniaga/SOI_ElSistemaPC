@@ -44,31 +44,22 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       validateMontajeDates(payload)
       return insert(supabase, TABLES.montajes, { estado: 'PLANIFICADO', ...payload })
     },
-    async updateRowPreparation(id, state, { filaId } = {}) {
+    async updateRowPreparation(id, state, { filaId, montageId = null } = {}) {
       assertFilaEditable({ editableFilaIds, filaId })
       assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
-      const { data, error } = await supabase.from('montaje_compases').update({ estado_preparacion: state }).eq('id', id).select().single()
-      if (error) throw error
-      return data
+      return this.updatePreparationAtomically({ montageId, measureId: id, newState: state, filaId, scope: 'collective' })
     },
     async updateStudentPreparation(payload) {
       if (!payload?.montaje_alumno_id || !payload?.montaje_compas_id) throw new TypeError('La preparación individual requiere alumno y compás')
       assertEnum(payload.estado_preparacion, ESTADOS_PREPARACION, 'estado_preparacion')
-      return insert(supabase, 'montaje_alumno_compases', payload)
+      return this.updatePreparationAtomically({ montageId: payload.montageId || payload.montaje_id, measureId: payload.montaje_compas_id, newState: payload.estado_preparacion, studentId: payload.studentId || payload.alumno_id, filaId: payload.filaId || payload.montaje_fila_id, scope: 'student' })
     },
     async updateStudentState(studentAssignmentId, measureId, state) {
       if (!studentAssignmentId || !measureId) throw new TypeError('La preparación individual requiere alumno y compás')
       if (state !== null) assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
-      const query = supabase.from('montaje_alumno_compases')
-      if (state === null) {
-        const { data, error } = await query.delete().eq('montaje_alumno_id', studentAssignmentId).eq('montaje_compas_id', measureId).select()
-        if (error) throw error
-        if (!data?.length) throw new Error('No se encontró el override individual')
-        return data[0]
-      }
-      const { data, error } = await query.upsert({ montaje_alumno_id: studentAssignmentId, montaje_compas_id: measureId, estado_preparacion: state }, { onConflict: 'montaje_alumno_id,montaje_compas_id' }).select().single()
-      if (error) throw error
-      return data
+      const { data: measure, error: measureError } = await supabase.from('montaje_compases').select('montaje_id').eq('id', measureId).single()
+      if (measureError) throw measureError
+      return this.updatePreparationAtomically({ montageId: measure.montaje_id, measureId, newState: state, studentId: studentAssignmentId, scope: 'student', source: state === null ? 'OVERRIDE_REMOVED' : 'INDIVIDUAL_OVERRIDE' })
     },
     async addSection(payload) {
       if (!payload?.montaje_id || !payload?.nombre?.trim()) throw new TypeError('La sección requiere montaje_id y nombre')
@@ -207,10 +198,12 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (memberships.error) throw memberships.error
       const ids = (memberships.data || []).map((row) => row.montaje_compas_id)
       if (!ids.length) throw new Error('Grupo sin compases')
-      const { data, error } = await supabase.from('montaje_compases').update({ estado_preparacion: state }).in('id', ids).select()
-      if (error) throw error
-      if (data?.length !== ids.length) throw new Error('Persistencia parcial del grupo vinculado')
-      return { affected: data.length }
+      const montage = await supabase.from(TABLES.grupoCompases).select('montaje_grupos_compases(montaje_id)').eq('grupo_id', groupId)
+      if (montage.error) throw montage.error
+      const montageId = montage.data?.[0]?.montaje_grupos_compases?.montaje_id
+      if (!montageId) throw new Error('Montaje del grupo no encontrado')
+      for (const measureId of ids) await this.updatePreparationAtomically({ montageId, measureId, newState: state, scope: 'collective', source: 'LINKED_GROUP_PROPAGATION' })
+      return { affected: ids.length }
     },
     async removeLinkedMeasure(groupId, measureId) {
       const { data, error } = await supabase.from(TABLES.grupoCompases).delete().eq('grupo_id', groupId).eq('montaje_compas_id', measureId).select()

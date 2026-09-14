@@ -30,8 +30,9 @@ function cardMarkup(montaje) {
 function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages = [], groups = [], action = null) {
   const selectionLabel = selectionMode ? (selected.size ? `${selected.size} compases seleccionados` : 'Selecciona compases') : 'Selección múltiple'
   const activeStudent = montaje.alumnos?.find((student) => student.id === activeStudentId)
+  const linked = groups.find((group) => group.measureIds?.includes(pickerMeasure?.id))
   const pickerOverride = activeStudent?.overrides?.[pickerMeasure?.id]
-  const picker = pickerMeasure ? `<div class="repertoire-picker" role="dialog" aria-label="Estado de ${measureAriaLabel(pickerMeasure)}"><strong>${measureAriaLabel(pickerMeasure)}</strong><div class="repertoire-picker__states">${ESTADOS_PREPARACION.map((state) => `<button type="button" class="btn btn-sm btn-outline-secondary repertoire-pick-state" data-state="${state}">${STATE_LABELS[state]}</button>`).join('')}</div>${activeStudent && pickerOverride ? '<button type="button" class="btn btn-sm btn-link repertoire-clear-override">Usar estado de la fila</button>' : ''}${canEditApplicability ? `<div class="repertoire-picker__applicability"><label for="repertoire-applicability">Aplicabilidad</label><select id="repertoire-applicability" class="form-select repertoire-applicability">${['TOCA', 'SILENCIO', 'TACET', 'NO_APLICA', 'DESCONOCIDO'].map((value) => `<option value="${value}" ${pickerMeasure.aplicabilidad === value ? 'selected' : ''}>${value}</option>`).join('')}</select></div>` : '<small>Aplicabilidad: solo lectura</small>'}</div>` : ''
+  const picker = pickerMeasure ? `<div class="repertoire-picker" role="dialog" aria-label="Estado de ${measureAriaLabel(pickerMeasure)}"><strong>${measureAriaLabel(pickerMeasure)}</strong><div class="repertoire-picker__states">${ESTADOS_PREPARACION.map((state) => `<button type="button" class="btn btn-sm btn-outline-secondary repertoire-pick-state" data-state="${state}">${STATE_LABELS[state]}</button>`).join('')}</div>${linked ? `<small>Vinculado a ${linked.nombre}</small><button type="button" class="btn btn-sm btn-outline-secondary repertoire-linked-all">Aplicar a todos los vinculados</button><button type="button" class="btn btn-sm btn-link repertoire-unlink">Desvincular este compás</button>` : ''}${activeStudent && pickerOverride ? '<button type="button" class="btn btn-sm btn-link repertoire-clear-override">Usar estado de la fila</button>' : ''}${canEditApplicability ? `<div class="repertoire-picker__applicability"><label for="repertoire-applicability">Aplicabilidad</label><select id="repertoire-applicability" class="form-select repertoire-applicability">${['TOCA', 'SILENCIO', 'TACET', 'NO_APLICA', 'DESCONOCIDO'].map((value) => `<option value="${value}" ${pickerMeasure.aplicabilidad === value ? 'selected' : ''}>${value}</option>`).join('')}</select></div>` : '<small>Aplicabilidad: solo lectura</small>'}</div>` : ''
   const selectedActions = selectionMode && selected.size ? '<button type="button" class="btn btn-sm btn-outline-secondary repertoire-create-passage">Crear pasaje</button><button type="button" class="btn btn-sm btn-outline-secondary repertoire-create-group">Vincular compases</button>' : ''
   const form = action ? `<form class="repertoire-action-form" data-action="${action}"><h2>${action === 'passage' ? 'Crear pasaje' : 'Vincular compases'}</h2>${action === 'passage' ? '<input name="name" class="form-control" placeholder="Nombre" required><textarea name="description" class="form-control" placeholder="Descripción (opcional)"></textarea><select name="difficulty" class="form-select"><option value="">Dificultad</option><option value="1">1 — Fácil</option><option value="2">2 — Moderado</option><option value="3">3 — Difícil</option><option value="4">4 — Muy difícil</option><option value="5">5 — Crítico</option></select><input name="focus" class="form-control" placeholder="Focus: RITMO, ARTICULACION">' : '<input name="name" class="form-control" placeholder="Nombre del grupo" required>'}<button class="btn btn-primary" type="submit">Guardar</button><button class="btn btn-link repertoire-cancel-action" type="button">Cancelar</button></form>` : ''
   const passageList = passages.filter((item) => !item.archived_at).length ? `<section class="repertoire-passages"><h2>Pasajes</h2>${passages.filter((item) => !item.archived_at).map((item) => `<button type="button" class="repertoire-passage" data-passage-id="${item.id}">${item.name} · cc. ${item.measureIds.join(', ')}</button>`).join('')}</section>` : ''
@@ -99,6 +100,8 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
       const stateButton = event.target.closest('.repertoire-pick-state')
       if (stateButton && pickerMeasure) await saveState(pickerMeasure, stateButton.dataset.state)
       if (event.target.closest('.repertoire-clear-override') && pickerMeasure && activeStudentId) await saveState(pickerMeasure, null)
+      if (event.target.closest('.repertoire-linked-all') && pickerMeasure) await updateLinked(pickerMeasure)
+      if (event.target.closest('.repertoire-unlink') && pickerMeasure) { const group = groups.find((item) => item.measureIds?.includes(pickerMeasure.id)); if (group) { await adapter.removeLinkedMeasure(group.id, pickerMeasure.id); group.measureIds = group.measureIds.filter((id) => id !== pickerMeasure.id); pickerMeasure = null; render() } }
     })
     container.querySelector('.repertoire-applicability')?.addEventListener('change', async (event) => {
       if (!pickerMeasure || !canEditApplicability) return
@@ -161,6 +164,17 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
       else measure.estado_preparacion = previous
       syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }
     }
+    render()
+  }
+
+  async function updateLinked(measure) {
+    const group = groups.find((item) => item.measureIds?.includes(measure.id))
+    if (!group) return
+    const state = measure.estado_preparacion
+    const previous = new Map(group.measureIds.map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
+    group.measureIds.forEach((id) => { active.compases.find((item) => item.id === id).estado_preparacion = state })
+    syncMessage = { label: 'Guardando…', className: 'is-pending' }; pickerMeasure = null; render()
+    try { await adapter.updateLinkedGroupState(group.id, state); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
     render()
   }
 

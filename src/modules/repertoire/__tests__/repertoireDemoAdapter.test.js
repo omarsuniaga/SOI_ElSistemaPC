@@ -18,4 +18,14 @@ describe('repertoire demo passage and linked-group operations', () => {
     expect(await adapter.renameLinkedGroup(group.id, 'Patrón B')).toMatchObject({ nombre: 'Patrón B', measureIds: ['1', '4', '8'] })
     expect((await adapter.breakLinkedGroup(group.id)).measureIds).toEqual(['1', '4', '8'])
   })
+
+  it('updates all linked measures deterministically', async () => {
+    const adapter = createRepertoireDemoAdapter()
+    const montage = (await adapter.listMontajes())[0]
+    const group = await adapter.createLinkedGroup({ nombre: 'Patrón A' })
+    await adapter.addLinkedMeasures(['demo-compas-1', 'demo-compas-4'].map((montaje_compas_id) => ({ grupo_id: group.id, montaje_compas_id })))
+    expect(await adapter.updateLinkedGroupState(group.id, 'DOMINADO')).toEqual({ affected: 2 })
+    expect(montage.compases[0].estado_preparacion).not.toBe('DOMINADO')
+    expect((await adapter.listMontajes())[0].compases.slice(0, 4).map((item) => item.estado_preparacion)).toEqual(['DOMINADO', 'SIN_ESTUDIAR', 'CON_DIFICULTAD', 'DOMINADO'])
+  })
 })

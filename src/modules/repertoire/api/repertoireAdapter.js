@@ -99,6 +99,17 @@ export function createRepertoireAdapter(client) {
       if (error || data?.length !== rows.length) throw error || new Error('Persistencia parcial de compases vinculados')
       return data
     },
+    async updateLinkedGroupState(groupId, state) {
+      assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
+      const memberships = await supabase.from(TABLES.grupoCompases).select('montaje_compas_id').eq('grupo_id', groupId)
+      if (memberships.error) throw memberships.error
+      const ids = (memberships.data || []).map((row) => row.montaje_compas_id)
+      if (!ids.length) throw new Error('Grupo sin compases')
+      const { data, error } = await supabase.from('montaje_compases').update({ estado_preparacion: state }).in('id', ids).select()
+      if (error) throw error
+      if (data?.length !== ids.length) throw new Error('Persistencia parcial del grupo vinculado')
+      return { affected: data.length }
+    },
     async removeLinkedMeasure(groupId, measureId) {
       const { data, error } = await supabase.from(TABLES.grupoCompases).delete().eq('grupo_id', groupId).eq('montaje_compas_id', measureId).select()
       if (error) throw error

@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.montaje_preparacion_historial (
   estado_nuevo public.estado_preparacion NOT NULL,
   actor_maestro_id uuid REFERENCES public.maestros(id) ON DELETE SET NULL,
   alcance text NOT NULL CHECK (alcance IN ('collective', 'student')),
-  fuente text NOT NULL CHECK (fuente IN ('PREPARATION_MUTATION', 'COLLECTIVE_FILA', 'INDIVIDUAL_OVERRIDE')),
+  fuente text NOT NULL CHECK (fuente IN ('PREPARATION_MUTATION', 'COLLECTIVE_FILA', 'INDIVIDUAL_OVERRIDE', 'OVERRIDE_REMOVED', 'LINKED_GROUP_PROPAGATION')),
   sesion_id uuid REFERENCES public.sesiones_clase(id) ON DELETE SET NULL,
   operacion_masiva_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()

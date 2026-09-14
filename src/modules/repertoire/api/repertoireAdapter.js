@@ -13,7 +13,7 @@ const TABLES = Object.freeze({
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
   ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
-  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial', targets: 'montaje_targets', milestones: 'montaje_target_milestones'
+  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial', targets: 'montaje_targets', milestones: 'montaje_target_milestones', eventRelations: 'montaje_eventos'
 })
 
 function requireClient(client) {
@@ -112,6 +112,11 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (!payload?.montageId || !payload?.measureId || !payload?.newState) throw new TypeError('La transición requiere montaje, compás y estado')
       return insert(supabase, TABLES.preparationHistory, { montaje_id: payload.montageId, montaje_fila_id: payload.filaId || null, alumno_id: payload.studentId || null, montaje_compas_id: payload.measureId, estado_anterior: payload.previousState || null, estado_nuevo: payload.newState, actor_maestro_id: payload.actorId || null, alcance: payload.scope || 'collective', fuente: payload.source || 'PREPARATION_MUTATION', sesion_id: payload.sessionId || null, operacion_masiva_id: payload.bulkOperationId || null })
     },
+    async updatePreparationAtomically(payload) {
+      const { data, error } = await supabase.rpc('fn_repertoire_update_preparation', { p_montage_id: payload.montageId, p_measure_id: payload.measureId, p_new_state: payload.newState, p_actor_id: payload.actorId || actorId, p_scope: payload.scope || 'collective', p_source: payload.source || 'PREPARATION_MUTATION', p_fila_id: payload.filaId || null, p_student_id: payload.studentId || null, p_session_id: payload.sessionId || null, p_bulk_operation_id: payload.bulkOperationId || null })
+      if (error) throw error
+      return data
+    },
     async historyByMeasure(montageId, measureId) {
       if (!montageId || !measureId) throw new TypeError('El historial requiere montaje y compás')
       const { data, error } = await supabase.from(TABLES.preparationHistory).select('*').eq('montaje_id', montageId).eq('montaje_compas_id', measureId).order('created_at', { ascending: true })
@@ -144,6 +149,7 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (error) throw error
       return data || []
     },
+    async listMontagesForEvent(eventId) { const { data, error } = await supabase.from(TABLES.eventRelations).select('*, montajes(*)').eq('calendario_evento_id', eventId); if (error) throw error; return data || [] },
     async historyBySession(sessionId) {
       if (!sessionId) throw new TypeError('El historial requiere sesión')
       const { data, error } = await supabase.from(TABLES.sessionWorks).select('*, sesion_repertorio_trabajo_compases(*), observacion_sesion_repertorio(*)').eq('sesion_id', sessionId).order('created_at', { ascending: true })

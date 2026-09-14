@@ -8,6 +8,8 @@ const passageMigrationPath = resolve(process.cwd(), 'supabase/migrations/2026091
 const sessionMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914192916_repertoire_session_work.sql')
 const historyMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914205937_repertoire_preparation_history.sql')
 const targetsMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914210804_repertoire_targets_milestones.sql')
+const atomicMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914213711_repertoire_atomic_preparation_mutation.sql')
+const eventMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914213713_repertoire_calendar_relationship.sql')
 
 describe('repertoire foundation migration contract', () => {
   it('defines the permanent work/version/montaje hierarchy and preparation primitives', async () => {
@@ -71,5 +73,23 @@ describe('repertoire foundation migration contract', () => {
     for (const field of ['estado_objetivo', 'fecha_objetivo', 'umbral_porcentaje', 'tempo_objetivo']) expect(sql).toContain(field)
     expect(sql).toContain('Human-defined expected preparation trajectory')
     expect(sql).not.toMatch(/DROP\s+TABLE|TRUNCATE|ON DELETE CASCADE/i)
+  })
+
+  it('defines an atomic state-plus-history RPC boundary', async () => {
+    const sql = await readFile(atomicMigrationPath, 'utf8')
+    expect(sql).toContain('fn_repertoire_update_preparation')
+    expect(sql).toContain('FOR UPDATE')
+    expect(sql).toContain('montaje_preparacion_historial')
+    expect(sql).toContain('not authorized')
+    expect(sql).toContain('zero-row mutation')
+  })
+
+  it('links montages to canonical calendar events without eventos_conciertos or soi_eventos', async () => {
+    const sql = await readFile(eventMigrationPath, 'utf8')
+    expect(sql).toContain('public.montaje_eventos')
+    expect(sql).toContain('public.calendario_institucional(id)')
+    expect(sql).not.toContain('eventos_conciertos')
+    expect(sql).not.toContain('soi_eventos')
+    expect(sql).toContain('ON DELETE RESTRICT')
   })
 })

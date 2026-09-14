@@ -9,6 +9,14 @@
 .repertoire-card__meta { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; margin: 1rem 0; color: var(--pm-text-secondary, #6c757d); font-size: .9rem; }
 .repertoire-mode-badge { border-radius: 999px; background: #fff3cd; color: #664d03; padding: .35rem .65rem; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .repertoire-map__toolbar { align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+.repertoire-sync { font-size: .85rem; margin-inline-start: auto; }
+.repertoire-sync.is-pending { color: #856404; }
+.repertoire-sync.is-saved { color: #146c43; }
+.repertoire-sync.is-error { color: #b02a37; font-weight: 600; }
+.repertoire-picker { padding: .85rem; margin: .75rem 0; border: 1px solid var(--pm-border, #dee2e6); border-radius: 12px; background: var(--pm-surface, #fff); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+.repertoire-picker__states { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.repertoire-picker__applicability { display: flex; align-items: center; gap: .6rem; margin-top: .7rem; max-width: 320px; }
+.repertoire-picker small { color: var(--pm-text-secondary, #6c757d); display: block; margin-top: .6rem; }
 .repertoire-bulk { width: auto; min-width: 170px; }
 .repertoire-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr)); gap: .45rem; padding: 1rem; border: 1px solid var(--pm-border, #dee2e6); border-radius: 16px; background: var(--pm-surface-subtle, #f8f9fa); }
 .repertoire-measure { min-height: 3rem; border: 1px solid var(--pm-border, #adb5bd); border-radius: 10px; background: transparent; font-size: 1.05rem; cursor: pointer; transition: transform .12s ease, outline .12s ease; }

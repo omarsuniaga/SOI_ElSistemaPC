@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.montaje_targets (
   created_by uuid REFERENCES public.maestros(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  archived_at timestamptz,
   CHECK (estado_objetivo IS NOT NULL OR umbral_porcentaje IS NOT NULL OR tempo_objetivo IS NOT NULL)
 );
 CREATE TABLE IF NOT EXISTS public.montaje_target_milestones (
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.montaje_target_milestones (
   umbral_porcentaje numeric(5,2) CHECK (umbral_porcentaje IS NULL OR umbral_porcentaje BETWEEN 0 AND 100),
   tempo_objetivo integer CHECK (tempo_objetivo IS NULL OR tempo_objetivo > 0),
   notas text,
+  archived_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_montaje_targets_scope ON public.montaje_targets(montaje_id, alcance, fecha_objetivo);

@@ -1,6 +1,7 @@
 import { assertEnum, validateMontajeDates, MONTAJE_ESTADOS, APLICABILIDAD_COMPAS, ESTADOS_PREPARACION } from '../domain/repertoireFoundation.js'
 import { assertFilaEditable } from '../domain/studentPreparation.js'
 import { createSessionRepertoireWork } from '../domain/sessionRepertoireWork.js'
+import { createMilestone, createTarget } from '../domain/trajectory.js'
 
 const TABLES = Object.freeze({
   obras: 'obras',
@@ -26,7 +27,7 @@ async function insert(client, table, payload) {
   return data
 }
 
-export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
+export function createRepertoireAdapter(client, { editableFilaIds = [], actorId = null, canEditTargets = () => false } = {}) {
   const supabase = requireClient(client)
   return {
     async createObra(payload) {
@@ -127,11 +128,19 @@ export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
       if (error) throw error
       return data || []
     },
-    async createTarget(payload) { return insert(supabase, TABLES.targets, payload) },
-    async createMilestone(payload) { return insert(supabase, TABLES.milestones, payload) },
+    async createTarget(payload) {
+      if (!canEditTargets({ actorId, scope: payload?.alcance, filaId: payload?.filaId || payload?.montaje_fila_id, studentId: payload?.studentId || payload?.alumno_id })) throw new Error('No autorizado para crear este objetivo')
+      const target = createTarget({ montageId: payload.montageId || payload.montaje_id, scope: payload.scope || payload.alcance, filaId: payload.filaId || payload.montaje_fila_id, passageId: payload.passageId || payload.pasaje_id, studentId: payload.studentId || payload.alumno_id, targetState: payload.targetState || payload.estado_objetivo, targetDate: payload.targetDate || payload.fecha_objetivo, thresholdPercent: payload.thresholdPercent ?? payload.umbral_porcentaje, targetTempo: payload.targetTempo ?? payload.tempo_objetivo, priority: payload.priority || payload.prioridad, notes: payload.notes || payload.notas, createdBy: payload.createdBy || payload.created_by || actorId })
+      return insert(supabase, TABLES.targets, { montaje_id: target.montageId, alcance: target.scope, montaje_fila_id: target.filaId, pasaje_id: target.passageId, alumno_id: target.studentId, estado_objetivo: target.targetState, fecha_objetivo: target.targetDate, umbral_porcentaje: target.thresholdPercent, tempo_objetivo: target.targetTempo, prioridad: target.priority, notas: target.notes, created_by: target.createdBy })
+    },
+    async updateTarget(id, payload) { if (!canEditTargets({ actorId, targetId: id })) throw new Error('No autorizado para editar este objetivo'); const { data, error } = await supabase.from(TABLES.targets).update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).is('archived_at', null).select().single(); if (error || !data) throw error || new Error('Objetivo no encontrado'); return data },
+    async archiveTarget(id) { if (!canEditTargets({ actorId, targetId: id })) throw new Error('No autorizado para archivar este objetivo'); return this.updateTarget(id, { archived_at: new Date().toISOString() }) },
+    async createMilestone(payload) { if (!canEditTargets({ actorId, targetId: payload?.targetId || payload?.target_id })) throw new Error('No autorizado para crear este hito'); const milestone = createMilestone({ targetId: payload.targetId || payload.target_id, label: payload.label || payload.etiqueta, targetDate: payload.targetDate || payload.fecha_objetivo, targetState: payload.targetState || payload.estado_objetivo, thresholdPercent: payload.thresholdPercent ?? payload.umbral_porcentaje, targetTempo: payload.targetTempo ?? payload.tempo_objetivo, notes: payload.notes || payload.notas }); return insert(supabase, TABLES.milestones, { target_id: milestone.targetId, etiqueta: milestone.label, fecha_objetivo: milestone.targetDate, estado_objetivo: milestone.targetState, umbral_porcentaje: milestone.thresholdPercent, tempo_objetivo: milestone.targetTempo, notas: milestone.notes }) },
+    async updateMilestone(id, payload) { if (!canEditTargets({ actorId, milestoneId: id })) throw new Error('No autorizado para editar este hito'); const { data, error } = await supabase.from(TABLES.milestones).update(payload).eq('id', id).select().single(); if (error || !data) throw error || new Error('Hito no encontrado'); return data },
+    async archiveMilestone(id) { if (!canEditTargets({ actorId, milestoneId: id })) throw new Error('No autorizado para archivar este hito'); const { data, error } = await supabase.from(TABLES.milestones).update({ archived_at: new Date().toISOString() }).eq('id', id).is('archived_at', null).select().single(); if (error || !data) throw error || new Error('Hito no encontrado'); return data },
     async listTargets(montageId) {
       if (!montageId) throw new TypeError('La trayectoria requiere montaje')
-      const { data, error } = await supabase.from(TABLES.targets).select('*, montaje_target_milestones(*)').eq('montaje_id', montageId).order('fecha_objetivo', { ascending: true })
+      const { data, error } = await supabase.from(TABLES.targets).select('*, montaje_target_milestones(*)').eq('montaje_id', montageId).is('archived_at', null).order('fecha_objetivo', { ascending: true })
       if (error) throw error
       return data || []
     },

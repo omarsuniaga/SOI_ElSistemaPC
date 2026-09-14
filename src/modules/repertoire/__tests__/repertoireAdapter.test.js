@@ -43,4 +43,13 @@ describe('repertoire adapter', () => {
     expect(work.measureIds).toEqual(['20', '21'])
     expect(insert).toHaveBeenCalledWith(expect.objectContaining({ sesion_id: 'session-1', montaje_id: 'montaje-1', focus_tags: ['RITMO'] }))
   })
+
+  it('exposes the explicit fila-assignment lifecycle through the real adapter seam', () => {
+    const { client } = clientFor()
+    const adapter = createRepertoireAdapter(client)
+    expect(adapter.listFilaAssignments).toEqual(expect.any(Function))
+    expect(adapter.createFilaAssignment).toEqual(expect.any(Function))
+    expect(adapter.updateFilaAssignment).toEqual(expect.any(Function))
+    expect(adapter.archiveFilaAssignment).toEqual(expect.any(Function))
+  })
 })

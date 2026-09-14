@@ -125,6 +125,25 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (!payload?.montaje_fila_id || !payload?.alumno_id) throw new TypeError('La asignación requiere fila y alumno')
       return insert(supabase, TABLES.alumnos, payload)
     },
+    async listFilaAssignments(montageId) {
+      if (!montageId) throw new TypeError('La asignación requiere montaje')
+      const { data, error } = await supabase.from('montaje_fila_maestros').select('*').eq('montaje_id', montageId).eq('active', true)
+      if (error) throw error
+      return data || []
+    },
+    async createFilaAssignment(payload) {
+      if (!payload?.montaje_id || !payload?.fila_id || !payload?.maestro_id) throw new TypeError('La asignación requiere montaje, fila y maestro')
+      return insert(supabase, 'montaje_fila_maestros', payload)
+    },
+    async updateFilaAssignment(id, payload) {
+      if (!id) throw new TypeError('La asignación requiere id')
+      const { data, error } = await supabase.from('montaje_fila_maestros').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    async archiveFilaAssignment(id) {
+      return this.updateFilaAssignment(id, { active: false })
+    },
     async addMeasure(payload) {
       if (!payload?.obra_version_id || payload.indice_interno == null || !payload.numero_visible) {
         throw new TypeError('El compás requiere versión, índice interno y número visible')

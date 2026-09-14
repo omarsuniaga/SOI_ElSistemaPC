@@ -11,6 +11,7 @@ const targetsMigrationPath = resolve(process.cwd(), 'supabase/migrations/2026091
 const atomicMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914213711_repertoire_atomic_preparation_mutation.sql')
 const eventMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914213713_repertoire_calendar_relationship.sql')
 const signalsMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914214811_repertoire_deterministic_signals.sql')
+const assignmentMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914220000_repertoire_fila_assignments_rls.sql')
 
 describe('repertoire foundation migration contract', () => {
   it('defines the permanent work/version/montaje hierarchy and preparation primitives', async () => {
@@ -88,7 +89,18 @@ describe('repertoire foundation migration contract', () => {
     expect(sql).toContain('not authorized')
     expect(sql).toContain('actor mismatch')
     expect(sql).toContain('student assignment outside montage')
+    expect(sql).toContain('history_student_id')
     expect(sql).toContain('zero-row mutation')
+  })
+
+  it('defines the explicit teacher-to-fila authorization boundary', async () => {
+    const sql = await readFile(assignmentMigrationPath, 'utf8')
+    expect(sql).toContain('montaje_fila_maestros')
+    expect(sql).toContain('repertoire_maestro_puede_editar_fila')
+    expect(sql).toContain('can_edit_preparation')
+    expect(sql).toContain('DROP POLICY IF EXISTS repertoire_acm_write ON public.montaje_compases')
+    expect(sql).toContain('repertoire_signal_delivery_recipient_ack')
+    expect(sql).not.toContain("get_user_role() = 'finanzas'")
   })
 
   it('links montages to canonical calendar events without eventos_conciertos or soi_eventos', async () => {

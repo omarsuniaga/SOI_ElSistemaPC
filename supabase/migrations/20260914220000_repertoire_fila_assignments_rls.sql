@@ -205,3 +205,20 @@ BEGIN
 END; $$;
 REVOKE ALL ON FUNCTION public.fn_repertoire_update_preparation(uuid, uuid, public.estado_preparacion, uuid, text, text, uuid, uuid, uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.fn_repertoire_update_preparation(uuid, uuid, public.estado_preparacion, uuid, text, text, uuid, uuid, uuid, uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_repertoire_update_applicability(
+  p_montage_id uuid, p_measure_id uuid, p_applicability public.aplicabilidad_compas,
+  p_fila_id uuid DEFAULT NULL
+) RETURNS public.aplicabilidad_compas LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  IF public.get_user_role() NOT IN ('admin','superadmin','coordinacion_academica')
+     AND NOT public.repertoire_maestro_puede_editar_fila(p_montage_id, p_fila_id) THEN
+    RAISE EXCEPTION 'fila assignment denied';
+  END IF;
+  UPDATE public.montaje_compases SET aplicabilidad = p_applicability, updated_at = now()
+    WHERE id = p_measure_id AND montaje_id = p_montage_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'measure not found'; END IF;
+  RETURN p_applicability;
+END; $$;
+REVOKE ALL ON FUNCTION public.fn_repertoire_update_applicability(uuid, uuid, public.aplicabilidad_compas, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_repertoire_update_applicability(uuid, uuid, public.aplicabilidad_compas, uuid) TO authenticated;

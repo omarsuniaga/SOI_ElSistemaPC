@@ -76,9 +76,15 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (!montageId) throw new Error('Montaje del compás no encontrado')
       return this.updatePreparationAtomically({ montageId, measureId: id, newState: state, filaId: options.filaId, scope: 'collective' })
     },
-    async updateMeasureApplicability(id, applicability) {
+    async updateMeasureApplicability(id, applicability, { montageId = null, filaId = null } = {}) {
       assertEnum(applicability, APLICABILIDAD_COMPAS, 'aplicabilidad')
-      const { data, error } = await supabase.from('montaje_compases').update({ aplicabilidad: applicability, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+      let resolvedMontageId = montageId
+      if (!resolvedMontageId) {
+        const { data: measure, error: measureError } = await supabase.from('montaje_compases').select('montaje_id').eq('id', id).single()
+        if (measureError) throw measureError
+        resolvedMontageId = measure?.montaje_id
+      }
+      const { data, error } = await supabase.rpc('fn_repertoire_update_applicability', { p_montage_id: resolvedMontageId, p_measure_id: id, p_applicability: applicability, p_fila_id: filaId })
       if (error) throw error
       return data
     },

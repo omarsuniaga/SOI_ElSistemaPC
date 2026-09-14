@@ -100,6 +100,7 @@ describe('repertoire foundation migration contract', () => {
     expect(sql).toContain('can_edit_preparation')
     expect(sql).toContain('DROP POLICY IF EXISTS repertoire_acm_write ON public.montaje_compases')
     expect(sql).toContain('repertoire_signal_delivery_recipient_ack')
+    expect(sql).toContain('fn_repertoire_update_applicability')
     expect(sql).not.toContain("get_user_role() = 'finanzas'")
   })
 

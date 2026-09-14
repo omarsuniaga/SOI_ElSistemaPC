@@ -28,4 +28,11 @@ describe('repertoire adapter', () => {
     await expect(adapter.createMontaje({ obra_version_id: 'v1', estado: 'INVALIDO' })).rejects.toThrow('estado inválido')
     expect(from).not.toHaveBeenCalled()
   })
+
+  it('rejects forged row mutation outside the assigned fila scope', async () => {
+    const { client, from } = clientFor()
+    const adapter = createRepertoireAdapter(client, { editableFilaIds: ['flauta'] })
+    await expect(adapter.updateRowPreparation('measure-1', 'DOMINADO', { filaId: 'oboe' })).rejects.toThrow('alcance editable')
+    expect(from).not.toHaveBeenCalled()
+  })
 })

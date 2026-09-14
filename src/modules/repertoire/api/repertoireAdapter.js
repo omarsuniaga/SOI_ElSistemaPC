@@ -1,4 +1,5 @@
 import { assertEnum, validateMontajeDates, MONTAJE_ESTADOS, APLICABILIDAD_COMPAS, ESTADOS_PREPARACION } from '../domain/repertoireFoundation.js'
+import { assertFilaEditable } from '../domain/studentPreparation.js'
 
 const TABLES = Object.freeze({
   obras: 'obras',
@@ -23,7 +24,7 @@ async function insert(client, table, payload) {
   return data
 }
 
-export function createRepertoireAdapter(client) {
+export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
   const supabase = requireClient(client)
   return {
     async createObra(payload) {
@@ -40,7 +41,8 @@ export function createRepertoireAdapter(client) {
       validateMontajeDates(payload)
       return insert(supabase, TABLES.montajes, { estado: 'PLANIFICADO', ...payload })
     },
-    async updateRowPreparation(id, state) {
+    async updateRowPreparation(id, state, { filaId } = {}) {
+      assertFilaEditable({ editableFilaIds, filaId })
       assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
       const { data, error } = await supabase.from('montaje_compases').update({ estado_preparacion: state }).eq('id', id).select().single()
       if (error) throw error

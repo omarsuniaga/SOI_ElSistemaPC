@@ -22,6 +22,7 @@ const VIEW_LOADERS = {
   clases:            () => import('../views/calendarioView.js'),
   metricas:          () => import('../views/metricasView.js'),
   repertorio:        () => import('../views/repertorioView.js'),
+  seccional:         () => import('../views/seccionalView.js'),
   'mis-clases':      () => import('../views/misClasesView.js'),
   asistencia:        () => import('../views/asistenciaView.js'),
   'clase-emergente': () => import('../views/claseEmergenteView.js'),
@@ -61,7 +62,7 @@ function resolveClaseId(params = {}, urlParams = new URLSearchParams()) {
 }
 
 export const CACHEABLE_VIEWS = new Set([
-  'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'repertorio', 'perfil', 'ruta',
+  'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'repertorio', 'seccional', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
   'gestionar-horario', 'mis-clases',
 ])
@@ -142,7 +143,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
 
   ;[
     'login', 'logout', 'fechas', 'calendario', 'clases', 'hoy', 'asistencia',
-    'metricas', 'repertorio', 'mis-clases', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
+    'metricas', 'repertorio', 'seccional', 'mis-clases', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
     'register', 'pending-approval', 'gestionar-horario', 'proponer-contenido',
@@ -231,6 +232,8 @@ export async function renderViewContent(route, container, params, urlParams, con
       return mod.renderMetricasView(container)
     case 'repertorio':
       return mod.renderRepertoireView(container)
+    case 'seccional':
+      return mod.renderSeccionalView(container)
     case 'mis-clases':
       return mod.renderMisClasesView(container)
     case 'perfil':

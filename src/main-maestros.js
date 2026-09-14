@@ -220,6 +220,7 @@ function buildTabs(permisos) {
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
     { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
     { id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' },
+    { id: 'seccional', label: 'Seccional', icon: 'bi-diagram-3' },
   ]
   if (permisos?.puede_inscribir_clases) {
     tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })

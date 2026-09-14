@@ -1,0 +1,7 @@
+.sectional-view { max-width: 1100px; margin: 0 auto; padding: clamp(1rem, 3vw, 2rem); }
+.sectional-tabs { display: flex; gap: .45rem; overflow-x: auto; padding: .75rem 0; }
+.sectional-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.8rem, 1fr)); gap: .45rem; padding: 1rem; border: 1px solid var(--pm-border, #dee2e6); border-radius: 16px; }
+.sectional-cell { min-height: 3rem; border: 1px solid var(--pm-border, #adb5bd); border-radius: 9px; background: var(--sectional-gradient, #adb5bd); cursor: pointer; }
+.sectional-cell:focus-visible, .sectional-cell:hover { outline: 3px solid color-mix(in srgb, var(--pm-primary, #0d6efd) 35%, transparent); }
+.sectional-detail { margin-top: 1rem; padding: .8rem; border-radius: 10px; background: var(--pm-surface-subtle, #f8f9fa); }
+.sectional-legend { color: var(--pm-text-secondary, #6c757d); font-size: .88rem; }

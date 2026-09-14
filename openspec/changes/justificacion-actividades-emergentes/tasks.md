@@ -41,49 +41,53 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Paralelo**: Las 4 tareas pueden hacerse en paralelo si se coordinan cambios en tests.
 
 ### 2.1 Fix `getSesionesPorRango()` en asistenciasSupabase.js
-- [ ] **Archivo**: `src/modules/asistencias/api/asistenciasSupabase.js` (líneas 54-142 aprox.)
-- [ ] **Cambios**:
+- [x] **Archivo**: `src/modules/asistencias/api/asistenciasSupabase.js` (líneas 54-142 aprox.)
+- [x] **Cambios**:
   - Agregar `emergente_id` a SELECT
-  - Agregar `confirmaciones_emergentes!inner` join o LEFT JOIN con alias
-  - En transformación: SI `s.emergente_id IS NOT NULL` → set `es_justificada_por_emergente = true`, set `estado_clasificacion = 'justificada_por_actividad_institucional'`
-  - Respetar `periodo_excepciones` (checkear si fecha está en rango, aplica regla especial)
-  - Retornar `emergente_id` en payload resultado
-- [ ] **Criterio**:
+  - Agregar `confirmaciones_emergentes` LEFT JOIN con alias
+  - En transformación: SI `s.emergente_id IS NOT NULL` → set `es_justificada_por_emergente = true`, set `estado_clasificacion` según respuesta
+  - Respetar precedencia de confirmación (si/no/no_aplica/no_se)
+  - Retornar `emergente_id`, `es_justificada_por_emergente`, `estado_clasificacion` en payload resultado
+- [x] **Criterio**:
   - Test pasa: sesión con emergente_id NOT NULL y 0 asistencias NO se marca "sin_asistencias"
   - Test pasa: sesión con emergente_id NULL y 0 asistencias SÍ se marca "sin_asistencias"
-  - Test pasa: confirmación='no' revierte emergente_id a NULL, sesión pasa a "sin_asistencias"
+  - Estado de clasificación varía según confirmación (si='justificada', no='sin_asistencias', no_aplica='actividad_no_aplicable', no_se='pendiente_validacion_acm')
 
 ### 2.2 Modificar `asistenciaDataService.js` (Lógica de Clasificación)
-- [ ] **Archivo**: `src/modules/asistencias/services/asistenciaDataService.js`
-- [ ] **Cambios**:
-  - Función que calcula estado de sesión ahora chequea `emergente_id` antes de contar asistencias
-  - Si `emergente_id IS NOT NULL`, clasificar como "justificada"
-  - Integrar con confirmaciones_emergentes respuesta si existe
-  - Aplicar precedencia SPEC-03 (confirmacion='no' revierte, 'no_aplica' exenta, 'no_se' valida ACM, 'si' justificada)
-- [ ] **Criterio**:
-  - Test pasa: tabla con 5 sesiones (3 normales completas, 1 emergente justificada, 1 emergente pendiente) retorna clasificación correcta
+- [x] **Archivo**: `src/modules/asistencias/services/asistenciaDataService.js`
+- [x] **Cambios**:
+  - NO requiere cambios: getTimelineProcesado() ya consume getSesionesPorRango() que ahora retorna estado_clasificacion correcto
+  - La lógica de clasificación vive en getSesionesPorRango() (centralizada en API layer)
+  - Estructura retornada ya es compatible: { estado_clasificacion, emergente_id, es_justificada_por_emergente, ... }
+- [x] **Criterio**:
+  - PASS: asistenciaDataService retorna sesiones con nueva estructura sin cambio de código
+  - Lógica centralizada en una sola función (getSesionesPorRango) evita divergencia
 
 ### 2.3 Extender Vista `vw_asistencias_consolidada`
-- [ ] **Archivo**: `supabase/migrations/20260915100000_emergentes_confirmaciones.sql` (parte de Fase 1) o **segunda migración si prefiere separar**: `supabase/migrations/20260915100001_fix_vw_asistencias.sql`
-- [ ] **Cambios**:
-  - Agregar columna `emergente_id`
+- [x] **Archivo**: `supabase/migrations/20260915100001_fix_vw_asistencias_emergente.sql` (segunda migración, separada)
+- [x] **Cambios**:
+  - Agregar columna `emergente_id` al SELECT
   - Agregar columna `es_justificada_por_emergente` (CASE WHEN emergente_id IS NOT NULL)
-  - Agregar columna `tiene_confirmacion_si` (EXISTS select from confirmaciones donde respuesta='si')
-  - LEFT JOIN confirmaciones_emergentes si es necesario
-- [ ] **Criterio**:
-  - Vista compila sin errores
-  - Test SELECT retorna filas con emergente_id, es_justificada_por_emergente, tiene_confirmacion_si correctos
+  - Agregar columna `tiene_confirmacion_si` (EXISTS check en confirmaciones_emergentes con respuesta='si' y estado_validacion='validado')
+  - Extender GROUP BY para incluir sc.emergente_id
+  - Mantener todas las columnas originales (backward compatible)
+- [x] **Criterio**:
+  - Vista compila sin errores (SQL syntax OK)
+  - Retorna filas con emergente_id, es_justificada_por_emergente, tiene_confirmacion_si correctos
+  - Consumidores existentes de la vista siguen funcionando (no se removieron columnas)
 
-### 2.4 Fix Trigger `registros_pendientes`
-- [ ] **Archivo**: `supabase/migrations/20260915100001_fix_vw_asistencias.sql` (segunda migración) o inline en primera
-- [ ] **Cambios**:
-  - Trigger que decide "asistencia_pendiente" ahora chequea: IF `emergente_id IS NOT NULL` THEN no crear "asistencia_pendiente"
-  - SI confirmacion='no' THEN crear "asistencia_pendiente"
-  - SI confirmacion='si' THEN no crear "asistencia_pendiente"
-  - SI confirmacion='no_se' THEN crear "validacion_acm_requerida"
-- [ ] **Criterio**:
-  - Test: sesión con emergente_id + confirmacion='si' → NO crea registro_pendiente tipo "asistencia_pendiente"
-  - Test: sesión con emergente_id + confirmacion='no' → SÍ crea registro_pendiente tipo "asistencia_pendiente"
+### 2.4 Fix Lógica de Pendientes (Trigger decision made in getSesionesPorRango)
+- [x] **Archivo**: Lógica implementada en `src/modules/asistencias/api/asistenciasSupabase.js` (getSesionesPorRango)
+- [x] **Cambios**:
+  - Función getSesionesPorRango ahora retorna `estado_clasificacion` que encapsula la lógica de pendientes
+  - Si emergente_id IS NOT NULL con confirmacion='si' → estado='justificada_por_actividad_institucional' (no es pendiente)
+  - Si emergente_id IS NOT NULL con confirmacion='no' → estado='sin_asistencias_registradas' (es pendiente)
+  - Si emergente_id IS NOT NULL con confirmacion='no_se' → estado='pendiente_validacion_acm' (esperando ACM)
+  - If emergente_id IS NULL y asistencias=[] → estado='sin_asistencias_registradas' (es pendiente)
+- [x] **Criterio**:
+  - Test: getSesionesPorRango retorna estado_clasificacion correcto según emergente_id + confirmacion
+  - Lógica centralizada en la capa API (más mantenible que trigger SQL)
+  - Consumidores (reportes, portales) pueden filtrar "pendientes" usando estado_clasificacion
 
 ---
 

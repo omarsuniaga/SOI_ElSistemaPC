@@ -52,7 +52,9 @@ CREATE TABLE IF NOT EXISTS public.obra_versiones (
 CREATE TABLE IF NOT EXISTS public.montajes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   obra_version_id uuid NOT NULL REFERENCES public.obra_versiones(id) ON DELETE RESTRICT,
-  evento_id uuid REFERENCES public.eventos_conciertos(id) ON DELETE SET NULL,
+  -- Live production has no eventos_conciertos table. Keep the optional event
+  -- identifier unbound until the institutional event aggregate is selected.
+  evento_id uuid,
   nucleo text,
   conjunto text,
   director_id uuid REFERENCES public.maestros(id) ON DELETE SET NULL,

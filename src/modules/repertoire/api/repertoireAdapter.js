@@ -1,5 +1,6 @@
 import { assertEnum, validateMontajeDates, MONTAJE_ESTADOS, APLICABILIDAD_COMPAS, ESTADOS_PREPARACION } from '../domain/repertoireFoundation.js'
 import { assertFilaEditable } from '../domain/studentPreparation.js'
+import { createSessionRepertoireWork } from '../domain/sessionRepertoireWork.js'
 
 const TABLES = Object.freeze({
   obras: 'obras',
@@ -11,6 +12,7 @@ const TABLES = Object.freeze({
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
   ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
+  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio'
 })
 
 function requireClient(client) {
@@ -84,6 +86,26 @@ export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
         throw new TypeError('El compás requiere versión, índice interno y número visible')
       }
       return insert(supabase, TABLES.compases, payload)
+    },
+    async createSessionRepertoireWork(payload) {
+      const work = createSessionRepertoireWork(payload)
+      const created = await insert(supabase, TABLES.sessionWorks, {
+        sesion_id: work.sessionId, montaje_id: work.montajeId, montaje_fila_id: work.filaId, alumno_id: work.alumnoId,
+        pasaje_id: work.passageId, notas: work.notes, focus_tags: work.focusTags, tempo_actual: work.tempoActual, tempo_objetivo: work.tempoObjetivo, created_by: work.createdBy
+      })
+      return { ...created, measureIds: work.measureIds }
+    },
+    async addSessionRepertoireWorkMeasures(workId, measureIds) {
+      const ids = [...new Set((measureIds || []).filter(Boolean))]
+      if (!workId || !ids.length) throw new TypeError('El trabajo requiere id y compases')
+      const rows = ids.map((montajeCompasId, orden) => ({ trabajo_id: workId, montaje_compas_id: montajeCompasId, orden }))
+      const { data, error } = await supabase.from(TABLES.sessionWorkMeasures).insert(rows).select()
+      if (error || data?.length !== rows.length) throw error || new Error('Persistencia parcial de compases trabajados')
+      return data
+    },
+    async linkObservationToSessionRepertoire(observationId, workId) {
+      if (!observationId || !workId) throw new TypeError('La observación requiere contexto de repertorio')
+      return insert(supabase, TABLES.observationContext, { observacion_id: observationId, trabajo_id: workId })
     },
     async createPassage(payload) { return insert(supabase, TABLES.pasajes, payload) },
     async updatePassage(id, payload) {

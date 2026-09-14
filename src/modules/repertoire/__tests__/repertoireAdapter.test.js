@@ -35,4 +35,12 @@ describe('repertoire adapter', () => {
     await expect(adapter.updateRowPreparation('measure-1', 'DOMINADO', { filaId: 'oboe' })).rejects.toThrow('alcance editable')
     expect(from).not.toHaveBeenCalled()
   })
+
+  it('records session repertoire context through the existing session boundary', async () => {
+    const { client, insert } = clientFor({ id: 'work-1' })
+    const adapter = createRepertoireAdapter(client)
+    const work = await adapter.createSessionRepertoireWork({ sessionId: 'session-1', montajeId: 'montaje-1', createdBy: 'maestro-1', measureIds: ['20', '21'], focusTags: ['RITMO'] })
+    expect(work.measureIds).toEqual(['20', '21'])
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ sesion_id: 'session-1', montaje_id: 'montaje-1', focus_tags: ['RITMO'] }))
+  })
 })

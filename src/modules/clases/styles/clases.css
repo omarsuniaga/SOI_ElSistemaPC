@@ -1535,18 +1535,20 @@ body.dark-mode .clase-card-v2--inactiva {
   padding-right: 2px;
 }
 
-/* Student Cards (Step 1) */
+/* Student Cards (Step 1) - Compact & Clickable */
 .sc-student-card {
   background: var(--sc-bg-surface);
   border: 1px solid var(--sc-border);
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
   box-shadow: var(--sc-card-shadow);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+  cursor: pointer;
+  user-select: none;
 }
 
 .sc-student-card:hover {
@@ -1555,14 +1557,19 @@ body.dark-mode .clase-card-v2--inactiva {
   box-shadow: var(--sc-card-shadow-hover);
 }
 
+.sc-student-card:active {
+  transform: scale(0.98);
+}
+
 .sc-avatar {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 0.82rem;
+  font-weight: 700;
   flex-shrink: 0;
   background: rgba(255, 193, 7, 0.15);
   color: #d97706;
@@ -1575,6 +1582,20 @@ body.dark-mode .clase-card-v2--inactiva {
   border-color: rgba(245, 158, 11, 0.3);
 }
 
+.sc-mini-action-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  border: none;
+}
+
 /* Filter Chips (Step 1) */
 .sc-filter-chips {
   display: flex;
@@ -1585,9 +1606,9 @@ body.dark-mode .clase-card-v2--inactiva {
 }
 
 .sc-chip {
-  padding: 0.3rem 0.75rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 600;
   background: var(--sc-bg-surface-elevated);
   border: 1px solid var(--sc-border);
@@ -1614,112 +1635,103 @@ body.dark-mode .clase-card-v2--inactiva {
   background: var(--sc-bg-surface-accent);
   border: 1px solid var(--sc-border-hover);
   border-radius: 12px;
-  padding: 0.85rem 1.15rem;
+  padding: 0.65rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
-/* Class Row / Card (Step 2) */
-.sc-class-card-mobile {
+/* Class Card (Step 2) - Compact & Clickable Grid */
+.sc-class-card-compact {
   background: var(--sc-bg-surface);
   border: 1px solid var(--sc-border);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
   box-shadow: var(--sc-card-shadow);
-  transition: all 0.2s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
 }
 
-.sc-class-card-mobile.sc-match,
-.sc-class-row.sc-match {
+.sc-class-card-compact:hover {
+  transform: translateY(-2px);
+  border-color: var(--sc-border-hover);
+  box-shadow: var(--sc-card-shadow-hover);
+}
+
+.sc-class-card-compact:active {
+  transform: scale(0.98);
+}
+
+.sc-class-card-compact.sc-match {
   background: rgba(13, 110, 253, 0.04) !important;
-  border-color: rgba(13, 110, 253, 0.3) !important;
+  border-color: rgba(13, 110, 253, 0.35) !important;
 }
 
-[data-bs-theme="dark"] .sc-class-card-mobile.sc-match,
-[data-bs-theme="dark"] .sc-class-row.sc-match {
+[data-bs-theme="dark"] .sc-class-card-compact.sc-match {
   background: rgba(56, 139, 253, 0.1) !important;
-  border-color: rgba(56, 139, 253, 0.4) !important;
+  border-color: rgba(56, 139, 253, 0.45) !important;
 }
 
-.sc-badge-match {
+.sc-badge-match-mini {
   background: linear-gradient(135deg, #0d6efd, #6610f2);
   color: #ffffff;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+  box-shadow: 0 1px 3px rgba(13, 110, 253, 0.2);
 }
 
-/* Table styling for Step 2 */
-.sc-table-container {
-  border: 1px solid var(--sc-border);
-  border-radius: 12px;
-  background: var(--sc-bg-surface);
-  box-shadow: var(--sc-card-shadow);
-  overflow: hidden;
-}
-
-.sc-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.84rem;
-}
-
-.sc-table thead th {
-  background: var(--sc-bg-surface-elevated);
-  color: var(--sc-text-muted);
+.sc-mini-select-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--sc-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  flex-shrink: 0;
+  border: none;
+  background: var(--bs-primary, #0d6efd);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.25);
+  transition: transform 0.15s ease;
 }
 
-.sc-table tbody tr {
-  background: var(--sc-bg-surface);
-  transition: background 0.15s ease;
-}
-
-.sc-table tbody tr:hover {
-  background: var(--sc-bg-surface-elevated);
-}
-
-.sc-table tbody td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--sc-border);
-  vertical-align: middle;
+.sc-class-card-compact:hover .sc-mini-select-btn {
+  transform: scale(1.1);
 }
 
 /* Capacity meter */
 .sc-capacity-meter {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  min-width: 110px;
+  gap: 0.2rem;
+  width: 100%;
 }
 
 .sc-capacity-track {
-  height: 6px;
-  border-radius: 4px;
+  height: 5px;
+  border-radius: 3px;
   background: var(--sc-border);
   overflow: hidden;
 }
 
 .sc-capacity-bar {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: width 0.3s ease;
 }
 
@@ -1727,8 +1739,9 @@ body.dark-mode .clase-card-v2--inactiva {
 .sc-split-card {
   background: var(--sc-bg-surface);
   border: 1px solid var(--sc-border);
-  border-radius: 14px;
-  padding: 1.25rem;
+  border-radius: 12px;
+  padding: 1rem;
   box-shadow: var(--sc-card-shadow);
 }
+
 

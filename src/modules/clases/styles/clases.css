@@ -1392,3 +1392,343 @@ body.dark-mode .clase-card-v2--inactiva {
   color: #fff;
   border-color: var(--bs-primary, #0d6efd);
 }
+
+/* ============================================================================
+   WIZARD ALUMNOS SIN CLASE (UI/UX Rediseño Premium)
+   ============================================================================ */
+
+.sin-clase-wizard {
+  --sc-bg-surface: #ffffff;
+  --sc-bg-surface-elevated: #f8fafc;
+  --sc-bg-surface-accent: rgba(13, 110, 253, 0.05);
+  --sc-border: rgba(0, 0, 0, 0.08);
+  --sc-border-hover: rgba(13, 110, 253, 0.3);
+  --sc-text-main: #0f172a;
+  --sc-text-muted: #64748b;
+  --sc-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --sc-card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --sc-connector-color: rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+[data-bs-theme="dark"] .sin-clase-wizard {
+  --sc-bg-surface: #1a202c;
+  --sc-bg-surface-elevated: #242c3d;
+  --sc-bg-surface-accent: rgba(56, 139, 253, 0.1);
+  --sc-border: rgba(255, 255, 255, 0.1);
+  --sc-border-hover: rgba(56, 139, 253, 0.45);
+  --sc-text-main: #f1f5f9;
+  --sc-text-muted: #94a3b8;
+  --sc-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --sc-card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --sc-connector-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Stepper Component */
+.sc-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--sc-bg-surface-elevated);
+  border: 1px solid var(--sc-border);
+  border-radius: 14px;
+  padding: 0.75rem 1.25rem;
+  flex-shrink: 0;
+}
+
+.sc-step {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  opacity: 0.6;
+  transition: all 0.25s ease;
+}
+
+.sc-step.active {
+  opacity: 1;
+}
+
+.sc-step.completed {
+  opacity: 0.9;
+}
+
+.sc-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--sc-bg-surface);
+  border: 2px solid var(--sc-border);
+  color: var(--sc-text-muted);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sc-step.active .sc-step-circle {
+  background: var(--bs-primary, #0d6efd);
+  border-color: var(--bs-primary, #0d6efd);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.2);
+}
+
+.sc-step.completed .sc-step-circle {
+  background: #198754;
+  border-color: #198754;
+  color: #ffffff;
+}
+
+.sc-step-content {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.sc-step-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--sc-text-muted);
+}
+
+.sc-step-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sc-text-main);
+}
+
+.sc-step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--sc-connector-color);
+  margin: 0 0.5rem;
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.sc-step-connector.active {
+  background: var(--bs-primary, #0d6efd);
+}
+
+@media (max-width: 576px) {
+  .sc-step-title {
+    display: none;
+  }
+  .sc-stepper {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Wizard Content Area: native flex scroll */
+.sc-wizard-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* Student Cards (Step 1) */
+.sc-student-card {
+  background: var(--sc-bg-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: var(--sc-card-shadow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.sc-student-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--sc-border-hover);
+  box-shadow: var(--sc-card-shadow-hover);
+}
+
+.sc-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  background: rgba(255, 193, 7, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(255, 193, 7, 0.25);
+}
+
+[data-bs-theme="dark"] .sc-avatar {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Filter Chips (Step 1) */
+.sc-filter-chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+}
+
+.sc-chip {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--sc-bg-surface-elevated);
+  border: 1px solid var(--sc-border);
+  color: var(--sc-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.sc-chip:hover {
+  border-color: var(--bs-primary, #0d6efd);
+  color: var(--bs-primary, #0d6efd);
+}
+
+.sc-chip.active {
+  background: var(--bs-primary, #0d6efd);
+  color: #ffffff;
+  border-color: var(--bs-primary, #0d6efd);
+}
+
+/* Context Banner (Step 2 & 3) */
+.sc-context-banner {
+  background: var(--sc-bg-surface-accent);
+  border: 1px solid var(--sc-border-hover);
+  border-radius: 12px;
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+/* Class Row / Card (Step 2) */
+.sc-class-card-mobile {
+  background: var(--sc-bg-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  box-shadow: var(--sc-card-shadow);
+  transition: all 0.2s ease;
+}
+
+.sc-class-card-mobile.sc-match,
+.sc-class-row.sc-match {
+  background: rgba(13, 110, 253, 0.04) !important;
+  border-color: rgba(13, 110, 253, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .sc-class-card-mobile.sc-match,
+[data-bs-theme="dark"] .sc-class-row.sc-match {
+  background: rgba(56, 139, 253, 0.1) !important;
+  border-color: rgba(56, 139, 253, 0.4) !important;
+}
+
+.sc-badge-match {
+  background: linear-gradient(135deg, #0d6efd, #6610f2);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+/* Table styling for Step 2 */
+.sc-table-container {
+  border: 1px solid var(--sc-border);
+  border-radius: 12px;
+  background: var(--sc-bg-surface);
+  box-shadow: var(--sc-card-shadow);
+  overflow: hidden;
+}
+
+.sc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.84rem;
+}
+
+.sc-table thead th {
+  background: var(--sc-bg-surface-elevated);
+  color: var(--sc-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--sc-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sc-table tbody tr {
+  background: var(--sc-bg-surface);
+  transition: background 0.15s ease;
+}
+
+.sc-table tbody tr:hover {
+  background: var(--sc-bg-surface-elevated);
+}
+
+.sc-table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--sc-border);
+  vertical-align: middle;
+}
+
+/* Capacity meter */
+.sc-capacity-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 110px;
+}
+
+.sc-capacity-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--sc-border);
+  overflow: hidden;
+}
+
+.sc-capacity-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Step 3 split cards */
+.sc-split-card {
+  background: var(--sc-bg-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: var(--sc-card-shadow);
+}
+

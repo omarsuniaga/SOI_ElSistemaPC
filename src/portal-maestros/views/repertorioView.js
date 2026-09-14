@@ -3,9 +3,9 @@ import { getMaestroLocal } from '../../portal-maestros/auth/maestroAuth.js'
 import { daysRemaining, ESTADOS_PREPARACION } from '../../modules/repertoire/domain/repertoireFoundation.js'
 import { effectivePreparationState } from '../../modules/repertoire/domain/studentPreparation.js'
 import { createRepertoireDemoAdapter } from '../../modules/repertoire/demo/repertoireDemoAdapter.js'
+import { DEFAULT_MEASURES_PER_ROW, MEASURES_PER_ROW_OPTIONS, readMeasuresPerRow, writeMeasuresPerRow } from '../../modules/repertoire/domain/gridSemantics.js'
 
 const STATE_LABELS = { SIN_EVALUAR: 'Sin evaluar', SIN_ESTUDIAR: 'Sin estudiar', CON_DIFICULTAD: 'Con dificultad', DOMINADO: 'Dominado', CONSOLIDADO: 'Consolidado' }
-const STATE_ICONS = { SIN_EVALUAR: '○', SIN_ESTUDIAR: '🔴', CON_DIFICULTAD: '🟠', DOMINADO: '🟡', CONSOLIDADO: '🟢' }
 const APPLICABILITY_LABELS = { TOCA: 'Toca', SILENCIO: 'Silencio', TACET: 'Tacet', NO_APLICA: 'No aplica', DESCONOCIDO: 'Desconocido' }
 
 export function cyclePreparationState(state) {
@@ -27,7 +27,28 @@ function cardMarkup(montaje) {
   </article>`
 }
 
-function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages = [], groups = [], action = null, linkedScope = null) {
+function gridMarkup(montaje, selected, activeStudent, activeStudentId, groups, passages, measuresPerRow) {
+  const marks = montaje.rehearsalMarks || montaje.marcas_ensayo || []
+  const cells = montaje.compases.map((measure) => {
+    const state = effectivePreparationState({ collectiveState: measure.estado_preparacion, individualState: activeStudent?.overrides?.[measure.id], applicability: measure.aplicabilidad })
+    const displayMeasure = { ...measure, estado_preparacion: state || measure.estado_preparacion }
+    const linked = groups.find((group) => group.measureIds?.includes(measure.id))
+    const passageMatches = passages.filter((passage) => passage.measureIds?.includes(measure.id))
+    const marker = marks.find((item) => item.measureId === measure.id || String(item.measureNumber ?? item.numero_visible) === String(measure.numero_visible))
+    const passageLabel = passageMatches.map((passage) => passage.name).filter(Boolean).join(', ')
+    const label = `${measureAriaLabel(displayMeasure)}${passageLabel ? ` — ${passageLabel}` : ''}${marker ? ` — Letra ${marker.label} comienza en compás ${measure.numero_visible}` : ''}${linked ? ` — vinculado a ${linked.nombre}` : ''}`
+    return { measure, displayMeasure, linked, passageMatches, marker, label }
+  })
+  const rows = []
+  for (let index = 0; index < cells.length; index += measuresPerRow) {
+    const row = cells.slice(index, index + measuresPerRow)
+    const mark = row.find((cell) => cell.marker)?.marker
+    rows.push(`<div class="repertoire-grid__row" role="row">${mark ? `<div class="repertoire-rehearsal-mark" role="note" aria-label="Letra ${mark.label} comienza en compás ${row.find((cell) => cell.marker).measure.numero_visible}"><strong>${mark.label}</strong>${mark.description ? ` <small>${mark.description}</small>` : ''}</div>` : ''}${row.map(({ measure, displayMeasure, linked, passageMatches, label }) => `<button class="repertoire-measure state-${displayMeasure.estado_preparacion.toLowerCase()} ${measure.aplicabilidad !== 'TOCA' ? 'is-not-applicable' : ''} ${activeStudent?.overrides?.[measure.id] ? 'has-individual-override' : ''} ${linked ? 'is-linked' : ''} ${passageMatches.length ? 'has-passage' : ''} ${selected.has(measure.id) ? 'is-selected' : ''}" role="gridcell" data-measure-id="${measure.id}" data-passage-ids="${passageMatches.map((passage) => passage.id).join(',')}" aria-label="${label}" title="Clic: ${label} · Shift+clic: seleccionar"><span class="measure-number">${measure.numero_visible}</span>${linked ? '<span class="measure-link" aria-hidden="true">↗</span>' : ''}</button>`).join('')}</div>`)
+  }
+  return rows.join('')
+}
+
+function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages = [], groups = [], action = null, linkedScope = null, measuresPerRow = DEFAULT_MEASURES_PER_ROW) {
   const selectionLabel = selectionMode ? (selected.size ? `${selected.size} compases seleccionados` : 'Selecciona compases') : 'Selección múltiple'
   const activeStudent = montaje.alumnos?.find((student) => student.id === activeStudentId)
   const linked = groups.find((group) => group.measureIds?.includes(pickerMeasure?.id))
@@ -42,10 +63,10 @@ function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditAppli
   const groupList = groups.length ? `<section class="repertoire-passages"><h2>Grupos vinculados</h2>${groups.map((group) => `<div class="repertoire-passage-row"><span>${group.nombre} · ${group.measureIds.join(', ')}</span><button type="button" class="btn btn-sm btn-link repertoire-rename-group" data-group-id="${group.id}">Renombrar</button><button type="button" class="btn btn-sm btn-link repertoire-break-group" data-group-id="${group.id}">Romper grupo</button></div>`).join('')}</section>` : ''
   return `<section class="repertoire-map" aria-label="Mapa de preparación de ${montaje.obra.titulo}">
     <div class="repertoire-map__header"><div><button class="btn btn-link repertoire-back">← Mis obras</button><h1>${montaje.obra.titulo}</h1><p>${montaje.filas[0]?.nombre} · ${montaje.evento?.nombre} · ${montaje.evento?.fecha}</p></div><span class="repertoire-mode-badge">DEMO · persistencia local</span></div>
-    <div class="repertoire-map__toolbar"><button class="btn btn-outline-secondary repertoire-multi" aria-pressed="${selectionMode}">${selectionLabel}</button>${selectedActions}<select class="form-select repertoire-bulk" aria-label="Estado para selección múltiple" ${selected.size ? '' : 'disabled'}>${ESTADOS_PREPARACION.map((state) => `<option value="${state}">${STATE_LABELS[state]}</option>`).join('')}</select><button class="btn btn-primary repertoire-apply" ${selected.size ? '' : 'disabled'}>Aplicar estado</button><span class="repertoire-sync ${syncMessage.className}" role="status" aria-live="polite">${syncMessage.label}</span></div>
+    <div class="repertoire-map__toolbar"><button class="btn btn-outline-secondary repertoire-multi" aria-pressed="${selectionMode}">${selectionLabel}</button>${selectedActions}<label class="repertoire-layout-setting">Compases por línea <select class="form-select repertoire-measures-per-row" aria-label="Compases por línea">${[...new Set([...MEASURES_PER_ROW_OPTIONS, measuresPerRow])].sort((a, b) => a - b).map((value) => `<option value="${value}" ${value === measuresPerRow ? 'selected' : ''}>${value}</option>`).join('')}</select></label><select class="form-select repertoire-bulk" aria-label="Estado para selección múltiple" ${selected.size ? '' : 'disabled'}>${ESTADOS_PREPARACION.map((state) => `<option value="${state}">${STATE_LABELS[state]}</option>`).join('')}</select><button class="btn btn-primary repertoire-apply" ${selected.size ? '' : 'disabled'}>Aplicar estado</button><span class="repertoire-sync ${syncMessage.className}" role="status" aria-live="polite">${syncMessage.label}</span></div>
     ${picker}${scopeDialog}
     ${form}${passageList}${groupList}
-    <div class="repertoire-grid" role="grid">${montaje.compases.map((measure) => { const state = effectivePreparationState({ collectiveState: measure.estado_preparacion, individualState: activeStudent?.overrides?.[measure.id], applicability: measure.aplicabilidad }); const displayMeasure = { ...measure, estado_preparacion: state || measure.estado_preparacion }; const linked = groups.find((group) => group.measureIds?.includes(measure.id)); const label = `${measureAriaLabel(displayMeasure)}${linked ? ` — vinculado a ${linked.nombre}` : ''}`; return `<button class="repertoire-measure state-${displayMeasure.estado_preparacion.toLowerCase()} ${measure.aplicabilidad !== 'TOCA' ? 'is-not-applicable' : ''} ${activeStudent?.overrides?.[measure.id] ? 'has-individual-override' : ''} ${linked ? 'is-linked' : ''} ${selected.has(measure.id) ? 'is-selected' : ''}" role="gridcell" data-measure-id="${measure.id}" aria-label="${label}" title="Clic: ${label} · Shift+clic: seleccionar">${STATE_ICONS[displayMeasure.estado_preparacion]}${linked ? '<span aria-hidden="true">↗</span>' : ''}</button>` }).join('')}</div>
+    <div class="repertoire-grid" role="grid" style="--measures-per-row: ${measuresPerRow}">${gridMarkup(montaje, selected, activeStudent, activeStudentId, groups, activePassages, measuresPerRow)}</div>
     <section class="repertoire-students" aria-label="Preparación individual"><h2>Detalle por alumno</h2><p>El estado colectivo de la fila no reemplaza estos estados individuales.</p><div class="repertoire-student-list"><button type="button" class="btn btn-sm ${activeStudentId === null ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="">Fila colectiva</button>${(montaje.alumnos || []).map((student) => `<button type="button" class="btn btn-sm ${student.id === activeStudentId ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="${student.id}">${student.nombre}: ${STATE_LABELS[student.estado_preparacion]}</button>`).join('')}</div></section>
     <p class="repertoire-legend">Los compases no aplicables se muestran en neutro y no cuentan para el porcentaje de preparación.</p>
   </section>`
@@ -67,15 +88,17 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
   let groups = []
   let action = null
   let linkedScope = null
+  let measuresPerRow = readMeasuresPerRow({ montajeId: active?.id || '' })
   const canEditApplicability = adapter.canEditApplicability === true
 
   const render = () => {
-    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action, linkedScope) : `<div class="repertoire-view"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">ACM · PREPARACIÓN ORQUESTAL</span><h1>Mis obras</h1><p>Montajes asignados para preparar con tu fila.</p></div>${montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes montajes asignados todavía.</div>'}</div>`
+    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action, linkedScope, measuresPerRow) : `<div class="repertoire-view"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">ACM · PREPARACIÓN ORQUESTAL</span><h1>Mis obras</h1><p>Montajes asignados para preparar con tu fila.</p></div>${montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes montajes asignados todavía.</div>'}</div>`
     if (active) bindMap()
-    else container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); activeStudentId = null; render() }))
+    else container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); measuresPerRow = readMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }); activeStudentId = null; render() }))
   }
 
   const bindMap = () => {
+    container.querySelector('.repertoire-measures-per-row')?.addEventListener('change', (event) => { measuresPerRow = writeMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }, event.target.value); render() })
     container.querySelectorAll('.repertoire-student').forEach((button) => button.addEventListener('click', () => { activeStudentId = button.dataset.studentId || null; pickerMeasure = null; render() }))
     container.querySelector('.repertoire-create-passage')?.addEventListener('click', () => { action = 'passage'; render() })
     container.querySelector('.repertoire-create-group')?.addEventListener('click', () => { action = 'group'; render() })

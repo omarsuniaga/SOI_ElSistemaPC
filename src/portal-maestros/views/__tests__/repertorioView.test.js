@@ -223,4 +223,28 @@ describe('repertorioView', () => {
     await vi.waitFor(() => expect(adapter.updateLinkedGroupState).toHaveBeenCalledWith('g-1', 'SIN_ESTUDIAR'))
     expect([...container.querySelectorAll('.repertoire-measure')].every((button) => button.getAttribute('aria-label').includes('Sin estudiar'))).toBe(true)
   })
+
+  it('renders numbered cells in configured musical rows and preserves the setting across state changes', async () => {
+    const adapter = makeAdapter({ listMontajes: async () => [{ ...(await makeAdapter().listMontajes())[0], compases: Array.from({ length: 12 }, (_, index) => ({ id: `m-${index + 1}`, numero_visible: String(index + 1), aplicabilidad: 'TOCA', estado_preparacion: 'SIN_EVALUAR' })) }] })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    const setting = container.querySelector('.repertoire-measures-per-row')
+    setting.value = '4'
+    setting.dispatchEvent(new Event('change'))
+    expect(container.querySelectorAll('.repertoire-grid__row')).toHaveLength(3)
+    expect(container.querySelector('[data-measure-id="m-1"] .measure-number').textContent).toBe('1')
+    expect(container.querySelector('[data-measure-id="m-1"]').textContent).not.toContain('🔴')
+    container.querySelector('[data-measure-id="m-1"]').click()
+    await vi.waitFor(() => expect(container.querySelector('.repertoire-measures-per-row').value).toBe('4'))
+  })
+
+  it('exposes rehearsal marks and passage context in cell accessibility labels', async () => {
+    const adapter = makeAdapter({ listMontajes: async () => [{ ...(await makeAdapter().listMontajes())[0], rehearsalMarks: [{ label: 'B', measureNumber: 2 }], compases: [1, 2, 3].map((number) => ({ id: `m-${number}`, numero_visible: String(number), aplicabilidad: 'TOCA', estado_preparacion: 'CON_DIFICULTAD' })) }] })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    expect(container.querySelector('.repertoire-rehearsal-mark').textContent).toContain('B')
+    expect(container.querySelector('[data-measure-id="m-2"]').getAttribute('aria-label')).toContain('Letra B comienza en compás 2')
+  })
 })

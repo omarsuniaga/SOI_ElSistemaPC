@@ -280,64 +280,64 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Secuencia**: Las 15 pruebas obligatorias pueden hacerse en paralelo, agrupadas por tema.
 
 ### 7.1 Test: Reintento no Duplica Confirmación (UPSERT Idempotence)
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 1 de 7)
-- [ ] **Criterio**: Confirmación M1 + Actividad A1 + 2026-09-15 se crea. Reintento con mismos parámetros actualiza, no duplica. ID confirmación es mismo.
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 1 de 7)
+- [x] **Criterio**: Confirmación M1 + Actividad A1 + 2026-09-15 se crea. Reintento con mismos parámetros actualiza, no duplica. ID confirmación es mismo.
 
 ### 7.2 Test: RLS Aislamiento - Maestro A No Ve Maestro B
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 2 de 7)
-- [ ] **Criterio**: M1 autenticado consulta confirmaciones_emergentes. Retorna solo confirmaciones donde maestro_id=M1. No ve confirmación de M2.
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 2 de 7)
+- [x] **Criterio**: M1 autenticado consulta confirmaciones_emergentes. Retorna solo confirmaciones donde maestro_id=M1. No ve confirmación de M2.
 
 ### 7.3 Test: RLS Escalación - ACM Ve Todas
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 3 de 7)
-- [ ] **Criterio**: ACM autenticado consulta confirmaciones_emergentes. Retorna todas las confirmaciones de todos maestros. Sin filtro.
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 3 de 7)
+- [x] **Criterio**: ACM autenticado consulta confirmaciones_emergentes. Retorna todas las confirmaciones de todos maestros. Sin filtro.
 
 ### 7.4 Test: Alcance Institución Filtra Todos Maestros del Día
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 4 de 7)
-- [ ] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'institucion', {}, 2026-09-15) retorna [M1, M2, M3, M4] (todos con sesiones ese día).
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 4 de 7)
+- [x] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'institucion', {}, 2026-09-15) retorna [M1, M2, M3, M4] (todos con sesiones ese día).
 
 ### 7.5 Test: Alcance Programa Filtra Solo Maestros de Ese Programa
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 5 de 7)
-- [ ] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'programa', {programa_id: P_Orquesta}, 2026-09-15) retorna [M_Orq1, M_Orq2]. No retorna maestros de Coro/Refuerzo.
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 5 de 7)
+- [x] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'programa', {programa_id: P_Orquesta}, 2026-09-15) retorna [M_Orq1, M_Orq2]. No retorna maestros de Coro/Refuerzo.
 
 ### 7.6 Test: Alcance Grupo Filtra Solo Maestros de Ese Grupo
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 6 de 7)
-- [ ] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'grupo', {grupo_id: G_Ensambles}, 2026-09-15) retorna [M_Ensambles]. No retorna otros maestros.
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 6 de 7)
+- [x] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'grupo', {grupo_id: G_Ensambles}, 2026-09-15) retorna [M_Ensambles]. No retorna otros maestros.
 
 ### 7.7 Test: Alcance Maestros Específicos Respeta Array Explícito
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 7 de 7)
-- [ ] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'maestros_especificos', {maestro_ids: [M1, M3, M7]}, 2026-09-15) retorna exactamente [M1, M3, M7].
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js` (test 7 de 7)
+- [x] **Criterio**: RPC fn_maestros_afectados_por_alcance(A1, 'maestros_especificos', {maestro_ids: [M1, M3, M7]}, 2026-09-15) retorna exactamente [M1, M3, M7].
 
 ### 7.8 Test: Confirmación "Sí" → Sesión Justificada (getSesionesPorRango)
-- [ ] **Archivo**: `src/modules/asistencias/api/__tests__/asistenciasSupabase.test.js` (extension)
-- [ ] **Criterio**: Sesión con emergente_id + confirmacion='si' retorna estado_clasificacion='justificada_por_actividad_institucional'. No aparece en "sin_asistencias".
+- [x] **Archivo**: `src/modules/asistencias/api/__tests__/asistenciasSupabase.test.js` (extension)
+- [x] **Criterio**: Sesión con emergente_id + confirmacion='si' retorna estado_clasificacion='justificada_por_actividad_institucional'. No aparece en "sin_asistencias".
 
 ### 7.9 Test: Confirmación "No Sé" → Escalación ACM (registros_pendientes)
-- [ ] **Archivo**: `src/modules/asistencias/api/__tests__/asistenciasSupabase.test.js`
-- [ ] **Criterio**: Confirmación con respuesta='no_se' y estado_validacion='pendiente' crea registro_pendiente tipo 'validacion_acm_requerida'.
+- [x] **Archivo**: `src/modules/asistencias/api/__tests__/asistenciasSupabase.test.js`
+- [x] **Criterio**: Confirmación con respuesta='no_se' y estado_validacion='pendiente' crea registro_pendiente tipo 'validacion_acm_requerida'.
 
 ### 7.10 Test: Modal Renderiza 4 Botones Correctamente
-- [ ] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (test en suite de modal)
-- [ ] **Criterio**: Modal muestra botones "Sí, Aplica" / "No, No Aplica" / "No Aplica" / "No Sé" con labels correctos. Todos clickeables.
+- [x] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (test en suite de modal)
+- [x] **Criterio**: Modal muestra botones "Sí, Aplica" / "No, No Aplica" / "No Aplica" / "No Sé" con labels correctos. Todos clickeables.
 
 ### 7.11 Test: Deep-Link Actividad → Bandeja Abre + Destaca Fila
-- [ ] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (test deep-link)
-- [ ] **Criterio**: URL /maestros/confirmaciones-emergentes?actividad_id=UUID abre componente, destaca fila actividad UUID, puede ser confirmada inmediatamente.
+- [x] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (test deep-link)
+- [x] **Criterio**: URL /maestros/confirmaciones-emergentes?actividad_id=UUID abre componente, destaca fila actividad UUID, puede ser confirmada inmediatamente.
 
 ### 7.12 Test: Vista Móvil 375px - Botones Touchable, Sin Overflow
-- [ ] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (suite móvil)
-- [ ] **Criterio**: En viewport 375px, modal buttons ≥44px height/width. Modal text no truncado horizontalmente. Scroll suave si lista larga.
+- [x] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (suite móvil)
+- [x] **Criterio**: En viewport 375px, modal buttons ≥44px height/width. Modal text no truncado horizontalmente. Scroll suave si lista larga.
 
 ### 7.13 Test: Demo Mode (config.isDemoMode=true) Retorna Mock Data Correctamente
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesAdapter.test.js`
-- [ ] **Criterio**: config.isDemoMode=true → adapter.confirmarActividad(...) retorna mock data (shape correcto, no real RPC call).
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesAdapter.test.js`
+- [x] **Criterio**: config.isDemoMode=true → adapter.confirmarActividad(...) retorna mock data (shape correcto, no real RPC call).
 
 ### 7.14 Test: Build Sin Regresiones - Vitest Warnings=0, Tree-Shake OK
-- [ ] **Archivo**: `package.json` (npm run test:run) + `vitest.config.ts`
-- [ ] **Criterio**: `npm run test:run -- --reporter=verbose` retorna 0 console warnings, 0 console errors. `npm run build` tree-shakes confirmacionesEmergentes* sin issues.
+- [x] **Archivo**: `package.json` (npm run test:run) + `vitest.config.ts`
+- [x] **Criterio**: `npm run test:run -- --reporter=verbose` retorna 0 console warnings, 0 console errors. `npm run build` tree-shakes confirmacionesEmergentes* sin issues.
 
 ### 7.15 Test: getSesionesPorRango() Respeta emergente_id → No False "Sin Asistencias"
-- [ ] **Archivo**: `src/modules/asistencias/api/__tests__/asistenciasSupabase.test.js`
-- [ ] **Criterio**: Sesión M1 + 2026-09-15 con emergente_id NOT NULL y asistencias=[] retorna totalRegistros=0 pero estado_clasificacion != 'sin_asistencias'. Retorna 'justificada_por_actividad_institucional'.
+- [x] **Archivo**: `src/modules/asistencias/api/__tests__/asistenciasSupabase.test.js`
+- [x] **Criterio**: Sesión M1 + 2026-09-15 con emergente_id NOT NULL y asistencias=[] retorna totalRegistros=0 pero estado_clasificacion != 'sin_asistencias'. Retorna 'justificada_por_actividad_institucional'.
 
 ---
 

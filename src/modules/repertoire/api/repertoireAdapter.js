@@ -12,7 +12,7 @@ const TABLES = Object.freeze({
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
   ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
-  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial'
+  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial', targets: 'montaje_targets', milestones: 'montaje_target_milestones'
 })
 
 function requireClient(client) {
@@ -124,6 +124,14 @@ export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
     },
     async preparationHistoryByStudent(montageId, studentId) {
       const { data, error } = await supabase.from(TABLES.preparationHistory).select('*').eq('montaje_id', montageId).eq('alumno_id', studentId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async createTarget(payload) { return insert(supabase, TABLES.targets, payload) },
+    async createMilestone(payload) { return insert(supabase, TABLES.milestones, payload) },
+    async listTargets(montageId) {
+      if (!montageId) throw new TypeError('La trayectoria requiere montaje')
+      const { data, error } = await supabase.from(TABLES.targets).select('*, montaje_target_milestones(*)').eq('montaje_id', montageId).order('fecha_objetivo', { ascending: true })
       if (error) throw error
       return data || []
     },

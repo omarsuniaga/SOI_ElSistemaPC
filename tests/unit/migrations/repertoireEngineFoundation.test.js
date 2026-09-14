@@ -7,6 +7,7 @@ const studentMigrationPath = resolve(process.cwd(), 'supabase/migrations/2026091
 const passageMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914174948_repertoire_passages_linked_measures.sql')
 const sessionMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914192916_repertoire_session_work.sql')
 const historyMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914205937_repertoire_preparation_history.sql')
+const targetsMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914210804_repertoire_targets_milestones.sql')
 
 describe('repertoire foundation migration contract', () => {
   it('defines the permanent work/version/montaje hierarchy and preparation primitives', async () => {
@@ -60,6 +61,15 @@ describe('repertoire foundation migration contract', () => {
     for (const field of ['montaje_compas_id', 'estado_anterior', 'estado_nuevo', 'actor_maestro_id', 'alcance', 'fuente', 'sesion_id']) expect(sql).toContain(field)
     expect(sql).toContain('Append-only preparation transitions')
     expect(sql).toContain('ENABLE ROW LEVEL SECURITY')
+    expect(sql).not.toMatch(/DROP\s+TABLE|TRUNCATE|ON DELETE CASCADE/i)
+  })
+
+  it('defines explicit targets and milestones without duplicating history', async () => {
+    const sql = await readFile(targetsMigrationPath, 'utf8')
+    expect(sql).toContain('public.montaje_targets')
+    expect(sql).toContain('public.montaje_target_milestones')
+    for (const field of ['estado_objetivo', 'fecha_objetivo', 'umbral_porcentaje', 'tempo_objetivo']) expect(sql).toContain(field)
+    expect(sql).toContain('Human-defined expected preparation trajectory')
     expect(sql).not.toMatch(/DROP\s+TABLE|TRUNCATE|ON DELETE CASCADE/i)
   })
 })

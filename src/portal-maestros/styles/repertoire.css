@@ -35,6 +35,8 @@
 .repertoire-rehearsal-mark small { font-weight: 400; }
 .repertoire-layout-setting { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; font-size: .85rem; }
 .repertoire-measures-per-row { width: auto; min-width: 4.5rem; }
+.repertoire-trajectory-panel { display: grid; gap: .5rem; margin: 1rem 0; padding: 1rem; border: 1px solid var(--pm-border, #dee2e6); border-radius: 14px; background: var(--pm-surface, #fff); }
+.repertoire-trajectory-panel h2 { margin: 0; font-size: 1rem; }
 .repertoire-action-form { display: grid; gap: .55rem; max-width: 480px; margin: .75rem 0; padding: 1rem; border: 1px solid var(--pm-border, #dee2e6); border-radius: 12px; background: var(--pm-surface, #fff); }
 .repertoire-action-form h2, .repertoire-passages h2 { font-size: 1rem; margin: 0; }
 .repertoire-passages { display: grid; gap: .35rem; margin: .75rem 0 1rem; }

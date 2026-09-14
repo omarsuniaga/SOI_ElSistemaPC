@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.montaje_pasajes (
   focus_tags text[] NOT NULL DEFAULT '{}',
   alcance jsonb NOT NULL DEFAULT '{}'::jsonb,
   creado_por uuid REFERENCES public.maestros(id) ON DELETE SET NULL,
+  archived_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

@@ -9,6 +9,7 @@ const TABLES = Object.freeze({
   alumnos: 'montaje_alumnos',
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
+  ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
 })
 
 function requireClient(client) {
@@ -81,6 +82,40 @@ export function createRepertoireAdapter(client) {
         throw new TypeError('El compás requiere versión, índice interno y número visible')
       }
       return insert(supabase, TABLES.compases, payload)
+    },
+    async createPassage(payload) { return insert(supabase, TABLES.pasajes, payload) },
+    async updatePassage(id, payload) {
+      const { data, error } = await supabase.from(TABLES.pasajes).update(payload).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    async archivePassage(id) {
+      return this.updatePassage(id, { archived_at: new Date().toISOString() })
+    },
+    async createLinkedGroup(payload) { return insert(supabase, TABLES.grupos, payload) },
+    async addLinkedMeasures(rows) {
+      if (!rows?.length) throw new TypeError('El grupo requiere compases')
+      const { data, error } = await supabase.from(TABLES.grupoCompases).insert(rows).select()
+      if (error || data?.length !== rows.length) throw error || new Error('Persistencia parcial de compases vinculados')
+      return data
+    },
+    async removeLinkedMeasure(groupId, measureId) {
+      const { data, error } = await supabase.from(TABLES.grupoCompases).delete().eq('grupo_id', groupId).eq('montaje_compas_id', measureId).select()
+      if (error) throw error
+      if (!data?.length) throw new Error('Compás no vinculado')
+      return data[0]
+    },
+    async renameLinkedGroup(id, nombre) { return this.updateLinkedGroup(id, { nombre }) },
+    async updateLinkedGroup(id, payload) {
+      const { data, error } = await supabase.from(TABLES.grupos).update(payload).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    async breakLinkedGroup(id) {
+      const { data, error } = await supabase.from(TABLES.grupos).delete().eq('id', id).select()
+      if (error) throw error
+      if (!data?.length) throw new Error('Grupo no encontrado')
+      return data[0]
     },
     async listPreparationCatalog() {
       const { data, error } = await supabase.from(TABLES.estados).select('*').order('orden')

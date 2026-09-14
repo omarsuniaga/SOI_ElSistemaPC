@@ -27,6 +27,7 @@ export function createRepertoireDemoAdapter() {
   const passages = []
   const groups = []
   const sessionWorks = []
+  const observationLinks = []
   return {
     canEditApplicability: false,
     async listMontajes() { return structuredClone(state) },
@@ -52,6 +53,12 @@ export function createRepertoireDemoAdapter() {
     async createSessionRepertoireWork(payload) { const work = { id: `demo-session-work-${sessionWorks.length + 1}`, sesion_id: payload.sessionId, montaje_id: payload.montajeId, montaje_fila_id: payload.filaId, pasaje_id: payload.passageId, focus_tags: payload.focusTags, notas: payload.notes, tempo_actual: payload.tempoActual, tempo_objetivo: payload.tempoObjetivo }; sessionWorks.push(work); return structuredClone(work) },
     async addSessionRepertoireWorkMeasures(workId, measureIds) { const work = sessionWorks.find((item) => item.id === workId); if (!work) throw new Error('Trabajo de sesión no encontrado'); work.measureIds = [...new Set(measureIds)]; return structuredClone(work.measureIds) },
     async listSessionRepertoireHistory() { return structuredClone(sessionWorks) },
+    async historyBySession(sessionId) { return structuredClone(sessionWorks.filter((work) => work.sesion_id === sessionId)) },
+    async historyByMontaje(montajeId) { return structuredClone(sessionWorks.filter((work) => work.montaje_id === montajeId)) },
+    async historyByFila(montajeId, filaId) { return structuredClone(sessionWorks.filter((work) => work.montaje_id === montajeId && work.montaje_fila_id === filaId)) },
+    async historyByPassage(passageId) { return structuredClone(sessionWorks.filter((work) => work.pasaje_id === passageId)) },
+    async historyByMeasureRange(montajeId, filaId, measures) { const wanted = new Set(measures); return structuredClone(sessionWorks.filter((work) => work.montaje_id === montajeId && (!filaId || work.montaje_fila_id === filaId) && (work.measureIds || []).some((id) => wanted.has(id)))) },
+    async linkObservationToSessionRepertoire(observationId, workId) { observationLinks.push({ observationId, workId }); return { observationId, workId } },
     summarize(cells) { return aggregatePreparation(cells) }
   }
 }

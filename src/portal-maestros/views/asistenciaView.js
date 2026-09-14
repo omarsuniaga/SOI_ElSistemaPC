@@ -1770,6 +1770,7 @@ function _renderVista(container, ctx) {
     sessionRepertoirePanel = renderSessionRepertoirePanel(container.querySelector('#pm-session-repertoire'), {
       sessionId: sesionId,
       adapter: repertoireAdapter,
+      createdBy: maestroIdSesion,
       montajeOptions: montageOptions,
     })
     _cleanups.push(() => sessionRepertoirePanel.destroy())
@@ -1902,6 +1903,8 @@ function _renderVista(container, ctx) {
       const root = container.querySelector('.pm-asist-root')
       if (root) root.appendChild(el)
     },
+    getRepertoireWorkId: () => sessionRepertoirePanel?.getSelectedWorkId?.(),
+    linkObservationToRepertoire: (observationId, workId) => repertoireAdapter.linkObservationToSessionRepertoire?.(observationId, workId),
   })
 
   // === Student List ===

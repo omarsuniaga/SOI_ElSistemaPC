@@ -198,4 +198,29 @@ describe('repertorioView', () => {
     container.querySelector('[data-scope="cancel"]').click()
     expect(adapter.updateLinkedGroupState).not.toHaveBeenCalled()
   })
+
+  it('propagates the intended new state only after choosing all linked measures', async () => {
+    const adapter = makeAdapter({
+      listMontajes: async () => [{
+        id: 'montaje-1', obra: { titulo: 'Obra de prueba' }, version: { nombre: 'Versión' }, evento: { nombre: 'Evento', fecha: '2026-12-18' }, filas: [{ nombre: 'Trompetas' }], alumnos: [], prioridad: 1, estado: 'EN_MONTAJE',
+        compases: [1, 4, 8, 16].map((number) => ({ id: `m-${number}`, numero_visible: String(number), aplicabilidad: 'TOCA', estado_preparacion: 'SIN_EVALUAR' }))
+      }],
+      createLinkedGroup: vi.fn(async () => ({ id: 'g-1', nombre: 'Patrón A' })),
+      addLinkedMeasures: vi.fn(async (rows) => rows),
+      updateLinkedGroupState: vi.fn(async (_id, state) => ({ affected: 4, state }))
+    })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    container.querySelector('.repertoire-multi').click()
+    for (let index = 0; index < 4; index += 1) container.querySelectorAll('.repertoire-measure')[index].click()
+    container.querySelector('.repertoire-create-group').click()
+    container.querySelector('[name="name"]').value = 'Patrón A'
+    container.querySelector('.repertoire-action-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(container.querySelector('.repertoire-measure.is-linked')).not.toBeNull())
+    container.querySelector('.repertoire-measure').click()
+    container.querySelector('[data-scope="all"]').click()
+    await vi.waitFor(() => expect(adapter.updateLinkedGroupState).toHaveBeenCalledWith('g-1', 'SIN_ESTUDIAR'))
+    expect([...container.querySelectorAll('.repertoire-measure')].every((button) => button.getAttribute('aria-label').includes('Sin estudiar'))).toBe(true)
+  })
 })

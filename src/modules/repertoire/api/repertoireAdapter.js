@@ -107,6 +107,39 @@ export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
       if (!observationId || !workId) throw new TypeError('La observación requiere contexto de repertorio')
       return insert(supabase, TABLES.observationContext, { observacion_id: observationId, trabajo_id: workId })
     },
+    async historyBySession(sessionId) {
+      if (!sessionId) throw new TypeError('El historial requiere sesión')
+      const { data, error } = await supabase.from(TABLES.sessionWorks).select('*, sesion_repertorio_trabajo_compases(*), observacion_sesion_repertorio(*)').eq('sesion_id', sessionId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async historyByMontaje(montajeId) {
+      if (!montajeId) throw new TypeError('El historial requiere montaje')
+      const { data, error } = await supabase.from(TABLES.sessionWorks).select('*, sesion_repertorio_trabajo_compases(*), sesiones_clase(id, fecha, clase_id)').eq('montaje_id', montajeId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async historyByFila(montajeId, filaId) {
+      const rows = await this.historyByMontaje(montajeId)
+      return rows.filter((row) => row.montaje_fila_id === filaId)
+    },
+    async historyByPassage(passageId) {
+      if (!passageId) throw new TypeError('El historial requiere pasaje')
+      const { data, error } = await supabase.from(TABLES.sessionWorks).select('*, sesion_repertorio_trabajo_compases(*), sesiones_clase(id, fecha, clase_id)').eq('pasaje_id', passageId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async historyByMeasureRange(montajeId, filaId, measures) {
+      const wanted = [...new Set((measures || []).filter(Boolean))]
+      if (!montajeId || !wanted.length) throw new TypeError('El historial requiere montaje y compases')
+      const { data: links, error: linksError } = await supabase.from(TABLES.sessionWorkMeasures).select('trabajo_id, montaje_compas_id').in('montaje_compas_id', wanted)
+      if (linksError) throw linksError
+      const workIds = [...new Set((links || []).map((link) => link.trabajo_id))]
+      if (!workIds.length) return []
+      const { data, error } = await supabase.from(TABLES.sessionWorks).select('*, sesion_repertorio_trabajo_compases(*), sesiones_clase(id, fecha, clase_id)').eq('montaje_id', montajeId).in('id', workIds).order('created_at', { ascending: true })
+      if (error) throw error
+      return (data || []).filter((row) => !filaId || row.montaje_fila_id === filaId)
+    },
     async createPassage(payload) { return insert(supabase, TABLES.pasajes, payload) },
     async updatePassage(id, payload) {
       const { data, error } = await supabase.from(TABLES.pasajes).update(payload).eq('id', id).select().single()

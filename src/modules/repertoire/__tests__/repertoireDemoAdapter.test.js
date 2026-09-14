@@ -28,4 +28,18 @@ describe('repertoire demo passage and linked-group operations', () => {
     expect(montage.compases[0].estado_preparacion).not.toBe('DOMINADO')
     expect((await adapter.listMontajes())[0].compases.slice(0, 4).map((item) => item.estado_preparacion)).toEqual(['DOMINADO', 'SIN_ESTUDIAR', 'CON_DIFICULTAD', 'DOMINADO'])
   })
+
+  it('keeps session work history queryable in both directions and observation context optional', async () => {
+    const adapter = createRepertoireDemoAdapter()
+    const first = await adapter.createSessionRepertoireWork({ sessionId: 'session-1', montajeId: 'montaje-1', filaId: 'fila-1', passageId: 'passage-1', createdBy: 'maestro-1', measureIds: ['20', '21'], focusTags: ['AFINACION'] })
+    await adapter.addSessionRepertoireWorkMeasures(first.id, ['20', '21'])
+    const second = await adapter.createSessionRepertoireWork({ sessionId: 'session-1', montajeId: 'montaje-1', filaId: 'fila-1', createdBy: 'maestro-1', measureIds: ['72', '76'], focusTags: ['RITMO'] })
+    await adapter.addSessionRepertoireWorkMeasures(second.id, ['72', '76'])
+    await adapter.linkObservationToSessionRepertoire('observation-1', first.id)
+    expect(await adapter.historyBySession('session-1')).toHaveLength(2)
+    expect(await adapter.historyByMontaje('montaje-1')).toHaveLength(2)
+    expect(await adapter.historyByFila('montaje-1', 'fila-1')).toHaveLength(2)
+    expect(await adapter.historyByPassage('passage-1')).toHaveLength(1)
+    expect(await adapter.historyByMeasureRange('montaje-1', 'fila-1', ['72', '76'])).toHaveLength(1)
+  })
 })

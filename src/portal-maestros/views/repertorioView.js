@@ -112,10 +112,10 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
       const stateButton = event.target.closest('.repertoire-pick-state')
       if (stateButton && pickerMeasure) await saveState(pickerMeasure, stateButton.dataset.state)
       if (event.target.closest('.repertoire-clear-override') && pickerMeasure && activeStudentId) await saveState(pickerMeasure, null)
-      if (event.target.closest('.repertoire-linked-all') && pickerMeasure) await updateLinked(pickerMeasure)
+      if (event.target.closest('.repertoire-linked-all') && pickerMeasure) await updateLinked(pickerMeasure, pickerMeasure.estado_preparacion)
       if (event.target.closest('.repertoire-unlink') && pickerMeasure) { const group = groups.find((item) => item.measureIds?.includes(pickerMeasure.id)); if (group) { await adapter.removeLinkedMeasure(group.id, pickerMeasure.id); group.measureIds = group.measureIds.filter((id) => id !== pickerMeasure.id); pickerMeasure = null; render() } }
     })
-    container.querySelectorAll('.repertoire-linked-scope').forEach((button) => button.addEventListener('click', async () => { if (button.dataset.scope === 'cancel') { linkedScope = null; render(); return } const request = linkedScope; linkedScope = null; if (button.dataset.scope === 'all') await updateLinked(request.measure); else await saveState(request.measure, request.state) }))
+    container.querySelectorAll('.repertoire-linked-scope').forEach((button) => button.addEventListener('click', async () => { if (button.dataset.scope === 'cancel') { linkedScope = null; render(); return } const request = linkedScope; linkedScope = null; if (button.dataset.scope === 'all') await updateLinked(request.measure, request.state); else await saveState(request.measure, request.state) }))
     container.querySelector('.repertoire-applicability')?.addEventListener('change', async (event) => {
       if (!pickerMeasure || !canEditApplicability) return
       const previous = pickerMeasure.aplicabilidad
@@ -183,10 +183,9 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
     render()
   }
 
-  async function updateLinked(measure) {
+  async function updateLinked(measure, state = measure.estado_preparacion) {
     const group = groups.find((item) => item.measureIds?.includes(measure.id))
     if (!group) return
-    const state = measure.estado_preparacion
     const previous = new Map(group.measureIds.map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
     group.measureIds.forEach((id) => { active.compases.find((item) => item.id === id).estado_preparacion = state })
     syncMessage = { label: 'Guardando…', className: 'is-pending' }; pickerMeasure = null; render()

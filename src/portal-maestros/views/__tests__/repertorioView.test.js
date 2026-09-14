@@ -17,6 +17,9 @@ const makeAdapter = (overrides = {}) => ({
   },
   updateMeasureState: vi.fn(async (_id, state) => ({ estado_preparacion: state })),
   updateStudentState: vi.fn(async (studentId, measureId, state) => ({ studentId, measureId, estado_preparacion: state })),
+  createPassage: vi.fn(async (payload) => ({ id: 'p-1', ...payload })),
+  createLinkedGroup: vi.fn(async (payload) => ({ id: 'g-1', ...payload })),
+  addLinkedMeasures: vi.fn(async (rows) => rows),
   ...overrides
 })
 
@@ -154,5 +157,24 @@ describe('repertorioView', () => {
     await Promise.resolve()
     expect(adapter.updateStudentState).toHaveBeenCalledWith('juan', 'm-1', 'CONSOLIDADO')
     expect(adapter.updateMeasureState).not.toHaveBeenCalled()
+  })
+
+  it('creates an independent passage and linked group from the same selection', async () => {
+    const adapter = makeAdapter()
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    container.querySelector('.repertoire-multi').click()
+    container.querySelectorAll('.repertoire-measure')[0].click()
+    container.querySelectorAll('.repertoire-measure')[2].click()
+    container.querySelector('.repertoire-create-passage').click()
+    container.querySelector('[name="name"]').value = 'Patrón de corcheas'
+    container.querySelector('[name="difficulty"]').value = '3'
+    container.querySelector('[name="focus"]').value = 'RITMO, ARTICULACION'
+    container.querySelector('.repertoire-action-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(adapter.createPassage).toHaveBeenCalledWith(expect.objectContaining({ measureIds: ['m-1', 'm-3'], difficulty: 3 }))
+    expect(container.textContent).toContain('Patrón de corcheas')
   })
 })

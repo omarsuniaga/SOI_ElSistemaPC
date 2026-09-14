@@ -27,16 +27,20 @@ function cardMarkup(montaje) {
   </article>`
 }
 
-function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId) {
+function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages = [], groups = [], action = null) {
   const selectionLabel = selectionMode ? (selected.size ? `${selected.size} compases seleccionados` : 'Selecciona compases') : 'Selección múltiple'
   const activeStudent = montaje.alumnos?.find((student) => student.id === activeStudentId)
   const pickerOverride = activeStudent?.overrides?.[pickerMeasure?.id]
   const picker = pickerMeasure ? `<div class="repertoire-picker" role="dialog" aria-label="Estado de ${measureAriaLabel(pickerMeasure)}"><strong>${measureAriaLabel(pickerMeasure)}</strong><div class="repertoire-picker__states">${ESTADOS_PREPARACION.map((state) => `<button type="button" class="btn btn-sm btn-outline-secondary repertoire-pick-state" data-state="${state}">${STATE_LABELS[state]}</button>`).join('')}</div>${activeStudent && pickerOverride ? '<button type="button" class="btn btn-sm btn-link repertoire-clear-override">Usar estado de la fila</button>' : ''}${canEditApplicability ? `<div class="repertoire-picker__applicability"><label for="repertoire-applicability">Aplicabilidad</label><select id="repertoire-applicability" class="form-select repertoire-applicability">${['TOCA', 'SILENCIO', 'TACET', 'NO_APLICA', 'DESCONOCIDO'].map((value) => `<option value="${value}" ${pickerMeasure.aplicabilidad === value ? 'selected' : ''}>${value}</option>`).join('')}</select></div>` : '<small>Aplicabilidad: solo lectura</small>'}</div>` : ''
+  const selectedActions = selectionMode && selected.size ? '<button type="button" class="btn btn-sm btn-outline-secondary repertoire-create-passage">Crear pasaje</button><button type="button" class="btn btn-sm btn-outline-secondary repertoire-create-group">Vincular compases</button>' : ''
+  const form = action ? `<form class="repertoire-action-form" data-action="${action}"><h2>${action === 'passage' ? 'Crear pasaje' : 'Vincular compases'}</h2>${action === 'passage' ? '<input name="name" class="form-control" placeholder="Nombre" required><textarea name="description" class="form-control" placeholder="Descripción (opcional)"></textarea><select name="difficulty" class="form-select"><option value="">Dificultad</option><option value="1">1 — Fácil</option><option value="2">2 — Moderado</option><option value="3">3 — Difícil</option><option value="4">4 — Muy difícil</option><option value="5">5 — Crítico</option></select><input name="focus" class="form-control" placeholder="Focus: RITMO, ARTICULACION">' : '<input name="name" class="form-control" placeholder="Nombre del grupo" required>'}<button class="btn btn-primary" type="submit">Guardar</button><button class="btn btn-link repertoire-cancel-action" type="button">Cancelar</button></form>` : ''
+  const passageList = passages.filter((item) => !item.archived_at).length ? `<section class="repertoire-passages"><h2>Pasajes</h2>${passages.filter((item) => !item.archived_at).map((item) => `<button type="button" class="repertoire-passage" data-passage-id="${item.id}">${item.name} · cc. ${item.measureIds.join(', ')}</button>`).join('')}</section>` : ''
   return `<section class="repertoire-map" aria-label="Mapa de preparación de ${montaje.obra.titulo}">
     <div class="repertoire-map__header"><div><button class="btn btn-link repertoire-back">← Mis obras</button><h1>${montaje.obra.titulo}</h1><p>${montaje.filas[0]?.nombre} · ${montaje.evento?.nombre} · ${montaje.evento?.fecha}</p></div><span class="repertoire-mode-badge">DEMO · persistencia local</span></div>
-    <div class="repertoire-map__toolbar"><button class="btn btn-outline-secondary repertoire-multi" aria-pressed="${selectionMode}">${selectionLabel}</button><select class="form-select repertoire-bulk" aria-label="Estado para selección múltiple" ${selected.size ? '' : 'disabled'}>${ESTADOS_PREPARACION.map((state) => `<option value="${state}">${STATE_LABELS[state]}</option>`).join('')}</select><button class="btn btn-primary repertoire-apply" ${selected.size ? '' : 'disabled'}>Aplicar estado</button><span class="repertoire-sync ${syncMessage.className}" role="status" aria-live="polite">${syncMessage.label}</span></div>
+    <div class="repertoire-map__toolbar"><button class="btn btn-outline-secondary repertoire-multi" aria-pressed="${selectionMode}">${selectionLabel}</button>${selectedActions}<select class="form-select repertoire-bulk" aria-label="Estado para selección múltiple" ${selected.size ? '' : 'disabled'}>${ESTADOS_PREPARACION.map((state) => `<option value="${state}">${STATE_LABELS[state]}</option>`).join('')}</select><button class="btn btn-primary repertoire-apply" ${selected.size ? '' : 'disabled'}>Aplicar estado</button><span class="repertoire-sync ${syncMessage.className}" role="status" aria-live="polite">${syncMessage.label}</span></div>
     ${picker}
-    <div class="repertoire-grid" role="grid">${montaje.compases.map((measure) => { const state = effectivePreparationState({ collectiveState: measure.estado_preparacion, individualState: activeStudent?.overrides?.[measure.id], applicability: measure.aplicabilidad }); const displayMeasure = { ...measure, estado_preparacion: state || measure.estado_preparacion }; return `<button class="repertoire-measure state-${displayMeasure.estado_preparacion.toLowerCase()} ${measure.aplicabilidad !== 'TOCA' ? 'is-not-applicable' : ''} ${activeStudent?.overrides?.[measure.id] ? 'has-individual-override' : ''} ${selected.has(measure.id) ? 'is-selected' : ''}" role="gridcell" data-measure-id="${measure.id}" aria-label="${measureAriaLabel(displayMeasure)}" title="Clic: ${measureAriaLabel(displayMeasure)} · Shift+clic: seleccionar">${STATE_ICONS[displayMeasure.estado_preparacion]}</button>` }).join('')}</div>
+    ${form}${passageList}
+    <div class="repertoire-grid" role="grid">${montaje.compases.map((measure) => { const state = effectivePreparationState({ collectiveState: measure.estado_preparacion, individualState: activeStudent?.overrides?.[measure.id], applicability: measure.aplicabilidad }); const displayMeasure = { ...measure, estado_preparacion: state || measure.estado_preparacion }; const linked = groups.find((group) => group.measureIds?.includes(measure.id)); const label = `${measureAriaLabel(displayMeasure)}${linked ? ` — vinculado a ${linked.nombre}` : ''}`; return `<button class="repertoire-measure state-${displayMeasure.estado_preparacion.toLowerCase()} ${measure.aplicabilidad !== 'TOCA' ? 'is-not-applicable' : ''} ${activeStudent?.overrides?.[measure.id] ? 'has-individual-override' : ''} ${linked ? 'is-linked' : ''} ${selected.has(measure.id) ? 'is-selected' : ''}" role="gridcell" data-measure-id="${measure.id}" aria-label="${label}" title="Clic: ${label} · Shift+clic: seleccionar">${STATE_ICONS[displayMeasure.estado_preparacion]}${linked ? '<span aria-hidden="true">↗</span>' : ''}</button>` }).join('')}</div>
     <section class="repertoire-students" aria-label="Preparación individual"><h2>Detalle por alumno</h2><p>El estado colectivo de la fila no reemplaza estos estados individuales.</p><div class="repertoire-student-list"><button type="button" class="btn btn-sm ${activeStudentId === null ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="">Fila colectiva</button>${(montaje.alumnos || []).map((student) => `<button type="button" class="btn btn-sm ${student.id === activeStudentId ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="${student.id}">${student.nombre}: ${STATE_LABELS[student.estado_preparacion]}</button>`).join('')}</div></section>
     <p class="repertoire-legend">Los compases no aplicables se muestran en neutro y no cuentan para el porcentaje de preparación.</p>
   </section>`
@@ -54,16 +58,41 @@ export async function renderRepertoireView(container, { adapter = createRepertoi
   let longPressTriggered = false
   let syncMessage = { label: 'Listo', className: 'is-saved' }
   let activeStudentId = active?.alumnos?.[0]?.id || null
+  let passages = []
+  let groups = []
+  let action = null
   const canEditApplicability = adapter.canEditApplicability === true
 
   const render = () => {
-    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId) : `<div class="repertoire-view"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">ACM · PREPARACIÓN ORQUESTAL</span><h1>Mis obras</h1><p>Montajes asignados para preparar con tu fila.</p></div>${montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes montajes asignados todavía.</div>'}</div>`
+    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action) : `<div class="repertoire-view"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">ACM · PREPARACIÓN ORQUESTAL</span><h1>Mis obras</h1><p>Montajes asignados para preparar con tu fila.</p></div>${montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes montajes asignados todavía.</div>'}</div>`
     if (active) bindMap()
     else container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); activeStudentId = null; render() }))
   }
 
   const bindMap = () => {
     container.querySelectorAll('.repertoire-student').forEach((button) => button.addEventListener('click', () => { activeStudentId = button.dataset.studentId || null; pickerMeasure = null; render() }))
+    container.querySelector('.repertoire-create-passage')?.addEventListener('click', () => { action = 'passage'; render() })
+    container.querySelector('.repertoire-create-group')?.addEventListener('click', () => { action = 'group'; render() })
+    container.querySelector('.repertoire-cancel-action')?.addEventListener('click', () => { action = null; render() })
+    container.querySelector('.repertoire-action-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault()
+      const form = new FormData(event.currentTarget)
+      syncMessage = { label: 'Guardando…', className: 'is-pending' }
+      render()
+      try {
+        if (action === 'passage') {
+          const passage = await adapter.createPassage({ name: form.get('name'), description: form.get('description'), difficulty: form.get('difficulty') ? Number(form.get('difficulty')) : null, focusTags: String(form.get('focus') || '').split(',').map((tag) => tag.trim()).filter(Boolean), measureIds: [...selected] })
+          passages.push(passage)
+        } else {
+          const group = await adapter.createLinkedGroup({ nombre: form.get('name') })
+          await adapter.addLinkedMeasures([...selected].map((montaje_compas_id) => ({ grupo_id: group.id, montaje_compas_id })))
+          groups.push({ ...group, measureIds: [...selected] })
+        }
+        selected = new Set(); selectionMode = false; action = null; syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' }
+      } catch { syncMessage = { label: 'No se pudo guardar; se conservó la selección', className: 'is-error' } }
+      render()
+    })
+    container.querySelectorAll('.repertoire-passage').forEach((button) => button.addEventListener('click', () => { const passage = passages.find((item) => item.id === button.dataset.passageId); selected = new Set(passage.measureIds); selectionMode = true; render(); container.querySelector('.repertoire-grid')?.scrollIntoView({ block: 'nearest' }) }))
     container.querySelector('.repertoire-back')?.addEventListener('click', () => { active = null; selected = new Set(); selectionMode = false; render() })
     container.querySelector('.repertoire-multi')?.addEventListener('click', () => { selectionMode = !selectionMode; anchorIndex = null; if (!selectionMode) selected = new Set(); render() })
     container.querySelector('.repertoire-picker')?.addEventListener('click', async (event) => {

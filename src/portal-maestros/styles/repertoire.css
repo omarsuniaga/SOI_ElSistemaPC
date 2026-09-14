@@ -26,6 +26,12 @@
 .repertoire-measure { min-height: 3rem; border: 1px solid var(--pm-border, #adb5bd); border-radius: 10px; background: transparent; font-size: 1.05rem; cursor: pointer; transition: transform .12s ease, outline .12s ease; }
 .repertoire-measure:focus-visible, .repertoire-measure:hover { outline: 3px solid color-mix(in srgb, var(--pm-primary, #0d6efd) 35%, transparent); transform: translateY(-1px); }
 .repertoire-measure.is-selected { outline: 3px solid var(--pm-primary, #0d6efd); }
+.repertoire-measure.is-linked { box-shadow: inset 0 -3px 0 var(--pm-primary, #0d6efd); }
+.repertoire-measure > span { display: block; font-size: .65rem; line-height: .65rem; }
+.repertoire-action-form { display: grid; gap: .55rem; max-width: 480px; margin: .75rem 0; padding: 1rem; border: 1px solid var(--pm-border, #dee2e6); border-radius: 12px; background: var(--pm-surface, #fff); }
+.repertoire-action-form h2, .repertoire-passages h2 { font-size: 1rem; margin: 0; }
+.repertoire-passages { display: grid; gap: .35rem; margin: .75rem 0 1rem; }
+.repertoire-passage { text-align: start; border: 0; background: transparent; color: var(--pm-primary, #0d6efd); padding: .3rem 0; }
 .repertoire-measure.state-sin_estudiar { background: #f8d7da; border-color: #dc3545; }
 .repertoire-measure.state-con_dificultad { background: #ffe5d0; border-color: #fd7e14; }
 .repertoire-measure.state-dominado { background: #fff3cd; border-color: #ffc107; }

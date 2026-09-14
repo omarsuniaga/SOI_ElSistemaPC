@@ -1378,7 +1378,7 @@ function _mostrarModalAlumnosSinClase() {
           <div>
             <h6 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
               <i class="bi bi-person-exclamation text-warning fs-5"></i>
-              <span>Padrón de Alumnos Sin Clase Asignada</span>
+              <span>Alumnos sin clases asignadas</span>
             </h6>
             <small class="text-muted">Hay <strong>${sinClaseList.length}</strong> alumnos activos sin asignación de horario</small>
           </div>
@@ -1410,7 +1410,7 @@ function _mostrarModalAlumnosSinClase() {
             <div class="p-5 text-center text-muted bg-body-tertiary rounded-4 border my-auto">
               <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-3"></i>
               <h5 class="fw-bold text-body">¡Excelente trabajo!</h5>
-              <p class="mb-0">Todos los alumnos del padrón tienen al menos una clase asignada.</p>
+              <p class="mb-0">Todos los alumnos activos tienen al menos una clase asignada.</p>
             </div>
           ` : `
             <div class="row g-2" id="gridSinClaseItems">
@@ -1454,11 +1454,11 @@ function _mostrarModalAlumnosSinClase() {
                       </div>
 
                       <div class="d-flex justify-content-between align-items-center pt-1.5 border-top border-opacity-10 mt-auto">
-                        <small class="text-muted text-truncate" style="font-size:0.68rem;">
-                          ${a.telefono ? `📞 ${escapeHTML(a.telefono)}` : 'Activo'}
-                        </small>
-                        <span class="sc-mini-action-btn btn btn-sm btn-primary shadow-xs" title="Seleccionar">
-                          <i class="bi bi-arrow-right"></i>
+                        <span class="text-muted text-truncate" style="font-size:0.68rem;">
+                          ${a.telefono ? `📞 ${escapeHTML(a.telefono)}` : ''}
+                        </span>
+                        <span class="sc-arrow-indicator text-primary" title="Seleccionar alumno" aria-label="Seleccionar">
+                          <i class="bi bi-arrow-right fs-6"></i>
                         </span>
                       </div>
                     </div>
@@ -1496,7 +1496,7 @@ function _mostrarModalAlumnosSinClase() {
 
         <!-- Banner de Contexto: Alumno seleccionado -->
         <div class="sc-context-banner mb-3">
-          <div class="d-flex align-items-center gap-2 text-truncate">
+          <div class="d-flex align-items-center gap-2.5 text-truncate">
             <div class="sc-avatar bg-primary text-white border-0" style="width:34px;height:34px;font-size:0.9rem;">
               <i class="bi bi-person-fill"></i>
             </div>
@@ -1509,9 +1509,8 @@ function _mostrarModalAlumnosSinClase() {
             </div>
           </div>
 
-          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 px-2.5 py-1 rounded-3 shadow-xs flex-shrink-0" id="btnVolverStep1" style="font-size:0.78rem;">
-            <i class="bi bi-arrow-left"></i>
-            <span class="d-none d-sm-inline">Cambiar alumno</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center rounded-3 shadow-xs flex-shrink-0" id="btnVolverStep1" title="Cambiar alumno" aria-label="Cambiar alumno" style="width:32px; height:32px; padding:0;">
+            <i class="bi bi-arrow-left fs-6"></i>
           </button>
         </div>
 
@@ -1577,7 +1576,7 @@ function _mostrarModalAlumnosSinClase() {
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center pt-1.5 border-top border-opacity-10 mt-auto">
-                      <div class="sc-capacity-meter me-2" style="max-width: calc(100% - 32px);">
+                      <div class="sc-capacity-meter me-2" style="max-width: calc(100% - 28px);">
                         <div class="d-flex justify-content-between small px-0.5 mb-0.5" style="font-size:0.68rem;">
                           <span class="${isFull ? 'text-danger fw-bold' : 'text-muted'}">${totalAlumnos}/${capacidad}</span>
                           <span class="text-muted">${pct}%</span>
@@ -1587,8 +1586,8 @@ function _mostrarModalAlumnosSinClase() {
                         </div>
                       </div>
 
-                      <span class="sc-mini-select-btn flex-shrink-0" title="Seleccionar">
-                        <i class="bi bi-chevron-right"></i>
+                      <span class="sc-arrow-indicator text-primary flex-shrink-0" title="Seleccionar clase" aria-label="Seleccionar">
+                        <i class="bi bi-chevron-right fs-6"></i>
                       </span>
                     </div>
                   </div>
@@ -1630,6 +1629,7 @@ function _mostrarModalAlumnosSinClase() {
     const horaTexto = primerHorario.hora_inicio 
       ? `${String(primerHorario.hora_inicio).slice(0, 5)} - ${String(primerHorario.hora_fin || '').slice(0, 5)}`
       : 'Flexible'
+    const salonTexto = clase.salon || primerHorario.salones?.nombre || primerHorario.salon_nombre || 'Sin salón asignado'
     const maestroObj = state.maestros.find(m => m.id === clase.maestro_principal_id || m.id === clase.maestro_id)
     const maestroNombre = clase.maestro_nombre || maestroObj?.nombre_completo || 'No asignado'
     const isAlreadyIn = inscritos.some(i => i.alumnoId === selectedAlumno.id)
@@ -1642,9 +1642,8 @@ function _mostrarModalAlumnosSinClase() {
         ${_renderStepper(3)}
 
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
-          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 shadow-xs" id="btnVolverStep2" style="font-size:0.8rem;">
-            <i class="bi bi-arrow-left"></i>
-            <span>Volver a clases</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center rounded-3 shadow-xs" id="btnVolverStep2" title="Volver a clases" aria-label="Volver a clases" style="width:34px; height:34px; padding:0;">
+            <i class="bi bi-arrow-left fs-6"></i>
           </button>
 
           <span class="badge ${isFull ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'} py-1.5 px-3 rounded-pill" style="font-size:0.82rem;">
@@ -1657,41 +1656,45 @@ function _mostrarModalAlumnosSinClase() {
             <!-- Columna Izquierda: Información de Clase y Acción de Incorporación -->
             <div class="col-12 col-lg-5 d-flex flex-column gap-3">
               
-              <!-- Tarjeta de Clase Seleccionada -->
+              <!-- Tarjeta de Clase Seleccionada: Metadatos en 2 columnas compactas -->
               <div class="sc-split-card">
-                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
-                  <h6 class="fw-bold mb-0 text-body" style="font-size:1.02rem;">${escapeHTML(clase.nombre)}</h6>
-                  <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.72rem;">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom flex-wrap gap-1">
+                  <h6 class="fw-bold mb-0 text-body" style="font-size:0.95rem;">${escapeHTML(clase.nombre)}</h6>
+                  <span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.7rem;">
                     <i class="bi ${getInstrumentoIcon(clase.instrumento)} me-1"></i>${escapeHTML(clase.instrumento || 'General')}
                   </span>
                 </div>
                 
-                <div class="d-flex flex-column gap-2 small text-muted mt-2.5" style="font-size:0.83rem;">
-                  <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-badge text-info fs-5"></i>
-                    <span>Docente: <strong class="text-body">${escapeHTML(maestroNombre)}</strong></span>
+                <div class="sc-props-grid mt-2">
+                  <div class="sc-prop-item">
+                    <span class="sc-prop-label"><i class="bi bi-person-badge text-info me-1"></i>Docente</span>
+                    <strong class="sc-prop-val text-truncate" title="${escapeHTML(maestroNombre)}">${escapeHTML(maestroNombre)}</strong>
                   </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-clock text-primary fs-5"></i>
-                    <span>Horario: <strong class="text-body">${escapeHTML(diaTexto)} · ${escapeHTML(horaTexto)}</strong></span>
+                  <div class="sc-prop-item">
+                    <span class="sc-prop-label"><i class="bi bi-door-closed text-secondary me-1"></i>Salón</span>
+                    <strong class="sc-prop-val text-truncate" title="${escapeHTML(salonTexto)}">${escapeHTML(salonTexto)}</strong>
                   </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-door-closed text-secondary fs-5"></i>
-                    <span>Salón: <strong class="text-body">${escapeHTML(clase.salon || primerHorario.salon_nombre || 'Sin salón asignado')}</strong></span>
+                  <div class="sc-prop-item sc-prop-span-2">
+                    <span class="sc-prop-label"><i class="bi bi-clock text-primary me-1"></i>Horario</span>
+                    <strong class="sc-prop-val text-truncate" title="${escapeHTML(diaTexto)} · ${escapeHTML(horaTexto)}">${escapeHTML(diaTexto)} · ${escapeHTML(horaTexto)}</strong>
                   </div>
                 </div>
               </div>
 
-              <!-- Panel de Confirmación de Inscripción -->
-              <div class="sc-split-card" style="background: var(--sc-bg-surface-accent); border-color: var(--sc-border-hover);">
-                <div class="d-flex align-items-center gap-2.5 mb-3">
-                  <div class="sc-avatar bg-success text-white border-0" style="width:40px;height:40px;">
+              <!-- Panel de Confirmación de Alumno a Incorporar -->
+              <div class="sc-split-card p-3" style="background: var(--sc-bg-surface-accent); border-color: var(--sc-border-hover);">
+                <div class="d-flex align-items-center gap-3 mb-3 p-1">
+                  <div class="sc-avatar bg-success text-white border-0 flex-shrink-0" style="width:42px;height:42px;font-size:1.15rem;">
                     <i class="bi bi-person-plus-fill"></i>
                   </div>
-                  <div class="text-truncate">
-                    <span class="small text-muted d-block" style="font-size:0.73rem;">Alumno a incorporar:</span>
-                    <strong class="text-body text-truncate d-block" style="font-size:0.95rem;">${escapeHTML(selectedAlumno.nombre_completo)}</strong>
-                    <span class="text-muted small">Instrumento: ${escapeHTML(selectedAlumno.instrumento || 'General')}</span>
+                  <div class="text-truncate flex-grow-1">
+                    <span class="text-muted d-block" style="font-size:0.72rem; text-transform: uppercase; font-weight:600; letter-spacing:0.4px;">Alumno a incorporar</span>
+                    <strong class="text-body text-truncate d-block" style="font-size:0.95rem; line-height: 1.3;" title="${escapeHTML(selectedAlumno.nombre_completo)}">
+                      ${escapeHTML(selectedAlumno.nombre_completo)}
+                    </strong>
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis border mt-1" style="font-size:0.68rem;">
+                      <i class="bi ${getInstrumentoIcon(selectedAlumno.instrumento)} me-1"></i>${escapeHTML(selectedAlumno.instrumento || 'General')}
+                    </span>
                   </div>
                 </div>
 
@@ -1712,8 +1715,8 @@ function _mostrarModalAlumnosSinClase() {
                       <i class="bi bi-person-lines-fill me-1.5"></i>Inscribir a otro alumno
                     </button>
                   ` : `
-                    <button type="button" class="btn btn-success w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2 rounded-3 fw-bold shadow-xs" id="btnConfirmarInscribirAqui" data-clase-id="${clase.id}" data-alumno-id="${selectedAlumno.id}" style="font-size:0.85rem;">
-                      <i class="bi bi-plus-circle-fill fs-5"></i>
+                    <button type="button" class="btn btn-success w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2.5 rounded-3 fw-bold shadow-xs" id="btnConfirmarInscribirAqui" data-clase-id="${clase.id}" data-alumno-id="${selectedAlumno.id}" style="font-size:0.88rem;">
+                      <i class="bi bi-check2-circle fs-5"></i>
                       <span>Confirmar e Inscribir Aquí</span>
                     </button>
                   `}
@@ -1722,40 +1725,47 @@ function _mostrarModalAlumnosSinClase() {
 
             </div>
 
-            <!-- Columna Derecha: Nómina Completa de Alumnos con Quitar -->
+            <!-- Columna Derecha: Nómina Completa con Header Ordenado y Botones Icono-Only -->
             <div class="col-12 col-lg-7 d-flex flex-column">
               <div class="sc-split-card d-flex flex-column h-100">
-                <div class="small fw-bold text-muted text-uppercase mb-2.5 d-flex justify-content-between align-items-center pb-2 border-bottom flex-shrink-0" style="font-size:0.75rem;">
-                  <span class="d-flex align-items-center gap-1.5 text-body">
-                    <i class="bi bi-people-fill text-primary"></i>
-                    <span>Nómina Actual de la Clase (${inscritos.length})</span>
-                  </span>
-                  <span class="text-muted fw-normal d-none d-sm-inline">Gestión de bajas si hubo una asignación errónea</span>
+                <div class="d-flex justify-content-between align-items-center pb-2.5 mb-2.5 border-bottom flex-shrink-0">
+                  <div>
+                    <div class="d-flex align-items-center gap-2">
+                      <h6 class="fw-bold mb-0 text-body" style="font-size:0.92rem;">Nómina Actual</h6>
+                      <span class="badge bg-secondary-subtle text-secondary-emphasis border rounded-pill" style="font-size:0.72rem;">
+                        ${inscritos.length} alumnos
+                      </span>
+                    </div>
+                    <small class="text-muted d-block mt-0.5" style="font-size:0.72rem;">
+                      Gestión de bajas si hubo una asignación errónea
+                    </small>
+                  </div>
                 </div>
 
                 <div class="flex-grow-1 overflow-auto pe-1" style="max-height: 420px;" id="listaNominaClaseContainer">
                   ${inscritos.length === 0 ? `
                     <div class="p-5 text-center text-muted small fst-italic">No hay alumnos inscritos en esta clase todavía.</div>
                   ` : `
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-1.5">
                       ${inscritos.map(ins => {
                         const isCurrentCandidate = ins.alumnoId === selectedAlumno.id
                         return `
-                          <div class="p-2.5 px-3 rounded-3 border d-flex justify-content-between align-items-center shadow-xs ${isCurrentCandidate ? 'border-success border-2 bg-success-subtle bg-opacity-25' : ''}" style="background: var(--sc-bg-surface-elevated);">
-                            <div class="d-flex align-items-center gap-2.5 text-truncate me-2">
-                              <i class="bi bi-person-circle ${isCurrentCandidate ? 'text-success' : 'text-primary'} fs-5"></i>
+                          <div class="p-2 px-2.5 rounded-3 border d-flex justify-content-between align-items-center shadow-xs ${isCurrentCandidate ? 'border-success border-2 bg-success-subtle bg-opacity-25' : ''}" style="background: var(--sc-bg-surface-elevated);">
+                            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                              <i class="bi bi-person-circle ${isCurrentCandidate ? 'text-success' : 'text-primary'} fs-5 flex-shrink-0"></i>
                               <div class="text-truncate">
                                 <div class="d-flex align-items-center gap-1.5">
-                                  <strong class="text-body small d-block text-truncate">${escapeHTML(ins.nombre)}</strong>
-                                  ${isCurrentCandidate ? '<span class="badge bg-success" style="font-size:0.65rem;">Recién agregado</span>' : ''}
+                                  <strong class="text-body small d-block text-truncate" style="font-size:0.8rem;">${escapeHTML(ins.nombre)}</strong>
+                                  ${isCurrentCandidate ? '<span class="badge bg-success" style="font-size:0.62rem;">Recién agregado</span>' : ''}
                                 </div>
-                                <span class="text-muted small text-truncate" style="font-size:0.75rem;">${ins.instrumento ? `${escapeHTML(ins.instrumento)}` : 'General'}</span>
+                                <span class="text-muted small text-truncate d-block" style="font-size:0.7rem; line-height: 1.1;">
+                                  ${ins.instrumento ? escapeHTML(ins.instrumento) : 'General'}
+                                </span>
                               </div>
                             </div>
                             
-                            <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 rounded-3 shadow-xs d-inline-flex align-items-center gap-1 btn-quitar-alumno-nomina" data-inscripcion-id="${ins.inscripcionId}" data-nombre="${escapeHTML(ins.nombre)}" data-clase-id="${clase.id}" title="Quitar de esta clase">
-                              <i class="bi bi-trash3-fill"></i>
-                              <span class="d-none d-sm-inline">Quitar</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger p-1 rounded-2 shadow-xs d-inline-flex align-items-center justify-content-center btn-quitar-alumno-nomina flex-shrink-0" data-inscripcion-id="${ins.inscripcionId}" data-nombre="${escapeHTML(ins.nombre)}" data-clase-id="${clase.id}" title="Quitar de esta clase" aria-label="Quitar de esta clase" style="width:28px; height:28px;">
+                              <i class="bi bi-trash3 fs-6"></i>
                             </button>
                           </div>
                         `

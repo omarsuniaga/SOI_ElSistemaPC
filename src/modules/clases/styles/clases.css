@@ -1744,4 +1744,58 @@ body.dark-mode .clase-card-v2--inactiva {
   box-shadow: var(--sc-card-shadow);
 }
 
+/* Step 1 & 2 Arrow Indicator (Naked arrow with micro-interaction) */
+.sc-arrow-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+  opacity: 0.85;
+}
+
+.sc-student-card:hover .sc-arrow-indicator,
+.sc-class-card-compact:hover .sc-arrow-indicator {
+  transform: translateX(3px);
+  opacity: 1;
+}
+
+/* Step 3: 2-Column Compact Class Properties Grid */
+.sc-props-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.75rem;
+}
+
+.sc-prop-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.sc-prop-item.sc-prop-span-2 {
+  grid-column: span 2;
+}
+
+.sc-prop-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--sc-text-muted);
+  line-height: 1;
+}
+
+.sc-prop-val {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+  line-height: 1.25;
+}
+
+[data-bs-theme="dark"] .sc-prop-val {
+  color: #e6edf3;
+}
+
+
 

@@ -40,6 +40,11 @@ SELECT sc.id AS sesion_clase_id,
         WHEN sc.emergente_id IS NOT NULL THEN true
         ELSE false
     END AS es_justificada_por_emergente,
+    -- CORRECTED (validado con smoke test real): "sí" del maestro justifica de
+    -- inmediato, sin depender de estado_validacion — esa columna solo aplica
+    -- al camino de "no_sé" (revisión ACM), no a "sí". Exigir 'validado' acá
+    -- hacía que tiene_confirmacion_si quedara en false incluso cuando el
+    -- maestro ya había confirmado que sí.
     CASE
         WHEN sc.emergente_id IS NOT NULL
             AND EXISTS (
@@ -47,7 +52,6 @@ SELECT sc.id AS sesion_clase_id,
                 WHERE ce.actividad_id = sc.emergente_id
                     AND ce.maestro_id = c.maestro_principal_id
                     AND ce.respuesta = 'si'
-                    AND ce.estado_validacion = 'validado'
             )
         THEN true
         ELSE false
@@ -60,5 +64,8 @@ SELECT sc.id AS sesion_clase_id,
      LEFT JOIN alumnos al ON ((al.id = a.alumno_id)))
      LEFT JOIN justificaciones j ON ((j.sesion_id = sc.id)))
      LEFT JOIN alumnos al2 ON ((al2.id = j.alumno_id)))
-  GROUP BY sc.id, sc.fecha, sc.clase_id, c.nombre, sc.hora_inicio, sc.hora_fin, sc.borrador,
+  GROUP BY sc.id, sc.fecha, sc.clase_id, c.nombre, c.maestro_principal_id, sc.hora_inicio, sc.hora_fin, sc.borrador,
            m1.nombre_completo, m2.nombre_completo, sc.contenido, sc.contenido_dsl, sc.salon_id, sc.emergente_id;
+-- CORRECTED (validado ejecutando contra Postgres real): c.maestro_principal_id
+-- se usa dentro del EXISTS de tiene_confirmacion_si pero faltaba en el GROUP BY.
+-- Postgres lo exige aunque el uso sea dentro de una subquery correlacionada.

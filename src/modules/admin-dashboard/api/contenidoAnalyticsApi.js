@@ -56,12 +56,12 @@ export async function getAnalisisContenidoPedagogico({
     }
   }
 
-  // 2. Consultar sesiones en el rango (columnas reales: id, fecha, estado, clase_id, maestro_id, tema, contenido)
+  // 2. Consultar sesiones en el rango (columnas reales: id, fecha, estado, clase_id, maestro_id, tema_principal, contenido)
   let sesiones = []
   try {
     const { data, error: sesErr } = await supabase
       .from('sesiones_clase')
-      .select('id, fecha, estado, clase_id, maestro_id, tema, contenido')
+      .select('id, fecha, estado, clase_id, maestro_id, tema_principal, contenido')
       .gte('fecha', inicio)
       .lte('fecha', fin)
 
@@ -205,7 +205,7 @@ export async function getAnalisisContenidoPedagogico({
       return
     }
 
-    const desc = s.tema?.trim() || s.contenido?.trim()
+    const desc = s.tema_principal?.trim() || s.contenido?.trim()
     if (desc && desc.length > 2) {
       clasificarFocoTecnico(desc, focoTecnicoCounts)
       actualizarCatedraResumen(catedrasMap, instrumento, desc, 'practicado')

@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION public.fn_repertoire_update_preparation(
   p_actor_id uuid, p_scope text DEFAULT 'collective', p_source text DEFAULT 'PREPARATION_MUTATION',
   p_fila_id uuid DEFAULT NULL, p_student_id uuid DEFAULT NULL, p_session_id uuid DEFAULT NULL,
   p_bulk_operation_id uuid DEFAULT NULL
-) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE previous_state public.estado_preparacion; resulting_state public.estado_preparacion; affected integer := 0; effective_actor uuid := public.maestro_actual();
 BEGIN
   IF NOT (public.get_user_department() = 'ACM' OR public.get_user_role() = ANY (ARRAY['admin','superadmin','direccion','coordinacion_academica'])) THEN RAISE EXCEPTION 'not authorized'; END IF;
@@ -25,3 +25,10 @@ BEGIN
   INSERT INTO public.montaje_preparacion_historial(montaje_id, montaje_fila_id, alumno_id, montaje_compas_id, estado_anterior, estado_nuevo, actor_maestro_id, alcance, fuente, sesion_id, operacion_masiva_id) VALUES (p_montage_id, p_fila_id, p_student_id, p_measure_id, previous_state, resulting_state, effective_actor, p_scope, p_source, p_session_id, p_bulk_operation_id);
   RETURN jsonb_build_object('affected', affected, 'measure_id', p_measure_id, 'previous_state', previous_state, 'new_state', resulting_state, 'scope', p_scope, 'bulk_operation_id', p_bulk_operation_id);
 END; $$;
+
+-- Preparation state may only be changed through the atomic boundary above.
+-- The function is deliberately callable only by authenticated clients and
+-- remains hardened by explicit actor/scope/assignment validation.
+REVOKE ALL ON FUNCTION public.fn_repertoire_update_preparation(uuid, uuid, public.estado_preparacion, uuid, text, text, uuid, uuid, uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_repertoire_update_preparation(uuid, uuid, public.estado_preparacion, uuid, text, text, uuid, uuid, uuid, uuid) TO authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.montaje_compases, public.montaje_alumno_compases FROM authenticated;

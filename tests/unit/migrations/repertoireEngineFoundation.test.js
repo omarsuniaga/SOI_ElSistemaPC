@@ -79,9 +79,15 @@ describe('repertoire foundation migration contract', () => {
   it('defines an atomic state-plus-history RPC boundary', async () => {
     const sql = await readFile(atomicMigrationPath, 'utf8')
     expect(sql).toContain('fn_repertoire_update_preparation')
+    expect(sql).toContain('SECURITY DEFINER SET search_path = public, pg_temp')
+    expect(sql).toContain('REVOKE ALL ON FUNCTION')
+    expect(sql).toContain('GRANT EXECUTE ON FUNCTION')
+    expect(sql).toContain('REVOKE INSERT, UPDATE, DELETE ON TABLE public.montaje_compases, public.montaje_alumno_compases FROM authenticated')
     expect(sql).toContain('FOR UPDATE')
     expect(sql).toContain('montaje_preparacion_historial')
     expect(sql).toContain('not authorized')
+    expect(sql).toContain('actor mismatch')
+    expect(sql).toContain('student assignment outside montage')
     expect(sql).toContain('zero-row mutation')
   })
 

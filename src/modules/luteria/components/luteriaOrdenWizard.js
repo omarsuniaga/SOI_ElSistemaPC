@@ -233,7 +233,7 @@ export async function openLuteriaOrdenWizard({ instrumentoId = null, onSuccess }
         return
       }
       if (!tipoInstrumento) {
-        errorEl.textContent = 'Tenés que indicar el tipo de instrumento.'
+        errorEl.textContent = 'Debe indicar el tipo de instrumento.'
         errorEl.classList.remove('d-none')
         return
       }

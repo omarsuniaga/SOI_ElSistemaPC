@@ -151,7 +151,7 @@ export async function renderGestionarClasesView(container) {
     container.innerHTML = _emptyState(
       'bi-lock',
       'Sin sesión activa',
-      'Por favor ingresá nuevamente.',
+      'Por favor ingrese nuevamente.',
     )
     return
   }
@@ -214,7 +214,7 @@ function _noPermissionState(permisos) {
         </div>
         <h2 class="gcv-permission-title">Acceso de Colaborador Requerido</h2>
         <p class="gcv-permission-copy">
-          Para gestionar clases e inscribir alumnos, necesitás que Admin active tu permiso de clases.
+          Para gestionar clases e inscribir alumnos, necesita que Admin active su permiso de clases.
         </p>
         <div id="gcv-permission-action">
           ${
@@ -300,7 +300,7 @@ function _buildShell(clases, { canCreateClasses = false } = {}) {
             <div class="gcv-panel" id="gcv-panel">
               <div class="gcv-panel-placeholder">
                 <i class="bi bi-arrow-left-circle" style="font-size:2.5rem;opacity:.3;"></i>
-                <p style="margin-top:.75rem;opacity:.4;">Seleccioná una clase</p>
+                <p style="margin-top:.75rem;opacity:.4;">Seleccione una clase</p>
               </div>
             </div>
           </div>`

@@ -191,7 +191,7 @@ export async function openDiagnosticoWizard({ ordenId, orden = {}, instrumentoLa
 
       const itemsActuales = collectItems()
       if (itemsActuales.length === 0) {
-        errorEl.textContent = 'Agregá al menos un ítem a la cotización.'
+        errorEl.textContent = 'Agregue al menos un ítem a la cotización.'
         errorEl.classList.remove('d-none')
         return
       }

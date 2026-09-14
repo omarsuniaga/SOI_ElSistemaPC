@@ -48,7 +48,7 @@ function _buildAlertBannerText(alertRecords) {
     return `${info.icon} ${n} ${info.label}${n > 1 ? 's' : ''}`
   })
 
-  return `${parts.join(' · ')} — revisá antes de guardar`
+  return `${parts.join(' · ')} — revise antes de guardar`
 }
 
 /**
@@ -153,7 +153,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
         <div class="ppp-clarification-body">
           ${contradictions.map(c => `<div class="ppp-clarification-item">• ${esc(c.reason)}</div>`).join('')}
         </div>
-        <div class="ppp-clarification-hint">Podés guardar igual o editar el texto arriba para separar mejor las ideas.</div>
+        <div class="ppp-clarification-hint">Puede guardar igual o editar el texto arriba para separar mejor las ideas.</div>
       </div>
     ` : ''
 

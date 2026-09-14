@@ -134,7 +134,7 @@ function _render() {
             <div class="alert alert-secondary py-2 small mb-3">
               <i class="bi bi-info-circle me-1"></i>
               Este caso está en estado <strong>${(c.estado || '').replace(/_/g, ' ')}</strong>. Las acciones están deshabilitadas.
-              Reabrí el caso con <em>Cambiar estado</em> si necesitás registrar nuevas acciones.
+              Reabra el caso con <em>Cambiar estado</em> si necesita registrar nuevas acciones.
             </div>` : ''}
 
           ${(() => {
@@ -360,7 +360,7 @@ function _openArchiveModal() {
     saveText: 'Archivar',
     body: `
       <div class="small">
-        <p>¿Confirmás archivar este caso? El caso quedará oculto en el listado activo pero permanecerá en el historial.</p>
+        <p>¿Confirma archivar este caso? El caso quedará oculto en el listado activo pero permanecerá en el historial.</p>
         <label class="form-label fw-semibold">Nota de archivado (opcional)</label>
         <textarea class="form-control form-control-sm" id="marc-notes" rows="2"></textarea>
       </div>`,

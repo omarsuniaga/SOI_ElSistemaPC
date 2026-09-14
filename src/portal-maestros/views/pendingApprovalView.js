@@ -147,7 +147,7 @@ export function renderPendingApprovalView(container, { onBackToLogin } = {}) {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
-        statusMsg.textContent = 'No hay sesión activa. Intentá iniciar sesión nuevamente.'
+        statusMsg.textContent = 'No hay sesión activa. Intente iniciar sesión nuevamente.'
         statusMsg.style.color = 'var(--pm-danger, #ef4444)'
         setCheckLoading(false)
         return
@@ -160,7 +160,7 @@ export function renderPendingApprovalView(container, { onBackToLogin } = {}) {
         .maybeSingle()
 
       if (error || !profile) {
-        statusMsg.textContent = 'No se pudo verificar el estado. Intentá de nuevo.'
+        statusMsg.textContent = 'No se pudo verificar el estado. Intente de nuevo.'
         statusMsg.style.color = 'var(--pm-danger, #ef4444)'
         setCheckLoading(false)
         return
@@ -183,14 +183,14 @@ export function renderPendingApprovalView(container, { onBackToLogin } = {}) {
       }
 
       if (profile.estado === 'rechazado') {
-        statusMsg.textContent = 'Tu solicitud fue rechazada. Contactá al administrador para más información.'
+        statusMsg.textContent = 'Su solicitud fue rechazada. Contacte al administrador para más información.'
         statusMsg.style.color = 'var(--pm-danger, #ef4444)'
         setCheckLoading(false)
         return
       }
 
       // Sigue pendiente
-      statusMsg.textContent = 'Tu solicitud aún está en revisión. Por favor esperá la confirmación del administrador.'
+      statusMsg.textContent = 'Su solicitud aún está en revisión. Por favor espere la confirmación del administrador.'
       statusMsg.style.color = 'var(--pm-text-muted)'
     } catch (err) {
       statusMsg.textContent = 'Error al verificar: ' + err.message

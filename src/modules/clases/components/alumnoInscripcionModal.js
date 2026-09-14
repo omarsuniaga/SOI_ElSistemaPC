@@ -320,7 +320,7 @@ function _wireEvents(claseId, clase) {
   // Inscribir seleccionados
   document.getElementById('insc-btn-inscribir')?.addEventListener('click', async () => {
     const checks = [...document.querySelectorAll('#lista-disponibles input[type="checkbox"]:checked')]
-    if (!checks.length) { alert('Seleccioná al menos un alumno'); return }
+    if (!checks.length) { alert('Seleccione al menos un alumno'); return }
 
     const btn = document.getElementById('insc-btn-inscribir')
     btn.disabled = true

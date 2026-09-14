@@ -254,7 +254,7 @@ Genera un resumen de 2 oraciones para el acta oficial.
       const names = presentes.join(', ') || 'sin alumnos'
       const indicators = indicadoresDisponibles.join(', ') || 'sin indicadores'
 
-      const prompt = `Sos un asistente de un sistema de evaluación musical. Convertí este texto en DSL estructurado.
+      const prompt = `Eres un asistente de un sistema de evaluación musical. Convierte este texto en DSL estructurado.
 
 SINTAXIS DSL:
 - #nombre → mencionar alumno (nombres disponibles: ${names})
@@ -270,7 +270,7 @@ INDICADOR ACTIVO: ${indicadorActivo || 'ninguno seleccionado'}
 TEXTO DEL MAESTRO:
 ${rawText}
 
-Respondé SOLO con el DSL estructurado, sin explicaciones.`
+Responde SOLO con el DSL estructurado, sin explicaciones.`
 
       const messages = [{ role: 'user', content: prompt }]
 
@@ -289,13 +289,13 @@ Respondé SOLO con el DSL estructurado, sin explicaciones.`
         : 'N/A'
       const names = alumnosRezagados.join(', ') || 'ninguno'
 
-      const prompt = `Sos un asistente pedagógico musical. Basándote en este contexto, dá UNA sugerencia breve (máx 2 oraciones).
+      const prompt = `Eres un asistente pedagógico musical. Basándote en este contexto, da UNA sugerencia breve (máx 2 oraciones).
 
 INDICADOR: ${indicadorNombre}
 HISTORIAL: ${historial.length} evaluaciones. Promedio: ${avg}/5
 ALUMNOS REZAGADOS (nota < 3): ${names}
 
-Respondé SOLO la sugerencia.`
+Responde SOLO la sugerencia.`
 
       const messages = [{ role: 'user', content: prompt }]
 

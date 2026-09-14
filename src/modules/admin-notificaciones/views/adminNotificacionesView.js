@@ -1232,7 +1232,7 @@ export async function renderAdminNotificacionesView(container) {
           </p>
           <ul class="extra-small text-secondary mb-0 ps-3 lh-base">
             <li><strong>Recomendación Inteligente:</strong> El sistema identifica en tiempo real a otros maestros activos que enseñen la misma especialidad (instrumento) y te los presenta como candidatos aptos para cubrir la vacante.</li>
-            <li><strong>Acción Inline:</strong> Hacé clic en <strong>"Proponer"</strong> al lado de un candidato sugerido para asignarlo provisionalmente. También podés <strong>Aprobar</strong> o <strong>Rechazar</strong> la solicitud de ausencia directo desde la tarjeta con actualización atómica (in-place).</li>
+            <li><strong>Acción Inline:</strong> Haga clic en <strong>"Proponer"</strong> al lado de un candidato sugerido para asignarlo provisionalmente. También puede <strong>Aprobar</strong> o <strong>Rechazar</strong> la solicitud de ausencia directo desde la tarjeta con actualización atómica (in-place).</li>
           </ul>
         </div>
 
@@ -1266,7 +1266,7 @@ export async function renderAdminNotificacionesView(container) {
             <h6 class="fw-bold mb-0">Buscador & KPIs en Caliente</h6>
           </div>
           <p class="extra-small text-secondary mb-0 lh-base">
-            Filtrá todo el feed interactivo al instante escribiendo en el buscador (docente, alumno, instrumento o motivo) o haciendo clic en cualquiera de las 4 tarjetas de KPIs del mini-dashboard superior.
+            Filtre todo el feed interactivo al instante escribiendo en el buscador (docente, alumno, instrumento o motivo) o haciendo clic en cualquiera de las 4 tarjetas de KPIs del mini-dashboard superior.
           </p>
         </div>
       </div>
@@ -1346,7 +1346,7 @@ export async function renderAdminNotificacionesView(container) {
         if (!titulo) { tituloEl?.classList.add('is-invalid'); return }
         if (!mensaje) { mensajeEl?.classList.add('is-invalid'); return }
         if (!selected.length) {
-          if (statusEl) statusEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">Seleccioná al menos un destinatario.</div>'
+          if (statusEl) statusEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">Seleccione al menos un destinatario.</div>'
           return
         }
 

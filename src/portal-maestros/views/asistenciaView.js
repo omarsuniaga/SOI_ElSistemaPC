@@ -2319,7 +2319,7 @@ function _renderVista(container, ctx) {
           }
         }
 
-        // (Se quitó de acá el "3. Procesar cierre de sesión y recálculo de progreso" que
+        // (Se quitó de aquí el "3. Procesar cierre de sesión y recálculo de progreso" que
         // llamaba a academicService.processSessionClosure(sesionId): ese motor lee de
         // indicator_attempts, tabla que ningún flujo alcanzable desde esta vista escribe.
         // Siempre devolvía 0 logros — aparentaba funcionar pero era código muerto. El

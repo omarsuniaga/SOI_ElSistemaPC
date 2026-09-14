@@ -43,7 +43,7 @@ export async function renderAsistentePedagogicoPanel(container) {
             </select>
           </div>
           <div id="ap-brechas-content">
-            <p class="text-muted small">Seleccioná un alumno para ver su cobertura curricular.</p>
+            <p class="text-muted small">Seleccione un alumno para ver su cobertura curricular.</p>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@ export async function renderAsistentePedagogicoPanel(container) {
           <span class="fw-semibold">Borrador para próxima clase</span>
         </div>
         <div class="card-body">
-          <p class="text-muted small mb-3">Generá un borrador de plan basado en los objetivos pendientes del alumno seleccionado.</p>
+          <p class="text-muted small mb-3">Genere un borrador de plan basado en los objetivos pendientes del alumno seleccionado.</p>
           <button class="btn btn-outline-success btn-sm" id="ap-btn-draft" disabled>
             <i class="bi bi-stars me-1"></i>Generar borrador
           </button>
@@ -124,7 +124,7 @@ export async function renderAsistentePedagogicoPanel(container) {
   sel.addEventListener('change', async () => {
     const id = sel.value
     if (!id) {
-      container.querySelector('#ap-brechas-content').innerHTML = '<p class="text-muted small">Seleccioná un alumno.</p>'
+      container.querySelector('#ap-brechas-content').innerHTML = '<p class="text-muted small">Seleccione un alumno.</p>'
       container.querySelector('#ap-btn-draft').disabled = true
       state.selectedAlumnoId = null
       state.selectedAlumno = null
@@ -272,7 +272,7 @@ export async function renderAsistentePedagogicoPanel(container) {
         document.dispatchEvent(new CustomEvent('planificacion:nuevoPlan', {
           detail: { tema: plan.tema, objetivos: plan.objetivos, contenido: plan.contenido }
         }))
-        AppToast.success('Borrador listo — abrí "Nuevo plan" para completar los detalles')
+        AppToast.success('Borrador listo — abra "Nuevo plan" para completar los detalles')
       })
     } catch (err) {
       draftContent.innerHTML = `<div class="alert alert-danger small">${err.message}</div>`

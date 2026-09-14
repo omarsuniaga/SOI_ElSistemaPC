@@ -61,7 +61,7 @@ export const templateHtml = `
               class="pm-login-input"
               id="pm-password"
               type="password"
-              placeholder="Ingresá tu contraseña"
+              placeholder="Ingrese su contraseña"
               autocomplete="current-password"
               aria-describedby="pm-password-error"
             />

@@ -37,7 +37,7 @@ export async function renderPlanningManager(container, { publishedRouteVersionId
     container.innerHTML = `
       <div class="pm-planning-empty" style="max-width:520px;margin:0 auto;">
         <p style="font-size:1.05rem;font-weight:600;margin-bottom:0.5rem;">✏️ Editar el currículo de esta ruta</p>
-        <p style="margin-bottom:1.25rem;">Se creará (o abrirá) <strong>tu borrador propio</strong>. Podés agregar, editar o quitar niveles, nodos e indicadores sin afectar la ruta publicada que ven los demás maestros.</p>
+        <p style="margin-bottom:1.25rem;">Se creará (o abrirá) <strong>su borrador propio</strong>. Puede agregar, editar o quitar niveles, nodos e indicadores sin afectar la ruta publicada que ven los demás maestros.</p>
         <button id="pm-mg-open-draft" class="pm-planning-btn pm-planning-btn-info" style="min-height:44px;padding:0.7rem 1.4rem;">
           Abrir mi borrador
         </button>

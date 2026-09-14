@@ -237,7 +237,7 @@ function buildCierreBanner() {
         <i class="bi bi-check-circle-fill fs-5 text-success"></i>
         <div>
           <strong class="text-body" style="font-size:0.85rem;">¡Todas las tareas completadas!</strong>
-          <div class="small text-muted" style="font-size:0.75rem;">El caso <em>${escapeHTML(nombreEvento)}</em> está concluido. Podés emitir el Acta Oficial.</div>
+          <div class="small text-muted" style="font-size:0.75rem;">El caso <em>${escapeHTML(nombreEvento)}</em> está concluido. Puede emitir el Acta Oficial.</div>
         </div>
       </div>
       <button class="btn btn-success btn-sm d-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-bold shadow-xs text-nowrap" id="btnDescargarActa"
@@ -560,7 +560,7 @@ function renderContent(container) {
         <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-body mb-4 border border-warning-subtle">
           <i class="bi bi-kanban display-4 text-warning mb-2"></i>
           <h5 class="fw-bold text-body mb-1">El Tablero de Tareas está vacío</h5>
-          <p class="text-secondary small mb-3">Actualmente no hay tareas registradas en la base de datos. Podés cargar un conjunto de casos de prueba reales para explorar el flujo multi-departamento.</p>
+          <p class="text-secondary small mb-3">Actualmente no hay tareas registradas en la base de datos. Puede cargar un conjunto de casos de prueba reales para explorar el flujo multi-departamento.</p>
           <div>
             <button class="btn btn-warning text-dark fw-bold px-4 py-2 rounded-3 shadow-xs" id="btnPoblarDemoHero">
               <i class="bi bi-lightning-charge-fill me-1"></i> Cargar Casos de Demostración

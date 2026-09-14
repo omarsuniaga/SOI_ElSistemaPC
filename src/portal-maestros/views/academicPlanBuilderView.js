@@ -28,7 +28,7 @@ export async function renderAcademicPlanBuilderView(container, { alumnoId }) {
         <div class="mb-4">
           <label class="apple-label" style="display: block; margin-bottom: 0.5rem;">Seleccionar Ruta</label>
           <select id="route-selector" class="input-apple">
-            <option value="" disabled selected>Elegí una ruta...</option>
+            <option value="" disabled selected>Elija una ruta...</option>
             ${routes.map(r => `<option value="${r.id}">${escHTML(r.name)} (${escHTML(r.instrument || 'General')})</option>`).join('')}
           </select>
         </div>
@@ -42,7 +42,7 @@ export async function renderAcademicPlanBuilderView(container, { alumnoId }) {
           </div>
 
           <div id="plan-summary" class="pm-placeholder" style="padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; background: var(--pm-bg-alt);">
-            <p class="apple-caption" style="margin: 0;">Seleccioná una ruta y nivel para ver el resumen del plan.</p>
+            <p class="apple-caption" style="margin: 0;">Seleccione una ruta y nivel para ver el resumen del plan.</p>
           </div>
 
           <button id="btn-create-plan" class="btn-apple-primary w-100" disabled>
@@ -87,7 +87,7 @@ export async function renderAcademicPlanBuilderView(container, { alumnoId }) {
         });
 
         levelSelector.innerHTML = `
-          <option value="" disabled selected>Seleccioná nivel inicial...</option>
+          <option value="" disabled selected>Seleccione nivel inicial...</option>
           ${levels.map(l => `<option value="${l.id}">${escHTML(l.blockName)} - ${escHTML(l.name)}</option>`).join('')}
         `;
 

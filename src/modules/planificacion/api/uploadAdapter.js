@@ -117,7 +117,7 @@ export async function parseWithAI(extractedText) {
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData?.session?.access_token
 
-  if (!token) throw new Error('Sesión no válida. Iniciá sesión nuevamente.')
+  if (!token) throw new Error('Sesión no válida. Inicie sesión nuevamente.')
 
   const response = await fetch(`${supabaseUrl}/functions/v1/groq-proxy/chat`, {
     method: 'POST',
@@ -145,7 +145,7 @@ export async function parseWithAI(extractedText) {
   try {
     parsed = JSON.parse(content)
   } catch {
-    throw new Error('La IA devolvió JSON inválido. Intentá con otro documento.')
+    throw new Error('La IA devolvió JSON inválido. Intente con otro documento.')
   }
 
   return validateHierarchy(parsed)

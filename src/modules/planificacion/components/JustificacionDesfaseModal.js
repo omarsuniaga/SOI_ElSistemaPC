@@ -57,7 +57,7 @@ export function openJustificacionDesfaseModal({ plan, calculoDesfase, onSubmitte
       const detalle = document.querySelector('#justificacion-detalle')?.value?.trim()
 
       if (!motivo || !detalle) {
-        AppToast.show('Por favor completá la causa y la explicación detallada.', 'error')
+        AppToast.show('Por favor complete la causa y la explicación detallada.', 'error')
         return false
       }
 

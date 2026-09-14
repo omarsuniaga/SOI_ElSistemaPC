@@ -309,7 +309,7 @@ function abrirModalJustificar(container, sesion) {
     </div>
     <div class="mb-3">
       <label class="form-label">Buscar alumno</label>
-      <input type="search" class="form-control" id="justificarBuscarAlumno" placeholder="Escribí el nombre del alumno...">
+      <input type="search" class="form-control" id="justificarBuscarAlumno" placeholder="Escriba el nombre del alumno...">
       <div class="list-group mt-2" id="justificarListaAlumnos" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
     <div class="mb-2" id="justificarAlumnoSeleccionado" style="display:none;">
@@ -449,7 +449,7 @@ function abrirModalBuscarAlumnoGlobal(container, sesiones) {
           claseInfoEl.textContent = `Clase de hoy: ${sesionSeleccionada.nombre} (${formatHora(sesionSeleccionada.horaInicio)}-${formatHora(sesionSeleccionada.horaFin)})`
           clasesEl.innerHTML = ''
         } else {
-          claseInfoEl.textContent = `Este alumno tiene ${pendientes.length} clases hoy. Elegí una:`
+          claseInfoEl.textContent = `Este alumno tiene ${pendientes.length} clases hoy. Elija una:`
           sesionSeleccionada = pendientes[0].sesion
           clasesEl.innerHTML = `
             <div class="list-group mb-2">
@@ -506,7 +506,7 @@ function abrirModalBuscarAlumnoGlobal(container, sesiones) {
     },
     onSave: async (body) => {
       if (!alumnoSeleccionado || !sesionSeleccionada) {
-        AppToast.error('Buscá un alumno y confirmá su clase de hoy primero')
+        AppToast.error('Busque un alumno y confirme su clase de hoy primero')
         return false
       }
       const motivo = body.querySelector('#buscarGlobalMotivo')?.value || ''

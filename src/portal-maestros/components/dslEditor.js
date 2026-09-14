@@ -7,12 +7,12 @@ import autocompletePopup, {
 import * as catalogService from '../services/catalogService.js'
 
 const DSL_PLACEHOLDER_HTML = `
-  <div class="pm-dsl-placeholder-title">✨ Escribí lo que pasó en clase con tus propias palabras</div>
+  <div class="pm-dsl-placeholder-title">✨ Escriba lo que pasó en clase con sus propias palabras</div>
   <div class="pm-dsl-placeholder-example" style="font-style:italic;color:var(--pm-text-muted,#888);font-size:0.85rem;margin-bottom:6px">
     "Yereni y Santa avanzaron muy bien hoy con el cambio de posición. Santiago necesita practicar más el arco."
   </div>
   <div class="pm-dsl-placeholder-guide">
-    Presioná <strong>✨ Analizar con IA</strong> y Groq va a extraer los avances automáticamente. · O usá los tokens del toolbar si preferís escribir directo: # alumno · [] contenido · {} tarea
+    Presione <strong>✨ Analizar con IA</strong> y el sistema extraerá los avances automáticamente. · O use los tokens de la barra si prefiere escribir directo: # alumno · [] contenido · {} tarea
   </div>
 `
 

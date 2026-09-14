@@ -10,7 +10,7 @@ export async function renderAprobacionView(container) {
   container.innerHTML = `
     <div class="pm-view-header">
       <h2><i class="bi bi-person-check"></i> Aprobación de Usuarios</h2>
-      <p class="pm-view-subtitle">Revisá y aprobá las solicitudes de registro (maestros y administradores)</p>
+      <p class="pm-view-subtitle">Revise y apruebe las solicitudes de registro (maestros y administradores)</p>
     </div>
     <div id="aprobacion-content">
       <div class="pm-loading">
@@ -123,7 +123,7 @@ function openApproveModal(profileId, contentEl, rolSolicitado = 'maestro') {
     size: 'sm',
     saveText: 'Aprobar',
     body: `
-      <p>Confirmá el rol con el que se aprobará al usuario:</p>
+      <p>Confirme el rol con el que se aprobará al usuario:</p>
       <div class="mb-3">
         <label class="form-label-compact">Rol</label>
         <select class="form-select" id="aprobacion-rol-select">
@@ -190,7 +190,7 @@ async function handleAction(profileId, nuevoEstado, rol, contentEl) {
         if (check?.estado !== 'activo') {
           // RLS está bloqueando — necesitamos re-loguear como admin para que el RPC funcione
           throw new Error(
-            'No se pudo activar el perfil. Por favor cerrá sesión e iniciá sesión nuevamente como admin, luego intentá aprobar de nuevo.',
+            'No se pudo activar el perfil. Por favor cierre sesión e inicie sesión nuevamente como admin, luego intente aprobar de nuevo.',
           )
         }
       }

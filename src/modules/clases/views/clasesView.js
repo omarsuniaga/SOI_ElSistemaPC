@@ -368,7 +368,7 @@ function _renderCardsHTML(clasesFiltradas) {
     <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body text-muted">
       <i class="bi bi-easel fs-1 d-block mb-3 opacity-50 text-secondary"></i>
       <h5 class="fw-bold">No se encontraron clases</h5>
-      <p class="small text-muted mb-3">Probá cambiando los filtros o agregá una nueva clase al catálogo.</p>
+      <p class="small text-muted mb-3">Pruebe cambiando los filtros o agregue una nueva clase al catálogo.</p>
       <button class="btn btn-primary btn-sm mx-auto" id="btnCrearClaseEmpty">
         <i class="bi bi-plus-lg me-1"></i>Crear Nueva Clase
       </button>
@@ -2281,7 +2281,7 @@ async function _mostrarModalNominaClase(claseId) {
         const select = document.getElementById('selectAlumnoParaInscribir')
         const alumnoId = select?.value
         if (!alumnoId) {
-          AppToast.warning('Seleccioná un alumno para inscribir.')
+          AppToast.warning('Seleccione un alumno para inscribir.')
           return
         }
 

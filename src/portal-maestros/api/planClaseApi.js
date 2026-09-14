@@ -72,7 +72,7 @@ async function _maestroActual() {
 /**
  * Crea o actualiza el plan de la clase.
  * El RLS exige que `maestro_id` sea el del maestro autenticado y que la clase
- * sea suya, así que la identidad se resuelve acá y no se acepta del formulario.
+ * sea suya, así que la identidad se resuelve aquí y no se acepta del formulario.
  */
 export async function guardarPlanDeClase(plan) {
   const titulo = (plan.titulo || '').trim()

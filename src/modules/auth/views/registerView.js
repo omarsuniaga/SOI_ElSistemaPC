@@ -1,4 +1,4 @@
-﻿import { Modal, Toast } from 'bootstrap'
+import { Modal, Toast } from 'bootstrap'
 import { useAuth } from '../hooks/useAuth.js'
 import { router } from '../../../core/router/router.js'
 import { CompactUI } from '../../../shared/utils/compactUI.js'
@@ -362,7 +362,7 @@ async function handleRegister(container) {
           router.navigate('login')
         }, 2000)
       } else {
-        showToast('Solicitud enviada. Esperá la aprobación de un administrador.', 'info', container)
+        showToast('Solicitud enviada. Espere la aprobación de un administrador.', 'info', container)
         setTimeout(() => {
           router.navigate('pending-approval')
         }, 800)

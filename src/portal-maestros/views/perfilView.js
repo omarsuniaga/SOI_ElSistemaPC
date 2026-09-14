@@ -350,7 +350,7 @@ function openNuevaSolicitudModal(maestro) {
           <div class="col-12 col-sm-6">
             <label class="form-label small fw-semibold text-muted mb-1">Tipo *</label>
             <select class="form-select input-apple" id="sol-tipo" required>
-              <option value="">Seleccioná el tipo</option>
+              <option value="">Seleccione el tipo</option>
               <option value="material">Material</option>
               <option value="pedagogico">Pedagógico</option>
               <option value="tecnico">Técnico</option>
@@ -470,7 +470,7 @@ function openNuevaSolicitudModal(maestro) {
           
         } catch (err) {
           console.error('[solicitudes]', err);
-          if (status) { status.textContent = 'Error al enviar. Intentá de nuevo.'; status.className = 'small text-danger'; status.style.display = 'block'; }
+          if (status) { status.textContent = 'Error al enviar. Intente de nuevo.'; status.className = 'small text-danger'; status.style.display = 'block'; }
         } finally {
           if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar solicitud'; }
         }
@@ -493,7 +493,7 @@ async function _loadSolicitudesHistorial(maestroId) {
     if (error) throw error;
 
     if (!data || data.length === 0) {
-      historial.innerHTML = '<p class="text-muted small fst-italic mb-0">No tenés solicitudes anteriores.</p>';
+      historial.innerHTML = '<p class="text-muted small fst-italic mb-0">No tiene solicitudes anteriores.</p>';
       return;
     }
 

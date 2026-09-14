@@ -62,11 +62,11 @@ export function createPlanClasePanel(container, { clase, periodoActivo = null, o
     container.innerHTML = `
       ${sinCurriculo ? aviso('warning',
         `Todavía no hay currículo de ${escapeHTML(clase.instrumento || 'este instrumento')}`,
-        'Podés escribir tu plan igual: no necesitás la ruta para planificar. Cuando la coordinación cargue el currículo, ' +
-        'vas a poder apoyarte en él para completar los contenidos.') : ''}
+        'Puede escribir su plan igual: no necesita la ruta para planificar. Cuando la coordinación cargue el currículo, ' +
+        'podrá apoyarse en él para completar los contenidos.') : ''}
 
       ${plan ? '' : aviso('primary', 'Esta clase todavía no tiene plan',
-        'Completá los campos y guardá. Podés dejarlo en borrador y seguir después.')}
+        'Complete los campos y guarde. Puede dejarlo en borrador y seguir después.')}
 
       <form id="pcp-form" style="display:grid; gap:1rem;">
         <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));">

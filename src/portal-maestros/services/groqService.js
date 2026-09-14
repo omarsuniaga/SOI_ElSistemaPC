@@ -134,8 +134,8 @@ Responde ÚNICAMENTE con el texto mejorado, sin explicaciones ni cambios de sign
 `
 
 const STRUCTURE_TO_DSL_PROMPT = `
-Sos un experto en convertir observaciones de clase al formato DSL pedagógico.
-Recibís una observación libre de un maestro de música.
+Eres un experto en convertir observaciones de clase al formato DSL pedagógico.
+Recibes una observación libre de un maestro de música.
 Tu tarea es ESTRUCTURARLA usando los tokens DSL:
 
   #Nombre    = alumno mencionado
@@ -148,11 +148,11 @@ Tu tarea es ESTRUCTURARLA usando los tokens DSL:
 Reglas strictas:
 - NO uses >CÓDIGO a menos que el maestro mencione explícitamente un código curricular
 - Usa [indicador] para referenciar el contenido evaluado
-- Si hay un indicador activo en la ruta, mencionalo en [ ]
+- Si hay un indicador activo en la ruta, menciónalo en [ ]
 - Las calificaciones van al FINAL de cada línea (ej: #María [Escalas] (buen trabajo) 5/5)
-- Si el maestro no mencionó un alumno, agrupalo con #todos
-- Solo usa los tokens que tengan contenido real — omití los que estén vacíos
-- Respondé ÚNICAMENTE con el texto estructurado en DSL, sin explicaciones ni prefijos
+- Si el maestro no mencionó un alumno, agrúpalo con #todos
+- Solo usa los tokens que tengan contenido real — omite los que estén vacíos
+- Responde ÚNICAMENTE con el texto estructurado en DSL, sin explicaciones ni prefijos
 
 MAL: "#María [Escalas] (mejoró) {practicar} 4/5 >CÓDIGO"
 BIEN: "#María [Escalas] (mejoró notablemente en la ejecución económica) {Escala F mayor en 3 octavas} 5/5"
@@ -254,8 +254,8 @@ Reglas del formato:
 - "nota": null solo si no hay suficiente información; de lo contrario 1-5 siguiendo la rúbrica
 - "tarea": solo si el texto menciona explícitamente tarea o "para la próxima"
 
-Escribí en español neutro profesional, sin voseo, sin modismos locales.
-Respondé ÚNICAMENTE el JSON, sin prefijos, sin texto adicional.
+Escribe en español neutro profesional, sin voseo, sin modismos locales.
+Responde ÚNICAMENTE el JSON, sin prefijos, sin texto adicional.
 
 ═══ SECCIONES PRESENTES ═══
 A continuación, los alumnos presentes agrupados por sección orquestal:

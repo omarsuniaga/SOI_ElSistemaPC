@@ -22,7 +22,7 @@ export function renderProponerContenidoView(container, { maestroId, claseId } = 
       </div>
 
       <div class="pm-tab-pane" data-pane="upload">
-        <p class="apple-caption">Subí una planificación (PDF, DOCX, MD o imagen) para extraer su estructura curricular.</p>
+        <p class="apple-caption">Suba una planificación (PDF, DOCX, MD o imagen) para extraer su estructura curricular.</p>
         <input type="file" data-role="file-input" accept=".pdf,.docx,.md,.txt,.jpg,.jpeg,.png" />
         <div data-role="upload-status"></div>
       </div>
@@ -89,7 +89,7 @@ export function renderProponerContenidoView(container, { maestroId, claseId } = 
   container.querySelector('[data-action="borrador"]').addEventListener('click', () => {
     // Modo borrador explícito: el dato queda solo en memoria (estructuraActual).
     // No se invoca enviarPropuesta ni ninguna otra persistencia.
-    window.alert('El borrador se mantiene en esta pantalla. Podés seguir editando o proponerlo más tarde.')
+    window.alert('El borrador se mantiene en esta pantalla. Puede seguir editando o proponerlo más tarde.')
   })
 
   container.querySelector('[data-action="cancelar"]').addEventListener('click', () => {

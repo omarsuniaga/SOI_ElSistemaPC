@@ -2125,8 +2125,8 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
               </div>
               <div class="pm-wa-templates" id="pm-wa-tpl-list"></div>
               <p class="pm-wa-label" style="margin-top:0.85rem;">Mensaje</p>
-              <textarea id="pm-wa-text" class="pm-wa-textarea" rows="5" placeholder="Escribí tu mensaje aquí..."></textarea>
-              <p class="pm-wa-hint">Usá <code>{alumno}</code> y <code>{contacto}</code> como variables dinámicas.</p>
+              <textarea id="pm-wa-text" class="pm-wa-textarea" rows="5" placeholder="Escriba su mensaje aquí..."></textarea>
+              <p class="pm-wa-hint">Use <code>{alumno}</code> y <code>{contacto}</code> como variables dinámicas.</p>
             </div>
             <div class="pm-wa-footer">
               <button class="pm-wa-cancel" id="pm-wa-cancel">Cancelar</button>
@@ -2184,7 +2184,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
         const tpls = getTemplates()
         tplList.innerHTML = tpls.length
           ? tpls.map(t => `<button class="pm-wa-tpl" data-id="${t.id}">${escHTML(t.label)}</button>`).join('')
-          : `<span style="font-size:0.78rem;color:var(--pm-text-muted);">Sin plantillas — creá una en Gestionar.</span>`
+          : `<span style="font-size:0.78rem;color:var(--pm-text-muted);">Sin plantillas — cree una en Gestionar.</span>`
         tplList.querySelectorAll('.pm-wa-tpl').forEach(btn => {
           btn.addEventListener('click', () => {
             const tpl = getTemplates().find(t => t.id === btn.dataset.id)

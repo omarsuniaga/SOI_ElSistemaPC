@@ -73,7 +73,7 @@ export function startAdminRealtimeNotifications(badgeCallback) {
       (payload) => {
         _showBrowserNotification(
           '📅 Nueva solicitud de ausencia',
-          'Un maestro solicitó una ausencia — revisá el Centro de Actividad.',
+          'Un maestro solicitó una ausencia — revise el Centro de Actividad.',
         )
         _scheduleFetch()
       },

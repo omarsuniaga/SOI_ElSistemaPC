@@ -495,7 +495,7 @@ function _emptyState() {
       <div class="hb-empty__icon"><i class="bi bi-calendar-plus"></i></div>
       <h3 class="hb-empty__title">Sin horario generado</h3>
       <p class="hb-empty__desc">
-        Presioná <strong>Generar horario</strong> para que el sistema distribuya automáticamente
+        Presione <strong>Generar horario</strong> para que el sistema distribuya automáticamente
         las clases según los maestros y salones disponibles.
       </p>
       <div class="hb-empty__steps">

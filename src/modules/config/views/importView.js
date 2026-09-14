@@ -298,7 +298,7 @@ export async function renderImportView(container) {
       html += '</div></div>'
       
       // Ejemplo completo
-      html += '<hr><strong>Ejemplo completo (copiá y pegá para probar):</strong><pre class="mt-2 p-2 bg-dark text-light rounded" style="font-size:11px">'
+      html += '<hr><strong>Ejemplo completo (copie y pegue para probar):</strong><pre class="mt-2 p-2 bg-dark text-light rounded" style="font-size:11px">'
       const example = generateExample(selectedEntity)
       html += JSON.stringify(example, null, 2) + '</pre>'
       

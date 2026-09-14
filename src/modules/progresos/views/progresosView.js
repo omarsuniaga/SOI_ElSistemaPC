@@ -67,7 +67,7 @@ function renderError(container, msg) {
         <div>
           <h5 class="alert-heading mb-1">Tabla no encontrada o sin acceso</h5>
           <p class="mb-2 small">${escapeHTML(msg)}</p>
-          <p class="mb-0 small text-muted">Verificá que la tabla <code>progresos</code> existe en Supabase y que las políticas RLS permiten la lectura.</p>
+          <p class="mb-0 small text-muted">Verifique que la tabla <code>progresos</code> existe en Supabase y que las políticas RLS permiten la lectura.</p>
         </div>
       </div>
     </div>`

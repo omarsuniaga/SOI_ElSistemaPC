@@ -310,13 +310,18 @@ export const AppModal = {
     }
 
     this._cancelHandler = () => {
-      if (onCancel) onCancel()
+      if (onCancel) {
+        // Igual que onSave/onDelete: devolver `false` evita el cierre
+        // (ej. para confirmar cambios sin guardar antes de salir).
+        const result = onCancel()
+        if (result === false) return
+      }
       this.close()
     }
 
     this._deleteHandler = async () => {
       if (!onDelete) return
-      if (!confirm('¿Estás seguro de que querés eliminar este elemento? Esta acción no se puede deshacer.')) return
+      if (!confirm('¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.')) return
       
       const original = els.btnDelete.innerHTML
       els.btnDelete.disabled = true

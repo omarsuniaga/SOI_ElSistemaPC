@@ -33,7 +33,7 @@ export function showConflictMoveModal({ conflictDescription }) {
           </div>
           <div class="modal-body">
             <p></p>
-            <p class="text-muted small">¿Querés mover la clase de todas formas?</p>
+            <p class="text-muted small">¿Desea mover la clase de todas formas?</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>

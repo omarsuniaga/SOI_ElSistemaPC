@@ -185,7 +185,7 @@ function renderContent(container, tareas) {
       <div class="row g-3 mb-2">
         ${
           deptList.length === 0
-            ? `<div class="col-12"><div class="alert alert-info text-center py-4"><i class="bi bi-inbox"></i> Aún no hay tareas. Creá un evento para disparar la cascada Hermes.</div></div>`
+            ? `<div class="col-12"><div class="alert alert-info text-center py-4"><i class="bi bi-inbox"></i> Aún no hay tareas. Cree un evento para disparar la cascada Hermes.</div></div>`
             : deptList.map(({ dept, s }) => renderDeptCard(dept, s)).join('')
         }
       </div>
@@ -418,8 +418,8 @@ function openAsignarTareaModal(container) {
     size: 'lg',
     body: `
       <div class="alert alert-info small py-2">
-        <i class="bi bi-stars me-1"></i> Pegá la solicitud en texto libre. La IA detecta el
-        departamento que debe atenderla y arma la tarea. Vos confirmás antes de crearla.
+        <i class="bi bi-stars me-1"></i> Pegue la solicitud en texto libre. La IA detecta el
+        departamento que debe atenderla y arma la tarea. Usted confirma antes de crearla.
       </div>
       <textarea class="form-control" id="atTexto" rows="4"
         placeholder="Ej. Necesito que me manden la relación de pago del mes de febrero"></textarea>
@@ -428,7 +428,7 @@ function openAsignarTareaModal(container) {
     onSave: async (mb) => {
       const texto = mb.querySelector('#atTexto').value.trim()
       if (!texto) {
-        AppToast.show('Escribí la solicitud primero', 'error')
+        AppToast.show('Escriba la solicitud primero', 'error')
         return false
       }
       try {

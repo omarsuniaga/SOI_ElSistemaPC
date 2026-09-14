@@ -21,7 +21,7 @@ export function openCaseActionModal(type, caso, onSaved) {
     onSave: async () => {
       const payload = cfg.collect()
       if (cfg.requiredKeys.some(k => !payload[k] || String(payload[k]).trim() === '')) {
-        alert(`Completá los campos requeridos: ${cfg.requiredKeys.join(', ')}`)
+        alert(`Complete los campos requeridos: ${cfg.requiredKeys.join(', ')}`)
         return false
       }
       try {

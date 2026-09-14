@@ -156,7 +156,7 @@ function _attachEvents() {
       title: 'Seguimiento de Alumnos',
       intro: 'Vista unificada del estado académico de cada alumno. Los alumnos con riesgo aparecen primero, destacados con una barra lateral amarilla.',
       sections: [
-        { icon: 'bi-search',                  title: 'Buscador',          description: 'Filtrá por nombre del alumno o por instrumento en tiempo real.',                                                                                                color: '#6b7280' },
+        { icon: 'bi-search',                  title: 'Buscador',          description: 'Filtre por nombre del alumno o por instrumento en tiempo real.',                                                                                                color: '#6b7280' },
         { icon: 'bi-exclamation-triangle-fill', title: 'Alerta de riesgo', description: 'Aparece cuando hay alumnos que requieren atención. Muestra el total con algún indicador activo.',                                                              color: '#f59e0b' },
         { icon: 'bi-person-fill',             title: 'Fila del alumno',   description: 'Nombre, instrumento, % de asistencia (últimas 4 semanas) y promedio de las últimas 3 calificaciones. Barra amarilla izquierda = en riesgo.',                   color: '#3b82f6' },
         { icon: 'bi-tags-fill',               title: 'Badges de riesgo',  description: '"Asistencia baja" < 70% en 4 semanas. "Nota baja" promedio < 6.0. "Observación" cuando hay observaciones de disciplina activas.',                            color: '#ef4444' },

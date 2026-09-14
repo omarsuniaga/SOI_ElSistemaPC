@@ -278,7 +278,7 @@ async function _enviarWhatsApp(alumnoId, nivel) {
       _toast('Este alumno no tiene un teléfono de contacto válido.', 'error')
     } else {
       console.error('[enviarWhatsApp]', err)
-      _toast('No se pudo registrar el contacto. Intentá de nuevo.', 'error')
+      _toast('No se pudo registrar el contacto. Intente de nuevo.', 'error')
     }
   }
 }
@@ -461,7 +461,7 @@ async function _openDetailPanel(alumno) {
             </button>
           `).join('')}
         </div>
-        <p class="small text-muted mt-2 mb-0">Abre WhatsApp con el mensaje precargado. Revisalo antes de enviar; el contacto queda registrado.</p>
+        <p class="small text-muted mt-2 mb-0">Abre WhatsApp con el mensaje precargado. Revíselo antes de enviar; el contacto queda registrado.</p>
       </div>
 
       <div class="mb-4 border rounded p-3" style="border-color: var(--n3-line, #d98b9c) !important;">
@@ -527,7 +527,7 @@ async function _openDetailPanel(alumno) {
       // Retener instrumento (Nivel 3)
       modalEl.querySelector('[data-accion-retener]')?.addEventListener('click', async (e) => {
         if (!window.confirm(
-          `RETENCIÓN DE INSTRUMENTO\n\n${alumno.alumno_nombre} · ${alumno.instrumento_principal || 'instrumento'}\n${alumno.dias_ausente} días de ausencia acumulados.\n\nSe marcará el instrumento como retenido y se abrirán los mensajes al representante y al maestro.\n\n¿Confirmás?`,
+          `RETENCIÓN DE INSTRUMENTO\n\n${alumno.alumno_nombre} · ${alumno.instrumento_principal || 'instrumento'}\n${alumno.dias_ausente} días de ausencia acumulados.\n\nSe marcará el instrumento como retenido y se abrirán los mensajes al representante y al maestro.\n\n¿Confirma?`,
         )) return
         e.currentTarget.disabled = true
         try {
@@ -535,7 +535,7 @@ async function _openDetailPanel(alumno) {
           if (waRepresentante) window.open(waRepresentante, '_blank', 'noopener')
           if (waMaestro) setTimeout(() => window.open(waMaestro, '_blank', 'noopener'), 400)
           AppModal.close?.()
-          _toast(`Instrumento de ${alumno.alumno_nombre} retenido. Revisá y enviá los 2 mensajes.`, 'success')
+          _toast(`Instrumento de ${alumno.alumno_nombre} retenido. Revise y envíe los 2 mensajes.`, 'success')
           await _loadData(); _render(); _attachEvents()
         } catch (err) {
           console.error(err)
@@ -592,7 +592,7 @@ async function _openDetailPanel(alumno) {
       modalEl.querySelector('[data-susp-confirmar]')?.addEventListener('click', async (e) => {
         const motivo = modalEl.querySelector('[data-susp-motivo]')?.value.trim() || ''
         const hasta = modalEl.querySelector('[data-susp-hasta]')?.value || null
-        if (!motivo) { _toast('Indicá el motivo de la suspensión.', 'warning'); return }
+        if (!motivo) { _toast('Indique el motivo de la suspensión.', 'warning'); return }
         e.currentTarget.disabled = true
         try {
           await suspenderAlumno({ alumnoId: alumno.alumno_id, motivo, hasta })

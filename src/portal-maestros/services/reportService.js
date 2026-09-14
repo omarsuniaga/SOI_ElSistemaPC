@@ -296,7 +296,7 @@ export async function generateDailyReport(sesionId) {
     const reportTitle = `Reporte Diario de Asistencia · ${claseData?.nombre || 'Clase'} (${formatDate(sesion.fecha)})`
     const opened = openReport(html, `reporte-diario-${date}`, { title: reportTitle })
     if (!opened) {
-      AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
+      AppToast.info('El reporte se descargó como archivo. Ábralo en el navegador y use Imprimir → Guardar como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateDailyReport:', err)
@@ -582,7 +582,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     const reportTitle = `Resumen Mensual de Asistencia · ${claseData?.nombre || 'Clase'} (${monthName(month)} ${year})`
     const opened = openReport(html, `resumen-asistencia-${year}-${padMM(month)}`, { title: reportTitle })
     if (!opened) {
-      AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
+      AppToast.info('El reporte se descargó como archivo. Ábralo en el navegador y use Imprimir → Guardar como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateMonthlyAttendance:', err)
@@ -1133,7 +1133,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const reportTitle = `Informe Pedagógico Institucional · ${claseData?.nombre || 'Clase'} (${monthName(month)} ${year})`
     const opened = openReport(html, `informe-pedagogico-${year}-${padMM(month)}`, { title: reportTitle })
     if (!opened) {
-      AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
+      AppToast.info('El reporte se descargó como archivo. Ábralo en el navegador y use Imprimir → Guardar como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateMonthlyPedagogical:', err)
@@ -1333,7 +1333,7 @@ export async function generateAcademicClosureReport(payload = {}) {
     const html = wrapDocument(p1 + p2, true)
     const opened = openReport(html, `cierre-academico-${periodo.id || 'periodo'}`)
     if (!opened) {
-      AppToast.info('El reporte se descargó como archivo HTML. Abrilo en el navegador e imprimilo como PDF.')
+      AppToast.info('El reporte se descargó como archivo HTML. Ábralo en el navegador e imprímalo como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateAcademicClosureReport:', err)

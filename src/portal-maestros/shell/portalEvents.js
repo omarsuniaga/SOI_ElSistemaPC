@@ -121,7 +121,7 @@ function _subscribeToPermisos({ getMaestro, getPermisosCached, onPermisosUpdate,
           await onPermisosUpdate(nuevosPermisos, { ganados, perdidos })
 
           if (ganados.length > 0) {
-            AppToast.success(`¡Nuevos permisos activados: ${ganados.join(', ')}! Ahora podés acceder desde el Perfil o la barra de navegación.`)
+            AppToast.success(`¡Nuevos permisos activados: ${ganados.join(', ')}! Ahora puede acceder desde el Perfil o la barra de navegación.`)
           } else if (perdidos.length > 0) {
             AppToast.show(`El administrador removió tu acceso a: ${perdidos.join(', ')}.`, 'warning')
           } else {

@@ -676,7 +676,7 @@ function editorCanvas(m) {
 
     function renderProps() {
       const el = elById(sel)
-      if (!el) { props.innerHTML = '<p class="text-muted small m-0">Seleccioná un elemento para editarlo. Doble clic en un texto para escribir.</p>'; return }
+      if (!el) { props.innerHTML = '<p class="text-muted small m-0">Seleccione un elemento para editarlo. Doble clic en un texto para escribir.</p>'; return }
       const layerBtns = `<div class="d-flex gap-2 mt-1">
         <button class="btn btn-sm btn-outline-secondary" data-p="fwd">Al frente</button>
         <button class="btn btn-sm btn-outline-secondary" data-p="back">Atrás</button>

@@ -68,7 +68,7 @@ export class PlanEstudiosPanel {
         <span style="font-size:2rem;">📋</span>
         <p>Sin entradas registradas.</p>
         <p style="font-size:0.78rem;color:var(--pm-text-muted);">
-          Comenzá con un <strong>diagnóstico inicial</strong> para documentar el nivel actual del alumno.
+          Comience con un <strong>diagnóstico inicial</strong> para documentar el nivel actual del alumno.
         </p>
       </div>
     `

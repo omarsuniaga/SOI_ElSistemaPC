@@ -1,4 +1,4 @@
-﻿/**
+/**
  * departamentosView.js — Gestión de correos y responsables de departamentos (portal ADM).
  * Permite registrar/editar, por departamento: correo institucional, responsable
  * (nombre + correo) y estado. Esos correos los usa Hermes para despachar mensajes
@@ -103,7 +103,7 @@ function tarjeta(d) {
               <i class="bi bi-check-lg me-1"></i>Guardar
             </button>
             <button class="btn btn-sm btn-outline-secondary dep-test" data-id="${d.id}" data-codigo="${escapeHTML(d.codigo)}"
-              ${d.email ? '' : 'disabled'} title="${d.email ? 'Enviar correo de prueba' : 'Cargá un correo primero'}">
+              ${d.email ? '' : 'disabled'} title="${d.email ? 'Enviar correo de prueba' : 'Ingrese un correo primero'}">
               <i class="bi bi-send me-1"></i>Probar
             </button>
           </div>
@@ -161,7 +161,7 @@ async function probar(container, btn) {
   const card = btn.closest('.dep-card')
   const email = card.querySelector('.dep-email').value.trim()
   if (!email || !EMAIL_RE.test(email)) {
-    AppToast.show('Cargá un correo válido antes de probar', 'error')
+    AppToast.show('Ingrese un correo válido antes de probar', 'error')
     return
   }
   const original = btn.innerHTML

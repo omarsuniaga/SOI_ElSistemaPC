@@ -167,7 +167,7 @@ function buildDetail(level, tema, objetivo, indicador) {
     badges: [],
     hints: [
       {
-        label: 'Qué podés hacer aquí',
+        label: 'Qué puede hacer aquí',
         value:
           'Ver niveles, temas, objetivos e indicadores; además guardar ponderaciones, evidencias, ejercicios y vínculos reales.',
       },
@@ -457,7 +457,7 @@ function renderEmpty() {
     <div class="pm-mapa-empty">
       <i class="bi bi-diagram-3"></i>
       <h3>Mapa pedagógico</h3>
-      <p>Elegí una clase para ver su árbol de niveles, temas, objetivos e indicadores.</p>
+      <p>Elija una clase para ver su árbol de niveles, temas, objetivos e indicadores.</p>
     </div>
   `
 }
@@ -658,7 +658,7 @@ export function renderMapaPedagogicoPanel(container, { maestroId = null } = {}) 
                 <aside class="pm-mapa-detail-panel">
                   <div class="pm-mapa-panel-head">
                     <h3>Detalle contextual</h3>
-                    <p>Ahora podés guardar peso, evidencia, ejercicio sugerido y vínculo académico real.</p>
+                    <p>Ahora puede guardar peso, evidencia, ejercicio sugerido y vínculo académico real.</p>
                   </div>
                   ${detail.type === 'indicador' ? '<div class="pm-mapa-detail-note">La señal real de dominio por alumno ya se alimenta desde el indicador académico vinculado abajo.</div>' : ''}
                   ${renderDetailCard(detail, state.saving || state.linking, state.suggesting, { catalog: state.indicatorCatalog, link: state.currentLink, mastery: state.currentMastery, masteryDetails: state.currentMasteryDetails })}

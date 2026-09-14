@@ -69,9 +69,9 @@ function _renderUI(container, planes, maestro) {
           <div class="card border-0 bg-body-secondary text-center py-5 rounded-4">
             <div class="card-body">
               <i class="bi bi-journal-x display-4 text-muted mb-3 d-block"></i>
-              <h5 class="fw-semibold">No tenés planificaciones cargadas</h5>
+              <h5 class="fw-semibold">No tiene planificaciones cargadas</h5>
               <p class="text-muted small max-w-md mx-auto mb-3">
-                Creá tu primer plan didáctico para organizar los contenidos y objetivos de tus clases.
+                Cree su primer plan didáctico para organizar los contenidos y objetivos de sus clases.
               </p>
               <button class="btn btn-primary btn-sm rounded-3" id="btn-crear-primer-plan">
                 <i class="bi bi-plus-lg me-1"></i>Crear Plan Didáctico
@@ -214,7 +214,7 @@ function _renderUI(container, planes, maestro) {
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
           <h4 class="fw-bold mb-1"><i class="bi bi-journal-text text-primary me-2"></i>Mis Planificaciones Didácticas</h4>
-          <p class="text-muted small mb-0">Gestioná las secuencias didácticas y generá el documento institucional para entrega física.</p>
+          <p class="text-muted small mb-0">Gestione las secuencias didácticas y genere el documento institucional para entrega física.</p>
         </div>
         <button class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-nuevo-plan">
           <i class="bi bi-plus-lg"></i>Nueva Planificación
@@ -278,7 +278,7 @@ function _renderUI(container, planes, maestro) {
               ? `
               <div class="alert alert-warning mt-3 mb-0">
                 <i class="bi bi-exclamation-circle me-2"></i>
-                Todavía no tenés planificaciones aprobadas para generar el documento oficial.
+                Todavía no tiene planificaciones aprobadas para generar el documento oficial.
               </div>
             `
               : ''

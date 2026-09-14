@@ -413,7 +413,7 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
           <h6 class="fw-bold text-${color}"><i class="bi bi-telephone-outbound me-2"></i>Próximo paso: Contactar a la familia</h6>
         </div>
         <div class="card-body px-4 pb-4">
-          <p class="text-muted small mb-3">El representante aún no ha sido contactado. Iniciá la comunicación por WhatsApp.</p>
+          <p class="text-muted small mb-3">El representante aún no ha sido contactado. Inicie la comunicación por WhatsApp.</p>
           <div class="d-flex flex-wrap gap-2 mb-3">
             ${p.madre_tlf_whatsapp ? `
               <a href="${buildWaUrl(p.madre_tlf_whatsapp, repNombre, nombreAlumno)}"
@@ -439,7 +439,7 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
           <h6 class="fw-bold text-${color}"><i class="bi bi-calendar-plus me-2"></i>Próximo paso: Agendar cita presencial</h6>
         </div>
         <div class="card-body px-4 pb-4">
-          <p class="text-muted small mb-3">Ya hubo contacto. Coordiná una fecha y hora para la entrevista de inscripción.</p>
+          <p class="text-muted small mb-3">Ya hubo contacto. Coordine una fecha y hora para la entrevista de inscripción.</p>
           <div class="mb-3">
             <label class="form-label fw-semibold small">Fecha y hora de la cita</label>
             <input type="datetime-local" class="form-control" id="input-fecha-cita">
@@ -459,7 +459,7 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
           <h6 class="fw-bold text-${color}"><i class="bi bi-calendar-event me-2"></i>Cita agendada para: ${fechaStr}</h6>
         </div>
         <div class="card-body px-4 pb-4">
-          <p class="text-muted small mb-3">El día de la cita, confirmá si el representante llegó y revisá los documentos.</p>
+          <p class="text-muted small mb-3">El día de la cita, confirme si el representante llegó y revise los documentos.</p>
           <div class="d-flex flex-wrap gap-2">
             <button class="btn btn-success btn-sm rounded-pill fw-semibold" id="btn-accion-documentos-ok">
               <i class="bi bi-check2-circle me-1"></i> Llegó — revisar documentos
@@ -477,7 +477,7 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
           <h6 class="fw-bold text-${color}"><i class="bi bi-check-circle me-2"></i>¡Listo para inscribir!</h6>
         </div>
         <div class="card-body px-4 pb-4">
-          <p class="text-muted small mb-3">Toda la documentación fue verificada. Podés iniciar el proceso formal de inscripción.</p>
+          <p class="text-muted small mb-3">Toda la documentación fue verificada. Puede iniciar el proceso formal de inscripción.</p>
           <button class="btn btn-success rounded-pill fw-semibold px-4" id="btn-accion-inscribir">
             <i class="bi bi-mortarboard-fill me-2"></i> Iniciar inscripción
           </button>
@@ -489,7 +489,7 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
           <h6 class="fw-bold text-${color}"><i class="bi bi-calendar-x me-2"></i>No se presentó a la cita</h6>
         </div>
         <div class="card-body px-4 pb-4">
-          <p class="text-muted small mb-3">Podés reprogramar una nueva fecha o descartar la postulación.</p>
+          <p class="text-muted small mb-3">Puede reprogramar una nueva fecha o descartar la postulación.</p>
           <div class="mb-3">
             <label class="form-label fw-semibold small">Nueva fecha de cita</label>
             <input type="datetime-local" class="form-control" id="input-fecha-reprogramar">
@@ -779,7 +779,7 @@ function attachEvents(container) {
     const spinner = container.querySelector('#spinner-reprogramar')
 
     if (!input?.value) {
-      AppToast.error('Seleccioná una nueva fecha para la cita.')
+      AppToast.error('Seleccione una nueva fecha para la cita.')
       return
     }
 
@@ -818,8 +818,8 @@ function attachEvents(container) {
     AppModal.open({
       title: 'Razón del descarte',
       body: `<div class="mb-3">
-        <label for="razon-descarte" class="form-label">Indicá la razón del descarte:</label>
-        <textarea id="razon-descarte" class="form-control" rows="3" placeholder="Indicá la razón..."></textarea>
+        <label for="razon-descarte" class="form-label">Indique la razón del descarte:</label>
+        <textarea id="razon-descarte" class="form-control" rows="3" placeholder="Indique la razón..."></textarea>
       </div>`,
       saveText: 'Descartar',
       onSave: async (modalBody) => {
@@ -848,7 +848,7 @@ function attachEvents(container) {
 
     if (!input?.value) {
       errorEl?.classList.remove('d-none')
-      if (errorEl) errorEl.textContent = 'Seleccioná una fecha para la cita.'
+      if (errorEl) errorEl.textContent = 'Seleccione una fecha para la cita.'
       return
     }
 

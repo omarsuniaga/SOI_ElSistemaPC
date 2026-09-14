@@ -9,7 +9,7 @@
  * peor (ese es exactamente el patrón "punitivo" que ya existe en
  * CumplimientoMaestrosWidget.js, con categorías "incumplidor"/"negligente" —
  * ese widget es para OTRA métrica, cumplimiento de bitácora, y no debe
- * copiarse acá): solo se nombra a quienes están en o por encima del promedio
+ * copiarse aquí): solo se nombra a quienes están en o por encima del promedio
  * institucional ("destacados"), nunca a quienes están por debajo.
  *
  * `buildIndiceEnsenanzaGuiadaData`/`renderIndiceEnsenanzaGuiadaHTML` están
@@ -88,7 +88,7 @@ export function renderIndiceEnsenanzaGuiadaHTML({ promedioInstitucional, totalMa
             .join('')}
         </div>
       `
-          : `<p class="premium-no-data">Todavía ningún maestro supera el promedio institucional — cuando alguno lo haga, aparecerá acá.</p>`
+          : `<p class="premium-no-data">Todavía ningún maestro supera el promedio institucional — cuando alguno lo haga, aparecerá aquí.</p>`
       }
     </div>
   `

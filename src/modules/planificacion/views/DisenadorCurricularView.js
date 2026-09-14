@@ -1124,7 +1124,7 @@ function _updateSVGFull(container, estadoEstructura, alumnosState) {
 
   const unidades = estadoEstructura.unidades || []
   if (unidades.length === 0) {
-    canvasEl.innerHTML = `<div class="text-body-secondary small py-5 text-center">Agregá indicadores para visualizar el mapa SVG en tiempo real.</div>`
+    canvasEl.innerHTML = `<div class="text-body-secondary small py-5 text-center">Agregue indicadores para visualizar el mapa SVG en tiempo real.</div>`
     return
   }
 
@@ -1251,11 +1251,11 @@ function _mostrarPanelEvaluacionAlumnos(container, nodo, alumnosState, estadoEst
   // indicadores demo/virtuales (persistido=false) exigen guardar el plan
   // primero. Nodos "sin tipo" (tests legados) se saltan la validación.
   if (nodo.tipo === 'unidad' || nodo.tipo === 'objetivo') {
-    AppToast.show('Seleccioná un Indicador de logro para evaluar alumnos', 'info')
+    AppToast.show('Seleccione un Indicador de logro para evaluar alumnos', 'info')
     return
   }
   if (nodo.tipo === 'indicador' && (!nodo.persistido || !_isValidUuid(nodo.id))) {
-    AppToast.show('Guardá el plan para habilitar la evaluación de este indicador', 'warning')
+    AppToast.show('Guarde el plan para habilitar la evaluación de este indicador', 'warning')
     return
   }
 

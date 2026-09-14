@@ -208,7 +208,7 @@ export async function fetchNotificaciones() {
 
     // Recordatorios de clase ('recordatorio_clase', generados por el cron
     // fn_generate_class_start_reminders) de un período académico YA CERRADO
-    // se descartan acá — antes se colaban indefinidamente: el .limit(30) por
+    // se descartan aquí — antes se colaban indefinidamente: el .limit(30) por
     // fecha de creación seguía trayendo avisos de mayo del semestre pasado
     // mientras hubiera menos de 30 notificaciones nuevas desde entonces, sin
     // ningún filtro de fecha ni de período. Otros tipos ('sistema', 'in_app',
@@ -311,7 +311,7 @@ async function _checkLocalAlerts(maestroId) {
         id:           'local_' + refId,
         tipo:         'sesion_sin_registrar',
         titulo:       'Clase sin registrar',
-        mensaje:      `${clase?.nombre || 'Tu clase'}${horario} terminó ${tiempoMsg}. Registrá la asistencia para que quede guardada.`,
+        mensaje:      `${clase?.nombre || 'Su clase'}${horario} terminó ${tiempoMsg}. Registre la asistencia para que quede guardada.`,
         estado:       'pendiente',
         created_at:   new Date().toISOString(),
         referencia_id: refId,

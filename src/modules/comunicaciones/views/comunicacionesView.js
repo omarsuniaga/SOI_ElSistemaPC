@@ -235,7 +235,7 @@ function renderCompositor(container, body) {
   const sel = seleccionados()
   if (sel.length === 0) {
     body.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>
-      No hay destinatarios. Andá al <button class="btn btn-link btn-sm p-0 align-baseline" id="commGoDir">Directorio</button> y seleccioná contactos.</div>`
+      No hay destinatarios. Vaya al <button class="btn btn-link btn-sm p-0 align-baseline" id="commGoDir">Directorio</button> y seleccione contactos.</div>`
     body.querySelector('#commGoDir')?.addEventListener('click', () => { state.tab = 'directorio'; renderShell(container) }, { signal: _abort.signal })
     return
   }
@@ -280,7 +280,7 @@ function renderCompositor(container, body) {
               ${VARIABLES.map((v) => `<button class="btn btn-outline-secondary btn-sm py-0 comm-var" data-var="${v}">${v}</button>`).join('')}
             </div>
 
-            <textarea class="form-control" id="commMsg" rows="8" placeholder="Escribí el mensaje...">${escapeHTML(state.mensaje)}</textarea>
+            <textarea class="form-control" id="commMsg" rows="8" placeholder="Escriba el mensaje...">${escapeHTML(state.mensaje)}</textarea>
 
             <div class="d-flex gap-2 mt-2 flex-wrap">
               <button class="btn btn-sm btn-outline-primary" id="commIA">
@@ -342,7 +342,7 @@ function renderActionZone(container, body) {
       <button class="btn btn-success w-100" id="commGenWa">
         <i class="bi bi-whatsapp me-1"></i>Generar links de WhatsApp
       </button>
-      <p class="text-muted small mt-2 mb-0">Se abre un link por contacto con el mensaje pre-cargado (personalizado con sus variables). Hacés clic y se envía desde tu WhatsApp.</p>
+      <p class="text-muted small mt-2 mb-0">Se abre un link por contacto con el mensaje pre-cargado (personalizado con sus variables). Haga clic y se enviará desde su WhatsApp.</p>
       <div id="commWaLinks" class="mt-2"></div>
     `
     body.querySelector('#commGenWa')?.addEventListener('click', () => generarLinksWa(body), { signal: _abort.signal })
@@ -412,7 +412,7 @@ async function enviarCorreos(body) {
 
 async function mejorarTexto(container, body, instruccion) {
   const texto = state.mensaje.trim()
-  if (!texto) { AppToast.show('Escribí algo primero para mejorarlo', 'error'); return }
+  if (!texto) { AppToast.show('Escriba un texto primero para mejorarlo', 'error'); return }
   const btn = body.querySelector('#commIA')
   const original = btn?.innerHTML
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Mejorando...' }
@@ -431,7 +431,7 @@ function abrirAjusteTono(container, body) {
   AppModal.open({
     title: 'Ajustar tono con IA',
     body: `
-      <p class="small text-muted">Elegí cómo querés que la IA reescriba el mensaje:</p>
+      <p class="small text-muted">Elija cómo desea que la IA reescriba el mensaje:</p>
       <div class="d-grid gap-2">
         ${['Más formal', 'Más cálido y cercano', 'Más corto y directo', 'Más motivador', 'Corregir ortografía y gramática']
           .map((t) => `<button class="btn btn-outline-primary comm-tono" data-tono="${t}">${t}</button>`)

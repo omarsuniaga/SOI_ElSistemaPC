@@ -190,9 +190,9 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) 
           <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-0 rounded-3" style="font-size:0.82rem;">
             <i class="bi bi-files fs-5 flex-shrink-0"></i>
             <div>
-              <strong>Estás duplicando una clase.</strong> Se copian el horario y la nómina del modelo original.
-              Asigná el nuevo <strong>maestro titular</strong> y el <strong>salón</strong> de cada bloque.
-              La copia nace <strong>en revisión</strong> y fuera del feed operativo hasta que la actives desde la ficha.
+              <strong>Está duplicando una clase.</strong> Se copian el horario y la nómina del modelo original.
+              Asigne el nuevo <strong>maestro titular</strong> y el <strong>salón</strong> de cada bloque.
+              La copia nace <strong>en revisión</strong> y fuera del feed operativo hasta que la active desde la ficha.
               <div class="form-check form-switch mt-2 p-2 rounded-3 bg-warning-subtle border border-warning-subtle">
                 <input class="form-check-input" type="checkbox" id="modal-suspender-original">
                 <label class="form-check-label fw-semibold" for="modal-suspender-original">
@@ -829,7 +829,7 @@ function _attachModalEvents(modalBody, _clase) {
     const endStr   = firstHorarioRow?.querySelector('[name="horario-hora_fin"]')?.value
 
     if (!startStr || !endStr) {
-      AppToast.warning('Por favor definí primero el horario de inicio y fin en "2. Horario & Salón"')
+      AppToast.warning('Por favor defina primero el horario de inicio y fin en "2. Horario & Salón"')
       return
     }
 
@@ -1108,7 +1108,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
 
   const _syncRotativa = async (claseId) => {
     const slots = _readSlots()
-    if (slots.length === 0) { AppToast.warning('Agregá al menos un turno'); return false }
+    if (slots.length === 0) { AppToast.warning('Agregue al menos un turno'); return false }
 
     const incomplete = slots.find(s => !s.hora_inicio || !s.hora_fin)
     if (incomplete) { AppToast.error('Todos los turnos deben tener hora de inicio y fin'); return false }

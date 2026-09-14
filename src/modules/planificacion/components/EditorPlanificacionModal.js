@@ -299,7 +299,7 @@ export async function openEditorPlanificacionModal({ plan = null, claseId = null
       container.innerHTML = `
         <div class="text-center py-4 text-body-secondary border border-secondary-subtle rounded-3 bg-body-tertiary">
           <i class="bi bi-journal-plus display-6 d-block mb-2"></i>
-          Sin objetivos asignados. Presioná <strong>"+ Agregar Objetivo Pedagógico"</strong> para comenzar.
+          Sin objetivos asignados. Presione <strong>"+ Agregar Objetivo Pedagógico"</strong> para comenzar.
         </div>
       `
       return
@@ -461,7 +461,7 @@ export async function openEditorPlanificacionModal({ plan = null, claseId = null
     })
 
     if (nodos.length === 0) {
-      containerSVG.innerHTML = `<span class="text-body-secondary small">Agregá indicadores de clase para visualizar la ruta en SVG.</span>`
+      containerSVG.innerHTML = `<span class="text-body-secondary small">Agregue indicadores de clase para visualizar la ruta en SVG.</span>`
       return
     }
 
@@ -488,7 +488,7 @@ export async function openEditorPlanificacionModal({ plan = null, claseId = null
       const enviarARevision = document.querySelector('#editor-plan-enviar')?.checked
 
       if (!clase_id || !titulo) {
-        AppToast.show('Por favor completá la clase y el título principal', 'warning')
+        AppToast.show('Por favor complete la clase y el título principal', 'warning')
         return false
       }
 

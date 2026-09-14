@@ -55,7 +55,7 @@ describe('ausenciaValidator', () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.errors['actividad_clase-1']).toBe('Indicá la actividad de reemplazo para esta clase.');
+      expect(result.errors['actividad_clase-1']).toBe('Indique la actividad de reemplazo para esta clase.');
     });
 
     it('accepts a complete request with selected class activities', () => {

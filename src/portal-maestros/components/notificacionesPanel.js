@@ -212,7 +212,7 @@ export const notificacionesPanel = {
         const ids = btn.dataset.ids.split(',');
         
         // Confirmación nativa elegante
-        const confirmar = confirm('¿Estás seguro de que querés eliminar esta notificación?');
+        const confirmar = confirm('¿Está seguro de que desea eliminar esta notificación?');
         if (!confirmar) return;
 
         let deleteSuccess = true;

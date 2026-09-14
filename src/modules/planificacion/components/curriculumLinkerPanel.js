@@ -59,7 +59,7 @@ function _buildPanelHTML(rutas) {
         <div class="text-center text-muted py-4">
           <i class="bi bi-diagram-3 d-block mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
           <p class="mb-0">Sin rutas curriculares disponibles.</p>
-          <small class="text-muted">Asigná una ruta a esta clase desde ACM primero.</small>
+          <small class="text-muted">Asigne una ruta a esta clase desde ACM primero.</small>
         </div>
       </div>`
   }
@@ -83,7 +83,7 @@ function _buildPanelHTML(rutas) {
         </div>
 
         <div class="cl-route-tree" id="cl-route-tree">
-          <div class="text-muted small text-center py-3">Seleccioná una ruta para ver sus indicadores.</div>
+          <div class="text-muted small text-center py-3">Seleccione una ruta para ver sus indicadores.</div>
         </div>
 
         <div class="cl-actions d-flex justify-content-between align-items-center mt-3 pt-3 border-top" style="display:none" id="cl-actions">
@@ -108,7 +108,7 @@ function _wireEvents(container, { claseId, planificacionId, classCurriculumPlanI
     const routeId = select.value
     if (!routeId) {
       container.querySelector('#cl-route-tree').innerHTML =
-        '<div class="text-muted small text-center py-3">Seleccioná una ruta para ver sus indicadores.</div>'
+        '<div class="text-muted small text-center py-3">Seleccione una ruta para ver sus indicadores.</div>'
       container.querySelector('#cl-actions').style.display = 'none'
       return
     }

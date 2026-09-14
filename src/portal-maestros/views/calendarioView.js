@@ -986,8 +986,8 @@ async function _openActionDrawer(fecha, container) {
       _abrirModalClaseEmergente(fecha, clasesDelMaestro)
     })
   })
-  // El drawer ya se abrió al toque, junto con el esqueleto (más arriba) —
-  // acá no hace falta volver a agregar "open".
+  // El drawer ya se abrió enseguida, junto con el esqueleto (más arriba) —
+  // aquí no hace falta volver a agregar "open".
 }
 
 /**

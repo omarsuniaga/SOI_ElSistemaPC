@@ -174,7 +174,7 @@ export function renderLoginView(container, { onSuccess }) {
               onSuccess(intended)
             }
           } else {
-          errorMsg.textContent = 'No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.'
+          errorMsg.textContent = 'No hay sesión biométrica guardada. Inicie sesión con contraseña primero.'
         }
       }
     } catch (err) {

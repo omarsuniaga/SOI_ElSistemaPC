@@ -140,7 +140,7 @@ export async function renderReportesInventarioView(container) {
         `
       }
       case 'historial': {
-        return '<p class="text-muted text-center py-4">El historial se exporta como parte del reporte general. Seleccioná un instrumento individual para ver su historial.</p>'
+        return '<p class="text-muted text-center py-4">El historial se exporta como parte del reporte general. Seleccione un instrumento individual para ver su historial.</p>'
       }
       case 'reparaciones': {
         const filteredReps = reps.filter(r => {
@@ -223,7 +223,7 @@ export async function renderReportesInventarioView(container) {
         `
       }
       default:
-        return '<p class="text-muted text-center py-4">Seleccioná un tipo de reporte.</p>'
+        return '<p class="text-muted text-center py-4">Seleccione un tipo de reporte.</p>'
     }
   }
 

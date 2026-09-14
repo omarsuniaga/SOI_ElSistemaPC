@@ -45,7 +45,7 @@ function renderClassSelector(container, clases) {
         </div>
         <div>
           <h1 class="page-title mb-0">Bitácora de Contenidos</h1>
-          <p class="text-muted small mb-0">Seleccioná una clase para ver su semáforo</p>
+          <p class="text-muted small mb-0">Seleccione una clase para ver su semáforo</p>
         </div>
       </div>
       <div class="card">
@@ -53,7 +53,7 @@ function renderClassSelector(container, clases) {
           <div class="mb-3">
             <label for="clase-selector" class="form-label fw-semibold">Clase</label>
             <select id="clase-selector" class="form-select form-select-lg">
-              <option value="">— Seleccioná una clase —</option>
+              <option value="">— Seleccione una clase —</option>
               ${clases
                 .map(
                   (c) =>

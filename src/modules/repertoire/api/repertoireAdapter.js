@@ -39,6 +39,17 @@ export function createRepertoireAdapter(client) {
       validateMontajeDates(payload)
       return insert(supabase, TABLES.montajes, { estado: 'PLANIFICADO', ...payload })
     },
+    async updateRowPreparation(id, state) {
+      assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
+      const { data, error } = await supabase.from('montaje_compases').update({ estado_preparacion: state }).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    async updateStudentPreparation(payload) {
+      if (!payload?.montaje_alumno_id || !payload?.montaje_compas_id) throw new TypeError('La preparación individual requiere alumno y compás')
+      assertEnum(payload.estado_preparacion, ESTADOS_PREPARACION, 'estado_preparacion')
+      return insert(supabase, 'montaje_alumno_compases', payload)
+    },
     async addSection(payload) {
       if (!payload?.montaje_id || !payload?.nombre?.trim()) throw new TypeError('La sección requiere montaje_id y nombre')
       return insert(supabase, TABLES.secciones, payload)

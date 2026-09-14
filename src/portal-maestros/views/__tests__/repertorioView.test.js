@@ -9,6 +9,7 @@ const makeAdapter = (overrides = {}) => ({
       version: { nombre: 'Versión' },
       evento: { nombre: 'Evento', fecha: '2026-12-18' },
       filas: [{ nombre: 'Trompetas' }],
+      alumnos: [{ id: 'juan', nombre: 'Juan', estado_preparacion: 'SIN_ESTUDIAR' }, { id: 'pedro', nombre: 'Pedro', estado_preparacion: 'CONSOLIDADO' }],
       prioridad: 1,
       estado: 'EN_MONTAJE',
       compases: [1, 2, 3].map((number) => ({ id: `m-${number}`, numero_visible: String(number), aplicabilidad: 'TOCA', estado_preparacion: 'SIN_EVALUAR' }))
@@ -129,5 +130,13 @@ describe('repertorioView', () => {
     container.querySelector('.repertoire-open').click()
     expect(container.querySelectorAll('.repertoire-measure')).toHaveLength(1000)
     expect(container.querySelector('[data-measure-id="m-0"]').getAttribute('aria-label')).toContain('Silencio')
+  })
+
+  it('shows individual student states without conflating them with the row map', async () => {
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter: makeAdapter() })
+    container.querySelector('.repertoire-open').click()
+    expect(container.querySelector('.repertoire-students').textContent).toContain('Juan: Sin estudiar')
+    expect(container.querySelector('.repertoire-students').textContent).toContain('Pedro: Consolidado')
   })
 })

@@ -9,6 +9,10 @@ const demoMontajes = [
     filas: [{ id: 'demo-fila-trompetas', nombre: 'Trompetas', responsable: 'Maestro ACM' }],
     prioridad: 2,
     estado: 'EN_MONTAJE',
+    alumnos: [
+      { id: 'demo-alumno-juan', nombre: 'Juan', estado_preparacion: 'SIN_ESTUDIAR' },
+      { id: 'demo-alumno-pedro', nombre: 'Pedro', estado_preparacion: 'CONSOLIDADO' }
+    ],
     compases: Array.from({ length: 96 }, (_, index) => ({
       id: `demo-compas-${index + 1}`,
       numero_visible: String(index + 1),
@@ -23,6 +27,7 @@ export function createRepertoireDemoAdapter() {
     async listMontajes() { return structuredClone(demoMontajes) },
     async updateMeasureState(_id, state) { return { estado_preparacion: state } },
     async updateMeasureApplicability(_id, applicability) { return { aplicabilidad: applicability } },
+    async updateStudentState(id, state) { return { id, estado_preparacion: state } },
     summarize(cells) { return aggregatePreparation(cells) }
   }
 }

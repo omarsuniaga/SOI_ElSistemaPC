@@ -652,7 +652,10 @@ function editorCanvas(m) {
       return CV_GRAD[f.valor] || CV_GRAD.oscuro
     }
 
-    function renderArt() {
+    // Solo redibuja el lienzo (no el panel de propiedades). Se usa mientras
+    // se escribe en el textarea de texto para que el preview se actualice
+    // en vivo sin destruir/recrear ese mismo textarea (ver nota en 'texto').
+    function drawArt() {
       art.style.background = bgCss()
       art.innerHTML = cv.elementos.map((el) => {
         const base = `left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;`
@@ -669,8 +672,9 @@ function editorCanvas(m) {
           (el.sombra ? 'text-shadow:0 2px 12px rgba(0,0,0,.55);' : '')
         return `<div class="cvel cvel--texto${sel === el.id ? ' is-sel' : ''}" data-id="${el.id}" style="${ts}">${escapeHTML(el.texto || '')}${handle}</div>`
       }).join('')
-      renderProps()
     }
+
+    function renderArt() { drawArt(); renderProps() }
 
     function elById(id) { return cv.elementos.find((e) => e.id === id) }
 
@@ -722,6 +726,10 @@ function editorCanvas(m) {
           else if (p === 'tamano') { el.tamano = Number(node.value); const v = props.querySelector('[data-p-val]'); if (v) v.textContent = node.value }
           else el[p] = node.value
           if (p === 'tamano') syncStyle(el)
+          // 'texto' dispara 'input' en cada tecla: redibuja solo el lienzo
+          // (drawArt) para no reconstruir el panel de propiedades y perder
+          // el foco/cursor del propio textarea que se está editando.
+          else if (p === 'texto') drawArt()
           else renderArt()
         })
       })

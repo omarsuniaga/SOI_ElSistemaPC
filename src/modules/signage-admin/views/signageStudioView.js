@@ -761,8 +761,18 @@ function editorCanvas(m) {
       if (!elNode) return
       const el = elById(elNode.dataset.id)
       elNode.setAttribute('contenteditable', 'true')
+      // Chromium pierde el caret al escribir si el elemento editable tiene
+      // display:flex (usado acá para centrar el texto verticalmente, ver ts
+      // más arriba). Se fuerza a block mientras se edita; renderArt() en
+      // done() reconstruye el nodo desde cero y restaura el flex al salir.
+      elNode.style.display = 'block'
       elNode.focus()
-      const done = () => { el.texto = elNode.innerText; elNode.removeAttribute('contenteditable'); elNode.removeEventListener('blur', done); renderArt() }
+      const selection = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(elNode)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      const done = () => { el.texto = elNode.innerText; elNode.removeAttribute('contenteditable'); elNode.style.display = ''; elNode.removeEventListener('blur', done); renderArt() }
       elNode.addEventListener('blur', done)
     })
 

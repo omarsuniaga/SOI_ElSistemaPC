@@ -911,7 +911,7 @@ function _mostrarModalResolucionConflictos(claseId) {
                   </div>
                   <div>
                     <h6 class="fw-bold mb-0 text-body">Matriz de Resolución & Bifurcación</h6>
-                    <small class="text-muted">Elegí la acción que regulariza la situación académica u operativa</small>
+                    <small class="text-muted">Elige la acción que regulariza la situación académica u operativa</small>
                   </div>
                 </div>
               </div>

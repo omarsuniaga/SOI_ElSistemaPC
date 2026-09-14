@@ -45,7 +45,12 @@ Este documento establece el **Lenguaje Ubicuo (Domain-Driven Design)** para desa
 * **Tipos:**
   * `solapamiento_maestro`: El mismo maestro tiene dos clases programadas a la misma hora en distintos salones.
   * `solapamiento_salon`: Dos clases distintas pretenden usar el mismo salón físico en la misma franja horaria.
+  * `solapamiento_alumnos`: Un alumno figura matriculado en dos clases que coinciden en el mismo día y rango horario.
   * `sobrecupo`: La nómina supera la capacidad física del salón asignado.
+
+### Acuerdo Docente / Acuerdo Inter-Cátedra
+* **Definición:** Pacto pedagógico formalizado y validado entre dos maestros cuando un alumno comparte horario entre dos clases concurrentes (ej. ensamble y cátedra de instrumento). Establece una hora exacta de transición/traspaso (ej. de 15:00 a 16:15 en Clase A y de 16:15 a 17:30 en Clase B), regularizando el solapamiento y despejando la advertencia administrativa.
+* **Términos canónicos:** `acuerdo_maestros`, `acuerdos_docentes`, `acuerdo_inter_catedra`. *Atributos clave:* `alumno_id`, `clase_origen_id`, `clase_destino_id`, `hora_transicion`, `motivo`, `activo`.
 
 ---
 

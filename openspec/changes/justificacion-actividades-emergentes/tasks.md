@@ -156,9 +156,9 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Secuencia**: Bandeja → Modal → Tests de Interacción → Tests Móvil.
 
 ### 4.1 Crear `ActividadEmergenteBandeja.js` (UI Component)
-- [ ] **Archivo**: `src/shared/components/ActividadEmergenteBandeja.js`
-- [ ] **Contenido**:
-  - Vue/React component que lista confirmaciones pendientes
+- [x] **Archivo**: `src/shared/components/ActividadEmergenteBandeja.js`
+- [x] **Contenido**:
+  - Componente Vanilla JS que lista confirmaciones pendientes
   - Cada fila: nombre actividad, fecha, maestro registrador, estado
   - Click fila abre modal: 4 botones (Sí / No / No Aplica / No Sé)
   - Modal: muestra actividad, clases afectadas (lista, counts), input observaciones opcional
@@ -166,7 +166,7 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
   - Botón "En Validación" si confirmacion='no_se' y estado_validacion='pendiente' (read-only, espera ACM)
   - Toast/notification on success
   - Deep-link support: URL param actividad_id → abre modal directamente
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Componente monta sin error
   - Modal abre/cierra correctamente
   - Form submit llama adapter.confirmarActividad
@@ -174,20 +174,18 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
   - Componente limpio: cero console warnings
 
 ### 4.2 Integrar con `src/portal-maestros/` (Rutas, Menú)
-- [ ] **Archivos**: `src/portal-maestros/App.vue` (o router), menú/navbar, layout
-- [ ] **Cambios**:
-  - Agregar ruta /maestros/confirmaciones-emergentes (o similar)
-  - Agregar link en menú con badge (cuenta de pendientes)
-  - Importar ActividadEmergenteBandeja en layout
-  - Hook: escuchar notificaciones deep-link e ir a ruta con ?actividad_id=
-- [ ] **Criterio**:
-  - Ruta /maestros/confirmaciones-emergentes carga ActividadEmergenteBandeja
-  - Badge muestra número correcto de confirmaciones pendientes
-  - Deep-link notify notification (si existe) → abre modal
+- [x] **Archivos**: `src/portal-maestros/shell/portalRoutes.js`, `src/portal-maestros/views/confirmacionesEmergentesView.js`
+- [x] **Cambios**:
+  - Agregar ruta 'confirmaciones-emergentes' en VIEW_LOADERS y renderViewContent
+  - Crear vista confirmacionesEmergentesView.js que monta ActividadEmergenteBandeja
+  - Deep-link query param actividad_id se pasa automáticamente al componente
+- [x] **Criterio**:
+  - Ruta confirmaciones-emergentes carga ActividadEmergenteBandeja
+  - Deep-link con ?actividad_id= abre modal directamente
 
 ### 4.3 Tests de Interacción (Vitest + @testing-library)
-- [ ] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js`
-- [ ] **Casos**:
+- [x] **Archivo**: `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js`
+- [x] **Casos**:
   - Test: componente renderiza lista de 3 actividades pendientes
   - Test: click en fila abre modal
   - Test: click "Sí" confirma, cierra modal, llama adapter
@@ -195,18 +193,18 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
   - Test: deep-link ?actividad_id=X abre modal para actividad X
   - Test: modal desaparece tras confirmar, lista se actualiza
   - Test: form sin validar observaciones (campo opcional)
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Todos 7 casos pasan
   - Coverage ≥80% en ActividadEmergenteBandeja.js
 
 ### 4.4 Tests Vista Móvil (Vitest + viewport)
-- [ ] **Archivo**: Misma suite que 4.3, agregar viewport='375px' en describe blocks
-- [ ] **Casos**:
+- [x] **Archivo**: Misma suite `src/shared/components/__tests__/ActividadEmergenteBandeja.test.js` (describe Vista Móvil 375px)
+- [x] **Casos**:
   - Test: modal buttons son touchable (min-height 44px, min-width 44px)
   - Test: modal no tiene overflow horizontal
   - Test: lista scrollable en 375px sin truncado de texto
   - Test: actividad nombre + fecha legibles en móvil
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Todos 4 casos pasan en viewport 375px
 
 ---

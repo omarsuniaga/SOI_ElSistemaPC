@@ -39,6 +39,7 @@ const VIEW_LOADERS = {
   'gestionar-clases':() => import('../views/gestionarClasesView.js'),
   'gestionar-horario':() => import('../views/disponibilidadView.js'),
   'proponer-contenido':() => import('../views/proponerContenidoView.js'),
+  'confirmaciones-emergentes': () => import('../views/confirmacionesEmergentesView.js'),
 }
 
 const MAESTRO_VIEWS = Object.keys(VIEW_LOADERS).concat(['logout'])
@@ -282,6 +283,8 @@ export async function renderViewContent(route, container, params, urlParams, con
         maestroId,
         claseId: normalizeNullableParam(urlParams.get('clase')),
       })
+    case 'confirmaciones-emergentes':
+      return mod.renderConfirmacionesEmergentesView(container, { maestroId, router })
   }
 
   return null

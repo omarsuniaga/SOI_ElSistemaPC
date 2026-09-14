@@ -30,6 +30,58 @@ async function insert(client, table, payload) {
 export function createRepertoireAdapter(client, { editableFilaIds = [], actorId = null, canEditTargets = () => false } = {}) {
   const supabase = requireClient(client)
   return {
+    async listMontajes() {
+      const { data: montajes, error } = await supabase.from(TABLES.montajes).select('*, obra_versiones(*, obras(*))').order('created_at', { ascending: false })
+      if (error) throw error
+      const rows = montajes || []
+      if (!rows.length) return []
+      const montageIds = rows.map((row) => row.id)
+      const versionIds = rows.map((row) => row.obra_version_id).filter(Boolean)
+      const [sections, measures] = await Promise.all([
+        supabase.from(TABLES.secciones).select('*, montaje_filas(*, montaje_alumnos(*))').in('montaje_id', montageIds).order('orden'),
+        supabase.from(TABLES.compases).select('*, montaje_compases!inner(*)').in('obra_version_id', versionIds).order('orden')
+      ])
+      if (sections.error) throw sections.error
+      if (measures.error) throw measures.error
+      const sectionsByMontage = new Map()
+      for (const section of sections.data || []) {
+        const filas = (section.montaje_filas || []).map((fila) => ({ ...fila, alumnos: fila.montaje_alumnos || [] }))
+        const current = sectionsByMontage.get(section.montaje_id) || []
+        current.push({ ...section, filas })
+        sectionsByMontage.set(section.montaje_id, current)
+      }
+      const measuresByMontage = new Map()
+      for (const row of measures.data || []) {
+        for (const state of row.montaje_compases || []) {
+          const current = measuresByMontage.get(state.montaje_id) || []
+          current.push({ ...row, ...state })
+          measuresByMontage.set(state.montaje_id, current)
+        }
+      }
+      return rows.map((montage) => ({
+        ...montage,
+        obra: montage.obra_versiones?.obras || {},
+        version: montage.obra_versiones || {},
+        filas: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas),
+        secciones: sectionsByMontage.get(montage.id) || [],
+        alumnos: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas.flatMap((fila) => fila.alumnos)),
+        compases: measuresByMontage.get(montage.id) || []
+      }))
+    },
+    async updateMeasureState(id, state, options = {}) {
+      assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
+      const { data, error } = await supabase.from(TABLES.compases).select('montaje_compases(montaje_id)').eq('id', id).single()
+      if (error) throw error
+      const montageId = options.montageId || data?.montaje_compases?.[0]?.montaje_id
+      if (!montageId) throw new Error('Montaje del compás no encontrado')
+      return this.updatePreparationAtomically({ montageId, measureId: id, newState: state, filaId: options.filaId, scope: 'collective' })
+    },
+    async updateMeasureApplicability(id, applicability) {
+      assertEnum(applicability, APLICABILIDAD_COMPAS, 'aplicabilidad')
+      const { data, error } = await supabase.from('montaje_compases').update({ aplicabilidad: applicability, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
     async createObra(payload) {
       if (!payload?.titulo?.trim()) throw new TypeError('La obra requiere título')
       return insert(supabase, TABLES.obras, payload)

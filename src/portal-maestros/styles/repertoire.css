@@ -32,6 +32,7 @@
 .repertoire-action-form h2, .repertoire-passages h2 { font-size: 1rem; margin: 0; }
 .repertoire-passages { display: grid; gap: .35rem; margin: .75rem 0 1rem; }
 .repertoire-passage { text-align: start; border: 0; background: transparent; color: var(--pm-primary, #0d6efd); padding: .3rem 0; }
+.repertoire-scope-dialog { display: grid; gap: .5rem; padding: 1rem; margin: .75rem 0; border: 2px solid var(--pm-primary, #0d6efd); border-radius: 12px; background: var(--pm-surface, #fff); }
 .repertoire-measure.state-sin_estudiar { background: #f8d7da; border-color: #dc3545; }
 .repertoire-measure.state-con_dificultad { background: #ffe5d0; border-color: #fd7e14; }
 .repertoire-measure.state-dominado { background: #fff3cd; border-color: #ffc107; }

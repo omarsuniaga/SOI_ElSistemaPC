@@ -20,6 +20,8 @@ const makeAdapter = (overrides = {}) => ({
   createPassage: vi.fn(async (payload) => ({ id: 'p-1', ...payload })),
   createLinkedGroup: vi.fn(async (payload) => ({ id: 'g-1', ...payload })),
   addLinkedMeasures: vi.fn(async (rows) => rows),
+  updateLinkedGroupState: vi.fn(async (_id, state) => ({ affected: 2, state })),
+  removeLinkedMeasures: vi.fn(async (_id, ids) => ({ affected: ids.length })),
   ...overrides
 })
 
@@ -176,5 +178,24 @@ describe('repertorioView', () => {
     await Promise.resolve()
     expect(adapter.createPassage).toHaveBeenCalledWith(expect.objectContaining({ measureIds: ['m-1', 'm-3'], difficulty: 3 }))
     expect(container.textContent).toContain('Patrón de corcheas')
+  })
+
+  it('requires an explicit linked scope choice and supports selected unlinking', async () => {
+    const adapter = makeAdapter()
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    container.querySelector('.repertoire-multi').click()
+    container.querySelectorAll('.repertoire-measure')[0].click()
+    container.querySelectorAll('.repertoire-measure')[2].click()
+    container.querySelector('.repertoire-create-group').click()
+    container.querySelector('[name="name"]').value = 'Patrón A'
+    container.querySelector('.repertoire-action-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+    container.querySelector('.repertoire-measure').click()
+    expect(container.querySelector('.repertoire-scope-dialog').textContent).toContain('Solo este compás')
+    container.querySelector('[data-scope="cancel"]').click()
+    expect(adapter.updateLinkedGroupState).not.toHaveBeenCalled()
   })
 })

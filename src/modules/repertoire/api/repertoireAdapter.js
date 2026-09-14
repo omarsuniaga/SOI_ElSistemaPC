@@ -116,6 +116,13 @@ export function createRepertoireAdapter(client) {
       if (!data?.length) throw new Error('Compás no vinculado')
       return data[0]
     },
+    async removeLinkedMeasures(groupId, measureIds) {
+      if (!measureIds?.length) return { affected: 0 }
+      const { data, error } = await supabase.from(TABLES.grupoCompases).delete().eq('grupo_id', groupId).in('montaje_compas_id', measureIds).select()
+      if (error) throw error
+      if (data?.length !== measureIds.length) throw new Error('Persistencia parcial al desvincular compases')
+      return { affected: data.length }
+    },
     async renameLinkedGroup(id, nombre) { return this.updateLinkedGroup(id, { nombre }) },
     async updateLinkedGroup(id, payload) {
       const { data, error } = await supabase.from(TABLES.grupos).update(payload).eq('id', id).select().single()

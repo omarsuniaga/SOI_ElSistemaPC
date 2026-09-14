@@ -1338,27 +1338,43 @@ function _mostrarModalAlumnosSinClase() {
 
   const _renderStepper = (step) => `
     <div class="sc-stepper mb-3" role="progressbar" aria-valuenow="${step}" aria-valuemin="1" aria-valuemax="3">
-      <div class="sc-step ${step === 1 ? 'active' : (step > 1 ? 'completed' : 'pending')}">
-        <div class="sc-step-circle">${step > 1 ? '<i class="bi bi-check-lg text-white"></i>' : '1'}</div>
-        <div class="sc-step-content">
-          <span class="sc-step-label">Paso 1</span>
-          <span class="sc-step-title">Elegir Alumno</span>
-        </div>
+      <div class="sc-stepper-back-slot">
+        ${step > 1 ? `
+          <button type="button" class="btn btn-sm btn-outline-secondary sc-stepper-back-btn btn-volver-wizard-step" 
+                  data-target-step="${step - 1}" 
+                  id="${step === 2 ? 'btnVolverStep1' : 'btnVolverStep2'}" 
+                  title="Volver al paso anterior" 
+                  aria-label="Volver al paso anterior">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+        ` : `
+          <div class="sc-stepper-back-placeholder"></div>
+        `}
       </div>
-      <div class="sc-step-connector ${step > 1 ? 'active' : ''}"></div>
-      <div class="sc-step ${step === 2 ? 'active' : (step > 2 ? 'completed' : 'pending')}">
-        <div class="sc-step-circle">${step > 2 ? '<i class="bi bi-check-lg text-white"></i>' : '2'}</div>
-        <div class="sc-step-content">
-          <span class="sc-step-label">Paso 2</span>
-          <span class="sc-step-title">Elegir Clase</span>
+
+      <div class="sc-stepper-steps-wrapper">
+        <div class="sc-step ${step === 1 ? 'active' : (step > 1 ? 'completed' : 'pending')}">
+          <div class="sc-step-circle">${step > 1 ? '<i class="bi bi-check-lg text-white"></i>' : '1'}</div>
+          <div class="sc-step-content">
+            <span class="sc-step-label">Paso 1</span>
+            <span class="sc-step-title">Elegir Alumno</span>
+          </div>
         </div>
-      </div>
-      <div class="sc-step-connector ${step > 2 ? 'active' : ''}"></div>
-      <div class="sc-step ${step === 3 ? 'active' : 'pending'}">
-        <div class="sc-step-circle">3</div>
-        <div class="sc-step-content">
-          <span class="sc-step-label">Paso 3</span>
-          <span class="sc-step-title">Confirmar Nómina</span>
+        <div class="sc-step-connector ${step > 1 ? 'active' : ''}"></div>
+        <div class="sc-step ${step === 2 ? 'active' : (step > 2 ? 'completed' : 'pending')}">
+          <div class="sc-step-circle">${step > 2 ? '<i class="bi bi-check-lg text-white"></i>' : '2'}</div>
+          <div class="sc-step-content">
+            <span class="sc-step-label">Paso 2</span>
+            <span class="sc-step-title">Elegir Clase</span>
+          </div>
+        </div>
+        <div class="sc-step-connector ${step > 2 ? 'active' : ''}"></div>
+        <div class="sc-step ${step === 3 ? 'active' : 'pending'}">
+          <div class="sc-step-circle">3</div>
+          <div class="sc-step-content">
+            <span class="sc-step-label">Paso 3</span>
+            <span class="sc-step-title">Confirmar Nómina</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1508,10 +1524,6 @@ function _mostrarModalAlumnosSinClase() {
               </span>
             </div>
           </div>
-
-          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center rounded-3 shadow-xs flex-shrink-0" id="btnVolverStep1" title="Cambiar alumno" aria-label="Cambiar alumno" style="width:32px; height:32px; padding:0;">
-            <i class="bi bi-arrow-left fs-6"></i>
-          </button>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
@@ -1641,11 +1653,7 @@ function _mostrarModalAlumnosSinClase() {
       <div id="step-3-nomina" class="sin-clase-wizard">
         ${_renderStepper(3)}
 
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2 flex-shrink-0">
-          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center rounded-3 shadow-xs" id="btnVolverStep2" title="Volver a clases" aria-label="Volver a clases" style="width:34px; height:34px; padding:0;">
-            <i class="bi bi-arrow-left fs-6"></i>
-          </button>
-
+        <div class="d-flex justify-content-end align-items-center mb-3 pb-2 border-bottom flex-shrink-0">
           <span class="badge ${isFull ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'} py-1.5 px-3 rounded-pill" style="font-size:0.82rem;">
             <i class="bi bi-people-fill me-1"></i>${totalAlumnos} / ${capacidad} inscritos
           </span>

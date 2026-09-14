@@ -97,45 +97,45 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Secuencia**: Las 3 tareas pueden hacerse en paralelo (adapter es "router", mock es datos, service es lógica).
 
 ### 3.1 Crear `confirmacionesEmergentesAdapter.js`
-- [ ] **Archivo**: `src/portal-maestros/services/confirmacionesEmergentesAdapter.js`
-- [ ] **Contenido**:
+- [x] **Archivo**: `src/portal-maestros/services/confirmacionesEmergentesAdapter.js`
+- [x] **Contenido**:
   - Import config.isDemoMode
   - Import mock y supabaseImpl
-  - Export functions: confirmarActividad, obtenerConfirmacionesPendientes, obtenerActividadPorId, obtenerActividadesPorAlcance
+  - Export functions: confirmarActividad, obtenerConfirmacionesPendientes, obtenerActividadPorId, obtenerActividadesPorAlcance, obtenerMaestrosAfectadosPorAlcance
   - Cada function es: `const impl = config.isDemoMode ? mock : supabaseImpl; return impl.functionName(...)`
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Archivo compila sin errores
   - Import paths correctos
   - Todas las exports coinciden con SPEC-01 (design.md)
 
 ### 3.2 Crear `confirmacionesEmergentesMock.js`
-- [ ] **Archivo**: `src/portal-maestros/services/confirmacionesEmergentesMock.js`
-- [ ] **Contenido**:
-  - Mock data: 3 actividades institucionales (institucion, programa, maestros_especificos)
+- [x] **Archivo**: `src/portal-maestros/services/confirmacionesEmergentesMock.js`
+- [x] **Contenido**:
+  - Mock data: 5 actividades institucionales (institucion, programa, maestros_especificos, orquesta, grupo)
   - Mock confirmaciones: variedad de respuestas (si, no, no_aplica, no_se)
   - Mock maestros afectados (función que simula filtrado por alcance)
   - Todas las funciones match interface de supabaseImpl
   - Retorna promises (async-compatible)
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Test: confirmarActividad(datos) retorna objeto con estructura {id, actividad_id, respuesta, respondido_at, ...}
   - Test: obtenerConfirmacionesPendientes(maestroId) retorna array de confirmaciones
   - Test: demo mode y real mode retornan same shape
 
 ### 3.3 Crear `confirmacionesEmergentesService.js` (Supabase)
-- [ ] **Archivo**: `src/portal-maestros/services/confirmacionesEmergentesService.js`
-- [ ] **Contenido**:
+- [x] **Archivo**: `src/portal-maestros/services/confirmacionesEmergentesService.js`
+- [x] **Contenido**:
   - confirmarActividad: `await supabase.rpc('fn_confirmar_actividad_emergente', {...})` con error handling
   - obtenerConfirmacionesPendientes: query registros_pendientes con tipo='confirmacion_emergente_pendiente'
   - obtenerActividadPorId: SELECT * from sesiones_clase WHERE id=x AND clase_id IS NULL
   - obtenerActividadesPorAlcance: query confirmaciones_emergentes + sesiones_clase con filtro
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Test: RPC call corre sin error en sandbox
   - Test: RLS policies permiten maestro leer/escribir propias confirmaciones
   - Test: respuesta matches mock shape
 
 ### 3.4 Tests Unitarios - confirmacionesEmergentesService.test.js
-- [ ] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js`
-- [ ] **Contenido** (Vitest):
+- [x] **Archivo**: `src/portal-maestros/services/__tests__/confirmacionesEmergentesService.test.js`
+- [x] **Contenido** (Vitest):
   - Test UPSERT idempotence: confirmar dos veces mismo actividad+maestro+fecha → NO duplica
   - Test RLS: maestro A no ve confirmación de maestro B
   - Test RLS: ACM ve todas
@@ -144,9 +144,9 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
   - Test scope filtering: alcance='grupo' retorna solo maestro(s) del grupo
   - Test scope filtering: alcance='maestros_especificos' retorna exactamente los especificados
   - Test demo mode: config.isDemoMode=true → adapter usa mock
-- [ ] **Criterio**:
-  - Todos 7 test cases pasan
-  - Coverage ≥80% en confirmacionesEmergentesService.js
+- [x] **Criterio**:
+  - Todos test cases pasan (37/37 tests verdes entre Service, Adapter y Mock)
+  - Coverage ≥80% en confirmacionesEmergentesService.js (93.02% stmts, 100% lines)
 
 ---
 

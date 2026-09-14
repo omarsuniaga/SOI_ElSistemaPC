@@ -12,7 +12,7 @@ const TABLES = Object.freeze({
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
   ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
-  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio'
+  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial'
 })
 
 function requireClient(client) {
@@ -106,6 +106,26 @@ export function createRepertoireAdapter(client, { editableFilaIds = [] } = {}) {
     async linkObservationToSessionRepertoire(observationId, workId) {
       if (!observationId || !workId) throw new TypeError('La observación requiere contexto de repertorio')
       return insert(supabase, TABLES.observationContext, { observacion_id: observationId, trabajo_id: workId })
+    },
+    async recordPreparationTransition(payload) {
+      if (!payload?.montageId || !payload?.measureId || !payload?.newState) throw new TypeError('La transición requiere montaje, compás y estado')
+      return insert(supabase, TABLES.preparationHistory, { montaje_id: payload.montageId, montaje_fila_id: payload.filaId || null, alumno_id: payload.studentId || null, montaje_compas_id: payload.measureId, estado_anterior: payload.previousState || null, estado_nuevo: payload.newState, actor_maestro_id: payload.actorId || null, alcance: payload.scope || 'collective', fuente: payload.source || 'PREPARATION_MUTATION', sesion_id: payload.sessionId || null, operacion_masiva_id: payload.bulkOperationId || null })
+    },
+    async historyByMeasure(montageId, measureId) {
+      if (!montageId || !measureId) throw new TypeError('El historial requiere montaje y compás')
+      const { data, error } = await supabase.from(TABLES.preparationHistory).select('*').eq('montaje_id', montageId).eq('montaje_compas_id', measureId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async preparationHistoryByFila(montageId, filaId) {
+      const { data, error } = await supabase.from(TABLES.preparationHistory).select('*').eq('montaje_id', montageId).eq('montaje_fila_id', filaId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async preparationHistoryByStudent(montageId, studentId) {
+      const { data, error } = await supabase.from(TABLES.preparationHistory).select('*').eq('montaje_id', montageId).eq('alumno_id', studentId).order('created_at', { ascending: true })
+      if (error) throw error
+      return data || []
     },
     async historyBySession(sessionId) {
       if (!sessionId) throw new TypeError('El historial requiere sesión')

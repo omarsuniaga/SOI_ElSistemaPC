@@ -247,4 +247,16 @@ describe('repertorioView', () => {
     expect(container.querySelector('.repertoire-rehearsal-mark').textContent).toContain('B')
     expect(container.querySelector('[data-measure-id="m-2"]').getAttribute('aria-label')).toContain('Letra B comienza en compás 2')
   })
+
+  it('loads bounded measure history from the read-only history action', async () => {
+    const historyByMeasure = vi.fn(async () => [{ createdAt: '2026-09-14', newState: 'DOMINADO', source: 'PREPARATION_MUTATION' }])
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter: makeAdapter({ historyByMeasure }) })
+    container.querySelector('.repertoire-open').click()
+    const measure = container.querySelector('.repertoire-measure')
+    measure.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    container.querySelector('.repertoire-history').click()
+    await vi.waitFor(() => expect(historyByMeasure).toHaveBeenCalledWith('montaje-1', 'm-1'))
+    expect(container.querySelector('.repertoire-history-list').textContent).toContain('Dominado')
+  })
 })

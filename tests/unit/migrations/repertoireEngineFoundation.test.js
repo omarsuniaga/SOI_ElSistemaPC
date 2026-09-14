@@ -6,6 +6,7 @@ const migrationPath = resolve(process.cwd(), 'supabase/migrations/20260914160601
 const studentMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914173531_repertoire_student_overrides.sql')
 const passageMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914174948_repertoire_passages_linked_measures.sql')
 const sessionMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914192916_repertoire_session_work.sql')
+const historyMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914205937_repertoire_preparation_history.sql')
 
 describe('repertoire foundation migration contract', () => {
   it('defines the permanent work/version/montaje hierarchy and preparation primitives', async () => {
@@ -51,5 +52,14 @@ describe('repertoire foundation migration contract', () => {
     expect(sql).toContain('sesiones_clase(id)')
     expect(sql).toContain('observaciones_sesion(id)')
     expect(sql).not.toMatch(/DROP\s+TABLE|TRUNCATE|CASCADE/i)
+  })
+
+  it('defines append-only preparation history separately from session evidence', async () => {
+    const sql = await readFile(historyMigrationPath, 'utf8')
+    expect(sql).toContain('public.montaje_preparacion_historial')
+    for (const field of ['montaje_compas_id', 'estado_anterior', 'estado_nuevo', 'actor_maestro_id', 'alcance', 'fuente', 'sesion_id']) expect(sql).toContain(field)
+    expect(sql).toContain('Append-only preparation transitions')
+    expect(sql).toContain('ENABLE ROW LEVEL SECURITY')
+    expect(sql).not.toMatch(/DROP\s+TABLE|TRUNCATE|ON DELETE CASCADE/i)
   })
 })

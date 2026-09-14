@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const migrationPath = resolve(process.cwd(), 'supabase/migrations/20260914160601_repertoire_engine_foundation.sql')
 const studentMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914173531_repertoire_student_overrides.sql')
+const passageMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914174948_repertoire_passages_linked_measures.sql')
 
 describe('repertoire foundation migration contract', () => {
   it('defines the permanent work/version/montaje hierarchy and preparation primitives', async () => {
@@ -30,5 +31,13 @@ describe('repertoire foundation migration contract', () => {
     expect(sql).toContain('ENABLE ROW LEVEL SECURITY')
     expect(sql).toContain('nunca se modifica por cambios colectivos de fila')
     expect(sql).not.toMatch(/\bDROP\s+TABLE\b/i)
+  })
+
+  it('defines reversible pedagogical passages and linked measure groups', async () => {
+    const sql = await readFile(passageMigrationPath, 'utf8')
+    for (const table of ['montaje_pasajes', 'montaje_pasaje_compases', 'montaje_grupos_compases', 'montaje_grupo_compases']) expect(sql).toContain(`public.${table}`)
+    expect(sql).toContain('ENABLE ROW LEVEL SECURITY')
+    expect(sql).toContain('separados de las marcas de ensayo')
+    expect(sql).not.toMatch(/\bDROP\s+TABLE\b|\bTRUNCATE\b/i)
   })
 })

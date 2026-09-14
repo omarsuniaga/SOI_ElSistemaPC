@@ -16,6 +16,11 @@ export function assertStudentMutationAllowed({ authorizedStudentIds = [], studen
   return true
 }
 
+export function assertFilaEditable({ editableFilaIds = [], filaId }) {
+  if (!editableFilaIds.includes(filaId)) throw new Error('Fila fuera del alcance editable')
+  return true
+}
+
 export function applyPreparationScope({ rowState, studentStates = {}, selectedStudentIds = [], state, scope }) {
   assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
   if (!Object.values(PREPARATION_UPDATE_SCOPES).includes(scope)) throw new RangeError(`alcance inválido: ${scope}`)

@@ -14,4 +14,12 @@ describe('seccionalView', () => {
     container.querySelector('.sectional-cell').click()
     expect(container.querySelector('.sectional-detail').textContent).toContain('Compás 1')
   })
+
+  it('keeps a 1000-measure sectional map within the existing DOM boundary', async () => {
+    const container = document.createElement('main')
+    const started = performance.now()
+    await renderSeccionalView(container, { adapter: createSectionalDemoAdapter({ measureCount: 1000 }) })
+    expect(container.querySelectorAll('.sectional-cell')).toHaveLength(1000)
+    expect(performance.now() - started).toBeLessThan(1500)
+  })
 })

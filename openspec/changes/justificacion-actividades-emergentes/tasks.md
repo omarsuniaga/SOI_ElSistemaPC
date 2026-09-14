@@ -249,28 +249,28 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Secuencia**: Audit View → Tests.
 
 ### 6.1 Crear `ActividadEmergenteAuditView.js` (Lectura + Auditoría)
-- [ ] **Archivo**: `src/modules/admin-reports/components/ActividadEmergenteAuditView.js`
-- [ ] **Contenido**:
+- [x] **Archivo**: `src/modules/admin-reports/components/ActividadEmergenteAuditView.js`
+- [x] **Contenido**:
   - Tabla read-only: todas las actividades + confirmaciones
   - Filtros: maestro_id, fecha, actividad_id, estado_validacion, respuesta
   - Columnas: actividad nombre, maestro, fecha, respuesta, estado_validacion, respondido_por, respondido_at, clases_afectadas (expandible), observaciones
   - Fila expandible: muestra audit trail completo (respondido_at, updated_at, user, cambios)
   - Export a CSV (lista completa para auditoría)
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Componente monta sin error
   - Tabla carga datos via RLS (ADM puede leer todo)
   - Filtros funcionan
   - Expandible muestra audit trail
 
 ### 6.2 Tests ADM
-- [ ] **Archivo**: `src/modules/admin-reports/components/__tests__/ActividadEmergenteAuditView.test.js`
-- [ ] **Casos**:
+- [x] **Archivo**: `src/modules/admin-reports/components/__tests__/ActividadEmergenteAuditView.test.js`
+- [x] **Casos**:
   - Test: tabla muestra solo confirmaciones donde estado_validacion='validado' al filtrar
   - Test: export a CSV genera archivo con todas filas
   - Test: admin puede ver confirmación de maestro X (RLS allows ADM SELECT all)
   - Test: maestro no puede acceder a esta vista (acceso denegado)
-- [ ] **Criterio**:
-  - Todos 4 casos pasan
+- [x] **Criterio**:
+  - Todos 4 casos pasan (5/5 en la suite)
 
 ---
 

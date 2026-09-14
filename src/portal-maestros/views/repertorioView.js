@@ -2,7 +2,7 @@ import '../styles/repertoire.css'
 import { getMaestroLocal } from '../../portal-maestros/auth/maestroAuth.js'
 import { daysRemaining, ESTADOS_PREPARACION } from '../../modules/repertoire/domain/repertoireFoundation.js'
 import { effectivePreparationState } from '../../modules/repertoire/domain/studentPreparation.js'
-import { createRepertoireDemoAdapter } from '../../modules/repertoire/demo/repertoireDemoAdapter.js'
+import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
 import { DEFAULT_MEASURES_PER_ROW, MEASURES_PER_ROW_OPTIONS, readMeasuresPerRow, writeMeasuresPerRow } from '../../modules/repertoire/domain/gridSemantics.js'
 
 const STATE_LABELS = { SIN_EVALUAR: 'Sin evaluar', SIN_ESTUDIAR: 'Sin estudiar', CON_DIFICULTAD: 'Con dificultad', DOMINADO: 'Dominado', CONSOLIDADO: 'Consolidado' }
@@ -74,9 +74,17 @@ function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditAppli
   </section>`
 }
 
-export async function renderRepertoireView(container, { adapter = createRepertoireDemoAdapter() } = {}) {
+export async function renderRepertoireView(container, { adapter } = {}) {
   container.innerHTML = '<div class="repertoire-loading" role="status">Cargando repertorio…</div>'
-  const montajes = await adapter.listMontajes()
+  try {
+    adapter ||= getRepertoireAdapter({ actorContext: { maestroId: getMaestroLocal()?.id || null } })
+  } catch (error) {
+    const message = error instanceof RepertoireUnavailableError ? error.message : 'No se pudo cargar el módulo de Repertorio.'
+    container.innerHTML = `<div class="repertoire-error" role="alert">${message}</div>`
+    return { mode: 'unavailable' }
+  }
+  let montajes
+  try { montajes = await adapter.listMontajes() } catch { container.innerHTML = '<div class="repertoire-error" role="alert">No se pudo cargar el módulo de Repertorio.</div>'; return { mode: 'unavailable' } }
   let active = null
   let selected = new Set()
   let selectionMode = false

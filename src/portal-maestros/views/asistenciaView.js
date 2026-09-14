@@ -82,7 +82,7 @@ import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
 import { renderSessionRepertoirePanel } from '../components/SessionRepertoirePanel.js'
-import { createRepertoireDemoAdapter } from '../../modules/repertoire/demo/repertoireDemoAdapter.js'
+import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
 import { resolverPertenenciaClase } from '../services/suplenciaService.js'
 import { generateDailyReport, generateMonthlyAttendance } from '../services/reportService.js'
 // reportService dynamically imported on demand for performance
@@ -166,7 +166,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       rutaId: null,
       sesionExistenteData: sesion,
       router,
-      repertoireAdapter: createRepertoireDemoAdapter(),
+      repertoireAdapter: getRepertoireAdapter({ actorContext: { maestroId: maestro?.id || null } }),
     })
 
     return typeof cleanup === 'function' ? cleanup : undefined
@@ -178,8 +178,11 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
 
 export async function renderAsistenciaView(
   containerOrId,
-  { claseId, fecha, sesionId, router, repertoireAdapter = createRepertoireDemoAdapter() } = {},
+  { claseId, fecha, sesionId, router, repertoireAdapter } = {},
 ) {
+  repertoireAdapter ||= (() => {
+    try { return getRepertoireAdapter({ actorContext: { maestroId: getMaestroLocal()?.id || null } }) } catch (error) { if (error instanceof RepertoireUnavailableError) return null; throw error }
+  })()
   // Resolve container: accept both DOM element and string ID
   const container =
     typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId
@@ -1766,7 +1769,10 @@ function _renderVista(container, ctx) {
   _cleanups.push(() => planificationCard.destroy())
 
   let sessionRepertoirePanel
-  repertoireAdapter.listMontajes().then((montageOptions) => {
+  if (!repertoireAdapter) {
+    const unavailable = container.querySelector('#pm-session-repertoire')
+    if (unavailable) unavailable.innerHTML = '<p class="session-repertoire-status" role="status">Repertorio no disponible.</p>'
+  } else repertoireAdapter.listMontajes().then((montageOptions) => {
     sessionRepertoirePanel = renderSessionRepertoirePanel(container.querySelector('#pm-session-repertoire'), {
       sessionId: sesionId,
       adapter: repertoireAdapter,
@@ -1774,7 +1780,7 @@ function _renderVista(container, ctx) {
       montajeOptions: montageOptions,
     })
     _cleanups.push(() => sessionRepertoirePanel.destroy())
-  }).catch((error) => console.warn('[asistencia] No se pudo cargar Repertorio trabajado:', error))
+  }).catch(() => { const unavailable = container.querySelector('#pm-session-repertoire'); if (unavailable) unavailable.innerHTML = '<p class="session-repertoire-status" role="alert">No se pudo cargar Repertorio trabajado.</p>' })
 
 
 

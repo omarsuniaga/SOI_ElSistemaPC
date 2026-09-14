@@ -46,6 +46,13 @@ vi.mock('../../../../core/router/router.js', () => ({
   router: { navigate: mockNavigate },
 }))
 
+const mockGetPeriodoActivo = vi.fn(() => Promise.resolve(null))
+vi.mock('../../../periodos/api/periodosApi.js', () => ({
+  getPeriodoActivo: (...args) => mockGetPeriodoActivo(...args),
+}))
+
+const RANGO_STORAGE_KEY = 'admin-cumplimiento-maestros-rango'
+
 import { CumplimientoMaestrosWidget } from '../cumplimientoMaestrosWidget.js'
 
 function maestroCompliance(overrides) {
@@ -66,6 +73,7 @@ describe('CumplimientoMaestrosWidget — Reporte Institucional', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     mockGetMaestrosComplianceStatus.mockResolvedValue([maestroCompliance({})])
     mockCargarHistorialInstitucional.mockResolvedValue({ sesiones: [] })
     container = document.createElement('div')
@@ -204,6 +212,7 @@ describe('CumplimientoMaestrosWidget — propagación del rango al detalle de ma
 
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     mockGetMaestrosComplianceStatus.mockResolvedValue([maestroCompliance({})])
     container = document.createElement('div')
     container.id = 'test-container'
@@ -325,6 +334,168 @@ describe('CumplimientoMaestrosWidget — propagación del rango al detalle de ma
     await new Promise((r) => setTimeout(r, 0))
 
     expect(widget.currentRango).toBe('semana_actual')
+  })
+})
+
+describe('CumplimientoMaestrosWidget — persistencia del rango entre navegaciones', () => {
+  let container
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockGetMaestrosComplianceStatus.mockResolvedValue([maestroCompliance({})])
+    mockGetPeriodoActivo.mockResolvedValue(null)
+    container = document.createElement('div')
+    container.id = 'test-container'
+    document.body.appendChild(container)
+  })
+
+  afterEach(() => {
+    container?.remove()
+    localStorage.clear()
+  })
+
+  async function initWidget() {
+    const widget = new CumplimientoMaestrosWidget('test-container')
+    await widget.init()
+    return widget
+  }
+
+  it('el rango elegido sobrevive a que el widget se destruya y se vuelva a instanciar (simula volver de "Ver Detalle")', async () => {
+    const widget1 = await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'mes_actual'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(widget1.currentRango).toBe('mes_actual')
+
+    // El router destruye la instancia anterior y crea una nueva al re-entrar
+    // a 'admin-dashboard' — esto es exactamente lo que pasa al volver de
+    // admin-maestro-detalle.
+    const widget2 = await initWidget()
+
+    expect(widget2.currentRango).toBe('mes_actual')
+  })
+
+  it('un rango personalizado (desde/hasta explícitos) también persiste entre instancias', async () => {
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'personalizado'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    container.querySelector('#inputCustomDesde').value = '2026-03-01'
+    container.querySelector('#inputCustomHasta').value = '2026-03-15'
+    container.querySelector('#btnAplicarRangoPersonalizado').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    const widget2 = await initWidget()
+
+    expect(widget2.currentRango).toBe('personalizado')
+    expect(widget2.customDates).toEqual({ desde: '2026-03-01', hasta: '2026-03-15' })
+    // El selector debe reflejar visualmente el rango restaurado, no el default
+    expect(container.querySelector('#selectRangoFechas').value).toBe('personalizado')
+    expect(container.querySelector('#inputCustomDesde').value).toBe('2026-03-01')
+  })
+
+  it('"Limpiar" restablece el período Y borra lo persistido (vuelve a semana_actual la próxima vez)', async () => {
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'mes_anterior'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+
+    container.querySelector('#btnLimpiarFiltrosMaestros').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    const widget2 = await initWidget()
+    expect(widget2.currentRango).toBe('semana_actual')
+  })
+})
+
+describe('CumplimientoMaestrosWidget — preset "Desde Inicio de Período"', () => {
+  let container
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockGetMaestrosComplianceStatus.mockResolvedValue([maestroCompliance({})])
+    container = document.createElement('div')
+    container.id = 'test-container'
+    document.body.appendChild(container)
+  })
+
+  afterEach(() => {
+    container?.remove()
+    localStorage.clear()
+  })
+
+  async function initWidget() {
+    const widget = new CumplimientoMaestrosWidget('test-container')
+    await widget.init()
+    return widget
+  }
+
+  it('usa la fecha_inicio del período académico activo como "desde"', async () => {
+    mockGetPeriodoActivo.mockResolvedValue({ id: 'p1', fecha_inicio: '2026-08-10', fecha_fin: '2026-12-15', activo: true })
+
+    const widget = await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'inicio_periodo'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(widget.customDates.desde).toBe('2026-08-10')
+    expect(mockGetMaestrosComplianceStatus).toHaveBeenLastCalledWith(
+      expect.objectContaining({ desde: '2026-08-10' }),
+    )
+  })
+
+  it('sin período activo configurado, cae de vuelta al 1ro de enero del año en curso (no rompe la vista)', async () => {
+    mockGetPeriodoActivo.mockResolvedValue(null)
+
+    const widget = await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'inicio_periodo'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(widget.customDates.desde).toMatch(/^\d{4}-01-01$/)
+  })
+
+  it('el detalle del maestro se abre con el rango "inicio_periodo" resuelto, no con fechas vacías', async () => {
+    mockGetPeriodoActivo.mockResolvedValue({ id: 'p1', fecha_inicio: '2026-08-10', fecha_fin: '2026-12-15', activo: true })
+
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'inicio_periodo'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    container.querySelector('.btn-detalle').click()
+    await new Promise((r) => setTimeout(r, 0))
+
+    const llamada = mockNavigate.mock.calls.find((c) => c[0] === 'admin-maestro-detalle')
+    expect(llamada[1].desde).toBe('2026-08-10')
+  })
+
+  it('getPeriodoActivo se consulta una sola vez por instancia aunque se recalcule el rango varias veces', async () => {
+    mockGetPeriodoActivo.mockResolvedValue({ id: 'p1', fecha_inicio: '2026-08-10', fecha_fin: '2026-12-15', activo: true })
+
+    await initWidget()
+
+    container.querySelector('#selectRangoFechas').value = 'inicio_periodo'
+    container.querySelector('#selectRangoFechas').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    container.querySelector('#btnRefresh').click()
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(mockGetPeriodoActivo).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -10,6 +10,7 @@ const historyMigrationPath = resolve(process.cwd(), 'supabase/migrations/2026091
 const targetsMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914210804_repertoire_targets_milestones.sql')
 const atomicMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914213711_repertoire_atomic_preparation_mutation.sql')
 const eventMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914213713_repertoire_calendar_relationship.sql')
+const signalsMigrationPath = resolve(process.cwd(), 'supabase/migrations/20260914214811_repertoire_deterministic_signals.sql')
 
 describe('repertoire foundation migration contract', () => {
   it('defines the permanent work/version/montaje hierarchy and preparation primitives', async () => {
@@ -91,5 +92,14 @@ describe('repertoire foundation migration contract', () => {
     expect(sql).not.toContain('eventos_conciertos')
     expect(sql).not.toContain('soi_eventos')
     expect(sql).toContain('ON DELETE RESTRICT')
+  })
+
+  it('separates deterministic signals from notification delivery channels', async () => {
+    const sql = await readFile(signalsMigrationPath, 'utf8')
+    expect(sql).toContain('public.repertoire_signals')
+    expect(sql).toContain('public.repertoire_signal_deliveries')
+    expect(sql).toContain('dedupe_key')
+    expect(sql).toContain('IN_APP')
+    expect(sql).not.toMatch(/ON DELETE CASCADE|DROP\s+TABLE|TRUNCATE/i)
   })
 })

@@ -13,7 +13,7 @@ const TABLES = Object.freeze({
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
   ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
-  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial', targets: 'montaje_targets', milestones: 'montaje_target_milestones', eventRelations: 'montaje_eventos'
+  ,sessionWorks: 'sesion_repertorio_trabajos', sessionWorkMeasures: 'sesion_repertorio_trabajo_compases', observationContext: 'observacion_sesion_repertorio', preparationHistory: 'montaje_preparacion_historial', targets: 'montaje_targets', milestones: 'montaje_target_milestones', eventRelations: 'montaje_eventos', signals: 'repertoire_signals', signalDeliveries: 'repertoire_signal_deliveries'
 })
 
 function requireClient(client) {
@@ -150,6 +150,8 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       return data || []
     },
     async listMontagesForEvent(eventId) { const { data, error } = await supabase.from(TABLES.eventRelations).select('*, montajes(*)').eq('calendario_evento_id', eventId); if (error) throw error; return data || [] },
+    async listInAppSignals() { const { data, error } = await supabase.from(TABLES.signalDeliveries).select('*, repertoire_signals(*)').eq('channel', 'IN_APP').order('created_at', { ascending: false }); if (error) throw error; return data || [] },
+    async acknowledgeSignal(deliveryId) { const { data, error } = await supabase.from(TABLES.signalDeliveries).update({ status: 'READ', read_at: new Date().toISOString() }).eq('id', deliveryId).select().single(); if (error || !data) throw error || new Error('Señal no encontrada'); return data },
     async historyBySession(sessionId) {
       if (!sessionId) throw new TypeError('El historial requiere sesión')
       const { data, error } = await supabase.from(TABLES.sessionWorks).select('*, sesion_repertorio_trabajo_compases(*), observacion_sesion_repertorio(*)').eq('sesion_id', sessionId).order('created_at', { ascending: true })

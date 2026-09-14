@@ -347,38 +347,38 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Secuencia**: Actualizar docs existentes.
 
 ### 8.1 Documentación de Uso - Portal Maestros
-- [ ] **Archivo**: `docs/es/portales/maestros/confirmaciones-emergentes.md` (crear nuevo o agregar a existente)
-- [ ] **Contenido**:
+- [x] **Archivo**: `docs/es/portales/maestros/confirmaciones-emergentes.md` (crear nuevo o agregar a existente)
+- [x] **Contenido**:
   - ¿Qué es una confirmación de actividad institucional?
   - ¿Cómo confirmar? (pasos con screenshots/video)
   - ¿Qué significan los 4 botones? (Sí/No/No Aplica/No Sé)
   - Caso de uso: Concierto General el 15-09
   - FAQ: "¿Por qué no veo mi confirmación?", "¿Puedo cambiar mi respuesta?"
-- [ ] **Criterio**: Documento redactado en español, claro, 2-3 págs máx.
+- [x] **Criterio**: Documento redactado en español, claro, 2-3 págs máx.
 
 ### 8.2 Documentación de Administración - Portal ACM
-- [ ] **Archivo**: `docs/es/portales/coordinacion/actividades-emergentes-admin.md` (crear nuevo)
-- [ ] **Contenido**:
+- [x] **Archivo**: `docs/es/portales/coordinacion/actividades-emergentes-admin.md` (crear nuevo)
+- [x] **Contenido**:
   - Cómo crear actividad institucional
   - Qué es alcance y cómo configurarlo (tipos + ejemplos)
   - Cómo validar confirmaciones "No Sé"
   - Cómo ver reporte agregado
   - Período de validación recomendado (ej. 24h para "No Sé")
-- [ ] **Criterio**: Documento redactado en español, técnico pero accesible, 2-3 págs.
+- [x] **Criterio**: Documento redactado en español, técnico pero accesible, 2-3 págs.
 
 ### 8.3 Documentación de Auditoría - Portal ADM
-- [ ] **Archivo**: `docs/es/portales/administracion/actividades-emergentes-audit.md` (crear nuevo)
-- [ ] **Contenido**:
+- [x] **Archivo**: `docs/es/portales/administracion/actividades-emergentes-audit.md` (crear nuevo)
+- [x] **Contenido**:
   - Vista de auditoría: qué datos se capturan (respondido_por, respondido_at, clases_afectadas)
   - Cómo filtrar por maestro/fecha/estado
   - Cómo exportar para auditoría externa
   - Interpretación del audit trail (cambios, timestamps)
-- [ ] **Criterio**: Documento redactado en español, 1-2 págs.
+- [x] **Criterio**: Documento redactado en español, 1-2 págs.
 
 ### 8.4 README / Cambios Globales
-- [ ] **Archivo**: Actualizar `README.md` o sección "Features" si existe
-- [ ] **Cambios**: Agregar línea en changelog: "**Justificación de Actividades Emergentes**: Maestros confirman actividades institucionales para validar asistencias."
-- [ ] **Criterio**: README refleja nuevo feature, sin errores de links.
+- [x] **Archivo**: Actualizar `README.md` o sección "Features" si existe
+- [x] **Cambios**: Agregar línea en changelog: "**Justificación de Actividades Emergentes**: Maestros confirman actividades institucionales para validar asistencias."
+- [x] **Criterio**: README refleja nuevo feature, sin errores de links.
 
 ---
 

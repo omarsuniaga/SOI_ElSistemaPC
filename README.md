@@ -149,3 +149,10 @@ npx vitest run src/portal-maestros/services/__tests__/offlineQueue.test.js
 ## Contexto Institucional
 
 Este portal es parte del **SOI (Sistema Operativo Institucional)** de la Fundación para la Expansión Cultural y Artística de Punta Cana (FUNEYCA PC). Gestiona el programa orquestal: alumnos, maestros, clases, asistencias y planificación pedagógica.
+
+---
+
+## Características Recientes
+
+- **Justificación de Actividades Emergentes**: Maestros confirman actividades institucionales para validar asistencias y justificar sesiones del día sin falsos reportes de inasistencia. Incluye gestión de alcance (ACM) y auditoría RLS (ADM). Ver guías en [docs/es/portales/maestros/confirmaciones-emergentes.md](docs/es/portales/maestros/confirmaciones-emergentes.md).
+

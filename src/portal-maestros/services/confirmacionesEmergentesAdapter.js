@@ -23,3 +23,15 @@ export const obtenerActividadesPorAlcance = (maestroId, fecha) =>
 
 export const obtenerMaestrosAfectadosPorAlcance = (params) =>
   getImpl().obtenerMaestrosAfectadosPorAlcance(params)
+
+export const crearActividadInstitucional = (datos) =>
+  getImpl().crearActividadInstitucional(datos)
+
+export const validarConfirmacionAcm = (params) =>
+  getImpl().validarConfirmacionAcm(params)
+
+export const obtenerTodasLasConfirmaciones = (filtros) =>
+  getImpl().obtenerTodasLasConfirmaciones(filtros)
+
+export const obtenerResumenAgregado = (confirmaciones) =>
+  getImpl().obtenerResumenAgregado(confirmaciones)

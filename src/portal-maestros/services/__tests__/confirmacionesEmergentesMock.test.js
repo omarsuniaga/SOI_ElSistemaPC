@@ -203,4 +203,73 @@ describe('confirmacionesEmergentesMock', () => {
       expect(maestros).toEqual(['esp-1', 'esp-2'])
     })
   })
+
+  describe('Funciones ACM (Fase 5)', () => {
+    it('crearActividadInstitucional crea la actividad en el mock y retorna maestros notificados', async () => {
+      const res = await (await import('../confirmacionesEmergentesMock.js')).crearActividadInstitucional({
+        actividad: 'Concierto de Gala ACM',
+        fecha: '2026-09-20',
+        alcance_tipo: 'institucion'
+      })
+      expect(res.actividad.id).toBeTruthy()
+      expect(res.actividad.actividad).toBe('Concierto de Gala ACM')
+      expect(res.maestros_notificados.length).toBeGreaterThan(0)
+    })
+
+    it('validarConfirmacionAcm actualiza estado_validacion y observaciones', async () => {
+      const mock = await import('../confirmacionesEmergentesMock.js')
+      const conf = await mock.confirmarActividad({
+        actividad_id: 'act-demo-institucion-1',
+        maestro_id: 'm-val-test',
+        fecha: '2026-09-15',
+        respuesta: 'no_se'
+      })
+
+      const val = await mock.validarConfirmacionAcm({
+        confirmacion_id: conf.id,
+        estado_validacion: 'validado',
+        observaciones: 'Aprobado por ACM'
+      })
+
+      expect(val.estado_validacion).toBe('validado')
+      expect(val.observaciones).toBe('Aprobado por ACM')
+    })
+
+    it('obtenerTodasLasConfirmaciones filtra por maestro, fecha y estado', async () => {
+      const mock = await import('../confirmacionesEmergentesMock.js')
+      mock._resetMockStore([
+        { id: 'c1', maestro_id: 'm1', fecha: '2026-09-15', estado_validacion: 'pendiente', respuesta: 'no_se' },
+        { id: 'c2', maestro_id: 'm2', fecha: '2026-09-15', estado_validacion: 'validado', respuesta: 'si' },
+        { id: 'c3', maestro_id: 'm1', fecha: '2026-09-16', estado_validacion: 'validado', respuesta: 'no' }
+      ])
+
+      const todas = await mock.obtenerTodasLasConfirmaciones()
+      expect(todas).toHaveLength(3)
+
+      const soloM1 = await mock.obtenerTodasLasConfirmaciones({ maestro_id: 'm1' })
+      expect(soloM1).toHaveLength(2)
+
+      const soloPendientes = await mock.obtenerTodasLasConfirmaciones({ estado_validacion: 'pendiente' })
+      expect(soloPendientes).toHaveLength(1)
+    })
+
+    it('obtenerResumenAgregado calcula totales por respuesta y por maestro', async () => {
+      const mock = await import('../confirmacionesEmergentesMock.js')
+      const confirmaciones = [
+        { id: '1', maestro_id: 'm1', respuesta: 'si', estado_validacion: 'validado' },
+        { id: '2', maestro_id: 'm1', respuesta: 'no', estado_validacion: 'validado' },
+        { id: '3', maestro_id: 'm2', respuesta: 'no_se', estado_validacion: 'pendiente' },
+        { id: '4', maestro_id: 'm3', respuesta: 'no_aplica', estado_validacion: 'validado' }
+      ]
+
+      const resumen = mock.obtenerResumenAgregado(confirmaciones)
+      expect(resumen.total).toBe(4)
+      expect(resumen.si).toBe(1)
+      expect(resumen.no).toBe(1)
+      expect(resumen.no_se).toBe(1)
+      expect(resumen.no_aplica).toBe(1)
+      expect(resumen.pendientes_validacion).toBe(1)
+      expect(resumen.por_maestro.m1.total).toBe(2)
+    })
+  })
 })

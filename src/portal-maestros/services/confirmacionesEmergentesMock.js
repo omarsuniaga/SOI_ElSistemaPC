@@ -298,3 +298,122 @@ export async function obtenerActividadesPorAlcance(maestroId, fecha) {
     .filter(c => c.maestro_id === maestroId && (!fecha || c.fecha === fecha))
     .map(c => ({ ...c }))
 }
+
+/**
+ * ACM: Creates a new institutional activity and broadcasts it by scope.
+ */
+export async function crearActividadInstitucional(datos) {
+  const { actividad, fecha, lugar, alcance_tipo = 'institucion', alcance_config = {}, maestro_id } = datos || {}
+  if (!actividad) throw new Error('crearActividadInstitucional: se requiere nombre de actividad.')
+  if (!fecha) throw new Error('crearActividadInstitucional: se requiere fecha.')
+
+  const nueva = {
+    id: `act-mock-${Date.now()}`,
+    actividad,
+    fecha,
+    lugar: lugar || null,
+    alcance_tipo,
+    alcance_config,
+    maestro_id: maestro_id || null,
+    clase_id: null,
+    estado: 'pendiente'
+  }
+
+  MOCK_ACTIVIDADES.push(nueva)
+
+  const maestrosNotificados = await obtenerMaestrosAfectadosPorAlcance({
+    actividad_id: nueva.id,
+    alcance_tipo,
+    alcance_config,
+    fecha
+  })
+
+  return {
+    actividad: { ...nueva },
+    maestros_notificados: maestrosNotificados || []
+  }
+}
+
+/**
+ * ACM: Validates or rejects a 'no_se' confirmation.
+ */
+export async function validarConfirmacionAcm({ confirmacion_id, estado_validacion, observaciones } = {}) {
+  if (!confirmacion_id) throw new Error('validarConfirmacionAcm: se requiere confirmacion_id.')
+  if (!estado_validacion) throw new Error('validarConfirmacionAcm: se requiere estado_validacion.')
+
+  const index = confirmacionesStore.findIndex(c => c.id === confirmacion_id)
+  if (index === -1) {
+    throw new Error(`validarConfirmacionAcm: confirmación "${confirmacion_id}" no encontrada.`)
+  }
+
+  const existing = confirmacionesStore[index]
+  const updated = {
+    ...existing,
+    estado_validacion,
+    observaciones: observaciones !== undefined ? observaciones : existing.observaciones,
+    updated_at: new Date().toISOString()
+  }
+
+  confirmacionesStore[index] = updated
+  return { ...updated }
+}
+
+/**
+ * ACM/ADM: Retrieves all confirmations with optional filters.
+ */
+export async function obtenerTodasLasConfirmaciones(filtros = {}) {
+  return confirmacionesStore
+    .filter(c => {
+      if (filtros.fecha && c.fecha !== filtros.fecha) return false
+      if (filtros.maestro_id && c.maestro_id !== filtros.maestro_id) return false
+      if (filtros.estado_validacion && c.estado_validacion !== filtros.estado_validacion) return false
+      return true
+    })
+    .map(c => {
+      const act = MOCK_ACTIVIDADES.find(a => a.id === c.actividad_id)
+      return {
+        ...c,
+        actividad_info: act ? { ...act } : null
+      }
+    })
+}
+
+/**
+ * Computes aggregated confirmation statistics.
+ */
+export function obtenerResumenAgregado(confirmaciones = []) {
+  const resumen = {
+    total: confirmaciones.length,
+    si: 0,
+    no: 0,
+    no_aplica: 0,
+    no_se: 0,
+    pendientes_validacion: 0,
+    validados: 0,
+    rechazados: 0,
+    por_maestro: {}
+  }
+
+  for (const c of confirmaciones) {
+    if (c.respuesta === 'si') resumen.si++
+    else if (c.respuesta === 'no') resumen.no++
+    else if (c.respuesta === 'no_aplica') resumen.no_aplica++
+    else if (c.respuesta === 'no_se') resumen.no_se++
+
+    if (c.estado_validacion === 'pendiente') resumen.pendientes_validacion++
+    else if (c.estado_validacion === 'validado') resumen.validados++
+    else if (c.estado_validacion === 'rechazado') resumen.rechazados++
+
+    const mId = c.maestro_id || 'sin_maestro'
+    if (!resumen.por_maestro[mId]) {
+      resumen.por_maestro[mId] = { total: 0, si: 0, no: 0, no_aplica: 0, no_se: 0 }
+    }
+    resumen.por_maestro[mId].total++
+    if (c.respuesta in resumen.por_maestro[mId]) {
+      resumen.por_maestro[mId][c.respuesta]++
+    }
+  }
+
+  return resumen
+}
+

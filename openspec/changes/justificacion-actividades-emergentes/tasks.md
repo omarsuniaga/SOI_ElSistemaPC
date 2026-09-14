@@ -215,29 +215,29 @@ Total: **32 tareas** organizadas en **8 fases** (algunas paralelas). Enfoque: Mi
 **Secuencia**: Manager View → Tests.
 
 ### 5.1 Crear `ActividadEmergenteManagerView.js` (Crear/Editar/Validar)
-- [ ] **Archivo**: `src/modules/academic-admin/components/ActividadEmergenteManagerView.js`
-- [ ] **Contenido**:
+- [x] **Archivo**: `src/modules/academic-admin/components/ActividadEmergenteManagerView.js`
+- [x] **Contenido**:
   - Form para crear nueva actividad institucional:
     - Campos: nombre, fecha, lugar, alcance_tipo (dropdown), alcance_config (dinámico JSON/form según tipo)
     - Botón "Crear": INSERT sesiones_clase raíz, llama RPC fn_difundir_actividad_por_alcance, muestra "Actividad creada, X maestros notificados"
   - Vista: tabla de confirmaciones pendientes/resueltas con filtros (maestro, fecha, estado_validacion)
   - Para cada confirmación 'no_se': botón "Validar" → abre modal con estado_validacion (validado/rechazado) + observaciones
   - Resumen agregado: total confirmadas (si/no/no_aplica/no_se), desglose por maestro
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Componente monta sin error
   - Form submit ejecuta INSERT + RPC exitosamente
   - Tabla muestra confirmaciones con alcance aplicado correctamente
   - Botón "Validar" llama RPC fn_validar_confirmacion_acm
 
 ### 5.2 Tests de Funcionalidad ACM
-- [ ] **Archivo**: `src/modules/academic-admin/components/__tests__/ActividadEmergenteManagerView.test.js`
-- [ ] **Casos**:
+- [x] **Archivo**: `src/modules/academic-admin/components/__tests__/ActividadEmergenteManagerView.test.js`
+- [x] **Casos**:
   - Test: crear actividad con alcance='institucion' → RPC diffunde a todos maestros
   - Test: crear actividad con alcance='programa' → RPC diffunde solo programa X
   - Test: tabla muestra solo confirmaciones en alcance de actividad
   - Test: validar 'no_se' → cambia estado_validacion a 'validado'
   - Test: resumen agregado cuenta correctamente (si/no/no_aplica/no_se)
-- [ ] **Criterio**:
+- [x] **Criterio**:
   - Todos 5 casos pasan
   - Coverage ≥75%
 

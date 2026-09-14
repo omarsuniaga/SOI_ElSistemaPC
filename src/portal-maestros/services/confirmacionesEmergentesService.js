@@ -175,3 +175,153 @@ export async function obtenerMaestrosAfectadosPorAlcance({
   if (error) throw error
   return data || []
 }
+
+/**
+ * ACM: Creates a new institutional activity in sesiones_clase (root session)
+ * and calculates affected maestros via RPC.
+ *
+ * @param {Object} datos
+ * @returns {Promise<Object>} { actividad, maestros_notificados }
+ */
+export async function crearActividadInstitucional(datos) {
+  const { actividad, fecha, lugar, alcance_tipo = 'institucion', alcance_config = {}, maestro_id } = datos || {}
+  if (!actividad) throw new Error('crearActividadInstitucional: se requiere nombre de actividad.')
+  if (!fecha) throw new Error('crearActividadInstitucional: se requiere fecha.')
+
+  const { data: actData, error: actError } = await supabase
+    .from('sesiones_clase')
+    .insert({
+      actividad,
+      fecha,
+      lugar: lugar || null,
+      alcance_tipo,
+      alcance_config,
+      maestro_id: maestro_id || null,
+      clase_id: null,
+      estado: 'pendiente'
+    })
+    .select()
+    .single()
+
+  if (actError) throw actError
+
+  const maestrosNotificados = await obtenerMaestrosAfectadosPorAlcance({
+    actividad_id: actData.id,
+    alcance_tipo: actData.alcance_tipo,
+    alcance_config: actData.alcance_config,
+    fecha: actData.fecha
+  })
+
+  return {
+    actividad: actData,
+    maestros_notificados: maestrosNotificados || []
+  }
+}
+
+/**
+ * ACM: Updates the validation state of a 'no_se' confirmation.
+ * Protected by confirmaciones_update_acm RLS policy.
+ *
+ * @param {Object} params
+ * @param {string} params.confirmacion_id
+ * @param {'validado'|'rechazado'} params.estado_validacion
+ * @param {string} [params.observaciones]
+ * @returns {Promise<Object>}
+ */
+export async function validarConfirmacionAcm({ confirmacion_id, estado_validacion, observaciones } = {}) {
+  if (!confirmacion_id) throw new Error('validarConfirmacionAcm: se requiere confirmacion_id.')
+  if (!estado_validacion) throw new Error('validarConfirmacionAcm: se requiere estado_validacion.')
+
+  const updatePayload = {
+    estado_validacion,
+    updated_at: new Date().toISOString()
+  }
+  if (observaciones !== undefined) {
+    updatePayload.observaciones = observaciones
+  }
+
+  const { data, error } = await supabase
+    .from('confirmaciones_emergentes')
+    .update(updatePayload)
+    .eq('id', confirmacion_id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * ACM/ADM: Retrieves all confirmations with optional filters.
+ *
+ * @param {Object} [filtros]
+ * @returns {Promise<Array>}
+ */
+export async function obtenerTodasLasConfirmaciones(filtros = {}) {
+  let query = supabase
+    .from('confirmaciones_emergentes')
+    .select(`
+      *,
+      actividad:actividad_id (
+        id, actividad, fecha, lugar, alcance_tipo, alcance_config
+      ),
+      maestro:maestro_id (
+        id, nombre, apellido
+      )
+    `)
+
+  if (filtros.fecha) query = query.eq('fecha', filtros.fecha)
+  if (filtros.maestro_id) query = query.eq('maestro_id', filtros.maestro_id)
+  if (filtros.estado_validacion) query = query.eq('estado_validacion', filtros.estado_validacion)
+
+  const { data, error } = await query.order('created_at', { ascending: false })
+  if (error) throw error
+
+  return (data || []).map(row => ({
+    ...row,
+    actividad_info: row.actividad || null
+  }))
+}
+
+/**
+ * Computes aggregated confirmation statistics from confirmation records.
+ *
+ * @param {Array} confirmaciones
+ * @returns {Object}
+ */
+export function obtenerResumenAgregado(confirmaciones = []) {
+  const resumen = {
+    total: confirmaciones.length,
+    si: 0,
+    no: 0,
+    no_aplica: 0,
+    no_se: 0,
+    pendientes_validacion: 0,
+    validados: 0,
+    rechazados: 0,
+    por_maestro: {}
+  }
+
+  for (const c of confirmaciones) {
+    if (c.respuesta === 'si') resumen.si++
+    else if (c.respuesta === 'no') resumen.no++
+    else if (c.respuesta === 'no_aplica') resumen.no_aplica++
+    else if (c.respuesta === 'no_se') resumen.no_se++
+
+    if (c.estado_validacion === 'pendiente') resumen.pendientes_validacion++
+    else if (c.estado_validacion === 'validado') resumen.validados++
+    else if (c.estado_validacion === 'rechazado') resumen.rechazados++
+
+    const mId = c.maestro_id || 'sin_maestro'
+    if (!resumen.por_maestro[mId]) {
+      resumen.por_maestro[mId] = { total: 0, si: 0, no: 0, no_aplica: 0, no_se: 0 }
+    }
+    resumen.por_maestro[mId].total++
+    if (c.respuesta in resumen.por_maestro[mId]) {
+      resumen.por_maestro[mId][c.respuesta]++
+    }
+  }
+
+  return resumen
+}
+

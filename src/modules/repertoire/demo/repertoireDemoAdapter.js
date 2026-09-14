@@ -23,11 +23,19 @@ const demoMontajes = [
 ]
 
 export function createRepertoireDemoAdapter() {
+  const state = structuredClone(demoMontajes)
   return {
-    async listMontajes() { return structuredClone(demoMontajes) },
-    async updateMeasureState(_id, state) { return { estado_preparacion: state } },
+    canEditApplicability: false,
+    async listMontajes() { return structuredClone(state) },
+    async updateMeasureState(_id, nextState) { return { estado_preparacion: nextState } },
     async updateMeasureApplicability(_id, applicability) { return { aplicabilidad: applicability } },
-    async updateStudentState(id, state) { return { id, estado_preparacion: state } },
+    async updateStudentState(studentId, measureId, nextState) {
+      const student = state[0].alumnos.find((item) => item.id === studentId)
+      student.overrides ||= {}
+      if (nextState === null) delete student.overrides[measureId]
+      else student.overrides[measureId] = nextState
+      return { studentId, measureId, estado_preparacion: nextState }
+    },
     summarize(cells) { return aggregatePreparation(cells) }
   }
 }

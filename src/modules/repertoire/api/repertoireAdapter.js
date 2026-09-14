@@ -50,6 +50,20 @@ export function createRepertoireAdapter(client) {
       assertEnum(payload.estado_preparacion, ESTADOS_PREPARACION, 'estado_preparacion')
       return insert(supabase, 'montaje_alumno_compases', payload)
     },
+    async updateStudentState(studentAssignmentId, measureId, state) {
+      if (!studentAssignmentId || !measureId) throw new TypeError('La preparación individual requiere alumno y compás')
+      if (state !== null) assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
+      const query = supabase.from('montaje_alumno_compases')
+      if (state === null) {
+        const { data, error } = await query.delete().eq('montaje_alumno_id', studentAssignmentId).eq('montaje_compas_id', measureId).select()
+        if (error) throw error
+        if (!data?.length) throw new Error('No se encontró el override individual')
+        return data[0]
+      }
+      const { data, error } = await query.upsert({ montaje_alumno_id: studentAssignmentId, montaje_compas_id: measureId, estado_preparacion: state }, { onConflict: 'montaje_alumno_id,montaje_compas_id' }).select().single()
+      if (error) throw error
+      return data
+    },
     async addSection(payload) {
       if (!payload?.montaje_id || !payload?.nombre?.trim()) throw new TypeError('La sección requiere montaje_id y nombre')
       return insert(supabase, TABLES.secciones, payload)

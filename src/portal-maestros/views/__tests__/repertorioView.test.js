@@ -16,6 +16,7 @@ const makeAdapter = (overrides = {}) => ({
     }]
   },
   updateMeasureState: vi.fn(async (_id, state) => ({ estado_preparacion: state })),
+  updateStudentState: vi.fn(async (studentId, measureId, state) => ({ studentId, measureId, estado_preparacion: state })),
   ...overrides
 })
 
@@ -138,5 +139,20 @@ describe('repertorioView', () => {
     container.querySelector('.repertoire-open').click()
     expect(container.querySelector('.repertoire-students').textContent).toContain('Juan: Sin estudiar')
     expect(container.querySelector('.repertoire-students').textContent).toContain('Pedro: Consolidado')
+  })
+
+  it('switches to a student map and writes an override without changing the row state', async () => {
+    const adapter = makeAdapter()
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    container.querySelector('[data-student-id="juan"]').click()
+    const measure = container.querySelector('.repertoire-measure')
+    measure.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    container.querySelector('[data-state="CONSOLIDADO"]').click()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(adapter.updateStudentState).toHaveBeenCalledWith('juan', 'm-1', 'CONSOLIDADO')
+    expect(adapter.updateMeasureState).not.toHaveBeenCalled()
   })
 })

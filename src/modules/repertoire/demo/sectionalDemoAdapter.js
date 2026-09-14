@@ -1,4 +1,4 @@
-export function createSectionalDemoAdapter({ measureCount = 32 } = {}) {
+export function createSectionalDemoAdapter({ measureCount = 32, canViewOrchestra = false } = {}) {
   const evidence = Array.from({ length: measureCount }, (_, measure) => [
     { sectionId: 'maderas', measureId: String(measure + 1), filaId: 'flauta', filaName: 'Flauta', collectiveState: 'SIN_ESTUDIAR', applicability: 'TOCA', students: Array(8).fill({}) },
     { sectionId: 'maderas', measureId: String(measure + 1), filaId: 'oboe', filaName: 'Oboe', collectiveState: 'CONSOLIDADO', applicability: 'TOCA', students: [{ overrideState: 'SIN_ESTUDIAR' }] },
@@ -8,5 +8,5 @@ export function createSectionalDemoAdapter({ measureCount = 32 } = {}) {
     { sectionId: 'metales', measureId: String(measure + 1), filaId: 'trompeta', filaName: 'Trompeta I', collectiveState: 'DOMINADO', applicability: 'TOCA', students: [{}] },
     { sectionId: 'metales', measureId: String(measure + 1), filaId: 'trompa', filaName: 'Trompa I', collectiveState: 'CONSOLIDADO', applicability: 'TOCA', students: [{}] }
   ]).flat())
-  return { async listEvidence() { return structuredClone(evidence) }, authorizedSectionIds: ['maderas', 'metales'], editableFilaIds: ['flauta', 'trompeta'], assertFilaEditable(filaId) { if (!this.editableFilaIds.includes(filaId)) throw new Error('Fila fuera del alcance editable'); return true } }
+  return { async listEvidence() { return structuredClone(evidence) }, authorizedSectionIds: ['maderas', 'metales'], canViewOrchestra, editableFilaIds: ['flauta', 'trompeta'], assertFilaEditable(filaId) { if (!this.editableFilaIds.includes(filaId)) throw new Error('Fila fuera del alcance editable'); return true } }
 }

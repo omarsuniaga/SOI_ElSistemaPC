@@ -32,4 +32,22 @@ describe('seccionalView', () => {
     expect(container.querySelector('h1').textContent).toContain('metales')
     expect(container.querySelector('.sectional-tab').textContent).toBe('GENERAL')
   })
+
+  it('lets an authorized Direction scope open the orchestra projection with section drill-down', async () => {
+    const container = document.createElement('main')
+    await renderSeccionalView(container, { adapter: createSectionalDemoAdapter({ measureCount: 2, canViewOrchestra: true }) })
+    container.querySelector('.sectional-projection').click()
+    expect(container.querySelector('h1').textContent).toContain('Orquesta')
+    expect(container.querySelectorAll('.sectional-cell')).toHaveLength(2)
+    container.querySelector('.sectional-cell').click()
+    expect(container.querySelector('.sectional-detail').textContent).toContain('maderas')
+    expect(container.querySelector('.sectional-detail').textContent).toContain('metales')
+  })
+
+  it('does not render an orchestra control for a teacher without orchestra capability', async () => {
+    const container = document.createElement('main')
+    await renderSeccionalView(container, { adapter: createSectionalDemoAdapter({ measureCount: 2, canViewOrchestra: false }) })
+    expect(container.querySelector('.sectional-projection')).toBeNull()
+    expect(container.textContent).not.toContain('General · Orquesta')
+  })
 })

@@ -212,6 +212,31 @@ export async function crearActividadInstitucional(datos) {
     fecha: actData.fecha
   })
 
+  // BUGFIX: sin esto, "maestros_notificados" era solo un conteo mostrado a
+  // ACM — ningún maestro veía nunca la confirmación en su bandeja, porque
+  // obtenerConfirmacionesPendientes() lee de registros_pendientes y nadie
+  // insertaba ahí. Detectado corriendo el flujo real contra Postgres, no
+  // por los tests (que mockean cada función por separado y nunca verifican
+  // que "crear actividad" y "ver pendientes" compartan datos reales).
+  if (maestrosNotificados && maestrosNotificados.length > 0) {
+    const registros = maestrosNotificados.map((maestroId) => ({
+      maestro_id: maestroId,
+      sesion_clase_id: actData.id,
+      tipo: 'confirmacion_emergente_pendiente',
+      estado: 'pendiente',
+      mensaje: `Actividad institucional "${actData.actividad}" el ${actData.fecha}. Confirmá si te aplicó a tus clases.`,
+      deep_link: `#/confirmaciones-emergentes?actividad_id=${actData.id}`
+    }))
+
+    const { error: notifError } = await supabase.from('registros_pendientes').insert(registros)
+    if (notifError) {
+      // La actividad ya quedó creada; no la revertimos por un fallo de
+      // notificación, pero sí lo reportamos para que ACM sepa que hay que
+      // reintentar la difusión.
+      console.error('[crearActividadInstitucional] Error al notificar maestros:', notifError)
+    }
+  }
+
   return {
     actividad: actData,
     maestros_notificados: maestrosNotificados || []

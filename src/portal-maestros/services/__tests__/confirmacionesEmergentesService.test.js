@@ -341,4 +341,70 @@ describe('confirmacionesEmergentesService', () => {
       expect(res).toEqual(['m-esp-1', 'm-esp-2'])
     })
   })
+
+  describe('crearActividadInstitucional', () => {
+    function mockSesionInsertChain(actividadInsertada) {
+      const single = vi.fn().mockResolvedValue({ data: actividadInsertada, error: null })
+      const select = vi.fn(() => ({ single }))
+      const insert = vi.fn(() => ({ select }))
+      return { insert }
+    }
+
+    it('inserta registros_pendientes para cada maestro afectado (bug real: antes solo se contaban, nunca se notificaban)', async () => {
+      const actividadInsertada = {
+        id: 'act-nueva-uuid',
+        actividad: 'Concierto de prueba',
+        fecha: '2026-09-20',
+        alcance_tipo: 'orquesta',
+        alcance_config: {}
+      }
+      const sesionChain = mockSesionInsertChain(actividadInsertada)
+      const registrosInsertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'sesiones_clase') return sesionChain
+        if (table === 'registros_pendientes') return { insert: registrosInsertMock }
+        throw new Error(`tabla inesperada en el mock: ${table}`)
+      })
+      supabase.rpc.mockResolvedValueOnce({ data: ['m1', 'm2'], error: null })
+
+      const { crearActividadInstitucional } = await import('../confirmacionesEmergentesService.js')
+      const resultado = await crearActividadInstitucional({
+        actividad: 'Concierto de prueba',
+        fecha: '2026-09-20',
+        alcance_tipo: 'orquesta'
+      })
+
+      expect(resultado.maestros_notificados).toEqual(['m1', 'm2'])
+      expect(registrosInsertMock).toHaveBeenCalledTimes(1)
+      const registrosInsertados = registrosInsertMock.mock.calls[0][0]
+      expect(registrosInsertados).toHaveLength(2)
+      expect(registrosInsertados.map((r) => r.maestro_id)).toEqual(['m1', 'm2'])
+      expect(registrosInsertados[0]).toMatchObject({
+        sesion_clase_id: 'act-nueva-uuid',
+        tipo: 'confirmacion_emergente_pendiente',
+        estado: 'pendiente'
+      })
+      expect(registrosInsertados[0].deep_link).toContain('act-nueva-uuid')
+    })
+
+    it('no intenta insertar registros_pendientes si no hay maestros afectados', async () => {
+      const actividadInsertada = { id: 'act-sin-afectados', actividad: 'X', fecha: '2026-09-20', alcance_tipo: 'grupo', alcance_config: {} }
+      const sesionChain = mockSesionInsertChain(actividadInsertada)
+      const registrosInsertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'sesiones_clase') return sesionChain
+        if (table === 'registros_pendientes') return { insert: registrosInsertMock }
+        throw new Error(`tabla inesperada en el mock: ${table}`)
+      })
+      supabase.rpc.mockResolvedValueOnce({ data: [], error: null })
+
+      const { crearActividadInstitucional } = await import('../confirmacionesEmergentesService.js')
+      const resultado = await crearActividadInstitucional({ actividad: 'X', fecha: '2026-09-20', alcance_tipo: 'grupo' })
+
+      expect(resultado.maestros_notificados).toEqual([])
+      expect(registrosInsertMock).not.toHaveBeenCalled()
+    })
+  })
 })

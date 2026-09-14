@@ -1,7 +1,7 @@
 /**
  * analisisContenidoView.js — Visor Ejecutivo de Análisis Pedagógico y Contenido Curricular (Portal ADM).
  * Rediseño Bento Grid Compacto de Alta Densidad con Síntesis Curricular IA,
- * Maduración de Repertorio Suzuki/Orquestal y Exportación a PDF Oficial.
+ * maduración de repertorio (cualquier cátedra/programa) y Exportación a PDF Oficial.
  */
 
 import { getAnalisisContenidoPedagogico } from '../api/contenidoAnalyticsApi.js'
@@ -131,7 +131,7 @@ export class AnalisisContenidoView {
                   ${resumen.obrasEnProgreso || 0}
                 </div>
                 <div class="text-body-secondary font-monospace text-truncate" style="font-size:0.7rem;">
-                  Suzuki & Piezas de Cámara
+                  ${this.catedra && this.catedra !== 'Todas' ? escapeHTML(this.catedra) : 'Repertorio & Piezas en Curso'}
                 </div>
               </div>
             </div>
@@ -180,7 +180,7 @@ export class AnalisisContenidoView {
                   <i class="bi bi-bar-chart-steps text-primary"></i>
                   <span>Escala de Maduración Curricular</span>
                 </h6>
-                <span class="text-body-secondary font-monospace" style="font-size:0.7rem;">Fases Suzuki / ACM</span>
+                <span class="text-body-secondary font-monospace" style="font-size:0.7rem;">Niveles de Logro ACM</span>
               </div>
               ${this.renderNivelesLogro(niveles)}
             </div>
@@ -278,7 +278,7 @@ export class AnalisisContenidoView {
               <h5 class="fw-bold mb-0 text-body">Análisis Pedagógico y Curricular</h5>
               <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style="font-size:0.7rem;">${escapeHTML(labelTipo)}</span>
             </div>
-            <p class="text-body-secondary small mb-0" style="font-size:0.76rem;">Monitoreo de bitácoras docentes, maduración de repertorio Suzuki y salud curricular.</p>
+            <p class="text-body-secondary small mb-0" style="font-size:0.76rem;">Monitoreo de bitácoras docentes, maduración de repertorio y salud curricular por cátedra.</p>
           </div>
         </div>
 

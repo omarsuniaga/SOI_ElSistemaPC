@@ -161,6 +161,7 @@ function _loadCachedNotifs(maestroId) {
 }
 
 let notificacionesCache = [];
+const REPERTOIRE_SIGNALS_ENABLED = import.meta.env.VITE_REPERTOIRE_SIGNALS_ENABLED === 'true'
 let repertoireSignalCache = []
 let listeners = [];
 
@@ -184,7 +185,7 @@ export function getUnifiedNotifications() {
 }
 
 export async function fetchRepertoireSignals(profileId = getMaestroLocal()?.id) {
-  if (!profileId) return []
+  if (!REPERTOIRE_SIGNALS_ENABLED || !profileId) return []
   try {
     const { data, error } = await supabase
       .from('repertoire_signal_deliveries')
@@ -233,7 +234,7 @@ export async function fetchNotificaciones() {
       return notificacionesCache;
     }
 
-    await fetchRepertoireSignals(maestro.id)
+    if (REPERTOIRE_SIGNALS_ENABLED) await fetchRepertoireSignals(maestro.id)
 
     // Recordatorios de clase ('recordatorio_clase', generados por el cron
     // fn_generate_class_start_reminders) de un período académico YA CERRADO

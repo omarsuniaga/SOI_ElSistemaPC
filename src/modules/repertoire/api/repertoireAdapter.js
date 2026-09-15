@@ -3,6 +3,8 @@ import { assertFilaEditable } from '../domain/studentPreparation.js'
 import { createSessionRepertoireWork } from '../domain/sessionRepertoireWork.js'
 import { createMilestone, createTarget } from '../domain/trajectory.js'
 
+const R1B_SCHEMA_GAP_CODES = new Set(['42P01', 'PGRST205', 'PGRST202'])
+
 const TABLES = Object.freeze({
   obras: 'obras',
   versiones: 'obra_versiones',
@@ -96,7 +98,9 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       const filaStatesResult = measureStateIds.length
         ? await supabase.from('montaje_fila_compases').select('*, montaje_compases!inner(montaje_id)').in('montaje_compas_id', measureStateIds)
         : { data: [], error: null }
-      if (filaStatesResult.error) throw filaStatesResult.error
+      const filaScopeUnavailable = filaStatesResult.error && R1B_SCHEMA_GAP_CODES.has(filaStatesResult.error.code)
+      if (filaStatesResult.error && !filaScopeUnavailable) throw filaStatesResult.error
+      if (filaScopeUnavailable) this.supportsFilaPreparation = false
       const filaStatesByFila = new Map()
       for (const row of filaStatesResult.data || []) {
         const current = filaStatesByFila.get(row.montaje_fila_id) || []
@@ -110,7 +114,8 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
         filas: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas.map((fila) => ({ ...fila, compases: filaStatesByFila.get(fila.id) || [] }))),
         secciones: sectionsByMontage.get(montage.id) || [],
         alumnos: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas.flatMap((fila) => fila.alumnos)),
-        compases: measuresByMontage.get(montage.id) || []
+        compases: measuresByMontage.get(montage.id) || [],
+        backendWarnings: filaScopeUnavailable ? ['R1-B de base de datos pendiente: la evaluación colectiva por fila está temporalmente en solo lectura.'] : []
       }))
     },
     async updateMeasureState(id, state, options = {}) {

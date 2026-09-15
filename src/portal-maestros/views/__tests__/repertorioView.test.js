@@ -286,6 +286,20 @@ describe('repertorioView', () => {
     await vi.waitFor(() => expect(container.querySelector('.repertoire-measures-per-row').value).toBe('4'))
   })
 
+  it('keeps eight configured measures in each row on narrow layouts', async () => {
+    localStorage.clear()
+    const adapter = makeAdapter({ listMontajes: async () => [{ ...(await makeAdapter().listMontajes())[0], compases: Array.from({ length: 16 }, (_, index) => ({ id: `m-${index + 1}`, numero_visible: String(index + 1), aplicabilidad: 'TOCA', estado_preparacion: 'SIN_EVALUAR' })) }] })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+
+    const rows = container.querySelectorAll('.repertoire-grid__row')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].querySelectorAll('.repertoire-measure')).toHaveLength(8)
+    expect(rows[0].querySelectorAll('.measure-number')[7].textContent).toBe('8')
+    expect(container.querySelector('.repertoire-grid').getAttribute('style')).toContain('--measures-per-row: 8')
+  })
+
   it('exposes rehearsal marks and passage context in cell accessibility labels', async () => {
     const adapter = makeAdapter({ listMontajes: async () => [{ ...(await makeAdapter().listMontajes())[0], rehearsalMarks: [{ label: 'B', measureNumber: 2 }], compases: [1, 2, 3].map((number) => ({ id: `m-${number}`, numero_visible: String(number), aplicabilidad: 'TOCA', estado_preparacion: 'CON_DIFICULTAD' })) }] })
     const container = document.createElement('main')

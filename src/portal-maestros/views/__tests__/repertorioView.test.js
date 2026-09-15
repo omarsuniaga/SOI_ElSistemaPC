@@ -320,4 +320,34 @@ describe('repertorioView', () => {
     await vi.waitFor(() => expect(historyByMeasure).toHaveBeenCalledWith('montaje-1', 'm-1'))
     expect(container.querySelector('.repertoire-history-list').textContent).toContain('Dominado')
   })
+
+  it('renders the mobile work-detail scope switch and controlled student navigation', async () => {
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter: makeAdapter({ listMontajes: async () => [{ ...(await makeAdapter().listMontajes())[0], filas: [{ id: 'fila-1', nombre: 'Trompetas' }], alumnos: [{ id: 'juan', montaje_fila_id: 'fila-1', nombre: 'Juan' }, { id: 'pedro', montaje_fila_id: 'fila-1', nombre: 'Pedro' }] }] }) })
+    container.querySelector('.repertoire-card[data-montaje-id="montaje-1"]').click()
+    expect(container.querySelector('#repertoire-detail-mode').getAttribute('aria-label')).toBe('Alcance de evaluación')
+    container.querySelector('#repertoire-detail-mode [data-value="alumnos"]').click()
+    expect(container.querySelector('.repertoire-student-picker').textContent).toContain('Juan')
+    container.querySelector('.repertoire-student-next').click()
+    expect(container.querySelector('.repertoire-student-picker').textContent).toContain('Pedro')
+    expect(container.querySelector('.repertoire-student-next').disabled).toBe(true)
+  })
+
+  it('fails closed for collective writes when real fila backend capability is unavailable', async () => {
+    const adapter = makeAdapter({ mode: 'real', supportsFilaPreparation: false })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-card[data-montaje-id="montaje-1"]').click()
+    container.querySelector('.repertoire-measure').click()
+    await vi.waitFor(() => expect(container.querySelector('.repertoire-sync').textContent).toContain('Actualización de backend requerida'))
+    expect(adapter.updateMeasureState).not.toHaveBeenCalled()
+  })
+
+  it('renders controlled empty state when the snapshot has no authorized filas', async () => {
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter: makeAdapter({ listMontajes: async () => [{ id: 'montaje-1', obra: { titulo: 'Obra sin filas' }, filas: [], alumnos: [], compases: [] }] }) })
+    container.querySelector('.repertoire-card[data-montaje-id="montaje-1"]').click()
+    expect(container.textContent).toContain('No hay filas autorizadas para esta obra.')
+    expect(container.querySelector('.repertoire-measure')).toBeNull()
+  })
 })

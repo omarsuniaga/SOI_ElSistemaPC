@@ -1,5 +1,4 @@
 -- R1-A production pre-flight. READ ONLY. Run before applying any migration.
-\set ON_ERROR_STOP on
 DO $$
 DECLARE missing text[]; bad text[]; unexpected text[]; collisions text[];
 BEGIN

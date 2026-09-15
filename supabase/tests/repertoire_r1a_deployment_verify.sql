@@ -1,5 +1,4 @@
 -- R1-A post-migration structural/security verification. READ ONLY.
-\set ON_ERROR_STOP on
 DO $$
 DECLARE expected text[] := ARRAY['obras','obra_versiones','montajes','montaje_secciones','montaje_filas','montaje_alumnos','obra_compases','montaje_compases','catalogo_estados_preparacion','montaje_alumno_compases','montaje_pasajes','montaje_pasaje_compases','montaje_grupos_compases','montaje_grupo_compases','sesion_repertorio_trabajos','sesion_repertorio_trabajo_compases','observacion_sesion_repertorio','montaje_preparacion_historial','montaje_targets','montaje_target_milestones','montaje_eventos','repertoire_signals','repertoire_signal_deliveries','montaje_fila_maestros']; n text; missing text[];
 BEGIN

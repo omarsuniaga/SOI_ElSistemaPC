@@ -16,7 +16,7 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import * as api from '../api/signageAdminApi.js'
 
-const PREVIEW_SRC = '/signage/index.html?preview=1'
+const PREVIEW_SRC = '/signage/index.html?preview=1&v=1.2.0'
 
 const state = {
   container: null,

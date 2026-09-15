@@ -75,7 +75,14 @@
     if (sx !== 1 || sy !== 1) base += 'transform:scale(' + sx + ',' + sy + ');';
 
     if (el.tipo === 'imagen') {
-      var src = el.storage_path ? (SIG.STORAGE_PUBLIC + el.storage_path) : (el.dataUrl || '');
+      var src = '';
+      if (el.storage_path) {
+        src = (el.storage_path.indexOf('http') === 0 || el.storage_path.indexOf('data:') === 0)
+          ? el.storage_path
+          : (SIG.STORAGE_PUBLIC + el.storage_path);
+      } else if (el.dataUrl) {
+        src = el.dataUrl;
+      }
       if (!src) return '';
       var imgStyle = 'width:100%;height:100%;display:block;object-fit:' + (el.ajuste === 'cover' ? 'cover' : 'contain') + ';';
       if (el.borderRadius) imgStyle += 'border-radius:' + px(el.borderRadius) + ';';

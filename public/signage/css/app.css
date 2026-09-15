@@ -125,16 +125,16 @@ html, body {
   background: var(--vis-bg);
 }
 .vis__stage { position: absolute; inset: 0; }
-.vis__stage img, .vis__stage video {
+.vis__stage > img, .vis__stage > video {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: contain; opacity: 0; transition: opacity .6s ease; background: var(--vis-bg);
 }
-.vis--cover .vis__stage img, .vis--cover .vis__stage video { object-fit: cover; }
-.vis__stage .slide {
+.vis--cover .vis__stage > img, .vis--cover .vis__stage > video { object-fit: cover; }
+.vis__stage > .slide {
   position: absolute; inset: 0;
   opacity: 0; transition: opacity .6s ease;
 }
-.vis__stage .is-live { opacity: 1; }
+.vis__stage > .is-live { opacity: 1; }
 
 /* ── Diapositivas nativas (creadas en el Estudio) ── */
 .slide {
@@ -193,8 +193,17 @@ html, body {
   position: relative; flex: 0 0 auto;
   transform-origin: center center;
 }
-.slide--canvas .cel { position: absolute; }
+.slide--canvas .cel { position: absolute; box-sizing: border-box; }
 .slide--canvas .cel--texto { overflow: hidden; }
+.slide--canvas .cel--imagen img {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  background: transparent;
+  pointer-events: none;
+}
 
 .vis__watermark {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;

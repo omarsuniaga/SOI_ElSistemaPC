@@ -97,6 +97,16 @@ async function ensureHtml2canvas() {
   return mod.default || mod
 }
 
+// ─── Local FileReader helper (Resilience / Fallback) ────────────────────────
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = (err) => reject(err)
+    reader.readAsDataURL(file)
+  })
+}
+
 // ─── View ─────────────────────────────────────────────────────────────────────
 
 export async function renderSignageSlideEditorView(container, params = {}) {
@@ -428,8 +438,9 @@ export async function renderSignageSlideEditorView(container, params = {}) {
     // ── Background CSS ──────────────────────────────────────────────────────
     const bgCss = () => {
       const f = cv.fondo || {}
-      if (f.tipo === 'imagen' && f.storage_path) {
-        return `#0b0e17 center/cover no-repeat url(${api.urlPublica(f.storage_path)})`
+      if (f.tipo === 'imagen') {
+        const bgUrl = f.storage_path ? api.urlPublica(f.storage_path) : (f.dataUrl || '')
+        if (bgUrl) return `#0b0e17 center/cover no-repeat url(${bgUrl})`
       }
       if (f.tipo === 'color') return f.valor || '#0b0e17'
       return CV_GRAD[f.valor] || CV_GRAD.oscuro
@@ -519,6 +530,14 @@ export async function renderSignageSlideEditorView(container, params = {}) {
     function applyImageNode(wrapper, el) {
       const img = document.createElement('img')
       img.src = el.storage_path ? api.urlPublica(el.storage_path) : (el.dataUrl || '')
+      if (el.dataUrl) {
+        img.addEventListener('error', () => {
+          if (img.src !== el.dataUrl) {
+            console.warn('[slide-editor] Fallback a dataUrl para imagen:', el.id)
+            img.src = el.dataUrl
+          }
+        }, { once: true })
+      }
       img.draggable = false
       img.style.cssText = [
         'width:100%', 'height:100%', 'pointer-events:none', 'display:block',
@@ -1652,12 +1671,27 @@ export async function renderSignageSlideEditorView(container, params = {}) {
       const toast = AppToast.progress(`Subiendo ${files.length} imagen(es)…`)
       try {
         for (let i = 0; i < files.length; i++) {
-          const { path } = await api.subirArchivo(files[i])
+          const file = files[i]
+          const localDataUrl = await readFileAsDataUrl(file).catch(() => null)
+          let storagePath = null
+          try {
+            const res = await api.subirArchivo(file)
+            storagePath = res.path
+          } catch (uploadErr) {
+            console.warn('[slide-editor] Subida a storage falló, usando dataUrl local:', uploadErr)
+          }
+
+          if (!storagePath && !localDataUrl) {
+            throw new Error(`No se pudo procesar la imagen "${file.name}"`)
+          }
+
           const el = {
             id: cvUid(), tipo:'imagen',
             x:200+(i*40), y:150+(i*30),
             w:files.length===1?580:420, h:files.length===1?420:320,
-            storage_path:path, ajuste:'contain', borderRadius:12, sombra:true,
+            storage_path: storagePath,
+            dataUrl: localDataUrl,
+            ajuste:'contain', borderRadius:12, sombra:true,
           }
           cv.elementos.push(el)
           if (i === files.length - 1) selectElement(el.id)
@@ -1867,8 +1901,20 @@ export async function renderSignageSlideEditorView(container, params = {}) {
         pushState()
         const toast = AppToast.progress('Subiendo fondo…')
         try {
-          const { path } = await api.subirArchivo(file)
-          cv.fondo = { tipo:'imagen', storage_path:path }
+          const localDataUrl = await readFileAsDataUrl(file).catch(() => null)
+          let storagePath = null
+          try {
+            const res = await api.subirArchivo(file)
+            storagePath = res.path
+          } catch (uploadErr) {
+            console.warn('[slide-editor] Subida de fondo a storage falló, usando dataUrl local:', uploadErr)
+          }
+
+          if (!storagePath && !localDataUrl) {
+            throw new Error(`No se pudo procesar la imagen de fondo "${file.name}"`)
+          }
+
+          cv.fondo = { tipo:'imagen', storage_path: storagePath, dataUrl: localDataUrl }
           toast.success('Fondo actualizado.'); renderArt()
         } catch (err) { toast.error(err.message) }
       })

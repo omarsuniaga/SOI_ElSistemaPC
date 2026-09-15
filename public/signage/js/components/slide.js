@@ -28,8 +28,9 @@
 
   function fondoStyle(f) {
     f = f || {};
-    if (f.tipo === 'imagen' && f.storage_path) {
-      return 'background:#0b0e17 center/cover no-repeat url(' + SIG.STORAGE_PUBLIC + f.storage_path + ');';
+    if (f.tipo === 'imagen') {
+      var bgSrc = f.storage_path ? (SIG.STORAGE_PUBLIC + f.storage_path) : (f.dataUrl || '');
+      if (bgSrc) return 'background:#0b0e17 center/cover no-repeat url(' + bgSrc + ');';
     }
     if (f.tipo === 'color' && /^#[0-9a-fA-F]{3,8}$/.test(f.valor || '')) {
       return 'background:' + f.valor + ';';
@@ -84,6 +85,9 @@
         src = el.dataUrl;
       }
       if (!src) return '';
+      var fbAttr = (el.storage_path && el.dataUrl)
+        ? ' data-fb="' + esc(el.dataUrl) + '" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.removeAttribute(\'data-fb\');}"'
+        : '';
       var imgStyle = 'width:100%;height:100%;display:block;object-fit:' + (el.ajuste === 'cover' ? 'cover' : 'contain') + ';';
       if (el.borderRadius) imgStyle += 'border-radius:' + px(el.borderRadius) + ';';
       if (el.bordeAncho) imgStyle += 'border:' + el.bordeAncho + 'px ' + (el.bordeStyle || 'solid') + ' ' + (el.bordeColor || '#ffffff') + ';';
@@ -95,7 +99,7 @@
       if (el.filterGrayscale) fparts.push('grayscale(' + el.filterGrayscale + '%)');
       if (el.filterBlur) fparts.push('blur(' + el.filterBlur + 'px)');
       if (fparts.length) imgStyle += 'filter:' + fparts.join(' ') + ';';
-      return '<div class="cel cel--imagen" style="' + base + '"><img style="' + imgStyle + '" src="' + esc(src) + '" alt=""></div>';
+      return '<div class="cel cel--imagen" style="' + base + '"><img style="' + imgStyle + '" src="' + esc(src) + '"' + fbAttr + ' alt=""></div>';
     }
 
     if (el.tipo === 'forma') {

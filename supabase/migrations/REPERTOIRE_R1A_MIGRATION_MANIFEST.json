@@ -6,7 +6,7 @@
     {
       "order": 1,
       "filename": "20260914160601_repertoire_engine_foundation.sql",
-      "sha256": "32558a80b9911345b501601d0f1b331fa59c1e3d83b602d7e2b9e3f0628d04fa",
+      "sha256": "f0688be0bc0cc31387f1c1e09eb43502676acbae0aaaae50bfbb6014f50bac5d",
       "purpose": "Create the additive repertoire, work, montage, fila, measure, and preparation-state foundation.",
       "creates": [
         "obras",

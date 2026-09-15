@@ -350,4 +350,12 @@ describe('repertorioView', () => {
     expect(container.textContent).toContain('No hay filas autorizadas para esta obra.')
     expect(container.querySelector('.repertoire-measure')).toBeNull()
   })
+
+  it('keeps investigate entry controlled when assisted research is unavailable', async () => {
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter: makeAdapter() })
+    container.querySelector('.repertoire-card[data-montaje-id="montaje-1"]').click()
+    container.querySelector('.repertoire-investigate').click()
+    expect(container.querySelector('.repertoire-sync').textContent).toContain('Investigación asistida no disponible')
+  })
 })

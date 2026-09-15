@@ -222,8 +222,10 @@ function buildTabs(permisos, maestroId = null) {
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
     { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
   ]
+  // Repertorio is the teacher-facing entry point for the new information
+  // architecture. Seccional remains routable for compatibility/deep links,
+  // but is no longer promoted as a primary navigation destination.
   if (repertoirePilot) tabs.push({ id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' })
-  else tabs.push({ id: 'seccional', label: 'Seccional', icon: 'bi-diagram-3' })
   if (permisos?.puede_inscribir_clases) {
     tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
   }

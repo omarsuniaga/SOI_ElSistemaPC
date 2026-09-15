@@ -73,13 +73,14 @@ CREATE POLICY repertoire_fila_assignment_manage ON public.montaje_fila_maestros
   FOR ALL TO authenticated
   USING (public.get_user_role() IN ('admin', 'superadmin', 'direccion', 'coordinacion_academica'))
   WITH CHECK (public.get_user_role() IN ('admin', 'superadmin', 'direccion', 'coordinacion_academica'));
-REVOKE INSERT, UPDATE, DELETE ON public.montaje_fila_maestros FROM authenticated;
-GRANT SELECT ON public.montaje_fila_maestros TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.montaje_fila_maestros TO authenticated;
 
 -- Teachers must have explicit fila evidence; academic/admin roles retain the
 -- intentionally broad academic capability. Finanzas is excluded explicitly.
 DROP POLICY IF EXISTS repertoire_acm_write ON public.montaje_compases;
 -- State DML is already revoked from authenticated in the atomic migration.
+REVOKE INSERT, UPDATE, DELETE ON public.montaje_preparacion_historial FROM authenticated;
+GRANT SELECT ON public.montaje_preparacion_historial TO authenticated;
 -- Keep read access explicit and leave all writes to the RPC.
 DROP POLICY IF EXISTS repertoire_student_override_write ON public.montaje_alumno_compases;
 CREATE POLICY repertoire_student_override_read_scope ON public.montaje_alumno_compases
@@ -113,11 +114,20 @@ BEGIN
   END LOOP;
 END $$;
 CREATE POLICY repertoire_passages_read_scope ON public.montaje_pasajes FOR SELECT TO authenticated
-  USING (public.repertoire_maestro_puede_leer_montage(montaje_id));
+  USING (public.get_user_role() IN ('admin','superadmin','direccion','coordinacion_academica') OR public.repertoire_maestro_puede_leer_fila(montaje_id, (alcance->>'fila_id')::uuid));
 CREATE POLICY repertoire_passages_write_scope ON public.montaje_pasajes FOR INSERT TO authenticated
-  WITH CHECK (public.repertoire_maestro_puede_editar_montage(montaje_id));
+  WITH CHECK (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(montaje_id, (alcance->>'fila_id')::uuid));
 CREATE POLICY repertoire_passages_update_scope ON public.montaje_pasajes FOR UPDATE TO authenticated
-  USING (public.repertoire_maestro_puede_editar_montage(montaje_id)) WITH CHECK (public.repertoire_maestro_puede_editar_montage(montaje_id));
+  USING (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(montaje_id, (alcance->>'fila_id')::uuid))
+  WITH CHECK (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(montaje_id, (alcance->>'fila_id')::uuid));
+
+ALTER TABLE public.montaje_grupos_compases ADD COLUMN IF NOT EXISTS fila_id uuid REFERENCES public.montaje_filas(id) ON DELETE SET NULL;
+CREATE POLICY repertoire_group_scope ON public.montaje_grupos_compases FOR ALL TO authenticated
+  USING (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(montaje_id, fila_id))
+  WITH CHECK (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(montaje_id, fila_id));
+CREATE POLICY repertoire_group_compases_scope ON public.montaje_grupo_compases FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.montaje_grupos_compases g WHERE g.id = grupo_id AND (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(g.montaje_id, g.fila_id))))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.montaje_grupos_compases g WHERE g.id = grupo_id AND (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR public.repertoire_maestro_puede_editar_fila(g.montaje_id, g.fila_id))));
 
 DROP POLICY IF EXISTS repertoire_targets_write ON public.montaje_targets;
 CREATE POLICY repertoire_targets_write_scope ON public.montaje_targets FOR ALL TO authenticated
@@ -132,6 +142,14 @@ CREATE POLICY repertoire_targets_write_scope ON public.montaje_targets FOR ALL T
     OR (alcance = 'student' AND public.repertoire_maestro_puede_editar_fila(montaje_id, montaje_fila_id))
   );
 
+DROP POLICY IF EXISTS repertoire_targets_read ON public.montaje_targets;
+CREATE POLICY repertoire_targets_read_scope ON public.montaje_targets FOR SELECT TO authenticated
+  USING (
+    public.get_user_role() IN ('admin','superadmin','direccion','coordinacion_academica')
+    OR (alcance = 'fila' AND public.repertoire_maestro_puede_leer_fila(montaje_id, montaje_fila_id))
+    OR (alcance = 'student' AND public.repertoire_maestro_puede_leer_fila(montaje_id, montaje_fila_id))
+  );
+
 DROP POLICY IF EXISTS repertoire_target_milestones_write ON public.montaje_target_milestones;
 CREATE POLICY repertoire_target_milestones_write_scope ON public.montaje_target_milestones FOR ALL TO authenticated
   USING (public.get_user_role() IN ('admin','superadmin','coordinacion_academica') OR EXISTS (SELECT 1 FROM public.montaje_targets t WHERE t.id = target_id AND public.repertoire_maestro_puede_editar_fila(t.montaje_id, t.montaje_fila_id)))
@@ -143,11 +161,26 @@ CREATE POLICY repertoire_event_relation_manage ON public.montaje_eventos FOR ALL
   WITH CHECK (public.get_user_role() IN ('admin','superadmin','direccion','coordinacion_academica'));
 
 DROP POLICY IF EXISTS repertoire_signal_delivery_read ON public.repertoire_signal_deliveries;
+DROP POLICY IF EXISTS repertoire_signals_read ON public.repertoire_signals;
+CREATE POLICY repertoire_signals_recipient_read ON public.repertoire_signals FOR SELECT TO authenticated
+  USING (
+    public.get_user_role() IN ('admin','superadmin','direccion','coordinacion_academica')
+    OR EXISTS (SELECT 1 FROM public.repertoire_signal_deliveries d WHERE d.signal_id = repertoire_signals.id AND d.profile_id = auth.uid())
+  );
 CREATE POLICY repertoire_signal_delivery_recipient_read ON public.repertoire_signal_deliveries FOR SELECT TO authenticated
   USING (profile_id = auth.uid() OR public.get_user_role() IN ('admin','superadmin','direccion','coordinacion_academica'));
 CREATE POLICY repertoire_signal_delivery_recipient_ack ON public.repertoire_signal_deliveries FOR UPDATE TO authenticated
   USING (profile_id = auth.uid() OR public.get_user_role() IN ('admin','superadmin'))
   WITH CHECK (profile_id = auth.uid() OR public.get_user_role() IN ('admin','superadmin'));
+
+DROP POLICY IF EXISTS repertoire_session_work_write ON public.sesion_repertorio_trabajos;
+CREATE POLICY repertoire_session_work_write_scope ON public.sesion_repertorio_trabajos
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    created_by = public.maestro_actual()
+    AND EXISTS (SELECT 1 FROM public.sesiones_clase s WHERE s.id = sesion_id AND (s.maestro_id = public.maestro_actual() OR public.maestro_en_clase(s.clase_id) OR public.es_admin()))
+    AND (montaje_fila_id IS NULL OR public.repertoire_maestro_puede_leer_fila(montaje_id, montaje_fila_id))
+  );
 
 COMMENT ON TABLE public.montaje_fila_maestros IS 'Authoritative teacher-to-montage/fila assignment and capability boundary for Repertoire.';
 

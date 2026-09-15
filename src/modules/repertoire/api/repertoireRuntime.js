@@ -9,9 +9,10 @@ export class RepertoireUnavailableError extends Error {
   }
 }
 
-export function getRepertoireAdapter({ mode = import.meta.env.VITE_REPERTOIRE_DATA_MODE || 'real', supabaseClient = supabase, actorContext = {} } = {}) {
+export function getRepertoireAdapter({ mode = import.meta.env.VITE_REPERTOIRE_DATA_MODE || 'real', supabaseClient = supabase, actorContext = {}, enabled = import.meta.env.VITE_REPERTOIRE_ENABLED === 'true' } = {}) {
   if (mode === 'demo') return createRepertoireDemoAdapter()
   if (mode !== 'real') throw new RepertoireUnavailableError('Modo de Repertorio inválido.')
+  if (!enabled) throw new RepertoireUnavailableError('El módulo de Repertorio no está activado.')
   if (!supabaseClient) throw new RepertoireUnavailableError()
   if (!actorContext?.maestroId) throw new RepertoireUnavailableError('No se pudo identificar al maestro actual.')
   return createRepertoireAdapter(supabaseClient, { actorId: actorContext.maestroId })

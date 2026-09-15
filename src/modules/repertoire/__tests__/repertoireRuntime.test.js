@@ -8,6 +8,7 @@ describe('Repertoire runtime adapter selection', () => {
   })
 
   it('fails closed for missing real configuration or invalid mode', () => {
+    expect(() => getRepertoireAdapter({ mode: 'real', enabled: false, supabaseClient: {} })).toThrow('no está activado')
     expect(() => getRepertoireAdapter({ mode: 'real', supabaseClient: null })).toThrow(RepertoireUnavailableError)
     expect(() => getRepertoireAdapter({ mode: 'invalid' })).toThrow('Modo de Repertorio inválido')
   })

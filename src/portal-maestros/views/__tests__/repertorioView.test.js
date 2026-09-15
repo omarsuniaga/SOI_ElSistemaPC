@@ -42,6 +42,18 @@ describe('repertorioView', () => {
     expect(adapter.createVersion).toHaveBeenCalledWith(expect.objectContaining({ obra_id: 'obra-1', nombre: 'Edición pedagógica' }))
   })
 
+  it('fails closed with backend guidance when pedagogical creation RPC is unavailable', async () => {
+    const adapter = makeAdapter({ listMontajes: async () => [], listObras: async () => [], createPedagogicalWork: vi.fn(async () => { throw { code: 'PGRST202' } }) })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-new-work').click()
+    container.querySelector('[name="title"]').value = 'Obra pendiente'
+    container.querySelector('[name="measures"]').value = '32'
+    container.querySelector('.repertoire-work-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(container.querySelector('.repertoire-form-error').textContent).toContain('Actualización de backend requerida'))
+    expect(container.textContent).not.toContain('fn_repertoire_create_pedagogical_montage')
+  })
+
   it('loads real teaching scopes and submits multiple authorized filas as one canonical work', async () => {
     const createPedagogicalWork = vi.fn(async () => ({ id: 'work-1' }))
     const adapter = makeAdapter({ listMontajes: async () => [], listObras: async () => [], listTeacherTeachingScopes: vi.fn(async () => [

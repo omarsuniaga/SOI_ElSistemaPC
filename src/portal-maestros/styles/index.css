@@ -17,6 +17,7 @@
 
 /* Vistas al final para que sobrescriban estilos genéricos */
 @import url('./05-views.css');
+@import url('./repertoire-primitives.css');
 
 /* Vistas específicas: gestionar-clases, registrar-alumno */
 @import url('./12-views-gestion.css');

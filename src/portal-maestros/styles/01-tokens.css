@@ -25,6 +25,11 @@
   --pm-text: var(--apple-text);
   --pm-text-muted: var(--apple-text-muted);
   --pm-border: var(--apple-border);
+  --pm-page-bg: var(--apple-bg);
+  --pm-focus-ring: #007aff;
+  --pm-on-accent: #ffffff;
+  --pm-overlay: rgba(2, 8, 23, .68);
+  --pm-disabled: #8e8e93;
 
   --pm-success: var(--apple-success);
   --pm-warning: var(--apple-warning);
@@ -88,6 +93,8 @@
 
   --pm-info-bg: rgba(0, 122, 255, 0.15);
   --pm-info-text: #0056b3;
+  --pm-pending-bg: rgba(255, 204, 0, .15);
+  --pm-pending-text: #946f00;
 
   /* ── Z-index scale ────────────────────────────────────────── */
   --pm-z-sidebar: 200;
@@ -133,6 +140,11 @@
   --pm-text: #f1f5f9;
   --pm-text-muted: #94a3b8;
   --pm-border: #334155;
+  --pm-page-bg: #020817;
+  --pm-focus-ring: #60a5fa;
+  --pm-on-accent: #ffffff;
+  --pm-overlay: rgba(0, 0, 0, .72);
+  --pm-disabled: #64748b;
   --pm-bg-hover: rgba(0, 122, 255, 0.15);
 
   /* Status backgrounds para dark mode */
@@ -147,6 +159,8 @@
 
   --pm-info-bg: rgba(0, 122, 255, 0.2);
   --pm-info-text: #60a5fa;
+  --pm-pending-bg: rgba(251, 191, 36, .2);
+  --pm-pending-text: #fbbf24;
 
   /* Glass effects para dark mode */
   --pm-glass-bg: rgba(28, 28, 30, 0.7);

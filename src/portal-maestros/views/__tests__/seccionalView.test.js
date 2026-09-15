@@ -5,6 +5,14 @@ import { createSectionalDemoAdapter } from '../../../modules/repertoire/demo/sec
 afterEach(() => { document.body.innerHTML = '' })
 
 describe('seccionalView', () => {
+  it('does not fabricate analytical evidence when no adapter is provided', async () => {
+    const container = document.createElement('main')
+    const result = await renderSeccionalView(container)
+    expect(result).toEqual({ mode: 'real-empty', rowCount: 0 })
+    expect(container.textContent).toContain('La analítica aparecerá')
+    expect(container.querySelectorAll('.sectional-cell')).toHaveLength(0)
+  })
+
   it('renders an authorized section with accessible segmented cells and detail', async () => {
     const container = document.createElement('main')
     const result = await renderSeccionalView(container, { adapter: createSectionalDemoAdapter() })

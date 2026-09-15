@@ -5,7 +5,15 @@ import { createSectionalDemoAdapter } from '../../modules/repertoire/demo/sectio
 const labels = { SIN_EVALUAR: 'Sin evaluar', SIN_ESTUDIAR: 'Sin estudiar', CON_DIFICULTAD: 'Con dificultad', DOMINADO: 'Dominado', CONSOLIDADO: 'Consolidado' }
 const colors = { SIN_EVALUAR: '#adb5bd', SIN_ESTUDIAR: '#dc3545', CON_DIFICULTAD: '#fd7e14', DOMINADO: '#ffc107', CONSOLIDADO: '#198754' }
 
-export async function renderSeccionalView(container, { adapter = createSectionalDemoAdapter() } = {}) {
+export async function renderSeccionalView(container, { adapter = null } = {}) {
+  // The demo adapter remains available for explicit fixture-driven tests and
+  // local demonstrations, but REAL portal navigation must never fabricate
+  // sectional evidence when production has no Repertoire rows.
+  if (!adapter) {
+    container.innerHTML = `<section class="sectional-view sectional-empty" aria-labelledby="sectional-empty-title"><span class="repertoire-eyebrow">ANÁLISIS DERIVADO</span><h1 id="sectional-empty-title">Analítica seccional</h1><p>La analítica aparecerá cuando exista un montaje real con preparación registrada.</p><button type="button" class="btn btn-primary sectional-go-repertoire">Ir a Repertorio</button></section>`
+    container.querySelector('.sectional-go-repertoire')?.addEventListener('click', () => { window.location.hash = '#/repertorio' })
+    return { mode: 'real-empty', rowCount: 0 }
+  }
   const evidence = await adapter.listEvidence()
   const authorizedSections = [...new Set(evidence.map((row) => row.sectionId))].filter((id) => adapter.authorizedSectionIds.includes(id))
   let sectionId = authorizedSections[0]

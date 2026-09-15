@@ -30,6 +30,13 @@ async function insert(client, table, payload) {
 export function createRepertoireAdapter(client, { editableFilaIds = [], actorId = null, canEditTargets = () => false } = {}) {
   const supabase = requireClient(client)
   return {
+    mode: 'real',
+    currentMaestroId: actorId,
+    async listObras() {
+      const { data, error } = await supabase.from(TABLES.obras).select('*, obra_versiones(*)').order('updated_at', { ascending: false })
+      if (error) throw error
+      return data || []
+    },
     async listMontajes() {
       const { data: montajes, error } = await supabase.from(TABLES.montajes).select('*, obra_versiones(*, obras(*))').order('created_at', { ascending: false })
       if (error) throw error

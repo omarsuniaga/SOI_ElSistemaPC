@@ -28,6 +28,20 @@ const makeAdapter = (overrides = {}) => ({
 afterEach(() => { document.body.innerHTML = '' })
 
 describe('repertorioView', () => {
+  it('opens a real repertoire home with a pedagogical new-work action', async () => {
+    const adapter = makeAdapter({ listMontajes: async () => [], listObras: async () => [], createObra: vi.fn(async (payload) => ({ id: 'obra-1', ...payload })), createVersion: vi.fn(async (payload) => ({ id: 'version-1', ...payload })) })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    expect(container.querySelector('h1').textContent).toContain('Tu espacio de trabajo musical')
+    expect(container.textContent).toContain('Tu repertorio está vacío')
+    container.querySelector('.repertoire-new-work').click()
+    container.querySelector('[name="title"]').value = 'Estudio de prueba'
+    container.querySelector('[name="version"]').value = 'Edición pedagógica'
+    container.querySelector('.repertoire-work-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(adapter.createObra).toHaveBeenCalledWith(expect.objectContaining({ titulo: 'Estudio de prueba' })))
+    expect(adapter.createVersion).toHaveBeenCalledWith(expect.objectContaining({ obra_id: 'obra-1', nombre: 'Edición pedagógica' }))
+  })
+
   it('renders assigned works and opens their preparation map', async () => {
     const container = document.createElement('main')
     await renderRepertoireView(container, { adapter: makeAdapter() })

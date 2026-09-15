@@ -16,14 +16,14 @@ function weightedDistribution(contributions) {
   return { counts, total, percentages: Object.fromEntries(ESTADOS_PREPARACION.map((state) => [state, total ? Math.round((counts[state] / total) * 10000) / 100 : 0])) }
 }
 
-function summarize(filas) {
-  const applicable = filas.filter((fila) => !EXCLUDED.has(fila.applicability) && fila.applicability !== 'DESCONOCIDO')
-  const excluded = filas.filter((fila) => EXCLUDED.has(fila.applicability))
-  const unresolved = filas.filter((fila) => fila.applicability === 'DESCONOCIDO')
-  const contributions = applicable.map(filaContribution)
+function summarizeClassified(filas, classified) {
+  const applicable = classified.filter(({ excluded, unresolved }) => !excluded && !unresolved)
+  const excluded = classified.filter(({ excluded }) => excluded)
+  const unresolved = classified.filter(({ unresolved }) => unresolved)
+  const contributions = applicable.map(({ contribution }) => contribution)
   const distribution = weightedDistribution(contributions)
-  const projectedFilas = filas.map((fila) => ({ filaId: fila.filaId, nombre: fila.filaName, sectionId: fila.sectionId, applicability: fila.applicability, ...filaContribution(fila), individualCount: fila.students?.length || 0 }))
-  const criticalStudentExceptions = applicable.reduce((total, fila) => total + (fila.students || []).filter((student) => student.critical === true || (student.overrideState && effectivePreparationState({ collectiveState: null, individualState: student.overrideState, applicability: 'TOCA' }) === 'SIN_ESTUDIAR')).length, 0)
+  const projectedFilas = classified.map(({ fila, contribution }) => ({ filaId: fila.filaId, nombre: fila.filaName, sectionId: fila.sectionId, applicability: fila.applicability, ...contribution, individualCount: fila.students?.length || 0 }))
+  const criticalStudentExceptions = applicable.reduce((total, { fila }) => total + (fila.students || []).filter((student) => student.critical === true || (student.overrideState && effectivePreparationState({ collectiveState: null, individualState: student.overrideState, applicability: 'TOCA' }) === 'SIN_ESTUDIAR')).length, 0)
   return {
     filas: projectedFilas,
     totalFilaCount: filas.length,
@@ -31,10 +31,19 @@ function summarize(filas) {
     excludedFilaCount: excluded.length,
     unresolvedFilaCount: unresolved.length,
     distribution,
-    criticalFilaCount: applicable.filter((fila) => filaContribution(fila).states.some(({ state }) => state === 'SIN_ESTUDIAR')).length,
+    criticalFilaCount: applicable.filter(({ contribution }) => contribution.states.some(({ state }) => state === 'SIN_ESTUDIAR')).length,
     criticalStudentExceptions,
     affectedSectionCount: new Set(filas.map((fila) => fila.sectionId).filter(Boolean)).size
   }
+}
+
+function summarize(filas) {
+  return summarizeClassified(filas, filas.map((fila) => ({
+    fila,
+    contribution: filaContribution(fila),
+    excluded: EXCLUDED.has(fila.applicability),
+    unresolved: fila.applicability === 'DESCONOCIDO'
+  })))
 }
 
 export function aggregateSectionalPreparation({ evidence = [], authorizationScope = {} } = {}) {
@@ -67,9 +76,26 @@ export function aggregateOrchestraPreparation({ evidence = [], authorizationScop
     byMeasure.set(row.measureId, list)
   })
   return [...byMeasure.entries()].map(([measureId, filas]) => {
-    const summary = summarize(filas)
-    const sections = aggregateSectionalPreparation({ evidence: filas, authorizationScope: {} })
-      .reduce((map, projection) => { map.set(projection.sectionId, projection); return map }, new Map())
+    const classified = filas.map((fila) => ({
+      fila,
+      contribution: filaContribution(fila),
+      excluded: EXCLUDED.has(fila.applicability),
+      unresolved: fila.applicability === 'DESCONOCIDO'
+    }))
+    const summary = summarizeClassified(filas, classified)
+    const sectionRows = new Map()
+    classified.forEach((item) => {
+      const sectionId = item.fila.sectionId
+      const list = sectionRows.get(sectionId) || []
+      list.push(item)
+      sectionRows.set(sectionId, list)
+    })
+    const sections = [...sectionRows.entries()].map(([sectionId, items]) => ({
+      sectionId,
+      measureId,
+      ...summarizeClassified(items.map(({ fila }) => fila), items),
+      key: `${sectionId || 'unknown'}:${measureId}`
+    }))
     return { measureId, ...summary, sectionProjections: [...sections.values()] }
   })
 }

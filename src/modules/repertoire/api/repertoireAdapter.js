@@ -31,6 +31,7 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
   const supabase = requireClient(client)
   return {
     mode: 'real',
+    supportsFilaPreparation: true,
     currentMaestroId: actorId,
     async listObras() {
       const { data, error } = await supabase.from(TABLES.obras).select('*, obra_versiones(*)').order('updated_at', { ascending: false })
@@ -55,24 +56,13 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
     async createPedagogicalWork({ title, composer = null, arranger = null, version = 'Versión principal', measures, notes = null, scopeIds = [], scopes = [] } = {}) {
       const count = Number(measures)
       if (!title?.trim() || !Number.isInteger(count) || count < 1) throw new TypeError('La obra requiere título y un número de compases válido')
-      const obra = await this.createObra({ titulo: title.trim(), compositor: composer?.trim() || null, arreglista: arranger?.trim() || null, resena: notes?.trim() || null })
-      const obraVersion = await this.createVersion({ obra_id: obra.id, nombre: version?.trim() || 'Versión principal', numero_compases: count, notas: notes?.trim() || null })
-      const measureRows = Array.from({ length: count }, (_, index) => ({ obra_version_id: obraVersion.id, indice_interno: index, numero_visible: String(index + 1), orden: index }))
-      const { data: measuresData, error: measuresError } = await supabase.from(TABLES.compases).insert(measureRows).select()
-      if (measuresError) throw measuresError
-      const montage = await this.createMontaje({ obra_version_id: obraVersion.id, nucleo: 'PEDAGOGICO', conjunto: 'MAESTRO' })
-      const selected = (scopes.length ? scopes : scopeIds.map((id) => ({ id }))).filter((scope) => scope?.id)
-      for (const scope of selected) {
-        const section = await this.addSection({ montaje_id: montage.id, nombre: scope.name || scope.nombre || `Clase ${scope.id}`, section_id: scope.sectionId || null })
-        const fila = await this.addRow({ montaje_seccion_id: section.id, nombre: scope.instrument || scope.instrumento || scope.name || scope.nombre || 'Fila', instrumento_id: scope.instrumentId || null })
-        for (const student of scope.students || []) await this.assignStudent({ montaje_fila_id: fila.id, alumno_id: student.id })
-      }
-      const montageMeasures = (measuresData || []).map((measure) => ({ montaje_id: montage.id, compas_id: measure.id }))
-      if (montageMeasures.length) {
-        const { error: montageMeasuresError } = await supabase.from('montaje_compases').insert(montageMeasures)
-        if (montageMeasuresError) throw montageMeasuresError
-      }
-      return { obra, version: obraVersion, montage, measures: measuresData || [] }
+      const selected = (scopes.length ? scopes : scopeIds.map((id) => ({ id }))).map((scope) => scope.id).filter(Boolean)
+      const { data, error } = await supabase.rpc('fn_repertoire_create_pedagogical_montage', {
+        p_title: title.trim(), p_composer: composer?.trim() || null, p_arranger: arranger?.trim() || null,
+        p_version_name: version?.trim() || 'Versión principal', p_num_measures: count, p_notes: notes?.trim() || null, p_scope_class_ids: selected
+      })
+      if (error) throw error
+      return data
     },
     async listMontajes() {
       const { data: montajes, error } = await supabase.from(TABLES.montajes).select('*, obra_versiones(*, obras(*))').order('created_at', { ascending: false })
@@ -102,11 +92,22 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
           measuresByMontage.set(state.montaje_id, current)
         }
       }
+      const measureStateIds = [...measuresByMontage.values()].flat().map((row) => row.id)
+      const filaStatesResult = measureStateIds.length
+        ? await supabase.from('montaje_fila_compases').select('*, montaje_compases!inner(montaje_id)').in('montaje_compas_id', measureStateIds)
+        : { data: [], error: null }
+      if (filaStatesResult.error) throw filaStatesResult.error
+      const filaStatesByFila = new Map()
+      for (const row of filaStatesResult.data || []) {
+        const current = filaStatesByFila.get(row.montaje_fila_id) || []
+        current.push(row)
+        filaStatesByFila.set(row.montaje_fila_id, current)
+      }
       return rows.map((montage) => ({
         ...montage,
         obra: montage.obra_versiones?.obras || {},
         version: montage.obra_versiones || {},
-        filas: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas),
+        filas: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas.map((fila) => ({ ...fila, compases: filaStatesByFila.get(fila.id) || [] }))),
         secciones: sectionsByMontage.get(montage.id) || [],
         alumnos: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas.flatMap((fila) => fila.alumnos)),
         compases: measuresByMontage.get(montage.id) || []
@@ -128,7 +129,9 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
         if (measureError) throw measureError
         resolvedMontageId = measure?.montaje_id
       }
-      const { data, error } = await supabase.rpc('fn_repertoire_update_applicability', { p_montage_id: resolvedMontageId, p_measure_id: id, p_applicability: applicability, p_fila_id: filaId })
+      const { data, error } = await supabase.rpc(filaId ? 'fn_repertoire_update_fila_applicability' : 'fn_repertoire_update_applicability', filaId
+        ? { p_montage_id: resolvedMontageId, p_fila_id: filaId, p_montaje_compas_id: id, p_aplicabilidad: applicability }
+        : { p_montage_id: resolvedMontageId, p_measure_id: id, p_applicability: applicability, p_fila_id: filaId })
       if (error) throw error
       return data
     },
@@ -149,7 +152,15 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
     async updateRowPreparation(id, state, { filaId, montageId = null } = {}) {
       assertFilaEditable({ editableFilaIds, filaId })
       assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
+      if (filaId) return this.updateFilaPreparation(id, state, { filaId, montageId })
       return this.updatePreparationAtomically({ montageId, measureId: id, newState: state, filaId, scope: 'collective' })
+    },
+    async updateFilaPreparation(measureId, state, { filaId, montageId } = {}) {
+      assertFilaEditable({ editableFilaIds, filaId })
+      assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
+      const { data, error } = await supabase.rpc('fn_repertoire_update_fila_preparation', { p_montage_id: montageId, p_fila_id: filaId, p_montaje_compas_id: measureId, p_estado: state })
+      if (error) throw error
+      return data
     },
     async updateStudentPreparation(payload) {
       if (!payload?.montaje_alumno_id || !payload?.montaje_compas_id) throw new TypeError('La preparación individual requiere alumno y compás')

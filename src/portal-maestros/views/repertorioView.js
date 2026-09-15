@@ -131,9 +131,21 @@ export async function renderRepertoireView(container, { adapter } = {}) {
   let priorityVisible = false
   let priorityCandidates = []
   const canEditApplicability = adapter.canEditApplicability === true
-  const canCreate = typeof adapter.createObra === 'function'
+  const canCreate = typeof adapter.createObra === 'function' || typeof adapter.createPedagogicalWork === 'function'
   const canManageOfficial = Boolean(adapter.canManageOfficial)
   const savedLabel = adapter.mode === 'real' ? 'Guardado en Supabase' : 'Guardado local (Demo)'
+  const setActiveFila = (filaId) => {
+    if (!active) return
+    active.canonicalCompases ||= active.compases
+    active.activeFilaId = filaId || active.filas?.[0]?.id || null
+    const fila = active.filas?.find((item) => item.id === active.activeFilaId)
+    if (!fila?.compases?.length) { active.compases = active.canonicalCompases; return }
+    const states = new Map(fila.compases.map((item) => [item.montaje_compas_id, item]))
+    active.compases = active.canonicalCompases.map((measure) => {
+      const filaState = states.get(measure.id)
+      return filaState ? { ...measure, estado_preparacion: filaState.estado_colectivo || 'SIN_EVALUAR', aplicabilidad: filaState.aplicabilidad || measure.aplicabilidad } : measure
+    })
+  }
 
   const render = () => {
     container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action, linkedScope, measuresPerRow, historyEvents, trajectoryVisible, trajectoryTargets, adapter.canEditTargets === true, priorityVisible, priorityCandidates, adapter.mode) : repertoireHomeMarkup({ montajes, obras, teachingScopes, canCreate, canManageOfficial, action: homeAction })
@@ -143,7 +155,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
 
   let homeAction = null
   const bindHome = () => {
-    container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); measuresPerRow = readMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }); activeStudentId = null; render() }))
+    container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); setActiveFila(active.filas?.[0]?.id); measuresPerRow = readMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }); activeStudentId = null; render() }))
     container.querySelector('.repertoire-new-work')?.addEventListener('click', () => { homeAction = 'new-work'; render() })
     container.querySelector('.repertoire-cancel-home')?.addEventListener('click', () => { homeAction = null; render() })
     container.querySelector('.repertoire-work-form')?.addEventListener('submit', async (event) => {
@@ -151,9 +163,11 @@ export async function renderRepertoireView(container, { adapter } = {}) {
       const form = new FormData(event.currentTarget)
       const scopeIds = form.getAll('scope')
       if (typeof adapter.createPedagogicalWork === 'function') {
-        await adapter.createPedagogicalWork({ title: String(form.get('title') || '').trim(), composer: String(form.get('composer') || '').trim(), arranger: String(form.get('arranger') || '').trim(), version: String(form.get('version') || '').trim(), measures: Number(form.get('measures')), notes: String(form.get('description') || '').trim(), scopeIds, scopes: teachingScopes.filter((scope) => scopeIds.includes(scope.id)) })
+        const created = await adapter.createPedagogicalWork({ title: String(form.get('title') || '').trim(), composer: String(form.get('composer') || '').trim(), arranger: String(form.get('arranger') || '').trim(), version: String(form.get('version') || '').trim(), measures: Number(form.get('measures')), notes: String(form.get('description') || '').trim(), scopeIds, scopes: teachingScopes.filter((scope) => scopeIds.includes(scope.id)) })
         obras = await adapter.listObras?.() || obras
         homeAction = null
+        montajes = await adapter.listMontajes?.() || montajes
+        if (created?.montage_id) { active = montajes.find((item) => item.id === created.montage_id) || null; setActiveFila(active?.filas?.[0]?.id) }
         render()
         return
       }
@@ -166,7 +180,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
   }
 
   const bindMap = () => {
-    container.querySelectorAll('.repertoire-fila-tab').forEach((button) => button.addEventListener('click', () => { active.activeFilaId = button.dataset.filaId; activeStudentId = null; pickerMeasure = null; render() }))
+    container.querySelectorAll('.repertoire-fila-tab').forEach((button) => button.addEventListener('click', () => { setActiveFila(button.dataset.filaId); activeStudentId = null; pickerMeasure = null; render() }))
     container.querySelector('.repertoire-trajectory')?.addEventListener('click', async () => { trajectoryTargets = await adapter.listTargets?.(active.id) || []; trajectoryVisible = true; render() })
     container.querySelector('.repertoire-priorities')?.addEventListener('click', async () => { priorityCandidates = await adapter.listPriorityCandidates?.(active.id) || []; priorityVisible = true; render() })
     container.querySelector('.repertoire-target-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); await adapter.createTarget?.({ montaje_id: active.id, alcance: 'montage', estado_objetivo: form.get('targetState') || null, fecha_objetivo: form.get('targetDate'), umbral_porcentaje: form.get('thresholdPercent') ? Number(form.get('thresholdPercent')) : null, tempo_objetivo: form.get('targetTempo') ? Number(form.get('targetTempo')) : null, notas: form.get('notes'), created_by: adapter.currentMaestroId || null }); trajectoryTargets = await adapter.listTargets?.(active.id) || []; render() })
@@ -218,7 +232,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
       pickerMeasure.aplicabilidad = event.target.value
       syncMessage = { label: 'Guardando…', className: 'is-pending' }
       render()
-      try { await adapter.updateMeasureApplicability(pickerMeasure.id, pickerMeasure.aplicabilidad); syncMessage = { label: savedLabel, className: 'is-saved' }; pickerMeasure = null } catch { pickerMeasure.aplicabilidad = previous; syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
+      try { await adapter.updateMeasureApplicability(pickerMeasure.id, pickerMeasure.aplicabilidad, { montageId: active.id, filaId: active.activeFilaId }); syncMessage = { label: savedLabel, className: 'is-saved' }; pickerMeasure = null } catch { pickerMeasure.aplicabilidad = previous; syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
       render()
     })
     container.querySelectorAll('.repertoire-measure').forEach((button) => button.addEventListener('click', async (event) => {
@@ -251,7 +265,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
       const previous = new Map([...selected].map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
       for (const id of selected) active.compases.find((item) => item.id === id).estado_preparacion = state
       selected = new Set(); selectionMode = false; syncMessage = { label: 'Guardando…', className: 'is-pending' }; render()
-      try { await Promise.all([...previous.keys()].map((id) => adapter.updateMeasureState(id, state))); syncMessage = { label: savedLabel, className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }; render(); return }
+      try { await Promise.all([...previous.keys()].map((id) => adapter.supportsFilaPreparation && adapter.updateRowPreparation ? adapter.updateRowPreparation(id, state, { montageId: active.id, filaId: active.activeFilaId }) : adapter.updateMeasureState(id, state))); syncMessage = { label: savedLabel, className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }; render(); return }
       render()
     })
   }
@@ -269,6 +283,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     render()
     try {
       if (student) await adapter.updateStudentState(activeStudentId, measure.id, state)
+      else if (adapter.supportsFilaPreparation && adapter.updateRowPreparation) await adapter.updateRowPreparation(measure.id, state, { montageId: active.id, filaId: active.activeFilaId })
       else await adapter.updateMeasureState(measure.id, state)
       syncMessage = { label: savedLabel, className: 'is-saved' }
     } catch {
@@ -285,7 +300,11 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     const previous = new Map(group.measureIds.map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
     group.measureIds.forEach((id) => { active.compases.find((item) => item.id === id).estado_preparacion = state })
     syncMessage = { label: 'Guardando…', className: 'is-pending' }; pickerMeasure = null; render()
-    try { await adapter.updateLinkedGroupState(group.id, state); syncMessage = { label: savedLabel, className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
+    try {
+      if (adapter.supportsFilaPreparation && adapter.updateRowPreparation) await Promise.all(group.measureIds.map((id) => adapter.updateRowPreparation(id, state, { montageId: active.id, filaId: active.activeFilaId })))
+      else await adapter.updateLinkedGroupState(group.id, state)
+      syncMessage = { label: savedLabel, className: 'is-saved' }
+    } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
     render()
   }
 

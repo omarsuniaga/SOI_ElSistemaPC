@@ -2,7 +2,7 @@
 
 Audit date: 2026-09-15  
 Baseline: `release/repertoire-r1b-stage1` at `5c75e5ce`  
-Scope: current implementation versus the seven supplied reference images. Reference 08 was not supplied.
+Scope: current implementation versus the twelve supplied reference images.
 
 ## Responsive priority correction
 
@@ -14,7 +14,11 @@ Teacher Repertoire is **mobile-first / PWA-first**. The desktop screenshots defi
 | 02 Work detail | Header, collapsed synopsis, horizontal fila tabs, Fila/Alumnos switch, grid, bottom sheet/drawer | Grid plus collapsible inspector | Multi-column inspector and roster | `MOBILE_PARTIAL` |
 | 03 Create pedagogical | Four progressive steps with one column | Stepper with two-column fields | Full builder workspace | `NEEDS_RESPONSIVE_REDESIGN` |
 | 04 Session/history | Chips, selectors, measure range, bottom sheets, compact notes | Split form where safe | Form + history/trajectory panels | `MOBILE_PARTIAL` |
-| 08 Multiselect (pending) | Long press + sticky bottom action sheet | Bottom sheet or compact toolbar | Shift/range + toolbar | `REFERENCE_08_PENDING` |
+| 08 Multiselect | Long press + sticky bottom action sheet | Bottom sheet or compact toolbar | Shift/range + toolbar | `MOBILE_PARTIAL` |
+| 09 Home | Header + tabs, search/filter, vertical work cards | Two-column cards where space permits | Dense three-column cards and filters | `MOBILE_PARTIAL` |
+| 10 Work detail | Horizontal fila tabs, Fila/Alumnos switch, grid, bottom sheet | Grid plus collapsible inspector | Multi-column inspector and roster | `MOBILE_PARTIAL` |
+| 11 Student evaluation | Student selector, individual evidence, selected cells and action sheet | Compact evaluation toolbar | Student roster plus grid | `MOBILE_PARTIAL` |
+| 12 Create work | Four progressive steps with one column | Stepper with two-column fields | Full builder workspace | `NEEDS_RESPONSIVE_REDESIGN` |
 
 Admin/ACM references 05–07 are `DESKTOP_FIRST`, with responsive drill-down rather than compressed wide tables/heatmaps. The current teacher grid is structurally mobile-capable for configured columns, but the surrounding shell still needs mobile composition work.
 
@@ -29,7 +33,11 @@ Admin/ACM references 05–07 are `DESKTOP_FIRST`, with responsive drill-down rat
 | 05 | `C:/Users/omare/Downloads/ChatGPT Image 15 sept 2026, 10_28_52 a.m. (2).png` | Admin/ACM dashboard |
 | 06 | `C:/Users/omare/Downloads/ChatGPT Image 15 sept 2026, 10_28_55 a.m. (6).png` | Institutional-work builder |
 | 07 | `C:/Users/omare/Downloads/ChatGPT Image 15 sept 2026, 10_28_56 a.m. (7).png` | Orchestra overview |
-| 08 | Not supplied | `REFERENCE_08_PENDING` — teacher multiselect evaluation |
+| 08 | `docs/design/repertoire/r1b-premium/08-teacher-multiselect-mobile.png` | Teacher multiselect evaluation |
+| 09 | `docs/design/repertoire/r1b-premium/09-teacher-repertoire-home-mobile.png` | Teacher repertoire home mobile |
+| 10 | `docs/design/repertoire/r1b-premium/10-teacher-work-detail-mobile.png` | Teacher work detail mobile |
+| 11 | `docs/design/repertoire/r1b-premium/11-teacher-student-evaluation-mobile.png` | Teacher student evaluation mobile |
+| 12 | `docs/design/repertoire/r1b-premium/12-teacher-create-work-mobile.png` | Teacher create-work mobile |
 
 ## Detailed matrix
 

@@ -22,7 +22,9 @@
   --pm-primary: var(--apple-primary);
   --pm-surface: var(--apple-surface);
   --pm-surface-2: var(--apple-bg);
+  --pm-surface-subtle: var(--apple-bg);
   --pm-text: var(--apple-text);
+  --pm-text-secondary: var(--apple-text-muted);
   --pm-text-muted: var(--apple-text-muted);
   --pm-border: var(--apple-border);
   --pm-page-bg: var(--apple-bg);
@@ -137,7 +139,9 @@
 [data-portal-theme="dark"] {
   --pm-surface: #1c1c1e;
   --pm-surface-2: #0f172a;
+  --pm-surface-subtle: #162033;
   --pm-text: #f1f5f9;
+  --pm-text-secondary: #cbd5e1;
   --pm-text-muted: #94a3b8;
   --pm-border: #334155;
   --pm-page-bg: #020817;

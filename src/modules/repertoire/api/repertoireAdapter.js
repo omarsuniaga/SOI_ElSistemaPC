@@ -37,6 +37,43 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (error) throw error
       return data || []
     },
+    async listTeacherTeachingScopes() {
+      if (!actorId) return []
+      const { data, error } = await supabase.from('clases')
+        .select('id, nombre, instrumento, maestro_principal_id, maestro_suplente_id, maestro_id, maestro_auxiliar_id, alumnos_clases(alumno_id, activo, alumnos(id, nombre_completo, instrumento_principal, activo))')
+        .eq('activo', true)
+        .or(`maestro_principal_id.eq.${actorId},maestro_suplente_id.eq.${actorId},maestro_id.eq.${actorId},maestro_auxiliar_id.eq.${actorId}`)
+        .order('nombre')
+      if (error) throw error
+      return (data || []).map((clase) => ({
+        id: clase.id,
+        name: clase.nombre,
+        instrument: clase.instrumento || clase.nombre,
+        students: (clase.alumnos_clases || []).filter((membership) => membership.activo !== false && membership.alumnos?.activo !== false).map((membership) => membership.alumnos).filter(Boolean)
+      }))
+    },
+    async createPedagogicalWork({ title, composer = null, arranger = null, version = 'Versión principal', measures, notes = null, scopeIds = [], scopes = [] } = {}) {
+      const count = Number(measures)
+      if (!title?.trim() || !Number.isInteger(count) || count < 1) throw new TypeError('La obra requiere título y un número de compases válido')
+      const obra = await this.createObra({ titulo: title.trim(), compositor: composer?.trim() || null, arreglista: arranger?.trim() || null, resena: notes?.trim() || null })
+      const obraVersion = await this.createVersion({ obra_id: obra.id, nombre: version?.trim() || 'Versión principal', numero_compases: count, notas: notes?.trim() || null })
+      const measureRows = Array.from({ length: count }, (_, index) => ({ obra_version_id: obraVersion.id, indice_interno: index, numero_visible: String(index + 1), orden: index }))
+      const { data: measuresData, error: measuresError } = await supabase.from(TABLES.compases).insert(measureRows).select()
+      if (measuresError) throw measuresError
+      const montage = await this.createMontaje({ obra_version_id: obraVersion.id, nucleo: 'PEDAGOGICO', conjunto: 'MAESTRO' })
+      const selected = (scopes.length ? scopes : scopeIds.map((id) => ({ id }))).filter((scope) => scope?.id)
+      for (const scope of selected) {
+        const section = await this.addSection({ montaje_id: montage.id, nombre: scope.name || scope.nombre || `Clase ${scope.id}`, section_id: scope.sectionId || null })
+        const fila = await this.addRow({ montaje_seccion_id: section.id, nombre: scope.instrument || scope.instrumento || scope.name || scope.nombre || 'Fila', instrumento_id: scope.instrumentId || null })
+        for (const student of scope.students || []) await this.assignStudent({ montaje_fila_id: fila.id, alumno_id: student.id })
+      }
+      const montageMeasures = (measuresData || []).map((measure) => ({ montaje_id: montage.id, compas_id: measure.id }))
+      if (montageMeasures.length) {
+        const { error: montageMeasuresError } = await supabase.from('montaje_compases').insert(montageMeasures)
+        if (montageMeasuresError) throw montageMeasuresError
+      }
+      return { obra, version: obraVersion, montage, measures: measuresData || [] }
+    },
     async listMontajes() {
       const { data: montajes, error } = await supabase.from(TABLES.montajes).select('*, obra_versiones(*, obras(*))').order('created_at', { ascending: false })
       if (error) throw error

@@ -42,6 +42,23 @@ describe('repertorioView', () => {
     expect(adapter.createVersion).toHaveBeenCalledWith(expect.objectContaining({ obra_id: 'obra-1', nombre: 'Edición pedagógica' }))
   })
 
+  it('loads real teaching scopes and submits multiple authorized filas as one canonical work', async () => {
+    const createPedagogicalWork = vi.fn(async () => ({ id: 'work-1' }))
+    const adapter = makeAdapter({ listMontajes: async () => [], listObras: async () => [], listTeacherTeachingScopes: vi.fn(async () => [
+      { id: 'class-1', name: 'Violines I', instrument: 'Violín', students: [{ id: 'student-1' }] },
+      { id: 'class-2', name: 'Violas', instrument: 'Viola', students: [{ id: 'student-2' }] }
+    ]), createPedagogicalWork })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-new-work').click()
+    container.querySelector('[name="title"]').value = 'Obra de prueba'
+    container.querySelector('[name="measures"]').value = '120'
+    container.querySelectorAll('[name="scope"]')[0].checked = true
+    container.querySelectorAll('[name="scope"]')[1].checked = true
+    container.querySelector('.repertoire-work-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(createPedagogicalWork).toHaveBeenCalledWith(expect.objectContaining({ title: 'Obra de prueba', measures: 120, scopeIds: ['class-1', 'class-2'] })))
+  })
+
   it('renders assigned works and opens their preparation map', async () => {
     const container = document.createElement('main')
     await renderRepertoireView(container, { adapter: makeAdapter() })
@@ -50,6 +67,22 @@ describe('repertorioView', () => {
     container.querySelector('.repertoire-open').click()
     expect(container.querySelectorAll('.repertoire-measure')).toHaveLength(3)
     expect(container.querySelector('.repertoire-measure').getAttribute('aria-label')).toContain('Compás 1')
+  })
+
+  it('navigates multiple filas while keeping one canonical measure map', async () => {
+    const adapter = makeAdapter({ listMontajes: async () => [{
+      id: 'montaje-1', obra: { titulo: 'Obra de prueba', compositor: 'Compositor' }, version: { nombre: 'Versión' }, filas: [
+        { id: 'fila-1', nombre: 'Violines I' }, { id: 'fila-2', nombre: 'Violas' }
+      ], alumnos: [{ id: 'student-1', montaje_fila_id: 'fila-1', nombre: 'César', estado_preparacion: 'DOMINADO' }, { id: 'student-2', montaje_fila_id: 'fila-2', nombre: 'Edelyn', estado_preparacion: 'CON_DIFICULTAD' }], prioridad: 1, estado: 'EN_MONTAJE', compases: [{ id: 'm-1', numero_visible: '1', aplicabilidad: 'TOCA', estado_preparacion: 'SIN_EVALUAR' }]
+    }] })
+    const container = document.createElement('main')
+    await renderRepertoireView(container, { adapter })
+    container.querySelector('.repertoire-open').click()
+    expect(container.textContent).toContain('Violines I')
+    container.querySelector('[data-fila-id="fila-2"]').click()
+    expect(container.querySelector('.repertoire-students').textContent).toContain('Edelyn')
+    expect(container.querySelector('.repertoire-students').textContent).not.toContain('César')
+    expect(container.querySelectorAll('.repertoire-measure')).toHaveLength(1)
   })
 
   it('cycles a measure optimistically and reports the saved state', async () => {

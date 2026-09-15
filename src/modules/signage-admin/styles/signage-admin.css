@@ -129,6 +129,124 @@
   font-size: 0.9rem;
 }
 
+/* ─── Pestañas del Panel Lateral del Estudio ─── */
+.signage-studio .ss-side-tabs {
+  display: flex;
+  background: var(--bs-tertiary-bg);
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+  flex: 0 0 auto;
+}
+.signage-studio .ss-side-tab {
+  flex: 1;
+  padding: 0.65rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+.signage-studio .ss-side-tab:hover {
+  color: var(--bs-body-color);
+}
+.signage-studio .ss-side-tab.active {
+  color: var(--bs-primary);
+  border-bottom-color: var(--bs-primary);
+  background: var(--bs-body-bg);
+}
+
+/* ─── Métricas de la Playlist (Loop Health) ─── */
+.signage-studio .ss-loop-health {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.85rem;
+  text-align: center;
+}
+.signage-studio .ss-health-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.signage-studio .ss-health-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bs-body-color);
+  line-height: 1.1;
+}
+.signage-studio .ss-health-lbl {
+  font-size: 0.66rem;
+  color: var(--bs-secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Presets Rápidos de Layout ─── */
+.signage-studio .ss-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+.signage-studio .ss-preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.65rem;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--bs-body-color);
+  transition: all 0.15s ease;
+}
+.signage-studio .ss-preset-btn:hover {
+  background: var(--bs-primary-bg-subtle);
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+  transform: translateY(-1px);
+}
+.signage-studio .ss-preset-btn i {
+  font-size: 1.15rem;
+  color: var(--bs-primary);
+  flex-shrink: 0;
+}
+
+/* ─── Drag & Drop en Filas de Medios ─── */
+.signage-studio .ss-drag-handle {
+  color: var(--bs-secondary-color);
+  cursor: grab;
+  padding: 0 0.2rem 0 0;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+.signage-studio .ss-drag-handle:hover {
+  opacity: 1;
+}
+.signage-studio .ss-media-row.is-dragging {
+  opacity: 0.4;
+  outline: 2px dashed var(--bs-primary);
+}
+.signage-studio .ss-media-row.drag-over {
+  border-top: 3px solid var(--bs-primary);
+  transform: translateY(2px);
+}
+
 @media (max-width: 1199.98px) {
   .signage-studio .ss-workspace {
     flex-direction: column;

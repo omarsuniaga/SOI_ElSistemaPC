@@ -37,9 +37,23 @@ const branch =
   ''
 const at = new Date().toISOString().replace('T', ' ').slice(0, 16) + 'Z'
 
+const DEVICE_OUT = resolve(ROOT, 'public/signage/device.js')
+
 const ver = branch && branch !== 'HEAD' ? `${short} (${branch})` : short
 const body = `/* Sello de versión de la cartelera — generado por scripts/stamp-signage-build.js */\n` +
   `window.SIGNAGE_BUILD = ${JSON.stringify({ ver, at, sha: sha || null })};\n`
 
 writeFileSync(OUT, body)
 console.log(`[stamp-signage-build] ${OUT} -> ${ver} @ ${at}`)
+
+const deviceBody = `/* Configuración de dispositivo por defecto (web / preview).
+ * En la Raspberry Pi física, scripts/deploy-signage-pi.sh sobreescribe este archivo con:
+ * window.SIGNAGE_CONFIG.mode = "device";
+ */
+window.SIGNAGE_CONFIG = window.SIGNAGE_CONFIG || {};
+if (!window.SIGNAGE_CONFIG.mode) {
+  window.SIGNAGE_CONFIG.mode = 'web';
+}
+`
+writeFileSync(DEVICE_OUT, deviceBody)
+console.log(`[stamp-signage-build] ${DEVICE_OUT} -> mode: web`)

@@ -6,6 +6,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# R1-B Stage 1 pilot gate. These are public build-time feature flags, scoped
+# to the exact release branch so the free Netlify plan does not require global
+# environment-variable scope changes.
+[context."release/repertoire-r1b-stage1".environment]
+  VITE_REPERTOIRE_ENABLED = "true"
+  VITE_REPERTOIRE_PILOT_MAESTRO_IDS = "dc73014a-9528-4081-84eb-f713b72031ff"
+
 [[headers]]
   for = "/*"
   [headers.values]

@@ -64,3 +64,24 @@
 @media (max-width: 600px) { .repertoire-map__header { display: block; } .repertoire-mode-badge { display: inline-block; margin-top: .75rem; } .repertoire-grid { padding: .7rem; } .repertoire-measure { min-height: 2.65rem; } }
 @media (max-width: 600px) { .repertoire-home__header { display: block; } .repertoire-home__actions { margin-top: 1rem; } .repertoire-home__actions .btn { width: 100%; } }
 @media (max-width: 600px) { .repertoire-fila-summary__columns { grid-template-columns: 1fr; } }
+
+/* Slice B: the home composition starts mobile-first and expands progressively. */
+.repertoire-home { min-width: 0; overflow-x: clip; }
+.repertoire-home > .repertoire-new-work { width: 100%; min-block-size: var(--pm-touch-min, 44px); }
+.repertoire-home-tabs { margin-block: 1rem; }
+.repertoire-home__toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: stretch; }
+.repertoire-search, .repertoire-search .form-control { min-width: 0; width: 100%; }
+.repertoire-open-filters { min-block-size: var(--pm-touch-min, 44px); white-space: nowrap; }
+.repertoire-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.repertoire-section-heading > span { color: var(--pm-text-muted, #6c757d); font-size: .85rem; }
+.repertoire-card { cursor: pointer; min-width: 0; }
+.repertoire-card:focus-visible { outline: 3px solid var(--pm-focus-ring, #60a5fa); outline-offset: 3px; }
+.repertoire-card__hint { color: var(--pm-primary, #0d6efd); font-size: .85rem; }
+.repertoire-card-menu, .repertoire-work-menu { flex: 0 0 auto; }
+.repertoire-error { padding: 1rem; border: 1px solid var(--pm-danger, #dc3545); border-radius: var(--pm-radius, 12px); color: var(--pm-text); background: var(--pm-danger-bg, #f8d7da); }
+@media (min-width: 768px) {
+  .repertoire-home > .repertoire-new-work { width: auto; }
+  .repertoire-card-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .repertoire-card-list .repertoire-card { margin-bottom: 0; }
+}
+@media (min-width: 1200px) { .repertoire-card-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

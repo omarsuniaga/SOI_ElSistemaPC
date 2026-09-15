@@ -4,6 +4,7 @@ import { daysRemaining, ESTADOS_PREPARACION } from '../../modules/repertoire/dom
 import { effectivePreparationState } from '../../modules/repertoire/domain/studentPreparation.js'
 import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
 import { DEFAULT_MEASURES_PER_ROW, MEASURES_PER_ROW_OPTIONS, readMeasuresPerRow, writeMeasuresPerRow } from '../../modules/repertoire/domain/gridSemantics.js'
+import { renderSegmentedControl, renderBottomSheet, renderConfirmDialog, renderContextMenu, renderEmptyState, renderSkeleton, bindRepertoireOverlay } from '../components/repertoirePrimitives.js'
 
 const STATE_LABELS = { SIN_EVALUAR: 'Sin evaluar', SIN_ESTUDIAR: 'Sin estudiar', CON_DIFICULTAD: 'Con dificultad', DOMINADO: 'Dominado', CONSOLIDADO: 'Consolidado' }
 const APPLICABILITY_LABELS = { TOCA: 'Toca', SILENCIO: 'Silencio', TACET: 'Tacet', NO_APLICA: 'No aplica', DESCONOCIDO: 'Desconocido' }
@@ -17,28 +18,38 @@ export function measureAriaLabel(measure) {
   return `Compás ${measure.numero_visible} — ${STATE_LABELS[measure.estado_preparacion] || STATE_LABELS.SIN_EVALUAR}`
 }
 
-function cardMarkup(montaje) {
+const html = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))
+
+function cardMarkup(montaje, { onMenu = false } = {}) {
   const days = daysRemaining(montaje.evento?.fecha)
-  const fila = montaje.filas?.[0]
-  return `<article class="repertoire-card" data-montaje-id="${montaje.id}">
-    <div class="repertoire-card__heading"><div><span class="repertoire-eyebrow">${montaje.estado.replaceAll('_', ' ')}</span><h2>${montaje.obra.titulo}</h2><p>${montaje.obra.compositor || ''} · ${montaje.version.nombre}</p></div><strong class="repertoire-priority">P${montaje.prioridad}</strong></div>
-    <div class="repertoire-card__meta"><span><i class="bi bi-music-note-list"></i> ${fila?.nombre || 'Fila pendiente'}</span><span><i class="bi bi-calendar-event"></i> ${montaje.evento?.nombre || 'Sin evento'}</span><span><i class="bi bi-hourglass-split"></i> ${days == null ? 'Fecha pendiente' : days >= 0 ? `Faltan ${days} días` : `Venció hace ${Math.abs(days)} días`}</span></div>
-    <button class="btn btn-primary repertoire-open" data-montaje-id="${montaje.id}">Abrir mapa <i class="bi bi-arrow-right"></i></button>
+  const filas = [...new Map((montaje.filas || []).map((fila) => [fila.id, fila.nombre || fila.name])).values()]
+  const obra = montaje.obra || {}
+  const title = html(obra.titulo || 'Obra sin título')
+  return `<article class="repertoire-card" data-montaje-id="${html(montaje.id)}" tabindex="0">
+    <div class="repertoire-card__heading"><div><span class="repertoire-eyebrow">${html((montaje.estado || 'SIN ESTADO').replaceAll('_', ' '))}</span><h2>${title}</h2><p>${html(obra.compositor || 'Compositor pendiente')} · ${html(montaje.version?.nombre || 'Versión pendiente')}</p></div>${onMenu ? '<button type="button" class="pm-icon-button repertoire-card-menu" aria-label="Acciones de la obra" data-montaje-id="' + html(montaje.id) + '">⋮</button>' : ''}</div>
+    <div class="repertoire-card__meta"><span>Filas: ${html(filas.length ? filas.join(', ') : 'Pendientes')}</span><span>Creación: ${html(montaje.created_at || '—')}</span><span>Estreno: ${html(montaje.evento?.fecha || '—')}</span><span>${days == null ? 'Fecha pendiente' : days >= 0 ? `Faltan ${days} días` : `Venció hace ${Math.abs(days)} días`}</span></div>
   </article>`
 }
 
-function workMarkup(work) {
+function workMarkup(work, { onMenu = false } = {}) {
   const versions = work.obra_versiones || []
-  return `<article class="repertoire-card repertoire-work-card"><div class="repertoire-card__heading"><div><span class="repertoire-eyebrow">PEDAGÓGICA · MIS OBRAS</span><h2>${work.titulo}</h2><p>${work.compositor || 'Compositor pendiente'}${work.arreglista ? ` · ${work.arreglista}` : ''}</p></div></div><div class="repertoire-card__meta"><span>${versions.length ? `${versions.length} versión${versions.length === 1 ? '' : 'es'}` : 'Versión pendiente'}</span><span>Creada por ti</span></div></article>`
+  const montageId = work.montaje_id || work.montage_id || ''
+  return `<article class="repertoire-card repertoire-work-card ${montageId ? 'is-openable' : ''}" ${montageId ? `data-montaje-id="${html(montageId)}" tabindex="0"` : ''}><div class="repertoire-card__heading"><div><span class="repertoire-eyebrow">PEDAGÓGICA · MIS OBRAS</span><h2>${html(work.titulo || 'Obra sin título')}</h2><p>${html(work.compositor || 'Compositor pendiente')}${work.arreglista ? ` · ${html(work.arreglista)}` : ''}</p></div>${onMenu ? `<button type="button" class="pm-icon-button repertoire-work-menu" aria-label="Acciones de la obra" data-work-id="${html(work.id)}" data-montaje-id="${html(montageId)}">⋮</button>` : ''}</div><div class="repertoire-card__meta"><span>${versions.length ? `${versions.length} versión${versions.length === 1 ? '' : 'es'}` : 'Versión pendiente'}</span><span>Creada por ti</span><span>Filas: ${html(work.filas_count ?? '—')}</span><span>Fecha: ${html(work.created_at || '—')}</span></div>${montageId ? '<span class="repertoire-card__hint">Abrir detalle →</span>' : ''}</article>`
 }
 
-function repertoireHomeMarkup({ montajes, obras, teachingScopes = [], canCreate = false, canManageOfficial = false, action = null }) {
-  const scopeOptions = teachingScopes.length ? teachingScopes.map((scope) => `<label class="repertoire-scope-option"><input type="checkbox" name="scope" value="${scope.id}"><span><strong>${scope.name}</strong><small>${scope.instrument || 'Instrumento pendiente'} · ${(scope.students || []).length} alumnos activos</small></span></label>`).join('') : '<p class="repertoire-form-hint">No hay clases activas asignadas a tu cuenta.</p>'
-  const form = action === 'new-work' ? `<form class="repertoire-action-form repertoire-work-form" data-action="new-work"><h2>Nueva obra pedagógica</h2><fieldset><legend>1. Datos de obra</legend><input name="title" class="form-control" placeholder="Título" required><input name="composer" class="form-control" placeholder="Compositor"><input name="arranger" class="form-control" placeholder="Arreglista (opcional)"><input name="version" class="form-control" placeholder="Versión / edición (opcional)"><textarea name="description" class="form-control" placeholder="Notas pedagógicas (opcional)"></textarea></fieldset><fieldset><legend>2. Estructura canónica</legend><label>Número de compases<input name="measures" class="form-control" type="number" min="1" required placeholder="Ej. 120"></label></fieldset><fieldset><legend>3. ¿Con qué grupos trabajarás esta obra?</legend><div class="repertoire-scope-options">${scopeOptions}</div></fieldset><button class="btn btn-primary" type="submit">Crear preparación</button><button class="btn btn-link repertoire-cancel-home" type="button">Cancelar</button></form>` : ''
-  const official = montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No hay repertorio oficial asignado a tu alcance.</div>'
-  const own = obras.length ? obras.map(workMarkup).join('') : '<div class="repertoire-empty">Tu repertorio está vacío.<br>Agrega una obra para comenzar a registrar el trabajo de tus alumnos.</div>'
-  const preparation = montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes preparaciones activas todavía.</div>'
-  return `<section class="repertoire-view" aria-labelledby="repertoire-home-title"><header class="repertoire-home__header"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">REPERTORIO</span><h1 id="repertoire-home-title">Tu espacio de trabajo musical</h1><p>Obras pedagógicas y repertorio oficial en un solo lugar.</p></div><div class="repertoire-home__actions">${canCreate ? '<button type="button" class="btn btn-primary repertoire-new-work">+ Nueva obra</button>' : ''}${canManageOfficial ? '<button type="button" class="btn btn-outline-secondary repertoire-manage-official">Gestionar repertorio oficial</button>' : ''}</div></header>${form}<section class="repertoire-home__section"><h2>Mis obras</h2>${own}</section><section class="repertoire-home__section"><h2>Repertorio oficial</h2>${official}</section><section class="repertoire-home__section"><h2>En preparación</h2>${preparation}</section></section>`
+export function repertoireHomeMarkup({ montajes = [], obras = [], teachingScopes = [], canCreate = false, activeTab = 'mine', search = '', filters = {}, filterOptions = {}, loading = false, error = null, action = null }) {
+  const query = html(search)
+  const tabOptions = [{ value: 'mine', label: `Mis obras${obras.length ? ` (${obras.length})` : ''}` }, { value: 'official', label: `Oficiales${montajes.length ? ` (${montajes.length})` : ''}` }]
+  const source = activeTab === 'mine' ? obras : montajes
+  const matches = source.filter((item) => { const obra = item.obra || item; const haystack = `${obra.titulo || ''} ${obra.compositor || ''}`.toLocaleLowerCase(); return haystack.includes(search.toLocaleLowerCase()) && (!filters.status || item.estado === filters.status) })
+  const scopeOptions = teachingScopes.length ? teachingScopes.map((scope) => `<label class="repertoire-scope-option"><input type="checkbox" name="scope" value="${html(scope.id)}"><span><strong>${html(scope.name)}</strong><small>${html(scope.instrument || 'Instrumento pendiente')} · ${(scope.students || []).length} alumnos activos</small></span></label>`).join('') : '<p class="repertoire-form-hint">No hay clases activas asignadas a tu cuenta.</p>'
+  const form = action === 'new-work' ? `<form class="repertoire-action-form repertoire-work-form" data-action="new-work"><h2>Nueva obra pedagógica</h2><fieldset><legend>Datos de obra</legend><input name="title" class="form-control" placeholder="Título" required><input name="composer" class="form-control" placeholder="Compositor"><input name="arranger" class="form-control" placeholder="Arreglista (opcional)"><input name="version" class="form-control" placeholder="Versión / edición (opcional)"><textarea name="description" class="form-control" placeholder="Notas pedagógicas (opcional)"></textarea></fieldset><fieldset><legend>Estructura canónica</legend><label>Número de compases<input name="measures" class="form-control" type="number" min="1" required placeholder="Ej. 120"></label></fieldset><fieldset><legend>Grupos de trabajo</legend><div class="repertoire-scope-options">${scopeOptions}</div></fieldset><button class="btn btn-primary" type="submit">Crear preparación</button><button class="btn btn-link repertoire-cancel-home" type="button">Cancelar</button></form>` : ''
+  const cards = loading ? renderSkeleton({ lines: 4, className: 'repertoire-home__skeleton' }) : error ? `<div class="repertoire-error" role="alert"><p>No se pudo cargar el repertorio.</p><button type="button" class="btn btn-primary repertoire-retry">Reintentar</button></div>` : matches.length ? matches.map((item) => activeTab === 'mine' ? workMarkup(item, { onMenu: true }) : cardMarkup(item, { onMenu: true })).join('') : renderEmptyState({ title: search || filters.status ? 'No hay coincidencias' : activeTab === 'mine' ? 'Tu repertorio está vacío' : 'No hay obras oficiales', message: search || filters.status ? 'Prueba con otra búsqueda o filtro.' : 'Cuando existan datos asignados aparecerán aquí.', action: canCreate && activeTab === 'mine' ? '<button type="button" class="pm-button pm-button--primary repertoire-new-work">Crear obra</button>' : '' })
+  const statuses = filterOptions.statuses?.map((status) => `<option value="${html(status)}" ${filters.status === status ? 'selected' : ''}>${html(status.replaceAll('_', ' '))}</option>`).join('') || ''
+  const filtersSheet = renderBottomSheet({ id: 'repertoire-filters', title: 'Filtros', open: Boolean(filters.open), body: `<label class="repertoire-filter-field">Estado<select class="form-select repertoire-filter-status"><option value="">Todos</option>${statuses}</select></label>`, actions: '<button type="button" class="pm-button pm-button--primary repertoire-apply-filters">Aplicar filtros</button>' })
+  const menu = renderContextMenu({ id: 'repertoire-card-menu', items: [{ id: 'edit', label: 'Editar' }, { id: 'delete', label: 'Eliminar', danger: true, disabled: true }] })
+  const dialog = renderConfirmDialog({ id: 'repertoire-delete-dialog', title: 'Eliminar obra', message: 'No existe una operación segura de borrado para este adaptador. La acción permanecerá bloqueada.', confirmLabel: 'Eliminar', danger: true })
+  return `<section class="repertoire-view repertoire-home" aria-labelledby="repertoire-home-title"><header class="repertoire-home__header"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">PORTAL MAESTROS</span><h1 id="repertoire-home-title">Repertorio</h1><p>Mis obras y repertorio oficial asignado</p></div><button type="button" class="btn btn-primary repertoire-new-work" ${canCreate ? '' : 'disabled'}>+ Crear obra</button></header>${form}${renderSegmentedControl({ id: 'repertoire-home-tabs', label: 'Tipo de repertorio', value: activeTab, options: tabOptions, className: 'repertoire-home-tabs' })}<div class="repertoire-home__toolbar"><label class="repertoire-search"><span class="visually-hidden">Buscar obras</span><input class="form-control repertoire-search-input" value="${query}" placeholder="Buscar por título o compositor" type="search"></label><button type="button" class="pm-button pm-button--secondary repertoire-open-filters" aria-expanded="${Boolean(filters.open)}">☷ Filtros</button></div>${filtersSheet}<section class="repertoire-home__section" aria-live="polite"><div class="repertoire-section-heading"><h2>${activeTab === 'mine' ? 'Mis obras' : 'Obras oficiales'}</h2><span>${matches.length} resultado${matches.length === 1 ? '' : 's'}</span></div><div class="repertoire-card-list">${cards}</div></section>${menu}${dialog}</section>`
 }
 
 function gridMarkup(montaje, selected, activeStudent, activeStudentId, groups, passages, measuresPerRow) {
@@ -105,8 +116,10 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     container.innerHTML = `<div class="repertoire-error" role="alert">${message}</div>`
     return { mode: 'unavailable' }
   }
-  let montajes
-  try { montajes = await adapter.listMontajes() } catch { container.innerHTML = '<div class="repertoire-error" role="alert">No se pudo cargar el módulo de Repertorio.</div>'; return { mode: 'unavailable' } }
+  let montajes = []
+  let homeLoading = true
+  let homeError = null
+  try { montajes = await adapter.listMontajes() } catch (error) { homeError = error }
   let active = null
   let obras = []
   try { obras = await adapter.listObras?.() || [] } catch { obras = [] }
@@ -132,7 +145,6 @@ export async function renderRepertoireView(container, { adapter } = {}) {
   let priorityCandidates = []
   const canEditApplicability = adapter.canEditApplicability === true
   const canCreate = typeof adapter.createObra === 'function' || typeof adapter.createPedagogicalWork === 'function'
-  const canManageOfficial = Boolean(adapter.canManageOfficial)
   const savedLabel = adapter.mode === 'real' ? 'Guardado en Supabase' : 'Guardado local (Demo)'
   const setActiveFila = (filaId) => {
     if (!active) return
@@ -147,36 +159,50 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     })
   }
 
+  let unbindHomeOverlay = () => {}
   const render = () => {
-    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action, linkedScope, measuresPerRow, historyEvents, trajectoryVisible, trajectoryTargets, adapter.canEditTargets === true, priorityVisible, priorityCandidates, adapter.mode) : repertoireHomeMarkup({ montajes, obras, teachingScopes, canCreate, canManageOfficial, action: homeAction })
+    unbindHomeOverlay()
+    unbindHomeOverlay = () => {}
+    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action, linkedScope, measuresPerRow, historyEvents, trajectoryVisible, trajectoryTargets, adapter.canEditTargets === true, priorityVisible, priorityCandidates, adapter.mode) : repertoireHomeMarkup({ montajes, obras, teachingScopes, canCreate, activeTab: homeTab, search: homeSearch, filters: homeFilters, filterOptions: homeFilterOptions, loading: homeLoading, error: homeTab === 'official' ? homeError : null, action: homeAction })
     if (active) bindMap()
     else bindHome()
   }
 
+  let homeTab = obras.length ? 'mine' : montajes.length ? 'official' : 'mine'
+  let homeSearch = ''
+  const homeFilters = { status: '', open: false }
+  let homeMenuId = null
   let homeAction = null
+  const homeFilterOptions = { statuses: [...new Set(montajes.map((item) => item.estado).filter(Boolean))] }
+  homeLoading = false
   const bindHome = () => {
-    container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); setActiveFila(active.filas?.[0]?.id); measuresPerRow = readMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }); activeStudentId = null; render() }))
-    container.querySelector('.repertoire-new-work')?.addEventListener('click', () => { homeAction = 'new-work'; render() })
+    const openMontaje = (id) => { const item = montajes.find((entry) => entry.id === id) || obras.find((entry) => (entry.montaje_id || entry.montage_id) === id); if (!item) return; active = item.montaje || item; setActiveFila(active.filas?.[0]?.id); measuresPerRow = readMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }); activeStudentId = null; render() }
+    container.querySelectorAll('.pm-segment').forEach((button) => button.addEventListener('click', () => { homeTab = button.dataset.value; render() }))
+    container.querySelector('.repertoire-search-input')?.addEventListener('change', (event) => { homeSearch = event.target.value; render() })
+    container.querySelector('.repertoire-open-filters')?.addEventListener('click', () => { homeFilters.open = true; render() })
+    container.querySelector('.repertoire-apply-filters')?.addEventListener('click', () => { homeFilters.status = container.querySelector('.repertoire-filter-status')?.value || ''; homeFilters.open = false; render() })
+    container.querySelectorAll('[data-sheet-close="repertoire-filters"]').forEach((button) => button.addEventListener('click', () => { homeFilters.open = false; render() }))
+    container.querySelector('.repertoire-retry')?.addEventListener('click', async () => { homeLoading = true; homeError = null; render(); try { montajes = await adapter.listMontajes(); homeFilterOptions.statuses = [...new Set(montajes.map((item) => item.estado).filter(Boolean))] } catch (error) { homeError = error } finally { homeLoading = false; render() } })
+    container.querySelectorAll('.repertoire-card-menu, .repertoire-work-menu').forEach((button) => button.addEventListener('click', (event) => { event.stopPropagation(); homeMenuId = button.dataset.montajeId || button.dataset.workId || button.closest('[data-montaje-id]')?.dataset.montajeId || null; const menu = container.querySelector('#repertoire-card-menu'); if (menu) { menu.hidden = false; menu.style.insetInlineEnd = '1rem'; menu.style.insetBlockStart = `${event.clientY || 80}px` } }))
+    container.querySelectorAll('.repertoire-card[data-montaje-id]').forEach((card) => {
+      const navigate = (event) => { if (event.target.closest('button')) return; openMontaje(card.dataset.montajeId) }
+      card.addEventListener('click', navigate)
+      card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(event) } })
+    })
+    container.querySelectorAll('.repertoire-new-work').forEach((button) => button.addEventListener('click', () => { if (!canCreate) return; homeAction = 'new-work'; render() }))
     container.querySelector('.repertoire-cancel-home')?.addEventListener('click', () => { homeAction = null; render() })
     container.querySelector('.repertoire-work-form')?.addEventListener('submit', async (event) => {
       event.preventDefault()
       const form = new FormData(event.currentTarget)
       const scopeIds = form.getAll('scope')
-      if (typeof adapter.createPedagogicalWork === 'function') {
-        const created = await adapter.createPedagogicalWork({ title: String(form.get('title') || '').trim(), composer: String(form.get('composer') || '').trim(), arranger: String(form.get('arranger') || '').trim(), version: String(form.get('version') || '').trim(), measures: Number(form.get('measures')), notes: String(form.get('description') || '').trim(), scopeIds, scopes: teachingScopes.filter((scope) => scopeIds.includes(scope.id)) })
-        obras = await adapter.listObras?.() || obras
-        homeAction = null
-        montajes = await adapter.listMontajes?.() || montajes
-        if (created?.montage_id) { active = montajes.find((item) => item.id === created.montage_id) || null; setActiveFila(active?.filas?.[0]?.id) }
-        render()
-        return
-      }
-      const obra = await adapter.createObra({ titulo: String(form.get('title') || '').trim(), compositor: String(form.get('composer') || '').trim() || null, arreglista: String(form.get('arranger') || '').trim() || null, resena: String(form.get('description') || '').trim() || null })
-      if (String(form.get('version') || '').trim()) await adapter.createVersion({ obra_id: obra.id, nombre: String(form.get('version')).trim(), numero_compases: form.get('measures') ? Number(form.get('measures')) : null })
-      obras = await adapter.listObras?.() || [...obras, obra]
+      if (typeof adapter.createPedagogicalWork === 'function') await adapter.createPedagogicalWork({ title: String(form.get('title') || '').trim(), composer: String(form.get('composer') || '').trim(), arranger: String(form.get('arranger') || '').trim(), version: String(form.get('version') || '').trim(), measures: Number(form.get('measures')), notes: String(form.get('description') || '').trim(), scopeIds, scopes: teachingScopes.filter((scope) => scopeIds.includes(scope.id)) })
+      else { const obra = await adapter.createObra({ titulo: String(form.get('title') || '').trim(), compositor: String(form.get('composer') || '').trim() || null, arreglista: String(form.get('arranger') || '').trim() || null, resena: String(form.get('description') || '').trim() || null }); if (String(form.get('version') || '').trim()) await adapter.createVersion({ obra_id: obra.id, nombre: String(form.get('version')).trim(), numero_compases: form.get('measures') ? Number(form.get('measures')) : null }) }
+      obras = await adapter.listObras?.() || obras
+      montajes = await adapter.listMontajes?.() || montajes
       homeAction = null
       render()
     })
+    unbindHomeOverlay = bindRepertoireOverlay(container, { onAction: (actionId) => { if (actionId === 'edit') container.dispatchEvent(new CustomEvent('repertoire:edit-work-requested', { detail: { id: homeMenuId }, bubbles: true })) }, onClose: () => { homeMenuId = null } })
   }
 
   const bindMap = () => {

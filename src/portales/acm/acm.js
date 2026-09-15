@@ -59,7 +59,7 @@ const navGroups = [
     label: 'Cartelera',
     icon: 'bi-tv',
     items: [
-      { id: 'signage-pantalla', label: 'Pantalla del vestíbulo', icon: 'bi-tv' },
+      { id: 'cartelera', label: 'Pantalla del vestíbulo', icon: 'bi-tv' },
     ],
   },
 ]

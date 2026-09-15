@@ -76,36 +76,25 @@ const SNAP_THRESHOLD = 8 // px en coordenadas canvas
 
 const cvUid = () => 'e' + Math.random().toString(36).slice(2, 8)
 
-// ─── QR Code Generator (sin librerías) ───────────────────────────────────────
-// Implementación mínima de QR versión 1 (21×21) sólo ASCII / UTF-8 corto.
-// Para URLs largas usamos la API pública de QR: api.qrserver.com
-function buildQrDataUrl(text) {
-  return new Promise((resolve) => {
-    const size = 200
-    const canvas = document.createElement('canvas')
-    canvas.width = size
-    canvas.height = size
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
-    const encoded = encodeURIComponent(text)
-    img.crossOrigin = 'anonymous'
-    img.onload = () => { ctx.drawImage(img, 0, 0, size, size); resolve(canvas.toDataURL('image/png')) }
-    img.onerror = () => resolve(null)
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&color=ffffff&bgcolor=0b0e17`
+// ─── QR Code Generator (Local / Offline — 100% CSP Compliant) ───────────────
+async function buildQrDataUrl(text) {
+  const mod = await import('qrcode')
+  const QRCode = mod.default || mod
+  return QRCode.toDataURL(text, {
+    width: 320,
+    margin: 2,
+    color: {
+      dark: '#000000',
+      light: '#ffffff',
+    },
+    errorCorrectionLevel: 'M',
   })
 }
 
-// ─── html2canvas polyfill simple (DOM→PNG) ───────────────────────────────────
-// Carga html2canvas dinámicamente desde CDN si no está disponible.
+// ─── html2canvas (Local bundle — 100% CSP Compliant) ────────────────────────
 async function ensureHtml2canvas() {
-  if (window.html2canvas) return window.html2canvas
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script')
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
-    s.onload = () => resolve(window.html2canvas)
-    s.onerror = () => reject(new Error('No se pudo cargar html2canvas'))
-    document.head.appendChild(s)
-  })
+  const mod = await import('html2canvas')
+  return mod.default || mod
 }
 
 // ─── View ─────────────────────────────────────────────────────────────────────
@@ -529,7 +518,7 @@ export async function renderSignageSlideEditorView(container, params = {}) {
     // ── Imagen ──────────────────────────────────────────────────────────────
     function applyImageNode(wrapper, el) {
       const img = document.createElement('img')
-      img.src = el.storage_path ? api.urlPublica(el.storage_path) : ''
+      img.src = el.storage_path ? api.urlPublica(el.storage_path) : (el.dataUrl || '')
       img.draggable = false
       img.style.cssText = [
         'width:100%', 'height:100%', 'pointer-events:none', 'display:block',
@@ -728,6 +717,8 @@ export async function renderSignageSlideEditorView(container, params = {}) {
       } else if (el.tipo === 'imagen') {
         const img = n.querySelector('img')
         if (img) {
+          const src = el.storage_path ? api.urlPublica(el.storage_path) : (el.dataUrl || '')
+          if (src && img.getAttribute('src') !== src) img.src = src
           img.style.objectFit    = el.ajuste === 'cover' ? 'cover' : 'contain'
           img.style.borderRadius = (el.borderRadius || 0) + 'px'
           img.style.border       = el.bordeAncho ? `${el.bordeAncho}px ${el.bordeStyle || 'solid'} ${el.bordeColor || '#fff'}` : 'none'
@@ -1701,19 +1692,40 @@ export async function renderSignageSlideEditorView(container, params = {}) {
       if (!url) return
       pushState()
       const toast = AppToast.progress('Generando QR…')
-      const dataUrl = await buildQrDataUrl(url)
-      if (!dataUrl) { toast.error('No se pudo generar el QR. Verifica tu conexión.'); return }
-      // Subir el dataUrl como archivo
       try {
-        const blob = await (await fetch(dataUrl)).blob()
-        const file = new File([blob], `qr-${Date.now()}.png`, { type: 'image/png' })
-        const { path } = await api.subirArchivo(file)
-        const el = { id:cvUid(), tipo:'imagen', x:490, y:210, w:300, h:300, storage_path:path, ajuste:'contain', borderRadius:12, sombra:true }
+        const dataUrl = await buildQrDataUrl(url)
+        if (!dataUrl) throw new Error('No se pudo generar el código QR.')
+
+        let storagePath = null
+        try {
+          const blob = await (await fetch(dataUrl)).blob()
+          const file = new File([blob], `qr-${Date.now()}.png`, { type: 'image/png' })
+          const res = await api.subirArchivo(file)
+          storagePath = res.path
+        } catch (uploadErr) {
+          console.warn('Subida a storage opcional, usando dataUrl local:', uploadErr)
+        }
+
+        const el = {
+          id: cvUid(),
+          tipo: 'imagen',
+          x: 490,
+          y: 210,
+          w: 300,
+          h: 300,
+          storage_path: storagePath,
+          dataUrl: storagePath ? null : dataUrl,
+          ajuste: 'contain',
+          borderRadius: 12,
+          sombra: true,
+        }
         cv.elementos.push(el)
         renderArt()
         selectElement(el.id)
         toast.success('QR insertado en el lienzo.')
-      } catch (err) { toast.error(err.message) }
+      } catch (err) {
+        toast.error(err.message || 'Error al generar el QR.')
+      }
     })
 
     // Countdown

@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { mutateOne } from '../../../lib/supabaseMutation.js'
 
 export async function obtenerSesiones(filtros = {}) {
   const { soloConContenido, ...rest } = filtros
@@ -122,17 +123,16 @@ export async function actualizarSesion(id, actualizaciones) {
     datosActualizacion.maestro_auxiliar_id = actualizaciones.maestro_auxiliar_id
   }
 
-  const { data, error } = await supabase
-    .from('sesiones_clase')
-    .update(datosActualizacion)
-    .eq('id', id)
-    .select()
-
-  if (error) {
+  try {
+    return await mutateOne(
+      supabase.from('sesiones_clase').update(datosActualizacion).eq('id', id),
+      { action: 'actualizar sesión de clase' },
+    )
+  } catch (error) {
+    if (error.code === 'NO_ROWS_AFFECTED') throw error
     console.error('Error actualizando sesión:', error.message)
     throw new Error('No se pudo actualizar la sesión')
   }
-  return data[0]
 }
 
 export async function eliminarSesion(id) {

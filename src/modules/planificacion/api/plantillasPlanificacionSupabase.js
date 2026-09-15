@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { mutateOne } from '../../../lib/supabaseMutation.js'
 
 /**
  * PlantillasPlanificacionSupabase — Adaptador de Supabase para plantillas_planificacion.
@@ -78,18 +79,16 @@ export async function crearPlantillaPlanificacion(plantilla) {
  * @returns {Promise<object>}
  */
 export async function actualizarPlantillaPlanificacion(id, cambios) {
-  const { data, error } = await supabase
-    .from('plantillas_planificacion')
-    .update(cambios)
-    .eq('id', id)
-    .select()
-
-  if (error) {
+  try {
+    return await mutateOne(
+      supabase.from('plantillas_planificacion').update(cambios).eq('id', id),
+      { action: 'actualizar plantilla de planificación' },
+    )
+  } catch (error) {
+    if (error.code === 'NO_ROWS_AFFECTED') throw error
     console.error('Error actualizando plantilla de planificación:', error.message)
     throw new Error('No se pudo actualizar la plantilla de planificación')
   }
-
-  return data[0]
 }
 
 /**

@@ -172,6 +172,7 @@ import { cleanupPushService } from './portal-maestros/services/pushService.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
 import { AppToast } from './shared/components/AppToast.js'
+import { isRepertoirePilotUser } from './modules/repertoire/api/repertoirePilotAccess.js'
 
 // Shell, rutas y eventos — módulos extraídos
 import { renderShell, setActiveTab, hideShell } from './portal-maestros/shell/portalShell.js'
@@ -213,15 +214,17 @@ const _viewRenderQueue = createViewRenderQueue()
 // ============================================
 // TAB DEFINITIONS — solo vistas de maestro
 // ============================================
-function buildTabs(permisos) {
+function buildTabs(permisos, maestroId = null) {
   const tabs = [
     { id: 'fechas', label: 'Fechas', icon: 'bi-calendar3' },
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
     { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
-    { id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' },
     { id: 'seccional', label: 'Seccional', icon: 'bi-diagram-3' },
   ]
+  if (isRepertoirePilotUser(maestroId)) {
+    tabs.splice(4, 0, { id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' })
+  }
   if (permisos?.puede_inscribir_clases) {
     tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
   }
@@ -422,7 +425,7 @@ function _buildShell(app, maestro, permisos) {
   renderShell(
     app,
     maestro,
-    buildTabs(_permisos),
+    buildTabs(_permisos, maestro?.id),
     (route, params) => router.navigate(route, params),
     _updateSyncIndicator,
   )

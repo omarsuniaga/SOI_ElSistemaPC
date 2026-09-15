@@ -11,6 +11,7 @@
  */
 
 import { importarConReintento } from '../../shared/utils/dynamicImport.js'
+import { isRepertoirePilotUser } from '../../modules/repertoire/api/repertoirePilotAccess.js'
 
 const VIEW_LOADERS = {
   login:             () => import('../views/loginView.js'),
@@ -173,6 +174,7 @@ export function initViewContainers() {
 }
 
 const ROUTE_PERMISSION_GUARDS = {
+  repertorio: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
   'gestionar-clases': (permisos) => Boolean(permisos?.puede_inscribir_clases),
   'crear-clase': (permisos) => Boolean(permisos?.puede_crear_clases),
   asistencia: (permisos) => (permisos ? permisos.puede_asistir !== false : false),
@@ -192,7 +194,7 @@ export async function renderViewContent(route, container, params, urlParams, con
     return null
   }
 
-  if (Object.hasOwn(ROUTE_PERMISSION_GUARDS, route) && !ROUTE_PERMISSION_GUARDS[route](permisos)) {
+  if (Object.hasOwn(ROUTE_PERMISSION_GUARDS, route) && !ROUTE_PERMISSION_GUARDS[route](permisos, context)) {
     router.navigate('hoy')
     return
   }

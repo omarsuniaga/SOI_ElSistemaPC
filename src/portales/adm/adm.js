@@ -18,10 +18,13 @@ const navGroups = [
     icon: 'bi-people',
     items: [
       { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
-      { id: 'ficha-360', label: 'Ficha 360° Alumnos', icon: 'bi-stars' },
+      // Oculto a pedido: 'Ficha 360° Alumnos' y 'Calendario Citas' salen del menú.
+      // No se borran: las rutas 'ficha-360' y 'postulados-calendario' siguen
+      // registradas en alumnos.router.js y son accesibles por URL o deep-link.
+      // { id: 'ficha-360', label: 'Ficha 360° Alumnos', icon: 'bi-stars' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
-      { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
+      // { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
     ],
   },
   {

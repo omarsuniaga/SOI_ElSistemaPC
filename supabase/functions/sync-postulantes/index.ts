@@ -198,6 +198,39 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   })
 }
 
+/**
+ * Mensaje de bienvenida enviado solo a postulantes NUEVOS (no re-enviado en
+ * re-sincronizaciones posteriores del mismo lead). Info tomada de ADM-A02
+ * (checklist de documentos + montos vigentes).
+ */
+function buildWelcomeMessage(postulante: Record<string, unknown>): string {
+  const nombre = String(postulante.nombre_completo ?? '').split(' ')[0] || 'familia'
+  return `¡Hola! 👋 Somos El Sistema Punta Cana 🎶.\n\nRecibimos la postulación de *${postulante.nombre_completo}*. ¡Gracias por su interés!\n\n📋 *Documentos que deben traer el día de la cita:*\n1. Copia del Acta de Nacimiento\n2. Copia de la Cédula del Representante\n3. 1 Foto tamaño 2x2\n4. Ficha Médica (MINERD) completada y firmada\n5. Autorización de uso de imagen firmada\n\n💰 *Inversión:* Inscripción única $1,000 DOP + aporte mensual de sostenibilidad $600 DOP.\n\nEn breve nos pondremos en contacto para coordinar una fecha y hora de cita presencial. Si querés proponer un día que te convenga, respondé este mensaje.`
+}
+
+/**
+ * Normaliza a formato E.164 sin '+' (lo que espera hermes_whatsapp_queue.jid).
+ * Los números capturados en el form vienen sin código de país (10 dígitos,
+ * área 809/829/849 de RD) — sin el prefijo '1' el dispatcher los manda tal
+ * cual y WhatsApp no resuelve el JID. Si ya viene con código de país
+ * (11 dígitos empezando en 1), se deja como está.
+ */
+function normalizePhone(raw: string): string {
+  const digits = String(raw ?? '').replace(/\D/g, '')
+  if (digits.length === 10) return `1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return digits
+  return digits
+}
+
+function firstPhone(postulante: Record<string, unknown>): string {
+  const candidates = [postulante.madre_tlf_whatsapp, postulante.padre_tlf_whatsapp, postulante.telefono_alumno]
+  for (const c of candidates) {
+    const normalized = normalizePhone(String(c ?? ''))
+    if (normalized.length >= 11) return normalized
+  }
+  return ''
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: CORS_HEADERS })
@@ -222,33 +255,84 @@ Deno.serve(async (req) => {
     const rows = parseCSV(text)
     console.log(`[sync-postulantes] Parsed ${rows.length} rows from CSV`)
 
-    let upserted = 0
-    let errors = 0
+    // Snapshot de claves existentes ANTES de sincronizar, para distinguir
+    // altas nuevas de re-sincronizaciones de un lead ya conocido.
+    const { data: existingRows, error: existingError } = await supabase
+      .from('postulantes')
+      .select('correo, nombre_completo')
+    if (existingError) throw new Error(`No se pudo leer postulantes existentes: ${existingError.message}`)
+    const existingKeys = new Set((existingRows ?? []).map((r) => `${r.correo}|||${r.nombre_completo}`))
 
+    // Mapear y deduplicar dentro del propio CSV (una fila por clave; se queda
+    // con la última ocurrencia, igual que hacía el upsert fila-a-fila antes).
+    // Postgres rechaza un upsert por lotes que repita la misma clave de
+    // conflicto dos veces en el mismo statement.
+    const byKey = new Map<string, ReturnType<typeof mapRowToPostulante>>()
     for (const row of rows) {
       const postulante = mapRowToPostulante(row)
       if (!postulante.nombre_completo) continue
+      byKey.set(`${postulante.correo}|||${postulante.nombre_completo}`, postulante)
+    }
+    const postulantesToUpsert = Array.from(byKey.values())
 
-      const { error } = await supabase.from('postulantes').upsert(postulante, {
-        onConflict: 'correo,nombre_completo',
-        ignoreDuplicates: false,
-      })
+    let upserted = 0
+    let errors = 0
+    let newLeads = 0
+    let whatsappQueued = 0
 
-      if (error) {
-        console.error('[sync-postulantes] Upsert error:', error.message)
-        errors++
+    // Una sola llamada para todo el lote en vez de un round-trip por fila —
+    // con 400+ postulantes el loop secuencial se acercaba al timeout de la
+    // Edge Function.
+    if (postulantesToUpsert.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('postulantes')
+        .upsert(postulantesToUpsert, { onConflict: 'correo,nombre_completo', ignoreDuplicates: false })
+
+      if (upsertError) {
+        console.error('[sync-postulantes] Upsert por lote falló:', upsertError.message)
+        errors = postulantesToUpsert.length
       } else {
-        upserted++
+        upserted = postulantesToUpsert.length
+
+        const nuevos = postulantesToUpsert.filter(
+          (p) => !existingKeys.has(`${p.correo}|||${p.nombre_completo}`),
+        )
+        newLeads = nuevos.length
+
+        const queueRows = nuevos
+          .map((p) => ({ postulante: p, phone: firstPhone(p) }))
+          .filter(({ phone }) => {
+            if (!phone) console.warn(`[sync-postulantes] Postulante nuevo sin teléfono usable`)
+            return phone
+          })
+          .map(({ postulante, phone }) => ({
+            jid: `${phone}@s.whatsapp.net`,
+            mensaje: buildWelcomeMessage(postulante),
+            estado: 'pendiente',
+          }))
+
+        if (queueRows.length > 0) {
+          const { error: queueError } = await supabase.from('hermes_whatsapp_queue').insert(queueRows)
+          if (queueError) {
+            console.error('[sync-postulantes] Error encolando WhatsApp en lote:', queueError.message)
+          } else {
+            whatsappQueued = queueRows.length
+          }
+        }
       }
     }
 
-    console.log(`[sync-postulantes] Done. ${upserted} upserted, ${errors} errors`)
+    console.log(
+      `[sync-postulantes] Done. ${upserted} upserted, ${errors} errors, ${newLeads} nuevos, ${whatsappQueued} WhatsApp encolados`,
+    )
 
     return jsonResponse({
       status: 'success',
       total_rows: rows.length,
       upserted,
       errors,
+      new_leads: newLeads,
+      whatsapp_queued: whatsappQueued,
       timestamp: new Date().toISOString(),
     })
   } catch (err) {

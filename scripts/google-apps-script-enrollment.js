@@ -23,13 +23,16 @@
  * ============================================================================
  */
 
-// Configuration loaded from Script Properties
+// Configuration. SUPABASE_SERVICE_ROLE_KEY and HMAC_SECRET must be set as
+// Script Properties (Project Settings -> Script Properties) — never commit
+// secrets into this file. The webhook URL is pre-filled since it's not
+// sensitive (it's protected by the HMAC signature, not by secrecy).
 function getConfig() {
   var props = PropertiesService.getScriptProperties();
   return {
-    supabaseUrl: props.getProperty('SUPABASE_URL'),
+    supabaseUrl: props.getProperty('SUPABASE_URL') || 'https://zmhmdvmyeyswunurcyow.supabase.co',
     supabaseKey: props.getProperty('SUPABASE_SERVICE_ROLE_KEY'),
-    hermesWebhookUrl: props.getProperty('HERMES_WEBHOOK_URL'),
+    hermesWebhookUrl: props.getProperty('HERMES_WEBHOOK_URL') || 'https://zmhmdvmyeyswunurcyow.supabase.co/functions/v1/enrollment-scheduler?action=webhook',
     hmacSecret: props.getProperty('HMAC_SECRET') || 'default-secret-change-me'
   };
 }

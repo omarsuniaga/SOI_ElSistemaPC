@@ -231,7 +231,7 @@ export function gestionarClasesModal() {
     container.querySelectorAll('.btn-eliminar').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const claseId = btn.getAttribute('data-clase-id')
-        if (confirm('¿Estás seguro de que quieres eliminar esta clase?')) {
+        if (confirm('¿Está seguro de que desea eliminar esta clase?')) {
           await deleteClase(claseId)
         }
       })

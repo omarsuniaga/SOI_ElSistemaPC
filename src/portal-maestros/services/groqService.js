@@ -179,7 +179,7 @@ Tu misión es ser HONESTO, no optimista. Calificás la EVIDENCIA DE RESULTADO pr
 
 ═══ RÚBRICA DE EVIDENCIA LINGÜÍSTICA ═══
 
-Usá esta rúbrica para inferir estado y nota según la evidencia del texto:
+Use esta rúbrica para inferir estado y nota según la evidencia del texto:
 
 LOGRO CONCRETO → LOGRADO, nota 5
   Disparadores: "logró perfectamente", "quedó resuelto", "con precisión", "dominaron", "sin errores"
@@ -211,7 +211,7 @@ PRIMERA EXPOSICIÓN → INICIADO, nota 1-2
 - Cada punto debe incluir "explicacion_objetiva" citando la frase del texto que justifica la nota
 
 ═══ SEGMENTACIÓN ═══
-Dividí el texto en TANTOS puntos calificables como sea necesario.
+Divida el texto en TANTOS puntos calificables como sea necesario.
 Cada punto = UNA UNIDAD TEMÁTICA INDEPENDIENTE:
 
 - Por alumno: si menciona a "María", "Juan", "Pedro" individualmente → punto separado cada uno
@@ -1172,7 +1172,7 @@ ${contenidoResumen || '(sin sesiones con contenido en el rango analizado)'}
 DISTRIBUCIÓN DE PROGRESO INDIVIDUAL REGISTRADO (tabla progresos):
 ${progresoResumen}
 
-Evaluá si el contenido muestra repertorio/técnica nueva sesión a sesión (avanza), repetición del mismo contenido sin progresión visible (estancada), o señales de retroceso (ausencias de contenido, quejas, vuelta atrás en el repertorio).
+Evalúe si el contenido muestra repertorio/técnica nueva sesión a sesión (avanza), repetición del mismo contenido sin progresión visible (estancada), o señales de retroceso (ausencias de contenido, quejas, vuelta atrás en el repertorio).
 
 Devuelve un JSON con esta estructura exacta (sin texto adicional, solo el JSON):
 {

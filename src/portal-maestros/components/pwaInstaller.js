@@ -139,7 +139,7 @@ export const pwaInstaller = {
           id: 'profile-incomplete',
           priority: 'medium',
           icon: 'bi-person-exclamation',
-          text: 'Completa tu número de teléfono en tu perfil de usuario.',
+          text: 'Complete su número de teléfono en su perfil de usuario.',
           actionLabel: 'Completar',
           action: () => {
             if (window.router) window.router.navigate('perfil')
@@ -153,7 +153,7 @@ export const pwaInstaller = {
           id: 'pwa-install-prompt',
           priority: 'medium',
           icon: 'bi-download',
-          text: 'Instala SOI Maestros en tu pantalla de inicio para acceso rápido sin conexión.',
+          text: 'Instale SOI Maestros en su pantalla de inicio para acceso rápido sin conexión.',
           actionLabel: 'Instalar',
           action: () => {
             this.promptInstall()
@@ -344,15 +344,15 @@ export const pwaInstaller = {
             <i class="bi bi-phone"></i>
           </div>
           <h3 id="pgm-title">Instalar en iPhone / iPad</h3>
-          <p class="pgm-subtitle">Añadí SOI Maestros a tu pantalla de inicio</p>
+          <p class="pgm-subtitle">Agregue SOI Maestros a su pantalla de inicio</p>
           <ol class="pgm-steps">
             <li>
               <span class="pgm-step-num">1</span>
-              <span>Toca el botón <strong>Compartir</strong> <i class="bi bi-box-arrow-up"></i> en la barra inferior de Safari</span>
+              <span>Presione el botón <strong>Compartir</strong> <i class="bi bi-box-arrow-up"></i> en la barra inferior de Safari</span>
             </li>
             <li>
               <span class="pgm-step-num">2</span>
-              <span>Desliza hacia abajo y toca <strong>"Añadir a pantalla de inicio"</strong></span>
+              <span>Deslice hacia abajo y seleccione <strong>"Agregar a pantalla de inicio"</strong></span>
             </li>
             <li>
               <span class="pgm-step-num">3</span>

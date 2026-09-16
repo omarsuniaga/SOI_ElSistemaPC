@@ -1144,7 +1144,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
           </header>
           ${rango === 'periodo' && periodoActivo ? `
           <p style="margin:-0.5rem 1.25rem 0; font-size:0.72rem; opacity:0.85; position:relative; z-index:1;">
-            📅 Mostrando desde el inicio de "${escHTML(periodoActivo.nombre || 'período actual')}" (${new Date(periodoActivo.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}). Ampliá el rango para ver períodos anteriores.
+            📅 Mostrando desde el inicio de "${escHTML(periodoActivo.nombre || 'período actual')}" (${new Date(periodoActivo.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}). Amplíe el rango para ver períodos anteriores.
           </p>
           ` : rango === 'periodo' ? `
           <p style="margin:-0.5rem 1.25rem 0; font-size:0.72rem; opacity:0.85; position:relative; z-index:1;">

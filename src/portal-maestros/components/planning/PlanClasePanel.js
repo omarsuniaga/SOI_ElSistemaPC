@@ -95,7 +95,7 @@ export function createPlanClasePanel(container, { clase, periodoActivo = null, o
         ${apoyo.length === 0 ? '' : `
           <div>
             <div style="font-size:.78rem; font-weight:700; color:var(--pm-text-muted); margin-bottom:.4rem;">
-              Apoyo del currículo · tocá para agregar a contenidos
+              Apoyo del currículo · presione para agregar a contenidos
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:.35rem;">
               ${apoyo.map((n) => `

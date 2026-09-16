@@ -38,7 +38,7 @@ export function renderPendingApprovalView(container, { onBackToLogin } = {}) {
           </div>
 
           <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:0.75rem;">
-            Tu cuenta está pendiente de aprobación
+            Su cuenta está pendiente de aprobación
           </h2>
 
           <p style="
@@ -168,7 +168,7 @@ export function renderPendingApprovalView(container, { onBackToLogin } = {}) {
 
       if (profile.estado === 'activo') {
         // ¡Aprobado! Recargar la app para iniciar sesión correctamente
-        statusMsg.textContent = '✅ ¡Tu cuenta fue aprobada! Ingresando al portal…'
+        statusMsg.textContent = '✅ ¡Su cuenta fue aprobada! Ingresando al portal…'
         statusMsg.style.color = 'var(--pm-success, #10b981)'
 
         // Actualizar el paso activo visualmente

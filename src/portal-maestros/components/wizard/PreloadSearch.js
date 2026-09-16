@@ -217,7 +217,7 @@ export function mountPreloadSearch(container) {
         resultsDiv.innerHTML = `
           <div class="alert alert-danger py-2 mb-0">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            Error al conectar. Continuá sin búsqueda.
+            Error al conectar. Continúe sin búsqueda.
           </div>`
       }
     }

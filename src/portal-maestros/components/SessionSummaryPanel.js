@@ -218,7 +218,7 @@ export function createSessionSummaryPanel() {
             ? `
           <div class="ssp-empty">
             No hay registros de progreso para esta sesión.<br>
-            Usá el botón 🎯 <strong>Analizar</strong> en el editor para generarlos.
+            Use el botón 🎯 <strong>Analizar</strong> en el editor para generarlos.
           </div>
         `
             : `

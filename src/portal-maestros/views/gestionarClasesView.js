@@ -556,7 +556,7 @@ function _attachShellEvents(clases, permisos = {}) {
 
   document.getElementById('gcv-btn-crear-clase')?.addEventListener('click', () => {
     if (!permisos?.puede_crear_clases) {
-      AppToast.error('Tu perfil todavía no tiene habilitado el permiso para crear clases.')
+      AppToast.error('Su perfil todavía no tiene habilitado el permiso para crear clases.')
       return
     }
     if (window.router?.navigate) {
@@ -739,7 +739,7 @@ function _attachPanelEvents(claseId, clases) {
     const clase = clases.find((item) => item.id === claseId)
     if (!btn || !clase) return
 
-    const confirmMsg = `¿Estás seguro de que deseas eliminar la clase "${clase.nombre || 'esta clase'}"? Esta acción eliminará los horarios e inscripciones asociadas de forma irreversible.`
+    const confirmMsg = `¿Está seguro de que desea eliminar la clase "${clase.nombre || 'esta clase'}"? Esta acción eliminará los horarios e inscripciones asociadas de forma irreversible.`
     if (!window.confirm(confirmMsg)) return
 
     const originalHTML = btn.innerHTML
@@ -866,7 +866,7 @@ function _attachPanelEvents(claseId, clases) {
     )
     if (exactMatch) {
       const proceed = confirm(
-        `Ya existe un alumno registrado con el nombre exacto "${exactMatch.nombre_completo || exactMatch.nombre}". ¿Deseas registrar un nuevo alumno con este mismo nombre?`,
+        `Ya existe un alumno registrado con el nombre exacto "${exactMatch.nombre_completo || exactMatch.nombre}". ¿Desea registrar un nuevo alumno con este mismo nombre?`,
       )
       if (!proceed) return
     }

@@ -175,7 +175,7 @@ export async function loginMaestro(email, password, options = {}) {
     return {
       success: false,
       code: 'MAESTRO_PROFILE_NOT_LINKED',
-      error: 'Tu cuenta está activa, pero falta completar su vinculación. Contactá al administrador.',
+      error: 'Su cuenta está activa, pero falta completar su vinculación. Contacte al administrador.',
     }
   }
 

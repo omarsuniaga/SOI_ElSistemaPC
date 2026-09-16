@@ -201,7 +201,7 @@ describe('renderHoyView - con clases emergentes', () => {
     expect(container.textContent).toContain('reforzamiento')
 
     // Subtítulo de reemplazo
-    expect(container.textContent).toContain('reemplaza tus clases programadas')
+    expect(container.textContent).toContain('reemplaza sus clases programadas')
 
     // data-eme-id
     const cards = container.querySelectorAll('.pm-emergente-card')

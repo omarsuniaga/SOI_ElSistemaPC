@@ -371,7 +371,7 @@ async function _checkLocalAlerts(maestroId) {
         id:           'local_' + refId,
         tipo:         'recordatorio_clase',
         titulo:       'Clase por empezar',
-        mensaje:      `${clase?.nombre || 'Tu clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepará la planificación.`,
+        mensaje:      `${clase?.nombre || 'Su clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepare la planificación.`,
         estado:       'pendiente',
         created_at:   new Date().toISOString(),
         referencia_id: refId,

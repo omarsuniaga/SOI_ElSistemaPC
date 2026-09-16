@@ -123,7 +123,7 @@ class AusenciaModal {
         <section class="am-section">
           <p class="am-section-label"><i class="bi bi-chat-left-text-fill"></i> Motivo <span class="am-required">*</span></p>
           <textarea id="motivo" class="am-textarea" maxlength="500"
-            placeholder="Describí brevemente el motivo de tu ausencia..."
+            placeholder="Describa brevemente el motivo de su ausencia..."
           >${escHTML(this.state.motivo)}</textarea>
           <div class="am-char-count"><span id="motivo-count">${this.state.motivo.length}</span>/500</div>
         </section>

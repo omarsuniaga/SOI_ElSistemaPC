@@ -249,8 +249,8 @@ export async function renderDisponibilidadView(container, { maestroId }) {
           <div>
             <h1 class="pm-disp-title">🗓️ Disponibilidad Horaria</h1>
             <p class="pm-disp-subtitle">
-              Registra tus bloques de tiempo disponibles. El sistema usará esta información
-              para generar un horario optimizado según tus clases.
+              Registre sus bloques de tiempo disponibles. El sistema usará esta información
+              para generar un horario optimizado según sus clases.
             </p>
           </div>
           <button class="pm-disp-save-btn" id="pm-disp-save" type="button" disabled>

@@ -104,7 +104,7 @@ export function renderRegisterView(container, { onSuccess }) {
                   type="password"
                   id="pm-reg-confirm-password"
                   class="pm-login-input"
-                  placeholder="Repetí tu contraseña"
+                  placeholder="Repita su contraseña"
                   autocomplete="new-password"
                 />
                 <button

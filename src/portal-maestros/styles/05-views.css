@@ -2034,7 +2034,7 @@
 
   /* La cabecera se mantiene en dos filas (título / acciones) también en
      tablet+ — ver .pm-asist-header en 05-views.css — solo se agranda el
-     gap y el título acá. */
+     gap y el título aquí. */
   .pm-asist-header {
     gap: var(--pm-space-4);
   }

@@ -170,7 +170,7 @@ Deno.serve(async (req: Request) => {
     const cleanPhone = phone_number.replace(/\D/g, '')
     const jid = `${cleanPhone}@s.whatsapp.net`
 
-    const message = `¡Hola ${full_name}! 👋\n\nHemos recibido correctamente tu formulario de postulación a El Sistema Punta Cana 🎶.\n\nPara formalizar el proceso, el siguiente paso obligatorio es asistir a una breve cita presencial para presentar los documentos básicos.\n\n📅 *Turnos disponibles para esta semana:*\n${formattedSlots}\n\n👉 Por favor, *responde únicamente con el número del turno* que prefieras (ejemplo: *1*) para reservarlo.`
+    const message = `¡Hola ${full_name}! 👋\n\nHemos recibido correctamente tu formulario de postulación a El Sistema Punta Cana 🎶.\n\n📋 *Documentos que debes traer el día de tu cita:*\n1. Copia del Acta de Nacimiento\n2. Copia de la Cédula del Representante\n3. 1 Foto tamaño 2x2\n4. Ficha Médica (MINERD) completada y firmada\n5. Autorización de uso de imagen firmada\n\n💰 *Inversión:* Inscripción única $1,000 DOP + aporte mensual de sostenibilidad $600 DOP.\n\nPara formalizar el proceso, el siguiente paso es asistir a una breve cita presencial con el expediente completo (plazo de gracia de documentos: 7 días).\n\n📅 *Turnos disponibles para esta semana:*\n${formattedSlots}\n\n👉 Por favor, *responde únicamente con el número del turno* que prefieras (ejemplo: *1*) para reservarlo. Si ninguno te funciona, respondé *"otro"* y te ofrecemos más opciones.`
 
     // Enqueue message to WhatsApp outbox
     await supabase.from('hermes_whatsapp_queue').insert({

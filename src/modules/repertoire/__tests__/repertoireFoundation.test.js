@@ -26,7 +26,10 @@ describe('repertoire foundation', () => {
     expect(() => validateMontajeDates({ fecha_inicio: '2026-10-10', fecha_objetivo: '2026-10-09' })).toThrow()
   })
 
-  it('calculates target days using calendar dates', () => {
-    expect(daysRemaining('2026-12-18', new Date('2026-12-01T22:00:00-04:00'))).toBe(17)
+  it('calculates target days using calendar dates (día calendario en UTC, sin importar el huso horario local)', () => {
+    // 2026-12-01T22:00:00-04:00 == 2026-12-02T02:00:00Z -> día calendario UTC = 2 de diciembre.
+    // El resultado no debe depender del huso horario del runtime que ejecuta el test.
+    expect(daysRemaining('2026-12-18', new Date('2026-12-01T22:00:00-04:00'))).toBe(16)
+    expect(daysRemaining('2026-12-18', new Date('2026-12-01T00:00:00Z'))).toBe(17)
   })
 })

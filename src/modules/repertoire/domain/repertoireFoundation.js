@@ -44,7 +44,11 @@ export function daysRemaining(targetDate, today = new Date()) {
   if (!targetDate) return null
   const target = new Date(`${targetDate}T00:00:00Z`)
   const base = new Date(today)
-  const baseUtc = Date.UTC(base.getFullYear(), base.getMonth(), base.getDate())
+  // Ambas fechas se reducen a su día calendario en UTC. Antes `base` usaba
+  // getFullYear/getMonth/getDate (hora LOCAL del runtime) mientras `target` se
+  // parseaba en UTC: el resultado dependía del huso horario de la máquina que
+  // ejecuta el código (daba 17 en UTC-4, 16 en UTC/CI para el mismo instante).
+  const baseUtc = Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate())
   const targetUtc = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate())
   return Math.ceil((targetUtc - baseUtc) / 86400000)
 }

@@ -28,7 +28,9 @@ vi.mock('../../services/rutaService.js', () => ({
 }))
 
 vi.mock('../../services/autoDraftService.js', () => ({
-  createAutoDraft: vi.fn(),
+  // Devuelve el shape real del controlador: el manager ya no se apaga cuando
+  // todavía no hay sesión, así que siempre construye uno.
+  createAutoDraft: vi.fn(() => ({ onInput: vi.fn(), destroy: vi.fn(), onSaved: vi.fn() })),
   saveDraft: vi.fn(),
   loadDraft: vi.fn(),
   discardDraft: vi.fn(),

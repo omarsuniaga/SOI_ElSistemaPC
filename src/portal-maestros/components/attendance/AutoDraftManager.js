@@ -6,12 +6,18 @@ import { createAutoDraft, saveDraft, loadDraft, discardDraft } from '../../servi
  */
 export function createAutoDraftManager(container, {
   sesionId,
+  getSesionId,
   maestroId,
   editor,
   sesionExistenteData,
   onDraftRecovered,
 }) {
-  if (!sesionId) return { destroy() {} }
+  // El id se consulta en cada guardado, no se captura al montar: el caso normal
+  // es que el maestro abra una fecha nueva (todavía sin sesión) y escriba antes
+  // de marcar asistencia. La sesión nace recién con el primer autosave de la
+  // vista, y el borrador tiene que engancharse a ese id.
+  const resolveSesionId = () =>
+    typeof getSesionId === 'function' ? getSesionId() : sesionId
 
   let autoDraft = null
   let destroyed = false
@@ -20,14 +26,15 @@ export function createAutoDraftManager(container, {
 
   autoDraft = createAutoDraft({
     saveFn: async (content) => {
-      if (!sesionId || destroyed) return
-      await saveDraft(sesionId, maestroId, content)
+      const id = resolveSesionId()
+      if (!id || destroyed) return
+      await saveDraft(id, maestroId, content)
     },
     debounceMs: 30000,
   })
 
   autoDraft.onSaved(() => {
-    if (destroyed || !draftIndicator) return
+    if (destroyed || !draftIndicator || !resolveSesionId()) return
     const now = new Date()
     const hh = String(now.getHours()).padStart(2, '0')
     const mm = String(now.getMinutes()).padStart(2, '0')
@@ -44,8 +51,8 @@ export function createAutoDraftManager(container, {
     }
   }
 
-  if (sesionExistenteData?.borrador === true) {
-    loadDraft(sesionId, maestroId)
+  if (sesionExistenteData?.borrador === true && resolveSesionId()) {
+    loadDraft(resolveSesionId(), maestroId)
       .then((draft) => {
         if (destroyed) return
         if (draft && draft.contenido_raw && draft.contenido_raw.trim()) {

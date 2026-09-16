@@ -85,7 +85,6 @@ describe('department portal profile contracts', () => {
       'alumnos',
       'maestros',
       'postulados',
-      'postulados-calendario',
       'clases-hoy',
       'clases',
       'salones',
@@ -101,6 +100,15 @@ describe('department portal profile contracts', () => {
       'gestion-usuarios',
       'permisos',
     ]))
+  })
+
+  it('keeps Ficha 360 and Calendario de Citas out of the ADM menu', () => {
+    // Ocultas a pedido: las rutas siguen registradas en alumnos.router.js y se
+    // alcanzan por URL o deep-link, pero no deben volver al menú sin decisión.
+    const routes = flattenRoutes(profileForDepartment('ADM'))
+
+    expect(routes).not.toContain('ficha-360')
+    expect(routes).not.toContain('postulados-calendario')
   })
 
   it('does not duplicate route ids inside ADM navigation', () => {

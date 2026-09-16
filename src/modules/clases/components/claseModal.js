@@ -23,7 +23,7 @@ import {
 } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
-import { alumnoCoincideBusqueda } from './claseModal.helpers.js'
+import { alumnoCoincideBusqueda, resolveEsRotativa } from './claseModal.helpers.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.
@@ -173,12 +173,7 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) 
     _options.maestros.find((maestro) => maestro.id === selectedPrincipalTeacherId)?.nombre ||
     'Maestro asignado'
 
-  const esRotativa = Boolean(
-    clase?.tipo_clase === 'rotativa' ||
-    clase?.tipo_clase === 'rotativo' ||
-    clase?.tipo_clase === 'individual' ||
-    (inscritosSlots && inscritosSlots.some(s => Boolean(s.hora_inicio || s.hora_fin)))
-  )
+  const esRotativa = resolveEsRotativa({ tipoClase: clase?.tipo_clase, inscritosSlots })
 
   return `
     <form class="container-fluid p-0" id="formClase">

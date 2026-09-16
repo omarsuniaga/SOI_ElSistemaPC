@@ -56,12 +56,12 @@ export async function getAnalisisContenidoPedagogico({
     }
   }
 
-  // 2. Consultar sesiones en el rango (columnas reales: id, fecha, estado, clase_id, maestro_id, tema, contenido)
+  // 2. Consultar sesiones en el rango (columnas reales: id, fecha, estado, clase_id, maestro_id, tema_principal, contenido)
   let sesiones = []
   try {
     const { data, error: sesErr } = await supabase
       .from('sesiones_clase')
-      .select('id, fecha, estado, clase_id, maestro_id, tema, contenido')
+      .select('id, fecha, estado, clase_id, maestro_id, tema_principal, contenido')
       .gte('fecha', inicio)
       .lte('fecha', fin)
 
@@ -205,7 +205,7 @@ export async function getAnalisisContenidoPedagogico({
       return
     }
 
-    const desc = s.tema?.trim() || s.contenido?.trim()
+    const desc = s.tema_principal?.trim() || s.contenido?.trim()
     if (desc && desc.length > 2) {
       clasificarFocoTecnico(desc, focoTecnicoCounts)
       actualizarCatedraResumen(catedrasMap, instrumento, desc, 'practicado')
@@ -270,10 +270,17 @@ export async function getAnalisisContenidoPedagogico({
 
 /**
  * Clasifica heurísticamente el texto pedagógico en áreas clave.
+ * Vocabulario deliberadamente cruzado entre familias instrumentales (cuerdas,
+ * viento, piano, guitarra, voz) para no sesgar la clasificación hacia una
+ * sola cátedra — la vista consume esto para cualquier instrumento/programa.
  */
 function clasificarFocoTecnico(texto, focoCounts) {
   const t = texto.toLowerCase()
-  if (t.includes('arco') || t.includes('dedo') || t.includes('postura') || t.includes('escala') || t.includes('digitacion')) {
+  if (
+    t.includes('arco') || t.includes('dedo') || t.includes('postura') || t.includes('escala') || t.includes('digitacion') ||
+    t.includes('embocadura') || t.includes('aliento') || t.includes('respiracion') || t.includes('pedal') ||
+    t.includes('muñeca') || t.includes('pulsacion') || t.includes('traste') || t.includes('diafragma')
+  ) {
     focoCounts['Técnica & Postura'] += 1
   } else if (t.includes('solfeo') || t.includes('lectura') || t.includes('ritmo') || t.includes('tiempo') || t.includes('metronomo')) {
     focoCounts['Lectura & Rítmica'] += 1

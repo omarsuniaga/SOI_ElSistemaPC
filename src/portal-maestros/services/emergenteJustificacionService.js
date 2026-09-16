@@ -3,6 +3,25 @@ import { supabase } from '../../lib/supabaseClient.js'
 
 const DIAS_ES_LARGO = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
 
+// clase_horarios.dia se guarda con tildes ("sábado", "miércoles"). Comparar
+// sin normalizar contra esta lista (sin tildes) nunca matchea esos dos días,
+// así que la auto-justificación se salta en silencio las clases de sábado y
+// miércoles (bug real detectado en producción: taller emergente del
+// 2026-09-05 nunca justificó "Taller 2dos Violines").
+function normalizeDia(str) {
+  // Quita marcas diacríticas combinantes (rango Unicode 0x300-0x36f) tras
+  // descomponer con NFD, sin depender de escribir el rango como literal en
+  // el código fuente (evita ambigüedades de encoding con tildes).
+  return Array.from((str || '').normalize('NFD'))
+    .filter((ch) => {
+      const code = ch.codePointAt(0)
+      return code < 0x300 || code > 0x36f
+    })
+    .join('')
+    .trim()
+    .toLowerCase()
+}
+
 /**
  * Auto-creates a justified session for every scheduled class on emergente.fecha.
  * Idempotent — re-calling with the same emergent updates existing sessions.
@@ -33,13 +52,17 @@ export async function autoJustificarClasesProgramadas(emergente, maestroId) {
 
   const { data: horarios, error: hError } = await supabase
     .from('clase_horarios')
-    .select('clase_id, hora_inicio, hora_fin')
+    .select('clase_id, dia, hora_inicio, hora_fin')
     .in('clase_id', claseIds)
-    .eq('dia', diaSemana)
 
   if (hError || !horarios?.length) return { justificadas: 0, errores: [] }
 
-  const clasesDelDia = horarios.map((h) => ({
+  const diaSemanaNorm = normalizeDia(diaSemana)
+  const horariosDelDia = horarios.filter((h) => normalizeDia(h.dia) === diaSemanaNorm)
+
+  if (!horariosDelDia.length) return { justificadas: 0, errores: [] }
+
+  const clasesDelDia = horariosDelDia.map((h) => ({
     ...h,
     nombre: clases.find((c) => c.id === h.clase_id)?.nombre || '',
   }))

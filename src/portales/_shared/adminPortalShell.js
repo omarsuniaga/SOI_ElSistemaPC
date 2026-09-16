@@ -523,8 +523,7 @@ function renderAccessDenied(app, brandText) {
  */
 async function injectCarteleraNav(profile) {
   if (!supabase) return
-  // Ya está en la nav de forma estática (ADM, ACM) → nada que hacer, sin consulta
-  if (profile.navGroups.some((g) => g.items.some((i) => i.id === 'cartelera' || i.id === 'signage-pantalla'))) return
+  if (profile.navGroups.some((g) => g.items.some((i) => i.id === 'cartelera' || i.id === 'cartelera-diapositiva' || i.id === 'signage-pantalla'))) return
   try {
     const { data } = await supabase
       .from('signage_pantallas')

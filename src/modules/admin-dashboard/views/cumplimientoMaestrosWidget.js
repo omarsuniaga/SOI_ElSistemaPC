@@ -7,6 +7,7 @@ import {
   getMaestrosComplianceStatus,
   getSemanaActualSantoDomingo,
 } from "../api/adminMaestroApi.js"
+import { getPeriodoActivo } from "../../periodos/api/periodosApi.js"
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from "../../../shared/components/InfoTooltip.js"
 import { cargarHistorialInstitucional } from "../../../portal-maestros/services/historialClasesService.js"
 import { generateInstitutionalReportHTML } from "../../../portal-maestros/services/reportService.js"
@@ -23,14 +24,42 @@ function hoyISO(offsetDias = 0) {
   return d.toISOString().split("T")[0]
 }
 
+// El widget se re-instancia desde cero cada vez que el router entra a
+// 'admin-dashboard' (incluso al volver desde "Ver Detalle" de un maestro),
+// así que el estado del rango de fechas vive en localStorage en vez de solo
+// en la instancia — si no, se pierde cada vez que el usuario navega y vuelve.
+const RANGO_STORAGE_KEY = "admin-cumplimiento-maestros-rango"
+
+function loadRangoPersistido() {
+  try {
+    const raw = localStorage.getItem(RANGO_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.currentRango) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function saveRangoPersistido(currentRango, customDates) {
+  try {
+    localStorage.setItem(RANGO_STORAGE_KEY, JSON.stringify({ currentRango, customDates }))
+  } catch {
+    // localStorage no disponible (modo privado, quota, etc.) — no es crítico
+  }
+}
+
 export class CumplimientoMaestrosWidget {
   constructor(containerId) {
     this.containerId = containerId
     this.container = document.getElementById(containerId)
     this.maestros = []
     this.filteredMaestros = []
-    this.currentRango = "semana_actual"
-    this.customDates = getSemanaActualSantoDomingo()
+    const persistido = loadRangoPersistido()
+    this.currentRango = persistido?.currentRango || "semana_actual"
+    this.customDates = persistido?.customDates || getSemanaActualSantoDomingo()
+    this._periodoActivoPromise = null
     this.currentFilter = {
       estado: null,
       especialidad: "",
@@ -76,9 +105,30 @@ export class CumplimientoMaestrosWidget {
   }
 
   /**
+   * Lazily fetches and caches the active academic period (periodos.activo = true).
+   * Cached per widget instance to avoid re-fetching on every rango change.
+   */
+  getPeriodoActivoCached() {
+    if (!this._periodoActivoPromise) {
+      this._periodoActivoPromise = getPeriodoActivo().catch(() => null)
+    }
+    return this._periodoActivoPromise
+  }
+
+  /**
    * Resolve active date range
    */
-  getRangoFechas() {
+  async getRangoFechas() {
+    if (this.currentRango === "inicio_periodo") {
+      const periodo = await this.getPeriodoActivoCached()
+      if (periodo?.fecha_inicio) {
+        return { desde: periodo.fecha_inicio, hasta: hoyISO(0) }
+      }
+      // Sin período activo configurado: fallback a inicio del año en curso
+      const anioActual = new Date().getFullYear()
+      return { desde: `${anioActual}-01-01`, hasta: hoyISO(0) }
+    }
+
     if (this.currentRango === "semana_actual") {
       return getSemanaActualSantoDomingo()
     }
@@ -185,8 +235,9 @@ export class CumplimientoMaestrosWidget {
    * Load maestro compliance data from canonical RPC
    */
   async loadData() {
-    const rango = this.getRangoFechas()
+    const rango = await this.getRangoFechas()
     this.customDates = rango
+    saveRangoPersistido(this.currentRango, this.customDates)
     const maestros = await getMaestrosComplianceStatus(rango)
 
     this.maestros = (maestros || []).map(m => {
@@ -381,6 +432,7 @@ export class CumplimientoMaestrosWidget {
                   <option value="quincena_2_actual" ${this.currentRango === "quincena_2_actual" ? "selected" : ""}>2da Quincena (16-Fin)</option>
                   <option value="mes_actual" ${this.currentRango === "mes_actual" ? "selected" : ""}>Mes en Curso</option>
                   <option value="mes_anterior" ${this.currentRango === "mes_anterior" ? "selected" : ""}>Mes Anterior</option>
+                  <option value="inicio_periodo" ${this.currentRango === "inicio_periodo" ? "selected" : ""}>Desde Inicio de Período</option>
                   <option value="personalizado" ${this.currentRango === "personalizado" ? "selected" : ""}>📅 Rango Personalizado...</option>
                 </select>
               </div>

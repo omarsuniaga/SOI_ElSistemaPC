@@ -60,7 +60,7 @@ export function setActiveTab(route) {
   })
 }
 
-export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator) {
+export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator, onRefresh) {
   // Admin que también es maestro: mostrar botón de acceso al panel admin
   const adminLink = maestro?.es_admin
     ? `<a href="/admin" class="pm-admin-link" title="Ir al Panel Admin">
@@ -123,6 +123,10 @@ export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator)
             <i class="bi bi-search"></i>
           </button>
 
+          <button id="pm-refresh-btn" class="pm-icon-btn" title="Actualizar datos" aria-label="Actualizar datos">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+
           <div id="pm-theme-toggle-container"></div>
 
           <button id="pm-bell-btn" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
@@ -174,6 +178,14 @@ export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator)
   document.getElementById('pm-btn-perfil')?.addEventListener('click', (e) => {
     e.preventDefault(); onNavigate('perfil')
   })
+
+  // Actualizar: rehace datos y vista sin recargar la página.
+  const refreshBtn = document.getElementById('pm-refresh-btn')
+  if (refreshBtn && onRefresh) {
+    refreshBtn.addEventListener('click', () => onRefresh())
+  } else if (refreshBtn) {
+    refreshBtn.style.display = 'none'
+  }
 
   // Bell
   document.getElementById('pm-bell-btn')?.addEventListener('click', () => notificacionesPanel.open())
@@ -288,4 +300,17 @@ function _initHeaderSearch(onNavigate) {
       removeDropdown()
     }
   })
+}
+
+/**
+ * Refleja el estado del refresco en el botón del header.
+ * @param {'running'|'done'|'error'} estado
+ */
+export function setRefreshState(estado) {
+  const btn = document.getElementById('pm-refresh-btn')
+  if (!btn) return
+  const spinning = estado === 'running'
+  btn.disabled = spinning
+  btn.classList.toggle('pm-refresh-spinning', spinning)
+  btn.title = spinning ? 'Actualizando...' : estado === 'error' ? 'No se pudo actualizar' : 'Actualizar datos'
 }

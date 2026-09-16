@@ -77,3 +77,7 @@ public/signage/build.js
 .tmp-supabase-cli-home/
 
 historico-clases-prof-ana-*.pdf
+
+# Electron UI diagnostic output
+.electron-ui-diagnostic/
+

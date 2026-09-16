@@ -143,7 +143,7 @@ async function openEditItemModal(type, id, currentValue, onComplete) {
 
 async function openAddItemModal(type, parentId, onComplete) {
   if (!parentId && type !== 'Clase') {
-    alert(`Primero seleccioná el elemento superior para agregar un ${type}`)
+    alert(`Primero seleccione el elemento superior para agregar un ${type}`)
     return
   }
 
@@ -152,7 +152,7 @@ async function openAddItemModal(type, parentId, onComplete) {
     body: `
       <div class="pm-form-group" style="margin-bottom:0;">
         <label class="pm-label" style="color:var(--pm-text-muted); font-size:0.7rem; margin-bottom:8px; display:block; text-transform:uppercase; font-weight:700;">Contenido del Nuevo ${type}</label>
-        <textarea id="new-item-content" class="pm-input" placeholder="Escribí aquí..." style="width:100%; min-height:120px; padding:1rem; border-radius:12px; background:var(--pm-surface-3); color:var(--pm-text); border:1px solid var(--pm-border); font-family:inherit; font-size:0.85rem; line-height:1.5; resize:none; outline:none;"></textarea>
+        <textarea id="new-item-content" class="pm-input" placeholder="Escriba aquí..." style="width:100%; min-height:120px; padding:1rem; border-radius:12px; background:var(--pm-surface-3); color:var(--pm-text); border:1px solid var(--pm-border); font-family:inherit; font-size:0.85rem; line-height:1.5; resize:none; outline:none;"></textarea>
       </div>
     `,
     onSave: async (modalBody) => {
@@ -235,7 +235,7 @@ async function loadClasses() {
     openAddItemModal('Clase', null, () => loadClasses())
 
   if (state.activeClassId) loadLevels(state.activeClassId)
-  else renderEmpty('#pm-rc-levels-wrapper', 'Elegí Clase')
+  else renderEmpty('#pm-rc-levels-wrapper', 'Elija Clase')
 
   wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
     const id = el.dataset.id
@@ -252,9 +252,9 @@ async function loadClasses() {
       state.activeLevelId = state.activeNodeId = state.activeObjectiveId = null
       loadClasses()
       loadLevels(id)
-      renderEmpty('#pm-rc-nodes-wrapper', 'Elegí Nivel')
-      renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema')
-      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+      renderEmpty('#pm-rc-nodes-wrapper', 'Elija Nivel')
+      renderEmpty('#pm-rc-objs-wrapper', 'Elija Tema')
+      renderEmpty('#pm-rc-inds-wrapper', 'Elija Objetivo')
     }
   })
 }
@@ -296,7 +296,7 @@ async function loadLevels(classId) {
     openAddItemModal('Nivel', classId, () => loadLevels(classId))
 
   if (state.activeLevelId) loadNodes(state.activeLevelId)
-  else renderEmpty('#pm-rc-nodes-wrapper', 'Elegí Nivel')
+  else renderEmpty('#pm-rc-nodes-wrapper', 'Elija Nivel')
 
   wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
     const id = el.dataset.id
@@ -313,8 +313,8 @@ async function loadLevels(classId) {
       state.activeNodeId = state.activeObjectiveId = null
       loadLevels(classId)
       loadNodes(id)
-      renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema')
-      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+      renderEmpty('#pm-rc-objs-wrapper', 'Elija Tema')
+      renderEmpty('#pm-rc-inds-wrapper', 'Elija Objetivo')
     }
   })
 }
@@ -356,7 +356,7 @@ async function loadNodes(levelId) {
     openAddItemModal('Tema', levelId, () => loadNodes(levelId))
 
   if (state.activeNodeId) loadObjectives(state.activeNodeId)
-  else renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema')
+  else renderEmpty('#pm-rc-objs-wrapper', 'Elija Tema')
 
   wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
     const id = el.dataset.id
@@ -373,7 +373,7 @@ async function loadNodes(levelId) {
       state.activeObjectiveId = null
       loadNodes(levelId)
       loadObjectives(id)
-      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+      renderEmpty('#pm-rc-inds-wrapper', 'Elija Objetivo')
     }
   })
 }
@@ -414,7 +414,7 @@ async function loadObjectives(nodeId) {
     openAddItemModal('Objetivo', nodeId, () => loadObjectives(nodeId))
 
   if (state.activeObjectiveId) loadIndicators(state.activeObjectiveId)
-  else renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+  else renderEmpty('#pm-rc-inds-wrapper', 'Elija Objetivo')
 
   wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
     const id = el.dataset.id

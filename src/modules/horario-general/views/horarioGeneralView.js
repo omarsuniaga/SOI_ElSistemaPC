@@ -9,7 +9,7 @@
  * Alcance deliberado (confirmado con el usuario): ver + diagnosticar +
  * exportar. Para corregir un hallazgo, el botón "Ver clase" lleva a la
  * ficha de esa clase en Gestión de Clases (deep-link ?selectedId= que ya
- * existe ahí) en vez de reimplementar edición de salón/horario acá.
+ * existe ahí) en vez de reimplementar edición de salón/horario aquí.
  */
 
 import { cargarHorarioGeneral, familiaDe, FAMILIA_LABEL, DIAS, DIA_LABEL } from '../services/horarioGeneralService.js'

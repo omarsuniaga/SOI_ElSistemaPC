@@ -75,12 +75,12 @@ export function renderLoginView(container, { onSuccess }) {
 
     let hasError = false
     if (!email) {
-      setFieldError(emailInput, 'Ingresa tu correo electrónico')
+      setFieldError(emailInput, 'Ingrese su correo electrónico')
       emailInput.focus()
       hasError = true
     }
     if (!password) {
-      setFieldError(passwordInput, 'Ingresa tu contraseña')
+      setFieldError(passwordInput, 'Ingrese su contraseña')
       if (!hasError) passwordInput.focus()
       hasError = true
     }
@@ -174,7 +174,7 @@ export function renderLoginView(container, { onSuccess }) {
               onSuccess(intended)
             }
           } else {
-          errorMsg.textContent = 'No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.'
+          errorMsg.textContent = 'No hay sesión biométrica guardada. Inicie sesión con contraseña primero.'
         }
       }
     } catch (err) {

@@ -74,7 +74,7 @@ export function createCategoriaTrabajoBar(container, opts = {}) {
         <i class="bi bi-check-circle-fill" style="color:var(--pm-success,#10b981);"></i>
         <span>Trabajo registrado en <strong>${escapeHTML(nombre)}</strong></span>
         ${estado.origen === ORIGEN.EXPLICITO
-          ? '<span class="pm-cat-hint">indicado por vos con <code>&gt;' + escapeHTML(estado.codigo) + '</code></span>'
+          ? '<span class="pm-cat-hint">indicado por usted con <code>&gt;' + escapeHTML(estado.codigo) + '</code></span>'
           : ''}
         <button type="button" class="pm-cat-link" data-accion="cambiar">Cambiar</button>
       `
@@ -82,7 +82,7 @@ export function createCategoriaTrabajoBar(container, opts = {}) {
       const alts = estado.alternativas.slice(0, 2)
       el.innerHTML = `
         <i class="bi bi-lightbulb" style="color:var(--pm-warning,#f59e0b);"></i>
-        <span>¿Trabajaste <strong>${escapeHTML(nombre)}</strong>?</span>
+        <span>¿Trabajó <strong>${escapeHTML(nombre)}</strong>?</span>
         <button type="button" class="pm-cat-btn" data-accion="confirmar">Sí, confirmar</button>
         ${alts.map(a => `
           <button type="button" class="pm-cat-link" data-accion="elegir" data-codigo="${escapeHTML(a.codigo)}">

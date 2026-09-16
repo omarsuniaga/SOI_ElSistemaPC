@@ -126,7 +126,7 @@ export function createStudentList(container, {
     overlay.innerHTML = `
       <div class="pm-turno-dialog" role="dialog" aria-modal="true" aria-label="Turno individual">
         <h4>Turno de ${escHTML(alumno.nombre_completo)}</h4>
-        <p class="pm-turno-hint">Dejá el día vacío si el alumno va el mismo día que el resto de la clase.</p>
+        <p class="pm-turno-hint">Deje el día vacío si el alumno va el mismo día que el resto de la clase.</p>
         <label class="pm-turno-field">
           <span>Día</span>
           <select id="pm-turno-dia">

@@ -151,7 +151,7 @@ export async function renderGestionarClasesView(container) {
     container.innerHTML = _emptyState(
       'bi-lock',
       'Sin sesión activa',
-      'Por favor ingresá nuevamente.',
+      'Por favor ingrese nuevamente.',
     )
     return
   }
@@ -214,7 +214,7 @@ function _noPermissionState(permisos) {
         </div>
         <h2 class="gcv-permission-title">Acceso de Colaborador Requerido</h2>
         <p class="gcv-permission-copy">
-          Para gestionar clases e inscribir alumnos, necesitás que Admin active tu permiso de clases.
+          Para gestionar clases e inscribir alumnos, necesita que Admin active su permiso de clases.
         </p>
         <div id="gcv-permission-action">
           ${
@@ -300,7 +300,7 @@ function _buildShell(clases, { canCreateClasses = false } = {}) {
             <div class="gcv-panel" id="gcv-panel">
               <div class="gcv-panel-placeholder">
                 <i class="bi bi-arrow-left-circle" style="font-size:2.5rem;opacity:.3;"></i>
-                <p style="margin-top:.75rem;opacity:.4;">Seleccioná una clase</p>
+                <p style="margin-top:.75rem;opacity:.4;">Seleccione una clase</p>
               </div>
             </div>
           </div>`
@@ -556,7 +556,7 @@ function _attachShellEvents(clases, permisos = {}) {
 
   document.getElementById('gcv-btn-crear-clase')?.addEventListener('click', () => {
     if (!permisos?.puede_crear_clases) {
-      AppToast.error('Tu perfil todavía no tiene habilitado el permiso para crear clases.')
+      AppToast.error('Su perfil todavía no tiene habilitado el permiso para crear clases.')
       return
     }
     if (window.router?.navigate) {
@@ -739,7 +739,7 @@ function _attachPanelEvents(claseId, clases) {
     const clase = clases.find((item) => item.id === claseId)
     if (!btn || !clase) return
 
-    const confirmMsg = `¿Estás seguro de que deseas eliminar la clase "${clase.nombre || 'esta clase'}"? Esta acción eliminará los horarios e inscripciones asociadas de forma irreversible.`
+    const confirmMsg = `¿Está seguro de que desea eliminar la clase "${clase.nombre || 'esta clase'}"? Esta acción eliminará los horarios e inscripciones asociadas de forma irreversible.`
     if (!window.confirm(confirmMsg)) return
 
     const originalHTML = btn.innerHTML
@@ -866,7 +866,7 @@ function _attachPanelEvents(claseId, clases) {
     )
     if (exactMatch) {
       const proceed = confirm(
-        `Ya existe un alumno registrado con el nombre exacto "${exactMatch.nombre_completo || exactMatch.nombre}". ¿Deseas registrar un nuevo alumno con este mismo nombre?`,
+        `Ya existe un alumno registrado con el nombre exacto "${exactMatch.nombre_completo || exactMatch.nombre}". ¿Desea registrar un nuevo alumno con este mismo nombre?`,
       )
       if (!proceed) return
     }

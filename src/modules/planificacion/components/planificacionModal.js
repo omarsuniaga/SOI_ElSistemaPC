@@ -238,7 +238,7 @@ export async function openPlanificacionModal(
             <i class="bi bi-journal-bookmark me-1"></i>Guía curricular
           </div>
           <div class="pm-plan-guide-body" id="pl-curriculo-body">
-            <div class="pm-plan-guide-empty">Seleccioná una clase para ver la guía</div>
+            <div class="pm-plan-guide-empty">Seleccione una clase para ver la guía</div>
           </div>
         </div>
       </div>`

@@ -118,6 +118,16 @@ export async function listarMedios(pantallaId) {
   return rows.filter((m) => !m.pantalla_id || m.pantalla_id === pantallaId)
 }
 
+export async function obtenerMedio(id) {
+  const { data, error } = await supabase
+    .from('signage_media')
+    .select('id, pantalla_id, tipo, titulo, credito, storage_path, youtube_url, youtube_video_id, contenido, duracion_seg, orden, activo, vigente_desde, vigente_hasta, created_at')
+    .eq('id', id)
+    .single()
+  if (error) throw new Error('No se pudo obtener el medio: ' + error.message)
+  return data
+}
+
 export function urlPublica(storagePath) {
   if (!storagePath) return null
   return supabase.storage.from(BUCKET).getPublicUrl(storagePath).data.publicUrl
@@ -160,8 +170,14 @@ export async function crearMedio(payload) {
 }
 
 export async function actualizarMedio(id, cambios) {
-  const { error } = await supabase.from('signage_media').update(cambios).eq('id', id)
+  const { data, error } = await supabase
+    .from('signage_media')
+    .update(cambios)
+    .eq('id', id)
+    .select('id')
+    .maybeSingle()
   if (error) throw new Error('No se pudo actualizar el medio: ' + error.message)
+  if (!data) throw new Error('No se encontró la diapositiva para actualizar')
 }
 
 export async function eliminarMedio(id, storagePath) {

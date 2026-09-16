@@ -168,7 +168,7 @@ export async function renderHistorialInstrumentoView(container, { activoId }) {
       }
 
       if (!payload.tipo_evento || !payload.descripcion.trim()) {
-        errEl.textContent = 'Completá todos los campos requeridos.'
+        errEl.textContent = 'Complete todos los campos requeridos.'
         errEl.classList.remove('d-none')
         return
       }

@@ -1,0 +1,15 @@
+# SCHEMA MIGRATION MAP — Estrategia de Migración hacia el Modelo Objetivo SOI 2.0
+
+> **Propósito:** Definir las transformaciones desde las tablas actuales hacia el Kernel y entidades objetivo del Master SPEC v2.0 sin pérdida de datos.
+> **Principio:** No ejecutar mutaciones ahora. Diseñar los puentes de datos y estrategias de rollback.
+
+| TARGET ENTITY | CURRENT SOURCE | CARDINALITY | TRANSFORMATION | ID STRATEGY | FK IMPACT | DATA LOSS RISK | ROLLBACK STRATEGY |
+|---|---|---|---|---|---|---|---|
+| **`personas`** | `alumnos` + `maestros` + `representantes` + `profiles` | N:1 consolidado | Extraer `nombre_completo`, `cedula`, `telefono`, `email`, `direccion`, `fecha_nacimiento` a tabla común | Generar `persona_id` UUID nuevo; almacenar `persona_id` en tablas de rol | `alumnos.persona_id`, `maestros.persona_id`, `representantes.persona_id` referencian `personas.id` | Bajo (no se destruyen columnas originales durante fase dual) | Mantener tablas fuente intactas mediante vistas puente |
+| **`alumnos` (Rol)** | `alumnos` actual | 1:1 | Retirar datos personales redundantes (tras migrar a `personas`); conservar `codigo_alumno`, `nivel_actual`, `fecha_ingreso`, `familia_id` | `KEEP_ID` (conservar `alumnos.id` idéntico para no romper asistencias ni cuotas) | Cero impacto: `asistencias`, `alumnos_clases`, `cuotas` siguen apuntando a `alumnos.id` | Muy Bajo | Script idempotente reversible |
+| **`maestros` (Rol)** | `maestros` actual | 1:1 | Conservar vínculo a `user_id` de auth y `persona_id`; conservar especialidad, estado | `KEEP_ID` (conservar `maestros.id`) | Cero impacto en `clases.maestro_principal_id` | Nulo | No alterar claves primarias |
+| **`familias`** | `familias` actual | 1:1 | Añadir `nucleo_id` (Principio P3 Multi-núcleo); mantener nombre y datos de contacto | `KEEP_ID` | `alumnos.familia_id`, `cuotas.familia_id` | Nulo | Migración directa de columnas |
+| **`casos` (Kernel Hermes)** | `student_cases` + `hermes_process_cases` | N:1 unificado | Unificar casos pedagógicos y procedimientos institucionales bajo un contrato único `hermes_casos` | `GENERATE_NEW_ID` con mapeo de `legacy_case_id` | Tareas institucionales apuntan a nuevo `caso_id` | Bajo | Tabla de equivalencia UUID |
+| **`solicitudes`** | `solicitudes_ausencia` + `solicitudes_permisos` + `solicitudes_necesidades` | N:1 unificado | Polimorfismo por `tipo_solicitud` (`ausencia_docente`, `recurso_aula`, `permiso_alumno`) | `GENERATE_NEW_ID` con mapeo histórico | Interfaz con módulo de aprobaciones DIR | Bajo | Vista unificada retrocompatible |
+| **`inventario_activos`** | `inventario_activos` actual | 1:1 | Normalizar catálogo de marcas/modelos; incorporar `nucleo_id` | `KEEP_ID` | `comodatos_activos.activo_id` se mantiene íntegro | Nulo | Agregar columnas opcionales |
+| **`cuotas` & `pagos`** | `cuotas`, `pagos`, `aplicaciones_pago` | 1:1 | Preservar motor FIFO transaccional; asegurar auditoría de balance | `KEEP_ID` | Mantener relaciones contables existentes | Nulo | Prohibido alterar IDs contables |

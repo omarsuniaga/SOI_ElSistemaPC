@@ -332,7 +332,7 @@ describe('E4: pulsoView UI Rendering & Utilities', () => {
 
       const result = timeAgo(twoWeeksAgo)
 
-      expect(result).toMatch(/ago/) // Format: "ago 1" or locale-specific
+      expect(result).toMatch(/\d+/) // Format: locale-specific date string e.g. "1 sept"
     })
 
     it('should return "hace unos segundos" for timestamps < 60 seconds ago', () => {

@@ -13,9 +13,10 @@ import '../styles/signage-admin.css'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import { router } from '../../../core/router/router.js'
 import * as api from '../api/signageAdminApi.js'
 
-const PREVIEW_SRC = '/signage/index.html?preview=1'
+const PREVIEW_SRC = '/signage/index.html?preview=1&v=1.2.0'
 
 const state = {
   container: null,
@@ -77,6 +78,8 @@ async function seleccionarPantalla(id) {
     logoPath: state.pantalla.logo_path || '',
   }
   state.menuPortales = Array.isArray(state.pantalla.menu_portales) ? [...state.pantalla.menu_portales] : []
+  state.modoNocturno = state.pantalla.modo_nocturno || { activo: false, desde: '21:00', hasta: '06:00' }
+  state.activeTab = state.activeTab || 'playlist'
   state.medios = await api.listarMedios(state.pantalla.id)
   state.dirty = false
   state.iframeReady = false
@@ -175,8 +178,141 @@ function renderBody() {
         </div>
       </div>
       <aside class="ss-side">
-        <div class="ss-panel">${panelHTML()}</div>
+        <div class="ss-side-tabs" id="ss-side-tabs">
+          <button class="ss-side-tab ${(state.activeTab || 'playlist') === 'playlist' ? 'active' : ''}" data-side-tab="playlist" type="button">
+            <i class="bi bi-collection-play"></i>Playlist
+            <span class="badge rounded-pill bg-secondary ms-1">${state.medios.length}</span>
+          </button>
+          <button class="ss-side-tab ${state.activeTab === 'layout' ? 'active' : ''}" data-side-tab="layout" type="button">
+            <i class="bi bi-aspect-ratio"></i>Diseño
+          </button>
+          <button class="ss-side-tab ${state.activeTab === 'screen' ? 'active' : ''}" data-side-tab="screen" type="button">
+            <i class="bi bi-sliders"></i>Pantalla
+          </button>
+        </div>
+        <div class="ss-panel" id="ss-panel">${panelHTML()}</div>
       </aside>
+    </div>`
+}
+
+/* ─── Presets rápidos de distribución ─────────────────────────────────── */
+
+const LAYOUT_PRESETS = [
+  {
+    id: 'standard',
+    icon: 'bi-grid-1x2-fill',
+    name: 'Estándar',
+    desc: 'Cabecera + Contenido + Horario',
+    apply: () => ({
+      cabecera: { visible: true, marca: true, reloj: true, fecha: true, evento: true },
+      visualizador: { visible: true, ajuste: 'contain', pie: true, pieTexto: '' },
+      horario: { visible: true, anchoPct: 28, hoy: true, manana: true, instrumento: false, meta: false },
+    }),
+  },
+  {
+    id: 'fullscreen',
+    icon: 'bi-fullscreen',
+    name: 'Pantalla Completa',
+    desc: '100% Contenido multimedia',
+    apply: () => ({
+      cabecera: { visible: false, marca: false, reloj: false, fecha: false, evento: false },
+      visualizador: { visible: true, ajuste: 'cover', pie: false, pieTexto: '' },
+      horario: { visible: false, anchoPct: 28, hoy: false, manana: false, instrumento: false, meta: false },
+    }),
+  },
+  {
+    id: 'classes',
+    icon: 'bi-calendar3',
+    name: 'Agenda & Clases',
+    desc: 'Horario lateral extendido',
+    apply: () => ({
+      cabecera: { visible: true, marca: true, reloj: true, fecha: true, evento: false },
+      visualizador: { visible: true, ajuste: 'contain', pie: true, pieTexto: '' },
+      horario: { visible: true, anchoPct: 36, hoy: true, manana: true, instrumento: true, meta: true },
+    }),
+  },
+  {
+    id: 'minimal',
+    icon: 'bi-window-fullscreen',
+    name: 'Evento / Gala',
+    desc: 'Cabecera limpia sin horario',
+    apply: () => ({
+      cabecera: { visible: true, marca: true, reloj: false, fecha: false, evento: true },
+      visualizador: { visible: true, ajuste: 'contain', pie: true, pieTexto: '' },
+      horario: { visible: false, anchoPct: 25, hoy: false, manana: false, instrumento: false, meta: false },
+    }),
+  },
+]
+
+function layoutPresetsHTML() {
+  return `
+    <div class="ss-preset-grid">
+      ${LAYOUT_PRESETS.map((p) => `
+        <button type="button" class="ss-preset-btn" data-preset="${p.id}" title="${escapeHTML(p.desc)}">
+          <i class="bi ${p.icon}"></i>
+          <div>
+            <div class="ss-preset-name">${escapeHTML(p.name)}</div>
+            <div class="text-muted" style="font-size:.66rem;font-weight:normal;">${escapeHTML(p.desc)}</div>
+          </div>
+        </button>
+      `).join('')}
+    </div>`
+}
+
+/* ─── Métricas de la Playlist (Loop Health) ────────────────────────────── */
+
+function loopHealthHTML() {
+  const activos = state.medios.filter((m) => m.activo !== false)
+  const totalSeg = activos.reduce((acc, m) => acc + (Number(m.duracion_seg) || 12), 0)
+  const minutos = Math.floor(totalSeg / 60)
+  const segs = totalSeg % 60
+  const durStr = minutos > 0 ? `${minutos}m ${segs ? `${segs}s` : ''}` : `${segs}s`
+  const repHora = totalSeg > 0 ? Math.round(3600 / totalSeg) : 0
+
+  return `
+    <div class="ss-loop-health">
+      <div class="ss-health-item">
+        <span class="ss-health-val">${durStr}</span>
+        <span class="ss-health-lbl">Ciclo total</span>
+      </div>
+      <div class="ss-health-item">
+        <span class="ss-health-val">${activos.length} <small class="fw-normal text-muted" style="font-size:.7rem">/ ${state.medios.length}</small></span>
+        <span class="ss-health-lbl">Activos</span>
+      </div>
+      <div class="ss-health-item">
+        <span class="ss-health-val">~${repHora}</span>
+        <span class="ss-health-lbl">Pases / hora</span>
+      </div>
+    </div>`
+}
+
+/* ─── Modo Reposo Nocturno ─────────────────────────────────────────────── */
+
+function sleepModeHTML() {
+  const mn = state.modoNocturno || { activo: false, desde: '21:00', hasta: '06:00' }
+  return `
+    <div class="card border border-body-tertiary rounded-4 mb-3">
+      <div class="card-header bg-body-tertiary d-flex align-items-center justify-content-between py-2">
+        <span class="fw-semibold small"><i class="bi bi-moon-stars me-2 text-warning"></i>Modo Reposo Nocturno</span>
+        <label class="form-check form-switch m-0" title="Activar/desactivar horario de reposo">
+          <input class="form-check-input" type="checkbox" id="ss-mn-activo" ${mn.activo ? 'checked' : ''}>
+        </label>
+      </div>
+      <div class="card-body py-2">
+        <p class="text-muted small mb-2" style="font-size:.74rem;">
+          Fuera del horario operativo, la pantalla apaga el contenido y muestra un reloj atenuado de bajo consumo.
+        </p>
+        <div class="row g-2 ${mn.activo ? '' : 'opacity-50'}">
+          <div class="col-6">
+            <label class="small text-muted mb-1 d-block" style="font-size:.72rem;">Apagar desde:</label>
+            <input type="time" class="form-control form-control-sm" id="ss-mn-desde" value="${escapeHTML(mn.desde || '21:00')}" ${mn.activo ? '' : 'disabled'}>
+          </div>
+          <div class="col-6">
+            <label class="small text-muted mb-1 d-block" style="font-size:.72rem;">Encender a las:</label>
+            <input type="time" class="form-control form-control-sm" id="ss-mn-hasta" value="${escapeHTML(mn.hasta || '06:00')}" ${mn.activo ? '' : 'disabled'}>
+          </div>
+        </div>
+      </div>
     </div>`
 }
 
@@ -221,60 +357,109 @@ function rng(path, label, min, max, suf) {
 }
 
 function panelHTML() {
-  return `
-    ${acc('cabecera', 'bi-window-sidebar', 'Cabecera', `
-      <div class="py-1">
-        <span class="d-block mb-1 small">Logo (PNG, se ajusta al alto de la cabecera)</span>
-        <div class="d-flex align-items-center gap-2">
-          <div class="ss-logo-preview">${state.marca.logoPath
-            ? `<img src="${escapeHTML(api.urlPublica(state.marca.logoPath))}" alt="logo">`
-            : '<span class="ss-logo-empty">✳</span>'}</div>
-          <label class="btn btn-sm btn-outline-secondary mb-0">
-            <i class="bi bi-upload me-1"></i>${state.marca.logoPath ? 'Cambiar' : 'Subir logo'}
-            <input type="file" id="ss-logo-file" accept="image/png,image/webp,image/svg+xml" hidden>
+  const tab = state.activeTab || 'playlist'
+
+  if (tab === 'playlist') {
+    return `
+      ${loopHealthHTML()}
+      ${mediosHTML()}
+    `
+  }
+
+  if (tab === 'layout') {
+    return `
+      <div class="mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="form-label small fw-semibold text-muted text-uppercase mb-0" style="letter-spacing: .04em; font-size: .72rem;">
+            <i class="bi bi-magic me-1 text-primary"></i>Distribución rápida
           </label>
-          ${state.marca.logoPath ? '<button class="btn btn-sm btn-outline-danger" id="ss-logo-del" title="Quitar logo"><i class="bi bi-x-lg"></i></button>' : ''}
+          <small class="text-muted" style="font-size: .68rem;">1 clic</small>
+        </div>
+        ${layoutPresetsHTML()}
+      </div>
+
+      ${acc('cabecera', 'bi-window-sidebar', 'Cabecera superior', `
+        <div class="py-1">
+          <span class="d-block mb-1 small">Logo institucional</span>
+          <div class="d-flex align-items-center gap-2">
+            <div class="ss-logo-preview">${state.marca.logoPath
+              ? `<img src="${escapeHTML(api.urlPublica(state.marca.logoPath))}" alt="logo">`
+              : '<span class="ss-logo-empty">✳</span>'}</div>
+            <label class="btn btn-sm btn-outline-secondary mb-0">
+              <i class="bi bi-upload me-1"></i>${state.marca.logoPath ? 'Cambiar' : 'Subir logo'}
+              <input type="file" id="ss-logo-file" accept="image/png,image/webp,image/svg+xml" hidden>
+            </label>
+            ${state.marca.logoPath ? '<button class="btn btn-sm btn-outline-danger" id="ss-logo-del" title="Quitar logo"><i class="bi bi-x-lg"></i></button>' : ''}
+          </div>
+        </div>
+        <label class="d-block py-1"><span class="d-block mb-1 small">Institución</span>
+          <input type="text" class="form-control form-control-sm" data-marca="institucion" value="${escapeHTML(state.marca.institucion)}" placeholder="El Sistema Punta Cana"></label>
+        <label class="d-block py-1"><span class="d-block mb-1 small">Siglas</span>
+          <input type="text" class="form-control form-control-sm" data-marca="siglas" value="${escapeHTML(state.marca.siglas)}" placeholder="FUNEYCA-PC"></label>
+        <hr class="my-2">
+        ${sw('cabecera.visible', 'Mostrar cabecera')}
+        ${sw('cabecera.marca', 'Logo y nombre')}
+        ${sw('cabecera.reloj', 'Reloj')}
+        ${sw('cabecera.fecha', 'Fecha')}
+        ${sw('cabecera.evento', 'Próximo evento del calendario')}
+      `)}
+
+      ${acc('horario', 'bi-list-columns-reverse', 'Barra lateral de clases', `
+        ${sw('horario.visible', 'Mostrar barra lateral')}
+        ${sw('horario.hoy', 'Clases de hoy')}
+        ${sw('horario.manana', 'Clases de mañana')}
+        <hr class="my-2">
+        <div class="text-muted small mb-1">Detalle por clase:</div>
+        ${sw('horario.instrumento', 'Etiqueta de instrumento')}
+        ${sw('horario.meta', 'Salón y maestro')}
+        <hr class="my-2">
+        ${rng('horario.anchoPct', 'Ancho de la barra', 20, 40, '%')}
+        <small class="text-muted d-block mt-1">El tamaño de letra se auto-ajusta para que quepan todas las clases.</small>
+      `)}
+
+      ${state.layout.visualizador ? acc('ajustes', 'bi-sliders', 'Ajustes del visualizador', `
+        ${sw('visualizador.visible', 'Mostrar visualizador')}
+        ${sel('visualizador.ajuste', 'Ajuste de imagen', [['contain', 'Completa (sin recortar)'], ['cover', 'Rellenar (recorta bordes)']])}
+        ${sw('visualizador.pie', 'Pie de foto (título y crédito)')}
+        ${txt('visualizador.pieTexto', 'Pie de foto fijo (opcional)', 'Sobrescribe el título del medio actual')}
+      `) : ''}
+    `
+  }
+
+  // screen / sistema
+  return `
+    <div class="card border border-body-tertiary rounded-4 mb-3">
+      <div class="card-header bg-body-tertiary py-2 fw-semibold small">
+        <i class="bi bi-display me-2 text-primary"></i>Datos de la pantalla
+      </div>
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="small text-muted">Nombre:</span>
+          <span class="small fw-semibold text-body">${escapeHTML(state.pantalla.nombre || state.pantalla.slug)}</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="small text-muted">Identificador:</span>
+          <code>${escapeHTML(state.pantalla.slug)}</code>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="small text-muted">Resolución estándar:</span>
+          <span class="badge bg-body-tertiary text-muted border border-body-tertiary">1920 × 1080 (16:9)</span>
         </div>
       </div>
-      <label class="d-block py-1"><span class="d-block mb-1 small">Institución</span>
-        <input type="text" class="form-control form-control-sm" data-marca="institucion" value="${escapeHTML(state.marca.institucion)}" placeholder="El Sistema Punta Cana"></label>
-      <label class="d-block py-1"><span class="d-block mb-1 small">Siglas</span>
-        <input type="text" class="form-control form-control-sm" data-marca="siglas" value="${escapeHTML(state.marca.siglas)}" placeholder="FUNEYCA-PC"></label>
-      <hr class="my-2">
-      ${sw('cabecera.visible', 'Mostrar cabecera')}
-      ${sw('cabecera.marca', 'Logo y nombre')}
-      ${sw('cabecera.reloj', 'Reloj')}
-      ${sw('cabecera.fecha', 'Fecha')}
-      ${sw('cabecera.evento', 'Próximo evento del calendario')}
-    `)}
-    ${acc('visualizador', 'bi-easel2', 'Visualizador — contenido', mediosHTML(), `<span class="badge bg-secondary">${state.medios.length}</span>`)}
-    ${acc('horario', 'bi-list-columns-reverse', 'Horario (barra lateral)', `
-      ${sw('horario.visible', 'Mostrar barra lateral')}
-      ${sw('horario.hoy', 'Clases de hoy')}
-      ${sw('horario.manana', 'Clases de mañana')}
-      <hr class="my-2">
-      <div class="text-muted small mb-1">Detalle por clase:</div>
-      ${sw('horario.instrumento', 'Etiqueta de instrumento')}
-      ${sw('horario.meta', 'Salón y maestro')}
-      <hr class="my-2">
-      ${rng('horario.anchoPct', 'Ancho de la barra', 20, 40, '%')}
-      <small class="text-muted">El tamaño de letra se ajusta solo para que quepan todas las clases.</small>
-    `)}
-    ${state.layout.visualizador ? acc('ajustes', 'bi-sliders', 'Visualizador — ajustes', `
-      ${sw('visualizador.visible', 'Mostrar visualizador')}
-      ${sel('visualizador.ajuste', 'Ajuste de imagen', [['contain', 'Completa (sin recortar)'], ['cover', 'Rellenar (recorta bordes)']])}
-      ${sw('visualizador.pie', 'Pie de foto (título y crédito)')}
-      ${txt('visualizador.pieTexto', 'Pie de foto fijo (opcional)', 'Sobrescribe el título del medio actual')}
-    `) : ''}
-    ${acc('visibilidad', 'bi-eye', 'Visibilidad del menú', `
-      <p class="small text-muted mb-2">El menú <b>Cartelera</b> siempre está en los portales <b>Admin</b>, <b>ADM</b> y <b>ACM</b>. Aquí eliges en qué otros portales aparece también:</p>
+    </div>
+
+    ${sleepModeHTML()}
+
+    ${acc('visibilidad', 'bi-eye', 'Visibilidad del menú en portales', `
+      <p class="small text-muted mb-2">El menú <b>Cartelera</b> siempre está en <b>Admin</b>, <b>ADM</b> y <b>ACM</b>. Aquí eliges en qué otros portales aparece:</p>
       ${api.PORTALES_DEPTO.map((p) => `
         <label class="form-check form-switch d-flex align-items-center gap-2 py-1 m-0">
           <input class="form-check-input" type="checkbox" data-portal="${p.id}"
             ${p.fijo || state.menuPortales.includes(p.id) ? 'checked' : ''} ${p.fijo ? 'disabled' : ''}>
           <span>${escapeHTML(p.label)} <small class="text-muted">(${p.id})${p.fijo ? ' · siempre' : ''}</small></span>
         </label>`).join('')}
-    `)}`
+    `)}
+  `
 }
 
 function mediosHTML() {
@@ -282,13 +467,20 @@ function mediosHTML() {
     ? state.medios.map(medioRow).join('')
     : '<div class="text-center text-muted py-4"><i class="bi bi-collection d-block fs-3 mb-2"></i>Sin contenido. Sube una imagen o agrega un vídeo.</div>'
   return `
-    <div class="d-flex flex-wrap gap-2 mb-2">
-      <label class="btn btn-sm btn-primary mb-0">
-        <i class="bi bi-upload me-1"></i>Subir imagen / vídeo
+    <div class="ss-add-actions-bar mb-3">
+      <label class="ss-action-card ss-action-card--upload" title="Subir imagen o vídeo (PNG, JPG, MP4, WebM)">
+        <i class="bi bi-cloud-arrow-up-fill"></i>
+        <span>Subir</span>
         <input type="file" id="ss-file" accept="image/*,video/mp4,video/webm" hidden>
       </label>
-      <button class="btn btn-sm btn-outline-primary" id="ss-slide"><i class="bi bi-easel2 me-1"></i>Nueva diapositiva</button>
-      <button class="btn btn-sm btn-outline-danger" id="ss-yt"><i class="bi bi-youtube me-1"></i>YouTube</button>
+      <button type="button" class="ss-action-card ss-action-card--slide" id="ss-slide" title="Diseñar diapositiva en lienzo interactivo">
+        <i class="bi bi-easel2-fill"></i>
+        <span>Diapositiva</span>
+      </button>
+      <button type="button" class="ss-action-card ss-action-card--yt" id="ss-yt" title="Agregar vídeo de YouTube">
+        <i class="bi bi-youtube"></i>
+        <span>YouTube</span>
+      </button>
     </div>
     <div class="ss-media-list">${filas}</div>`
 }
@@ -297,7 +489,7 @@ const TIPO_ICONO = { video: 'film', youtube: 'youtube', slide: 'easel2' }
 const TIPO_LABEL = { imagen: 'Imagen', video: 'Vídeo', youtube: 'YouTube', slide: 'Diapositiva' }
 
 function medioRow(m) {
-  const url = m.storage_path ? api.urlPublica(m.storage_path) : null
+  const url = m.storage_path ? api.urlPublica(m.storage_path) : (m.dataUrl || null)
   const thumb = m.tipo === 'imagen' && url
     ? `<img src="${escapeHTML(url)}" alt="" class="ss-thumb">`
     : `<div class="ss-thumb ss-thumb--icon"><i class="bi bi-${TIPO_ICONO[m.tipo] || 'image'}"></i></div>`
@@ -308,8 +500,9 @@ function medioRow(m) {
     vig,
   ].filter(Boolean).join('  ·  ')
   return `
-    <div class="ss-media-row${m.activo ? '' : ' is-off'}" data-id="${m.id}">
+    <div class="ss-media-row${m.activo ? '' : ' is-off'}" data-id="${m.id}" draggable="true">
       <div class="ss-media-main">
+        <span class="ss-drag-handle" title="Arrastra para reordenar"><i class="bi bi-grip-vertical"></i></span>
         ${thumb}
         <div class="ss-media-txt">
           <div class="ss-media-title">${escapeHTML(m.titulo || m.youtube_url || 'Sin título')}</div>
@@ -349,6 +542,17 @@ function attachShell(host) {
     try { preview().contentWindow.postMessage({ type: 'signage:ping' }, '*') } catch { /* iframe aún no accesible */ }
   })
 
+  // Pestañas del panel lateral
+  host.querySelectorAll('[data-side-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.activeTab = btn.dataset.sideTab
+      host.querySelectorAll('[data-side-tab]').forEach((b) =>
+        b.classList.toggle('active', b.dataset.sideTab === state.activeTab)
+      )
+      renderPanel()
+    })
+  })
+
   fitWorkspace()
   requestAnimationFrame(fitWorkspace)
   setTimeout(fitWorkspace, 250)
@@ -356,11 +560,116 @@ function attachShell(host) {
   window.addEventListener('resize', fitWorkspace)
 }
 
+let draggedMediaId = null
+
+function attachDragAndDrop(host) {
+  const mediaList = host.querySelector('.ss-media-list')
+  if (!mediaList) return
+
+  mediaList.querySelectorAll('.ss-media-row').forEach((row) => {
+    const id = row.dataset.id
+
+    row.addEventListener('dragstart', (e) => {
+      draggedMediaId = id
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', id)
+      requestAnimationFrame(() => row.classList.add('is-dragging'))
+    })
+
+    row.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      if (draggedMediaId && draggedMediaId !== id) {
+        row.classList.add('drag-over')
+      }
+    })
+
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drag-over')
+    })
+
+    row.addEventListener('drop', async (e) => {
+      e.preventDefault()
+      row.classList.remove('drag-over')
+      if (!draggedMediaId || draggedMediaId === id) return
+
+      const fromIdx = state.medios.findIndex((m) => m.id === draggedMediaId)
+      const toIdx = state.medios.findIndex((m) => m.id === id)
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return
+
+      const arr = [...state.medios]
+      const [moved] = arr.splice(fromIdx, 1)
+      arr.splice(toIdx, 0, moved)
+      state.medios = arr
+
+      renderPanel()
+      postModel()
+      try {
+        await api.reordenarMedios(arr.map((m) => m.id))
+        AppToast.success('Orden de playlist actualizado.')
+      } catch (err) {
+        AppToast.error(err.message)
+        await recargarMedios()
+      }
+    })
+
+    row.addEventListener('dragend', () => {
+      draggedMediaId = null
+      mediaList.querySelectorAll('.ss-media-row').forEach((r) => {
+        r.classList.remove('is-dragging', 'drag-over')
+      })
+    })
+  })
+}
+
 /* Eventos del panel lateral. Se re-cablean en cada renderPanel(). */
 function attachPanel(host) {
   host.querySelectorAll('[data-acc-toggle]').forEach((b) =>
     b.addEventListener('click', () => { state.seccion = state.seccion === b.dataset.accToggle ? '' : b.dataset.accToggle; renderPanel() }),
   )
+
+  // Presets rápidos de distribución
+  host.querySelectorAll('[data-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = LAYOUT_PRESETS.find((p) => p.id === btn.dataset.preset)
+      if (!preset) return
+      state.layout = api.mergeLayout(preset.apply())
+      markDirty()
+      postModel()
+      renderPanel()
+      AppToast.success(`Diseño cambiado a "${preset.name}". Recuerda guardar los cambios.`)
+    })
+  })
+
+  // Modo Reposo Nocturno
+  host.querySelector('#ss-mn-activo')?.addEventListener('change', async (e) => {
+    state.modoNocturno = state.modoNocturno || {}
+    state.modoNocturno.activo = e.target.checked
+    renderPanel()
+    try {
+      await api.guardarModoNocturno(state.pantalla.id, state.modoNocturno)
+      state.pantalla.modo_nocturno = { ...state.modoNocturno }
+      AppToast.success(state.modoNocturno.activo ? 'Modo reposo activado.' : 'Modo reposo desactivado.')
+    } catch (err) { AppToast.error(err.message) }
+  })
+  host.querySelector('#ss-mn-desde')?.addEventListener('change', async (e) => {
+    state.modoNocturno = state.modoNocturno || {}
+    state.modoNocturno.desde = e.target.value
+    try {
+      await api.guardarModoNocturno(state.pantalla.id, state.modoNocturno)
+      state.pantalla.modo_nocturno = { ...state.modoNocturno }
+      AppToast.success('Horario de reposo actualizado.')
+    } catch (err) { AppToast.error(err.message) }
+  })
+  host.querySelector('#ss-mn-hasta')?.addEventListener('change', async (e) => {
+    state.modoNocturno = state.modoNocturno || {}
+    state.modoNocturno.hasta = e.target.value
+    try {
+      await api.guardarModoNocturno(state.pantalla.id, state.modoNocturno)
+      state.pantalla.modo_nocturno = { ...state.modoNocturno }
+      AppToast.success('Horario de reposo actualizado.')
+    } catch (err) { AppToast.error(err.message) }
+  })
 
   host.querySelectorAll('[data-path]').forEach((el) => {
     const evt = el.type === 'range' ? 'input' : 'change'
@@ -389,7 +698,7 @@ function attachPanel(host) {
 
   // medios
   host.querySelector('#ss-file')?.addEventListener('change', onSubir)
-  host.querySelector('#ss-slide')?.addEventListener('click', () => editorCanvas(null))
+  host.querySelector('#ss-slide')?.addEventListener('click', () => router.navigate('cartelera/diapositiva', { pantallaId: state.pantalla?.id }))
   host.querySelector('#ss-yt')?.addEventListener('click', onYouTube)
   host.querySelectorAll('.ss-media-row').forEach((row) => {
     const id = row.dataset.id
@@ -403,13 +712,28 @@ function attachPanel(host) {
     row.querySelector('.ss-edit')?.addEventListener('click', () => editarMedio(m))
     row.querySelectorAll('.ss-move').forEach((btn) => btn.addEventListener('click', () => moverMedio(id, Number(btn.dataset.dir))))
   })
+
+  // Drag & Drop reordenamiento
+  attachDragAndDrop(host)
 }
 
 function irASeccion(zona) {
-  const map = { cabecera: 'cabecera', visualizador: 'visualizador', horario: 'horario' }
-  state.seccion = map[zona] || state.seccion
+  if (zona === 'visualizador') {
+    state.activeTab = 'playlist'
+  } else if (zona === 'cabecera' || zona === 'horario') {
+    state.activeTab = 'layout'
+    state.seccion = zona
+  }
+  const host = state.container
+  if (host) {
+    host.querySelectorAll('[data-side-tab]').forEach((b) =>
+      b.classList.toggle('active', b.dataset.sideTab === state.activeTab)
+    )
+  }
   renderPanel()
-  state.container.querySelector(`[data-acc="${state.seccion}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  if (state.seccion) {
+    state.container?.querySelector(`[data-acc="${state.seccion}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
 }
 
 /* ─── modelo → iframe ─────────────────────────────────────────────────── */
@@ -491,6 +815,10 @@ async function guardar() {
   try {
     await api.guardarLayout(state.pantalla.id, state.layout)
     await api.guardarIdentidad(state.pantalla.id, state.marca)
+    if (state.modoNocturno) {
+      await api.guardarModoNocturno(state.pantalla.id, state.modoNocturno)
+      state.pantalla.modo_nocturno = JSON.parse(JSON.stringify(state.modoNocturno))
+    }
     state.pantalla.layout = JSON.parse(JSON.stringify(state.layout))
     state.pantalla.institucion = state.marca.institucion
     state.pantalla.siglas = state.marca.siglas
@@ -508,6 +836,8 @@ async function guardar() {
 
 async function recargarMedios() {
   state.medios = await api.listarMedios(state.pantalla.id)
+  const badge = state.container?.querySelector('[data-side-tab="playlist"] .badge')
+  if (badge) badge.textContent = state.medios.length
   renderPanel()
   postModel()
 }
@@ -560,7 +890,6 @@ async function onSubir(e) {
   } catch (err) { t.error(err.message) }
 }
 
-/* ─── editor de lienzo libre (arrastrar textos e imágenes) ───────────── */
 
 const CV_GRAD = {
   oscuro: 'linear-gradient(135deg,#10192b,#0b0e17 75%)',
@@ -652,7 +981,10 @@ function editorCanvas(m) {
       return CV_GRAD[f.valor] || CV_GRAD.oscuro
     }
 
-    function renderArt() {
+    // Solo redibuja el lienzo (no el panel de propiedades). Se usa mientras
+    // se escribe en el textarea de texto para que el preview se actualice
+    // en vivo sin destruir/recrear ese mismo textarea (ver nota en 'texto').
+    function drawArt() {
       art.style.background = bgCss()
       art.innerHTML = cv.elementos.map((el) => {
         const base = `left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;`
@@ -669,8 +1001,9 @@ function editorCanvas(m) {
           (el.sombra ? 'text-shadow:0 2px 12px rgba(0,0,0,.55);' : '')
         return `<div class="cvel cvel--texto${sel === el.id ? ' is-sel' : ''}" data-id="${el.id}" style="${ts}">${escapeHTML(el.texto || '')}${handle}</div>`
       }).join('')
-      renderProps()
     }
+
+    function renderArt() { drawArt(); renderProps() }
 
     function elById(id) { return cv.elementos.find((e) => e.id === id) }
 
@@ -722,6 +1055,10 @@ function editorCanvas(m) {
           else if (p === 'tamano') { el.tamano = Number(node.value); const v = props.querySelector('[data-p-val]'); if (v) v.textContent = node.value }
           else el[p] = node.value
           if (p === 'tamano') syncStyle(el)
+          // 'texto' dispara 'input' en cada tecla: redibuja solo el lienzo
+          // (drawArt) para no reconstruir el panel de propiedades y perder
+          // el foco/cursor del propio textarea que se está editando.
+          else if (p === 'texto') drawArt()
           else renderArt()
         })
       })
@@ -761,8 +1098,18 @@ function editorCanvas(m) {
       if (!elNode) return
       const el = elById(elNode.dataset.id)
       elNode.setAttribute('contenteditable', 'true')
+      // Chromium pierde el caret al escribir si el elemento editable tiene
+      // display:flex (usado acá para centrar el texto verticalmente, ver ts
+      // más arriba). Se fuerza a block mientras se edita; renderArt() en
+      // done() reconstruye el nodo desde cero y restaura el flex al salir.
+      elNode.style.display = 'block'
       elNode.focus()
-      const done = () => { el.texto = elNode.innerText; elNode.removeAttribute('contenteditable'); elNode.removeEventListener('blur', done); renderArt() }
+      const selection = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(elNode)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      const done = () => { el.texto = elNode.innerText; elNode.removeAttribute('contenteditable'); elNode.style.display = ''; elNode.removeEventListener('blur', done); renderArt() }
       elNode.addEventListener('blur', done)
     })
 
@@ -997,8 +1344,11 @@ async function cambiarMedio(id, cambios, m) {
 
 function editarMedio(m) {
   if (m.tipo === 'slide') {
-    if (m.contenido?.tipo === 'canvas') editorCanvas(m)
-    else editorSlide(m)
+    if (m.contenido?.tipo === 'canvas') {
+      router.navigate(`cartelera/diapositiva/${m.id}`, { id: m.id, pantallaId: state.pantalla?.id })
+    } else {
+      editorSlide(m)
+    }
     return
   }
   const esImagen = m.tipo === 'imagen'

@@ -189,7 +189,7 @@ export function mountPreloadSearch(container) {
           <div class="list-group">${items}</div>
           <p class="text-muted small mt-2 mb-0">
             <i class="bi bi-info-circle me-1"></i>
-            Se precargarán los campos disponibles. Podés editarlos antes de guardar.
+            Se precargarán los campos disponibles. Puede editarlos antes de guardar.
           </p>`
 
         function pickPostulante(idx) {
@@ -217,7 +217,7 @@ export function mountPreloadSearch(container) {
         resultsDiv.innerHTML = `
           <div class="alert alert-danger py-2 mb-0">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            Error al conectar. Continuá sin búsqueda.
+            Error al conectar. Continúe sin búsqueda.
           </div>`
       }
     }

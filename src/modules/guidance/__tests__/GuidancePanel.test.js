@@ -103,7 +103,7 @@ describe('createGuidancePanel', () => {
     mockService.getHints.mockReturnValue({
       proactive: [],
       reactive: [
-        { id: 'r1', message: 'Hay ausencias', action: 'Registrá justificación', priority: 'medium', process: 'test' },
+        { id: 'r1', message: 'Hay ausencias', action: 'Registre justificación', priority: 'medium', process: 'test' },
       ],
       total: 1,
     })

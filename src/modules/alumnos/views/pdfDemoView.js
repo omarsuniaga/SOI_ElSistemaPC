@@ -5,7 +5,7 @@ export async function renderPdfDemoView(container) {
     <div class="container py-4" style="max-width:720px">
       <div class="mb-4">
         <h4 class="mb-1"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Vista previa de documentos PDF</h4>
-        <p class="text-muted small mb-0">Generá los PDFs de inscripción con datos de ejemplo para revisar el diseño antes de usarlos en producción.</p>
+        <p class="text-muted small mb-0">Genere los PDF de inscripción con datos de ejemplo para revisar el diseño antes de usarlos en producción.</p>
       </div>
 
       <div class="row g-3">

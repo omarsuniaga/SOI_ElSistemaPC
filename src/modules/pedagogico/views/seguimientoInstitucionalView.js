@@ -339,7 +339,7 @@ async function _openNewCaseModal() {
       const descripcion  = document.querySelector('#nc-descripcion')?.value?.trim() || null
 
       if (!alumnoId || !tipo || !titulo) {
-        alert('Completá alumno, tipo y título.')
+        alert('Complete alumno, tipo y título.')
         return false
       }
 

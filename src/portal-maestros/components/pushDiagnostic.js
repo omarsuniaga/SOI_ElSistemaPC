@@ -419,7 +419,7 @@ export const pushDiagnostic = {
       let successMsg = '✅ ¡Notificaciones push activadas!'
       
       if (isMobileFinal) {
-        successMsg += '<br><small>💡 En móvil, agrega la app a pantalla de inicio para notificaciones completas (botón Compartir → Agregar a pantalla de inicio)</small>'
+        successMsg += '<br><small>💡 En móvil, agregue la app a la pantalla de inicio para notificaciones completas (botón Compartir → Agregar a pantalla de inicio)</small>'
       }
       resultDiv.innerHTML = successMsg
       

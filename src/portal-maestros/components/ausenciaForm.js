@@ -22,7 +22,7 @@ export function renderAusenciaForm(onSubmit) {
       <div class="col-12">
         <label class="form-label label-apple">Motivo de ausencia</label>
         <select class="input-apple" id="ausenciaMotivo" required>
-          <option value="">Selecciona un motivo</option>
+          <option value="">Seleccione un motivo</option>
           <option value="enfermedad">Enfermedad</option>
           <option value="personal">Asunto personal</option>
           <option value="familiar">Emergencia familiar</option>
@@ -71,7 +71,7 @@ async function cargarMaestros() {
 
     const maestroActual = getMaestroLocal();
     state.maestros = (data || []).filter(m => m.id !== maestroActual?.id);
-    select.innerHTML = '<option value="">Selecciona un sustituto</option>' +
+    select.innerHTML = '<option value="">Seleccione un sustituto</option>' +
       state.maestros.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
   } catch (error) {
     select.innerHTML = '<option value="">Error al cargar maestros</option>';

@@ -244,7 +244,7 @@ function _renderCasosBodyHTML() {
           <i class="bi bi-inbox fs-1"></i>
         </div>
         <p class="fw-semibold text-body-secondary mb-1">Aún no hay reincorporaciones ni justificaciones en este período</p>
-        <p class="text-muted small mb-0">Podés probar ampliando el rango de fechas con los filtros superiores o limpiando el filtro para ver todo el histórico.</p>
+        <p class="text-muted small mb-0">Puede probar ampliando el rango de fechas con los filtros superiores o limpiando el filtro para ver todo el histórico.</p>
       </div>`
   }
 
@@ -350,7 +350,7 @@ function _abrirAyuda() {
       {
         icon: 'bi-archive',
         title: 'Casos Cerrados',
-        description: 'Historial de contactos que concluyeron en reincorporación, justificación o resolución del caso. Podés filtrar por rango de fechas y exportar a CSV.',
+        description: 'Historial de contactos que concluyeron en reincorporación, justificación o resolución del caso. Puede filtrar por rango de fechas y exportar a CSV.',
       },
     ],
   })

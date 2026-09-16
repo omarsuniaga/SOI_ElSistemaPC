@@ -48,6 +48,7 @@ y leer todos los registros con `mem_get_observation`.
 - **Enrutamiento:** Basado en Hash (`#/hoy`, `#/calendario`, etc.).
 - **Consultas DB:** Nunca usar joins complejos de Supabase (`.eq('tabla.columna', ...)`). Realizar 2 consultas separadas.
 - **Variables:** Español, camelCase.
+- **Idioma UI:** Español neutro e institucional (estricto tratamiento formal / impersonal; prohibido el voseo o dialectos regionales — ver `docs/planning/HANDOFF_ESTANDARIZACION_ESPANOL_NEUTRO.md`).
 
 ## Roadmap de Fases
 

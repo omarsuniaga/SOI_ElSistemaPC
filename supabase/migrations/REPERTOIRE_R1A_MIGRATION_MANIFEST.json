@@ -1,0 +1,188 @@
+{
+  "release": "R1-A",
+  "status": "release-candidate",
+  "production_applied": false,
+  "migrations": [
+    {
+      "order": 1,
+      "filename": "20260914160601_repertoire_engine_foundation.sql",
+      "sha256": "32558a80b9911345b501601d0f1b331fa59c1e3d83b602d7e2b9e3f0628d04fa",
+      "purpose": "Create the additive repertoire, work, montage, fila, measure, and preparation-state foundation.",
+      "creates": [
+        "obras",
+        "obra_versiones",
+        "montajes",
+        "montaje_secciones",
+        "montaje_filas",
+        "montaje_alumnos",
+        "obra_compases",
+        "montaje_compases",
+        "catalogo_estados_preparacion",
+        "montaje_estado",
+        "aplicabilidad_compas",
+        "estado_preparacion"
+      ],
+      "depends_on": [
+        "auth.users",
+        "maestros",
+        "alumnos",
+        "instrumentos",
+        "sections"
+      ]
+    },
+    {
+      "order": 2,
+      "filename": "20260914173531_repertoire_student_overrides.sql",
+      "sha256": "3bf96ada897996bc480a5347e26d01cf661082ac4c453f01a13482ceaba6b22c",
+      "purpose": "Add per-student preparation overrides with scoped access policies.",
+      "creates": [
+        "montaje_alumno_compases"
+      ],
+      "depends_on": [
+        "montaje_alumnos",
+        "montaje_compases",
+        "estado_preparacion"
+      ]
+    },
+    {
+      "order": 3,
+      "filename": "20260914174948_repertoire_passages_linked_measures.sql",
+      "sha256": "d4e9f086aafeda1ce42708e0cc8bddb6d6ddbf444b09d5c93b35a41e0451e355",
+      "purpose": "Add passage metadata and reversible linked-measure groups.",
+      "creates": [
+        "montaje_pasajes",
+        "montaje_pasaje_compases",
+        "montaje_grupos_compases",
+        "montaje_grupo_compases"
+      ],
+      "depends_on": [
+        "montajes",
+        "montaje_compases"
+      ]
+    },
+    {
+      "order": 4,
+      "filename": "20260914192916_repertoire_session_work.sql",
+      "sha256": "1fb39c5e37e4592903101766c12084063bcc842f997afe10fdde42303c0ce49b",
+      "purpose": "Record repertoire work inside existing class sessions and observations.",
+      "creates": [
+        "sesion_repertorio_trabajos",
+        "sesion_repertorio_trabajo_compases",
+        "observacion_sesion_repertorio"
+      ],
+      "depends_on": [
+        "sesiones_clase",
+        "observaciones_sesion",
+        "montajes",
+        "montaje_filas",
+        "montaje_pasajes",
+        "maestros",
+        "alumnos"
+      ]
+    },
+    {
+      "order": 5,
+      "filename": "20260914205937_repertoire_preparation_history.sql",
+      "sha256": "344481eddfa54f9104f60bd40eca99af9f10a6d0ebb65f8005a39610412bcbc2",
+      "purpose": "Add append-only preparation transition history.",
+      "creates": [
+        "montaje_preparacion_historial"
+      ],
+      "depends_on": [
+        "montajes",
+        "montaje_filas",
+        "alumnos",
+        "montaje_compases",
+        "sesiones_clase",
+        "estado_preparacion"
+      ]
+    },
+    {
+      "order": 6,
+      "filename": "20260914210804_repertoire_targets_milestones.sql",
+      "sha256": "2c841d08fb2cb60efd73e964af5e8eaab916b755b06c331c8f2af33c15122054",
+      "purpose": "Add preparation targets and target milestones.",
+      "creates": [
+        "montaje_targets",
+        "montaje_target_milestones"
+      ],
+      "depends_on": [
+        "montajes",
+        "montaje_filas",
+        "alumnos",
+        "estado_preparacion"
+      ]
+    },
+    {
+      "order": 7,
+      "filename": "20260914213711_repertoire_atomic_preparation_mutation.sql",
+      "sha256": "fdb48522b9be5b5795ee76f79ef9c5ac450bd543648401af91f0655e323bc840",
+      "purpose": "Route preparation and history mutations through validated atomic SECURITY DEFINER RPCs.",
+      "creates": [
+        "fn_repertoire_update_preparation"
+      ],
+      "depends_on": [
+        "montaje_compases",
+        "montaje_alumno_compases",
+        "montaje_preparacion_historial",
+        "maestro_actual",
+        "get_user_role",
+        "get_user_department"
+      ]
+    },
+    {
+      "order": 8,
+      "filename": "20260914213713_repertoire_calendar_relationship.sql",
+      "sha256": "040faf04ba3898a812fc1e189823234c2d3451c7acc6408c7db244aab8304418",
+      "purpose": "Relate montages to the canonical institutional calendar.",
+      "creates": [
+        "montaje_eventos"
+      ],
+      "depends_on": [
+        "montajes",
+        "calendario_institucional"
+      ]
+    },
+    {
+      "order": 9,
+      "filename": "20260914214811_repertoire_deterministic_signals.sql",
+      "sha256": "c9ff214aaaab2a6f84172e668a4b1e4fecf9ff00a93d3f8e1c3d5ee476c39738",
+      "purpose": "Add deterministic signal records and recipient deliveries without background activation.",
+      "creates": [
+        "repertoire_signals",
+        "repertoire_signal_deliveries"
+      ],
+      "depends_on": [
+        "montajes",
+        "calendario_institucional",
+        "profiles"
+      ]
+    },
+    {
+      "order": 10,
+      "filename": "20260914220000_repertoire_fila_assignments_rls.sql",
+      "sha256": "5eeaf6ba586002efbdb4ca3cc91a409d86a74cc472a9f01cb0d555d1f97f9832",
+      "purpose": "Establish explicit teacher-to-fila assignments and final scope-aware RLS/grant/RPC hardening.",
+      "creates": [
+        "montaje_fila_maestros",
+        "repertoire_maestro_puede_leer_fila",
+        "repertoire_maestro_puede_editar_fila",
+        "repertoire_maestro_puede_editar_montage",
+        "repertoire_maestro_puede_leer_montage",
+        "fn_repertoire_update_preparation",
+        "fn_repertoire_update_applicability"
+      ],
+      "depends_on": [
+        "montajes",
+        "montaje_filas",
+        "maestros",
+        "montaje_compases",
+        "montaje_pasajes",
+        "montaje_grupos_compases",
+        "montaje_targets",
+        "repertoire_signals",
+        "sesion_repertorio_trabajos"
+      ]
+    }
+  ]
+}

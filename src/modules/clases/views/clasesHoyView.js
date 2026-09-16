@@ -76,22 +76,54 @@ function pillsHTML(diaSeleccionado) {
 
 
 
-function alumnoRowHTML(alumno) {
+import { obtenerAcuerdosMaestros } from '../api/acuerdosApi.js'
+
+function alumnoRowHTML(alumno, claseId = null, todosAcuerdos = []) {
   const yaJustificado = alumno.estadoAsistencia === 'justificado'
-  const badge = yaJustificado
-    ? `<span class="badge text-bg-info-subtle text-info-emphasis border border-info-subtle ms-2" title="${escapeHTML(alumno.justificacionTexto || 'Sin motivo especificado')}">
+  const badgeJustificado = yaJustificado
+    ? `<span class="badge text-bg-info-subtle text-info-emphasis border border-info-subtle ms-1" title="${escapeHTML(alumno.justificacionTexto || 'Sin motivo especificado')}">
          <i class="bi bi-shield-check"></i> Justificado
        </span>`
     : ''
+
+  // Verificar si el alumno tiene un acuerdo docente en esta clase
+  const acuerdo = claseId && todosAcuerdos.length > 0
+    ? todosAcuerdos.find(ac =>
+        ac.activo &&
+        ac.alumno_id === alumno.id &&
+        (ac.clase_origen_id === claseId || ac.clase_destino_id === claseId)
+      )
+    : null
+
+  let badgeAcuerdo = ''
+  if (acuerdo) {
+    const esOrigen = acuerdo.clase_origen_id === claseId
+    const hora = escapeHTML(acuerdo.hora_transicion || '16:00')
+    const otraClase = escapeHTML(esOrigen ? (acuerdo.clase_destino_nombre || 'otra clase') : (acuerdo.clase_origen_nombre || 'otra clase'))
+    const tooltip = esOrigen 
+      ? `Acuerdo: Asiste aquí hasta las ${hora}, luego pasa a ${otraClase}`
+      : `Acuerdo: Ingresa a las ${hora} procedente de ${otraClase}`
+    const label = esOrigen ? `Hasta ${hora}` : `Desde ${hora}`
+
+    badgeAcuerdo = `
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" title="${tooltip}" style="font-size:0.67rem;">
+        <i class="bi bi-handshake-fill me-1"></i>${label}
+      </span>
+    `
+  }
+
   return `
     <div class="clases-hoy__nomina-alumno">
-      <span><i class="bi bi-person me-1 text-secondary"></i> ${escapeHTML(alumno.nombre_completo || 'Alumno')}</span>
-      ${badge}
+      <span class="text-truncate me-1"><i class="bi bi-person me-1 text-secondary"></i> ${escapeHTML(alumno.nombre_completo || 'Alumno')}</span>
+      <div class="d-flex align-items-center flex-shrink-0">
+        ${badgeAcuerdo}
+        ${badgeJustificado}
+      </div>
     </div>
   `
 }
 
-function cardHTML(sesion) {
+function cardHTML(sesion, acuerdos = []) {
   const estadoMeta = ESTADO_LABEL[sesion.estado] || ESTADO_LABEL.futura
   const capacidad = sesion.capacidadMaxima ?? 20
   const totalAlumnos = sesion.totalAlumnos || 0
@@ -102,7 +134,7 @@ function cardHTML(sesion) {
   if (pctOcupacion >= 100) fillClass = 'bg-danger'
 
   const alumnosHTML = sesion.alumnos.length > 0
-    ? sesion.alumnos.map(alumnoRowHTML).join('')
+    ? sesion.alumnos.map(a => alumnoRowHTML(a, sesion.claseId, acuerdos)).join('')
     : '<div class="clases-hoy__nomina-alumno text-muted">Sin alumnos matriculados</div>'
 
   const maestroNombre = sesion.maestroTitular?.nombre_completo || 'Sin asignar'
@@ -125,7 +157,7 @@ function cardHTML(sesion) {
     : ''
 
   const telefonoMaestro = sesion.maestroTitular?.tlf
-  const mensajeWhatsapp = `Hola ${sesion.maestroTitular?.nombre_completo || ''}, te recordamos pasar la asistencia de "${sesion.nombre}" (${formatHora(sesion.horaInicio)}-${formatHora(sesion.horaFin)}) — llevás ${pendiente?.diasAtraso ?? 0} día(s) pendiente.`
+  const mensajeWhatsapp = `Hola ${sesion.maestroTitular?.nombre_completo || ''}, te recordamos pasar la asistencia de "${sesion.nombre}" (${formatHora(sesion.horaInicio)}-${formatHora(sesion.horaFin)}) — tienes ${pendiente?.diasAtraso ?? 0} día(s) pendiente.`
   const waLink = pendiente && telefonoMaestro ? whatsappLink(telefonoMaestro, mensajeWhatsapp) : null
   const recordatorioBtn = pendiente
     ? (waLink
@@ -222,7 +254,7 @@ function emptyStateHTML() {
     <div class="clases-hoy__empty">
       <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
       <h5 class="fw-bold">No hay clases para este día</h5>
-      <p class="text-muted small mb-0">Probá seleccionando otro día o ajustando los filtros aplicados.</p>
+      <p class="text-muted small mb-0">Selecciona otro día o ajusta los filtros aplicados.</p>
     </div>
   `
 }
@@ -277,7 +309,7 @@ function abrirModalJustificar(container, sesion) {
     </div>
     <div class="mb-3">
       <label class="form-label">Buscar alumno</label>
-      <input type="search" class="form-control" id="justificarBuscarAlumno" placeholder="Escribí el nombre del alumno...">
+      <input type="search" class="form-control" id="justificarBuscarAlumno" placeholder="Escriba el nombre del alumno...">
       <div class="list-group mt-2" id="justificarListaAlumnos" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
     <div class="mb-2" id="justificarAlumnoSeleccionado" style="display:none;">
@@ -340,7 +372,7 @@ function abrirModalJustificar(container, sesion) {
     },
     onSave: async (body) => {
       if (!seleccionado) {
-        AppToast.error('Buscá y seleccioná un alumno primero')
+        AppToast.error('Busca y selecciona un alumno primero')
         return false
       }
       const motivo = body.querySelector('#justificarMotivo')?.value || ''
@@ -356,7 +388,7 @@ function abrirModalBuscarAlumnoGlobal(container, sesiones) {
   const bodyHTML = `
     <div class="mb-3">
       <label class="form-label">Nombre del alumno</label>
-      <input type="search" class="form-control" id="buscarGlobalInput" placeholder="Escribí el nombre que te pasó el padre por WhatsApp...">
+      <input type="search" class="form-control" id="buscarGlobalInput" placeholder="Escribe el nombre del alumno a consultar...">
       <div class="list-group mt-2" id="buscarGlobalLista" style="max-height: 260px; overflow-y: auto;"></div>
     </div>
     <div id="buscarGlobalDetalle" style="display:none;">
@@ -417,7 +449,7 @@ function abrirModalBuscarAlumnoGlobal(container, sesiones) {
           claseInfoEl.textContent = `Clase de hoy: ${sesionSeleccionada.nombre} (${formatHora(sesionSeleccionada.horaInicio)}-${formatHora(sesionSeleccionada.horaFin)})`
           clasesEl.innerHTML = ''
         } else {
-          claseInfoEl.textContent = `Este alumno tiene ${pendientes.length} clases hoy. Elegí una:`
+          claseInfoEl.textContent = `Este alumno tiene ${pendientes.length} clases hoy. Elija una:`
           sesionSeleccionada = pendientes[0].sesion
           clasesEl.innerHTML = `
             <div class="list-group mb-2">
@@ -474,7 +506,7 @@ function abrirModalBuscarAlumnoGlobal(container, sesiones) {
     },
     onSave: async (body) => {
       if (!alumnoSeleccionado || !sesionSeleccionada) {
-        AppToast.error('Buscá un alumno y confirmá su clase de hoy primero')
+        AppToast.error('Busque un alumno y confirme su clase de hoy primero')
         return false
       }
       const motivo = body.querySelector('#buscarGlobalMotivo')?.value || ''
@@ -629,7 +661,7 @@ function renderContent(container, dia, kpis, sesiones) {
 
       <!-- GRID DE TARJETAS DE CLASE DEL DÍA -->
       <div class="clases-hoy__grid">
-        ${sesionesOrdenadas.length > 0 ? sesionesOrdenadas.map(cardHTML).join('') : ''}
+        ${sesionesOrdenadas.length > 0 ? sesionesOrdenadas.map(s => cardHTML(s, obtenerAcuerdosMaestros())).join('') : ''}
         <div id="clasesHoyEmptyFiltro" style="display:none;">${emptyStateHTML()}</div>
       </div>
       ${sesionesOrdenadas.length === 0 ? emptyStateHTML() : ''}

@@ -117,7 +117,7 @@ export async function renderRegistroPagosView(container) {
     const referencia_transaccion = fd.get('referencia_transaccion') || null
 
     if (!alumno_id || !monto || !concepto || !periodo_mes || !metodo_pago) {
-      errEl.textContent = 'Completá todos los campos requeridos.'
+      errEl.textContent = 'Complete todos los campos requeridos.'
       errEl.classList.remove('d-none')
       return
     }

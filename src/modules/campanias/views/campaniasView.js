@@ -86,7 +86,7 @@ function render(container) {
 function renderLista() {
   if (state.campanias.length === 0) {
     return `<div class="card border-0 shadow-sm rounded-3"><div class="card-body text-body-secondary text-center py-5">
-      <i class="bi bi-megaphone fs-1 d-block mb-2 opacity-50"></i>No hay campañas. Creá una a la derecha.</div></div>`
+      <i class="bi bi-megaphone fs-1 d-block mb-2 opacity-50"></i>No hay campañas. Cree una a la derecha.</div></div>`
   }
   const filas = state.campanias.map((c) => {
     const activa = c.activo
@@ -156,7 +156,7 @@ function renderPanelEjecucion(c) {
         <li class="text-body-secondary">• Sin teléfono: ${p.sin_telefono}</li>
         <li>• Cupo disponible: <strong>${p.cupo_disponible}</strong> / ${p.cupo_total}</li>
       </ul>
-      ${excede ? `<div class="alert alert-warning py-2 px-2 small mb-2">⚠️ La audiencia supera el cupo disponible. Abrí otro grupo de Iniciación Musical o enviá en tandas.</div>` : ''}`
+      ${excede ? `<div class="alert alert-warning py-2 px-2 small mb-2">⚠️ La audiencia supera el cupo disponible. Abra otro grupo de Iniciación Musical o envíe en tandas.</div>` : ''}`
   } else {
     cuerpo = `
       <ul class="list-unstyled small mb-2">

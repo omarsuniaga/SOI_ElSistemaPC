@@ -69,8 +69,8 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
               <div>
                 <h2 class="pm-calendar-empty-card__title">Sin clases cargadas</h2>
                 <p class="pm-calendar-empty-card__text">
-                  Esta vista fue optimizada para mostrar tus clases programadas por mes.
-                  En cuanto existan asignaciones, el calendario aparecera aqui.
+                  Esta vista fue optimizada para mostrar sus clases programadas por mes.
+                  En cuanto existan asignaciones, el calendario aparecerá aquí.
                 </p>
               </div>
             </div>
@@ -675,7 +675,7 @@ async function _openActionDrawer(fecha, container) {
   // paralelo) antes de siquiera agregar la clase "open" (la que dispara la
   // animación de aparición), así que el drawer tardaba exactamente lo que
   // tardaran esas 6 consultas sumadas en aparecer en pantalla. Ahora se
-  // abre al toque y el contenido real reemplaza el esqueleto cuando llega.
+  // abre enseguida y el contenido real reemplaza el esqueleto cuando llega.
   _ensureDrawerStyles()
   drawer.innerHTML = `
     <div class="pm-drawer-content">
@@ -965,7 +965,7 @@ async function _openActionDrawer(fecha, container) {
       e.stopPropagation()
       const sesionId = btn.dataset.sesion
       if (!sesionId) return
-      if (confirm('¿Deseas descartar este borrador? La fecha se desmarcará por completo.')) {
+      if (confirm('¿Desea descartar este borrador? La fecha se desmarcará por completo.')) {
         try {
           await eliminarSesion(sesionId)
           invalidateClasesCache()
@@ -986,8 +986,8 @@ async function _openActionDrawer(fecha, container) {
       _abrirModalClaseEmergente(fecha, clasesDelMaestro)
     })
   })
-  // El drawer ya se abrió al toque, junto con el esqueleto (más arriba) —
-  // acá no hace falta volver a agregar "open".
+  // El drawer ya se abrió enseguida, junto con el esqueleto (más arriba) —
+  // aquí no hace falta volver a agregar "open".
 }
 
 /**
@@ -1048,7 +1048,7 @@ async function _abrirModalClaseEmergente(fecha, clases) {
             `Clase emergente creada. ${resultado.justificadas} clase(s) programada(s) marcada(s) como justificadas.`,
           )
         } else {
-          AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
+          AppToast.success('Clase emergente creada. Proceda a registrar la asistencia.')
         }
 
         // Navigate to attendance

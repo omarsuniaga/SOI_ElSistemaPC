@@ -77,7 +77,7 @@ function _render(container) {
         </div>
         <div>
           <h4 class="fw-bold mb-0">Planificación de Clase</h4>
-          <p class="text-muted small mb-0">Vinculá indicadores curriculares y evaluá el progreso de tus alumnos</p>
+          <p class="text-muted small mb-0">Vincule indicadores curriculares y evalúe el progreso de sus alumnos</p>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ function _renderNoRouteCard() {
     <div class="page-glass rounded p-4 mb-4 text-center">
       <i class="bi bi-diagram-3 d-block mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
       <h6 class="text-muted mb-1">Sin ruta curricular asignada</h6>
-      <p class="text-muted small mb-3">Asigná una ruta desde ACM para vincular indicadores a tus planificaciones.</p>
+      <p class="text-muted small mb-3">Asigne una ruta desde ACM para vincular indicadores a sus planificaciones.</p>
     </div>`
 }
 

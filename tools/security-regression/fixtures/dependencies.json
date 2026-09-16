@@ -1,0 +1,750 @@
+{
+  "roles": [
+    "maestro",
+    "admin"
+  ],
+  "ledger": [
+    {
+      "name": "finanzas_reinscripcion_guardian",
+      "version": "20260908052508"
+    },
+    {
+      "name": "justificaciones_clase_id_nullable",
+      "version": "20260907185533"
+    },
+    {
+      "name": "inventario_materiales_tabla",
+      "version": "20260907072159"
+    },
+    {
+      "name": "whatsapp_gateway_worker_lease",
+      "version": "20260907071747"
+    },
+    {
+      "name": "whatsapp_gateway_security_hardening",
+      "version": "20260907071706"
+    }
+  ],
+  "columns": [
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "asistencias",
+      "column": "id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "asistencias",
+      "column": "sesion_clase_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "asistencias",
+      "column": "clase_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "asistencias",
+      "column": "alumno_id"
+    },
+    {
+      "udt": "date",
+      "type": "date",
+      "table": "asistencias",
+      "column": "fecha"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "asistencias",
+      "column": "estado"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "asistencias",
+      "column": "justificacion_texto"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "asistencias",
+      "column": "observaciones"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "asistencias",
+      "column": "registrado_por"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "asistencias",
+      "column": "created_at"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "asistencias",
+      "column": "updated_at"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "asistencias",
+      "column": "periodo_id"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "asistencias",
+      "column": "marked_at"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "nombre"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "programa_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "nivel_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "maestro_principal_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "maestro_suplente_id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "tipo_clase"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "instrumento"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "descripcion"
+    },
+    {
+      "udt": "int4",
+      "type": "integer",
+      "table": "clases",
+      "column": "capacidad_maxima"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "clases",
+      "column": "activo"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "clases",
+      "column": "created_at"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "clases",
+      "column": "updated_at"
+    },
+    {
+      "udt": "varchar",
+      "type": "character varying",
+      "table": "clases",
+      "column": "estado"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "maestro_id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "plan_estudio"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "modalidad"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "salon"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "route_version_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "maestro_auxiliar_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "clases",
+      "column": "ruta_id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "whatsapp_group_jid"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "clases",
+      "column": "es_clase_iniciacion"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "clases",
+      "column": "necesita_revision"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "clases",
+      "column": "revision_motivo"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "maestros",
+      "column": "id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "maestros",
+      "column": "user_id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "nombre_completo"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "especialidad"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "tipo_maestro"
+    },
+    {
+      "udt": "_text",
+      "type": "ARRAY",
+      "table": "maestros",
+      "column": "habilidades"
+    },
+    {
+      "udt": "jsonb",
+      "type": "jsonb",
+      "table": "maestros",
+      "column": "disponibilidad"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "tlf"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "correo"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "resena"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "maestros",
+      "column": "puede_ser_suplente"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "maestros",
+      "column": "activo"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "maestros",
+      "column": "created_at"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "maestros",
+      "column": "updated_at"
+    },
+    {
+      "udt": "_text",
+      "type": "ARRAY",
+      "table": "maestros",
+      "column": "especialidades"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "maestros",
+      "column": "es_admin"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "maestros",
+      "column": "retirado_en"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "maestros",
+      "column": "retirado_por"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "maestros",
+      "column": "motivo_retiro"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "periodos",
+      "column": "id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "periodos",
+      "column": "nombre"
+    },
+    {
+      "udt": "date",
+      "type": "date",
+      "table": "periodos",
+      "column": "fecha_inicio"
+    },
+    {
+      "udt": "date",
+      "type": "date",
+      "table": "periodos",
+      "column": "fecha_fin"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "periodos",
+      "column": "activo"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "periodos",
+      "column": "created_at"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "periodos",
+      "column": "updated_at"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "periodos",
+      "column": "cerrado"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "periodos",
+      "column": "cerrado_at"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "periodos",
+      "column": "cerrado_por"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "periodos",
+      "column": "observaciones_cierre"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "periodos_cierre_auditoria",
+      "column": "id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "periodos_cierre_auditoria",
+      "column": "periodo_id"
+    },
+    {
+      "udt": "date",
+      "type": "date",
+      "table": "periodos_cierre_auditoria",
+      "column": "fecha_inicio"
+    },
+    {
+      "udt": "date",
+      "type": "date",
+      "table": "periodos_cierre_auditoria",
+      "column": "fecha_fin"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "periodos_cierre_auditoria",
+      "column": "cerrado_por"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "periodos_cierre_auditoria",
+      "column": "observaciones"
+    },
+    {
+      "udt": "jsonb",
+      "type": "jsonb",
+      "table": "periodos_cierre_auditoria",
+      "column": "resumen"
+    },
+    {
+      "udt": "jsonb",
+      "type": "jsonb",
+      "table": "periodos_cierre_auditoria",
+      "column": "snapshot"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "periodos_cierre_auditoria",
+      "column": "created_at"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "profiles",
+      "column": "id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "email"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "nombre_completo"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "rol"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "avatar_url"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "profiles",
+      "column": "activo"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "estado"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "profiles",
+      "column": "created_at"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "profiles",
+      "column": "updated_at"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "solicitud_instrumento"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "profiles",
+      "column": "solicitud_resena"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "clase_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "horario_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "maestro_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "salon_id"
+    },
+    {
+      "udt": "date",
+      "type": "date",
+      "table": "sesiones_clase",
+      "column": "fecha"
+    },
+    {
+      "udt": "time",
+      "type": "time without time zone",
+      "table": "sesiones_clase",
+      "column": "hora_inicio"
+    },
+    {
+      "udt": "time",
+      "type": "time without time zone",
+      "table": "sesiones_clase",
+      "column": "hora_fin"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "tema_principal"
+    },
+    {
+      "udt": "jsonb",
+      "type": "jsonb",
+      "table": "sesiones_clase",
+      "column": "contenidos_trabajados"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "observaciones_generales"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "estado"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "sesiones_clase",
+      "column": "cerrada_en"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "sesiones_clase",
+      "column": "created_at"
+    },
+    {
+      "udt": "timestamptz",
+      "type": "timestamp with time zone",
+      "table": "sesiones_clase",
+      "column": "updated_at"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "sesiones_clase",
+      "column": "borrador"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "contenido"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "contenido_dsl"
+    },
+    {
+      "udt": "jsonb",
+      "type": "jsonb",
+      "table": "sesiones_clase",
+      "column": "asistencia"
+    },
+    {
+      "udt": "bool",
+      "type": "boolean",
+      "table": "sesiones_clase",
+      "column": "es_codocencia"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "actividad"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "maestro_auxiliar_id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "motivo"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "emergente_id"
+    },
+    {
+      "udt": "uuid",
+      "type": "uuid",
+      "table": "sesiones_clase",
+      "column": "node_id"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "node_origen"
+    },
+    {
+      "udt": "text",
+      "type": "text",
+      "table": "sesiones_clase",
+      "column": "node_codigo"
+    }
+  ],
+  "helpers": [
+    {
+      "name": "fn_validar_cierre_periodo",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_validar_cierre_periodo(p_periodo_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  WITH periodo AS (\n    SELECT * FROM public.periodos WHERE id = p_periodo_id\n  ),\n  ses AS (\n    SELECT\n      s.id, s.fecha, s.borrador, s.estado,\n      c.nombre AS clase_nombre,\n      c.maestro_principal_id AS maestro_id,\n      m.nombre_completo AS maestro_nombre,\n      EXISTS (SELECT 1 FROM public.asistencias a WHERE a.sesion_clase_id = s.id) AS tiene_asistencia\n    FROM public.sesiones_clase s\n    CROSS JOIN periodo p\n    LEFT JOIN public.clases   c ON c.id = s.clase_id\n    LEFT JOIN public.maestros m ON m.id = c.maestro_principal_id\n    WHERE s.fecha BETWEEN p.fecha_inicio AND p.fecha_fin\n      AND s.estado <> 'cancelada'\n      AND public.fn_es_dia_lectivo(s.fecha)\n  ),\n  tot AS (\n    SELECT count(*)::int AS total,\n           count(*) FILTER (WHERE tiene_asistencia AND borrador IS NOT TRUE)::int AS completas\n    FROM ses\n  )\n  SELECT jsonb_build_object(\n    'periodo', jsonb_build_object(\n      'id', p.id, 'nombre', p.nombre,\n      'fecha_inicio', p.fecha_inicio, 'fecha_fin', p.fecha_fin,\n      'cerrado', p.cerrado),\n    'criterio', 'Sesion completa = tiene marcas de asistencia y no esta en borrador. Solo se evaluan dias lectivos.',\n    'total_sesiones', t.total,\n    'completas', t.completas,\n    'incompletas', t.total - t.completas,\n    'pct_completitud',\n      CASE WHEN t.total = 0 THEN NULL\n           ELSE round((t.completas::numeric / t.total::numeric) * 100, 1) END,\n    'puede_cerrar', (t.total > 0 AND t.completas = t.total),\n    'semaforo',\n      CASE WHEN t.total = 0 THEN 'SIN_SESIONES'\n           WHEN t.completas = t.total THEN 'VERDE'\n           WHEN t.completas::numeric / t.total::numeric >= 0.9 THEN 'AMARILLO'\n           ELSE 'ROJO' END,\n    'por_maestro', (\n      SELECT coalesce(jsonb_agg(jsonb_build_object(\n          'maestro_id', maestro_id,\n          'maestro', coalesce(maestro_nombre, 'Sin docente asignado'),\n          'total', n, 'completas', ok, 'incompletas', n - ok,\n          'pct', CASE WHEN n = 0 THEN NULL ELSE round((ok::numeric/n::numeric)*100,1) END\n        ) ORDER BY (n - ok) DESC, maestro_nombre), '[]'::jsonb)\n      FROM (SELECT maestro_id, maestro_nombre, count(*)::int n,\n                   count(*) FILTER (WHERE tiene_asistencia AND borrador IS NOT TRUE)::int ok\n            FROM ses GROUP BY 1,2) x),\n    'sesiones_incompletas', (\n      SELECT coalesce(jsonb_agg(jsonb_build_object(\n          'sesion_id', id, 'fecha', fecha, 'clase', clase_nombre,\n          'maestro', coalesce(maestro_nombre, 'Sin docente asignado'),\n          'estado', estado, 'borrador', borrador,\n          'falta', CASE WHEN NOT tiene_asistencia THEN 'asistencia'\n                        WHEN borrador IS TRUE THEN 'confirmacion'\n                        ELSE 'otro' END\n        ) ORDER BY fecha), '[]'::jsonb)\n      FROM ses\n      WHERE NOT (tiene_asistencia AND borrador IS NOT TRUE))\n  )\n  FROM periodo p CROSS JOIN tot t;\n$function$\n"
+    },
+    {
+      "name": "is_admin",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\nAS $function$\r\n  SELECT public.get_user_role() IN ('admin', 'superadmin');\r\n$function$\n"
+    },
+    {
+      "name": "is_super_admin",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_super_admin()\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\nAS $function$\nBEGIN\n  -- A. Whitelist directa del desarrollador por email en JWT\n  IF lower(COALESCE(auth.jwt()->>'email', '')) = 'osuniagarivera@gmail.com' THEN\n    RETURN true;\n  END IF;\n\n  -- B. Claim de rol especial o service_role en JWT\n  IF lower(COALESCE(auth.jwt()->>'role', '')) IN ('superadmin', 'service_role') THEN\n    RETURN true;\n  END IF;\n\n  -- C. Perfil en tabla profiles con rol 'superadmin'\n  IF EXISTS (\n    SELECT 1 FROM public.profiles\n    WHERE id = auth.uid()\n      AND lower(rol) = 'superadmin'\n      AND (activo IS NULL OR activo = true)\n  ) THEN\n    RETURN true;\n  END IF;\n\n  RETURN false;\nEND;\n$function$\n"
+    },
+    {
+      "name": "is_teacher",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_teacher()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\nAS $function$\r\n  SELECT public.get_user_role() = 'maestro';\r\n$function$\n"
+    },
+    {
+      "name": "profile_is_active",
+      "definition": "CREATE OR REPLACE FUNCTION public.profile_is_active()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1 FROM public.profiles\r\n    WHERE id = auth.uid() AND estado = 'activo'\r\n  );\r\n$function$\n"
+    },
+    {
+      "name": "teacher_can_create_students",
+      "definition": "CREATE OR REPLACE FUNCTION public.teacher_can_create_students()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\nAS $function$\n  SELECT\n    (SELECT public.profile_is_active()) = true\n    AND (SELECT public.is_teacher()) = true\n    AND public.tiene_permiso('alumnos:create');\n$function$\n"
+    },
+    {
+      "name": "tiene_permiso",
+      "definition": "CREATE OR REPLACE FUNCTION public.tiene_permiso(p_permiso text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\r\nBEGIN\r\n  RETURN COALESCE(\r\n    (SELECT p_permiso = ANY(permisos)\r\n     FROM public.permisos_maestros\r\n     WHERE maestro_id = public.maestro_actual()),\r\n    false\r\n  );\r\nEND;\r\n$function$\n"
+    }
+  ]
+}

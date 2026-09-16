@@ -392,7 +392,7 @@ export async function renderPlanningHistorialPane(
 
   async function _openPromoverModal(item) {
     if (!publishedRouteVersionId) {
-      AppToast.error('Seleccioná una clase con ruta publicada para promover este contenido.')
+      AppToast.error('Seleccione una clase con ruta publicada para promover este contenido.')
       return
     }
 
@@ -402,7 +402,7 @@ export async function renderPlanningHistorialPane(
       blocks = await getRouteVersionHierarchy(publishedRouteVersionId)
     } catch (err) {
       console.error('[PlanningHistorialPane] Error loading hierarchy:', err)
-      AppToast.error('No se pudo cargar la ruta. Intentá de nuevo.')
+      AppToast.error('No se pudo cargar la ruta. Intente de nuevo.')
       return
     }
 
@@ -451,7 +451,7 @@ export async function renderPlanningHistorialPane(
         />
       </div>
 
-      <div class="pm-ht-modal-error" id="pm-ht-modal-error">Seleccioná un nodo existente o escribí un nombre para crear uno nuevo.</div>
+      <div class="pm-ht-modal-error" id="pm-ht-modal-error">Seleccione un nodo existente o escriba un nombre para crear uno nuevo.</div>
     `
 
     AppModal.open({
@@ -492,7 +492,7 @@ export async function renderPlanningHistorialPane(
             // Use first available level from the published hierarchy
             const firstLevel = blocks[0]?.levels?.[0]
             if (!firstLevel) {
-              AppToast.error('La ruta no tiene niveles. Agregá un nivel desde la pestaña Gestionar.')
+              AppToast.error('La ruta no tiene niveles. Agregue un nivel desde la pestaña Gestionar.')
               return false
             }
 
@@ -539,7 +539,7 @@ export async function renderPlanningHistorialPane(
           // return undefined → modal closes
         } catch (err) {
           console.error('[PlanningHistorialPane] Error promoviendo:', err)
-          AppToast.error('No se pudo registrar el contenido. Intentá de nuevo.')
+          AppToast.error('No se pudo registrar el contenido. Intente de nuevo.')
           return false
         }
       },

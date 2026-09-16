@@ -36,7 +36,7 @@ export class IndicadorLogro {
   /**
    * Calcula la siguiente estrella en el ciclo de evaluación 1-Tap.
    * Regla única de negocio: 0 → 1 → 2 → 3 → 4 → 5 → 0. Antes estaba duplicada
-   * (con la misma expresión) en tres vistas distintas — centralizada acá para
+   * (con la misma expresión) en tres vistas distintas — centralizada aquí para
    * que no puedan divergir.
    * @param {number} actual — Estrellas actuales (0 a 5)
    * @returns {number} Siguiente valor en el ciclo

@@ -165,7 +165,7 @@ function _openRuleModal(rule) {
       const activo      = document.querySelector('#rm-activo')?.checked
       const configStr   = document.querySelector('#rm-config')?.value || '{}'
 
-      if (!nombre || !tipo) { alert('Completá nombre y tipo.'); return false }
+      if (!nombre || !tipo) { alert('Complete nombre y tipo.'); return false }
 
       let config
       try { config = JSON.parse(configStr) } catch { alert('JSON de configuración inválido.'); return false }

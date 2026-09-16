@@ -14,6 +14,8 @@ const nodeSuites = [
 ]
 const dedicatedSuites = [
   'tools/unicode-reviewer/revisar-textos.test.mjs',
+  'tools/security-regression/closure-adapter.test.js',
+  'tools/security-regression/security.test.js',
 ]
 
 describe('test runner discovery contract', () => {

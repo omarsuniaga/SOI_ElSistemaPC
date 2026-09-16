@@ -29,15 +29,15 @@ export function construirSubsetCatalogoPrompt(catalogo) {
     return {
       tools: [],
       vacio: true,
-      promptBlock: 'No hay tools disponibles en modo sandbox para este simulacro. Respondé con el formato JSON legacy de tareas/mensajes.',
+      promptBlock: 'No hay tools disponibles en modo sandbox para este simulacro. Responde con el formato JSON legacy de tareas/mensajes.',
     }
   }
 
   const promptBlock =
-    `Además de las tareas/mensajes, podés invocar las siguientes tools disponibles en modo sandbox ` +
+    `Además de las tareas/mensajes, puedes invocar las siguientes tools disponibles en modo sandbox ` +
     `(ejecutan sobre datos simulados, nunca sobre producción):\n` +
     JSON.stringify(tools, null, 2) +
-    `\n\nSi decidís usar una tool, respondé SOLO un JSON array de tool_calls con la forma ` +
+    `\n\nSi decides usar una tool, responde SOLO un JSON array de tool_calls con la forma ` +
     `[{"tool_name": "<name>", "args": {...}}], usando exclusivamente los nombres de la lista anterior.`
 
   return { tools, vacio: false, promptBlock }

@@ -50,10 +50,10 @@ export function createAutoDraftManager(container, {
         if (destroyed) return
         if (draft && draft.contenido_raw && draft.contenido_raw.trim()) {
           const ts = draft.updated_at
-            ? new Date(draft.updated_at).toLocaleString('es-AR')
+            ? new Date(draft.updated_at).toLocaleString('es-DO')
             : ''
           const recover = confirm(
-            `Hay un borrador guardado${ts ? ` (${ts})` : ''}.\n\n¿Deseas recuperarlo?`,
+            `Hay un borrador guardado${ts ? ` (${ts})` : ''}.\n\n¿Desea recuperarlo?`,
           )
           if (recover) {
             if (onDraftRecovered) onDraftRecovered(draft.contenido_raw)

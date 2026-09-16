@@ -496,7 +496,7 @@ function _renderEmergentes(emergentes, diaHoy, hoy) {
       <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
       <p class="pm-eme-subtitle">
         <i class="bi bi-exclamation-triangle-fill"></i>
-        Clase emergente registrada — reemplaza tus clases programadas de hoy
+        Clase emergente registrada — reemplaza sus clases programadas de hoy
       </p>
       <div class="pm-clases-container">
         ${listHTML}
@@ -574,7 +574,7 @@ function _bindEmptyStateEmergente(container, fechaHoy, maestroId, clases) {
 
         if (error) throw error
 
-        AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
+        AppToast.success('Clase emergente creada. Proceda a registrar la asistencia.')
         window.location.hash = `#/asistencia?sesion=${data.id}&fecha=${datos.fecha}`
       },
     })

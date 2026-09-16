@@ -11,7 +11,7 @@ function renderShell(container) {
   container.innerHTML = `
     <div class="pm-view-header">
       <h2><i class="bi bi-clipboard-check"></i> Revisión Director</h2>
-      <p class="pm-view-subtitle">Revisá las ausencias antes de enviarlas a aprobación final.</p>
+      <p class="pm-view-subtitle">Revise las ausencias antes de enviarlas a aprobación final.</p>
     </div>
     <div id="ausencias-director-content">
       <div class="pm-loading">
@@ -29,7 +29,7 @@ function renderEmpty(contentEl) {
         <i class="bi bi-inbox"></i>
       </div>
       <h3>No hay ausencias pendientes de revisión</h3>
-      <p style="opacity:.65;">Las nuevas solicitudes aparecerán acá automáticamente.</p>
+      <p style="opacity:.65;">Las nuevas solicitudes aparecerán aquí automáticamente.</p>
     </div>
   `;
 }

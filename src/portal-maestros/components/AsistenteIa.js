@@ -83,7 +83,7 @@ export async function createAsistenteIa(container) {
             <button class="pm-modal-close" id="pm-search-close">&times;</button>
           </div>
           <div class="pm-modal-body">
-            <p class="apple-caption" style="margin-bottom:1rem;">Ingresa el nombre del alumno para buscar su historial.</p>
+            <p class="apple-caption" style="margin-bottom:1rem;">Ingrese el nombre del alumno para buscar su historial.</p>
             <input type="text" id="pm-search-input" class="input-apple" placeholder="Nombre del alumno..." autofocus />
             <button class="btn-apple-primary" id="pm-search-go" style="margin-top:1.5rem; width:100%;">Comenzar Análisis</button>
           </div>

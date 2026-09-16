@@ -29,7 +29,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
             </div>
             <div>
               <h2 class="pm-justif-title" id="pm-justif-title">Justificar Inasistencia</h2>
-              <p class="pm-justif-subtitle" id="pm-justif-subtitle">Registra el motivo de la ausencia</p>
+              <p class="pm-justif-subtitle" id="pm-justif-subtitle">Registre el motivo de la ausencia</p>
             </div>
           </div>
           <button class="pm-justif-close" id="pm-justif-close" aria-label="Cerrar">
@@ -413,7 +413,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
       deleteBtn.style.display = 'flex';
     } else {
       titleEl.textContent = 'Justificar Inasistencia';
-      subtitleEl.textContent = 'Registra el motivo de la ausencia';
+      subtitleEl.textContent = 'Registre el motivo de la ausencia';
       btnTextEl.textContent = 'Guardar Justificación';
       deleteBtn.style.display = 'none';
     }

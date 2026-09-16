@@ -37,7 +37,7 @@ export async function renderPlanningManager(container, { publishedRouteVersionId
     container.innerHTML = `
       <div class="pm-planning-empty" style="max-width:520px;margin:0 auto;">
         <p style="font-size:1.05rem;font-weight:600;margin-bottom:0.5rem;">✏️ Editar el currículo de esta ruta</p>
-        <p style="margin-bottom:1.25rem;">Se creará (o abrirá) <strong>tu borrador propio</strong>. Podés agregar, editar o quitar niveles, nodos e indicadores sin afectar la ruta publicada que ven los demás maestros.</p>
+        <p style="margin-bottom:1.25rem;">Se creará (o abrirá) <strong>su borrador propio</strong>. Puede agregar, editar o quitar niveles, nodos e indicadores sin afectar la ruta publicada que ven los demás maestros.</p>
         <button id="pm-mg-open-draft" class="pm-planning-btn pm-planning-btn-info" style="min-height:44px;padding:0.7rem 1.4rem;">
           Abrir mi borrador
         </button>
@@ -48,13 +48,13 @@ export async function renderPlanningManager(container, { publishedRouteVersionId
 
   async function _openDraft() {
     container.innerHTML =
-      '<div class="pm-planning-empty"><p>Preparando tu borrador editable…<br><small>La primera vez puede tardar unos segundos.</small></p></div>'
+      '<div class="pm-planning-empty"><p>Preparando el borrador editable…<br><small>La primera vez puede tardar unos segundos.</small></p></div>'
     try {
       draftVersionId = await getOrCreateDraftVersion(publishedRouteVersionId)
     } catch (err) {
       console.error('[manager] Error creando borrador:', err)
       container.innerHTML =
-        '<div class="pm-planning-empty"><p>No se pudo abrir tu borrador. Intenta de nuevo.</p></div>'
+        '<div class="pm-planning-empty"><p>No se pudo abrir su borrador. Intente de nuevo.</p></div>'
       return
     }
     await _reload()
@@ -98,7 +98,7 @@ export async function renderPlanningManager(container, { publishedRouteVersionId
         }
       </style>
       <div class="pm-mg-banner">
-        ✏️ Estás editando <strong>tu borrador propio</strong>. La ruta publicada que ven los demás maestros no se modifica.
+        ✏️ Está editando <strong>su borrador propio</strong>. La ruta publicada que ven los demás maestros no se modifica.
       </div>
       ${
         blocks.length === 0
@@ -281,7 +281,7 @@ export async function renderPlanningManager(container, { publishedRouteVersionId
         if (a === 'del-indicator') {
           return _confirmDelete({
             title: 'Eliminar indicador',
-            message: 'El indicador se marcará como inactivo en tu borrador. ¿Continuar?',
+            message: 'El indicador se marcará como inactivo en su borrador. ¿Continuar?',
             onConfirm: () => _run(() => deleteIndicator(id), 'Indicador eliminado'),
           })
         }

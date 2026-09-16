@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
  *
  * "Mis Clases Dadas": render e interacción. La lógica de datos (roster,
  * causa de justificación, respaldo de hora/salón) vive en
- * historialClasesService.js y se cubre en su propio test — acá se mockea
+ * historialClasesService.js y se cubre en su propio test — aquí se mockea
  * directo para no duplicar esa cobertura.
  */
 

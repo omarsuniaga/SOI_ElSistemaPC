@@ -74,7 +74,7 @@ export function renderPerfilView(container) {
     <div class="pm-settings pm-fade-in" role="main" aria-label="Configuración del perfil">
       <header class="pm-settings-header">
         <h1 class="apple-display-md">Perfil</h1>
-        <p class="apple-caption">Gestiona tu cuenta, apariencia y notificaciones</p>
+        <p class="apple-caption">Gestione su cuenta, apariencia y notificaciones</p>
       </header>
       <div class="pm-settings-grid">
         <div id="pm-banner-perfil-incompleto" style="display:none;" class="pm-profile-alert"></div>
@@ -167,7 +167,7 @@ function renderPersonalData(container, maestro) {
         <i class="bi bi-person-circle pm-icon-blue" aria-hidden="true"></i>
         <div>
           <h3 id="datos-title" class="pm-settings-section__title">Datos Personales</h3>
-          <p class="pm-settings-section__desc">Información básica de tu cuenta</p>
+          <p class="pm-settings-section__desc">Información básica de su cuenta</p>
         </div>
       </div>
       <div class="pm-settings-form-grid">
@@ -350,7 +350,7 @@ function openNuevaSolicitudModal(maestro) {
           <div class="col-12 col-sm-6">
             <label class="form-label small fw-semibold text-muted mb-1">Tipo *</label>
             <select class="form-select input-apple" id="sol-tipo" required>
-              <option value="">Seleccioná el tipo</option>
+              <option value="">Seleccione el tipo</option>
               <option value="material">Material</option>
               <option value="pedagogico">Pedagógico</option>
               <option value="tecnico">Técnico</option>
@@ -401,7 +401,7 @@ function openNuevaSolicitudModal(maestro) {
           <div class="col-12">
             <label class="form-label small fw-semibold text-muted mb-1">Descripción *</label>
             <textarea class="form-control input-apple" id="sol-descripcion" rows="3"
-                      placeholder="Describí la necesidad con detalle..." required maxlength="800"></textarea>
+                      placeholder="Describa la necesidad con detalle..." required maxlength="800"></textarea>
           </div>
           <div class="col-12">
             <label class="form-label small fw-semibold text-muted mb-1">Observaciones adicionales</label>
@@ -470,7 +470,7 @@ function openNuevaSolicitudModal(maestro) {
           
         } catch (err) {
           console.error('[solicitudes]', err);
-          if (status) { status.textContent = 'Error al enviar. Intentá de nuevo.'; status.className = 'small text-danger'; status.style.display = 'block'; }
+          if (status) { status.textContent = 'Error al enviar. Intente de nuevo.'; status.className = 'small text-danger'; status.style.display = 'block'; }
         } finally {
           if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar solicitud'; }
         }
@@ -493,7 +493,7 @@ async function _loadSolicitudesHistorial(maestroId) {
     if (error) throw error;
 
     if (!data || data.length === 0) {
-      historial.innerHTML = '<p class="text-muted small fst-italic mb-0">No tenés solicitudes anteriores.</p>';
+      historial.innerHTML = '<p class="text-muted small fst-italic mb-0">No tiene solicitudes anteriores.</p>';
       return;
     }
 
@@ -539,7 +539,7 @@ function renderInstallApp(container) {
       </div>
       <div id="pm-install-body">
         <p style="font-size:0.82rem;color:var(--pm-text-muted);margin:0 0 0.75rem;">
-          Instalá el portal como aplicación nativa para usarlo sin navegador, con acceso offline y notificaciones push.
+          Instale el portal como aplicación nativa para usarlo sin navegador, con acceso offline y notificaciones push.
         </p>
         <div class="pm-settings-actions-row">
           <button class="btn-apple-primary w-100" id="pm-btn-install-profile" style="gap:0.5rem;">
@@ -677,7 +677,7 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
         <i class="bi bi-shield-check pm-icon-blue" aria-hidden="true"></i>
         <div>
           <h3 id="collab-title" class="pm-settings-section__title">Colaboración de Inscripción</h3>
-          <p class="pm-settings-section__desc">Solicitá permisos especiales para coadyuvar en la matrícula</p>
+          <p class="pm-settings-section__desc">Solicite permisos especiales para coadyuvar en la matrícula</p>
         </div>
       </div>
       <div class="pm-collab-cards">
@@ -1080,7 +1080,7 @@ function confirmarCerrarSesion() {
     body: `
       <div style="text-align:center; padding:1rem 0;">
         <i class="bi bi-box-arrow-right" style="font-size:2.5rem;color:var(--pm-danger);opacity:0.8;"></i>
-        <p style="margin-top:1rem;">¿Estás seguro que quieres salir?</p>
+        <p style="margin-top:1rem;">¿Está seguro de que desea salir?</p>
       </div>`,
     saveText: 'Salir',
     cancelText: 'Cancelar',
@@ -1153,7 +1153,7 @@ function checkPerfilIncompleto(maestro) {
     banner.innerHTML = `
       <div class="pm-profile-alert__inner">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-        <div><strong>Completa tu perfil</strong><p>Agrega tu especialidad y disponibilidad horaria.</p></div>
+        <div><strong>Complete su perfil</strong><p>Agregue su especialidad y disponibilidad horaria.</p></div>
       </div>`;
   } else {
     banner.style.display = 'none';

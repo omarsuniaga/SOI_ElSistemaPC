@@ -21,8 +21,9 @@ const SUPPRESSED_PATTERNS = [
   // La librería web-vitals que inyectan algunas extensiones del navegador
   // (Web Vitals, Lighthouse, etc.) tira "Cannot read properties of undefined
   // (reading 'startTime')" en reportAllChanges al navegar dentro del SPA.
-  // No es código de la app (acá web-vitals se usa con PerformanceObserver a mano).
+  // No es código de la app (aquí web-vitals se usa con PerformanceObserver a mano).
   'reportAllChanges',
+  "reading 'starttime'",
 ]
 
 /**
@@ -85,6 +86,29 @@ window.addEventListener('error', (event) => {
     event.stopImmediatePropagation()
   }
 }, true) // Capture phase to intercept early
+
+// ============================================
+// Wrap requestIdleCallback to catch unhandled extension errors
+// ============================================
+if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+  const originalRequestIdleCallback = window.requestIdleCallback
+  window.requestIdleCallback = function (callback, options) {
+    return originalRequestIdleCallback.call(
+      window,
+      function (deadline) {
+        try {
+          return callback(deadline)
+        } catch (err) {
+          if (isSuppressed(err)) {
+            return
+          }
+          throw err
+        }
+      },
+      options,
+    )
+  }
+}
 
 // NOTE: window.fetch monkey-patch REMOVED — was silently returning null on
 // suppressed errors, causing cascading bugs. Console/event suppression kept

@@ -9,6 +9,7 @@
 #   2. Build (vite)                         → debe pasar SIEMPRE (absoluto)
 #   3. Lint SOLO de los archivos cambiados  → cero errores nuevos
 #   4. Tests del blast-radius               → solo fallos NUEVOS vs baseline bloquean
+#   5. Política estructural                 → la deuda no crece (docs/POLITICA_DE_DESARROLLO.md)
 #
 # Uso:
 #   scripts/soi-verify-gate.sh [BASE_REF]        # gate normal
@@ -105,6 +106,15 @@ else
       ok "sin fallos nuevos (los que hay son baseline conocido)"
     fi
   fi
+fi
+
+# ── 5. Política estructural (la deuda no crece) ───────────────────────────────
+step "Política estructural (docs/POLITICA_DE_DESARROLLO.md)"
+if node scripts/check-structural-policy.mjs >/tmp/soi-gate-policy.log 2>&1; then
+  ok "sin regresiones estructurales (R1 tablas huérfanas, R3 institucion_id)"
+else
+  bad "la deuda estructural creció — ver detalle:"
+  sed 's/^/      /' /tmp/soi-gate-policy.log
 fi
 
 # ── Resultado ────────────────────────────────────────────────────────────────

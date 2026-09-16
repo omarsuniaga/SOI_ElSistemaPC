@@ -92,7 +92,7 @@ export function createObservationSaveButton(container, opts) {
       }
 
       const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
-      await saveObservation(
+      const savedObservation = await saveObservation(
         opts.sesionId,
         // Dueño de la fila: titular preferido (opts.maestroIdSesion), igual que
         // sesiones_clase — así el suplente edita la misma observación en vez de
@@ -110,6 +110,10 @@ export function createObservationSaveButton(container, opts) {
           fechaHoy: opts.fechaHoy || null,
         },
       )
+      const repertoireWorkId = opts.getRepertoireWorkId?.()
+      if (repertoireWorkId && savedObservation?.id && opts.linkObservationToRepertoire) {
+        await opts.linkObservationToRepertoire(savedObservation?.id, repertoireWorkId)
+      }
 
       const _parsedForProgress = parseDSL(raw)
       if (_parsedForProgress.estados && _parsedForProgress.estados.length > 0) {

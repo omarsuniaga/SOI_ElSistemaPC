@@ -91,7 +91,7 @@ export async function loginMaestro(email, password, options = {}) {
     return {
       success: false,
       code: 'PROFILE_LOOKUP_FAILED',
-      error: 'No pudimos verificar los permisos de tu cuenta. Intentá nuevamente.',
+      error: 'No pudimos verificar los permisos de su cuenta. Intente nuevamente.',
     }
   }
 
@@ -103,7 +103,7 @@ export async function loginMaestro(email, password, options = {}) {
     return {
       success: false,
       pendingApproval: true,
-      error: 'Tu cuenta está pendiente de aprobación por un administrador.',
+      error: 'Su cuenta está pendiente de aprobación por un administrador.',
     }
   }
 
@@ -111,7 +111,7 @@ export async function loginMaestro(email, password, options = {}) {
     await supabase.auth.signOut()
     return {
       success: false,
-      error: 'Tu solicitud fue rechazada. Contactá al administrador.',
+      error: 'Su solicitud fue rechazada. Contacte al administrador.',
     }
   }
 
@@ -166,7 +166,7 @@ export async function loginMaestro(email, password, options = {}) {
     return {
       success: false,
       code: 'MAESTRO_LOOKUP_FAILED',
-      error: 'No pudimos consultar tu acreditación de maestro. Intentá nuevamente.',
+      error: 'No pudimos consultar su acreditación de maestro. Intente nuevamente.',
     }
   }
 
@@ -175,7 +175,7 @@ export async function loginMaestro(email, password, options = {}) {
     return {
       success: false,
       code: 'MAESTRO_PROFILE_NOT_LINKED',
-      error: 'Tu cuenta está activa, pero falta completar su vinculación. Contactá al administrador.',
+      error: 'Su cuenta está activa, pero falta completar su vinculación. Contacte al administrador.',
     }
   }
 

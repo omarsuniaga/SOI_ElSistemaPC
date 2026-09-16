@@ -11,8 +11,8 @@ function hasValue(value) {
 export function validateDateRange(fechaInicio, fechaFin) {
   const errors = {};
 
-  if (!hasValue(fechaInicio)) errors.fechaInicio = 'Indicá la fecha inicial.';
-  if (!hasValue(fechaFin)) errors.fechaFin = 'Indicá la fecha final.';
+  if (!hasValue(fechaInicio)) errors.fechaInicio = 'Indique la fecha inicial.';
+  if (!hasValue(fechaFin)) errors.fechaFin = 'Indique la fecha final.';
 
   if (!errors.fechaInicio && !errors.fechaFin && fechaFin < fechaInicio) {
     errors.fechaFin = 'La fecha final no puede ser anterior a la fecha inicial.';
@@ -48,15 +48,15 @@ export function validateAbsenceRequest(formState = {}) {
   const errors = { ...dateResult.errors, ...fileResult.errors };
 
   if (!VALID_ABSENCE_TYPES.has(formState.tipoAusencia)) {
-    errors.tipoAusencia = 'Seleccioná un tipo de ausencia válido.';
+    errors.tipoAusencia = 'Seleccione un tipo de ausencia válido.';
   }
 
   if (!VALID_URGENCY.has(formState.urgencia)) {
-    errors.urgencia = 'Seleccioná una urgencia válida.';
+    errors.urgencia = 'Seleccione una urgencia válida.';
   }
 
   if (!hasValue(formState.motivo)) {
-    errors.motivo = 'Explicá el motivo de la ausencia.';
+    errors.motivo = 'Explique el motivo de la ausencia.';
   } else if (formState.motivo.trim().length > MAX_REASON_LENGTH) {
     errors.motivo = `El motivo no puede superar ${MAX_REASON_LENGTH} caracteres.`;
   }
@@ -64,19 +64,19 @@ export function validateAbsenceRequest(formState = {}) {
   const selectedClasses = (formState.clasesAfectadas || []).filter((clase) => clase.selected !== false);
   for (const clase of selectedClasses) {
     if (!hasValue(clase.actividadReemplazo)) {
-      errors[`actividad_${clase.claseId}`] = 'Indicá la actividad de reemplazo para esta clase.';
+      errors[`actividad_${clase.claseId}`] = 'Indique la actividad de reemplazo para esta clase.';
     }
   }
 
   if (formState.claseEmergente?.activo) {
     if (!hasValue(formState.claseEmergente.fechaNueva)) {
-      errors.claseEmergenteFecha = 'Indicá la fecha de recuperación.';
+      errors.claseEmergenteFecha = 'Indique la fecha de recuperación.';
     }
     if (!hasValue(formState.claseEmergente.horaNueva)) {
-      errors.claseEmergenteHora = 'Indicá la hora de recuperación.';
+      errors.claseEmergenteHora = 'Indique la hora de recuperación.';
     }
     if (!hasValue(formState.claseEmergente.salonIdNuevo)) {
-      errors.claseEmergenteSalon = 'Seleccioná un salón disponible.';
+      errors.claseEmergenteSalon = 'Seleccione un salón disponible.';
     }
   }
 

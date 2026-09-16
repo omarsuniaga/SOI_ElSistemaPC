@@ -1,0 +1,44 @@
+{
+  "approved_design_revision": "0.1",
+  "approval": "Omar: la revision humana aprueba el hallazgo y te pide continuar",
+  "repository": "omarsuniaga/SOI_ElSistemaPC",
+  "base_branch": "release/soi-v1-lts",
+  "base_commit": "8c90951342ecbee90eb7d675c478f167c223ff12",
+  "preserved_tag": "soi-v1.2-lts",
+  "tag_target_commit": "3a1ad56f22c4f2531b5cc36d0df54756b181f3a4",
+  "live_catalog_date": "2026-09-11",
+  "live_postgres_version": "17.6",
+  "live_migration_head": "20260908052508",
+  "gates": {
+    "G0": "approved",
+    "G1": "incomplete: full schema restore pending",
+    "G2": "isolated patch tested; production unchanged",
+    "G3": "full characterization pending"
+  },
+  "sources": {
+    "AGENTS.md": "ec9cf3cfb0e95320e9ad41bd389315860a931c764fd0f3726daaa8dbfab274c5",
+    "ASTRA_MASTER_INIT_PROMPT.md": "20e949a09b938cfccd3108a66d8153000a6d9e6ef81e300e00b5577de57d9a6d",
+    "SOI_MASTER_SPEC_v2.0_UNIFICADO.md": "4a5fddd9b1f44a496d0392a7d7121362cb6ef3bb7ef5a621b6d7078f4e50e7ae",
+    "docs/release-v1/SOI_V2_INHERITANCE_CONTRACT.md": "fb4e2f6647a9b65fb615a5f6047523dfb5556986e23e4fb3cdb4319836c47a7c",
+    "docs/context-baseline/ASTRA_CONTEXT_MANIFEST.md": "d217387b93991ce3656e78d31d060016b200198f3288b7735063f30f0248da8f",
+    "database/schema_reference_2026-09-10.sql": "7720be54fed3f3d9f78c16af0cd6e284ed502982a5fe5d74dcefc1d9b89db229"
+  },
+  "approved_documents": {
+    "SOI_V2_ARCHITECTURE_DECISIONS.md": "056045074157b8aabcfb09d759ccc74c68a609ff3979de3a41f0dceac28661d9",
+    "SOI_V2_AUDIT_OBSERVABILITY_MODEL.md": "4fd97a0daabd953a2b608ca45cab724ebb3aa5b570bf854674186c7370c319aa",
+    "SOI_V2_COMMUNICATION_GATEWAYS.md": "9120d692b42c850bbf10b30c38926d4472d4a118aefa71546a4dc6590202115f",
+    "SOI_V2_DATA_LIFECYCLE_POLICY.md": "89e0eef18f1a5e65b270c69d3224eed5d4a3cc90377a81d42df2ad5a3dcab4c2",
+    "SOI_V2_DESIGN_SYSTEM_FOUNDATION.md": "78d995536ab21adbef04da79d7fbd3c86ef20c02b87ea273b64b1c2f616d5089",
+    "SOI_V2_IDENTITY_AUTH_MODEL.md": "265f446eb6934b59bfebe30bb757ed7731a59bb32bb9fdd26eca32bd925e81b8",
+    "SOI_V2_INFORMATION_ARCHITECTURE.md": "e5b7550d17b6054f285644f7f419e806def69d926038c5576eb356f4f3501607",
+    "SOI_V2_NOTIFICATION_ARCHITECTURE.md": "2240ffb7c5eb0242769d4ee0c90170a1b9456b89171b81c345cb628ffbee82fa",
+    "SOI_V2_OFFLINE_PWA_STRATEGY.md": "b4e77c90f5d8d1a55762c2bb7790bd2a0aa34ee5919ed737bcdde7ff0ddbad3c",
+    "SOI_V2_PERSISTENCE_STRATEGY.md": "438526ccf8051c3fc5b44ae1844a421b36a664c8a9e8e5535f83bb409f7dde4a",
+    "SOI_V2_PHASE0_IMPLEMENTATION_PLAN.md": "c7bfd9ba2890d4b563af2d455afc0a2872e2e543e0dcd96e58487c7e180d36f2",
+    "SOI_V2_RBAC_MATRIX.md": "3e0be67e099c4cc78a536c43bcfb439af888a39a9533f30183a50582076b0934",
+    "SOI_V2_REPORTING_ARCHITECTURE.md": "fe35ff98454d37581ceee571b0cd734e0806453289de4cedc904f9995eb8043b",
+    "SOI_V2_ROUTE_MAP.md": "966b5b8e2a36f1da03e7302b296191e48f24443146556b326f0cdc9a2d4ca6d4",
+    "SOI_V2_SDD_FOUNDATION.md": "427bc2d570451c968fd195b22a52133b62bf4cd02e40c4e5f6d942b21a925d2a",
+    "SOI_V2_SECURITY_MODEL.md": "aad6187789af91b8bce613e83b914bc4e3e33add4c406f38e663d3d802f1bbca"
+  }
+}

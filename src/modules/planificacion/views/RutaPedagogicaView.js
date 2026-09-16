@@ -109,7 +109,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
 
   // Construye la "carcasa" completa (cabecera, chips KPI, canvas SVG y la
   // tabla vacía) UNA sola vez por carga de clase/roster. El canvas SVG solo
-  // se dibuja acá — nunca en cada tap de estrella.
+  // se dibuja aquí — nunca en cada tap de estrella.
   const _renderShell = () => {
     const planClase = selectBestPlanForClass(planificaciones, {
       claseId: selectedClaseId,
@@ -209,7 +209,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
       </div>
     `
 
-    // Render Canvas SVG — solo se dibuja acá (carga inicial / cambio de clase),
+    // Render Canvas SVG — solo se dibuja aquí (carga inicial / cambio de clase),
     // nunca en cada tap de estrella.
     const canvasContainer = container.querySelector('#full-ruta-svg-canvas')
     if (canvasContainer) {

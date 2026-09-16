@@ -25,7 +25,10 @@
     "unicode:test": "vitest run --config vitest.unicode.config.mjs",
     "unicode:check": "node tools/unicode-reviewer/revisar-textos.js ./src --dry-run",
     "unicode:review": "node tools/unicode-reviewer/revisar-textos.js ./src",
-    "unicode:auto": "node tools/unicode-reviewer/revisar-textos.js ./src --auto-fix"
+    "unicode:auto": "node tools/unicode-reviewer/revisar-textos.js ./src --auto-fix",
+    "policy:check": "node scripts/check-structural-policy.mjs",
+    "policy:list": "node scripts/check-structural-policy.mjs --list",
+    "policy:record": "node scripts/check-structural-policy.mjs --record"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

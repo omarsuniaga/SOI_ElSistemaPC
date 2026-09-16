@@ -60,7 +60,7 @@ export async function renderExportView(container) {
             </div>
             <div class="card-body">
               <p class="text-muted small mb-3">
-                Buscá un alumno y seleccioná qué secciones incluir: ficha técnica, asistencias, progresos, observaciones e indicadores dominados.
+                Busque un alumno y seleccione qué secciones incluir: ficha técnica, asistencias, progresos, observaciones e indicadores dominados.
               </p>
 
               <!-- Buscador -->
@@ -187,7 +187,7 @@ export async function renderExportView(container) {
             </div>
             <div class="card-body">
               <p class="text-muted small mb-3">
-                Tabla con todos los alumnos activos. Filtrá por instrumento o nivel.
+                Tabla con todos los alumnos activos. Filtre por instrumento o nivel.
               </p>
               <div class="row g-3 align-items-end">
                 <div class="col-md-4">
@@ -287,7 +287,7 @@ export async function renderExportView(container) {
             </div>
             <div class="card-body">
               <p class="text-muted small mb-3">
-                Verificá qué alumnos tienen datos completos para generar permisos de ausencia, autorizaciones de viaje o cartas institucionales.
+                Verifique qué alumnos tienen datos completos para generar permisos de ausencia, autorizaciones de viaje o cartas institucionales.
               </p>
               <div class="d-flex align-items-center gap-3 mb-3">
                 <button class="btn btn-secondary" id="btn-ejecutar-diagnostico">
@@ -327,7 +327,7 @@ export async function renderExportView(container) {
             </div>
             <div class="card-body">
               <p class="text-muted small mb-4">
-                Generá permisos de ausencia, autorizaciones de viaje y cartas institucionales con datos reales de los alumnos.
+                Genere permisos de ausencia, autorizaciones de viaje y cartas institucionales con datos reales de los alumnos.
               </p>
               <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
@@ -355,7 +355,7 @@ export async function renderExportView(container) {
                 <div class="col-12 col-md-6">
                   <label class="form-label small fw-semibold">2. Seleccionar plantilla</label>
                   <select class="form-select form-select-sm" id="doc-template-select" disabled>
-                    <option value="">— Primero seleccioná un alumno —</option>
+                    <option value="">— Primero seleccione un alumno —</option>
                   </select>
                 </div>
                 <div class="col-12" id="doc-actividad-form" style="display:none;">
@@ -559,7 +559,7 @@ function _attachEvents(container) {
   // ── Expediente individual ──────────────────────────────────────────────────
   container.querySelector('#btn-expediente').addEventListener('click', async () => {
     if (!_alumnoSeleccionado) {
-      _setStatus('exp-status', 'Seleccioná un alumno primero.', true)
+      _setStatus('exp-status', 'Seleccione un alumno primero.', true)
       return
     }
 
@@ -572,7 +572,7 @@ function _attachEvents(container) {
     }
 
     if (!Object.values(secciones).some(Boolean)) {
-      _setStatus('exp-status', 'Seleccioná al menos una sección.', true)
+      _setStatus('exp-status', 'Seleccione al menos una sección.', true)
       return
     }
 
@@ -652,7 +652,7 @@ function _attachEvents(container) {
     const desde  = document.getElementById('rango-desde').value
     const hasta  = document.getElementById('rango-hasta').value
     const instrF = document.getElementById('rango-instrumento').value.trim().toLowerCase()
-    if (!desde || !hasta) { _setStatus('rango-status', 'Seleccioná ambas fechas.', true); return }
+    if (!desde || !hasta) { _setStatus('rango-status', 'Seleccione ambas fechas.', true); return }
     if (desde > hasta)    { _setStatus('rango-status', '"Desde" debe ser anterior a "Hasta".', true); return }
     _setBtnLoading('btn-inscritos-rango', true)
     _setStatus('rango-status', 'Filtrando...')
@@ -757,7 +757,7 @@ function _attachEvents(container) {
       _docAlumnoData = await getStudentDocumentData(_docAlumnoId)
       const sel = container.querySelector('#doc-template-select')
       sel.disabled = false
-      sel.innerHTML = '<option value="">— Seleccioná una plantilla —</option>' +
+      sel.innerHTML = '<option value="">— Seleccione una plantilla —</option>' +
         _templates.map(t => `<option value="${t.id}" data-tipo="${t.tipo}">${t.nombre}</option>`).join('')
     } catch (err) { console.error('[doc] error loading alumno:', err) }
   })
@@ -768,7 +768,7 @@ function _attachEvents(container) {
     container.querySelector('#doc-buscar-alumno').value = ''
     const sel = container.querySelector('#doc-template-select')
     sel.disabled = true
-    sel.innerHTML = '<option value="">— Primero seleccioná un alumno —</option>'
+    sel.innerHTML = '<option value="">— Primero seleccione un alumno —</option>'
     container.querySelector('#doc-actividad-form').style.display = 'none'
   })
 
@@ -795,7 +795,7 @@ function _attachEvents(container) {
     const responsable = container.querySelector('#doc-act-responsable')?.value?.trim() || 'Coordinación Pedagógica'
 
     if (!actividad.nombre) {
-      container.querySelector('#doc-gen-status').textContent = 'Ingresá el nombre de la actividad.'
+      container.querySelector('#doc-gen-status').textContent = 'Ingrese el nombre de la actividad.'
       return
     }
 

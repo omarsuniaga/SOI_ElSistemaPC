@@ -6,7 +6,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
  * Flujo bidireccional maestro -> ACM sobre route_versions:
  *   - El maestro INSERTA una propuesta (origen='maestro', status='propuesta')
  *     desde proponerContenidoView.js (WU #7). RLS le impide cambiar status.
- *   - El ACM revisa las propuestas pendientes acá y decide:
+ *   - El ACM revisa las propuestas pendientes aquí y decide:
  *       publicarPropuesta -> status='published' (valor REAL del enum)
  *       devolverPropuesta -> status='devuelta' + feedback obligatorio
  */

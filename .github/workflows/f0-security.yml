@@ -1,0 +1,26 @@
+name: F0 security regression
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260911020424_f0_security_containment.sql'
+      - 'tools/security-regression/**'
+      - 'src/modules/metricas/api/metricsApi.js'
+      - '.github/workflows/f0-security.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/security-regression/package-lock.json
+      - run: npm ci
+        working-directory: tools/security-regression
+      - run: npm test
+        working-directory: tools/security-regression

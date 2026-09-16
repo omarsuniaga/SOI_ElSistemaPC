@@ -309,7 +309,7 @@ export async function actualizarTurnoAlumno(claseId, alumnoId, { dia = null, hor
 
   // La cache de inscripciones está indexada por el conjunto de claseIds
   // pedido (orden estable), no por clase individual — invalidar todo el
-  // bucket es más simple y seguro que tratar de reconstruir esa key acá.
+  // bucket es más simple y seguro que tratar de reconstruir esa key aquí.
   viewCache.invalidate('inscripciones_')
   return data
 }

@@ -21,6 +21,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import { resetAdminNotifBadge } from '../realtimeService.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -865,16 +866,16 @@ export async function renderAdminNotificacionesView(container) {
       suplentesHTML = `
         <div class="anv-suplentes-box">
           <div class="anv-suplentes-title">
-            <i class="bi bi-magic"></i> Suplentes Recomendados (${event.maestroInstrumento || 'Instrumento'})
+            <i class="bi bi-magic"></i> Suplentes Recomendados (${escapeHTML(event.maestroInstrumento || 'Instrumento')})
           </div>
           <div class="anv-suplentes-list">
             ${event.suplentesSugeridos.map(s => `
               <div class="anv-suplente-item">
                 <div class="anv-suplente-info">
-                  <span class="anv-suplente-name">${s.nombre_completo}</span>
-                  <span class="anv-suplente-email">${s.email}</span>
+                  <span class="anv-suplente-name">${escapeHTML(s.nombre_completo)}</span>
+                  <span class="anv-suplente-email">${escapeHTML(s.email)}</span>
                 </div>
-                <button class="anv-suplente-btn" data-action="notify-sub" data-sub-name="${s.nombre_completo}" data-sub-email="${s.email}">
+                <button class="anv-suplente-btn" data-action="notify-sub" data-sub-name="${escapeHTML(s.nombre_completo)}" data-sub-email="${escapeHTML(s.email)}">
                   <i class="bi bi-send-fill"></i> Proponer
                 </button>
               </div>
@@ -921,7 +922,7 @@ export async function renderAdminNotificacionesView(container) {
       actionsHTML = `
         <div class="anv-inline-actions">
           <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}"${paramsAttr}>
-            <i class="bi bi-arrow-right-circle"></i> ${event.actionLabel || 'Ver'}
+            <i class="bi bi-arrow-right-circle"></i> ${escapeHTML(event.actionLabel || 'Ver')}
           </button>
         </div>
       `
@@ -929,18 +930,18 @@ export async function renderAdminNotificacionesView(container) {
 
     el.innerHTML = `
       <div class="anv-event-dot" style="background:${cat.bg}">
-        <i class="bi ${event.icon}" style="color:${event.iconColor}"></i>
+        <i class="bi ${escapeHTML(event.icon)}" style="color:${event.iconColor}"></i>
       </div>
       <div class="anv-event-body">
         <span class="anv-cat-chip" style="background:${cat.bg};color:${cat.color}">
-          ${catLabel}
+          ${escapeHTML(catLabel)}
         </span>
         <div class="anv-event-top">
-          <span class="anv-event-titulo">${event.titulo}</span>
-          <span class="anv-event-time">${event.timeAgo}</span>
+          <span class="anv-event-titulo">${escapeHTML(event.titulo)}</span>
+          <span class="anv-event-time">${escapeHTML(event.timeAgo)}</span>
         </div>
-        <div class="anv-event-sub">${event.subtitulo}</div>
-        ${event.motivo ? `<div class="anv-event-motivo">"${event.motivo}"</div>` : ''}
+        <div class="anv-event-sub">${escapeHTML(event.subtitulo)}</div>
+        ${event.motivo ? `<div class="anv-event-motivo">"${escapeHTML(event.motivo)}"</div>` : ''}
         ${suplentesHTML}
         ${estadoChipHTML}
         ${actionsHTML}
@@ -1179,7 +1180,7 @@ export async function renderAdminNotificacionesView(container) {
           <div class="anv-center">
             <div class="anv-center-icon"><i class="bi bi-exclamation-triangle"></i></div>
             <p class="anv-center-title">Error al cargar</p>
-            <p class="anv-center-sub">${err.message}</p>
+            <p class="anv-center-sub">${escapeHTML(err.message)}</p>
           </div>
         `
       }
@@ -1231,7 +1232,7 @@ export async function renderAdminNotificacionesView(container) {
           </p>
           <ul class="extra-small text-secondary mb-0 ps-3 lh-base">
             <li><strong>Recomendación Inteligente:</strong> El sistema identifica en tiempo real a otros maestros activos que enseñen la misma especialidad (instrumento) y te los presenta como candidatos aptos para cubrir la vacante.</li>
-            <li><strong>Acción Inline:</strong> Hacé clic en <strong>"Proponer"</strong> al lado de un candidato sugerido para asignarlo provisionalmente. También podés <strong>Aprobar</strong> o <strong>Rechazar</strong> la solicitud de ausencia directo desde la tarjeta con actualización atómica (in-place).</li>
+            <li><strong>Acción Inline:</strong> Haga clic en <strong>"Proponer"</strong> al lado de un candidato sugerido para asignarlo provisionalmente. También puede <strong>Aprobar</strong> o <strong>Rechazar</strong> la solicitud de ausencia directo desde la tarjeta con actualización atómica (in-place).</li>
           </ul>
         </div>
 
@@ -1265,7 +1266,7 @@ export async function renderAdminNotificacionesView(container) {
             <h6 class="fw-bold mb-0">Buscador & KPIs en Caliente</h6>
           </div>
           <p class="extra-small text-secondary mb-0 lh-base">
-            Filtrá todo el feed interactivo al instante escribiendo en el buscador (docente, alumno, instrumento o motivo) o haciendo clic en cualquiera de las 4 tarjetas de KPIs del mini-dashboard superior.
+            Filtre todo el feed interactivo al instante escribiendo en el buscador (docente, alumno, instrumento o motivo) o haciendo clic en cualquiera de las 4 tarjetas de KPIs del mini-dashboard superior.
           </p>
         </div>
       </div>
@@ -1345,7 +1346,7 @@ export async function renderAdminNotificacionesView(container) {
         if (!titulo) { tituloEl?.classList.add('is-invalid'); return }
         if (!mensaje) { mensajeEl?.classList.add('is-invalid'); return }
         if (!selected.length) {
-          if (statusEl) statusEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">Seleccioná al menos un destinatario.</div>'
+          if (statusEl) statusEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">Seleccione al menos un destinatario.</div>'
           return
         }
 

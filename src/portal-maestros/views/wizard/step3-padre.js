@@ -11,8 +11,8 @@ export function render(draft, errors = {}) {
     <form id="wiz-form-step3" novalidate>
       <div class="alert alert-secondary py-2 mb-3">
         <i class="bi bi-person-heart me-1"></i>
-        Ingresa los datos del padre del alumno tal como aparecen en su documento de identidad.
-        Si el padre no está en vida o no aplica, puedes dejar estos campos vacíos.
+        Ingrese los datos del padre del alumno tal como aparecen en su documento de identidad.
+        Si el padre no está en vida o no aplica, puede dejar estos campos vacíos.
       </div>
 
       ${renderFormField({ name: 'padre_nombre', label: 'Nombre y apellido completo del padre', type: 'text', value: draft.padre_nombre ?? '', error: errors.padre_nombre ?? '', hint: 'Tal como aparece en la cédula' })}

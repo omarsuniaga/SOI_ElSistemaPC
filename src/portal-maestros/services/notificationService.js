@@ -4,6 +4,7 @@ import { getMisClases, getHorariosClases, getSesiones } from './maestroDataServi
 import { onPushReceived } from './pushService.js';
 import { LifecycleManager } from '../../shared/services/lifecycleManager.js';
 import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js';
+import { normalizeRepertoireDelivery, projectNotifications, getActionableCount } from '../../modules/repertoire/domain/notificationProjection.js'
 
 function getLocalYYYYMMDD(d = new Date()) {
   const year = d.getFullYear()
@@ -160,6 +161,7 @@ function _loadCachedNotifs(maestroId) {
 }
 
 let notificacionesCache = [];
+let repertoireSignalCache = []
 let listeners = [];
 
 /**
@@ -174,7 +176,32 @@ export function onNotificacionesChange(callback) {
 }
 
 function notifyListeners() {
-  listeners.forEach(cb => cb([...notificacionesCache]));
+  listeners.forEach(cb => cb(projectNotifications(notificacionesCache, repertoireSignalCache)));
+}
+
+export function getUnifiedNotifications() {
+  return projectNotifications(notificacionesCache, repertoireSignalCache)
+}
+
+export async function fetchRepertoireSignals(profileId = getMaestroLocal()?.id) {
+  if (!profileId) return []
+  try {
+    const { data, error } = await supabase
+      .from('repertoire_signal_deliveries')
+      .select('id, profile_id, channel, status, created_at, updated_at, read_at, repertoire_signals(*)')
+      .eq('profile_id', profileId)
+      .eq('channel', 'IN_APP')
+      .order('created_at', { ascending: false })
+      .limit(30)
+    if (error) throw error
+    repertoireSignalCache = (data || []).map(normalizeRepertoireDelivery).filter(Boolean)
+    return repertoireSignalCache
+  } catch (error) {
+    // Pending migrations or missing production tables must not break legacy inbox.
+    repertoireSignalCache = []
+    console.info('[NotifService] Repertoire signals unavailable:', error?.message || error)
+    return []
+  }
 }
 
 /**
@@ -206,9 +233,11 @@ export async function fetchNotificaciones() {
       return notificacionesCache;
     }
 
+    await fetchRepertoireSignals(maestro.id)
+
     // Recordatorios de clase ('recordatorio_clase', generados por el cron
     // fn_generate_class_start_reminders) de un período académico YA CERRADO
-    // se descartan acá — antes se colaban indefinidamente: el .limit(30) por
+    // se descartan aquí — antes se colaban indefinidamente: el .limit(30) por
     // fecha de creación seguía trayendo avisos de mayo del semestre pasado
     // mientras hubiera menos de 30 notificaciones nuevas desde entonces, sin
     // ningún filtro de fecha ni de período. Otros tipos ('sistema', 'in_app',
@@ -311,7 +340,7 @@ async function _checkLocalAlerts(maestroId) {
         id:           'local_' + refId,
         tipo:         'sesion_sin_registrar',
         titulo:       'Clase sin registrar',
-        mensaje:      `${clase?.nombre || 'Tu clase'}${horario} terminó ${tiempoMsg}. Registrá la asistencia para que quede guardada.`,
+        mensaje:      `${clase?.nombre || 'Su clase'}${horario} terminó ${tiempoMsg}. Registre la asistencia para que quede guardada.`,
         estado:       'pendiente',
         created_at:   new Date().toISOString(),
         referencia_id: refId,
@@ -342,7 +371,7 @@ async function _checkLocalAlerts(maestroId) {
         id:           'local_' + refId,
         tipo:         'recordatorio_clase',
         titulo:       'Clase por empezar',
-        mensaje:      `${clase?.nombre || 'Tu clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepará la planificación.`,
+        mensaje:      `${clase?.nombre || 'Su clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepare la planificación.`,
         estado:       'pendiente',
         created_at:   new Date().toISOString(),
         referencia_id: refId,
@@ -357,6 +386,16 @@ async function _checkLocalAlerts(maestroId) {
 }
 
 export async function marcarLeida(id) {
+  const repertoireItem = repertoireSignalCache.find((item) => item.id === id)
+  if (repertoireItem) {
+    repertoireItem.acknowledged = true
+    repertoireItem.lifecycle = 'ACKNOWLEDGED'
+    notifyListeners()
+    try {
+      await supabase.from('repertoire_signal_deliveries').update({ status: 'READ', read_at: new Date().toISOString() }).eq('id', id)
+    } catch (e) { console.warn('[NotifService] Error al revisar señal de repertorio', e) }
+    return
+  }
   const maestro = getMaestroLocal();
   const notif = notificacionesCache.find(n => n.id === id);
   if (notif) notif.estado = 'leida';
@@ -422,6 +461,9 @@ export async function marcarTodasLeidas() {
 
   if (!maestro) return;
 
+  repertoireSignalCache.forEach((item) => { item.acknowledged = true; item.lifecycle = 'ACKNOWLEDGED' })
+  notifyListeners()
+
   try {
     await supabase
       .from('notificaciones')
@@ -434,7 +476,7 @@ export async function marcarTodasLeidas() {
 }
 
 export function getUnreadCount() {
-  return notificacionesCache.filter(n => n.estado === 'pendiente' || n.estado === 'enviada').length;
+  return getActionableCount(getUnifiedNotifications())
 }
 
 // ── Supabase Realtime ───────────────────────────────────────────────────────────────

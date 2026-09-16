@@ -37,7 +37,7 @@ export function openClaseConflictModal({ conflictos = [], onConfirm, onCancel })
     </div>
 
     <div class="p-3 bg-body-tertiary rounded border small text-muted">
-      Elegí qué lado tiene prioridad. El otro quedará marcado como <strong>pendiente de modificación</strong>, sin cambios automáticos de salón, maestro o alumnos.
+      Elija qué lado tiene prioridad. El otro quedará marcado como <strong>pendiente de modificación</strong>, sin cambios automáticos de salón, maestro o alumnos.
     </div>
   `
 

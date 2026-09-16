@@ -136,12 +136,22 @@ export async function actualizarSesion(id, actualizaciones) {
 }
 
 export async function eliminarSesion(id) {
-  const { error } = await supabase.from('sesiones_clase').delete().eq('id', id)
+  const { data, error } = await supabase
+    .from('sesiones_clase')
+    .delete()
+    .eq('id', id)
+    .select()
+
   if (error) {
     console.error('Error eliminando sesión:', error.message)
     throw new Error('No se pudo eliminar la sesión')
   }
-  return { success: true }
+
+  if (!data || data.length === 0) {
+    throw new Error('Sesión no encontrada o rechazada por permisos al eliminar')
+  }
+
+  return { success: true, deleted: data[0] }
 }
 
 export async function registrarAsistencia(sesionId, asistencia) {

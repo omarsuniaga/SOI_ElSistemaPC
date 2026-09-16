@@ -14,7 +14,7 @@ export const templateHtml = `
       </div>
       <div class="pm-login-brand-copy">
         <span class="pm-login-kicker">Portal de Maestros</span>
-        <h1 class="pm-login-title">Accedé a tu guía en segundos.</h1>
+        <h1 class="pm-login-title">Acceda a su guía en segundos.</h1>
         <p class="pm-login-subtitle">
           Una vista limpia, profesional y rápida para entrar desde móvil, tablet o desktop.
         </p>
@@ -32,7 +32,7 @@ export const templateHtml = `
         <div class="pm-login-card-header">
           <div>
             <h2 class="pm-login-card-title">Iniciar sesión</h2>
-            <p class="pm-login-card-subtitle">Usá tu correo institucional y contraseña.</p>
+            <p class="pm-login-card-subtitle">Use su correo institucional y contraseña.</p>
           </div>
           <button class="pm-login-theme-hint" type="button" tabindex="-1" aria-hidden="true">
             <i class="bi bi-moon-stars"></i>
@@ -61,7 +61,7 @@ export const templateHtml = `
               class="pm-login-input"
               id="pm-password"
               type="password"
-              placeholder="Ingresá tu contraseña"
+              placeholder="Ingrese su contraseña"
               autocomplete="current-password"
               aria-describedby="pm-password-error"
             />

@@ -275,7 +275,7 @@ async function _recargar(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="pm-empty" style="padding:3rem 1rem;text-align:center;" role="alert">
-        <p style="color:var(--pm-danger);">Error al cargar tus clases</p>
+        <p style="color:var(--pm-danger);">Error al cargar sus clases</p>
         <p style="font-size:0.85rem;color:var(--pm-text-muted);">${escHTML(err.message)}</p>
       </div>`
   }

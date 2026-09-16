@@ -1,0 +1,2887 @@
+[
+  {
+    "codigo": "23051",
+    "changes": [
+      {
+        "campo": "marca",
+        "db": "STEG: BUCHWALDER",
+        "xlsx": "STEG"
+      },
+      {
+        "campo": "modelo",
+        "db": null,
+        "xlsx": "BUCHWALDER"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCTB11YA",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "COMPARTIDO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCTB12YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "22127",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22128",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22129",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCGTR86EX",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCGTR87EX",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCGTR88EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "24088",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLA22EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLA23EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "25185",
+    "changes": [
+      {
+        "campo": "tamano",
+        "db": "4/4 (12)",
+        "xlsx": "4/4"
+      }
+    ]
+  },
+  {
+    "codigo": "25186",
+    "changes": [
+      {
+        "campo": "tamano",
+        "db": "4/4 (12)",
+        "xlsx": "4/4"
+      },
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLA117OB",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLA130IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLA21EX",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "BRANYAN PEGUERO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22079",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22080",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "excelente",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "22081",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "22082",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      }
+    ]
+  },
+  {
+    "codigo": "22084",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "excelente",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "22085",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "22086",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22087",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "ANGELITA STJUSTE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22088",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22089",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      }
+    ]
+  },
+  {
+    "codigo": "22090",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "22091",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "HELEN SIRI",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22092",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "22093",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "23055",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "GABRIELA MARTE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23057",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DEPOSITO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23058",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "ESCARLET MARTINEZ",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23060",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "excelente",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "AMELIE FERNANDEZ",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23061",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "23063",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "MELANY PEGUERO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23064",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": "WAILANI GARCIA"
+      }
+    ]
+  },
+  {
+    "codigo": "23065",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "ROBNER ALLAN GARCÍA",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23066",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "excelente",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN25SG",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN26SG",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN28SG",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN30RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN31RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN32RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN33RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "EVAN RODRIGUEZ",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN34RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": "ALEJANDRA PÉREZ"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN36RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN37RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN38EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN39EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN40AR",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "en_reparacion",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN41EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "en_reparacion",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN42MU",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DYAKENSON LAMERIQUE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN43LI",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN46YS",
+    "changes": [
+      {
+        "campo": "modelo",
+        "db": null,
+        "xlsx": "-"
+      },
+      {
+        "campo": "numero_serie",
+        "db": null,
+        "xlsx": "-"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "en_reparacion",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN48MA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "25175",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "25183",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "en_reparacion",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "ANGELITA STJUSTE"
+      }
+    ]
+  },
+  {
+    "codigo": "25182",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN106AR",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN108AR",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "SHANTII HIGGS",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN109AR",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN110AR",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN120IH",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "GABRIELA MARTE"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN121IH",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "DYAKENSON LAMERIQUE"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN122IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN123IH",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "MONTSERRAT PEÑA"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN124IH",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "AMELIE FERNANDEZ"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN125IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN126IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "ESCARLET MARTINEZ"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN128IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN129IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN144GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN145GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN146GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN147GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN148GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN149GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN150GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN151GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN152GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN153GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN154GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN155GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN156GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN157GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN158GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN159GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN160GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN161GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN162GC",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN163GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN164GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN165GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "24089",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "MARIA V. ALBORNOZ",
+        "xlsx": "ISABELLA BAEZ"
+      }
+    ]
+  },
+  {
+    "codigo": "24090",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLN44RO",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22077",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "GENESIS SOSA",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22078",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "ELIAURIS VAZQUEZ",
+        "xlsx": "AUDREY DIVICHE"
+      }
+    ]
+  },
+  {
+    "codigo": "24087",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLC14EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLC15EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLC16EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "SOL MARTE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLC17EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCVLC18EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "25187",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "25189",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "AUDREY DIVICHE",
+        "xlsx": "ESTEBAN SANO"
+      }
+    ]
+  },
+  {
+    "codigo": "25190",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "ESTEBAN SANO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22101",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22102",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22103",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22104",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23069",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "mantenimiento"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23071",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22100",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT03RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADO ROUSSE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT04RO",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT05NU",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "25192",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "RESTAURACIÓN",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "25191",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT79RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT80RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT81RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT82RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT111RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "ANA TAVERAS"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT112RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT113RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "ASHLEY LEBRON"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT114RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT115RO",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "GEILY DIVICHE"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT138IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT139IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT163GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCLT164GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFGT136IH",
+    "changes": [
+      {
+        "campo": "numero_serie",
+        "db": "4072",
+        "xlsx": "57980"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFGT137IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT50MU",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT51MU",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT52MU",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT53MU",
+    "changes": [
+      {
+        "campo": "tipo_instrumento",
+        "db": "flauta_dulce",
+        "xlsx": "flauta_dulce_alto"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT54MU",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT55EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT56MU",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT57EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT58MU",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT59EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT61EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT62EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT63EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT64EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT65EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT66YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT67YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT68YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT69YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT70YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT71YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT72YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT73YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT74YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT75YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT89EX",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT76YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT77YA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT60NU",
+    "changes": [
+      {
+        "campo": "tipo_instrumento",
+        "db": "flauta_dulce_nuvo",
+        "xlsx": "flauta_dulce"
+      },
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22094",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "ALEGNA CUELLO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22095",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "ZARA DIAZ",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22096",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NOELIA PEÑA",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22097",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "22098",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22099",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADA",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT07NU",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT09EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT78NU",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCFLT169IH",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": null,
+        "xlsx": "ZARA DIAZ"
+      }
+    ]
+  },
+  {
+    "codigo": "22119",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "RESTAURACIÓN",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23068",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "25193",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "disponible"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "PAULA OZORIO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCBOE131IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22105",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22106",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23073",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "excelente",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23074",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCSAX06NU",
+    "changes": [
+      {
+        "campo": "tipo_instrumento",
+        "db": "saxofon_nuvo",
+        "xlsx": "saxofon_alto"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23075",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22107",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "23072",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "excelente",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCRN01NU",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22110",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22111",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "de_baja",
+        "xlsx": "mantenimiento"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "de_baja",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DAÑADA",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA84VI",
+    "changes": [
+      {
+        "campo": "marca",
+        "db": null,
+        "xlsx": "THOMANN"
+      },
+      {
+        "campo": "modelo",
+        "db": null,
+        "xlsx": "CR-400"
+      },
+      {
+        "campo": "numero_serie",
+        "db": null,
+        "xlsx": "21-73123CCI00801"
+      },
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22117",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCCNO132IH",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "excelente"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "DIAFREISI DUMOND"
+      }
+    ]
+  },
+  {
+    "codigo": "22118",
+    "changes": [
+      {
+        "campo": "marca",
+        "db": null,
+        "xlsx": "-"
+      },
+      {
+        "campo": "numero_serie",
+        "db": null,
+        "xlsx": "-"
+      },
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "NO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22116",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22109",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "prestado",
+        "xlsx": "en_reparacion"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "BRAYNEL PACHECO",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTBN02MA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTBN83EX",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "regular"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTBN140IH",
+    "changes": [
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "BRAYNEL PACHECO"
+      }
+    ]
+  },
+  {
+    "codigo": "22112",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA85PA",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "regular",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "estado_uso",
+        "db": "disponible",
+        "xlsx": "prestado"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": "JOSE TOMAS LORENZO"
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA119OB",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA133IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA134IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA135IH",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA165GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA166GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "ESPCTPA167GC",
+    "changes": [
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  },
+  {
+    "codigo": "22121",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      }
+    ]
+  },
+  {
+    "codigo": "22120",
+    "changes": [
+      {
+        "campo": "estado_conservacion",
+        "db": "mantenimiento",
+        "xlsx": "bueno"
+      },
+      {
+        "campo": "asignado_texto",
+        "db": "DISPONIBLE",
+        "xlsx": null
+      }
+    ]
+  }
+]

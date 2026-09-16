@@ -118,8 +118,10 @@ export const notificacionesPanel = {
 
     listEl.innerHTML = groups.map(g => {
       const isGroup = g.count > 1;
-      const anyUnread = g.items.some(n => n.estado !== 'leida');
+      const anyUnread = g.items.some(n => n.source === 'REPERTOIRE_SIGNAL' ? !n.acknowledged : n.estado !== 'leida');
       const route = _routeForTipo(g.tipo, g.items[0]);
+      const isRepertoire = g.items[0].source === 'REPERTOIRE_SIGNAL'
+      const repertoireSignal = g.items[0]
 
       const isSinRegistrar = g.tipo === 'sesion_sin_registrar'
 
@@ -130,21 +132,21 @@ export const notificacionesPanel = {
           data-route="${route}"
           title="${isGroup ? 'Ver todo' : g.items[0].titulo}"
         >
-          <div class="pm-notif-icon ${getNotifColor(g.tipo)}">
+          <div class="pm-notif-icon ${isRepertoire ? getSignalColor(repertoireSignal.severity) : getNotifColor(g.tipo)}">
             <i class="bi ${getNotifIcon(g.tipo)}"></i>
           </div>
           <div class="pm-notif-content">
             <div class="pm-notif-title">
-              ${isGroup ? `${g.items[0].titulo} <span class="pm-notif-count">${g.count}</span>` : g.items[0].titulo}
+              ${isRepertoire ? `<span class="pm-signal-severity">${repertoireSignal.severity}</span> ${escapeHtml(repertoireSignal.title)}` : (isGroup ? `${g.items[0].titulo} <span class="pm-notif-count">${g.count}</span>` : g.items[0].titulo)}
             </div>
             <div class="pm-notif-msg">
-              ${isGroup
+              ${isRepertoire ? escapeHtml(repertoireSignal.message) : (isGroup
                 ? `${g.count} clases sin registrar`
                 : g.items[0].mensaje
-              }
+              )}
             </div>
             <div class="pm-notif-footer-row">
-              <span class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</span>
+              <span class="pm-notif-time">${formatRelativeTime(g.items[0].created_at || g.items[0].createdAt)}</span>
               ${isSinRegistrar && route !== '#/'
                 ? `<a class="pm-notif-cta" data-route="${route}" href="#">Registrar ahora →</a>`
                 : ''
@@ -152,7 +154,7 @@ export const notificacionesPanel = {
             </div>
           </div>
           <div class="pm-notif-actions">
-            <button class="pm-notif-btn-mark" data-ids="${g.items.map(n => n.id).join(',')}" title="Marcar como leída">
+              <button class="pm-notif-btn-mark" data-ids="${g.items.map(n => n.id).join(',')}" title="Marcar como revisada">
               <i class="bi bi-check-circle"></i>
             </button>
             <button class="pm-notif-btn-delete" data-ids="${g.items.map(n => n.id).join(',')}" title="Eliminar">
@@ -212,7 +214,7 @@ export const notificacionesPanel = {
         const ids = btn.dataset.ids.split(',');
         
         // Confirmación nativa elegante
-        const confirmar = confirm('¿Estás seguro de que querés eliminar esta notificación?');
+        const confirmar = confirm('¿Está seguro de que desea eliminar esta notificación?');
         if (!confirmar) return;
 
         let deleteSuccess = true;
@@ -312,6 +314,14 @@ function getNotifColor(tipo) {
   }
 }
 
+function getSignalColor(severity) {
+  return severity === 'CRITICAL' ? 'bg-danger text-white' : severity === 'HIGH' ? 'bg-warning text-dark' : 'bg-secondary text-white'
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+}
+
 /**
  * Agrupa notificaciones por tipo.
  * NOTA: sesion_sin_registrar NO se agrupa porque cada notificación es para una clase/día específica
@@ -326,6 +336,10 @@ function _groupByTipo(notificaciones) {
   const seen = new Map(); // tipo → index en groups[]
 
   for (const notif of notificaciones) {
+    if (notif.source === 'REPERTOIRE_SIGNAL') {
+      groups.push({ tipo: 'repertoire_signal', items: [notif], count: 1 })
+      continue
+    }
     if (GROUPABLE.has(notif.tipo) && seen.has(notif.tipo)) {
       const g = groups[seen.get(notif.tipo)];
       g.items.push(notif);
@@ -343,6 +357,7 @@ function _groupByTipo(notificaciones) {
  * Resuelve la ruta de navegación in-app para el click en el panel.
  */
 function _routeForTipo(tipo, notif) {
+  if (notif.source === 'REPERTOIRE_SIGNAL') return notif.deepLink || '#/repertorio'
   const claseId = notif.clase_id || notif.data?.clase_id;
   const alumnoId = notif.alumno_id || notif.data?.alumno_id;
   const hoy = new Date();

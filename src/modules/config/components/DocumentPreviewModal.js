@@ -60,7 +60,7 @@ export function openDocumentPreview(opts) {
                     rows="18" style="font-size:0.8rem;line-height:1.5;">${contenidoFinal}</textarea>
         </div>
       </div>
-      ${hasCritical ? `<p class="text-danger small mt-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Hay datos críticos faltantes. Completá los datos antes de generar.</p>` : ''}
+      ${hasCritical ? `<p class="text-danger small mt-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Hay datos críticos faltantes. Complete los datos antes de generar.</p>` : ''}
     `,
     onShow: (modalBody) => {
       const dialog = modalBody.closest('.app-modal-dialog')

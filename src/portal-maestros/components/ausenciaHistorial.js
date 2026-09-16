@@ -520,7 +520,7 @@ class AusenciaHistorial {
   }
 
   async _cancelSolicitud(id) {
-    if (!confirm('¿Estás seguro que deseas cancelar esta solicitud?')) return;
+    if (!confirm('¿Está seguro de que desea cancelar esta solicitud?')) return;
 
     try {
       const { error } = await supabase

@@ -94,7 +94,7 @@ export async function renderClaseEmergenteView(container, { maestroId }) {
     };
 
     if (!payload.nombre_clase) {
-      alert('Por favor ingresa un nombre para la clase.');
+      alert('Por favor ingrese un nombre para la clase.');
       return;
     }
 

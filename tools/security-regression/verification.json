@@ -1,0 +1,279 @@
+{
+  "status": "passed",
+  "scope": "SQL real con fixtures sintéticos y adaptador ACM",
+  "runtime": "PGlite 0.5.8 / PostgreSQL 18.3",
+  "production_runtime": "PostgreSQL 17.6",
+  "passed": 67,
+  "failed": 0,
+  "pending": 0,
+  "tests": [
+    {
+      "name": "Cierre del portal ACM delegates to one atomic RPC and exposes its authoritative receipt",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre del portal ACM propagates a denied close",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre del portal ACM never turns an invalid receipt into success: null",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre del portal ACM never turns an invalid receipt into success: {\"ok\":false}",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre del portal ACM never turns an invalid receipt into success: {\"ok\":true}",
+      "status": "passed"
+    },
+    {
+      "name": "passes every read-only deployment postcondition",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies anonymous table access: alumnos",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies anonymous table access: alumnos_clases",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies anonymous table access: clases",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies anonymous table access: clase_horarios",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies anonymous table access: conversaciones_whatsapp",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies anonymous table access: alertas_log",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas permits the titular only its own roster, using maestro ID distinct from auth ID",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas permits the suplente and its own titular roster",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies unprivileged or inactive profile 4",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies unprivileged or inactive profile 6",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies unprivileged or inactive profile 7",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies unprivileged or inactive profile 8",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies a token with no profile",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas retains staff roster reads for profile 1",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas retains staff roster reads for profile 5",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies maestro WhatsApp access",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas retains admin WhatsApp access",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas retains service_role access for the worker",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas prevents inventarista from changing clases via es_admin",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas prevents maestro from deleting another clase",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas prevents direct administrative alumno deletion",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas denies TRUNCATE, which bypasses row policies",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas retains assigned-maestro schedule editing",
+      "status": "passed"
+    },
+    {
+      "name": "RLS ejecutada por PostgreSQL, con filas sintéticas WITH CHECK prevents moving a horario to an unassigned clase",
+      "status": "passed"
+    },
+    {
+      "name": "Contención de fusión destructiva rejects merge for anon without touching histories",
+      "status": "passed"
+    },
+    {
+      "name": "Contención de fusión destructiva rejects merge for authenticated without touching histories",
+      "status": "passed"
+    },
+    {
+      "name": "Contención de fusión destructiva rejects merge for service_role without touching histories",
+      "status": "passed"
+    },
+    {
+      "name": "Vistas que contenían datos personales denies anonymous view access: vw_seguimiento_ausentes",
+      "status": "passed"
+    },
+    {
+      "name": "Vistas que contenían datos personales denies anonymous view access: vw_asistencias_consolidada",
+      "status": "passed"
+    },
+    {
+      "name": "Vistas que contenían datos personales does not expose consolidated attendance to inventarista",
+      "status": "passed"
+    },
+    {
+      "name": "Vistas que contenían datos personales preserves the admin consolidated report",
+      "status": "passed"
+    },
+    {
+      "name": "Vistas que contenían datos personales limits the consolidated report to assigned clases",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol prevents inventarista from promoting its own profile",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies anonymous aprobar_usuario",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies anonymous rechazar_usuario",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies role escalation for inactive/missing actor null",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies role escalation for inactive/missing actor 7",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies role escalation for inactive/missing actor 8",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies role escalation for inactive/missing actor 999",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol retains active-superadmin role changes",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol retains admin approval of a pending profile",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol retains pending-user access to its own login status",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies privileged maestro approval for profile 2",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies privileged maestro approval for profile 8",
+      "status": "passed"
+    },
+    {
+      "name": "Perfiles: no se permite eludir los gates elevando el rol denies privileged maestro approval for profile 999",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado denies close for profile 2",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado denies close for profile 4",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado denies close for profile 6",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado denies close for profile 8",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado denies close for profile 999",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado counts one clase occurrence with two attendance marks as one occurrence",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado rejects caller-supplied impersonation",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado fails closed if validation is unknown",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado rejects a range different from the validated periodo",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado requires a reason for a forced incomplete close",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado allows an authorized forced close with a reason",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado rejects duplicate close",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado prevents a direct close that bypasses the RPC",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado retains edits of an open periodo",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado prevents date edits after a periodo is closed",
+      "status": "passed"
+    },
+    {
+      "name": "Cierre transaccional autorizado rolls back the periodo if audit insertion fails",
+      "status": "passed"
+    }
+  ]
+}

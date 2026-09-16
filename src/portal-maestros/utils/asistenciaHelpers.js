@@ -80,7 +80,7 @@ export function abrirEnlaceConLimite(url, textoPlano, maxChars = 1800) {
       textoPlano.slice(0, maxChars) +
       '…\n\n[Texto truncado — el reporte completo excede el límite de caracteres]'
     AppToast.warn(
-      `El texto se truncó (${textoPlano.length} caracteres, máximo ${maxChars}). Usá la opción PDF para ver el reporte completo.`,
+      `El texto se truncó (${textoPlano.length} caracteres, máximo ${maxChars}). Use la opción PDF para ver el reporte completo.`,
     )
     window.open(url + encodeURIComponent(descripcion), '_blank')
   } else {

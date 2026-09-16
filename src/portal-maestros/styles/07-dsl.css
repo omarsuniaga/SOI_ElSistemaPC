@@ -179,7 +179,7 @@
      menú de selección nativo de iOS — pero este es un contenteditable, y
      hereda esas reglas. En iOS Safari y varios WebViews de Android eso
      impide que se active el modo de edición de texto al tocar el campo,
-     así que el teclado nunca aparece. Se revierte solo acá. */
+     así que el teclado nunca aparece. Se revierte solo aquí. */
   -webkit-touch-callout: default;
   -webkit-user-select: text;
   user-select: text;

@@ -14,6 +14,7 @@ export async function loadJsonMock(path) {
     '/assets/data/mocks/alertas_config.json': () => import('../../assets/data/mocks/alertas_config.json'),
     '/assets/data/mocks/objetivos_gamificacion.json': () => import('../../assets/data/mocks/objetivos_gamificacion.json'),
     '/assets/data/mocks/ausencias.json': () => import('../../assets/data/mocks/ausencias.json'),
+    '/assets/data/mocks/maestros.json': () => import('../../assets/data/mocks/maestros.json'),
     '/assets/data/mocks/planificacion-curricular.json': () => import('../../assets/data/mocks/planificacion-curricular.json'),
   }
   

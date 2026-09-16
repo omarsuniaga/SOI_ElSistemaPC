@@ -81,6 +81,8 @@ import { createStudentList } from '../components/attendance/StudentList.js'
 import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
+import { renderSessionRepertoirePanel } from '../components/SessionRepertoirePanel.js'
+import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
 import { resolverPertenenciaClase } from '../services/suplenciaService.js'
 import { generateDailyReport, generateMonthlyAttendance } from '../services/reportService.js'
 // reportService dynamically imported on demand for performance
@@ -164,6 +166,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       rutaId: null,
       sesionExistenteData: sesion,
       router,
+      repertoireAdapter: getRepertoireAdapter({ actorContext: { maestroId: maestro?.id || null } }),
     })
 
     return typeof cleanup === 'function' ? cleanup : undefined
@@ -175,8 +178,11 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
 
 export async function renderAsistenciaView(
   containerOrId,
-  { claseId, fecha, sesionId, router } = {},
+  { claseId, fecha, sesionId, router, repertoireAdapter } = {},
 ) {
+  repertoireAdapter ||= (() => {
+    try { return getRepertoireAdapter({ actorContext: { maestroId: getMaestroLocal()?.id || null } }) } catch (error) { if (error instanceof RepertoireUnavailableError) return null; throw error }
+  })()
   // Resolve container: accept both DOM element and string ID
   const container =
     typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId
@@ -442,6 +448,7 @@ export async function renderAsistenciaView(
       rutaId,
       sesionExistenteData,
       router,
+      repertoireAdapter,
     })
   } catch (err) {
     console.error('[asistenciaView] Error fatal:', err.message, err.stack)
@@ -467,6 +474,7 @@ function _renderVista(container, ctx) {
     rutaId,
     sesionExistenteData,
     router,
+    repertoireAdapter,
   } = ctx
   let sesionId = ctx.sesionId
   let isSessionRegistered =
@@ -1468,6 +1476,7 @@ function _renderVista(container, ctx) {
       </div>
 
       <div id="pm-academic-tools" style="margin-top:1.5rem; display:none;"></div>
+      <div id="pm-session-repertoire" style="margin-top:1.5rem;"></div>
 
       <!-- Barra de Acciones Fija (Por encima del menú inferior) -->
       <div class="pm-asist-actions-fixed">
@@ -1759,6 +1768,20 @@ function _renderVista(container, ctx) {
   })
   _cleanups.push(() => planificationCard.destroy())
 
+  let sessionRepertoirePanel
+  if (!repertoireAdapter) {
+    const unavailable = container.querySelector('#pm-session-repertoire')
+    if (unavailable) unavailable.innerHTML = '<p class="session-repertoire-status" role="status">Repertorio no disponible.</p>'
+  } else repertoireAdapter.listMontajes().then((montageOptions) => {
+    sessionRepertoirePanel = renderSessionRepertoirePanel(container.querySelector('#pm-session-repertoire'), {
+      sessionId: sesionId,
+      adapter: repertoireAdapter,
+      createdBy: maestroIdSesion,
+      montajeOptions: montageOptions,
+    })
+    _cleanups.push(() => sessionRepertoirePanel.destroy())
+  }).catch(() => { const unavailable = container.querySelector('#pm-session-repertoire'); if (unavailable) unavailable.innerHTML = '<p class="session-repertoire-status" role="alert">No se pudo cargar Repertorio trabajado.</p>' })
+
 
 
   // Wire "Proponer plan curricular" button
@@ -1886,6 +1909,8 @@ function _renderVista(container, ctx) {
       const root = container.querySelector('.pm-asist-root')
       if (root) root.appendChild(el)
     },
+    getRepertoireWorkId: () => sessionRepertoirePanel?.getSelectedWorkId?.(),
+    linkObservationToRepertoire: (observationId, workId) => repertoireAdapter.linkObservationToSessionRepertoire?.(observationId, workId),
   })
 
   // === Student List ===
@@ -2319,7 +2344,7 @@ function _renderVista(container, ctx) {
           }
         }
 
-        // (Se quitó de acá el "3. Procesar cierre de sesión y recálculo de progreso" que
+        // (Se quitó de aquí el "3. Procesar cierre de sesión y recálculo de progreso" que
         // llamaba a academicService.processSessionClosure(sesionId): ese motor lee de
         // indicator_attempts, tabla que ningún flujo alcanzable desde esta vista escribe.
         // Siempre devolvía 0 logros — aparentaba funcionar pero era código muerto. El
@@ -2627,7 +2652,7 @@ function _renderVista(container, ctx) {
         const btnDescartarBorrador = container.querySelector('#btn-descartar-borrador')
         if (btnDescartarBorrador) {
           btnDescartarBorrador.addEventListener('click', async () => {
-            if (confirm('¿Deseas descartar este borrador? La fecha se limpiará por completo.')) {
+            if (confirm('¿Desea descartar este borrador? La fecha se limpiará por completo.')) {
               try {
                 btnDescartarBorrador.disabled = true
                 btnDescartarBorrador.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Descartando...'

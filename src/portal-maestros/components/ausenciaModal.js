@@ -123,7 +123,7 @@ class AusenciaModal {
         <section class="am-section">
           <p class="am-section-label"><i class="bi bi-chat-left-text-fill"></i> Motivo <span class="am-required">*</span></p>
           <textarea id="motivo" class="am-textarea" maxlength="500"
-            placeholder="Describí brevemente el motivo de tu ausencia..."
+            placeholder="Describa brevemente el motivo de su ausencia..."
           >${escHTML(this.state.motivo)}</textarea>
           <div class="am-char-count"><span id="motivo-count">${this.state.motivo.length}</span>/500</div>
         </section>
@@ -133,7 +133,7 @@ class AusenciaModal {
           <p class="am-section-label"><i class="bi bi-music-note-list"></i> Clases afectadas</p>
           <div id="clases-afectadas-container" class="am-clases-placeholder">
             <i class="bi bi-calendar-x" style="font-size:1.5rem;opacity:0.4;"></i>
-            <span>Seleccioná la fecha para ver las clases afectadas</span>
+            <span>Seleccione la fecha para ver las clases afectadas</span>
           </div>
         </section>
 
@@ -369,7 +369,7 @@ class AusenciaModal {
     this.maestro = getMaestroLocal();
 
     if (!this.maestro) {
-      AppToast.error('Iniciá sesión para solicitar ausencias');
+      AppToast.error('Inicie sesión para solicitar ausencias');
       return;
     }
 
@@ -427,7 +427,7 @@ class AusenciaModal {
         this.state.fechaFin = '';
         document.getElementById('clases-afectadas-container').innerHTML = `
           <i class="bi bi-calendar-x" style="font-size:1.5rem;opacity:0.4;"></i>
-          <span>Seleccioná la fecha para ver las clases afectadas</span>`;
+          <span>Seleccione la fecha para ver las clases afectadas</span>`;
         document.getElementById('clases-afectadas-container').className = 'am-clases-placeholder';
       });
     });
@@ -600,13 +600,13 @@ class AusenciaModal {
 
   _validate() {
     const errors = [];
-    if (!this.state.fechaInicio) errors.push('Seleccioná la fecha de inicio');
-    if (!this.state.fechaFin) errors.push('Seleccioná la fecha de fin');
+    if (!this.state.fechaInicio) errors.push('Seleccione la fecha de inicio');
+    if (!this.state.fechaFin) errors.push('Seleccione la fecha de fin');
     if (this.state.fechaInicio && this.state.fechaFin && this.state.fechaInicio > this.state.fechaFin) {
       errors.push('La fecha final debe ser después de la fecha inicial');
     }
     if (!this.state.motivo || this.state.motivo.trim().length === 0) {
-      errors.push('Explicá el motivo de la ausencia');
+      errors.push('Explique el motivo de la ausencia');
     }
     return errors;
   }
@@ -658,7 +658,7 @@ class AusenciaModal {
       if (error?.validationErrors && Object.keys(error.validationErrors).length > 0) {
         const errDiv = document.getElementById('ausencia-errors');
         if (errDiv) errDiv.textContent = Object.values(error.validationErrors).join('; ');
-        AppToast.error('Revisá los campos marcados');
+        AppToast.error('Revise los campos marcados');
       } else {
         AppToast.error('Error al enviar la solicitud');
       }

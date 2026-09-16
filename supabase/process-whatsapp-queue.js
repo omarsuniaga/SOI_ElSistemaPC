@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import fetch from 'node-fetch'
 import {
   clampMessageText,
   estimateTokenBudget,
@@ -29,6 +28,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 // Anti-ban: pausa con jitter entre envíos (mimetiza ritmo humano)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+
+// Normaliza el jid guardado en cola (a veces llega con +, espacios o paréntesis,
+// ej. "+1 (809)6714156") al formato de JID de WhatsApp que espera Baileys en el
+// bridge ("18096714156@s.whatsapp.net"). Los jids ya completos (coordinadores de
+// departamento, grupos @g.us) se dejan intactos.
+function toWhatsAppJid(rawJid) {
+  const value = String(rawJid || '').trim()
+  if (value.includes('@')) return value
+  const digits = value.replace(/\D/g, '')
+  return `${digits}@s.whatsapp.net`
+}
 const MAX_TOKENS_PER_MESSAGE = Number(process.env.WHATSAPP_MAX_TOKENS_PER_MESSAGE || WHATSAPP_SECURITY_DEFAULTS.maxTokensPerTurn)
 const MAX_CHARS_PER_MESSAGE = Number(process.env.WHATSAPP_MAX_CHARS_PER_MESSAGE || WHATSAPP_SECURITY_DEFAULTS.maxCharsPerMessage)
 
@@ -91,7 +101,7 @@ async function processQueue() {
 
     // Nota: fn_whatsapp_reclamar_pendientes ya marcó estado='procesando' e incrementó intentos.
     try {
-      const url = `${config.gateway_url.replace(/\/$/, '')}/message/sendText`
+      const url = `${config.gateway_url.replace(/\/$/, '')}/send`
       const headers = {
         'Content-Type': 'application/json'
       }
@@ -102,11 +112,11 @@ async function processQueue() {
       }
 
       const body = {
-        jid: message.jid,
-        text: clampMessageText(message.mensaje, MAX_CHARS_PER_MESSAGE)
+        chatId: toWhatsAppJid(message.jid),
+        message: clampMessageText(message.mensaje, MAX_CHARS_PER_MESSAGE)
       }
 
-      const tokenEstimate = estimateTokenBudget(body.text)
+      const tokenEstimate = estimateTokenBudget(body.message)
       if (tokenEstimate > MAX_TOKENS_PER_MESSAGE) {
         throw new Error(`Mensaje excede el presupuesto de tokens permitido (${tokenEstimate} > ${MAX_TOKENS_PER_MESSAGE})`)
       }

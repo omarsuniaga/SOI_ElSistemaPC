@@ -22,7 +22,7 @@ export async function renderAcmPropuestasView(container) {
     <div class="acm-propuestas-container">
       <div class="acm-propuestas-header">
         <h1>Propuestas de Maestros</h1>
-        <p>Revisá el contenido curricular propuesto y decidí si publicarlo o devolverlo con feedback.</p>
+        <p>Revise el contenido curricular propuesto y decida si publicarlo o devolverlo con feedback.</p>
       </div>
       <div class="acm-propuestas-body" style="display:flex; gap:1.5rem;">
         <div class="acm-propuestas-list" id="acm-propuestas-list" style="flex: 0 0 320px;"></div>

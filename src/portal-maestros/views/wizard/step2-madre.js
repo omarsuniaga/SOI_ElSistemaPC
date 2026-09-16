@@ -11,8 +11,8 @@ export function render(draft, errors = {}) {
     <form id="wiz-form-step2" novalidate>
       <div class="alert alert-secondary py-2 mb-3">
         <i class="bi bi-person-heart me-1"></i>
-        Ingresa los datos de la madre del alumno tal como aparecen en su documento de identidad.
-        Si la madre no está en vida o no aplica, puedes dejar estos campos vacíos.
+        Ingrese los datos de la madre del alumno tal como aparecen en su documento de identidad.
+        Si la madre no está en vida o no aplica, puede dejar estos campos vacíos.
       </div>
 
       ${renderFormField({ name: 'madre_nombre', label: 'Nombre y apellido completo de la madre', type: 'text', value: draft.madre_nombre ?? '', error: errors.madre_nombre ?? '', hint: 'Tal como aparece en la cédula' })}

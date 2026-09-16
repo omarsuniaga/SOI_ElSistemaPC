@@ -802,7 +802,7 @@ export async function renderAlumnosView(container) {
         }
         AppModal.open({
           title: 'Cambios sin guardar',
-          body: '<p>Tenés cambios sin guardar. ¿Querés salir de todas formas?</p>',
+          body: '<p>Tiene cambios sin guardar. ¿Desea salir de todas formas?</p>',
           saveText: 'Salir sin guardar',
           onSave: () => AppModal.close(),
           onCancel: () => {}, // stay in the edit modal

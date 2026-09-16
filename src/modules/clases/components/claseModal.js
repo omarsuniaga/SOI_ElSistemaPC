@@ -118,6 +118,10 @@ export async function openClaseModal(clase = null, options = {}) {
       : 'Nueva Clase'
   const saveText = isEdicion ? 'Guardar Cambios' : isClon ? 'Crear Copia' : 'Crear Clase'
 
+  // Se marca al primer input/change dentro del formulario; permite advertir
+  // antes de cerrar el modal con cambios sin guardar (X, Cancelar o Escape).
+  let isDirty = false
+
   AppModal.open({
     title,
     saveText,
@@ -138,11 +142,25 @@ export async function openClaseModal(clase = null, options = {}) {
     size: 'view',
     body: _getClaseFormHTML(prefill, inscritosIds, inscritosSlots, { isClon }),
     onShow: (modalBody) => {
+      const _markDirty = (e) => {
+        isDirty = true
+        e.target?.classList?.remove('is-invalid')
+      }
+      modalBody.addEventListener('input', _markDirty)
+      modalBody.addEventListener('change', _markDirty)
       _attachModalEvents(modalBody, clase)
     },
     onSave: async (modalBody) => {
-      return await _handleSave(modalBody, clase, { isClon })
-    }
+      const ok = await _handleSave(modalBody, clase, { isClon })
+      if (ok) isDirty = false
+      return ok
+    },
+    onCancel: () => {
+      if (!isDirty) return
+      if (!confirm('Tienes cambios sin guardar en esta clase. ¿Deseas salir sin guardar?')) {
+        return false
+      }
+    },
   })
 }
 
@@ -172,13 +190,14 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) 
           <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-0 rounded-3" style="font-size:0.82rem;">
             <i class="bi bi-files fs-5 flex-shrink-0"></i>
             <div>
-              <strong>Estás duplicando una clase.</strong> Se copian el horario y la nómina del modelo original.
-              Asigná el nuevo <strong>maestro titular</strong> y el <strong>salón</strong> de cada bloque.
-              La copia nace <strong>en revisión</strong> y fuera del feed operativo hasta que la actives desde la ficha.
-              <div class="form-check mt-1">
-                <input class="form-check-input" type="checkbox" id="modal-suspender-original" checked>
-                <label class="form-check-label" for="modal-suspender-original">
-                  Suspender la clase original al crear la copia
+              <strong>Está duplicando una clase.</strong> Se copian el horario y la nómina del modelo original.
+              Asigne el nuevo <strong>maestro titular</strong> y el <strong>salón</strong> de cada bloque.
+              La copia nace <strong>en revisión</strong> y fuera del feed operativo hasta que la active desde la ficha.
+              <div class="form-check form-switch mt-2 p-2 rounded-3 bg-warning-subtle border border-warning-subtle">
+                <input class="form-check-input" type="checkbox" id="modal-suspender-original">
+                <label class="form-check-label fw-semibold" for="modal-suspender-original">
+                  <i class="bi bi-exclamation-triangle-fill text-warning-emphasis me-1"></i>
+                  Suspender la clase original al crear la copia (acción con impacto inmediato)
                 </label>
               </div>
             </div>
@@ -258,6 +277,7 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) 
               <div class="col-6">
                 <label class="form-label-compact">Capacidad Máx.</label>
                 <input type="number" class="form-control input-dense" id="modal-max_alumnos" value="${clase?.capacidad_maxima || 20}" min="1" max="80">
+                <small class="text-muted" id="cupo-indicator" style="font-size:0.68rem;"></small>
               </div>
               <div class="col-6">
                 <label class="form-label-compact">Dinámica</label>
@@ -375,6 +395,7 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
               <option value="60">60 min (1h)</option>
               <option value="custom">Personalizado…</option>
             </select>
+            <input type="number" class="form-control form-control-sm border-start-0 py-1" id="slot-duration-custom" min="1" max="240" placeholder="min" value="30" style="display:none; width:60px; font-size:0.78rem;">
             <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 px-2.5 py-1" id="btn-auto-slots" title="Generar franjas según el horario global y la duración" style="font-size:0.78rem;">
               <i class="bi bi-magic"></i>
               <span>Auto</span>
@@ -393,7 +414,7 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
       </div>
 
       <div class="d-flex justify-content-between align-items-center mt-1 px-1">
-        <small class="text-muted" style="font-size:0.75rem;">Podés asignar 1, 2 o más alumnos por cada turno (Micro-Grupos)</small>
+        <small class="text-muted" style="font-size:0.75rem;">Puedes asignar 1, 2 o más alumnos por cada turno (Micro-Grupos)</small>
         <small class="fw-bold text-primary" id="slots-count">
           ${inscritosSlots.length || 0} alumno(s) asignados
         </small>
@@ -475,6 +496,41 @@ function _renderSlotCardHTML(slot, alumnos = [], alumnosMap = new Map()) {
 }
 
 function _attachModalEvents(modalBody, _clase) {
+  // ── Indicador de cupo (control de capacidad) ──────────────────────────────
+  // Cuenta alumnos seleccionados según la dinámica activa y los compara
+  // contra "Capacidad Máx.", coloreando en rojo cuando se excede.
+  const _countAlumnosSeleccionados = () => {
+    const esRotativaAhora = modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value === 'rotativa'
+    if (esRotativaAhora) {
+      const ids = new Set(Array.from(modalBody.querySelectorAll('#slots-container .slot-alumno-pill')).map(p => p.dataset.alumnoId))
+      return ids.size
+    }
+    return modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked').length
+  }
+
+  const _updateCupoIndicator = () => {
+    const max = parseInt(modalBody.querySelector('#modal-max_alumnos')?.value, 10) || 0
+    const count = _countAlumnosSeleccionados()
+    const badge = modalBody.querySelector('#badge-total-alumnos-modal')
+    const indicator = modalBody.querySelector('#cupo-indicator')
+    const sobreCupo = max > 0 && count > max
+
+    if (badge) {
+      badge.textContent = count
+      badge.classList.toggle('bg-danger', sobreCupo)
+      badge.classList.toggle('bg-primary', !sobreCupo)
+    }
+    if (indicator) {
+      indicator.textContent = max > 0 ? `${count} / ${max} alumnos` : ''
+      indicator.classList.toggle('text-danger', sobreCupo)
+      indicator.classList.toggle('fw-semibold', sobreCupo)
+      indicator.classList.toggle('text-muted', !sobreCupo)
+    }
+  }
+
+  modalBody.querySelector('#modal-max_alumnos')?.addEventListener('input', _updateCupoIndicator)
+  setTimeout(_updateCupoIndicator, 0)
+
   // Botón para seleccionar ruta
   const btnSeleccionarRuta = modalBody.querySelector('#btn-seleccionar-ruta')
   if (btnSeleccionarRuta) {
@@ -550,6 +606,7 @@ function _attachModalEvents(modalBody, _clase) {
       const esRotativa = modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value === 'rotativa'
       seccionGrupal.style.display   = esRotativa ? 'none'  : 'block'
       seccionRotativa.style.display = esRotativa ? 'block' : 'none'
+      _updateCupoIndicator()
     })
   })
 
@@ -562,6 +619,7 @@ function _attachModalEvents(modalBody, _clase) {
     const totalPills = slotsContainer.querySelectorAll('.slot-alumno-pill').length
     const totalCards = slotsContainer.querySelectorAll('.slot-card').length
     slotsCount.textContent = `${totalPills} alumno(s) en ${totalCards} turno(s)`
+    _updateCupoIndicator()
   }
 
   // 1. Agregar Turno Nuevo
@@ -742,16 +800,25 @@ function _attachModalEvents(modalBody, _clase) {
   })
 
   // 3. Auto-generar franjas de turnos según el horario global
+  const durationSelect = modalBody.querySelector('#slot-duration-select')
+  const durationCustom = modalBody.querySelector('#slot-duration-custom')
+
+  durationSelect?.addEventListener('change', () => {
+    const isCustom = durationSelect.value === 'custom'
+    if (durationCustom) {
+      durationCustom.style.display = isCustom ? 'block' : 'none'
+      if (isCustom) durationCustom.focus()
+    }
+  })
+
   modalBody.querySelector('#btn-auto-slots')?.addEventListener('click', () => {
-    const durationSelect = modalBody.querySelector('#slot-duration-select')
     let durationMin = parseInt(durationSelect?.value || '30', 10)
 
     if (durationSelect?.value === 'custom') {
-      const customVal = prompt('Ingresá la duración de cada turno en minutos (ej: 15, 20, 30, 45):', '30')
-      if (customVal === null) return
-      const parsed = parseInt(customVal, 10)
+      const parsed = parseInt(durationCustom?.value, 10)
       if (isNaN(parsed) || parsed <= 0) {
-        AppToast.warning('La duración ingresada no es válida')
+        AppToast.warning('Ingresa una duración personalizada válida (en minutos)')
+        durationCustom?.focus()
         return
       }
       durationMin = parsed
@@ -762,7 +829,7 @@ function _attachModalEvents(modalBody, _clase) {
     const endStr   = firstHorarioRow?.querySelector('[name="horario-hora_fin"]')?.value
 
     if (!startStr || !endStr) {
-      AppToast.warning('Por favor definí primero el horario de inicio y fin en "2. Horario & Salón"')
+      AppToast.warning('Por favor defina primero el horario de inicio y fin en "2. Horario & Salón"')
       return
     }
 
@@ -866,6 +933,7 @@ function _attachModalEvents(modalBody, _clase) {
     const selected = Array.from(checks).filter(c => c.checked).length
     if (countDisplay) countDisplay.textContent = `${selected} alumnos seleccionados`
     updateSelectAllState()
+    _updateCupoIndicator()
   }
 
   const applyAlumnoFilters = () => {
@@ -917,6 +985,41 @@ function _attachModalEvents(modalBody, _clase) {
   updateCount()
 }
 
+// Asocia fragmentos de los mensajes de Clase.validate() (y el chequeo de
+// cupo) a los campos del formulario, para marcarlos visualmente además de
+// listarlos en el toast. No depende del texto exacto completo: basta con
+// que el mensaje contenga la palabra clave.
+const _VALIDATION_FIELD_MAP = [
+  ['nombre', '#modal-nombre'],
+  ['maestro titular', '#modal-maestro_id'],
+  ['programa', '#modal-programa_id'],
+  ['instrumento', '#modal-instrumento'],
+  ['horario', '#modal-horarios-container'],
+  ['solapados', '#modal-horarios-container'],
+  ['capacidad máxima', '#modal-max_alumnos'],
+  ['máximo de alumnos', '#modal-max_alumnos'],
+  ['notas pedagógicas', '#modal-notas_pedagogicas'],
+]
+
+function _showValidationErrors(modalBody, errores) {
+  modalBody.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'))
+
+  const camposMarcados = new Set()
+  errores.forEach(msg => {
+    const msgLower = msg.toLowerCase()
+    for (const [keyword, selector] of _VALIDATION_FIELD_MAP) {
+      if (msgLower.includes(keyword) && !camposMarcados.has(selector)) {
+        modalBody.querySelector(selector)?.classList.add('is-invalid')
+        camposMarcados.add(selector)
+      }
+    }
+  })
+
+  const listHtml = `<strong>Revisa lo siguiente antes de guardar:</strong>` +
+    `<ul class="mb-0 ps-3 mt-1">${errores.map(e => `<li>${escapeHTML(e)}</li>`).join('')}</ul>`
+  AppToast.error(listHtml)
+}
+
 async function _handleSave(modalBody, originalClase, ctx = {}) {
   const isEdicion = !!originalClase
   const isClon = !isEdicion && !!ctx.isClon
@@ -951,8 +1054,19 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
   const claseObj = new Clase(formData)
   const errores = claseObj.validate()
 
+  // Control de cupo: compara la selección actual contra "Capacidad Máx.".
+  // No se infiere de _readSlots (definido más abajo) para poder bloquear
+  // el guardado antes de tocar la base de datos.
+  const alumnosSeleccionados = formData.tipo_clase === 'rotativa'
+    ? new Set(Array.from(modalBody.querySelectorAll('#slots-container .slot-alumno-pill')).map(p => p.dataset.alumnoId)).size
+    : modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked').length
+
+  if (formData.capacidad_maxima > 0 && alumnosSeleccionados > formData.capacidad_maxima) {
+    errores.push(`Seleccionaste ${alumnosSeleccionados} alumnos, pero la capacidad máxima es ${formData.capacidad_maxima}. Aumenta el cupo o quita alumnos.`)
+  }
+
   if (errores.length > 0) {
-    AppToast.error(errores[0])
+    _showValidationErrors(modalBody, errores)
     return false
   }
 
@@ -994,7 +1108,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
 
   const _syncRotativa = async (claseId) => {
     const slots = _readSlots()
-    if (slots.length === 0) { AppToast.warning('Agregá al menos un turno'); return false }
+    if (slots.length === 0) { AppToast.warning('Agregue al menos un turno'); return false }
 
     const incomplete = slots.find(s => !s.hora_inicio || !s.hora_fin)
     if (incomplete) { AppToast.error('Todos los turnos deben tener hora de inicio y fin'); return false }
@@ -1023,6 +1137,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
     let resultClase
     if (isEdicion) {
       resultClase = await actualizarClase(originalClase.id, formData, true)
+      tSave.update('Sincronizando nómina de alumnos...')
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) { tSave.dismiss(); return false }
@@ -1031,6 +1146,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
       }
     } else {
       resultClase = await crearClase(formData, true)
+      tSave.update('Inscribiendo alumnos...')
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) { tSave.dismiss(); return false }
@@ -1040,7 +1156,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
           const results = await Promise.allSettled(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
           const fallidos = results.filter(r => r.status === 'rejected').length
           if (fallidos > 0) {
-            AppToast.warning(`${fallidos} de ${selectedIds.length} alumno(s) no se pudieron inscribir. Revisá la nómina.`)
+            AppToast.warning(`${fallidos} de ${selectedIds.length} alumno(s) no se pudieron inscribir. Revisa la nómina.`)
           }
         }
       }
@@ -1048,6 +1164,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
       if (isClon) {
         // La copia nace fuera del feed operativo y en revisión; además arrastra
         // los campos académicos que el formulario no expone.
+        tSave.update('Marcando la copia como pendiente de revisión...')
         try {
           await marcarClaseComoClon(resultClase.id, {
             origenNombre: _options.origenClon?.nombre,
@@ -1063,6 +1180,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
 
         const suspenderOriginal = modalBody.querySelector('#modal-suspender-original')?.checked
         if (suspenderOriginal && _options.origenClon?.id) {
+          tSave.update('Suspendiendo la clase original...')
           try {
             await suspenderClase(_options.origenClon.id, `Reemplazada por la copia "${formData.nombre}".`)
             originalSuspendida = true
@@ -1081,8 +1199,11 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
           ? `Copia creada${originalSuspendida ? ' y original suspendida' : ''}. Queda en revisión hasta verificar maestro, salón y nómina.`
           : 'Clase creada con éxito.'
     )
+    // onSuccess/onSaved son alias del mismo callback de recarga en todos los
+    // call sites; invocar ambos duplicaba la recarga completa de la vista
+    // (5 queries + motor de conflictos) en cada guardado.
     if (_options.onSuccess) await _options.onSuccess()
-    if (_options.onSaved) await _options.onSaved()
+    else if (_options.onSaved) await _options.onSaved()
     return true
   } catch (err) {
     console.error('[claseModal] Error al guardar clase:', err)

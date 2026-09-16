@@ -6,7 +6,7 @@ window.SIGNAGE_CONFIG = {
   screenSlug: 'punta-cana-vestibulo',
   timezone: 'America/Santo_Domingo',
 
-  poll: { horario: 180000, media: 180000, calendario: 900000, pantalla: 900000 },
+  poll: { horario: 180000, media: 180000, calendario: 900000, pantalla: 180000 },
 
   slideDefaultSeconds: 12,
   videoMaxSeconds: 240,

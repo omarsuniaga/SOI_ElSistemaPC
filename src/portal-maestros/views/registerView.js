@@ -22,9 +22,9 @@ export function renderRegisterView(container, { onSuccess }) {
 
           <div class="pm-login-brand-copy">
             <span class="pm-login-kicker">Portal de Maestros</span>
-            <h1 class="pm-login-title">Solicitá tu cuenta docente.</h1>
+            <h1 class="pm-login-title">Solicite su cuenta docente.</h1>
             <p class="pm-login-subtitle">
-              Creá tu perfil para entrar al portal con una interfaz limpia, profesional y lista para mobile,
+              Cree su perfil para entrar al portal con una interfaz limpia, profesional y lista para mobile,
               tablet y desktop.
             </p>
           </div>
@@ -42,7 +42,7 @@ export function renderRegisterView(container, { onSuccess }) {
               <div>
                 <h2 class="pm-login-card-title">Crear cuenta</h2>
                 <p class="pm-login-card-subtitle">
-                  Completá tus datos institucionales para solicitar acceso.
+                  Complete sus datos institucionales para solicitar acceso.
                 </p>
               </div>
               <button class="pm-login-theme-hint" type="button" tabindex="-1" aria-hidden="true">
@@ -104,7 +104,7 @@ export function renderRegisterView(container, { onSuccess }) {
                   type="password"
                   id="pm-reg-confirm-password"
                   class="pm-login-input"
-                  placeholder="Repetí tu contraseña"
+                  placeholder="Repita su contraseña"
                   autocomplete="new-password"
                 />
                 <button
@@ -148,7 +148,7 @@ export function renderRegisterView(container, { onSuccess }) {
             </button>
 
             <div class="pm-login-footer">
-              <a href="#" data-route="login" class="pm-login-register-link">¿Ya tenés cuenta? Iniciar sesión</a>
+              <a href="#" data-route="login" class="pm-login-register-link">¿Ya tiene cuenta? Iniciar sesión</a>
               <span class="pm-login-footer-dot">•</span>
               <span class="pm-login-footer-note">La solicitud queda pendiente de aprobación</span>
             </div>
@@ -205,13 +205,13 @@ export function renderRegisterView(container, { onSuccess }) {
     let hasError = false
 
     if (!nombre) {
-      setFieldError(nombreInput, 'Ingresá tu nombre completo')
+      setFieldError(nombreInput, 'Ingrese su nombre completo')
       if (!hasError) nombreInput.focus()
       hasError = true
     }
 
     if (!email) {
-      setFieldError(emailInput, 'Ingresá tu correo electrónico')
+      setFieldError(emailInput, 'Ingrese su correo electrónico')
       if (!hasError) emailInput.focus()
       hasError = true
     }
@@ -223,7 +223,7 @@ export function renderRegisterView(container, { onSuccess }) {
     }
 
     if (!confirmPassword) {
-      setFieldError(confirmPasswordInput, 'Confirmá tu contraseña')
+      setFieldError(confirmPasswordInput, 'Confirme su contraseña')
       if (!hasError) confirmPasswordInput.focus()
       hasError = true
     } else if (password !== confirmPassword) {
@@ -252,8 +252,8 @@ export function renderRegisterView(container, { onSuccess }) {
     if (error) {
       errorMsg.textContent =
         error.message === 'User already registered'
-          ? 'Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.'
-          : error.message || 'Error al registrarse. Intentá de nuevo.'
+          ? 'Este correo ya está registrado. Si ya es maestro, intente iniciar sesión.'
+          : error.message || 'Error al registrarse. Intente de nuevo.'
       setLoading(false)
       return
     }

@@ -92,7 +92,7 @@ describe('CategoriaTrabajoBar', () => {
 
     await bar.analizarAhora('practicamos escalas en una octava')
 
-    expect(bar.el.textContent).toContain('¿Trabajaste')
+    expect(bar.el.textContent).toContain('¿Trabajó')
     // El candado que este test protege: la categoría no se emite por sí sola.
     expect(bar.getCategoria().codigo).toBeNull()
     expect(onChange).not.toHaveBeenCalled()
@@ -118,7 +118,7 @@ describe('CategoriaTrabajoBar', () => {
     expect(bar.getCategoria()).toEqual({ codigo: 'ARC', origen: 'explicito' })
     expect(onChange).toHaveBeenCalledWith({ codigo: 'ARC', origen: 'explicito' })
     // Resuelto por el código explícito, sin candidatos del servidor.
-    expect(bar.el.textContent).toContain('indicado por vos')
+    expect(bar.el.textContent).toContain('indicado por usted')
   })
 
   it('no pisa una elección manual del maestro al seguir escribiendo', async () => {

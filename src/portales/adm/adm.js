@@ -55,20 +55,23 @@ const navGroups = [
       },
     ],
   },
-  {
-    id: 'bandeja',
-    label: 'Hermes & Tareas',
-    icon: 'bi-kanban',
-    items: [
-      { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
-    ],
-  },
+  // Oculto a pedido: "Hermes & Tareas" no hace falta todavía (no se borra,
+  // solo se saca del menú — la ruta 'hermes-tareas' sigue registrada).
+  // {
+  //   id: 'bandeja',
+  //   label: 'Hermes & Tareas',
+  //   icon: 'bi-kanban',
+  //   items: [
+  //     { id: 'hermes-tareas', label: 'Tablero Kanban & Tareas', icon: 'bi-kanban-fill' },
+  //   ],
+  // },
   {
     id: 'sistema',
     label: 'Sistema & Accesos',
     icon: 'bi-gear',
     items: [
-      { id: 'signage-pantalla', label: 'Cartelera / Pantalla', icon: 'bi-tv' },
+      { id: 'cartelera', label: 'Cartelera / Pantalla', icon: 'bi-tv' },
+      { id: 'cartelera-diapositiva', label: 'Diseñador de Diapositivas', icon: 'bi-easel2' },
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },

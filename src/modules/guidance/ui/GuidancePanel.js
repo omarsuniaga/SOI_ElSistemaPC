@@ -66,7 +66,7 @@ export function createGuidancePanel(opts = {}) {
           <div class="guidance-qa-input">
             <input type="text"
                    class="guidance-qa-field"
-                   placeholder="Escribí tu pregunta..."
+                   placeholder="Escriba su pregunta..."
                    data-guidance-qa-input
                    aria-label="Pregunta para orientación" />
             <button class="guidance-qa-send"

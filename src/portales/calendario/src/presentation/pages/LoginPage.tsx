@@ -50,7 +50,7 @@ export function LoginPage() {
       <AuthShell>
         <StatusMessage
           title="Cuenta pendiente de aprobación"
-          message="Tu cuenta todavía no fue aprobada por un administrador. Probá de nuevo más tarde."
+          message="Tu cuenta todavía no ha sido aprobada por un administrador. Intente de nuevo más tarde."
         />
       </AuthShell>
     );
@@ -61,7 +61,7 @@ export function LoginPage() {
       <AuthShell>
         <StatusMessage
           title="Acceso rechazado"
-          message="Esta cuenta no tiene acceso habilitado. Contactá a Dirección."
+          message="Esta cuenta no tiene acceso habilitado. Contacte a Dirección."
         />
       </AuthShell>
     );
@@ -70,7 +70,7 @@ export function LoginPage() {
   return (
     <AuthShell>
       <h1 className="text-xl font-semibold text-zinc-100 mb-1">Calendario Institucional</h1>
-      <p className="text-sm text-zinc-400 mb-6">Iniciá sesión con tu cuenta de El Sistema Punta Cana.</p>
+      <p className="text-sm text-zinc-400 mb-6">Inicie sesión con su cuenta de El Sistema Punta Cana.</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-zinc-400 mb-1" htmlFor="email">

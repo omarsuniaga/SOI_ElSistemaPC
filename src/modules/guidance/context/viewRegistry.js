@@ -21,15 +21,15 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasNewStudents',
-        tip: 'Tenés alumnos nuevos preinscritos para hoy. Revisá la lista de preinscritos antes de empezar.',
+        tip: 'Hay alumnos nuevos preinscritos para hoy. Revise la lista de preinscritos antes de empezar.',
       },
       {
         condition: 'isAfter9am',
-        tip: 'Ya pasaron las 9 AM. Si no cargaste asistencia, hacelo ahora para no perder el registro.',
+        tip: 'Ya pasaron las 9 AM. Si no ha registrado asistencia, hágalo ahora para no perder el registro.',
       },
       {
         condition: 'hasPendingEvaluations',
-        tip: 'Hay evaluaciones pendientes de calificar. Revisá la sección de métricas.',
+        tip: 'Hay evaluaciones pendientes de calificar. Revise la sección de métricas.',
       },
     ],
   },
@@ -41,15 +41,15 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'allMarked',
-        tip: 'Cargaste todos los alumnos. Recordá guardar antes de salir.',
+        tip: 'Se han cargado todos los alumnos. Recuerde guardar antes de salir.',
       },
       {
         condition: 'hasAbsences',
-        tip: 'Algunos alumnos están marcados como ausentes. Si tenés justificación, registrala.',
+        tip: 'Algunos alumnos están marcados como ausentes. Si cuenta con justificación, regístrela.',
       },
       {
         condition: 'noStudentsLoaded',
-        tip: 'No hay alumnos cargados para esta sección. Verificá que seleccionaste el grado y sección correctos.',
+        tip: 'No hay alumnos cargados para esta sección. Verifique que haya seleccionado el grado y sección correctos.',
       },
     ],
   },
@@ -61,11 +61,11 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasEmptyGrades',
-        tip: 'Hay campos de calificación vacíos. Si el alumno no fue evaluado, dejalo en blanco o marcá "N/A".',
+        tip: 'Hay campos de calificación vacíos. Si el alumno no fue evaluado, déjelo en blanco o marque "N/A".',
       },
       {
         condition: 'gradeBelowMinimum',
-        tip: 'Una calificación es menor al mínimo permitido (0). Verificá que sea correcta.',
+        tip: 'Una calificación es menor al mínimo permitido (0). Verifique que sea correcta.',
       },
     ],
   },
@@ -77,11 +77,11 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasUnapprovedPlans',
-        tip: 'Tenés planificaciones pendientes de aprobación. Revisalas con el coordinador.',
+        tip: 'Tiene planificaciones pendientes de aprobación. Revíselas con el coordinador.',
       },
       {
         condition: 'noPlansThisWeek',
-        tip: 'No tenés planificaciones para esta semana. Crealas para mantener el seguimiento.',
+        tip: 'No tiene planificaciones para esta semana. Créelas para mantener el seguimiento.',
       },
     ],
   },
@@ -93,11 +93,11 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasLowPerformance',
-        tip: 'Algunas métricas están por debajo del umbral. Revisá los alumnos con bajo rendimiento.',
+        tip: 'Algunas métricas están por debajo del umbral. Revise los alumnos con bajo rendimiento.',
       },
       {
         condition: 'dataIsStale',
-        tip: 'Los datos no se actualizaron hoy. Refrescá la vista para ver información actual.',
+        tip: 'Los datos no se actualizaron hoy. Actualice la vista para ver información actual.',
       },
     ],
   },
@@ -109,7 +109,7 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasIncompleteFiles',
-        tip: 'Algunas preinscripciones tienen archivos incompletos. Completalas antes de procesar.',
+        tip: 'Algunas preinscripciones tienen archivos incompletos. Complételas antes de procesar.',
       },
     ],
   },
@@ -121,7 +121,7 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasMissingInfo',
-        tip: 'Algunos registros de estudiantes tienen información faltante. Completalos para mantener la base de datos.',
+        tip: 'Algunos registros de estudiantes tienen información faltante. Complételos para mantener la base de datos.',
       },
     ],
   },
@@ -133,7 +133,7 @@ export const VIEWS = [
     contextualTips: [
       {
         condition: 'hasUpcomingEvals',
-        tip: 'Tenés evaluaciones próximas. Prepará los materiales y comunicá a los alumnos.',
+        tip: 'Tiene evaluaciones próximas. Prepare los materiales y comuníquelo a los alumnos.',
       },
     ],
   },

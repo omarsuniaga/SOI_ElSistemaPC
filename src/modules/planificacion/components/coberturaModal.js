@@ -200,7 +200,7 @@ export async function openCoberturaModal({
       <div class="alert alert-warning">
         <i class="bi bi-exclamation-triangle me-2"></i>
         No se pudo analizar automáticamente: ${err.message}
-        <br><small>Podés saltar este paso o confirmar sin cobertura.</small>
+        <br><small>Puede saltar este paso o confirmar sin cobertura.</small>
       </div>`
     el.querySelector('#cob-btn-confirm').disabled = false
   }
@@ -213,7 +213,7 @@ export async function openCoberturaModal({
         <div class="alert alert-info">
           <i class="bi bi-info-circle me-2"></i>
           No hay ruta de contenidos asignada o currículo activo, o no se encontraron alumnos.
-          Podés saltar este paso.
+          Puede saltar este paso.
         </div>`
       return
     }
@@ -227,7 +227,7 @@ export async function openCoberturaModal({
     body.innerHTML = `
       <p class="text-muted small mb-3">
         <i class="bi bi-robot me-1"></i>
-        La IA pre-marcó los objetivos que probablemente se cubrieron. Revisá y ajustá según corresponda.
+        La IA pre-marcó los objetivos que probablemente se cubrieron. Revise y ajuste según corresponda.
       </p>
       ${Object.entries(byAlumno)
         .map(

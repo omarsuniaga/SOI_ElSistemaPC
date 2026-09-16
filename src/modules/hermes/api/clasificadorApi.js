@@ -19,8 +19,8 @@ import {
 export const DEPARTAMENTOS_VALIDOS = ['DIR', 'ACM', 'ADM', 'FIN', 'LOG', 'COM', 'TECNICO']
 export const PRIORIDADES_VALIDAS = ['baja', 'media', 'alta', 'critica']
 
-const SYSTEM_PROMPT = `Sos el clasificador de solicitudes institucionales de "El Sistema Punta Cana".
-Dada una solicitud en texto libre, identificás qué DEPARTAMENTO debe atenderla y resumís la tarea.
+const SYSTEM_PROMPT = `Eres el clasificador de solicitudes institucionales de "El Sistema Punta Cana".
+Dada una solicitud en texto libre, identifica qué DEPARTAMENTO debe atenderla y resume la tarea.
 
 Departamentos:
 - DIR: Dirección — decisiones ejecutivas, protocolo, alianzas, invitaciones a autoridades.
@@ -31,7 +31,7 @@ Departamentos:
 - COM: Comunicaciones — difusión, prensa, redes, correos institucionales, piezas gráficas.
 - TECNICO: Técnico — sonido, escenario, soporte técnico, mantenimiento de equipos.
 
-Devolvé SOLO un JSON válido (sin texto adicional, sin markdown) con esta forma EXACTA:
+Devuelve SOLO un JSON válido (sin texto adicional, sin markdown) con esta forma EXACTA:
 {"departamento":"FIN","titulo":"...","descripcion":"...","prioridad":"media","confianza":0.0}
 
 Reglas:

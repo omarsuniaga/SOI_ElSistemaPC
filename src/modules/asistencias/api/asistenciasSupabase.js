@@ -70,6 +70,7 @@ export async function getSesionesPorRango({
       observaciones_generales,
       estado,
       clase_id,
+      emergente_id,
       clases (
         id,
         nombre,
@@ -83,6 +84,11 @@ export async function getSesionesPorRango({
       asistencias (
         id,
         estado
+      ),
+      confirmaciones_emergentes (
+        id,
+        respuesta,
+        estado_validacion
       )
     `,
     )
@@ -111,6 +117,49 @@ export async function getSesionesPorRango({
 
   const sesiones = (data || []).map((sc) => {
     const ayudas = sc.asistencias || []
+    const confirmaciones = sc.confirmaciones_emergentes || []
+
+    // FASE 2 FIX: Chequear si sesión está justificada por actividad institucional (emergente_id)
+    const esJustificadaPorEmergente = sc.emergente_id !== null && sc.emergente_id !== undefined
+
+    // Determinar estado de clasificación según precedencia
+    let estadoClasificacion = null
+    if (esJustificadaPorEmergente) {
+      // Si hay emergente_id, chequear respuesta del maestro
+      const confirmacion = confirmaciones[0] // Puede haber 0 o 1 confirmación
+      if (confirmacion) {
+        switch (confirmacion.respuesta) {
+          case 'si':
+            estadoClasificacion = 'justificada_por_actividad_institucional'
+            break
+          case 'no':
+            // Maestro rechazó: se revierte a sin asistencias (pero esto requeriría UPDATE en DB)
+            // Por ahora solo marcamos el estado
+            estadoClasificacion = 'sin_asistencias_registradas'
+            break
+          case 'no_aplica':
+            estadoClasificacion = 'actividad_no_aplicable'
+            break
+          case 'no_se':
+            estadoClasificacion = 'pendiente_validacion_acm'
+            break
+          default:
+            estadoClasificacion = 'justificada_por_actividad_institucional'
+        }
+      } else {
+        // Sin confirmación aún: estado pendiente
+        estadoClasificacion = 'pendiente_confirmacion_actividad'
+      }
+    } else {
+      // Lógica estándar: contar asistencias
+      if (ayudas.length === 0) {
+        estadoClasificacion = 'sin_asistencias_registradas'
+      } else {
+        // Estados más específicos según contenido
+        estadoClasificacion = 'asistencias_registradas'
+      }
+    }
+
     return {
       sesionId: sc.id,
       fecha: sc.fecha,
@@ -128,6 +177,10 @@ export async function getSesionesPorRango({
       totalAusentes: ayudas.filter((a) => a.estado === ESTADOS.AUSENTE).length,
       totalJustificados: ayudas.filter((a) => a.estado === ESTADOS.JUSTIFICADO).length,
       totalRegistros: ayudas.length,
+      // FASE 2 NUEVAS PROPIEDADES
+      emergente_id: sc.emergente_id,
+      es_justificada_por_emergente: esJustificadaPorEmergente,
+      estado_clasificacion: estadoClasificacion,
     }
   })
 

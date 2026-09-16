@@ -96,7 +96,7 @@ export function renderEvaluacionClaseModal({
   overlay.querySelector('.eval-modal-save').onclick = async () => {
     const alumnoId = overlay.querySelector('#eval-alumno-select')?.value
     if (!alumnoId) {
-      _showError(overlay, 'Seleccioná un alumno')
+      _showError(overlay, 'Seleccione un alumno')
       return
     }
 

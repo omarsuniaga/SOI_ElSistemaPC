@@ -62,7 +62,7 @@ export async function renderCrearClaseView(container) {
                 ${Number(permisos.total_clases_asignadas || 0)} clases asignadas
               </span>
               <span class="badge bg-success-subtle text-success-emphasis">
-                Maestro titular bloqueado en tu perfil
+                Maestro titular bloqueado en su perfil
               </span>
               <span class="badge bg-secondary-subtle text-secondary-emphasis">
                 ${soporte.salones.length} salones disponibles

@@ -11,6 +11,7 @@
  */
 
 import { importarConReintento } from '../../shared/utils/dynamicImport.js'
+import { isRepertoirePilotUser } from '../../modules/repertoire/api/repertoirePilotAccess.js'
 
 const VIEW_LOADERS = {
   login:             () => import('../views/loginView.js'),
@@ -21,6 +22,8 @@ const VIEW_LOADERS = {
   calendario:        () => import('../views/calendarioView.js'),
   clases:            () => import('../views/calendarioView.js'),
   metricas:          () => import('../views/metricasView.js'),
+  repertorio:        () => import('../views/repertorioView.js'),
+  seccional:         () => import('../views/seccionalView.js'),
   'mis-clases':      () => import('../views/misClasesView.js'),
   asistencia:        () => import('../views/asistenciaView.js'),
   'clase-emergente': () => import('../views/claseEmergenteView.js'),
@@ -60,7 +63,7 @@ function resolveClaseId(params = {}, urlParams = new URLSearchParams()) {
 }
 
 export const CACHEABLE_VIEWS = new Set([
-  'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'perfil', 'ruta',
+  'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'repertorio', 'seccional', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
   'gestionar-horario', 'mis-clases',
 ])
@@ -141,7 +144,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
 
   ;[
     'login', 'logout', 'fechas', 'calendario', 'clases', 'hoy', 'asistencia',
-    'metricas', 'mis-clases', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
+    'metricas', 'repertorio', 'seccional', 'mis-clases', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
     'register', 'pending-approval', 'gestionar-horario', 'proponer-contenido',
@@ -171,6 +174,7 @@ export function initViewContainers() {
 }
 
 const ROUTE_PERMISSION_GUARDS = {
+  repertorio: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
   'gestionar-clases': (permisos) => Boolean(permisos?.puede_inscribir_clases),
   'crear-clase': (permisos) => Boolean(permisos?.puede_crear_clases),
   asistencia: (permisos) => (permisos ? permisos.puede_asistir !== false : false),
@@ -190,7 +194,7 @@ export async function renderViewContent(route, container, params, urlParams, con
     return null
   }
 
-  if (Object.hasOwn(ROUTE_PERMISSION_GUARDS, route) && !ROUTE_PERMISSION_GUARDS[route](permisos)) {
+  if (Object.hasOwn(ROUTE_PERMISSION_GUARDS, route) && !ROUTE_PERMISSION_GUARDS[route](permisos, context)) {
     router.navigate('hoy')
     return
   }
@@ -228,6 +232,10 @@ export async function renderViewContent(route, container, params, urlParams, con
       })
     case 'metricas':
       return mod.renderMetricasView(container)
+    case 'repertorio':
+      return mod.renderRepertoireView(container)
+    case 'seccional':
+      return mod.renderSeccionalView(container)
     case 'mis-clases':
       return mod.renderMisClasesView(container)
     case 'perfil':

@@ -73,7 +73,7 @@ export async function renderRutasManagementPanel(container, viewMode = 'maestro'
             </div>
             <p class="text-muted small mb-3">
               Los maestros pueden proponer variantes de las rutas estándar para sus grupos especiales.
-              Revisá y aprobá o rechazá según sea necesario.
+              Revise y apruebe o rechace según sea necesario.
             </p>
             <div id="variantes-dashboard-container" class="mt-3"></div>
           </div>
@@ -89,7 +89,7 @@ export async function renderRutasManagementPanel(container, viewMode = 'maestro'
               Proponer Variante de Ruta
             </div>
             <p class="text-muted small mb-3">
-              ¿Tu grupo necesita una ruta diferente? Podés proponer una variante de una ruta estándar
+              ¿Su grupo necesita una ruta diferente? Puede proponer una variante de una ruta estándar
               para que los administradores la revisen y aprueben.
             </p>
             <div class="rutas-actions">

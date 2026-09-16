@@ -501,7 +501,7 @@ function renderPanelDiaSeleccionado(diaSeleccionadoData) {
         <div class="text-center py-5 text-muted">
           <i class="bi bi-calendar2-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
           <div class="small fw-semibold">Sin clases registradas</div>
-          <small class="text-muted">Hacé clic en un día del calendario que tenga sesiones marcadas.</small>
+          <small class="text-muted">Haga clic en un día del calendario que tenga sesiones marcadas.</small>
         </div>
       `}
     </div>
@@ -617,7 +617,7 @@ function _renderClaseCardDetalle(c, idx) {
                               data-fecha="${escapeHTML(c.fecha)}"
                               data-motivo="${escapeHTML(detalleMotivo)}"
                               data-evidencia="${escapeHTML(justifObj.evidencia_url || '')}"
-                              title="Hacé clic para ver el justificativo o comprobante médico">
+                              title="Haga clic para ver el justificativo o comprobante médico">
                         <i class="bi bi-file-earmark-medical-fill"></i>
                         <span>Justificado</span>
                         <i class="bi bi-box-arrow-up-right ms-0.5" style="font-size:0.65rem;"></i>

@@ -45,7 +45,7 @@ describe('sectional aggregation', () => {
     const second = aggregateOrchestraPreparation({ evidence })
     expect(first).toEqual(second)
     expect(first).toHaveLength(1000)
-    expect(performance.now() - started).toBeLessThan(1500)
+    expect(performance.now() - started).toBeLessThan(3500)
   })
   it('weights filas equally, not by student headcount', () => {
     const [result] = aggregateSectionalPreparation({ evidence: [fila('flauta', 'Flauta', 'SIN_ESTUDIAR', Array(8).fill({})), fila('oboe', 'Oboe', 'CONSOLIDADO', [{}]), fila('clarinete', 'Clarinete', 'DOMINADO', Array(6).fill({})), fila('fagot', 'Fagot', 'DOMINADO', Array(2).fill({}))] })

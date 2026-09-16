@@ -13,7 +13,7 @@ describe('repertoire signals', () => {
     expect(resolveSignal(item).lifecycle).toBe('RESOLVED')
   })
   it('does not redeliver unchanged evidence but allows escalation and scoped recipients', () => {
-    const existing = { lifecycle: 'OPEN', severity: 'HIGH', evidence: { red: 4 }, createdAt: '2026-09-14T10:00:00Z' }
+    const existing = { lifecycle: 'OPEN', severity: 'HIGH', evidence: { red: 4 }, createdAt: new Date().toISOString() }
     expect(shouldDeliver(existing, { ...existing })).toBe(false)
     expect(shouldDeliver(existing, { ...existing, severity: 'CRITICAL' })).toBe(true)
     expect(resolveRecipients({ role: 'teacher', assignedFilaIds: ['fila-1'] })).toEqual({ scope: 'assigned', filaIds: ['fila-1'] })

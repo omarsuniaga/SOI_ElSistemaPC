@@ -709,7 +709,6 @@ async function initPortal() {
   // retrasar la pantalla inicial ni competir con la primera interacción.
   const prefetchSecondary = () => {
     prefetchMonthData()
-      .then(() => window.pwaInstaller?.evaluateInsights())
       .catch((err) => console.warn('[Prefetch] Error:', err.message))
   }
   if ('requestIdleCallback' in window) window.requestIdleCallback(prefetchSecondary, { timeout: 3000 })

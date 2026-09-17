@@ -31,6 +31,8 @@ export function createRepertoireDemoAdapter() {
   const preparationHistory = []
   const recordTransition = (measureId, previousState, newState, scope = 'collective', studentId = null) => { if (previousState === newState) return; preparationHistory.push({ montageId: state[0].id, measureId, previousState, newState, scope, studentId, source: scope === 'student' ? 'INDIVIDUAL_OVERRIDE' : 'COLLECTIVE_FILA', createdAt: new Date().toISOString() }) }
   return {
+    // La vista muestra el sello "DEMO · persistencia local" según esto.
+    mode: 'demo',
     canEditApplicability: false,
     async listMontajes() { return structuredClone(state) },
     async updateMeasureState(_id, nextState) { const measure = state[0].compases.find((item) => item.id === _id); recordTransition(_id, measure?.estado_preparacion, nextState); if (measure) measure.estado_preparacion = nextState; return { estado_preparacion: nextState } },

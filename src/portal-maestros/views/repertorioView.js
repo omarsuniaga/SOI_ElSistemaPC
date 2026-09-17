@@ -1,9 +1,21 @@
 import '../styles/repertoire.css'
 import { getMaestroLocal } from '../../portal-maestros/auth/maestroAuth.js'
-import { daysRemaining, ESTADOS_PREPARACION } from '../../modules/repertoire/domain/repertoireFoundation.js'
+import { ESTADOS_PREPARACION } from '../../modules/repertoire/domain/repertoireFoundation.js'
 import { effectivePreparationState } from '../../modules/repertoire/domain/studentPreparation.js'
 import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
 import { DEFAULT_MEASURES_PER_ROW, MEASURES_PER_ROW_OPTIONS, readMeasuresPerRow, writeMeasuresPerRow } from '../../modules/repertoire/domain/gridSemantics.js'
+import { montageSubtitle, montageEventLabel, montageDeadline } from '../../modules/repertoire/domain/montagePresentation.js'
+
+// Modo del adaptador activo ('demo' | 'real'). Se fija al montar la vista y lo
+// lee el encabezado del mapa para decidir si muestra el sello DEMO.
+let _modoAdaptador = 'real'
+
+/** El aviso de guardado no puede decir "Demo" cuando el dato se fue a la base. */
+function mensajeGuardado() {
+  return _modoAdaptador === 'demo'
+    ? { label: 'Guardado local (Demo)', className: 'is-saved' }
+    : { label: 'Guardado', className: 'is-saved' }
+}
 
 const STATE_LABELS = { SIN_EVALUAR: 'Sin evaluar', SIN_ESTUDIAR: 'Sin estudiar', CON_DIFICULTAD: 'Con dificultad', DOMINADO: 'Dominado', CONSOLIDADO: 'Consolidado' }
 const APPLICABILITY_LABELS = { TOCA: 'Toca', SILENCIO: 'Silencio', TACET: 'Tacet', NO_APLICA: 'No aplica', DESCONOCIDO: 'Desconocido' }
@@ -18,11 +30,12 @@ export function measureAriaLabel(measure) {
 }
 
 function cardMarkup(montaje) {
-  const days = daysRemaining(montaje.evento?.fecha)
+  const plazo = montageDeadline(montaje)
+  const subtitulo = montageSubtitle(montaje)
   const fila = montaje.filas?.[0]
   return `<article class="repertoire-card" data-montaje-id="${montaje.id}">
-    <div class="repertoire-card__heading"><div><span class="repertoire-eyebrow">${montaje.estado.replaceAll('_', ' ')}</span><h2>${montaje.obra.titulo}</h2><p>${montaje.obra.compositor || ''} · ${montaje.version.nombre}</p></div><strong class="repertoire-priority">P${montaje.prioridad}</strong></div>
-    <div class="repertoire-card__meta"><span><i class="bi bi-music-note-list"></i> ${fila?.nombre || 'Fila pendiente'}</span><span><i class="bi bi-calendar-event"></i> ${montaje.evento?.nombre || 'Sin evento'}</span><span><i class="bi bi-hourglass-split"></i> ${days == null ? 'Fecha pendiente' : days >= 0 ? `Faltan ${days} días` : `Venció hace ${Math.abs(days)} días`}</span></div>
+    <div class="repertoire-card__heading"><div><span class="repertoire-eyebrow">${montaje.estado.replaceAll('_', ' ')}</span><h2>${montaje.obra.titulo}</h2>${subtitulo ? `<p>${subtitulo}</p>` : ''}</div><strong class="repertoire-priority">P${montaje.prioridad}</strong></div>
+    <div class="repertoire-card__meta"><span><i class="bi bi-music-note-list"></i> ${fila?.nombre || 'Fila pendiente'}</span><span><i class="bi bi-calendar-event"></i> ${montageEventLabel(montaje)}</span><span${plazo.days != null && plazo.days < 0 ? ' class="repertoire-meta--overdue"' : ''}><i class="bi bi-hourglass-split"></i> ${plazo.label}</span></div>
     <button class="btn btn-primary repertoire-open" data-montaje-id="${montaje.id}">Abrir mapa <i class="bi bi-arrow-right"></i></button>
   </article>`
 }
@@ -62,14 +75,14 @@ function mapMarkup(montaje, selected, selectionMode, pickerMeasure, canEditAppli
   const passageList = activePassages.length ? `<section class="repertoire-passages"><h2>Pasajes</h2>${activePassages.map((item) => `<div class="repertoire-passage-row"><button type="button" class="repertoire-passage" data-passage-id="${item.id}">${item.name} · cc. ${item.measureIds.join(', ')}</button><button type="button" class="btn btn-sm btn-link repertoire-edit-passage" data-passage-id="${item.id}">Editar</button><button type="button" class="btn btn-sm btn-link repertoire-archive-passage" data-passage-id="${item.id}">Archivar</button></div>`).join('')}</section>` : ''
   const groupList = groups.length ? `<section class="repertoire-passages"><h2>Grupos vinculados</h2>${groups.map((group) => `<div class="repertoire-passage-row"><span>${group.nombre} · ${group.measureIds.join(', ')}</span><button type="button" class="btn btn-sm btn-link repertoire-rename-group" data-group-id="${group.id}">Renombrar</button><button type="button" class="btn btn-sm btn-link repertoire-break-group" data-group-id="${group.id}">Romper grupo</button></div>`).join('')}</section>` : ''
   return `<section class="repertoire-map" aria-label="Mapa de preparación de ${montaje.obra.titulo}">
-    <div class="repertoire-map__header"><div><button class="btn btn-link repertoire-back">← Mis obras</button><h1>${montaje.obra.titulo}</h1><p>${montaje.filas[0]?.nombre} · ${montaje.evento?.nombre} · ${montaje.evento?.fecha}</p></div><span class="repertoire-mode-badge">DEMO · persistencia local</span></div>
+    <div class="repertoire-map__header"><div><button class="btn btn-link repertoire-back">← Mis obras</button><h1>${montaje.obra.titulo}</h1><p>${[montaje.filas[0]?.nombre, montageEventLabel(montaje), montageDeadline(montaje).label].filter(Boolean).join(' · ')}</p></div>${_modoAdaptador === 'demo' ? '<span class="repertoire-mode-badge">DEMO · persistencia local</span>' : ''}</div>
     <div class="repertoire-map__toolbar"><button class="btn btn-outline-secondary repertoire-multi" aria-pressed="${selectionMode}">${selectionLabel}</button>${selectedActions}<button class="btn btn-outline-secondary repertoire-trajectory">Trayectoria</button><button class="btn btn-outline-secondary repertoire-priorities">Prioridades</button><label class="repertoire-layout-setting">Compases por línea <select class="form-select repertoire-measures-per-row" aria-label="Compases por línea">${[...new Set([...MEASURES_PER_ROW_OPTIONS, measuresPerRow])].sort((a, b) => a - b).map((value) => `<option value="${value}" ${value === measuresPerRow ? 'selected' : ''}>${value}</option>`).join('')}</select></label><select class="form-select repertoire-bulk" aria-label="Estado para selección múltiple" ${selected.size ? '' : 'disabled'}>${ESTADOS_PREPARACION.map((state) => `<option value="${state}">${STATE_LABELS[state]}</option>`).join('')}</select><button class="btn btn-primary repertoire-apply" ${selected.size ? '' : 'disabled'}>Aplicar estado</button><span class="repertoire-sync ${syncMessage.className}" role="status" aria-live="polite">${syncMessage.label}</span></div>
     ${picker}${scopeDialog}
     ${form}${passageList}${groupList}
     ${trajectoryVisible ? `<section class="repertoire-trajectory-panel" aria-label="Trayectoria de preparación"><h2>Trayectoria</h2>${trajectoryTargets.length ? trajectoryTargets.map((target) => `<article><strong>${target.notas || target.alcance || 'Objetivo'}</strong><div>Estado: ${target.estado_objetivo || '—'} · Umbral: ${target.umbral_porcentaje ?? '—'}% · Fecha: ${target.fecha_objetivo || '—'}</div></article>`).join('') : '<p>No hay objetivos explícitos para este montaje.</p>'}${canEditTargets ? '<form class="repertoire-target-form"><input name="notes" placeholder="Nombre del objetivo" required><select name="targetState"><option value="">Estado</option><option>CON_DIFICULTAD</option><option>DOMINADO</option><option>CONSOLIDADO</option></select><input name="targetDate" type="date" required><input name="thresholdPercent" type="number" min="0" max="100" placeholder="Umbral %"><input name="targetTempo" type="number" min="1" placeholder="Tempo BPM"><button type="submit" class="btn btn-primary">Crear objetivo</button></form>' : ''}</section>` : ''}
     ${priorityVisible ? `<section class="repertoire-trajectory-panel" aria-label="Prioridades de ensayo"><h2>Prioridades de ensayo</h2>${priorityCandidates.length ? priorityCandidates.map((candidate, index) => `<article><strong>${index + 1}. ${candidate.label}</strong><div>${candidate.urgency} · ${(candidate.reasons || []).join(' · ')}</div><small>${candidate.why || ''}</small></article>`).join('') : '<p>No hay prioridades calculadas para este alcance.</p>'}</section>` : ''}
     <div class="repertoire-grid" role="grid" style="--measures-per-row: ${measuresPerRow}">${gridMarkup(montaje, selected, activeStudent, activeStudentId, groups, activePassages, measuresPerRow)}</div>
-    <section class="repertoire-students" aria-label="Preparación individual"><h2>Detalle por alumno</h2><p>El estado colectivo de la fila no reemplaza estos estados individuales.</p><div class="repertoire-student-list"><button type="button" class="btn btn-sm ${activeStudentId === null ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="">Fila colectiva</button>${(montaje.alumnos || []).map((student) => `<button type="button" class="btn btn-sm ${student.id === activeStudentId ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="${student.id}">${student.nombre}: ${STATE_LABELS[student.estado_preparacion]}</button>`).join('')}</div></section>
+    <section class="repertoire-students" aria-label="Preparación individual"><h2>Detalle por alumno</h2><p>El estado colectivo de la fila no reemplaza estos estados individuales.</p><div class="repertoire-student-list"><button type="button" class="btn btn-sm ${activeStudentId === null ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="">Fila colectiva</button>${(montaje.alumnos || []).map((student) => `<button type="button" class="btn btn-sm ${student.id === activeStudentId ? 'btn-primary' : 'btn-outline-secondary'} repertoire-student" data-student-id="${student.id}">${student.nombre}${STATE_LABELS[student.estado_preparacion] ? `: ${STATE_LABELS[student.estado_preparacion]}` : ''}</button>`).join('')}</div></section>
     <p class="repertoire-legend">Los compases no aplicables se muestran en neutro y no cuentan para el porcentaje de preparación.</p>
   </section>`
 }
@@ -104,10 +117,13 @@ export async function renderRepertoireView(container, { adapter } = {}) {
   let trajectoryTargets = []
   let priorityVisible = false
   let priorityCandidates = []
-  const canEditApplicability = adapter.canEditApplicability === true
+  // Se consulta en cada render: el adaptador real aprende sus filas editables
+  // al listar los montajes, después de construirse.
+  const puedeEditarAplicabilidad = () => adapter.canEditApplicability === true
+  _modoAdaptador = adapter.mode === 'demo' ? 'demo' : 'real'
 
   const render = () => {
-    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, canEditApplicability, syncMessage, activeStudentId, passages, groups, action, linkedScope, measuresPerRow, historyEvents, trajectoryVisible, trajectoryTargets, adapter.canEditTargets === true, priorityVisible, priorityCandidates) : `<div class="repertoire-view"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">ACM · PREPARACIÓN ORQUESTAL</span><h1>Mis obras</h1><p>Montajes asignados para preparar con tu fila.</p></div>${montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes montajes asignados todavía.</div>'}</div>`
+    container.innerHTML = active ? mapMarkup(active, selected, selectionMode, pickerMeasure, puedeEditarAplicabilidad(), syncMessage, activeStudentId, passages, groups, action, linkedScope, measuresPerRow, historyEvents, trajectoryVisible, trajectoryTargets, adapter.canEditTargets === true, priorityVisible, priorityCandidates) : `<div class="repertoire-view"><div class="repertoire-view__intro"><span class="repertoire-eyebrow">ACM · PREPARACIÓN ORQUESTAL</span><h1>Mis obras</h1><p>Montajes asignados para preparar con tu fila.</p></div>${montajes.length ? montajes.map(cardMarkup).join('') : '<div class="repertoire-empty">No tienes montajes asignados todavía.</div>'}</div>`
     if (active) bindMap()
     else container.querySelectorAll('.repertoire-open').forEach((button) => button.addEventListener('click', () => { active = montajes.find((item) => item.id === button.dataset.montajeId); measuresPerRow = readMeasuresPerRow({ montajeId: active.id, versionId: active.version?.id || active.version?.nombre || '', filaId: active.filas?.[0]?.id || '' }); activeStudentId = null; render() }))
   }
@@ -123,7 +139,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     container.querySelector('.repertoire-unlink-selected')?.addEventListener('click', async () => { for (const group of groups) { const ids = [...selected].filter((id) => group.measureIds.includes(id)); if (ids.length) { await adapter.removeLinkedMeasures(group.id, ids); group.measureIds = group.measureIds.filter((id) => !ids.includes(id)) } } selected = new Set(); selectionMode = false; render() })
     container.querySelector('.repertoire-cancel-action')?.addEventListener('click', () => { action = null; render() })
     container.querySelectorAll('.repertoire-edit-passage').forEach((button) => button.addEventListener('click', () => { action = `edit-passage:${button.dataset.passageId}`; render() }))
-    container.querySelectorAll('.repertoire-archive-passage').forEach((button) => button.addEventListener('click', async () => { if (!confirm('¿Archivar pasaje?')) return; syncMessage = { label: 'Guardando…', className: 'is-pending' }; render(); try { await adapter.archivePassage(button.dataset.passageId); passages.find((item) => item.id === button.dataset.passageId).archived_at = new Date().toISOString(); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' } } catch { syncMessage = { label: 'No se pudo archivar', className: 'is-error' } } render() }))
+    container.querySelectorAll('.repertoire-archive-passage').forEach((button) => button.addEventListener('click', async () => { if (!confirm('¿Archivar pasaje?')) return; syncMessage = { label: 'Guardando…', className: 'is-pending' }; render(); try { await adapter.archivePassage(button.dataset.passageId); passages.find((item) => item.id === button.dataset.passageId).archived_at = new Date().toISOString(); syncMessage = mensajeGuardado() } catch { syncMessage = { label: 'No se pudo archivar', className: 'is-error' } } render() }))
     container.querySelectorAll('.repertoire-rename-group').forEach((button) => button.addEventListener('click', async () => { const group = groups.find((item) => item.id === button.dataset.groupId); const name = window.prompt('Nuevo nombre', group.nombre); if (!name?.trim()) return; await adapter.renameLinkedGroup(group.id, name.trim()); group.nombre = name.trim(); render() }))
     container.querySelectorAll('.repertoire-break-group').forEach((button) => button.addEventListener('click', async () => { if (!confirm('¿Romper grupo vinculado?')) return; const group = groups.find((item) => item.id === button.dataset.groupId); await adapter.breakLinkedGroup(group.id); groups = groups.filter((item) => item.id !== group.id); render() }))
     container.querySelector('.repertoire-action-form')?.addEventListener('submit', async (event) => {
@@ -142,7 +158,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
           await adapter.addLinkedMeasures([...selected].map((montaje_compas_id) => ({ grupo_id: group.id, montaje_compas_id })))
           groups.push({ ...group, measureIds: [...selected] })
         }
-        selected = new Set(); selectionMode = false; action = null; syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' }
+        selected = new Set(); selectionMode = false; action = null; syncMessage = mensajeGuardado()
       } catch { syncMessage = { label: 'No se pudo guardar; se conservó la selección', className: 'is-error' } }
       render()
     })
@@ -159,12 +175,12 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     })
     container.querySelectorAll('.repertoire-linked-scope').forEach((button) => button.addEventListener('click', async () => { if (button.dataset.scope === 'cancel') { linkedScope = null; render(); return } const request = linkedScope; linkedScope = null; if (button.dataset.scope === 'all') await updateLinked(request.measure, request.state); else await saveState(request.measure, request.state) }))
     container.querySelector('.repertoire-applicability')?.addEventListener('change', async (event) => {
-      if (!pickerMeasure || !canEditApplicability) return
+      if (!pickerMeasure || !puedeEditarAplicabilidad()) return
       const previous = pickerMeasure.aplicabilidad
       pickerMeasure.aplicabilidad = event.target.value
       syncMessage = { label: 'Guardando…', className: 'is-pending' }
       render()
-      try { await adapter.updateMeasureApplicability(pickerMeasure.id, pickerMeasure.aplicabilidad); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' }; pickerMeasure = null } catch { pickerMeasure.aplicabilidad = previous; syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
+      try { await adapter.updateMeasureApplicability(pickerMeasure.id, pickerMeasure.aplicabilidad, { filaId: active.filas?.[0]?.id, montageId: active.id }); syncMessage = mensajeGuardado(); pickerMeasure = null } catch { pickerMeasure.aplicabilidad = previous; syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
       render()
     })
     container.querySelectorAll('.repertoire-measure').forEach((button) => button.addEventListener('click', async (event) => {
@@ -197,7 +213,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
       const previous = new Map([...selected].map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
       for (const id of selected) active.compases.find((item) => item.id === id).estado_preparacion = state
       selected = new Set(); selectionMode = false; syncMessage = { label: 'Guardando…', className: 'is-pending' }; render()
-      try { await Promise.all([...previous.keys()].map((id) => adapter.updateMeasureState(id, state))); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }; render(); return }
+      try { await Promise.all([...previous.keys()].map((id) => adapter.updateMeasureState(id, state, { filaId: active.filas?.[0]?.id, montageId: active.id }))); syncMessage = mensajeGuardado() } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' }; render(); return }
       render()
     })
   }
@@ -215,8 +231,8 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     render()
     try {
       if (student) await adapter.updateStudentState(activeStudentId, measure.id, state)
-      else await adapter.updateMeasureState(measure.id, state)
-      syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' }
+      else await adapter.updateMeasureState(measure.id, state, { filaId: active.filas?.[0]?.id, montageId: active.id })
+      syncMessage = mensajeGuardado()
     } catch {
       if (student) { if (previous === null) delete student.overrides[measure.id]; else student.overrides[measure.id] = previous }
       else measure.estado_preparacion = previous
@@ -231,7 +247,7 @@ export async function renderRepertoireView(container, { adapter } = {}) {
     const previous = new Map(group.measureIds.map((id) => [id, active.compases.find((item) => item.id === id).estado_preparacion]))
     group.measureIds.forEach((id) => { active.compases.find((item) => item.id === id).estado_preparacion = state })
     syncMessage = { label: 'Guardando…', className: 'is-pending' }; pickerMeasure = null; render()
-    try { await adapter.updateLinkedGroupState(group.id, state); syncMessage = { label: 'Guardado local (Demo)', className: 'is-saved' } } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
+    try { await adapter.updateLinkedGroupState(group.id, state); syncMessage = mensajeGuardado() } catch { previous.forEach((value, id) => { active.compases.find((item) => item.id === id).estado_preparacion = value }); syncMessage = { label: 'No se pudo guardar; se revirtió', className: 'is-error' } }
     render()
   }
 

@@ -2,6 +2,9 @@ import { assertEnum, validateMontajeDates, MONTAJE_ESTADOS, APLICABILIDAD_COMPAS
 import { assertFilaEditable } from '../domain/studentPreparation.js'
 import { createSessionRepertoireWork } from '../domain/sessionRepertoireWork.js'
 import { createMilestone, createTarget } from '../domain/trajectory.js'
+import { pickPrincipalEvent } from '../domain/montagePresentation.js'
+import { buildStudentRoster } from '../domain/studentRoster.js'
+import { collectEditableFilaIds } from '../domain/filaAuthorization.js'
 
 const TABLES = Object.freeze({
   obras: 'obras',
@@ -10,6 +13,9 @@ const TABLES = Object.freeze({
   secciones: 'montaje_secciones',
   filas: 'montaje_filas',
   alumnos: 'montaje_alumnos',
+  alumnoCompases: 'montaje_alumno_compases',
+  filaMaestros: 'montaje_fila_maestros',
+  estadosCompases: 'montaje_compases',
   compases: 'obra_compases',
   estados: 'catalogo_estados_preparacion'
   ,pasajes: 'montaje_pasajes', pasajeCompases: 'montaje_pasaje_compases', grupos: 'montaje_grupos_compases', grupoCompases: 'montaje_grupo_compases'
@@ -29,7 +35,18 @@ async function insert(client, table, payload) {
 
 export function createRepertoireAdapter(client, { editableFilaIds = [], actorId = null, canEditTargets = () => false } = {}) {
   const supabase = requireClient(client)
+  // El alcance editable se aprende de las asignaciones reales al listar los
+  // montajes. Antes llegaba vacío y el guard local rechazaba toda edición aun
+  // con la asignación cargada en la base.
+  const editableFilas = new Set(editableFilaIds)
   return {
+    get editableFilaIds() { return [...editableFilas] },
+    // Marcar aplicabilidad está autorizado por la misma asignación de fila que
+    // la preparación: si el maestro puede editar una fila, puede decir qué toca.
+    get canEditApplicability() { return editableFilas.size > 0 },
+    // La vista muestra el sello "DEMO" según esto: con datos reales no debe
+    // aparecer, porque le diría al maestro que su trabajo es de mentira.
+    mode: 'real',
     async listMontajes() {
       const { data: montajes, error } = await supabase.from(TABLES.montajes).select('*, obra_versiones(*, obras(*))').order('created_at', { ascending: false })
       if (error) throw error
@@ -37,15 +54,43 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       if (!rows.length) return []
       const montageIds = rows.map((row) => row.id)
       const versionIds = rows.map((row) => row.obra_version_id).filter(Boolean)
-      const [sections, measures] = await Promise.all([
-        supabase.from(TABLES.secciones).select('*, montaje_filas(*, montaje_alumnos(*))').in('montaje_id', montageIds).order('orden'),
-        supabase.from(TABLES.compases).select('*, montaje_compases!inner(*)').in('obra_version_id', versionIds).order('orden')
+      const [sections, measures, eventLinks] = await Promise.all([
+        supabase.from(TABLES.secciones).select('*, montaje_filas(*, montaje_alumnos(*, alumnos(id, nombre_completo)))').in('montaje_id', montageIds).order('orden'),
+        supabase.from(TABLES.compases).select('*, montaje_compases!inner(*)').in('obra_version_id', versionIds).order('orden'),
+        // El evento no es adorno: de él salen la cuenta regresiva de la tarjeta
+        // y las señales de preparación. Sin esta consulta la vista mostraba
+        // "Sin evento" y "Fecha pendiente" con el vínculo ya cargado.
+        supabase.from(TABLES.eventRelations).select('*, calendario_institucional(id, titulo, fecha_inicio)').in('montaje_id', montageIds)
       ])
       if (sections.error) throw sections.error
       if (measures.error) throw measures.error
+      if (eventLinks.error) throw eventLinks.error
+      // Estados individuales por compás. Sin esto la vista no tenía con qué
+      // pintar las excepciones de cada alumno y el detalle por alumno quedaba
+      // vacío en modo real.
+      const assignmentIds = (sections.data || []).flatMap((section) =>
+        (section.montaje_filas || []).flatMap((fila) => (fila.montaje_alumnos || []).map((alumno) => alumno.id))
+      )
+      if (actorId) {
+        const asignaciones = await supabase.from(TABLES.filaMaestros).select('fila_id, maestro_id, can_edit_preparation, active').in('montaje_id', montageIds)
+        if (asignaciones.error) throw asignaciones.error
+        for (const filaId of collectEditableFilaIds(asignaciones.data, actorId)) editableFilas.add(filaId)
+      }
+      let overrideRows = []
+      if (assignmentIds.length) {
+        const overrides = await supabase.from(TABLES.alumnoCompases).select('*').in('montaje_alumno_id', assignmentIds)
+        if (overrides.error) throw overrides.error
+        overrideRows = overrides.data || []
+      }
+      const eventsByMontage = new Map()
+      for (const link of eventLinks.data || []) {
+        const current = eventsByMontage.get(link.montaje_id) || []
+        current.push(link)
+        eventsByMontage.set(link.montaje_id, current)
+      }
       const sectionsByMontage = new Map()
       for (const section of sections.data || []) {
-        const filas = (section.montaje_filas || []).map((fila) => ({ ...fila, alumnos: fila.montaje_alumnos || [] }))
+        const filas = (section.montaje_filas || []).map((fila) => ({ ...fila, alumnos: buildStudentRoster(fila.montaje_alumnos, overrideRows) }))
         const current = sectionsByMontage.get(section.montaje_id) || []
         current.push({ ...section, filas })
         sectionsByMontage.set(section.montaje_id, current)
@@ -62,6 +107,7 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
         ...montage,
         obra: montage.obra_versiones?.obras || {},
         version: montage.obra_versiones || {},
+        evento: pickPrincipalEvent(eventsByMontage.get(montage.id)),
         filas: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas),
         secciones: sectionsByMontage.get(montage.id) || [],
         alumnos: (sectionsByMontage.get(montage.id) || []).flatMap((section) => section.filas.flatMap((fila) => fila.alumnos)),
@@ -70,9 +116,15 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
     },
     async updateMeasureState(id, state, options = {}) {
       assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
-      const { data, error } = await supabase.from(TABLES.compases).select('montaje_compases(montaje_id)').eq('id', id).single()
-      if (error) throw error
-      const montageId = options.montageId || data?.montaje_compases?.[0]?.montaje_id
+      // `id` es el del compás DENTRO del montaje (`montaje_compases`), que es lo
+      // que la vista tiene y lo que espera el RPC. Buscarlo en `obra_compases`
+      // —donde ese id no existe— hacía fallar toda edición antes de la red.
+      let montageId = options.montageId
+      if (!montageId) {
+        const { data, error } = await supabase.from(TABLES.estadosCompases).select('montaje_id').eq('id', id).single()
+        if (error) throw error
+        montageId = data?.montaje_id
+      }
       if (!montageId) throw new Error('Montaje del compás no encontrado')
       return this.updatePreparationAtomically({ montageId, measureId: id, newState: state, filaId: options.filaId, scope: 'collective' })
     },
@@ -103,7 +155,7 @@ export function createRepertoireAdapter(client, { editableFilaIds = [], actorId 
       return insert(supabase, TABLES.montajes, { estado: 'PLANIFICADO', ...payload })
     },
     async updateRowPreparation(id, state, { filaId, montageId = null } = {}) {
-      assertFilaEditable({ editableFilaIds, filaId })
+      assertFilaEditable({ editableFilaIds: [...editableFilas], filaId })
       assertEnum(state, ESTADOS_PREPARACION, 'estado_preparacion')
       return this.updatePreparationAtomically({ montageId, measureId: id, newState: state, filaId, scope: 'collective' })
     },

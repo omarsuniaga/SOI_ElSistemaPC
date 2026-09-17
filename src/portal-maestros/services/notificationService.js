@@ -188,7 +188,7 @@ export async function fetchRepertoireSignals(profileId = getMaestroLocal()?.id) 
   try {
     const { data, error } = await supabase
       .from('repertoire_signal_deliveries')
-      .select('id, profile_id, channel, status, created_at, updated_at, read_at, repertoire_signals(*)')
+      .select('id, profile_id, channel, status, created_at, delivered_at, read_at, repertoire_signals(*)')
       .eq('profile_id', profileId)
       .eq('channel', 'IN_APP')
       .order('created_at', { ascending: false })

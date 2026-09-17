@@ -12,8 +12,11 @@ export function normalizeRepertoireDelivery(delivery) {
     severity: signal.severity || 'MEDIUM',
     lifecycle: signal.lifecycle || delivery?.status || 'OPEN',
     acknowledged: delivery?.status === 'READ' || signal.lifecycle === 'ACKNOWLEDGED',
-    createdAt: delivery?.created_at || signal.createdAt,
-    updatedAt: signal.updatedAt || delivery?.updated_at || signal.createdAt,
+    // La señal llega en camelCase cuando viene del dominio y en snake_case
+    // cuando viene de la base; se aceptan las dos formas.
+    createdAt: delivery?.created_at || signal.createdAt || signal.created_at,
+    // La tabla registra `delivered_at`, no `updated_at`.
+    updatedAt: signal.updatedAt || signal.updated_at || delivery?.delivered_at || signal.createdAt || signal.created_at,
     deepLink: signal.deepLink || null,
     evidence: signal.evidence || {},
     dedupeKey: signal.dedupeKey,

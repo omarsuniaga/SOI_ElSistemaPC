@@ -2,13 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderRepertoireView } from '../repertorioView.js'
 
 const makeAdapter = (overrides = {}) => ({
+  // El adaptador se identifica: de esto dependen el sello "DEMO" del encabezado
+  // y el aviso "Guardado local (Demo)".
+  mode: 'demo',
   async listMontajes() {
     return [{
       id: 'montaje-1',
       obra: { titulo: 'Obra de prueba', compositor: 'Compositor' },
       version: { nombre: 'Versión' },
       evento: { nombre: 'Evento', fecha: '2026-12-18' },
-      filas: [{ nombre: 'Trompetas' }],
+      filas: [{ id: 'fila-trompetas', nombre: 'Trompetas' }],
       alumnos: [{ id: 'juan', nombre: 'Juan', estado_preparacion: 'SIN_ESTUDIAR' }, { id: 'pedro', nombre: 'Pedro', estado_preparacion: 'CONSOLIDADO' }],
       prioridad: 1,
       estado: 'EN_MONTAJE',
@@ -48,7 +51,9 @@ describe('repertorioView', () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(adapter.updateMeasureState).toHaveBeenCalledWith('m-1', 'SIN_ESTUDIAR')
+    // La fila viaja en la llamada: sin ella el RPC recibe p_fila_id NULL y la
+    // RLS responde "fila assignment denied" a cualquier maestro no privilegiado.
+    expect(adapter.updateMeasureState).toHaveBeenCalledWith('m-1', 'SIN_ESTUDIAR', { filaId: 'fila-trompetas', montageId: 'montaje-1' })
     expect(container.querySelector('.repertoire-measure').getAttribute('aria-label')).toContain('Sin estudiar')
     expect(container.querySelector('.repertoire-sync').textContent).toBe('Guardado local (Demo)')
   })
@@ -62,7 +67,7 @@ describe('repertorioView', () => {
     container.querySelector('[data-state="CONSOLIDADO"]').click()
     await Promise.resolve()
     await Promise.resolve()
-    expect(adapter.updateMeasureState).toHaveBeenCalledWith('m-1', 'CONSOLIDADO')
+    expect(adapter.updateMeasureState).toHaveBeenCalledWith('m-1', 'CONSOLIDADO', { filaId: 'fila-trompetas', montageId: 'montaje-1' })
     expect(container.textContent).toContain('Guardado local (Demo)')
   })
 

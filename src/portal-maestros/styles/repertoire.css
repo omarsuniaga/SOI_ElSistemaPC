@@ -7,6 +7,9 @@
 .repertoire-card p, .repertoire-map__header p { margin: 0; color: var(--pm-text-secondary, #6c757d); }
 .repertoire-priority { color: var(--pm-danger, #dc3545); }
 .repertoire-card__meta { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; margin: 1rem 0; color: var(--pm-text-secondary, #6c757d); font-size: .9rem; }
+/* Una fecha vencida no puede leerse igual que las demás: es lo único de la
+   tarjeta que exige una decisión del maestro. */
+.repertoire-meta--overdue { color: var(--pm-danger, #dc3545); font-weight: 600; }
 .repertoire-mode-badge { border-radius: 999px; background: #fff3cd; color: #664d03; padding: .35rem .65rem; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .repertoire-map__toolbar { align-items: center; flex-wrap: wrap; margin: 1rem 0; }
 .repertoire-sync { font-size: .85rem; margin-inline-start: auto; }
@@ -23,6 +26,8 @@
 .repertoire-student-list { display: flex; flex-wrap: wrap; gap: .5rem; }
 .repertoire-bulk { width: auto; min-width: 170px; }
 .repertoire-grid { display: grid; gap: .55rem; overflow-x: auto; padding: 1rem; border: 1px solid var(--pm-border, #dee2e6); border-radius: 16px; background: var(--pm-surface-subtle, #f8f9fa); }
+/* `--pm-surface-subtle` no existe en el portal: sin este respaldo el mapa se
+   pintaba blanco fijo, también en oscuro. */
 .repertoire-grid__row { display: grid; grid-template-columns: repeat(var(--measures-per-row), minmax(3.2rem, 1fr)); gap: .45rem; min-width: calc(var(--measures-per-row) * 3.2rem + (var(--measures-per-row) - 1) * .45rem); position: relative; }
 .repertoire-measure { min-height: 3rem; position: relative; border: 1px solid var(--pm-border, #adb5bd); border-radius: 10px; background: transparent; color: var(--pm-text, #212529); font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: transform .12s ease, outline .12s ease; }
 .repertoire-measure:focus-visible, .repertoire-measure:hover { outline: 3px solid color-mix(in srgb, var(--pm-primary, #0d6efd) 35%, transparent); transform: translateY(-1px); }
@@ -42,10 +47,38 @@
 .repertoire-passages { display: grid; gap: .35rem; margin: .75rem 0 1rem; }
 .repertoire-passage { text-align: start; border: 0; background: transparent; color: var(--pm-primary, #0d6efd); padding: .3rem 0; }
 .repertoire-scope-dialog { display: grid; gap: .5rem; padding: 1rem; margin: .75rem 0; border: 2px solid var(--pm-primary, #0d6efd); border-radius: 12px; background: var(--pm-surface, #fff); }
-.repertoire-measure.state-sin_estudiar { background: #f8d7da; border-color: #dc3545; }
-.repertoire-measure.state-con_dificultad { background: #ffe5d0; border-color: #fd7e14; }
-.repertoire-measure.state-dominado { background: #fff3cd; border-color: #ffc107; }
-.repertoire-measure.state-consolidado { background: #d1e7dd; border-color: #198754; }
+/* Cada estado fija fondo Y tinta. Heredar `--pm-text` dejaba el número casi
+   blanco sobre estos pasteles claros: en tema oscuro el contraste caía a ~1.1:1
+   y los compases quedaban literalmente ilegibles. */
+.repertoire-measure.state-sin_estudiar { background: #f8d7da; border-color: #dc3545; color: #58151c; }
+.repertoire-measure.state-con_dificultad { background: #ffe5d0; border-color: #fd7e14; color: #6b3008; }
+.repertoire-measure.state-dominado { background: #fff3cd; border-color: #ffc107; color: #5c4600; }
+.repertoire-measure.state-consolidado { background: #d1e7dd; border-color: #198754; color: #0a3622; }
 .repertoire-measure.is-not-applicable { background: repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(108,117,125,.12) 4px, rgba(108,117,125,.12) 8px); border-style: dashed; }
+
+/* ── Tema oscuro ──────────────────────────────────────────────────────────
+   El portal corre en oscuro por defecto y el mapa era una isla blanca. Los
+   estados conservan su significado cromático, pero sobre fondos profundos con
+   tinta clara. */
+[data-portal-theme="dark"] .repertoire-grid,
+[data-bs-theme="dark"] .repertoire-grid {
+  background: var(--pm-surface-2, #0f172a);
+  border-color: var(--pm-border, #334155);
+}
+
+[data-portal-theme="dark"] .repertoire-measure.state-sin_estudiar,
+[data-bs-theme="dark"] .repertoire-measure.state-sin_estudiar { background: #4a1219; border-color: #f1707c; color: #ffe3e6; }
+[data-portal-theme="dark"] .repertoire-measure.state-con_dificultad,
+[data-bs-theme="dark"] .repertoire-measure.state-con_dificultad { background: #4d2a08; border-color: #ffa14a; color: #ffe8d4; }
+[data-portal-theme="dark"] .repertoire-measure.state-dominado,
+[data-bs-theme="dark"] .repertoire-measure.state-dominado { background: #453601; border-color: #ffd43b; color: #fff6d8; }
+[data-portal-theme="dark"] .repertoire-measure.state-consolidado,
+[data-bs-theme="dark"] .repertoire-measure.state-consolidado { background: #0c3a26; border-color: #4ade80; color: #d8f5e6; }
+[data-portal-theme="dark"] .repertoire-measure.state-sin_evaluar,
+[data-bs-theme="dark"] .repertoire-measure.state-sin_evaluar { color: var(--pm-text, #f1f5f9); }
+[data-portal-theme="dark"] .repertoire-measure.is-not-applicable,
+[data-bs-theme="dark"] .repertoire-measure.is-not-applicable {
+  background: repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(148,163,184,.18) 4px, rgba(148,163,184,.18) 8px);
+}
 .repertoire-legend, .repertoire-empty { margin-top: 1rem; color: var(--pm-text-secondary, #6c757d); font-size: .88rem; }
 @media (max-width: 600px) { .repertoire-map__header { display: block; } .repertoire-mode-badge { display: inline-block; margin-top: .75rem; } .repertoire-grid { padding: .7rem; } .repertoire-measure { min-height: 2.65rem; } }

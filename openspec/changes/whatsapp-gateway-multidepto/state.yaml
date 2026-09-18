@@ -1,0 +1,106 @@
+change_name: whatsapp-gateway-multidepto
+status: tasks-ready
+created_at: 2026-09-07T12:28:00Z
+updated_at: 2026-09-07T15:00:00Z
+
+phase:
+  explore: complete
+  propose: complete
+  spec: complete
+  design: complete
+  tasks: complete
+  apply: in_progress   # F1 completa (WU1+WU2), verificada contra prod via BEGIN/ROLLBACK
+  verify: pending
+  archive: pending
+
+apply_progress:
+  F1:
+    status: complete
+    date: 2026-09-07
+    commits: [b350f047, a7ca2628]   # + WU2 commit pendiente
+    migrations:
+      - supabase/migrations/20260907030000_whatsapp_multidepto_queue.sql
+      - supabase/migrations/20260907031000_whatsapp_multidepto_config.sql
+      - supabase/migrations/20260907032000_whatsapp_claim_parametrizada.sql
+    tests:
+      - supabase/tests/whatsapp_multidepto_foundation.test.sql
+      - supabase/tests/whatsapp_claim_multidepto.test.sql
+    verified: "GREEN contra proyecto zmhmdvmyeyswunurcyow (Postgres 17) via BEGIN/ROLLBACK; nada persistido"
+    notes: "Prod tenia 2 filas hermes_whatsapp_config activas ('soi-main'): una demo, una real. La migracion de config deduplica y promueve la real a ADM."
+  F2:
+    status: complete
+    date: 2026-09-07
+    migrations:
+      - supabase/migrations/20260907040000_whatsapp_gateway_devices.sql
+      - supabase/migrations/20260907041000_whatsapp_ventana_helper.sql
+    edge_function: supabase/functions/whatsapp-gateway/ (index.ts + handlers.ts)
+    config: "supabase/config.toml -> [functions.whatsapp-gateway] verify_jwt=false"
+    tests:
+      - supabase/tests/whatsapp_gateway_devices.test.sql
+      - tests/edge/whatsapp-gateway.test.ts (16 tests, vitest)
+    verified: "SQL GREEN via BEGIN/ROLLBACK contra prod; vitest edge 16 pass; helper refactor no rompe F1 (E1+E7)"
+  F3:
+    status: complete
+    date: 2026-09-07
+    lib: src/services/whatsapp-runner/ (businessHours, ackWaiter, edgeClient, contentGuard, dispatchLoop, socket, index)
+    tests: "tests/whatsapp-runner/ — 48 tests vitest; eslint limpio"
+    notes: "Sin dependencia de @whiskeysockets/baileys (no es dep del repo) — la app Electron (F4) inyecta makeWASocket/useMultiFileAuthState/fetchLatestBaileysVersion. Sin process.env en la lib."
+  F4: pending  # Electron shell — apps/whatsapp-desktop/
+
+artifact_store: openspec
+execution_mode: automatic
+delivery_strategy: ask-on-risk
+
+decisions:
+  transport: "Baileys runner wrapped in Electron; Evolution API + whatsapp-dispatcher + docker/whatsapp-gateway + process-whatsapp-queue.js deprecated at cutover"
+  data_model: "Enfoque A - departamento + origen column on hermes_whatsapp_queue; hermes_whatsapp_config one-row-per-department; fn_whatsapp_reclamar_pendientes(p_departamento, p_limite) with compat overload"
+  electron_auth: "per-install device token + thin edge fn whatsapp-gateway (/claim /report /heartbeat); service_role only in edge fn; whatsapp_gateway_devices table; token via safeStorage"
+  departments_v1: "ADM first (validate real traffic), then FIN"
+  r6_r7_r8_routing: "out the ADM number for v1 (departamento_envio, default ADM); movable to dedicated ACM install later"
+  dedup: "per (jid, departamento)"
+  manual_send_approval: "estado=pendiente directly for admin-composed; pendiente_aprobacion stays only for R6"
+  electron_location: "monorepo apps/whatsapp-desktop/"
+  windows_signing: "fast-follow v1.1; v1 unsigned with run-anyway guide"
+  fin_cobranza: "replace wa.me deep-link with fn_whatsapp_encolar_manual('FIN', ...); cooldown moves to DB"
+  business_hours: "per-department ventana_inicio/ventana_fin (default 10:00-19:00 America/Santo_Domingo) + solo_dias_habiles; enforced in claim fn AND Electron poll gate"
+  inbound: "dropped for v1 except minimal whatsapp-optout-webhook; templates get BAJA footer; full whatsapp-webhook behind flag whatsapp_inbound_full_enabled=false"
+
+workload_forecast:
+  total_lines_estimated: 6400
+  chained_prs_recommended: true
+  decision_needed_before_apply: false
+  chain_strategy: stacked-to-main
+  suggested_prs: 13
+  per_phase_risk:
+    F1_db_foundation: high
+    F2_device_auth_edge_fn: high
+    F3_runner_lib: high
+    F4_electron_shell: high
+    F5_manual_send: high
+    F6_producer_routing: high
+    F7_portal_panels: high
+    F8_optout_minimal: medium
+    F9_cutover_cleanup: low
+
+next_phase: apply
+next_recommended_action: "Backbone F1-F3 completo + Judgment Day APROBADO (4 rondas). 13 commits en claude/whatsapp-adm-portal-832416, sin push. Siguiente: F4 (Electron apps/whatsapp-desktop/). Antes: decidir rama base de los PRs apilados (origin/master divergida). No aplicar migraciones al remoto."
+
+judgment_day:
+  rondas: 4
+  verdicto: APROBADO
+  convergencia: "R1: 1 CRITICAL + 20 · R2: 12 · R3: 3 · R4: 1 confirmado + 2 chicos · cierre limpio"
+  commits_fixes: [3264ed78, 34be5ec2, d454d84f, e2d163eb]
+  deuda_diferida_a_F4_F9: "ver openspec/changes/whatsapp-gateway-multidepto/tasks.md seccion 'Deuda tecnica del backbone'"
+
+artifacts:
+  exploration_file: "openspec/changes/whatsapp-gateway-multidepto/exploration.md"
+  proposal_file: "openspec/changes/whatsapp-gateway-multidepto/proposal.md"
+  spec_file: "openspec/changes/whatsapp-gateway-multidepto/spec.md"
+  design_file: "openspec/changes/whatsapp-gateway-multidepto/design.md"
+  tasks_file: "openspec/changes/whatsapp-gateway-multidepto/tasks.md"
+  engram:
+    explore: "sdd/whatsapp-gateway-multidepto/explore"
+    proposal: "sdd/whatsapp-gateway-multidepto/proposal"
+    spec: "sdd/whatsapp-gateway-multidepto/spec"
+    design: "sdd/whatsapp-gateway-multidepto/design"
+    tasks: "sdd/whatsapp-gateway-multidepto/tasks"

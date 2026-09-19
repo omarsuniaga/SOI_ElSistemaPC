@@ -88,6 +88,21 @@ import { generateDailyReport, generateMonthlyAttendance } from '../services/repo
 // reportService dynamically imported on demand for performance
 
 /**
+ * Repertorio es un módulo piloto: para maestros fuera del piloto, getRepertoireAdapter
+ * lanza RepertoireUnavailableError. Eso NO debe romper la toma de asistencia — el panel
+ * de repertorio ya sabe mostrarse como "no disponible" cuando el adaptador es null.
+ * @returns {object|null} adaptador, o null si el módulo no está disponible para este maestro
+ */
+function _resolveRepertoireAdapter(maestroId) {
+  try {
+    return getRepertoireAdapter({ actorContext: { maestroId: maestroId || null } })
+  } catch (error) {
+    if (error instanceof RepertoireUnavailableError) return null
+    throw error
+  }
+}
+
+/**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
  *
  * Accepts either a DOM element or a string container ID as first argument.
@@ -166,7 +181,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       rutaId: null,
       sesionExistenteData: sesion,
       router,
-      repertoireAdapter: getRepertoireAdapter({ actorContext: { maestroId: maestro?.id || null } }),
+      repertoireAdapter: _resolveRepertoireAdapter(maestro?.id),
     })
 
     return typeof cleanup === 'function' ? cleanup : undefined
@@ -180,9 +195,7 @@ export async function renderAsistenciaView(
   containerOrId,
   { claseId, fecha, sesionId, router, repertoireAdapter } = {},
 ) {
-  repertoireAdapter ||= (() => {
-    try { return getRepertoireAdapter({ actorContext: { maestroId: getMaestroLocal()?.id || null } }) } catch (error) { if (error instanceof RepertoireUnavailableError) return null; throw error }
-  })()
+  repertoireAdapter ||= _resolveRepertoireAdapter(getMaestroLocal()?.id)
   // Resolve container: accept both DOM element and string ID
   const container =
     typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId
@@ -1910,7 +1923,7 @@ function _renderVista(container, ctx) {
       if (root) root.appendChild(el)
     },
     getRepertoireWorkId: () => sessionRepertoirePanel?.getSelectedWorkId?.(),
-    linkObservationToRepertoire: (observationId, workId) => repertoireAdapter.linkObservationToSessionRepertoire?.(observationId, workId),
+    linkObservationToRepertoire: (observationId, workId) => repertoireAdapter?.linkObservationToSessionRepertoire?.(observationId, workId),
   })
 
   // === Student List ===

@@ -23,9 +23,11 @@
  *   - initViewContainers() NO crea contenedores para rutas admin
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // ── Mock de todas las vistas para no ejecutarlas ───────────────────────────────
+vi.mock('../../../portal-maestros/views/repertorioView.js',      () => ({ renderRepertoireView: vi.fn().mockResolvedValue(null) }))
+vi.mock('../../../portal-maestros/views/seccionalView.js',       () => ({ renderSeccionalView: vi.fn().mockResolvedValue(null) }))
 vi.mock('../../../portal-maestros/views/loginView.js',           () => ({ renderLoginView: vi.fn() }))
 vi.mock('../../../portal-maestros/views/registerView.js',        () => ({ renderRegisterView: vi.fn() }))
 vi.mock('../../../portal-maestros/views/pendingApprovalView.js', () => ({ renderPendingApprovalView: vi.fn() }))
@@ -535,5 +537,46 @@ describe('CACHEABLE_VIEWS — solo vistas de maestro', () => {
       'clase-b',
       'clase-a',
     ])
+  })
+})
+
+// ── Módulo piloto: Repertorio + Seccional ─────────────────────────────────────
+// Seccional estaba abierta a cualquier maestro (solo Repertorio tenía guarda).
+describe('Repertorio y Seccional — solo maestros del piloto (por URL)', () => {
+  const ctx = (router, maestroId = 'm1') => ({
+    router,
+    permisos: {},
+    maestroId,
+    showLoginScreen: vi.fn(),
+    cleanupPushService: vi.fn(),
+    stopRealtime: vi.fn(),
+    logoutMaestro: vi.fn(),
+  })
+
+  afterEach(() => vi.unstubAllEnvs())
+
+  ;['repertorio', 'seccional'].forEach((route) => {
+    it(`${route}: flag apagado → navega a "hoy" y NO renderiza`, async () => {
+      vi.stubEnv('VITE_REPERTOIRE_ENABLED', 'false')
+      const router = { navigate: vi.fn() }
+      await renderViewContent(route, document.createElement('div'), {}, new URLSearchParams(), ctx(router))
+      expect(router.navigate).toHaveBeenCalledWith('hoy')
+    })
+
+    it(`${route}: flag prendido pero maestro fuera de la lista → navega a "hoy"`, async () => {
+      vi.stubEnv('VITE_REPERTOIRE_ENABLED', 'true')
+      vi.stubEnv('VITE_REPERTOIRE_PILOT_MAESTRO_IDS', 'otro-1')
+      const router = { navigate: vi.fn() }
+      await renderViewContent(route, document.createElement('div'), {}, new URLSearchParams(), ctx(router))
+      expect(router.navigate).toHaveBeenCalledWith('hoy')
+    })
+
+    it(`${route}: maestro del piloto → se renderiza (sin redirigir a "hoy")`, async () => {
+      vi.stubEnv('VITE_REPERTOIRE_ENABLED', 'true')
+      vi.stubEnv('VITE_REPERTOIRE_PILOT_MAESTRO_IDS', 'm1')
+      const router = { navigate: vi.fn() }
+      await renderViewContent(route, document.createElement('div'), {}, new URLSearchParams(), ctx(router))
+      expect(router.navigate).not.toHaveBeenCalledWith('hoy')
+    })
   })
 })

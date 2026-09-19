@@ -175,6 +175,8 @@ export function initViewContainers() {
 
 const ROUTE_PERMISSION_GUARDS = {
   repertorio: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
+  // Seccional es parte del módulo Repertorio (piloto): misma guarda, también por URL.
+  seccional: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
   'gestionar-clases': (permisos) => Boolean(permisos?.puede_inscribir_clases),
   'crear-clase': (permisos) => Boolean(permisos?.puede_crear_clases),
   asistencia: (permisos) => (permisos ? permisos.puede_asistir !== false : false),

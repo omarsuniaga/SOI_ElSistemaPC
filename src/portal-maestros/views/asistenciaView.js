@@ -34,6 +34,7 @@ import {
   obtenerJustificacion,
   eliminarJustificacion,
 } from '../services/justificacionService.js'
+import { construirJustificaciones, aplicarJustificadosDeAsistencias } from '../services/justificacionesAdm.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
@@ -263,7 +264,7 @@ export async function renderAsistenciaView(
         .order('updated_at', { ascending: false }), // más reciente primero dentro de cada grupo
       supabase
         .from('asistencias')
-        .select('alumno_id, estado, sesion_clase_id')
+        .select('alumno_id, estado, sesion_clase_id, justificacion_texto')
         .eq('clase_id', claseId)
         .eq('fecha', fechaHoy),
     ])
@@ -382,7 +383,7 @@ export async function renderAsistenciaView(
       try {
         const { data } = await supabase
           .from('justificaciones')
-          .select('alumno_id')
+          .select('*')
           .eq('sesion_id', sesionId)
         return data || []
       } catch (_e) {
@@ -411,7 +412,7 @@ export async function renderAsistenciaView(
 
     // === Estado local ===
     const estado = {}
-    const justificaciones = {}
+    let justificaciones = {}
     alumnos.forEach((a) => {
       estado[a.id] = null
     })
@@ -442,6 +443,11 @@ export async function renderAsistenciaView(
         }
       })
     }
+
+    // Justificadas desde Administración: aparecen como J aunque el maestro ya tenga
+    // registros del día, y con su motivo (tabla justificaciones o asistencias).
+    aplicarJustificadosDeAsistencias(estado, asistenciasRes?.data)
+    justificaciones = construirJustificaciones(justificacionesRes, asistenciasRes?.data)
 
     // === Render ===
     _renderVista(container, {

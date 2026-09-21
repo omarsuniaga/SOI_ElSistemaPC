@@ -100,12 +100,20 @@ export function createStudentList(container, {
            <i class="bi bi-clock-history"></i>
          </button>`
       : ''
+    // Razón de la justificación (p. ej. "Actividad especial: Visita Guiada") bajo el nombre
+    const justif = est === 'J' ? justificaciones?.[a.id] : null
+    const razonHTML = justif?.motivo
+      ? `<span class="pm-asist-razon" style="display:block; font-size:0.72rem; color:#0891b2; margin-top:2px;">
+           <i class="bi bi-info-circle"></i> ${escHTML(justif.motivo)}${justif.descripcion ? ` — ${escHTML(justif.descripcion)}` : ''}
+         </span>`
+      : ''
     return `
       <div class="pm-asist-item ${colorClass}" data-id="${a.id}">
         <div class="pm-asist-avatar">${a.nombre_completo[0]}</div>
         <div class="pm-asist-info">
           <span class="pm-asist-nombre">${escHTML(a.nombre_completo)}</span>
           <span class="pm-asist-instrumento">${escHTML(a.instrumento_principal || '—')}${escHTML(turnoStr)}</span>
+          ${razonHTML}
         </div>
         ${turnoEditBtn}
         <div class="pm-asist-btns">

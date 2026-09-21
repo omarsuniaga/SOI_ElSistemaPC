@@ -34,7 +34,7 @@ import {
   obtenerJustificacion,
   eliminarJustificacion,
 } from '../services/justificacionService.js'
-import { construirJustificaciones, aplicarJustificadosDeAsistencias } from '../services/justificacionesAdm.js'
+import { construirJustificaciones, aplicarJustificadosDeAsistencias, justificacionesPorActividad } from '../services/justificacionesAdm.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
@@ -448,6 +448,22 @@ export async function renderAsistenciaView(
     // registros del día, y con su motivo (tabla justificaciones o asistencias).
     aplicarJustificadosDeAsistencias(estado, asistenciasRes?.data)
     justificaciones = construirJustificaciones(justificacionesRes, asistenciasRes?.data)
+
+    // Clase suspendida por una actividad especial: la razón de los alumnos J es la actividad
+    if (sesionExistenteData?.emergente_id) {
+      let actividadEmergente = null
+      try {
+        const { data } = await supabase
+          .from('sesiones_clase')
+          .select('actividad, motivo')
+          .eq('id', sesionExistenteData.emergente_id)
+          .maybeSingle()
+        actividadEmergente = data || null
+      } catch (_e) {
+        console.warn('[asistencia] No se pudo cargar la actividad que suspendió la clase:', _e)
+      }
+      justificaciones = justificacionesPorActividad(estado, actividadEmergente, justificaciones)
+    }
 
     // === Render ===
     _renderVista(container, {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { construirJustificaciones, aplicarJustificadosDeAsistencias } from '../justificacionesAdm.js'
+import { construirJustificaciones, aplicarJustificadosDeAsistencias, justificacionesPorActividad } from '../justificacionesAdm.js'
 
 describe('construirJustificaciones', () => {
   it('indexa por alumno el motivo guardado en la tabla justificaciones', () => {
@@ -60,5 +60,24 @@ describe('aplicarJustificadosDeAsistencias', () => {
     const estado = { a1: 'P' }
     aplicarJustificadosDeAsistencias(estado, [{ alumno_id: 'a1', estado: 'justificado' }])
     expect(estado.a1).toBe('P')
+  })
+})
+
+describe('justificacionesPorActividad', () => {
+  it('da a cada alumno J la razón "Actividad especial" con el motivo de la actividad', () => {
+    const mapa = justificacionesPorActividad({ a1: 'J', a2: 'P', a3: null }, { actividad: 'Visita Guiada', motivo: 'Ensayo abierto' })
+    expect(Object.keys(mapa)).toEqual(['a1'])
+    expect(mapa.a1.motivo).toBe('Actividad especial: Visita Guiada')
+    expect(mapa.a1.descripcion).toBe('Ensayo abierto')
+    expect(mapa.a1.id).toBeUndefined()
+  })
+
+  it('no pisa la justificación que ya existe de un alumno', () => {
+    const mapa = justificacionesPorActividad({ a1: 'J' }, { actividad: 'Visita Guiada' }, { a1: { motivo: 'Propio' } })
+    expect(mapa.a1.motivo).toBe('Propio')
+  })
+
+  it('sin actividad no inventa razones', () => {
+    expect(justificacionesPorActividad({ a1: 'J' }, null)).toEqual({})
   })
 })

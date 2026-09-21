@@ -37,3 +37,22 @@ export function aplicarJustificadosDeAsistencias(estado, asistenciasRows = []) {
   }
   return estado
 }
+
+/**
+ * Razón de los alumnos justificados porque la clase se suspendió por una actividad
+ * especial (sesión con emergente_id). No pisa las justificaciones que ya existen.
+ * Sin `id`: no hay fila en `justificaciones` que borrar.
+ */
+export function justificacionesPorActividad(estado, actividad, existentes = {}) {
+  if (!actividad) return { ...existentes }
+  const mapa = { ...existentes }
+  for (const [alumnoId, valor] of Object.entries(estado)) {
+    if (valor !== 'J' || mapa[alumnoId]) continue
+    mapa[alumnoId] = {
+      alumno_id: alumnoId,
+      motivo: `Actividad especial: ${actividad.actividad || 'Actividad especial'}`,
+      descripcion: actividad.motivo || '',
+    }
+  }
+  return mapa
+}

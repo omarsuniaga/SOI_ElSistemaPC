@@ -614,3 +614,15 @@
 
 
 
+
+/* Alumno sin teléfono: tinte rojo translúcido (theme-aware vía --bs-danger-rgb).
+   Se declara con [data-bs-theme] para ganarle a las reglas por tema de arriba. */
+.list-group-item.alumno-card--sin-telefono,
+[data-bs-theme] .list-group-item.alumno-card--sin-telefono {
+  background: rgba(var(--bs-danger-rgb), 0.09);
+}
+
+.list-group-item.alumno-card--sin-telefono:hover,
+[data-bs-theme] .list-group-item.alumno-card--sin-telefono:hover {
+  background: rgba(var(--bs-danger-rgb), 0.14);
+}

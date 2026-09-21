@@ -315,9 +315,12 @@ export async function renderAlumnosView(container) {
       else if (porcentaje >= 50) progresoColor = 'info'
       else if (porcentaje >= 25) progresoColor = 'warning'
 
+      // Sin teléfono: la card se marca con un tinte rojo translúcido (ver alumnos.css)
+      const sinTelefono = !a.telefono
+
       return `
         <div class="col p-1">
-          <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer; padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
+          <div class="list-group-item card h-100 rounded-4 border ${sinTelefono ? 'alumno-card--sin-telefono' : 'bg-body'} shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" data-id="${a.id}" style="cursor: pointer; padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
             
             <!-- Parte Superior: Nombre, Instrumento y Contacto -->
             <div class="mb-2">
@@ -358,26 +361,18 @@ export async function renderAlumnosView(container) {
               </div>
             </div>
 
-            <!-- Barra Inferior de Acciones Contextuales -->
-            <div class="pt-2 border-top d-flex align-items-center justify-content-between gap-1.5 mt-auto">
-              <button class="btn btn-xs btn-outline-primary rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2 fw-semibold" data-action="ficha360" data-id="${a.id}" title="Ver Ficha 360° Integral" style="font-size:0.75rem;">
-                <i class="bi bi-stars me-1 text-warning"></i>
-                <span>360°</span>
+            <!-- Barra Inferior de Acciones: solo íconos (Editar · WhatsApp · Eliminar), sin texto -->
+            <div class="pt-2 border-top d-flex align-items-center gap-1 mt-auto">
+              <button class="btn btn-xs btn-outline-secondary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="edit" data-id="${a.id}" title="Editar perfil de alumno" aria-label="Editar perfil de alumno" style="font-size:0.85rem;">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i>
               </button>
 
-              <button class="btn btn-xs btn-outline-secondary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-grow-1 py-1 px-2 fw-semibold" data-action="edit" data-id="${a.id}" title="Editar perfil de alumno" style="font-size:0.75rem;">
-                <i class="bi bi-pencil-square me-1"></i>
-                <span>Editar</span>
+              <button class="btn btn-xs btn-outline-success rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="whatsapp" data-id="${a.id}" ${a.telefono ? 'title="Enviar WhatsApp" aria-label="Enviar WhatsApp"' : 'disabled aria-disabled="true" title="Sin teléfono: no se puede enviar WhatsApp" aria-label="WhatsApp no disponible: el alumno no tiene teléfono"'} style="font-size:0.85rem;">
+                <i class="bi bi-whatsapp" aria-hidden="true"></i>
               </button>
 
-              ${a.telefono ? `
-                <button class="btn btn-xs btn-outline-success rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="font-size:0.75rem;">
-                  <i class="bi bi-whatsapp"></i>
-                </button>
-              ` : ''}
-
-              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center py-1 px-2" data-action="delete" data-id="${a.id}" title="Eliminar alumno" style="font-size:0.75rem;">
-                <i class="bi bi-trash"></i>
+              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="delete" data-id="${a.id}" title="Eliminar alumno" aria-label="Eliminar alumno" style="font-size:0.85rem;">
+                <i class="bi bi-trash" aria-hidden="true"></i>
               </button>
             </div>
 

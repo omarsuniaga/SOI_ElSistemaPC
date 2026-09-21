@@ -101,4 +101,42 @@ describe('asistenciasView - Justificado Status & Modal', () => {
     expect(callArgs.hideSave).toBe(true)
     expect(callArgs.cancelText).toBe('Entendido')
   })
+
+  it('muestra la fecha de la sesión aunque la clase no traiga `fecha` (usa el día seleccionado)', async () => {
+    getPeriodos.mockResolvedValue([{ id: 'p1', nombre: 'Semestre 2026-I', activo: true }])
+    getPeriodoActivo.mockResolvedValue({ id: 'p1', nombre: 'Semestre 2026-I' })
+    getClases.mockResolvedValue([{ id: 'c1', nombre: 'Cátedra de Violín', instrumento: 'Violín', maestro_nombre: 'Carlos Gómez' }])
+    getReporteConsolidado.mockResolvedValue({
+      timelineByDate: [
+        {
+          fecha: '2026-03-10',
+          clases: [
+            {
+              clase_id: 'c1',
+              clase_nombre: 'Cátedra de Violín',
+              instrumento: 'Violín',
+              maestro_nombre: 'Carlos Gómez',
+              hora_inicio: '14:00',
+              hora_fin: '16:00',
+              presentes: 0,
+              ausentes: 0,
+              justificados: 1,
+              total_alumnos: 1,
+              asistencias: [
+                { alumno_id: 'a2', alumno_nombre: 'Mateo Rivas', estado: 'justificado', justificacion_texto: 'Cita médica' },
+              ],
+              justificaciones: [],
+            },
+          ],
+        },
+      ],
+      resumenGlobal: { totalClases: 1, totalPresentes: 0, totalAusentes: 0, totalJustificados: 1, totalRegistros: 1, totalSesiones: 1 },
+    })
+
+    await renderAsistenciasView(container)
+    container.querySelector('.badge-justificado-clickable').dispatchEvent(new Event('click', { bubbles: true }))
+
+    const { body } = mockAppModalOpen.mock.calls[0][0]
+    expect(body).toContain('10 de marzo de 2026')
+  })
 })

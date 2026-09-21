@@ -2168,7 +2168,7 @@ async function _mostrarModalNominaClase(claseId) {
                 </label>
                 <div class="d-flex flex-column gap-2">
                   <select class="form-select form-select-sm" id="selectAlumnoParaInscribir">
-                    <option value="">Seleccionar del padrón...</option>
+                    <option value="">Seleccionar alumno...</option>
                     ${state.alumnosDisponibles
                       .filter(a => !inscritos.some(i => i.alumnoId === a.id))
                       .map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo || 'Estudiante')} (${escapeHTML(a.instrumento_principal || 'General')})</option>`)

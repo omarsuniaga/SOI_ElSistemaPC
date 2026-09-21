@@ -95,7 +95,7 @@ export async function renderDuplicadosWorkbenchView(container) {
             <i class="bi bi-check2-circle"></i>
           </div>
           <h4 class="fw-bold text-body-emphasis">¡Base de Alumnos Impecable!</h4>
-          <p class="text-muted small mb-4">No se detectaron registros duplicados ni colisiones en el padrón de alumnos.</p>
+          <p class="text-muted small mb-4">No se detectaron registros duplicados ni colisiones en el listado de alumnos.</p>
           <button class="btn btn-primary btn-sm px-4 py-2" id="btnVolverVacio">
             <i class="bi bi-arrow-left me-1"></i> Volver al Directorio de Alumnos
           </button>

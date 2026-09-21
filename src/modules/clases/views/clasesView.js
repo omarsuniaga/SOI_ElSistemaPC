@@ -203,6 +203,13 @@ function normalizeStr(t) {
 }
 const normalizeText = normalizeStr
 
+/** Nombre del titular: el de la clase si viene, si no el del catálogo de maestros. */
+function nombreMaestroDe(c) {
+  if (c.maestro_nombre) return c.maestro_nombre
+  const m = state.maestros.find(x => x.id === c.maestro_principal_id || x.id === c.maestro_id)
+  return m?.nombre_completo || m?.nombre || ''
+}
+
 function getFiltradosClases() {
   const q = normalizeStr(state.searchQuery)
   const fam = state.filtroFamilia
@@ -261,7 +268,7 @@ function getFiltradosClases() {
     if (q) {
       const matchNombre = normalizeStr(c.nombre).includes(q)
       const matchInst = normalizeStr(c.instrumento).includes(q)
-      const matchMaestro = normalizeStr(c.maestro_nombre).includes(q)
+      const matchMaestro = normalizeStr(nombreMaestroDe(c)).includes(q)
       const matchSalon = normalizeStr(c.salon).includes(q)
       if (!matchNombre && !matchInst && !matchMaestro && !matchSalon) return false
     }

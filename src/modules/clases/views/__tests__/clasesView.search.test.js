@@ -177,6 +177,40 @@ describe('clasesView Search & Focus preservation', () => {
     expect(cards[1].textContent).toContain('Inactiva')
   })
 
+  it('filters classes by teacher name typed in the search box, resolving the name through maestro_principal_id', async () => {
+    const maestros = [
+      { id: 'm1', nombre_completo: 'Carlos Gómez' },
+      { id: 'm2', nombre_completo: 'María López' },
+    ]
+    const defaultFrom = mockFrom.getMockImplementation()
+    mockFrom.mockImplementation((tabla) => {
+      const data = tabla === 'maestros' ? maestros : []
+      const result = Promise.resolve({ data })
+      const chain = { eq: () => chain, order: () => result }
+      return { select: () => chain }
+    })
+
+    // Como en producción: la API no entrega maestro_nombre, solo el id del titular
+    obtenerClases.mockImplementation(() => Promise.resolve([
+      { id: 'c1', nombre: 'Violín Inicial', instrumento: 'Violín', maestro_principal_id: 'm1', activo: true },
+      { id: 'c2', nombre: 'Flauta Avanzada', instrumento: 'Flauta', maestro_principal_id: 'm2', activo: true },
+    ]))
+
+    try {
+      await renderClasesView(container, { resetFilters: true })
+
+      const searchInput = container.querySelector('#inputBuscarClases')
+      searchInput.value = 'gom'
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+      const cardsContainer = container.querySelector('#clasesCardsContainer')
+      expect(cardsContainer.textContent).toContain('Violín Inicial')
+      expect(cardsContainer.textContent).not.toContain('Flauta Avanzada')
+    } finally {
+      mockFrom.mockImplementation(defaultFrom)
+    }
+  })
+
   it('only loads active students into the padrón (inactive students must not appear as "sin clase")', async () => {
     mockEq.mockClear()
     mockFrom.mockClear()

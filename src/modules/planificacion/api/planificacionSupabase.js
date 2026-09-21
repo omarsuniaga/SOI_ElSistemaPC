@@ -1,5 +1,7 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { assertAffected, mutateOne } from '../../../lib/supabaseMutation.js'
 import { Planificacion } from '../models/planificacion.model.js'
+// LC1: mutateOne para actualizarPlanificacion (data[0] ciego), assertAffected para el batch.
 import { resolveExportableEstadoAliases } from '../utils/planificacionExportUtils.js'
 
 /**
@@ -212,14 +214,11 @@ export async function actualizarPlanificacion(id, actualizaciones) {
   const errores = model.validate()
   if (errores.length > 0) throw new Error(errores.join('. '))
 
-  const { data, error } = await supabase
-    .from('planificaciones')
-    .update(_toPlanificacionPayload(model))
-    .eq('id', id)
-    .select()
-
-  if (error) throw error
-  return new Planificacion(data[0])
+  const row = await mutateOne(
+    supabase.from('planificaciones').update(_toPlanificacionPayload(model)).eq('id', id),
+    { action: 'actualizar planificación' },
+  )
+  return new Planificacion(row)
 }
 
 export async function eliminarPlanificacion(id) {
@@ -231,14 +230,11 @@ export async function eliminarPlanificacion(id) {
 export async function marcarRevisadasMasivo(ids) {
   if (!ids || !ids.length) return []
 
-  const { data, error } = await supabase
-    .from('planificaciones')
-    .update({ estado: 'revisado' })
-    .in('id', ids)
-    .select()
-
-  if (error) throw error
-  return (data || []).map((p) => new Planificacion(p))
+  const rows = await assertAffected(
+    supabase.from('planificaciones').update({ estado: 'revisado' }).in('id', ids),
+    { action: 'marcar planificaciones como revisadas', min: 1 },
+  )
+  return rows.map((p) => new Planificacion(p))
 }
 
 export async function marcarRevisada(id) {

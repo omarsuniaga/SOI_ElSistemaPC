@@ -26,7 +26,10 @@ function normalizeDia(str) {
  * Auto-creates a justified session for every scheduled class on emergente.fecha.
  * Idempotent — re-calling with the same emergent updates existing sessions.
  *
- * @param {{ id: string, fecha: string, actividad: string, motivo: string }} emergente
+ * Los alumnos de la clase que participan en la actividad (`emergente.asistencia`)
+ * quedan presentes; el resto queda justificado, porque no ve clase ese día.
+ *
+ * @param {{ id: string, fecha: string, actividad: string, motivo: string, asistencia?: Array<{ alumno_id: string }> }} emergente
  * @param {string} maestroId
  * @returns {Promise<{ justificadas: number, errores: string[] }>}
  */
@@ -57,6 +60,12 @@ export async function autoJustificarClasesProgramadas(emergente, maestroId) {
 
   if (hError || !horarios?.length) return { justificadas: 0, errores: [] }
 
+  const participantes = new Set(
+    (Array.isArray(emergente.asistencia) ? emergente.asistencia : [])
+      .map((a) => a?.alumno_id)
+      .filter(Boolean),
+  )
+
   const diaSemanaNorm = normalizeDia(diaSemana)
   const horariosDelDia = horarios.filter((h) => normalizeDia(h.dia) === diaSemanaNorm)
 
@@ -78,13 +87,15 @@ export async function autoJustificarClasesProgramadas(emergente, maestroId) {
 
       const asistencia = (inscripciones || []).map((i) => ({
         alumno_id: i.alumno_id,
-        estado: 'justificado',
+        estado: participantes.has(i.alumno_id) ? 'presente' : 'justificado',
       }))
 
       const contenido =
         `Clase suspendida por actividad especial: "${emergente.actividad || 'Actividad especial'}".` +
         (emergente.motivo ? ` Motivo: ${emergente.motivo}.` : '') +
-        ' Todos los alumnos quedan justificados.'
+        (participantes.size > 0
+          ? ' Los alumnos que participan en la actividad figuran presentes; el resto queda justificado.'
+          : ' Los alumnos quedan justificados.')
 
       const { error: upsertError } = await supabase.from('sesiones_clase').upsert(
         {

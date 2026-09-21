@@ -138,6 +138,38 @@ describe('autoJustificarClasesProgramadas', () => {
     expect(opts.onConflict).toBe('clase_id,fecha,maestro_id')
   })
 
+  it('los alumnos que participan en la actividad quedan presentes y el resto justificado', async () => {
+    const upsertMock = vi.fn().mockResolvedValue({ error: null })
+
+    supabase.from.mockImplementation((table) => {
+      if (table === 'clases')
+        return makeChain({ data: [{ id: 'clase-1', nombre: 'Seccional' }] })
+      if (table === 'clase_horarios')
+        return makeChain({
+          data: [{ clase_id: 'clase-1', dia: 'viernes', hora_inicio: '16:00', hora_fin: '17:00' }],
+          inResolves: true,
+        })
+      if (table === 'alumnos_clases')
+        return makeChain({
+          data: [{ alumno_id: 'participa' }, { alumno_id: 'no-participa' }],
+          resolveOnEqCall: 2,
+        })
+      if (table === 'sesiones_clase')
+        return { upsert: upsertMock }
+    })
+
+    // La fila insertada de la actividad trae los alumnos elegidos en `asistencia`
+    const conParticipantes = { ...EMERGENTE, asistencia: [{ alumno_id: 'participa' }, { alumno_id: 'de-otra-clase' }] }
+    await autoJustificarClasesProgramadas(conParticipantes, MAESTRO_ID)
+
+    const [payload] = upsertMock.mock.calls[0]
+    expect(payload.asistencia).toEqual([
+      { alumno_id: 'participa', estado: 'presente' },
+      { alumno_id: 'no-participa', estado: 'justificado' },
+    ])
+    expect(payload.contenido).not.toContain('Todos los alumnos quedan justificados')
+  })
+
   it('continúa procesando las demás clases si una falla (error parcial)', async () => {
     let upsertCalls = 0
     const upsertMock = vi.fn().mockImplementation(() => {

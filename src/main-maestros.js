@@ -167,19 +167,20 @@ import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAu
 import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
 import { supabase } from './lib/supabaseClient.js'
-import { prefetchMonthData } from './portal-maestros/services/maestroDataService.js'
+import { prefetchMonthData, invalidateAllCache } from './portal-maestros/services/maestroDataService.js'
 import { cleanupPushService } from './portal-maestros/services/pushService.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
 import { AppToast } from './shared/components/AppToast.js'
-import { isRepertoirePilotUser } from './modules/repertoire/api/repertoirePilotAccess.js'
 
 // Shell, rutas y eventos — módulos extraídos
-import { renderShell, setActiveTab, hideShell } from './portal-maestros/shell/portalShell.js'
+import { renderShell, setActiveTab, hideShell, setRefreshState } from './portal-maestros/shell/portalShell.js'
+import { createPortalRefresher } from './portal-maestros/shell/portalRefresh.js'
 import {
   setupRouterRoutes,
   initViewContainers,
   renderViewContent,
+  buildTabs,
   CACHEABLE_VIEWS,
   createViewRenderCache,
   createViewRenderQueue,
@@ -214,23 +215,6 @@ const _viewRenderQueue = createViewRenderQueue()
 // ============================================
 // TAB DEFINITIONS — solo vistas de maestro
 // ============================================
-function buildTabs(permisos, maestroId = null) {
-  const tabs = [
-    { id: 'fechas', label: 'Fechas', icon: 'bi-calendar3' },
-    { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
-    { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
-    { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
-    { id: 'seccional', label: 'Seccional', icon: 'bi-diagram-3' },
-  ]
-  if (isRepertoirePilotUser(maestroId)) {
-    tabs.splice(4, 0, { id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' })
-  }
-  if (permisos?.puede_inscribir_clases) {
-    tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
-  }
-  return tabs
-}
-
 // ============================================
 // SYNC
 // ============================================
@@ -418,6 +402,25 @@ async function _renderViewSerial(route, params = {}, { silent = false } = {}) {
 // ============================================
 // SHELL SETUP
 // ============================================
+// Botón "Actualizar" del header: rehace datos y vista sin recargar la página.
+// Antes, para ver algo nuevo, el maestro tenía que cerrar la app y volver a
+// abrirla — los dos caches (datos y vistas renderizadas) sobreviven a navegar.
+const _refreshPortal = createPortalRefresher({
+  invalidateData: () => invalidateAllCache(),
+  invalidateViews: () => invalidateAllViews(),
+  renderView: (route) => _renderView(route),
+  getCurrentRoute: () => router.currentRoute?.() || 'hoy',
+  checkForUpdate: () => _swRegistration?.update(),
+  onStateChange: (estado) => {
+    setRefreshState(estado)
+    if (estado === 'done') {
+      _triggerSync()
+      AppToast.success('Datos actualizados')
+    }
+    if (estado === 'error') AppToast.error('No se pudo actualizar. Revise su conexión.')
+  },
+})
+
 function _buildShell(app, maestro, permisos) {
   _maestro = maestro
   _permisos = permisos || _permisos
@@ -428,6 +431,7 @@ function _buildShell(app, maestro, permisos) {
     buildTabs(_permisos, maestro?.id),
     (route, params) => router.navigate(route, params),
     _updateSyncIndicator,
+    _refreshPortal,
   )
 
   // Sync indicator click → retry sync
@@ -688,7 +692,6 @@ async function initPortal() {
   // retrasar la pantalla inicial ni competir con la primera interacción.
   const prefetchSecondary = () => {
     prefetchMonthData()
-      .then(() => window.pwaInstaller?.evaluateInsights())
       .catch((err) => console.warn('[Prefetch] Error:', err.message))
   }
   if ('requestIdleCallback' in window) window.requestIdleCallback(prefetchSecondary, { timeout: 3000 })

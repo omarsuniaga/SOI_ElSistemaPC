@@ -434,7 +434,8 @@ const NAV_GROUPS = [
       { id: 'alumnos', label: 'Alumnos', icon: 'bi-people' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'postulados', label: 'Postulados & Admisión', icon: 'bi-person-plus-fill' },
-      { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
+      // Oculto a pedido: la ruta 'postulados-calendario' sigue registrada.
+      // { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
     ],
   },
   {

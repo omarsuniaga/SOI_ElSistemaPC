@@ -115,6 +115,30 @@
   transform: scale(1.05);
 }
 
+/* ── Botón Actualizar ──────────────────────────────────────── */
+.pm-icon-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.pm-icon-btn:disabled:hover {
+  background: var(--pm-surface-2);
+  transform: none;
+}
+
+.pm-refresh-spinning i {
+  display: inline-block;
+  animation: pm-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes pm-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-refresh-spinning i { animation: none; }
+}
+
 .pm-header-right {
   display: flex;
   align-items: center;

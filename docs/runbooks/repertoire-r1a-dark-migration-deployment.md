@@ -1,6 +1,26 @@
 # Repertoire Engine R1-A — Dark Migration Deployment Runbook
 
-Status: release candidate, not applied to production. This runbook is a procedure, not authorization to deploy.
+Status: **applied to production** (project `zmhmdvmyeyswunurcyow`), feature still dark. Structural and security verification passed on 2026-09-16. This runbook is kept as the procedure of record and as the reference for verification and rollback; it is not authorization to deploy anywhere else.
+
+## Post-deployment record (2026-09-16)
+
+| Check | Result |
+| --- | --- |
+| Migration history | 10/10 present in `supabase_migrations.schema_migrations` |
+| `repertoire_r1a_deployment_verify.sql` | Passed, run read-only, no exception raised |
+| Migration manifest | 10/10 hashes match after the correction recorded below |
+| Row counts | All Repertoire business tables empty; `catalogo_estados_preparacion` seeded with 5 rows |
+| `montajes` / `montaje_eventos` | Zero foreign keys to `eventos_conciertos` or `soi_eventos`; `montaje_eventos` references `calendario_institucional` |
+| RLS | Enabled on all 24 tables; 43 policies, including the reviewed assignment, signal-recipient and target-scope policies |
+| Feature flag | `VITE_REPERTOIRE_ENABLED` unset — the module is unreachable for every user |
+
+Not verified against production: `supabase/tests/repertoire_r1a_security.sql`, the six-identity authorization matrix. That script inserts rows into `auth.users`, `profiles` and `maestros` before rolling back, and its own header restricts it to a disposable local database. Run it there before Stage 1; the grants and policies it exercises were verified by catalog inspection instead.
+
+### Manifest correction
+
+The manifest hash for migration 1 (`20260914160601_repertoire_engine_foundation.sql`) did not match the file, and did not match **any** committed version of it. The file changed in `f5fc0816`, which removed the `montajes.evento_id -> eventos_conciertos` foreign key because that table does not exist in production; the manifest was written afterwards in `c84856bb` carrying the hash of an intermediate state that was never committed. What is deployed corresponds to the current file — verification confirms zero concert foreign keys. The manifest now records the real hash (`f0688be0…`) and keeps the superseded value under `manifest_corrections`.
+
+This mismatch should have stopped the deployment: the pre-flight gate below calls any manifest mismatch an abort condition, and the release proceeded anyway. The schema landed correctly, but the integrity gate did not function as a gate. Before R1-B, verify the manifest as a blocking step rather than a displayed one.
 
 ## Frozen migration stack
 
@@ -112,4 +132,4 @@ R1-B starts only after structural verification, security verification, existing 
 - Stage 3: selected teachers.
 - Stage 4: broader Portal Maestros activation.
 
-No R1-B work is included in this release candidate.
+No R1-B work is included in this release. Stage 0 (dark) is the current state.

@@ -173,8 +173,33 @@ export function initViewContainers() {
   return viewContainers
 }
 
+/**
+ * Pestañas del portal, en orden. `repertorio` y `seccional` son del piloto:
+ * `seccional` se dibuja con el adaptador demo, así que fuera del piloto
+ * mostraría datos inventados con apariencia de reales.
+ */
+export function buildTabs(permisos, maestroId = null) {
+  const tabs = [
+    { id: 'fechas', label: 'Fechas', icon: 'bi-calendar3' },
+    { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
+    { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
+    { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
+  ]
+  if (isRepertoirePilotUser(maestroId)) {
+    tabs.push(
+      { id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' },
+      { id: 'seccional', label: 'Seccional', icon: 'bi-diagram-3' },
+    )
+  }
+  if (permisos?.puede_inscribir_clases) {
+    tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
+  }
+  return tabs
+}
+
 const ROUTE_PERMISSION_GUARDS = {
   repertorio: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
+  seccional: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
   'gestionar-clases': (permisos) => Boolean(permisos?.puede_inscribir_clases),
   'crear-clase': (permisos) => Boolean(permisos?.puede_crear_clases),
   asistencia: (permisos) => (permisos ? permisos.puede_asistir !== false : false),

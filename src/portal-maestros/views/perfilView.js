@@ -1044,11 +1044,6 @@ async function guardarPerfil(maestroOriginal) {
 
     viewState.dirty = false;
     window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Perfil actualizado', type: 'success' } }));
-
-    // Sincronizar y re-evaluar SOI Smart Insights de inmediato
-    if (window.pwaInstaller) {
-      window.pwaInstaller.evaluateInsights();
-    }
   } catch (error) {
     window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error al guardar: ' + error.message, type: 'danger' } }));
   } finally {

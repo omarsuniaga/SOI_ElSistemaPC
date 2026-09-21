@@ -76,6 +76,7 @@ import { createPlanificationCard } from '../components/attendance/PlanificationC
 import { createDslSection } from '../components/attendance/DslSection.js'
 import { createBulkActions } from '../components/attendance/BulkActions.js'
 import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
+import { shouldQueueDraftSave } from '../components/attendance/draftPolicy.js'
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
 import { createStudentList } from '../components/attendance/StudentList.js'
 import { createGradePanel } from '../components/attendance/GradePanel.js'
@@ -1550,15 +1551,45 @@ function _renderVista(container, ctx) {
   // === Editor DSL & Toolbar Section ===
   let categoriaTrabajo = { codigo: null, origen: null }
 
+  // Lo último que se mandó a persistir. Arranca en `serverDSL` porque el editor
+  // emite `onChange` al montarse con el contenido que vino del servidor.
+  let _contenidoPersistido = serverDSL
+
   const dslSection = createDslSection(container, {
     initialContent: serverDSL,
     claseId,
     onEditorChange: (value) => {
       dslContent = value
+      // El texto escrito se guarda con el mismo autosave que la asistencia:
+      // crea o actualiza la sesión con `borrador: true`, que es de donde esta
+      // vista recarga el contenido al volver a abrir la clase. Sin esto el
+      // texto solo vivía en memoria y se perdía al salir.
+      if (!shouldQueueDraftSave({
+        value,
+        lastPersisted: _contenidoPersistido,
+        hasSesion: Boolean(sesionId),
+        isRegistered: isSessionRegistered,
+      })) return
+      _contenidoPersistido = value
+      _autoSave()
     },
   })
   const editor = dslSection.getEditor()
   const editorContainer = container.querySelector('#pm-dsl-editor-container')
+
+  // Salir del editor —o de la vista— persiste ya, sin esperar el debounce de 2 s.
+  const _flushContenido = () => {
+    if (!shouldQueueDraftSave({
+      value: dslContent,
+      lastPersisted: _contenidoPersistido,
+      hasSesion: Boolean(sesionId),
+      isRegistered: isSessionRegistered,
+    })) return
+    _contenidoPersistido = dslContent
+    _autoSave(true).catch((err) => console.warn('[asistencia] Error al guardar contenido:', err))
+  }
+  editorContainer?.querySelector('#pm-dsl-editable')?.addEventListener('blur', _flushContenido)
+  _cleanups.push(_flushContenido)
 
   // === Generar Informe Modal ===
   const informeModal = createGenerarInformeModal(container, {
@@ -1865,7 +1896,7 @@ function _renderVista(container, ctx) {
 
   // === Auto-Draft Manager ===
   const _draftMgr = createAutoDraftManager(container, {
-    sesionId,
+    getSesionId: () => sesionId,
     maestroId: maestroIdSesion,
     editor,
     sesionExistenteData,

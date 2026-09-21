@@ -1,12 +1,29 @@
 {
   "release": "R1-A",
-  "status": "release-candidate",
-  "production_applied": false,
+  "status": "applied",
+  "production_applied": true,
+  "production_project_ref": "zmhmdvmyeyswunurcyow",
+  "production_verified_at": "2026-09-16",
+  "production_verification": {
+    "migration_history": "10/10 presentes en supabase_migrations.schema_migrations",
+    "structural_and_security": "supabase/tests/repertoire_r1a_deployment_verify.sql ejecutado read-only sin excepciones",
+    "authorization_matrix": "supabase/tests/repertoire_r1a_security.sql NO ejecutado: el script escribe y está restringido a una base local desechable",
+    "feature_flag": "VITE_REPERTOIRE_ENABLED sin configurar: el módulo sigue oscuro para todos los usuarios"
+  },
+  "manifest_corrections": [
+    {
+      "filename": "20260914160601_repertoire_engine_foundation.sql",
+      "sha256_anterior": "32558a80b9911345b501601d0f1b331fa59c1e3d83b602d7e2b9e3f0628d04fa",
+      "sha256_corregido": "f0688be0bc0cc31387f1c1e09eb43502676acbae0aaaae50bfbb6014f50bac5d",
+      "fecha": "2026-09-16",
+      "motivo": "El hash registrado no correspondía a ninguna versión commiteada del archivo. La migración 1 cambió en f5fc0816 (quitó la FK montajes.evento_id -> eventos_conciertos, tabla inexistente en producción) y el manifiesto, creado después en c84856bb, quedó con el hash de un estado intermedio que nunca se commiteó. Lo aplicado en producción corresponde al archivo actual: la verificación confirma cero FKs a eventos_conciertos."
+    }
+  ],
   "migrations": [
     {
       "order": 1,
       "filename": "20260914160601_repertoire_engine_foundation.sql",
-      "sha256": "32558a80b9911345b501601d0f1b331fa59c1e3d83b602d7e2b9e3f0628d04fa",
+      "sha256": "f0688be0bc0cc31387f1c1e09eb43502676acbae0aaaae50bfbb6014f50bac5d",
       "purpose": "Create the additive repertoire, work, montage, fila, measure, and preparation-state foundation.",
       "creates": [
         "obras",

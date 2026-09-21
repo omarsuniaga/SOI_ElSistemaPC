@@ -191,10 +191,6 @@ export async function renderAlumnosView(container) {
                 <i class="bi bi-file-earmark-pdf"></i>
                 <span class="d-none d-sm-inline">Demo</span>
               </button>
-              <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-bold shadow-sm" id="btnAbrirFicha360" title="Ver Ficha 360° Integral" style="font-size:0.78rem;">
-                <i class="bi bi-stars"></i>
-                <span>Ficha 360°</span>
-              </button>
               <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnInscribir" title="Inscribir Alumno" style="font-size:0.78rem;">
                 <i class="bi bi-person-plus-fill"></i>
                 <span>Inscribir</span>
@@ -412,7 +408,6 @@ export async function renderAlumnosView(container) {
     const signal = _abortController?.signal
 
     container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal(), { signal })
-    container.querySelector('#btnAbrirFicha360')?.addEventListener('click', () => Ficha360Modal.abrir('sofia'), { signal })
     container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
     container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
     container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })

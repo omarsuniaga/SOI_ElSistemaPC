@@ -727,7 +727,12 @@ async function _openActionDrawer(fecha, container) {
   const asistencias = (asistRes.status === 'fulfilled' ? asistRes.value.data : null) || []
   const clasesDelMaestro = (clasesRes.status === 'fulfilled' ? clasesRes.value.data : null) || []
   const periodoActivo = periodoActivoRes.status === 'fulfilled' ? periodoActivoRes.value : null
-  const sesionesAutoJustificadas = sesiones.filter((s) => s.clase_id && s.emergente_id)
+  // Solo las clases del maestro: para un administrador la consulta trae las de todos,
+  // y abrir una ajena termina en "Clase no encontrada".
+  const misClaseIds = new Set(clasesDelMaestro.map((x) => x.id))
+  const sesionesAutoJustificadas = sesiones.filter(
+    (s) => s.clase_id && s.emergente_id && misClaseIds.has(s.clase_id),
+  )
 
   const claseIds = clasesDelMaestro.map((x) => x.id)
   const [horariosRes, cumplimiento] = await Promise.all([

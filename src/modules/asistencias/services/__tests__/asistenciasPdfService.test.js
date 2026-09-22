@@ -137,7 +137,7 @@ describe('construirDatosInformeAsistencias', () => {
     const septiembre = filtrarTimelinePorMes(timeline, 2026, 8)
     const { incidencias } = construirDatosInformeAsistencias(septiembre)
 
-    expect(incidencias.map((a) => a.alumno)).toEqual(['Marta', 'Pedro'])
+    expect(incidencias.map((a) => a.alumno)).toEqual(['Pedro', 'Marta'])
     expect(incidencias.find((a) => a.alumno === 'Marta')).toEqual(expect.objectContaining({
       ausencias: 2,
       justificadas: 1,

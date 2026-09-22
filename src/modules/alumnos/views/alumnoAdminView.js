@@ -8,6 +8,7 @@ import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm, SECTIONS } from '../components/AlumnoForm.js'
 import { PostulanteResolver } from '../components/PostulanteResolver.js'
 import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 import {
   obtenerAlumno,
   obtenerInscripcionesDetalladasAlumno,
@@ -17,6 +18,16 @@ import {
   actualizarAlumno,
   reactivarAlumno,
 } from '../api/alumnosApi.js'
+import {
+  obtenerClases,
+  inscribirAlumno,
+  desinscribirAlumno,
+  actualizarTurnoInscripcion,
+} from '../../clases/api/clasesApi.js'
+
+// Mismos valores que el CHECK constraint de clase_horarios.dia y alumnos_clases.dia.
+const DIAS_SEMANA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+const capitalizar = (s) => s ? `${s[0].toUpperCase()}${s.slice(1)}` : s
 
 
 // ─── Multi-phone splitter ─────────────────────────────────────────────────────
@@ -90,6 +101,47 @@ function val(v) {
     return '<span class="text-muted fst-italic small">—</span>'
   }
   return escapeHTML(String(v))
+}
+
+// ─── Clases inscritas: gestión (editar turno / quitar / añadir) ──────────────
+
+/** Horario que el alumno realmente sigue: su turno individual si lo tiene, si no el de la clase. */
+function horarioEfectivoTexto(clase) {
+  const fuente = clase.turno || (clase.clase_horarios || [])[0]
+  if (!fuente) return 'Sin horario'
+  const dia = fuente.dia ? capitalizar(fuente.dia) : ''
+  const horaInicio = (fuente.hora_inicio || '').slice(0, 5)
+  const horaFin = (fuente.hora_fin || '').slice(0, 5)
+  const rango = horaInicio && horaFin ? `${horaInicio}–${horaFin}` : horaInicio
+  return [dia, rango].filter(Boolean).join(' ') || 'Sin horario'
+}
+
+function renderClasesListHTML(clases) {
+  if (clases.length === 0) {
+    return '<p class="text-muted fst-italic">Sin clases activas.</p>'
+  }
+  return `
+    <div class="list-group">
+      ${clases.map(c => `
+        <div class="list-group-item d-flex justify-content-between align-items-center gap-2 flex-wrap">
+          <div>
+            <span class="fw-semibold">${val(c.nombre)}</span>
+            <span class="text-muted small ms-2">${escapeHTML(horarioEfectivoTexto(c))}</span>
+          </div>
+          <div class="d-flex gap-1">
+            ${c.tipo_clase === 'rotativa' ? `
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-editar-turno="${escapeHTML(c.id)}" title="Editar turno">
+                <i class="bi bi-pencil"></i>
+              </button>
+            ` : ''}
+            <button type="button" class="btn btn-sm btn-outline-danger" data-quitar-clase="${escapeHTML(c.id)}" data-nombre="${escapeHTML(c.nombre)}" title="Quitar de esta clase">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `
 }
 
 function bool(v) {
@@ -272,23 +324,15 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
       <div class="tab-pane fade" id="panel-clases" role="tabpanel" aria-labelledby="tab-clases">
         <div class="p-3">
-          <h6 class="fw-bold text-uppercase text-muted small mb-3">Clases inscritas</h6>
-          ${clases.length === 0
-            ? '<p class="text-muted fst-italic">Sin clases activas.</p>'
-            : `<div class="list-group">
-                 ${clases.map(c => {
-                   const horarios = (c.clase_horarios || [])
-                     .map(h => `${val(h.dia)} ${val(h.hora_inicio?.slice(0, 5) || '')}`)
-                     .join(', ') || 'Sin horario'
-                   return `
-                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                       <span class="fw-semibold">${val(c.nombre)}</span>
-                       <span class="text-muted small">${horarios}</span>
-                     </div>
-                   `
-                 }).join('')}
-              </div>`
-          }
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-uppercase text-muted small mb-0">Clases inscritas</h6>
+            <button class="btn btn-sm btn-outline-primary" id="btn-agregar-clase">
+              <i class="bi bi-plus-circle me-1"></i>Añadir a una clase
+            </button>
+          </div>
+          <div id="clases-list-container">
+            ${renderClasesListHTML(clases)}
+          </div>
         </div>
       </div>
 
@@ -601,12 +645,206 @@ export async function renderAlumnoAdminView(container, params = {}) {
     }
   }
 
+  // ─── Clases inscritas: acciones ──────────────────────────────────────────────
+
+  async function reloadClasesPanel() {
+    try {
+      clases = await obtenerInscripcionesDetalladasAlumno(alumno.id)
+    } catch (err) {
+      console.error('Error recargando clases del alumno:', err)
+      AppToast.error('No se pudo actualizar la lista de clases.')
+      return
+    }
+    const listEl = container.querySelector('#clases-list-container')
+    if (listEl) listEl.innerHTML = renderClasesListHTML(clases)
+  }
+
+  function quitarDeClase(claseId, nombreClase) {
+    // Sin diálogo nativo del navegador (prohibido en este módulo, ver
+    // nativeDialogs.test.js): el propio AppModal es la confirmación,
+    // igual que AlumnoDeleteModal.
+    AppModal.open({
+      title: 'Quitar de la clase',
+      saveText: 'Quitar de la clase',
+      saveClass: 'btn-danger',
+      cancelText: 'Cancelar',
+      body: `<p class="mb-0">¿Deseas quitar a <strong>${escapeHTML(alumno.nombre_completo)}</strong> de "${escapeHTML(nombreClase)}"?</p>`,
+      onSave: async () => {
+        try {
+          await desinscribirAlumno(claseId, alumno.id)
+          AppToast.success(`Se quitó a ${alumno.nombre_completo} de "${nombreClase}".`)
+          await reloadClasesPanel()
+          return true
+        } catch (err) {
+          console.error('Error quitando alumno de la clase:', err)
+          AppToast.error(err.message || 'No se pudo quitar al alumno de la clase.')
+          return false
+        }
+      },
+    })
+  }
+
+  function abrirModalEditarTurno(claseId) {
+    const clase = clases.find(c => c.id === claseId)
+    if (!clase) return
+    const fuente = clase.turno || (clase.clase_horarios || [])[0] || {}
+
+    AppModal.open({
+      title: `Editar turno — ${escapeHTML(clase.nombre)}`,
+      size: 'sm',
+      saveText: 'Guardar',
+      body: `
+        <div class="mb-2">
+          <label class="form-label small">Día</label>
+          <select class="form-select form-select-sm" id="turno-dia">
+            <option value="">(usar día de la clase)</option>
+            ${DIAS_SEMANA.map(d => `<option value="${d}" ${d === fuente.dia ? 'selected' : ''}>${capitalizar(d)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label small">Hora inicio</label>
+            <input type="time" class="form-control form-control-sm" id="turno-hora-inicio" value="${(fuente.hora_inicio || '').slice(0, 5)}">
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Hora fin</label>
+            <input type="time" class="form-control form-control-sm" id="turno-hora-fin" value="${(fuente.hora_fin || '').slice(0, 5)}">
+          </div>
+        </div>
+      `,
+      onSave: async (body) => {
+        const dia = body.querySelector('#turno-dia').value || null
+        const horaInicio = body.querySelector('#turno-hora-inicio').value || null
+        const horaFin = body.querySelector('#turno-hora-fin').value || null
+        try {
+          await actualizarTurnoInscripcion(claseId, alumno.id, horaInicio, horaFin, dia)
+          AppToast.success('Turno actualizado.')
+          await reloadClasesPanel()
+          return true
+        } catch (err) {
+          console.error('Error actualizando turno:', err)
+          AppToast.error(err.message || 'No se pudo actualizar el turno.')
+          return false
+        }
+      },
+    })
+  }
+
+  async function abrirModalAgregarClase() {
+    let todasLasClases = []
+    try {
+      todasLasClases = await obtenerClases()
+    } catch (err) {
+      console.error('Error cargando clases disponibles:', err)
+      AppToast.error('No se pudieron cargar las clases disponibles.')
+      return
+    }
+
+    const inscritasIds = new Set(clases.map(c => c.id))
+    const disponibles = todasLasClases.filter(c => c.activo !== false && !inscritasIds.has(c.id))
+    let seleccionada = null
+
+    AppModal.open({
+      title: 'Añadir a una clase',
+      size: 'md',
+      saveText: 'Inscribir',
+      body: `
+        <div class="mb-2">
+          <input type="search" class="form-control form-control-sm" id="agregar-clase-buscar" placeholder="Buscar clase por nombre o instrumento..." autocomplete="off">
+        </div>
+        <div class="list-group" id="agregar-clase-lista" style="max-height: 260px; overflow-y: auto;"></div>
+        <div id="agregar-clase-turno" class="mt-3 d-none">
+          <label class="form-label small">Día</label>
+          <select class="form-select form-select-sm mb-2" id="agregar-clase-dia">
+            <option value="">(usar día de la clase)</option>
+            ${DIAS_SEMANA.map(d => `<option value="${d}">${capitalizar(d)}</option>`).join('')}
+          </select>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small">Hora inicio</label>
+              <input type="time" class="form-control form-control-sm" id="agregar-clase-hora-inicio">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Hora fin</label>
+              <input type="time" class="form-control form-control-sm" id="agregar-clase-hora-fin">
+            </div>
+          </div>
+        </div>
+      `,
+      onShow: (body) => {
+        const listaEl = body.querySelector('#agregar-clase-lista')
+        const turnoEl = body.querySelector('#agregar-clase-turno')
+
+        const renderLista = (filtro = '') => {
+          const q = filtro.trim().toLowerCase()
+          const filtradas = disponibles.filter(c =>
+            !q || (c.nombre || '').toLowerCase().includes(q) || (c.instrumento || '').toLowerCase().includes(q)
+          )
+          listaEl.innerHTML = filtradas.length === 0
+            ? '<p class="text-muted small mb-0">Sin clases disponibles.</p>'
+            : filtradas.map(c => `
+                <button type="button" class="list-group-item list-group-item-action py-2" data-clase-id="${escapeHTML(c.id)}">
+                  ${escapeHTML(c.nombre)}${c.instrumento ? ` <span class="text-muted small">· ${escapeHTML(c.instrumento)}</span>` : ''}
+                </button>
+              `).join('')
+          listaEl.querySelectorAll('[data-clase-id]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              seleccionada = filtradas.find(c => c.id === btn.dataset.claseId)
+              listaEl.querySelectorAll('[data-clase-id]').forEach(b => b.classList.toggle('active', b === btn))
+              turnoEl.classList.toggle('d-none', seleccionada?.tipo_clase !== 'rotativa')
+            })
+          })
+        }
+
+        renderLista()
+        body.querySelector('#agregar-clase-buscar').addEventListener('input', (e) => renderLista(e.target.value))
+      },
+      onSave: async (body) => {
+        if (!seleccionada) {
+          AppToast.error('Selecciona una clase primero.')
+          return false
+        }
+        const dia = body.querySelector('#agregar-clase-dia')?.value || null
+        const horaInicio = body.querySelector('#agregar-clase-hora-inicio')?.value || null
+        const horaFin = body.querySelector('#agregar-clase-hora-fin')?.value || null
+        try {
+          await inscribirAlumno(seleccionada.id, alumno.id, horaInicio, horaFin, dia)
+          AppToast.success(`${alumno.nombre_completo} fue inscrito en "${seleccionada.nombre}".`)
+          await reloadClasesPanel()
+          return true
+        } catch (err) {
+          console.error('Error inscribiendo alumno en la clase:', err)
+          AppToast.error(err.message || 'No se pudo inscribir al alumno en la clase.')
+          return false
+        }
+      },
+    })
+  }
+
   // ─── Event wiring ─────────────────────────────────────────────────────────────
 
   let activeModalSection = null
   let bsModal = null
 
   function attachEvents() {
+    // Clases inscritas — delegado sobre el panel para sobrevivir a los refrescos
+    // parciales de #clases-list-container.
+    container.querySelector('#panel-clases')?.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-agregar-clase')) {
+        abrirModalAgregarClase()
+        return
+      }
+      const btnQuitar = e.target.closest('[data-quitar-clase]')
+      if (btnQuitar) {
+        quitarDeClase(btnQuitar.dataset.quitarClase, btnQuitar.dataset.nombre)
+        return
+      }
+      const btnEditar = e.target.closest('[data-editar-turno]')
+      if (btnEditar) {
+        abrirModalEditarTurno(btnEditar.dataset.editarTurno)
+      }
+    })
+
     // Completitud — toggle detalle
     document.getElementById('btn-toggle-completitud')?.addEventListener('click', (e) => {
       const detalle = document.getElementById('completitud-detalle')

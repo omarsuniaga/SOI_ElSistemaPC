@@ -17,7 +17,7 @@ import {
   obtenerEstadosAsistenciaMaestro,
 } from '../../modules/asistencias/api/asistenciasSupabase.js'
 import { eliminarSesion } from '../../modules/planificacion/api/sesionesSupabase.js'
-import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
+import { invalidateView as navInvalidateView, invalidateCalendarioViews } from '../services/navigationHooks.js'
 
 const DIAS_HEADER = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 const UMBRAL_VENCIDA = 7
@@ -974,7 +974,7 @@ async function _openActionDrawer(fecha, container) {
         try {
           await eliminarSesion(sesionId)
           invalidateClasesCache()
-          navInvalidateView('calendario')
+          invalidateCalendarioViews()
           AppToast.show('Borrador descartado. Fecha desmarcada.', 'success')
           close()
           await renderCalendarioView(container)

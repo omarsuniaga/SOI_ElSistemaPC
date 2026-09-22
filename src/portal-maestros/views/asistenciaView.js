@@ -24,7 +24,7 @@ import {
 } from '../services/maestroDataService.js'
 import { AsistenciaTour } from '../components/AsistenciaTour.js'
 import { AppToast } from '../../shared/components/AppToast.js'
-import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
+import { invalidateView as navInvalidateView, invalidateCalendarioViews } from '../services/navigationHooks.js'
 import { eliminarSesion } from '../../modules/planificacion/api/sesionesSupabase.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
 import { createSessionSummaryPanel } from '../components/SessionSummaryPanel.js'
@@ -2399,7 +2399,7 @@ function _renderVista(container, ctx) {
           // Invalidar cache y vistas para que se actualicen
           invalidateClasesCache()
           navInvalidateView('hoy')
-          navInvalidateView('calendario')
+          invalidateCalendarioViews()
           navInvalidateView('metricas')
           fetchNotificaciones().catch((e) =>
             console.warn('[asistenciaView] Error al actualizar notificaciones:', e),
@@ -2727,7 +2727,7 @@ function _renderVista(container, ctx) {
                 }
                 AppToast.show('Borrador descartado correctamente', 'success')
                 invalidateClasesCache()
-                navInvalidateView('calendario')
+                invalidateCalendarioViews()
                 window.location.hash = '#/fechas'
               } catch (err) {
                 AppToast.show('Error al descartar: ' + err.message, 'danger')

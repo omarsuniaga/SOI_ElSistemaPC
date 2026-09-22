@@ -24,7 +24,7 @@ import {
 } from '../api/asistenciasApi.js'
 import { openEvaluacionEstrellasModal } from '../../planificacion/components/EvaluacionEstrellasModal.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
-import { descargarPdfResumenMensual } from '../../admin-dashboard/services/academicReportsPdfService.js'
+import { descargarPdfControlAsistencias, filtrarTimelinePorMes } from '../services/asistenciasPdfService.js'
 
 const state = {
   timeline: [],
@@ -225,7 +225,7 @@ function renderContent(container) {
   const totalPresentesFiltrados = timelineFiltrada.reduce((sum, d) => sum + d.clases.reduce((s, c) => s + (c.presentes || 0), 0), 0)
   const totalAusentesFiltrados = timelineFiltrada.reduce((sum, d) => sum + d.clases.reduce((s, c) => s + (c.ausentes || 0), 0), 0)
   const totalJustificadosFiltrados = timelineFiltrada.reduce((sum, d) => sum + d.clases.reduce((s, c) => s + (c.justificados || 0), 0), 0)
-  const tasaAsistencia = totalRegistrosFiltrados > 0 ? Math.round(((totalPresentesFiltrados + totalJustificadosFiltrados) / totalRegistrosFiltrados) * 100) : 0
+  const tasaAsistencia = totalRegistrosFiltrados > 0 ? Math.round((totalPresentesFiltrados / totalRegistrosFiltrados) * 100) : 0
   const filtrosActivosCount = contarFiltrosActivos()
 
   // Mapear sesiones por fecha YYYY-MM-DD para el calendario y panel derecho
@@ -259,7 +259,7 @@ function renderContent(container) {
               <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2" style="font-size:0.75rem;" title="Ausentes">
                 <i class="bi bi-x-circle-fill me-1"></i>${totalAusentesFiltrados} A
               </span>
-              <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size:0.75rem;" title="Efectividad Global">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size:0.75rem;" title="Tasa real de asistencia (presentes / convocatorias)">
                 ${tasaAsistencia}%
               </span>
             </div>
@@ -967,21 +967,36 @@ function _attachEvents(container) {
   })
 
   // 8. Botón Descargar PDF
+  // El informe representa el mes visible del calendario y respeta exactamente
+  // los filtros activos de cátedra, clase, maestro y búsqueda.
   container.querySelector('#btnDescargarPdfAsistencias')?.addEventListener('click', async () => {
-    AppToast.info('Generando informe de asistencia...')
+    AppToast.info('Generando informe mensual de asistencia...')
     try {
-      await descargarPdfResumenMensual({
-        periodoNombre: state.periodos.find(p => p.id === state.filtroPeriodo)?.nombre || 'Período Académico',
-        fechaGeneracion: new Date().toLocaleDateString('es-ES'),
-        totalSesiones: state.resumenGlobal?.totalSesiones || 0,
-        totalAsistencias: state.resumenGlobal?.totalRegistros || 0,
-        tasaAsistenciaPct: state.resumenGlobal?.totalRegistros ? Math.round(((state.resumenGlobal.totalPresentes + state.resumenGlobal.totalJustificados) / state.resumenGlobal.totalRegistros) * 100) : 0,
-        totalInasistencias: state.resumenGlobal?.totalAusentes || 0,
-        asistenciasPorDia: [],
-        asistenciasPorInstrumento: [],
-        alumnosEnRiesgo: [],
+      const timelineFiltrada = getFiltradosTimeline()
+      const timelineDelMes = filtrarTimelinePorMes(
+        timelineFiltrada,
+        state.calendarYear,
+        state.calendarMonth,
+      )
+
+      const claseSeleccionada = state.filtroClase === 'todas'
+        ? 'Todas'
+        : state.clases.find((c) => c.id === state.filtroClase)?.nombre || state.filtroClase
+
+      await descargarPdfControlAsistencias({
+        timeline: timelineDelMes,
+        anio: state.calendarYear,
+        mesIndex: state.calendarMonth,
+        periodoNombre: state.periodos.find((p) => p.id === state.filtroPeriodo)?.nombre || 'Período Académico',
+        filtros: {
+          catedra: state.filtroCatedra,
+          clase: claseSeleccionada,
+          maestro: state.filtroMaestro,
+          busqueda: state.searchQuery.trim(),
+        },
+        fechaGeneracion: new Date(),
       })
-      AppToast.success('Informe PDF generado exitosamente.')
+      AppToast.success('Informe mensual de asistencia generado exitosamente.')
     } catch (err) {
       console.error('[asistenciasView] Error al exportar PDF:', err)
       AppToast.error('No se pudo generar el PDF de asistencia.')

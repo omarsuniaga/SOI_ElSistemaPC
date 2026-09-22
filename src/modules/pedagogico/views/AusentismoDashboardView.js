@@ -16,13 +16,24 @@ import '../styles/ausentismo.css'
 
 const PAGE_SIZE = 25
 
+/**
+ * Rango por defecto de la tabla de Reincorporaciones: al menos un mes, no sin
+ * filtro. Sin esto, la consulta trae todo el histórico (hasta 200 filas) desde
+ * el primer render.
+ */
+export function defaultRangoReincorporaciones(now = new Date()) {
+  const hasta = now.toISOString().slice(0, 10)
+  const desdeDate = new Date(now)
+  desdeDate.setMonth(desdeDate.getMonth() - 1)
+  return { desde: desdeDate.toISOString().slice(0, 10), hasta }
+}
+
 const state = {
   container: null,
   periodo: null,
   kpis: null,
   casos: [],
-  desde: '',
-  hasta: '',
+  ...defaultRangoReincorporaciones(),
   page: 1,
   pageSize: PAGE_SIZE,
   loading: false,
@@ -100,6 +111,7 @@ function _renderFunnelChart() {
   const n1 = Number(k.nivel1 || 0)
   const n2 = Number(k.nivel2 || 0)
   const n3 = Number(k.nivel3 || 0)
+  const retencionesActivas = Number(k.retencionesActivas || 0)
   const maxVal = Math.max(1, n1, n2, n3)
 
   const pct1 = Math.round((n1 / maxVal) * 100)
@@ -153,7 +165,11 @@ function _renderFunnelChart() {
               <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-shield-exclamation text-danger fs-5"></i>
                 <div>
-                  <strong class="text-body">${n3} retenciones</strong> activas o en trámite de restitución.
+                  <strong class="text-body">${n3} alumno${n3 === 1 ? '' : 's'}</strong> en Nivel 3 (requieren evaluar retención de instrumento)${
+                    retencionesActivas > 0
+                      ? ` · <strong class="text-body">${retencionesActivas}</strong> con retención ya registrada`
+                      : ' · ninguno con retención registrada aún'
+                  }.
                 </div>
               </div>
               <div class="d-flex align-items-center gap-2">
@@ -208,7 +224,7 @@ function _render() {
       <!-- Tabla de casos cerrados (VD6, VD7) -->
       <div class="card border-0 shadow-sm mb-4 ausentismo-kpi-card" id="card-casos-cerrados">
         <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-          <h2 class="h5 mb-0 fw-semibold">Casos cerrados (reincorporaciones y justificaciones)</h2>
+          <h2 class="h5 mb-0 fw-semibold">Reincorporaciones</h2>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input type="date" class="form-control form-control-sm w-auto" data-desde value="${escapeHTML(state.desde)}" aria-label="Fecha desde">
             <span class="text-muted small">a</span>
@@ -243,7 +259,7 @@ function _renderCasosBodyHTML() {
         <div class="mb-3 text-secondary opacity-50">
           <i class="bi bi-inbox fs-1"></i>
         </div>
-        <p class="fw-semibold text-body-secondary mb-1">Aún no hay reincorporaciones ni justificaciones en este período</p>
+        <p class="fw-semibold text-body-secondary mb-1">Aún no hay reincorporaciones en este período</p>
         <p class="text-muted small mb-0">Puede probar ampliando el rango de fechas con los filtros superiores o limpiando el filtro para ver todo el histórico.</p>
       </div>`
   }
@@ -349,8 +365,8 @@ function _abrirAyuda() {
       },
       {
         icon: 'bi-archive',
-        title: 'Casos Cerrados',
-        description: 'Historial de contactos que concluyeron en reincorporación, justificación o resolución del caso. Puede filtrar por rango de fechas y exportar a CSV.',
+        title: 'Reincorporaciones',
+        description: 'Historial de alumnos que tuvieron el instrumento retenido y fueron reincorporados tras firmar el acta. Puede filtrar por rango de fechas y exportar a CSV.',
       },
     ],
   })

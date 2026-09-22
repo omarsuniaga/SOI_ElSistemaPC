@@ -199,6 +199,10 @@ export async function renderAlumnosView(container) {
                 <i class="bi bi-plus-circle-fill"></i>
                 <span>Nuevo Alumno</span>
               </button>
+              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnIrInactivos" title="Ver alumnos inactivos" style="font-size:0.78rem;">
+                <i class="bi bi-person-dash-fill"></i>
+                <span class="d-none d-sm-inline">Inactivos</span>
+              </button>
             </div>
           </div>
 

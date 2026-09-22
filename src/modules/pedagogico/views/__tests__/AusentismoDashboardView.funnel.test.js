@@ -97,7 +97,10 @@ describe('defaultRangoReincorporaciones', () => {
       .toEqual({ desde: '2026-08-21', hasta: '2026-09-21' })
   })
 
-  it('maneja meses más cortos (31 -> 28/29/30) sin desbordar al mes siguiente', () => {
-    expect(defaultRangoReincorporaciones(new Date('2026-03-31T12:00:00Z')).desde).toBe('2026-03-03')
+  it('limita el día al último válido del mes anterior sin desbordar', () => {
+    expect(defaultRangoReincorporaciones(new Date('2026-03-31T12:00:00Z')).desde).toBe('2026-02-28')
+    expect(defaultRangoReincorporaciones(new Date('2028-03-31T12:00:00Z')).desde).toBe('2028-02-29')
+    expect(defaultRangoReincorporaciones(new Date('2026-05-31T12:00:00Z')).desde).toBe('2026-04-30')
+    expect(defaultRangoReincorporaciones(new Date('2026-01-31T12:00:00Z')).desde).toBe('2025-12-31')
   })
 })

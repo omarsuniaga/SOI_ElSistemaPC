@@ -67,19 +67,26 @@ describe('clasesView — dar de baja a un alumno de la clase', () => {
   })
 
   it('desde la nómina, llama a desinscribirAlumno(claseId, alumnoId) — no con el id de la inscripción', async () => {
+    // El código real llama a AppModal.open(...) y, en la misma función, agenda un
+    // setTimeout que engancha los listeners contra el DOM real. El mock inserta el
+    // body de forma SÍNCRONA (antes de que ese setTimeout llegue a dispararse), para
+    // no depender de una carrera de tiempos entre el test y el código real — la causa
+    // de que este test pasara en local y fallara en CI.
+    AppModal.open.mockImplementation((opts) => {
+      document.body.insertAdjacentHTML('beforeend', opts.body)
+    })
+
     await renderClasesView(container, { resetFilters: true })
 
     container.querySelector('[data-action="ver-nomina"]').click()
-    await vi.waitFor(() => expect(AppModal.open).toHaveBeenCalled())
 
-    // El modal real inserta su cuerpo en el documento; los eventos se enlazan en un setTimeout.
-    const host = document.createElement('div')
-    host.innerHTML = AppModal.open.mock.calls[0][0].body
-    document.body.appendChild(host)
-    await new Promise((r) => setTimeout(r, 10))
-
-    host.querySelector('[data-action="desinscribir-alumno"]').click()
-    await vi.waitFor(() => expect(desinscribirAlumno).toHaveBeenCalled())
+    // El botón existe en el DOM enseguida (mock síncrono), pero el listener se
+    // engancha 100ms después (setTimeout real del código). Se reintenta el clic
+    // hasta que el listener ya esté enganchado, en vez de fijar ese valor aquí.
+    await vi.waitFor(() => {
+      document.querySelector('[data-action="desinscribir-alumno"]')?.click()
+      expect(desinscribirAlumno).toHaveBeenCalled()
+    })
 
     expect(desinscribirAlumno).toHaveBeenCalledWith('c1', 'al-1')
   })

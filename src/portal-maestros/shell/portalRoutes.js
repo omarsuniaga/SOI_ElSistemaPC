@@ -11,7 +11,6 @@
  */
 
 import { importarConReintento } from '../../shared/utils/dynamicImport.js'
-import { isRepertoirePilotUser } from '../../modules/repertoire/api/repertoirePilotAccess.js'
 
 const VIEW_LOADERS = {
   login:             () => import('../views/loginView.js'),
@@ -174,23 +173,20 @@ export function initViewContainers() {
 }
 
 /**
- * Pestañas del portal, en orden. `repertorio` y `seccional` son del piloto:
- * `seccional` se dibuja con el adaptador demo, así que fuera del piloto
- * mostraría datos inventados con apariencia de reales.
+ * Pestañas del portal, en orden.
+ *
+ * `repertorio` y `seccional` están deshabilitadas para todo maestro: son
+ * vistas sin terminar. `seccional` además se dibuja con el adaptador demo,
+ * así que mostrarla fuera de un piloto controlado exhibiría datos
+ * inventados con apariencia de reales.
  */
-export function buildTabs(permisos, maestroId = null) {
+export function buildTabs(permisos, _maestroId = null) {
   const tabs = [
     { id: 'fechas', label: 'Fechas', icon: 'bi-calendar3' },
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
     { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
   ]
-  if (isRepertoirePilotUser(maestroId)) {
-    tabs.push(
-      { id: 'repertorio', label: 'Repertorio', icon: 'bi-music-note-list' },
-      { id: 'seccional', label: 'Seccional', icon: 'bi-diagram-3' },
-    )
-  }
   if (permisos?.puede_inscribir_clases) {
     tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
   }
@@ -198,8 +194,9 @@ export function buildTabs(permisos, maestroId = null) {
 }
 
 const ROUTE_PERMISSION_GUARDS = {
-  repertorio: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
-  seccional: (_permisos, context) => isRepertoirePilotUser(context.maestroId),
+  // Deshabilitadas para todo maestro (vistas sin terminar) — ver comentario en buildTabs.
+  repertorio: () => false,
+  seccional: () => false,
   'gestionar-clases': (permisos) => Boolean(permisos?.puede_inscribir_clases),
   'crear-clase': (permisos) => Boolean(permisos?.puede_crear_clases),
   asistencia: (permisos) => (permisos ? permisos.puede_asistir !== false : false),

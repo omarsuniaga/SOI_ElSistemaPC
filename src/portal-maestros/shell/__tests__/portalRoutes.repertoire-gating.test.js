@@ -1,10 +1,8 @@
 /**
- * Compuerta del piloto de Repertorio sobre la navegación del portal.
- *
- * `repertorio` nació cerrado: pestaña y ruta dependen de `isRepertoirePilotUser`.
- * Su vista hermana `seccional` quedó abierta a todo maestro y, peor, se dibuja
- * con `createSectionalDemoAdapter()` — datos inventados con apariencia de reales.
- * Estas pruebas fijan que ambas rutas compartan la misma compuerta.
+ * Repertorio y Seccional están deshabilitadas para todo maestro: son vistas
+ * sin terminar. Antes tenían una compuerta de piloto (`isRepertoirePilotUser`)
+ * que las mostraba a una lista de maestros; ahora quedan ocultas siempre,
+ * sin importar esa compuerta ni las variables VITE_REPERTOIRE_*.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -32,7 +30,7 @@ function contexto() {
   }
 }
 
-describe('compuerta del piloto de Repertorio', () => {
+describe('Repertorio y Seccional deshabilitadas para todo maestro', () => {
   beforeEach(() => {
     isRepertoirePilotUser.mockReset()
     renderSeccionalView.mockClear()
@@ -40,8 +38,8 @@ describe('compuerta del piloto de Repertorio', () => {
   })
 
   describe('pestañas del portal', () => {
-    it('esconde Repertorio y Seccional cuando el maestro no es piloto', () => {
-      isRepertoirePilotUser.mockReturnValue(false)
+    it.each([false, true])('nunca las muestra, sea o no piloto (isRepertoirePilotUser=%s)', (esPiloto) => {
+      isRepertoirePilotUser.mockReturnValue(esPiloto)
 
       const ids = buildTabs(PERMISOS, 'maestro-1').map((t) => t.id)
 
@@ -49,18 +47,7 @@ describe('compuerta del piloto de Repertorio', () => {
       expect(ids).not.toContain('seccional')
     })
 
-    it('muestra ambas cuando el maestro sí es piloto', () => {
-      isRepertoirePilotUser.mockReturnValue(true)
-
-      const ids = buildTabs(PERMISOS, 'maestro-1').map((t) => t.id)
-
-      expect(ids).toContain('repertorio')
-      expect(ids).toContain('seccional')
-    })
-
     it('no toca las pestañas de siempre', () => {
-      isRepertoirePilotUser.mockReturnValue(false)
-
       const ids = buildTabs(PERMISOS, 'maestro-1').map((t) => t.id)
 
       expect(ids).toEqual(['fechas', 'hoy', 'planificacion', 'metricas'])
@@ -68,8 +55,8 @@ describe('compuerta del piloto de Repertorio', () => {
   })
 
   describe('acceso por URL', () => {
-    it('rebota seccional a hoy cuando el maestro no es piloto', async () => {
-      isRepertoirePilotUser.mockReturnValue(false)
+    it.each([false, true])('rebota seccional a hoy sin renderizarla, sea o no piloto (isRepertoirePilotUser=%s)', async (esPiloto) => {
+      isRepertoirePilotUser.mockReturnValue(esPiloto)
       const ctx = contexto()
 
       await renderViewContent('seccional', document.createElement('div'), {}, new URLSearchParams(), ctx)
@@ -78,24 +65,14 @@ describe('compuerta del piloto de Repertorio', () => {
       expect(renderSeccionalView).not.toHaveBeenCalled()
     })
 
-    it('rebota repertorio a hoy cuando el maestro no es piloto', async () => {
-      isRepertoirePilotUser.mockReturnValue(false)
+    it.each([false, true])('rebota repertorio a hoy sin renderizarlo, sea o no piloto (isRepertoirePilotUser=%s)', async (esPiloto) => {
+      isRepertoirePilotUser.mockReturnValue(esPiloto)
       const ctx = contexto()
 
       await renderViewContent('repertorio', document.createElement('div'), {}, new URLSearchParams(), ctx)
 
       expect(ctx.router.navigate).toHaveBeenCalledWith('hoy')
       expect(renderRepertoireView).not.toHaveBeenCalled()
-    })
-
-    it('deja pasar seccional al piloto', async () => {
-      isRepertoirePilotUser.mockReturnValue(true)
-      const ctx = contexto()
-
-      await renderViewContent('seccional', document.createElement('div'), {}, new URLSearchParams(), ctx)
-
-      expect(ctx.router.navigate).not.toHaveBeenCalled()
-      expect(renderSeccionalView).toHaveBeenCalled()
     })
   })
 })

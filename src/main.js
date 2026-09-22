@@ -82,7 +82,6 @@ import { reportCatalogAudit } from './core/catalogAudit.js'
 import { renderCatalogDiagnosticsView } from './core/catalogDiagnosticsView.js'
 import { governanceMatrixRoute } from './core/portalModuleMatrix.js'
 import { renderPortalModuleMatrixView } from './core/portalModuleMatrixView.js'
-import { abrirModalConmutadorPortales } from './portales/_shared/portalHubModal.js'
 
 // Módulos
 import { registerRoutesAuth } from './modules/auth/index.js'
@@ -572,9 +571,6 @@ function renderNavbar(_container, isAuthenticated = false) {
       ${isDemo ? '<span class="badge bg-warning text-dark ms-1.5" style="font-size: 0.6rem;">DEMO</span>' : ''}
     </div>
     <div class="mobile-header-actions">
-      <button class="mobile-header-btn" id="mobileBtnHub" title="Hub de Portales Departamentales">
-        <i class="bi bi-grid-3x3-gap"></i>
-      </button>
       <button class="mobile-header-btn" id="mobileBtnTheme" title="Cambiar tema">
         <i class="bi ${isDark ? 'bi-sun-fill' : 'bi-moon-fill'}"></i>
       </button>
@@ -591,7 +587,6 @@ function renderNavbar(_container, isAuthenticated = false) {
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon"><i class="bi bi-mortarboard-fill"></i></div>
       <span class="sidebar-brand-text">SOI</span>
-      <button class="btn btn-sm btn-outline-light rounded-pill ms-auto me-1 py-0 px-2" id="sidebarBtnHub" title="Hub de Portales Departamentales"><i class="bi bi-grid-3x3-gap"></i></button>
       ${isDemo ? '<span class="badge bg-warning text-dark ms-2" style="font-size: 0.6rem;">DEMO</span>' : ''}
     </div>
     <nav class="sidebar-nav">
@@ -701,11 +696,6 @@ function renderNavbar(_container, isAuthenticated = false) {
     })
   })
 
-  sidebar.querySelector('#sidebarBtnHub')?.addEventListener('click', (e) => {
-    e.stopPropagation()
-    abrirModalConmutadorPortales()
-  })
-
   sidebar.querySelector('#sidebarBtnHelp').addEventListener('click', () => {
     router.navigate('ayuda')
   })
@@ -729,11 +719,6 @@ function renderNavbar(_container, isAuthenticated = false) {
   // Eventos de la Barra Superior Móvil (Header)
   mobileHeader.querySelector('#mobileHeaderBrand')?.addEventListener('click', () => {
     router.navigate('clases-hoy')
-  }, { signal })
-
-  mobileHeader.querySelector('#mobileBtnHub')?.addEventListener('click', (e) => {
-    e.stopPropagation()
-    abrirModalConmutadorPortales()
   }, { signal })
 
   mobileHeader.querySelector('#mobileBtnTheme')?.addEventListener('click', () => {

@@ -1,4 +1,3 @@
-import { abrirModalConmutadorPortales } from './portalHubModal.js'
 /**
  * adminPortalShell.js — Shell parametrizado para portales departamentales (ACM, ADM, ...).
  *
@@ -195,9 +194,6 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
       <span class="mobile-header-title">${profile.brandText}</span>
     </div>
     <div class="mobile-header-actions">
-      <button class="mobile-header-btn" id="mobileBtnHub" title="Hub de Portales Departamentales">
-        <i class="bi bi-grid-3x3-gap"></i>
-      </button>
       <button class="mobile-header-btn" id="mobileBtnTheme" title="Cambiar tema">
         <i class="bi ${isDark ? 'bi-sun-fill' : 'bi-moon-fill'}"></i>
       </button>
@@ -214,9 +210,6 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon"><i class="bi ${profile.brandIcon}"></i></div>
       <span class="sidebar-brand-text">${profile.brandText}</span>
-      <button class="btn btn-sm btn-outline-light rounded-pill ms-auto me-1 py-0 px-2" id="sidebarBtnHub" title="Hub de Portales Departamentales">
-        <i class="bi bi-grid-3x3-gap"></i>
-      </button>
     </div>
     <nav class="sidebar-nav">
       ${profile.navGroups
@@ -332,15 +325,6 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     mobileHeader.querySelector('#mobileBtnTheme i')?.setAttribute('class', isDarkNow ? 'bi bi-sun-fill' : 'bi bi-moon-fill')
   }
 
-  sidebar.querySelector('#sidebarBtnHub')?.addEventListener(
-    'click',
-    (e) => {
-      e.stopPropagation()
-      abrirModalConmutadorPortales()
-    },
-    { signal },
-  )
-
   sidebar.querySelector('#sidebarBtnTheme')?.addEventListener(
     'click',
     () => {
@@ -364,15 +348,6 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     'click',
     () => {
       router.navigate(profile.defaultRoute)
-    },
-    { signal },
-  )
-
-  mobileHeader.querySelector('#mobileBtnHub')?.addEventListener(
-    'click',
-    (e) => {
-      e.stopPropagation()
-      abrirModalConmutadorPortales()
     },
     { signal },
   )

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../infrastructure/supabase/supabaseClient';
+import { hasCalendarPortalAccess } from '../../infrastructure/supabase/portalAccess';
 
 export interface UserProfile {
   id: string;
@@ -10,7 +11,7 @@ export interface UserProfile {
   estado: string;
 }
 
-export type AuthStatus = 'loading' | 'signed_out' | 'pending_approval' | 'rejected' | 'authenticated';
+export type AuthStatus = 'loading' | 'signed_out' | 'pending_approval' | 'rejected' | 'unauthorized' | 'authenticated';
 
 interface SignInResult {
   success: boolean;
@@ -78,10 +79,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setStatus('pending_approval');
     } else if (userProfile.estado === 'rechazado') {
       setStatus('rejected');
+    } else if (!supabase || !(await hasCalendarPortalAccess(supabase))) {
+      // Acceso restringido: solo quien tenga el portal CAL asignado en la base
+      // (user_portal_access o rol por defecto del catálogo). No se cierra la sesión
+      // porque es compartida con los demás portales.
+      setErrorMessage('No autorizado: su cuenta no tiene acceso al portal Calendario.');
+      setStatus('unauthorized');
     } else {
-      // Nota: a diferencia del portal Admin (exclusivo de rol 'admin'), Calendario no filtra
-      // por rol — está pensado para coordinadores de cualquier departamento (DIR/ACM/ADM/FIN/
-      // LOG/COM/TECNICO/LUT). Solo se exige `estado === 'activo'` (no pendiente, no rechazado).
       setStatus('authenticated');
     }
   }, []);

@@ -801,7 +801,7 @@ export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) 
 export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
+    .select('clase_id, dia, hora_inicio, hora_fin, clases(id, nombre, tipo_clase, clase_horarios(dia, hora_inicio, hora_fin))')
     .eq('alumno_id', alumnoId)
     .eq('activo', true)
 
@@ -809,5 +809,13 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
     console.error('Error cargando inscripciones detalladas de alumno:', error.message)
     throw new Error('No se pudieron cargar las clases del alumno')
   }
-  return (data || []).map(r => r.clases).filter(Boolean)
+  // `dia`/`hora_inicio`/`hora_fin` son el turno individual del alumno (solo tiene
+  // sentido en clases rotativas); si están vacíos, el alumno sigue el horario
+  // por defecto de la clase (clase_horarios).
+  return (data || [])
+    .filter(r => r.clases)
+    .map(r => ({
+      ...r.clases,
+      turno: (r.dia || r.hora_inicio || r.hora_fin) ? { dia: r.dia, hora_inicio: r.hora_inicio, hora_fin: r.hora_fin } : null,
+    }))
 }

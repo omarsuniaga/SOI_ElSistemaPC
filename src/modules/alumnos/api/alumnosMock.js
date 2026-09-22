@@ -330,6 +330,10 @@ export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) 
 export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
   await delay()
   return [
-    { id: 'clase_001', nombre: 'Violín Principiantes A', clase_horarios: [{ dia: 'Lunes', hora_inicio: '14:00:00' }] }
+    {
+      id: 'clase_001', nombre: 'Violín Principiantes A', tipo_clase: 'fija',
+      clase_horarios: [{ dia: 'Lunes', hora_inicio: '14:00:00', hora_fin: '15:00:00' }],
+      turno: null,
+    }
   ]
 }

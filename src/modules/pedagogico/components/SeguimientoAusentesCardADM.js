@@ -88,6 +88,14 @@ export function renderSeguimientoAusentesCardADM(data = null) {
     ? 'card border-0 shadow-sm ausentismo-kpi-card kpi-nivel-3 has-urgent-cases'
     : 'card border-0 shadow-sm ausentismo-kpi-card kpi-nivel-3'
 
+  // Nivel 3 es un umbral (días ausente), no una retención ya hecha — eso lo
+  // registra Coordinación Académica aparte, en retenciones_instrumento. Sin
+  // ninguna retención real todavía, "Retención de instrumento" da a entender
+  // que ya se retuvo el instrumento a estos alumnos.
+  const nivel3Subtitulo = retencionesActivas > 0
+    ? 'Retención de instrumento'
+    : 'Alcanzó el umbral de retención'
+
   return `
     <div class="d-flex flex-column gap-4">
       <!-- Bloque 1: Escalamiento de Ausentismo (VD1) -->
@@ -146,7 +154,7 @@ export function renderSeguimientoAusentesCardADM(data = null) {
                       ${hasUrgentNivel3 ? '<span class="badge bg-danger text-white ms-1" style="font-size: 0.65rem;">ACCIÓN</span>' : ''}
                     </div>
                     <div class="h4 mb-0 fw-bold ${hasUrgentNivel3 ? 'text-danger' : ''}">${nivel3}</div>
-                    <small class="text-muted">Retención de instrumento</small>
+                    <small class="text-muted">${nivel3Subtitulo}</small>
                   </div>
                   <div class="ausentismo-icon-badge ${hasUrgentNivel3 ? 'bg-danger text-white' : 'bg-body-secondary text-body-secondary'}">
                     <i class="bi bi-exclamation-circle-fill"></i>

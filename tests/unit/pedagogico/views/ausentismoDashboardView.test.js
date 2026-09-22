@@ -151,7 +151,9 @@ describe('AusentismoDashboardView (ADM read-only)', () => {
     await renderAusentismoDashboardView(container)
 
     expect(container.querySelector('[data-empty-state]')).toBeTruthy()
-    expect(container.innerHTML).toContain('Aún no hay reincorporaciones ni justificaciones en este período')
+    // El título de la sección se redujo a "Reincorporaciones": "justificaciones"
+    // no tiene ninguna acción real que las genere (ver AusentismoDashboardView.js).
+    expect(container.innerHTML).toContain('Aún no hay reincorporaciones en este período')
     expect(container.querySelector('[data-csv]').hasAttribute('disabled')).toBe(true)
   })
 

@@ -203,6 +203,13 @@ function normalizeStr(t) {
 }
 const normalizeText = normalizeStr
 
+/** Nombre del titular: el de la clase si viene, si no el del catálogo de maestros. */
+function nombreMaestroDe(c) {
+  if (c.maestro_nombre) return c.maestro_nombre
+  const m = state.maestros.find(x => x.id === c.maestro_principal_id || x.id === c.maestro_id)
+  return m?.nombre_completo || m?.nombre || ''
+}
+
 function getFiltradosClases() {
   const q = normalizeStr(state.searchQuery)
   const fam = state.filtroFamilia
@@ -261,7 +268,7 @@ function getFiltradosClases() {
     if (q) {
       const matchNombre = normalizeStr(c.nombre).includes(q)
       const matchInst = normalizeStr(c.instrumento).includes(q)
-      const matchMaestro = normalizeStr(c.maestro_nombre).includes(q)
+      const matchMaestro = normalizeStr(nombreMaestroDe(c)).includes(q)
       const matchSalon = normalizeStr(c.salon).includes(q)
       if (!matchNombre && !matchInst && !matchMaestro && !matchSalon) return false
     }
@@ -1245,7 +1252,7 @@ function _mostrarModalResolucionConflictos(claseId) {
             const { data: inscritos } = await supabase.from('alumnos_clases').select('id, alumno_id').eq('clase_id', otraClaseId)
             for (const ins of inscritos || []) {
               if (alumnosIds.includes(ins.alumno_id)) {
-                await desinscribirAlumno(ins.id)
+                await desinscribirAlumno(otraClaseId, ins.alumno_id)
               }
             }
             tDesin.success('Alumnos desinscritos de la otra clase.')
@@ -1306,7 +1313,9 @@ function _mostrarModalResolucionConflictos(claseId) {
           const unicos = new Set()
           for (const ins of inscripciones || []) {
             if (unicos.has(ins.alumno_id)) {
-              await desinscribirAlumno(ins.id)
+              // Por id de fila: desinscribirAlumno(clase, alumno) borraría también la que se conserva
+              const { error: errDup } = await supabase.from('alumnos_clases').delete().eq('id', ins.id)
+              if (errDup) throw errDup
             } else {
               unicos.add(ins.alumno_id)
             }
@@ -1772,7 +1781,7 @@ function _mostrarModalAlumnosSinClase() {
                               </div>
                             </div>
                             
-                            <button type="button" class="btn btn-sm btn-outline-danger p-1 rounded-2 shadow-xs d-inline-flex align-items-center justify-content-center btn-quitar-alumno-nomina flex-shrink-0" data-inscripcion-id="${ins.inscripcionId}" data-nombre="${escapeHTML(ins.nombre)}" data-clase-id="${clase.id}" title="Quitar de esta clase" aria-label="Quitar de esta clase" style="width:28px; height:28px;">
+                            <button type="button" class="btn btn-sm btn-outline-danger p-1 rounded-2 shadow-xs d-inline-flex align-items-center justify-content-center btn-quitar-alumno-nomina flex-shrink-0" data-inscripcion-id="${ins.inscripcionId}" data-alumno-id="${ins.alumnoId}" data-nombre="${escapeHTML(ins.nombre)}" data-clase-id="${clase.id}" title="Quitar de esta clase" aria-label="Quitar de esta clase" style="width:28px; height:28px;">
                               <i class="bi bi-trash3 fs-6"></i>
                             </button>
                           </div>
@@ -1925,12 +1934,12 @@ function _mostrarModalAlumnosSinClase() {
 
     containerEl.querySelectorAll('.btn-quitar-alumno-nomina').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const inscripcionId = btn.dataset.inscripcionId
+        const alumnoId = btn.dataset.alumnoId
         const nombre = btn.dataset.nombre
         const claseId = btn.dataset.claseId
         if (confirm(`¿Deseas dar de baja a "${nombre}" de esta clase?`)) {
           try {
-            await desinscribirAlumno(inscripcionId)
+            await desinscribirAlumno(claseId, alumnoId)
             AppToast.success(`Alumno "${nombre}" removido de la clase.`)
             await renderClasesView(state.container)
             containerEl.innerHTML = await _renderStep3(claseId)
@@ -2159,7 +2168,7 @@ async function _mostrarModalNominaClase(claseId) {
                 </label>
                 <div class="d-flex flex-column gap-2">
                   <select class="form-select form-select-sm" id="selectAlumnoParaInscribir">
-                    <option value="">Seleccionar del padrón...</option>
+                    <option value="">Seleccionar alumno...</option>
                     ${state.alumnosDisponibles
                       .filter(a => !inscritos.some(i => i.alumnoId === a.id))
                       .map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo || 'Estudiante')} (${escapeHTML(a.instrumento_principal || 'General')})</option>`)
@@ -2215,7 +2224,7 @@ async function _mostrarModalNominaClase(claseId) {
                             </div>
                           </div>
                         </div>
-                        <button class="btn btn-outline-danger btn-sm py-1 px-2.5" data-action="desinscribir-alumno" data-id="${al.inscripcionId}" data-nombre="${escapeHTML(al.nombre)}" title="Dar de baja a este estudiante">
+                        <button class="btn btn-outline-danger btn-sm py-1 px-2.5" data-action="desinscribir-alumno" data-id="${al.inscripcionId}" data-alumno-id="${al.alumnoId}" data-nombre="${escapeHTML(al.nombre)}" title="Dar de baja a este estudiante">
                           <i class="bi bi-person-x me-1"></i>Dar de baja
                         </button>
                       </div>
@@ -2303,11 +2312,11 @@ async function _mostrarModalNominaClase(claseId) {
         const btn = e.target.closest('[data-action="desinscribir-alumno"]')
         if (!btn) return
 
-        const inscripcionId = btn.dataset.id
+        const alumnoId = btn.dataset.alumnoId
         const nombre = btn.dataset.nombre
         if (confirm(`¿Dar de baja a "${nombre}" de esta clase?`)) {
           try {
-            await desinscribirAlumno(inscripcionId)
+            await desinscribirAlumno(claseId, alumnoId)
             AppToast.success(`Alumno ${nombre} dado de baja de la clase.`)
             AppModal.close()
             await renderClasesView(state.container)

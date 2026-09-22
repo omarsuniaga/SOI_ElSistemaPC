@@ -614,7 +614,7 @@ function _renderClaseCardDetalle(c, idx) {
                               data-student="${escapeHTML(a.alumno_nombre || a.alumnoNombre || 'Estudiante')}"
                               data-clase="${escapeHTML(c.clase_nombre || 'Clase')}"
                               data-docente="${escapeHTML(c.maestro_nombre || 'Maestro')}"
-                              data-fecha="${escapeHTML(c.fecha)}"
+                              data-fecha="${escapeHTML(c.fecha || state.selectedFecha || '')}"
                               data-motivo="${escapeHTML(detalleMotivo)}"
                               data-evidencia="${escapeHTML(justifObj.evidencia_url || '')}"
                               title="Haga clic para ver el justificativo o comprobante médico">
@@ -705,7 +705,7 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
       <!-- Ficha Alumno Destacada -->
       <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-3" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25);">
         <div class="d-flex align-items-center gap-3">
-          <div class="d-flex align-items-center justify-content-center rounded-circle text-white shadow-xs" style="width: 44px; height: 44px; background: #4f46e5; font-size: 1.25rem;">
+          <div class="d-flex align-items-center justify-content-center rounded-circle text-white flex-shrink-0" style="width: 44px; height: 44px; background: #4f46e5; font-size: 1.25rem;">
             <i class="bi bi-person-fill"></i>
           </div>
           <div>
@@ -713,35 +713,35 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
             <h5 class="fw-bold mb-0 text-body" style="letter-spacing: -0.01em;">${escapeHTML(student || 'Estudiante')}</h5>
           </div>
         </div>
-        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-pill fw-semibold shadow-2xs" style="font-size: 0.75rem;">
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-2 px-3 rounded-pill fw-semibold" style="font-size: 0.75rem;">
           <i class="bi bi-file-earmark-medical-fill me-1"></i>Inasistencia Justificada
         </span>
       </div>
 
       <!-- Cuadrícula de Metadatos Contextuales -->
-      <div class="row g-2.5 mb-3">
+      <div class="row g-3 mb-3">
         <div class="col-12 col-sm-6">
-          <div class="p-2.5 rounded-3 bg-body-tertiary border h-100">
-            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.75rem;">
-              <i class="bi bi-easel2 text-primary me-1"></i>Clase
+          <div class="p-3 rounded-3 bg-body-tertiary border h-100">
+            <span class="text-muted small d-block mb-2 fw-semibold" style="font-size: 0.75rem;">
+              <i class="bi bi-easel2 text-primary me-2"></i>Clase
             </span>
             <strong class="text-body d-block" style="font-size: 0.9rem;">${escapeHTML(clase || 'Clase')}</strong>
           </div>
         </div>
 
         <div class="col-12 col-sm-6">
-          <div class="p-2.5 rounded-3 bg-body-tertiary border h-100">
-            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.75rem;">
-              <i class="bi bi-person-badge text-primary me-1"></i>Maestro Titular
+          <div class="p-3 rounded-3 bg-body-tertiary border h-100">
+            <span class="text-muted small d-block mb-2 fw-semibold" style="font-size: 0.75rem;">
+              <i class="bi bi-person-badge text-primary me-2"></i>Maestro Titular
             </span>
             <strong class="text-body d-block" style="font-size: 0.9rem;">${escapeHTML(docente || 'Sin asignar')}</strong>
           </div>
         </div>
 
         <div class="col-12">
-          <div class="p-2.5 rounded-3 bg-body-tertiary border">
-            <span class="text-muted small d-block mb-1 fw-semibold" style="font-size: 0.75rem;">
-              <i class="bi bi-calendar-event text-primary me-1"></i>Fecha de la Sesión
+          <div class="p-3 rounded-3 bg-body-tertiary border">
+            <span class="text-muted small d-block mb-2 fw-semibold" style="font-size: 0.75rem;">
+              <i class="bi bi-calendar-event text-primary me-2"></i>Fecha de la Sesión
             </span>
             <strong class="text-body d-block text-capitalize" style="font-size: 0.9rem;">${escapeHTML(fechaFormateada)}</strong>
           </div>
@@ -750,7 +750,7 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
 
       <!-- Declaración de Causa / Motivo -->
       <div class="p-3 rounded-3 mb-3" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-left: 4px solid #4f46e5;">
-        <div class="d-flex align-items-center gap-1.5 mb-1.5" style="color: #4338ca;">
+        <div class="d-flex align-items-center gap-2 mb-2" style="color: #4338ca;">
           <i class="bi bi-chat-left-quote-fill"></i>
           <span class="small fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.04em;">Causa / Motivo Declarado</span>
         </div>
@@ -760,7 +760,7 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
       <!-- Evidencia / Archivo Adjunto -->
       <div>
         ${evidencia ? `
-          <a href="${escapeHTML(evidencia)}" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between p-2.5 rounded-3 shadow-xs">
+          <a href="${escapeHTML(evidencia)}" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between p-3 rounded-3">
             <div class="d-flex align-items-center gap-2">
               <i class="bi bi-paperclip fs-5 text-primary"></i>
               <span class="fw-semibold small">Ver Comprobante / Certificado Adjunto</span>
@@ -768,7 +768,7 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
             <i class="bi bi-box-arrow-up-right small"></i>
           </a>
         ` : `
-          <div class="p-2.5 text-center text-muted small bg-body-tertiary rounded-3 border border-dashed" style="font-size: 0.75rem;">
+          <div class="p-3 text-center text-muted small bg-body-tertiary rounded-3 border" style="font-size: 0.75rem;">
             <i class="bi bi-file-earmark-x me-1"></i>No se adjuntó comprobante digital en este registro.
           </div>
         `}

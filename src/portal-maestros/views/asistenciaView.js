@@ -34,6 +34,7 @@ import {
   obtenerJustificacion,
   eliminarJustificacion,
 } from '../services/justificacionService.js'
+import { construirJustificaciones, aplicarJustificadosDeAsistencias, justificacionesPorActividad } from '../services/justificacionesAdm.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
@@ -263,7 +264,7 @@ export async function renderAsistenciaView(
         .order('updated_at', { ascending: false }), // más reciente primero dentro de cada grupo
       supabase
         .from('asistencias')
-        .select('alumno_id, estado, sesion_clase_id')
+        .select('alumno_id, estado, sesion_clase_id, justificacion_texto')
         .eq('clase_id', claseId)
         .eq('fecha', fechaHoy),
     ])
@@ -382,7 +383,7 @@ export async function renderAsistenciaView(
       try {
         const { data } = await supabase
           .from('justificaciones')
-          .select('alumno_id')
+          .select('*')
           .eq('sesion_id', sesionId)
         return data || []
       } catch (_e) {
@@ -411,7 +412,7 @@ export async function renderAsistenciaView(
 
     // === Estado local ===
     const estado = {}
-    const justificaciones = {}
+    let justificaciones = {}
     alumnos.forEach((a) => {
       estado[a.id] = null
     })
@@ -441,6 +442,27 @@ export async function renderAsistenciaView(
           estado[j.alumno_id] = 'J'
         }
       })
+    }
+
+    // Justificadas desde Administración: aparecen como J aunque el maestro ya tenga
+    // registros del día, y con su motivo (tabla justificaciones o asistencias).
+    aplicarJustificadosDeAsistencias(estado, asistenciasRes?.data)
+    justificaciones = construirJustificaciones(justificacionesRes, asistenciasRes?.data)
+
+    // Clase suspendida por una actividad especial: la razón de los alumnos J es la actividad
+    if (sesionExistenteData?.emergente_id) {
+      let actividadEmergente = null
+      try {
+        const { data } = await supabase
+          .from('sesiones_clase')
+          .select('actividad, motivo')
+          .eq('id', sesionExistenteData.emergente_id)
+          .maybeSingle()
+        actividadEmergente = data || null
+      } catch (_e) {
+        console.warn('[asistencia] No se pudo cargar la actividad que suspendió la clase:', _e)
+      }
+      justificaciones = justificacionesPorActividad(estado, actividadEmergente, justificaciones)
     }
 
     // === Render ===

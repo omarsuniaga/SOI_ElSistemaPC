@@ -147,7 +147,7 @@ export async function renderAlumnosView(container) {
                 <i class="bi bi-people-fill fs-5"></i>
               </div>
               <div>
-                <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Padrón de Alumnos</h5>
+                <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Listado de Alumnos</h5>
                 <small class="text-muted d-block" style="font-size:0.75rem;">Directorio integral de estudiantes matriculados</small>
               </div>
               

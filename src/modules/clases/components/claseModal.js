@@ -1295,7 +1295,7 @@ function _getAlumnosSelectorHTML(selectedIds = []) {
       <!-- Resumen / Contador de Selección -->
       <div class="d-flex justify-content-between align-items-center mb-2 px-1">
         <small class="fw-bold text-primary" id="alumnos-selection-count">${selectedSet.size} seleccionados</small>
-        <small class="text-muted">${todosAlumnos.length} en el padrón</small>
+        <small class="text-muted">${todosAlumnos.length} alumnos en total</small>
       </div>
 
       <div class="alumnos-list border rounded-3 bg-body-tertiary p-2" style="max-height: calc(92vh - 310px); overflow-y: auto;">

@@ -259,6 +259,38 @@ async function obtenerClasesDelDiaSupabase(diaFiltro = null) {
   return { dia, fecha, esHoy, sesiones, kpis }
 }
 
+const MOTIVO_POR_DEFECTO = 'Justificado desde Administración'
+
+/**
+ * El portal de maestros y los reportes leen el motivo desde `justificaciones`
+ * (motivo NOT NULL), no solo desde asistencias.justificacion_texto. Best-effort:
+ * la asistencia ya quedó guardada por la RPC, así que un fallo aquí no la deshace.
+ */
+async function sincronizarMotivoJustificacion({ asistenciaId, claseId, alumnoId, fecha, motivo }) {
+  try {
+    const { data: asistencia } = await supabase
+      .from('asistencias')
+      .select('sesion_clase_id')
+      .eq('id', asistenciaId)
+      .single()
+    if (!asistencia?.sesion_clase_id) return
+
+    const { error } = await supabase.from('justificaciones').upsert(
+      [{
+        sesion_id: asistencia.sesion_clase_id,
+        alumno_id: alumnoId,
+        clase_id: claseId,
+        fecha,
+        motivo: (motivo || '').trim() || MOTIVO_POR_DEFECTO,
+      }],
+      { onConflict: 'sesion_id,alumno_id' },
+    )
+    if (error) console.warn('[clasesHoyApi] No se pudo registrar el motivo en justificaciones:', error.message)
+  } catch (err) {
+    console.warn('[clasesHoyApi] No se pudo registrar el motivo en justificaciones:', err?.message)
+  }
+}
+
 /**
  * Justifica la ausencia de un alumno delegando la persistencia a la RPC canónica
  * o al Mock DataAdapter en modo demo / fallback.
@@ -280,6 +312,7 @@ export async function justificarAusencia({ claseId, alumnoId, fecha, motivo }) {
       throw new Error(`No se pudo justificar la ausencia: ${error.message}`)
     }
 
+    await sincronizarMotivoJustificacion({ asistenciaId: data, claseId, alumnoId, fecha, motivo })
     return data
   } catch (error) {
     if (error?.message?.includes('fetch') || error?.name === 'TypeError') {

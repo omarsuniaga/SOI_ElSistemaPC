@@ -112,6 +112,51 @@ describe('clasesHoyApi DataAdapter', () => {
       })
     })
 
+    it('also records the reason in `justificaciones` so the teacher portal and reports see it', async () => {
+      supabase.rpc.mockResolvedValue({ data: 'attendance-id', error: null })
+      const upsert = vi.fn().mockResolvedValue({ error: null })
+      supabase.from.mockImplementation((tabla) => {
+        if (tabla === 'asistencias') {
+          return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { sesion_clase_id: 'sesion-1' }, error: null }) }) }) }
+        }
+        return { upsert }
+      })
+
+      await justificarAusencia({ claseId: 'class-id', alumnoId: 'student-id', fecha: '2026-08-18', motivo: 'Cita médica' })
+
+      expect(upsert).toHaveBeenCalledWith(
+        [expect.objectContaining({ sesion_id: 'sesion-1', alumno_id: 'student-id', clase_id: 'class-id', fecha: '2026-08-18', motivo: 'Cita médica' })],
+        { onConflict: 'sesion_id,alumno_id' },
+      )
+    })
+
+    it('uses a default reason when none is given, because `justificaciones.motivo` is NOT NULL', async () => {
+      supabase.rpc.mockResolvedValue({ data: 'attendance-id', error: null })
+      const upsert = vi.fn().mockResolvedValue({ error: null })
+      supabase.from.mockImplementation((tabla) => {
+        if (tabla === 'asistencias') {
+          return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { sesion_clase_id: 'sesion-1' }, error: null }) }) }) }
+        }
+        return { upsert }
+      })
+
+      await justificarAusencia({ claseId: 'class-id', alumnoId: 'student-id', fecha: '2026-08-18', motivo: '   ' })
+
+      const [[payload]] = upsert.mock.calls[0]
+      expect(payload.motivo).toBeTruthy()
+      expect(payload.motivo.trim()).not.toBe('')
+    })
+
+    it('does not fail the justification if syncing `justificaciones` fails (attendance is already saved)', async () => {
+      supabase.rpc.mockResolvedValue({ data: 'attendance-id', error: null })
+      supabase.from.mockImplementation(() => { throw new Error('boom') })
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await expect(
+        justificarAusencia({ claseId: 'class-id', alumnoId: 'student-id', fecha: '2026-08-18', motivo: 'Cita' }),
+      ).resolves.toBe('attendance-id')
+    })
+
     it('surfaces a failed atomic operation', async () => {
       supabase.rpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } })
 

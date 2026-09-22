@@ -62,6 +62,33 @@ async function gotrueError(res: Response): Promise<string> {
 }
 
 /**
+ * Acceso al portal FIN según la base (`has_portal_access`): asignación explícita
+ * en user_portal_access o rol por defecto del catálogo. Sin lista de roles fija
+ * en el cliente, y falla cerrada: cualquier error o respuesta que no sea `true`
+ * deniega el acceso.
+ */
+export async function hasFinPortalAccess(
+  config: { url: string; anonKey: string },
+  accessToken: string
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.url}/rest/v1/rpc/has_portal_access`, {
+      method: 'POST',
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_portal_id: 'FIN' })
+    });
+    if (!res.ok) return false;
+    return (await res.json()) === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Authenticates AND authorizes: a valid Supabase Auth account is not enough
  * on its own — only profiles.rol IN ('admin','cajero') may use this portal,
  * matching fn_registrar_pago_transaccional's own server-side check. If the
@@ -109,26 +136,7 @@ export async function signInAndAuthorize(
   const rows = await profileRes.json();
   const profileRow = Array.isArray(rows) ? rows[0] : null;
 
-  let isAuthorized = ['superadmin', 'admin', 'finanzas'].includes(profileRow.rol);
-  if (!isAuthorized) {
-    try {
-      const accessRes = await fetch(`${config.url}/rest/v1/rpc/has_portal_access`, {
-        method: 'POST',
-        headers: {
-          apikey: config.anonKey,
-          Authorization: `Bearer ${session.accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ p_portal_id: 'FIN' })
-      });
-      if (accessRes.ok) {
-        const allowed = await accessRes.json();
-        if (allowed === true) isAuthorized = true;
-      }
-    } catch {
-      // Ignore network error and rely on role
-    }
-  }
+  const isAuthorized = await hasFinPortalAccess(config, session.accessToken);
 
   if (!isAuthorized) {
     setStoredSession(null);
@@ -201,26 +209,7 @@ export async function restoreSession(): Promise<AuthorizedProfile | null> {
     return null;
   }
 
-  let isAuthorized = ['superadmin', 'admin', 'finanzas'].includes(profileRow.rol);
-  if (!isAuthorized) {
-    try {
-      const accessRes = await fetch(`${config.url}/rest/v1/rpc/has_portal_access`, {
-        method: 'POST',
-        headers: {
-          apikey: config.anonKey,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ p_portal_id: 'FIN' })
-      });
-      if (accessRes.ok) {
-        const allowed = await accessRes.json();
-        if (allowed === true) isAuthorized = true;
-      }
-    } catch {
-      // Ignore network error
-    }
-  }
+  const isAuthorized = await hasFinPortalAccess(config, token);
 
   if (!isAuthorized) {
     setStoredSession(null);

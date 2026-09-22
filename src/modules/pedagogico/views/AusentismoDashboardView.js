@@ -23,8 +23,20 @@ const PAGE_SIZE = 25
  */
 export function defaultRangoReincorporaciones(now = new Date()) {
   const hasta = now.toISOString().slice(0, 10)
-  const desdeDate = new Date(now)
-  desdeDate.setMonth(desdeDate.getMonth() - 1)
+
+  // Trabajar en UTC evita que la zona horaria local desplace el día al convertir
+  // a ISO. Además, limitamos el día al último válido del mes anterior para que
+  // fechas como 31 de marzo no desborden a marzo al "restar un mes".
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth()
+  const day = now.getUTCDate()
+  const ultimoDiaMesAnterior = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  const desdeDate = new Date(Date.UTC(
+    year,
+    month - 1,
+    Math.min(day, ultimoDiaMesAnterior),
+  ))
+
   return { desde: desdeDate.toISOString().slice(0, 10), hasta }
 }
 

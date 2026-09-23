@@ -2,6 +2,7 @@ import { Modal } from 'bootstrap'
 import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
+import { perfilMusicalAlumno } from '../domain/perfilMusicalAlumno.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -29,8 +30,8 @@ import {
  */
 // ─── Completitud ─────────────────────────────────────────────────────────────
 
-function renderCompletitudBanner(alumno) {
-  const { porcentaje, nivel, camposFaltantes, porGrupo } = calcularCompletitud(alumno)
+function renderCompletitudBanner(alumno, clases) {
+  const { porcentaje, nivel, camposFaltantes, porGrupo } = calcularCompletitud(alumno, perfilMusicalAlumno(alumno, clases))
   const color = NIVEL_COLOR[nivel]
   const label = NIVEL_LABEL[nivel]
 
@@ -219,6 +220,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
   function renderView() {
     const initials = getInitials(alumno.nombre_completo)
     const edad = calcularEdad(alumno.fecha_nacimiento)
+    const perfil = perfilMusicalAlumno(alumno, clases)
     const activoBadge = alumno.activo
       ? '<span class="badge bg-success">Activo</span>'
       : '<span class="badge bg-secondary">Inactivo</span>'
@@ -314,7 +316,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
         </button>
 
         <div id="completitud-banner-container">
-          ${renderCompletitudBanner(alumno)}
+          ${renderCompletitudBanner(alumno, clases)}
         </div>
 
         <!-- Header card -->
@@ -330,11 +332,14 @@ export async function renderAlumnoAdminView(container, params = {}) {
                   <h4 class="mb-1 fw-bold">${val(alumno.nombre_completo)}</h4>
                   <div class="d-flex flex-wrap gap-2 align-items-center">
                     ${activoBadge}
-                    ${alumno.instrumento_principal ? `<span class="badge bg-info text-dark">${val(alumno.instrumento_principal)}</span>` : ''}
+                    ${perfil.enIniciacion ? '<span class="badge bg-primary">Iniciación Musical</span>' : ''}
+                    ${perfil.tieneCatedraInstrumental && perfil.instrumentoPrincipal ? `<span class="badge bg-info text-dark">Cátedra: ${val(perfil.instrumentoPrincipal)}</span>` : ''}
+                    ${perfil.instrumentoInteres ? `<span class="badge bg-light text-dark border">Interés: ${val(perfil.instrumentoInteres)}</span>` : ''}
                     ${alumno.nivel_actual ? `<span class="badge bg-light text-dark border">${val(alumno.nivel_actual)}</span>` : ''}
                     ${edad !== null ? `<span class="text-muted small">${escapeHTML(String(edad))} años</span>` : ''}
                     ${alumno.created_at ? `<span class="text-muted small">Inscrito: ${val(formatDate(alumno.created_at))}</span>` : ''}
                   </div>
+                  ${perfil.instrumentoPrincipal && !perfil.tieneCatedraInstrumental ? '<div class="small text-muted mt-1">Hay un instrumento principal registrado sin clase instrumental activa. Revisar el dato en la pestaña Musical.</div>' : ''}
                 </div>
               </div>
               <div class="d-flex gap-2 flex-wrap">
@@ -805,7 +810,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
       // Re-render completitud banner if it exists
       const bannerContainer = container.querySelector('#completitud-banner-container')
       if (bannerContainer) {
-        bannerContainer.innerHTML = renderCompletitudBanner(alumno)
+        bannerContainer.innerHTML = renderCompletitudBanner(alumno, clases)
         // Re-bind completitud details toggle
         const btnToggle = bannerContainer.querySelector('#btn-toggle-completitud')
         if (btnToggle) {

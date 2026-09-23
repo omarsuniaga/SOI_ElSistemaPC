@@ -157,7 +157,7 @@ export async function renderAlumnosView(container) {
                   <i class="bi bi-person-check-fill me-1"></i>${totalActivos}/${totalAlumnos} Activos
                 </span>
                 <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Alumnos con instrumento asignado">
-                  <i class="bi bi-music-note-beamed me-1"></i>${totalConInstrumento} con Cátedra
+                  <i class="bi bi-music-note-beamed me-1"></i>${totalConInstrumento} con instrumento registrado
                 </span>
                 <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1.5 px-2.5 rounded-3 fw-medium" style="font-size:0.75rem;" title="Alumnos con número de WhatsApp registrado">
                   <i class="bi bi-whatsapp me-1"></i>${totalConWhatsapp} con WhatsApp
@@ -333,7 +333,7 @@ export async function renderAlumnosView(container) {
               <!-- Instrumento / Cátedra -->
               <div class="mb-2">
                 <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;">
-                  <i class="bi ${getInstrumentoIcon(a.instrumento)} me-1 text-primary"></i>${escapeHTML(a.instrumento || 'Sin cátedra')}
+                  <i class="bi ${getInstrumentoIcon(a.instrumento)} me-1 text-primary"></i>${escapeHTML(a.instrumento ? `Registrado: ${a.instrumento}` : 'Sin instrumento asignado')}
                 </span>
               </div>
 
@@ -768,10 +768,10 @@ export async function renderAlumnosView(container) {
         }
 
         try {
-          await actualizarAlumno(capturedId, validation.data)
+          const guardado = await actualizarAlumno(capturedId, validation.data)
           const idx = state.alumnosOriginales.findIndex(a => a.id === capturedId)
           if (idx !== -1) {
-            const updatedAlumno = { ...state.alumnosOriginales[idx], ...validation.data }
+            const updatedAlumno = { ...state.alumnosOriginales[idx], ...guardado }
             updatedAlumno._completitud = calcularCompletitud(updatedAlumno)
             state.alumnosOriginales[idx] = updatedAlumno
           }
@@ -806,10 +806,12 @@ export async function renderAlumnosView(container) {
     const nombre = modalBody.querySelector('#modal-nombre')?.value || ''
     const email = modalBody.querySelector('#modal-email')?.value || ''
     const instrumento = modalBody.querySelector('#modal-instrumento')?.value || ''
+    const instrumentoInteres = modalBody.querySelector('#modal-instrumento-interes')?.value || ''
     
     return nombre.trim() !== (alumnoOriginal.nombre || '') ||
            email.trim().toLowerCase() !== (alumnoOriginal.email || '').toLowerCase() ||
-           instrumento.trim() !== (alumnoOriginal.instrumento || '')
+           instrumento.trim() !== (alumnoOriginal.instrumento || '') ||
+           instrumentoInteres.trim() !== (alumnoOriginal.instrumento_interes || '')
   }
 
   function openViewModal(id) {
@@ -874,7 +876,7 @@ export async function renderAlumnosView(container) {
         <div class="row">
           <div class="col-md-6">
             <div class="mb-2">
-              <label class="form-label fw-bold">Instrumento</label>
+              <label class="form-label fw-bold">Instrumento principal registrado</label>
               <p class="form-control-plaintext">${escapeHTML(alumno.instrumento || 'Sin instrumento especificado')}</p>
             </div>
           </div>

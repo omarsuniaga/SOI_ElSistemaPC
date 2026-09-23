@@ -1,70 +1,82 @@
-# Portal FIN — Backlog (huella de pendientes)
+# Portal `fin` — Backlog
 
-**Última actualización:** 2026-09-06
-**Decisión marco (Omar):** concentrarse en lo vital — **registrar el pago mensual de los
-alumnos** — y reactivar el resto **módulo a módulo**. Nada se borra; todo queda registrado acá.
-
-Detalle del estado del cableado de cada vista: [`PORTAL_FIN_MENU_AUDITORIA.md`](./PORTAL_FIN_MENU_AUDITORIA.md).
-Contrato del backend y reparto de agentes: `~/docs/ARQUITECTURA_MODULO_COBRO_reparto_agentes.md`.
+**Última actualización:** 2026-09-07
+**Portal:** `src/portales/fin/` (React + TS + Tailwind, arquitectura hexagonal). Servido en `/fin`
+(alias `/soi-finanzas`). Antes se llamó `soi-finanzas`; el portal de cobro vanilla-JS
+(`src/modules/caja/`) se **eliminó** (queda en git). Ver `src/portales/fin/README.md`,
+`docs/PORTAL_FIN_MENU_AUDITORIA.md` (auditoría del menú vanilla, histórica),
+`docs/planning/BRIEF_REDISENO_CUOTASVIEW.md`.
 
 ---
 
-## En curso — Módulo 1: Cobro de Mensualidades
+## Módulo 1 — Cobro de Mensualidades ✅ (backend + frontend base)
 
-### Backend (`be/*`)
-- [x] Fase 0 — 4 migraciones aplicadas a prod (2026-09-06): cron mensual de cuotas, `exento_mensualidad` + becas en `fn_generar_ciclo_cuotas`, `pagos.fecha_pago` + RPC reescrita, vista `vw_alumno_estado_pago` con `security_invoker`.
-- [ ] `be/cuotas-alumno` — helpers `buscarAlumnos(q)`, `getCuotasByAlumno(id)`, `listarAlumnosPorEstado(estado)` en `cajaSupabase.js` + `cajaMock.js` + tests + export en `cajaApi.js`.
-- [ ] `registroPagoView` / `registrarPago`: pasar `fecha_pago` editable a la RPC.
+### Backend — todo en prod (`zmhmdvmyeyswunurcyow`)
+- [x] Vista `vw_alumno_estado_pago` (`security_invoker`) — modelo de lectura por alumno.
+- [x] `fn_registrar_pago_transaccional(…, p_cuota_ids, p_fecha_pago DEFAULT)` — pago atómico,
+      FIFO (cuotas seleccionadas + resto de la familia), mora contra fecha contable,
+      **excedente → wallet** (D7).
+- [x] `fn_generar_ciclo_cuotas(mes, anio, 60000)` — respeta exentos y becas · **cron día 1**
+      (`finanzas_generar_ciclo_cuotas_mensual`).
+- [x] `pagos.fecha_pago`, `alumnos.exento_mensualidad`.
+- [x] Trigger `trg_beca_anula_cuotas_abiertas` — beca registrada tarde ⇒ cuotas de mensualidad
+      abiertas del alumno pasan a `becada`, se perdona el saldo.
 
-### Frontend (`fe/*`)
-- [ ] `#/cobro` — búsqueda unificada alumno / representante / familia sobre `vw_alumno_estado_pago`. Oculta `estado_pago='inactivo'` por defecto (toggle "incluir retirados").
-- [ ] `#/cobro/:alumnoId` — ficha de cobro: cuotas liquidables → método + fecha + referencia → RPC → recibo PDF.
-- [ ] `#/registro` — pestañas «Al día» (`alumno_activo=true`), «Con mora», «Deudas de retirados» (`estado_pago='inactivo' AND saldo>0`). Export CSV.
-- [ ] Agregar `#/cobro` y `#/registro` como items visibles en `NAV_CATALOGO` (`visible: true`).
+### Frontend — `src/portales/fin/`
+- [x] Hook `useAlumnosCartera` (lee `vw_alumno_estado_pago`) · `lib/carteraHelpers.ts` (+tests).
+- [x] `views/CuotasView.tsx` reescrito — una fila por alumno, pestañas
+      Pendientes / Al día-Becados / **Deudas de retirados** / Todos, fila expandible.
+- [x] `p_fecha_pago` cableado en `SupabasePaymentTransactionAdapter` (`RegistroPagoView` ya
+      tenía el campo "Fecha de Valor").
+- [x] `tsc --noEmit -p tsconfig.json` → **0 errores** (se limpiaron los 4 del baseline).
 
-### Decisiones abiertas
-- [ ] **D7** — excedente de pago: hoy la RPC lo **rechaza**. Alternativa: acreditar a wallet. Confirmar.
-- [ ] **D-infra** — construir `.github/workflows/db-migrate.yml` (CI aplica migraciones al merge) vs. aplicarlas a mano.
-- [ ] **Rol `finanzas`** — asignar a Katherine: `UPDATE profiles SET rol='finanzas' WHERE id='<id>'`.
+### Follow-ups del módulo (no bloquean)
+- [ ] `useAlumnosCartera` degrada a error si falla el fetch — considerar fallback a
+      `useFinance()` (alumnos+cuotas ya cargados) para modo cache-degradado.
+- [ ] Ficha del alumno como modal completo (hoy es fila expandible) con último pago + historial.
+- [ ] Regenerar `src/infrastructure/supabase/database.types.ts` cuando cambie el esquema.
 
-### Operativo — antes de facturar
-- [ ] **Cargar becas reales** en la tabla `public.becas` (hoy: 0 filas; hay becados de Operación Genoma).
-- [ ] **Generar septiembre 2026** — `SELECT fn_generar_ciclo_cuotas(9, 2026, 60000)` — NO ejecutado; sobre-facturaría a los becados hasta cargar `becas`. Octubre en adelante lo cubre el cron.
+---
+
+## Operativo — antes de facturar (Omar / super admin)
+- [ ] **Perfil de Katherine** con `rol='finanzas'` — se crea desde el **portal admin** (la RLS y
+      la RPC ya aceptan ese rol; `profiles.rol` es `text`).
+- [ ] **Cargar becas reales** en `public.becas` (0 filas hoy; hay becados de Operación Genoma).
+      El trigger anula el cobro pendiente si se cargan tarde.
+- [ ] **Generar septiembre 2026** — `SELECT fn_generar_ciclo_cuotas(9, 2026, 60000);` — NO
+      ejecutado (sobre-facturaría a los becados hasta cargar `becas`). Octubre+ lo cubre el cron.
 - [ ] Revisar los ~41 alumnos activos sin cuota de agosto (237 cuotas / 278 activos).
 
 ---
 
-## Menú oculto — reactivar por módulo
+## Otras vistas del portal `fin` (React) — estado
 
-Cada uno se saca de `visible: false` en `NAV_CATALOGO` (`src/modules/caja/index.js`) cuando su
-módulo esté listo.
+El portal trae ~20 vistas heredadas de `soi-finanzas` (`src/portales/fin/src/views/`). La mayoría
+opera sobre `FinanceContext` (estado en memoria / borrador) y **no están conectadas a Supabase**.
+Cablear cada una a datos reales es su propio módulo:
 
-| Item | Bloqueo para reactivar | Prioridad |
-|---|---|---|
-| **Cuotas** `#/cuotas` | Reescribir filtros: hoy clasifica por heurística de `nivel` de score, no por estado real de cuota. O sustituirlo por `#/registro`. | media — lo cubre `#/registro` |
-| **Dashboard** `#/dashboard` | Rehacer como panel de cobro (cobrado hoy, morosos, al día) — hoy 4 KPIs en 0. | media |
-| **Reportes** `#/reportes` | Dejar solo «Cierre del día» + «Estado de cuenta familiar». «Impacto social» está sin hacer (`disabled`, "PR5"). | media |
-| **Tiendita** `#/accesorios` | 🔴 **`fn_decrementar_stock` no existe en prod** (migración en `20260905210000_fn_decrementar_stock.sql`, PR #53 mergeado sin aplicar) + fallback en `cajaSupabase.js:asignarAccesorio` usa `supabase.raw()` (inexistente en supabase-js v2). Aplicar migración + arreglar fallback. Cargar catálogo de accesorios. | baja |
-| **Notificaciones** `#/notificaciones` | Tabla `notificaciones_caja` vacía; definir quién escribe ahí (Hermes / edge functions). | baja |
-| **Campañas** `#/campanas` | Tablas vacías. Útil cuando haya historial de cobros para segmentar. | baja |
-| **Score Familias** `#/score` | Cambiar gate `session.user.user_metadata.role` → chequeo real de rol (mismo fix que PR #51). Poblar `score_compromiso`. | baja |
-| **Mensajes** `#/mensajes` | Mensajería interna — probablemente se descarta (ya está Telegram/Hermes). | descartar |
-| **Tareas del Director** `#/hermes` | Tablero institucional embebido, fuera del dominio de caja. Probablemente se descarta del portal FIN. | descartar |
-
----
-
-## Rutas huérfanas (registradas en `caja.router.js`, sin item de menú)
-
-| Ruta | Estado | Acción |
-|---|---|---|
-| `#/wallet/:familiaId` | `wallet_movimientos` vacío. La RPC de pago ya no acredita excedente al wallet (D7). Botón "Ver movimientos" sigue en el detalle de `familiasView`. | Al reactivar Familias, quitar el botón; o eliminar la ruta. |
-| `#/minutas` | Vista existe, ruta registrada, **sin item de menú ni link** — inalcanzable para el usuario. | Eliminar del router o dejar documentada. |
-| `#/tareas` (la de caja, ≠ `#/hermes`) | Huérfana — estuvo en el menú antes. `tareas_caja` vacío. | Eliminar del router o documentar. |
+| Vista | Nota |
+|---|---|
+| `CuotasView` | ✅ conectada (`vw_alumno_estado_pago` + RPC) |
+| `RegistroPagoView` | ✅ conectada (`fn_registrar_pago_transaccional`) |
+| `MoraCobranzaView`, `FamiliasView`, `Ficha360View` | leen de `useAuthoritativeReceivables` (familias/alumnos/cuotas/pagos reales) — parcialmente conectadas |
+| `NominaView`, `GastosFijosView`, `PresupuestoView`, `BancosConciliacionView`, `ContabilidadLibroView`, `FacturasGastoView`, `CajaDiariaView`, `BecasView`, `TienditaView`, `LutheriaInventarioView` | **borrador** — `FinanceContext` / `initialData.ts`, sin persistencia real |
+| `DashboardView`, `MyDayView`, `SupabaseSettingsView` | mixtas |
 
 ---
 
 ## Deuda técnica transversal
-
-- [ ] **Reconciliación esquema repo ↔ prod.** Varias migraciones del repo nunca se aplicaron (`20260823192500_programa_becas_patrocinios` → `alumnos_beneficios` no existe en prod; `fn_generar_ciclo_cuotas` estaba en la versión vieja). Riesgo latente para todo trabajo de backend. Hacer: dump de prod, diff contra `supabase/migrations/`, marcar/squash baseline.
-- [ ] **`familias.activa`** = `true` en las 298 — bandera sin mantener. El módulo nuevo se apoya en `alumnos.activo`; decidir si se retira `familias.activa` o se sincroniza.
-- [ ] **Supabase Pro** (~US$25/mes) — habilita branches de staging para validar migraciones antes de prod. Hoy no hay validación previa.
+- [ ] **`tsc --noEmit` en CI del portal** — hoy el build de vite solo transpila; los tipos no se
+      chequean en CI y acumulan deuda (se llegaron a juntar 4 errores).
+- [ ] **Reconciliación esquema repo ↔ prod** — varias migraciones del repo nunca se aplicaron
+      (`20260823192500_programa_becas_patrocinios` → `alumnos_beneficios` no existe en prod).
+      El `database.types.ts` regenerado (20.945 líneas vs 11.855) sugiere drift grande.
+      Hacer: `supabase db dump` de prod, diff contra `supabase/migrations/`, marcar/squash baseline.
+- [ ] **`fn_decrementar_stock`** — la migración `20260905210000_fn_decrementar_stock.sql` está en
+      el repo pero **sin aplicar a prod**. Solo importa si se conecta `TienditaView`.
+- [ ] **`.github/workflows/db-migrate.yml`** — hoy las migraciones se aplican a mano (vía MCP
+      `apply_migration`). Automatizar al merge.
+- [ ] **`familias.activa`** = `true` en las 298 — bandera sin mantener; el módulo se apoya en
+      `alumnos.activo`.
+- [ ] **Supabase Pro** (~US$25/mes) — habilita branches de staging para validar migraciones
+      antes de prod.

@@ -1,9 +1,13 @@
 # Brief de implementación — Rediseño de `CuotasView` (portal `fin`)
 
-**De:** backend (Claude) · **Para:** Antigravity (frontend) · **Fecha:** 2026-09-07
-**Sustituye la §2–§3 de** `SPEC_REDISENO_CUOTAS_ALUMNOS.md` (el modelo agregado ya existe en la BD).
+> ## ✅ EJECUTADO (2026-09-07) — PRs #66 y #67
+> El rediseño lo hizo **Claude** (Omar eligió Opción A tras la confusión de portales). No es un
+> pendiente. Este doc queda como **referencia del contrato** (la vista, la RPC, los filtros).
+> - **PR #66:** `hooks/useAlumnosCartera.ts`, `lib/carteraHelpers.ts` (+tests), `views/CuotasView.tsx` reescrito.
+> - **PR #67:** `p_fecha_pago` cableado en `SupabasePaymentTransactionAdapter` + 4 errores `tsc` del baseline a 0.
+> - **No hecho a propósito** (§3): cooldown radial de WhatsApp + config días/horas.
 
-El backend está cerrado. Todo lo que sigue es frontend en `src/portales/fin/`.
+**Fecha:** 2026-09-07 · **Sustituye la §2–§3 de** `SPEC_REDISENO_CUOTAS_ALUMNOS.md` (el modelo agregado ya existe en la BD).
 
 ---
 
@@ -115,9 +119,8 @@ Agregar campo de fecha de pago (default hoy, editable) y pasarlo a `SupabasePaym
   - tipo `Alumno` del portal sin `tiene_pasaporte` (`Ficha360View.tsx:407`) ni `direccion` (`:437`)
 - Considerar agregar `tsc --noEmit` al CI del portal.
 
-## 5. Reglas de trabajo
+## 5. Estado
 
-- Rama `fe/cuotasview-rediseno`, PR contra la trunk, prueba en el deploy preview.
-- **Solo** tocar `src/portales/fin/`. Nada de `supabase/`, `src/modules/`, `src/core/`, admin/auth/maestros.
-- No crear migraciones.
-- Cualquier columna/RPC que falte → pedirla al backend, no resolverla con lógica cliente.
+Ejecutado en `fe/cuotasview-rediseno` (#66) y `fe/fecha-pago-y-tsc` (#67), ambos mergeados.
+Falta solo lo operativo: perfil de Katherine (`rol='finanzas'`, portal admin), cargar becas,
+`SELECT fn_generar_ciclo_cuotas(9, 2026, 60000)` para septiembre. Ver `PORTAL_FIN_BACKLOG.md`.

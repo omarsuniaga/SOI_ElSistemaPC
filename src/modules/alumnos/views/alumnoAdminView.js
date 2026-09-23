@@ -333,13 +333,13 @@ export async function renderAlumnoAdminView(container, params = {}) {
                   <div class="d-flex flex-wrap gap-2 align-items-center">
                     ${activoBadge}
                     ${perfil.enIniciacion ? '<span class="badge bg-primary">Iniciación Musical</span>' : ''}
-                    ${perfil.tieneCatedraInstrumental && perfil.instrumentoPrincipal ? `<span class="badge bg-info text-dark">Cátedra: ${val(perfil.instrumentoPrincipal)}</span>` : ''}
+                    ${perfil.instrumentoPrincipalCoincide ? `<span class="badge bg-info text-dark">Cátedra: ${val(perfil.instrumentoPrincipal)}</span>` : ''}
                     ${perfil.instrumentoInteres ? `<span class="badge bg-light text-dark border">Interés: ${val(perfil.instrumentoInteres)}</span>` : ''}
                     ${alumno.nivel_actual ? `<span class="badge bg-light text-dark border">${val(alumno.nivel_actual)}</span>` : ''}
                     ${edad !== null ? `<span class="text-muted small">${escapeHTML(String(edad))} años</span>` : ''}
                     ${alumno.created_at ? `<span class="text-muted small">Inscrito: ${val(formatDate(alumno.created_at))}</span>` : ''}
                   </div>
-                  ${perfil.instrumentoPrincipal && !perfil.tieneCatedraInstrumental ? '<div class="small text-muted mt-1">Hay un instrumento principal registrado sin clase instrumental activa. Revisar el dato en la pestaña Musical.</div>' : ''}
+                  ${perfil.instrumentoPrincipal && !perfil.instrumentoPrincipalCoincide ? '<div class="small text-muted mt-1">El instrumento principal registrado no coincide con una clase instrumental activa. Revisar el dato en la pestaña Musical.</div>' : ''}
                 </div>
               </div>
               <div class="d-flex gap-2 flex-wrap">

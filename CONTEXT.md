@@ -11,6 +11,7 @@ Este documento establece el **Lenguaje Ubicuo (Domain-Driven Design)** para desa
 * **Definición:** Joven o niño matriculado en el programa formativo orquestal o coral.
 * **Términos canónicos:** `alumno` (código/bd), `estudiante` (sinónimo UI). *Evitar:* usuario, cliente, escolar.
 * **Atributos clave:** `instrumento_principal`, `etapa`/`nivel`, `representante` (tutor legal), `estado` (`activo`, `inactivo`, `postulado`).
+* **Situación musical:** `instrumento_interes` expresa una preferencia y no asigna cátedra. `instrumento_principal` registra un instrumento asignado; puede ser `NULL` durante Iniciación Musical o coro. Las clases actuales se obtienen de `alumnos_clases.activo = true` y sus clases, no se deducen de ninguno de esos dos campos. Un alumno puede cursar iniciación y una cátedra instrumental al mismo tiempo. Los valores históricos de `instrumento_principal` sin matrícula instrumental requieren revisión humana antes de reclasificarlos.
 
 ### Maestro / Docente
 * **Definición:** Músico o instructor pedagógico responsable de impartir cátedras y clases.

@@ -5,7 +5,7 @@ import { PARENTESCOS } from '../api/alumnosApi.js'
 export const SECTIONS = {
   personal: [
     { key: 'nombre_completo', label: 'Nombre completo' },
-    { key: 'instrumento_principal', label: 'Instrumento principal' },
+    { key: 'instrumento_principal', label: 'Instrumento principal asignado' },
     { key: 'familiar_telefono', label: 'Teléfono / WhatsApp', type: 'phone' },
     { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date' },
     { key: 'genero', label: 'Género', type: 'select', options: [{ v: '', l: '—' }, { v: 'M', l: 'Masculino' }, { v: 'F', l: 'Femenino' }, { v: 'O', l: 'Otro' }, { v: 'N', l: 'No binario' }] },
@@ -59,7 +59,7 @@ export const SECTIONS = {
     { key: 'padres_en_vida', label: 'Padres en vida' },
   ],
   musical: [
-    { key: 'instrumento_principal', label: 'Instrumento principal' },
+    { key: 'instrumento_principal', label: 'Instrumento principal asignado' },
     { key: 'nivel_actual', label: 'Nivel actual' },
     { key: 'tiene_conocimientos_musicales', label: 'Tiene conocimientos musicales', type: 'checkbox' },
     { key: 'instrumento_previo', label: 'Instrumento previo' },
@@ -105,6 +105,7 @@ export class AlumnoForm {
         fecha_nacimiento: this.alumno.fecha_nacimiento || '',
         genero: this.alumno.genero || '',
         instrumento: this.alumno.instrumento || '',
+        instrumento_interes: this.alumno.instrumento_interes || '',
         direccion: this.alumno.direccion || '',
         contacto_emergencia_nombre: this.alumno.contacto_emergencia_nombre || '',
         contacto_emergencia_telefono: this.alumno.contacto_emergencia_telefono || '',
@@ -157,6 +158,7 @@ export class AlumnoForm {
       { id: 'modal-telefono', key: 'telefono', transform: v => v.trim() },
       { id: 'modal-cedula', key: 'cedula', transform: v => v.trim() || '' },
       { id: 'modal-instrumento', key: 'instrumento', transform: v => v.trim() },
+      { id: 'modal-instrumento-interes', key: 'instrumento_interes', transform: v => v.trim() },
       { id: 'modal-direccion', key: 'direccion', transform: v => v.trim() || '' },
       { id: 'modal-contacto-emergencia-nombre', key: 'contacto_emergencia_nombre', transform: v => v.trim() || '' },
       { id: 'modal-contacto-emergencia-telefono', key: 'contacto_emergencia_telefono', transform: v => v.trim() || '' },
@@ -217,16 +219,13 @@ export class AlumnoForm {
     const nombreEl = container.querySelector('#modal-nombre')
     const emailEl = container.querySelector('#modal-email')
     const telefonoEl = container.querySelector('#modal-telefono')
-    const instrumentoEl = container.querySelector('#modal-instrumento')
 
     const nombre = nombreEl ? nombreEl.value.trim() : ''
     const email = emailEl ? emailEl.value.trim().toLowerCase() : ''
     const telefono = telefonoEl ? telefonoEl.value.trim() : ''
-    const instrumento = instrumentoEl ? instrumentoEl.value.trim() : ''
 
     if (!nombre) errors.nombre = 'El nombre es obligatorio'
     if (email && !isValidEmail(email)) errors.email = 'El email no tiene un formato válido'
-    if (!instrumento) errors.instrumento = 'El instrumento es obligatorio'
     if (!telefono) errors.telefono = 'El teléfono es obligatorio'
 
     return {
@@ -265,6 +264,7 @@ export class AlumnoForm {
     const fechaNacimiento = container.querySelector('#modal-fechaNacimiento').value
     const genero = container.querySelector('#modal-genero').value
     const instrumento = container.querySelector('#modal-instrumento').value.trim()
+    const instrumentoInteres = container.querySelector('#modal-instrumento-interes').value.trim()
     const direccion = container.querySelector('#modal-direccion').value.trim()
 
     const familiarNombre = container.querySelector('#modal-familiar-nombre').value.trim()
@@ -280,6 +280,7 @@ export class AlumnoForm {
       fecha_nacimiento: fechaNacimiento || null,
       genero: genero || null,
       instrumento,
+      instrumento_interes: instrumentoInteres || null,
       direccion: direccion || null,
       is_active: esActivo,
       familiar_nombre: familiarNombre || null,
@@ -370,8 +371,12 @@ export class AlumnoForm {
         <input type="text" class="form-control input-dense" id="modal-nombre" maxlength="100" required placeholder="Juan Pérez" autocomplete="off" value="${escapeHTML(a.nombre || '')}">
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact"><i class="bi bi-music-note-beamed text-primary me-1"></i>Instrumento Principal *</label>
-        <input type="text" class="form-control input-dense border-primary-subtle" id="modal-instrumento" required maxlength="50" placeholder="Violín, Piano..." autocomplete="off" value="${escapeHTML(a.instrumento || '')}">
+        <label class="form-label-compact"><i class="bi bi-music-note-beamed text-primary me-1"></i>Instrumento principal asignado</label>
+        <input type="text" class="form-control input-dense border-primary-subtle" id="modal-instrumento" maxlength="50" placeholder="Solo si ya cursa una cátedra" autocomplete="off" value="${escapeHTML(a.instrumento || '')}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Instrumento de interés</label>
+        <input type="text" class="form-control input-dense" id="modal-instrumento-interes" maxlength="50" placeholder="Preferencia, aún sin asignar" autocomplete="off" value="${escapeHTML(a.instrumento_interes || '')}">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact"><i class="bi bi-whatsapp text-success me-1"></i>Teléfono (WhatsApp) *</label>

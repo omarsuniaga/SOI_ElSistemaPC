@@ -42,8 +42,6 @@ const CAMPOS = [
   { key: 'autoriza_fotos_redes', label: 'Autoriza fotos en redes',  peso: 3, grupo: 'Compromisos' },
 ]
 
-const PESO_TOTAL = CAMPOS.reduce((s, c) => s + c.peso, 0)
-
 /**
  * Verifica si un campo tiene valor válido.
  */
@@ -67,11 +65,16 @@ function tieneValor(alumno, key) {
  *   porGrupo: { [grupo]: { total: number, completos: number, porcentaje: number } }
  * }}
  */
-export function calcularCompletitud(alumno) {
+export function calcularCompletitud(alumno, { tieneCatedraInstrumental = false } = {}) {
+  // No se exige una cátedra instrumental a quien solo cursa iniciación o coro.
+  const camposAplicables = CAMPOS.filter(c =>
+    (c.key !== 'instrumento_principal' || tieneCatedraInstrumental) &&
+    (c.key !== 'instrumento_interes' || ['instrumento', 'ambas'].includes(alumno.interes_musical))
+  )
   const faltantes = []
   const completos = []
 
-  for (const campo of CAMPOS) {
+  for (const campo of camposAplicables) {
     if (tieneValor(alumno, campo.key)) {
       completos.push(campo)
     } else {
@@ -80,7 +83,8 @@ export function calcularCompletitud(alumno) {
   }
 
   const pesoCompleto = completos.reduce((s, c) => s + c.peso, 0)
-  const porcentaje = Math.round((pesoCompleto / PESO_TOTAL) * 100)
+  const pesoTotal = camposAplicables.reduce((s, c) => s + c.peso, 0)
+  const porcentaje = Math.round((pesoCompleto / pesoTotal) * 100)
 
   const nivel =
     porcentaje >= 90 ? 'completo' :
@@ -90,7 +94,7 @@ export function calcularCompletitud(alumno) {
 
   // Agrupar por sección
   const porGrupo = {}
-  for (const campo of CAMPOS) {
+  for (const campo of camposAplicables) {
     if (!porGrupo[campo.grupo]) {
       porGrupo[campo.grupo] = { total: 0, completos: 0, porcentaje: 0, faltantes: [] }
     }

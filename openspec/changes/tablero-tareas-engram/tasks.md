@@ -77,13 +77,68 @@ conversación, puede correr el `mem_search` de 3.3, obtener la lista de
 tareas disponibles, tomar una, y que otro agente que consulte 5 minutos
 después ya la vea como tomada.
 
-## Phase 4 — Cierre
+## Phase 4 — Cierre (de la parte "tablero de tareas" original)
 
-- [ ] 4.1 Si Phase 2 confirma que Engram NO tiene escritura utilizable (o
-      el conector no se habilita en un plazo razonable), cerrar este change
-      dejando Phase 1 (el archivo markdown) como solución definitiva, no
-      como parche temporal — actualizar `proposal.md` quitando la promesa
-      de Fase 3 para no dejar deuda documental de algo que no va a pasar.
+- [ ] 4.1 Si Phase 2 confirma que Engram NO tiene escritura utilizable en
+      *esta* sesión, no cerrar el change entero — la evidencia de la Fase 5
+      (otra sesión sí escribe) ya demuestra que el mecanismo funciona en
+      general. Lo que cierra es solo "¿esta sesión concreta tiene acceso?",
+      no "¿el diseño es viable?".
 - [ ] 4.2 `npm run test:run` no debería verse afectado (este change es
       documentación/proceso, cero código) — confirmar igual que no se rompió
       nada por accidente.
+
+## Phase 5 — Reconocer y mapear el backlog real ya existente en Engram
+
+- [ ] 5.1 En cuanto una sesión con Engram conectado esté disponible (esta
+      misma, si se conecta, u otra): correr `mem_search(query: "backlog OR
+      tablero OR reparaciones", project: "sistema-academico-pwa")` y volcar
+      el resultado completo — no el resumen de segunda mano que ya tengo de
+      un pegado de chat — a un documento verificable.
+- [ ] 5.2 Confirmar el alcance exacto de las entradas ya conocidas por
+      referencia indirecta (`CDA1-6`, `ACM2-4`, `ESC1`, `LC1/5/8`, `T0.5c`,
+      `decision-maestro-actividad-especial`, `Repertorio R1-B/R1-C`) —
+      estado real, no el que aparecía en el momento del pegado (puede haber
+      avanzado).
+- [ ] 5.3 Cruzar contra `openspec/changes/` de este repo: ¿`Repertorio R1-B/R1-C`
+      tiene change propio? Si no, crearlo (mismo patrón que
+      `fase-0-clasificar-tablas-vacias`) — no dejar una tarea con 4204 tests
+      verdes y despliegue pendiente sin su change formal.
+
+## Phase 6 — Reconciliación entre `TASK_BOARD.md` y Engram
+
+- [ ] 6.1 Las 4 filas actuales de `TASK_BOARD.md` (`planificacion-dataadapter-migracion-restante`,
+      `fn-decrementar-stock-accesorios-huerfano`, `fase-0-clasificar-tablas-vacias`,
+      `tablero-tareas-engram`) se registran como entradas nuevas en Engram
+      bajo `coordination/task-board` — evitar que queden invisibles para
+      quien solo consulta Engram.
+- [ ] 6.2 Verificar que ninguna de las 4 se solape con algo ya en el backlog
+      de Engram (ej.: ¿`decision-maestro-actividad-especial` toca la misma
+      tabla `confirmaciones_emergentes`/`justificaciones_actividades_emergentes`
+      que mi `justificacion-actividades-emergentes` ya listado en el
+      backlog de `TASK_BOARD.md`? — cruzar antes de que dos agentes escriban
+      migraciones distintas sobre el mismo dominio).
+- [ ] 6.3 Una vez reconciliado: `TASK_BOARD.md` pasa a ser explícitamente un
+      espejo de solo-lectura (quitar la sección "vista parcial" y reemplazarla
+      por "sincronizado con Engram el <fecha>, ver ahí para estado en vivo").
+
+## Phase 7 — Lanes (candado por área) y convención de identidad
+
+- [ ] 7.1 Crear las primeras entradas de `coordination/lanes/<area>` en
+      Engram para las áreas activas hoy: `academico-planificacion` (varios
+      changes activos ahí), `finanzas` (Portal FIN backlog), `hermes-notificaciones`
+      (frente CDA de la otra sesión), `academico-emergentes` (mi change +
+      `decision-maestro-actividad-especial`).
+- [ ] 7.2 Adoptar la convención de identidad (`tipo_agente` + `session_id`)
+      en los 3 lugares: entradas de Engram, filas de `TASK_BOARD.md`
+      (columna nueva `tipo_agente`), y pie de commits (ya existe para Claude
+      Code vía `Claude-Session:`; falta para Codex/AntiGravity si aplica).
+- [ ] 7.3 Documentar en `AGENTS.md` §5bis el flujo completo: consultar lane
+      antes de tocar un área → tomar tarea en el tablero → trabajar → liberar
+      lane → actualizar estado. No como texto nuevo suelto, como reemplazo
+      del §5bis actual (que hoy solo menciona el tablero, no los lanes).
+
+**Verification (Fases 5-7):** un agente que entra a una sesión nueva, con o
+sin Engram conectado, puede responder sin ambigüedad: "¿qué áreas están
+ocupadas ahora mismo, por quién, y hasta cuándo?" — y esa respuesta coincide
+entre sesiones distintas consultadas en paralelo.

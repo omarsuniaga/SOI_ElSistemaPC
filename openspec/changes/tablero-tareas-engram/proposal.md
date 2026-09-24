@@ -38,6 +38,34 @@ esta sesión para probarlo en vivo):**
   `ElSistemaPC`); probablemente es un tablero externo (Linear/Notion/vault
   Obsidian institucional) que Engram referencia pero no reemplaza.
 
+## Actualización 2026-09-24 — evidencia nueva que cambia el diagnóstico
+
+Una sesión de agente distinta (local, Windows, Engram conectado) demostró en
+vivo un backlog activo mucho más grande que el de este archivo —
+`CDA1-6`, `ACM2-4`, `ESC1`, `LC1/5/8`, `T0.5c`,
+`decision-maestro-actividad-especial`, `Repertorio R1-B/R1-C` — y lo
+reportó con detalle (estados, PRs, bloqueos por decisión de Omar). Eso
+confirma dos cosas que antes estaban en duda:
+
+1. **Engram sí tiene uso de escritura/actualización de estado en la
+   práctica** — aunque yo no pude verificar la firma exacta de la API
+   (sigo sin el conector en esta sesión), el hecho de que ese backlog exista
+   con estados actualizados prueba que alguien lo escribe.
+2. **El problema ya no es "¿existe un mecanismo?" — existe y funciona en al
+   menos una sesión.** El problema real es que **hay múltiples fuentes de
+   verdad divergentes al mismo tiempo**: el Engram de esa sesión, mi
+   `openspec/TASK_BOARD.md`, y potencialmente lo que rastrean Codex/AntiGravity
+   por su lado (mencionados en el handoff de esa sesión como auditores). Esto
+   es coordinación multi-agente, no solo "un tablero de tareas" — el scope de
+   este change se amplía en consecuencia (ver Fases 5-7 en `tasks.md`).
+
+**Decisión de diseño derivada:** no voy a intentar replicar ni adivinar el
+backlog de Engram de memoria (lo que reporté en esta conversación es
+second-hand, vino de un pegado del usuario, no de una consulta directa mía).
+Cualquier plan de coordinación tiene que asumir que **Engram es la fuente de
+verdad cuando está disponible**, y que las sesiones sin conector (como esta)
+operan en modo degradado explícito, nunca fingiendo paridad.
+
 **Decisión de diseño que se deriva de esto:** no diseñar el tablero
 asumiendo que Engram tiene locking atómico. Diseñarlo **optimista**, con
 detección de conflicto en vez de prevención — es el patrón más seguro dado
@@ -147,3 +175,58 @@ Fase 2, condicionada a confirmar la API de escritura.
       y su firma — documentado en este mismo change antes de intentar Fase 2
 - [ ] Si se confirma la escritura: entradas espejo creadas en Engram bajo
       `topic: "coordination/task-board"`, `project: "sistema-academico-pwa"`
+
+## Protocolo de coordinación multi-agente (ampliación 2026-09-24)
+
+Tres problemas separados, que hasta ahora se estaban tratando como uno solo:
+
+### A. ¿Quién es la fuente de verdad? (resuelto arriba: Engram, cuando está disponible)
+
+Regla explícita: **ninguna sesión inventa su propio tablero paralelo si
+Engram está al alcance.** Una sesión sin conector (modo degradado) puede
+seguir trabajando, pero:
+- Marca todo lo que produce como "vista parcial, sesión sin Engram — fecha X"
+  (ya se hizo en `TASK_BOARD.md`).
+- Al primer momento en que Engram esté disponible, esa sesión reconcilia
+  (no reemplaza) lo que escribió contra lo que ya existe ahí — Fase 6 abajo.
+
+### B. Candado por área ("lanes") — evitar que dos agentes toquen lo mismo a la vez
+
+`SOI_MASTER_SPEC_v2.0_UNIFICADO.md:237` menciona `coordination/lanes (candado
+por área)` sin detallar el mecanismo. Sin poder inspeccionarlo, se propone un
+diseño mínimo compatible con lo que ya sabemos de Engram (topics):
+
+- **Área = dominio funcional**, no archivo individual (ej.: `finanzas`,
+  `academico-planificacion`, `hermes-notificaciones`, `lutheria`,
+  `repertorio`, `portal-maestros-calendario`) — lo bastante granular para no
+  bloquear todo el repo por una tarea, lo bastante amplio para que dos
+  agentes no choquen en la misma tabla/RPC sin saberlo.
+- Antes de tocar código de un área: `mem_search(query: "coordination/lanes/<area>",
+  project: "sistema-academico-pwa")`. Si hay una entrada con `estado: ocupado`
+  y `expira_at` en el futuro, esperar o coordinar con quien la tiene.
+- Al empezar: escribir `estado: ocupado`, `agente`, `tipo_agente` (Claude
+  Code / Codex / AntiGravity / humano), `task_id` (el change de OpenSpec que
+  lo justifica), `expira_at` (timestamp — un lock que nunca expira es un lock
+  que se olvida liberado; sugerido: +4h renovable).
+- Al terminar (o si `expira_at` ya pasó): liberar. Un lock vencido se trata
+  como libre — no bloquea indefinidamente por una sesión que se cortó.
+- **Esto es advisory, no hard-lock.** El backstop real sigue siendo git: si
+  dos agentes igual chocan, el conflicto de merge es quien realmente lo
+  impide. El lane solo reduce la probabilidad y dice "por qué" cuando pasa.
+
+### C. Identidad de agente — saber quién hizo qué
+
+Todo commit, entrada de Engram o fila de `TASK_BOARD.md` debe poder
+atribuirse a: **tipo de agente** (Claude Code / Codex / AntiGravity / lila /
+AI-Anti / humano) + **identificador de sesión** cuando exista (ej. el
+`Claude-Session:` que ya llevan mis commits). Sin esto, un lock huérfano o
+una tarea "tomada" no tiene a quién preguntarle si sigue viva.
+
+## Success (ampliado)
+
+- [ ] Diseño de lanes documentado arriba, con acuerdo explícito de que es
+      advisory (no reemplaza git como backstop real)
+- [ ] Convención de identidad de agente aplicada de forma consistente en
+      Engram, `TASK_BOARD.md` y mensajes de commit
+- [ ] Al menos una reconciliación real ejecutada entre esta sesión y la
+      sesión con Engram (ver `tasks.md` Fase 6) — no solo diseñada en papel

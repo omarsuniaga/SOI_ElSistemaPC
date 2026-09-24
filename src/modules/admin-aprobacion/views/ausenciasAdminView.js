@@ -835,6 +835,11 @@ function _renderHistorialView(container) {
 }
 
 async function _loadData(container) {
+  // TEMP DEBUG (2026-09-24): incondicional, sin try/catch de por medio —
+  // confirma en vivo si este build realmente ejecuta _loadData. Quitar una
+  // vez confirmado el diagnóstico del triage de Jev.
+  console.log('[JEV-DEBUG] _loadData ejecutando, build con triage de Jev activo')
+
   const contentEl = container.querySelector('#aav-content')
   const refreshBtn = container.querySelector('#aav-refresh-btn')
 

@@ -63,11 +63,28 @@ export async function obtenerPermisos() {
     throw new Error('No se pudieron cargar los permisos')
   }
 
-  return mergePermisosRoster({
-    maestros,
-    permisos: (data || []).map(normalizePermiso),
-    clases,
-  })
+  const permisos = (data || []).map(normalizePermiso)
+  await resolverNombresConcedidoPor(permisos)
+
+  return mergePermisosRoster({ maestros, permisos, clases })
+}
+
+// concedido_por es un UUID de auth.users; sin esto la vista mostraba el UUID.
+// Es un dato accesorio: si falla, la lista se muestra igual.
+async function resolverNombresConcedidoPor(permisos) {
+  const ids = [...new Set(permisos.map(p => p.concedido_por).filter(Boolean))]
+  if (!ids.length) return
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nombre_completo, email')
+      .in('id', ids)
+    if (error) throw error
+    const nombres = new Map((data || []).map(p => [p.id, p.nombre_completo || p.email]))
+    for (const p of permisos) p.concedido_por_nombre = nombres.get(p.concedido_por) ?? null
+  } catch (err) {
+    console.warn('No se pudieron resolver los nombres de concedido_por:', err?.message || err)
+  }
 }
 
 export async function obtenerPermisoPorMaestro(maestroId) {
@@ -114,7 +131,7 @@ export async function actualizarPermiso(maestroId, changes) {
   // First read the current row so we never overwrite fields not included in `changes`
   const { data: current } = await supabase
     .from('permisos_maestros')
-    .select('puede_registrar_alumnos, puede_inscribir_clases, puede_crear_clases, permisos, solicitudes')
+    .select('puede_registrar_alumnos, puede_inscribir_clases, puede_crear_clases, permisos, solicitudes, concedido_por')
     .eq('maestro_id', maestroId)
     .maybeSingle()
 
@@ -135,7 +152,8 @@ export async function actualizarPermiso(maestroId, changes) {
         : (current?.puede_crear_clases ?? false),
     permisos: Array.isArray(changes.permisos) ? changes.permisos : (current?.permisos ?? []),
     solicitudes: Array.isArray(changes.solicitudes) ? changes.solicitudes : (current?.solicitudes ?? []),
-    concedido_por: changes.concedido_por || null,
+    // Al revocar no llega concedido_por: conservar quién otorgó lo que queda.
+    concedido_por: changes.concedido_por || current?.concedido_por || null,
   }
 
   const { data, error } = await supabase
@@ -272,8 +290,10 @@ export async function aprobarSolicitud(solicitudId, adminId) {
     const solicitud = normalizeSolicitud(data)
     const permisosArray = []
 
-  if (solicitud.solicita_alumnos) permisosArray.push('registrar_alumnos', 'alumnos:create')
-    if (solicitud.solicita_clases) permisosArray.push('inscribir_clases', 'clases:enroll')
+    // Solo claves canónicas: los alias viejos (registrar_alumnos, inscribir_clases)
+    // sobrevivían a la revocación desde Permisos & Roles y el portal los seguía aceptando.
+    if (solicitud.solicita_alumnos) permisosArray.push('alumnos:create')
+    if (solicitud.solicita_clases) permisosArray.push('clases:enroll')
 
     const permisoActual = await obtenerPermisoPorMaestro(data.maestro_id)
     const permisosActuales = Array.isArray(permisoActual?.permisos) ? permisoActual.permisos : []

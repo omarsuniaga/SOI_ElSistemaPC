@@ -40,6 +40,54 @@ function getPermissionKey(field) {
   return 'clases:enroll'
 }
 
+// permisoService (portal de maestros) también acepta estos alias viejos:
+// revocar solo la clave canónica dejaba el acceso vivo aunque aquí dijera "No".
+const LEGACY_ALIASES = {
+  'alumnos:create': ['registrar_alumnos'],
+  'clases:enroll': ['inscribir_clases'],
+}
+
+function withPermission(list, key) {
+  return list.includes(key) ? [...list] : [...list, key]
+}
+
+function withoutPermission(list, key) {
+  const drop = new Set([key, ...(LEGACY_ALIASES[key] || [])])
+  return list.filter(k => !drop.has(k))
+}
+
+function currentAdmin() {
+  const user = useAuth.getUser ? useAuth.getUser() : null
+  return {
+    id: user?.id ?? null,
+    nombre: user?.user_metadata?.full_name || user?.email || 'Administrador',
+  }
+}
+
+function buildGrantChanges(match, field, key) {
+  const admin = currentAdmin()
+  return {
+    [field]: true,
+    permisos: withPermission(match.permisos || [], key),
+    solicitudes: (match.solicitudes || []).filter(s => s !== key),
+    concedido_por: admin.id,
+    concedido_por_nombre: admin.nombre,
+  }
+}
+
+function buildRevokeChanges(match, field, key) {
+  return {
+    [field]: false,
+    permisos: withoutPermission(match.permisos || [], key),
+  }
+}
+
+function fieldLabel(field) {
+  if (field === 'puede_registrar_alumnos') return 'Registrar Alumnos'
+  if (field === 'puede_crear_clases') return 'Crear Clases'
+  return 'Gestionar Clases'
+}
+
 function getClassSummaryLabel(permiso) {
   const total = Number(permiso?.total_clases_asignadas || 0)
   const titular = Number(permiso?.clases_titular || 0)
@@ -146,7 +194,7 @@ function renderContent(container) {
 
       ${!state.permisos.length ? renderEmpty() : `
       <!-- Table -->
-      <div class="table-scroll-container">
+      <div class="table-scroll-container" style="max-height: none; overflow-y: visible;">
         <table class="table table-compact table-hover mb-0" id="permisosTable">
           <thead>
             <tr>
@@ -196,7 +244,7 @@ function renderTableRows() {
       <tr data-maestro-id="${escapeHTML(p.maestro_id)}">
         <td>
           <div class="d-flex align-items-center gap-2">
-            <div class="avatar-compact bg-primary text-white">${getInitials(p.maestro_nombre || p.maestro_id)}</div>
+            <div class="avatar-compact bg-primary text-white">${escapeHTML(getInitials(p.maestro_nombre || p.maestro_id))}</div>
             <span class="text-truncate" style="max-width: 150px;" title="${escapeHTML(p.maestro_nombre)}">${escapeHTML(p.maestro_nombre || 'Sin nombre')}</span>
           </div>
         </td>
@@ -295,7 +343,8 @@ function renderEmpty() {
 function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
-    .split(' ')
+    .split(/\s+/)
+    .filter(Boolean)
     .map(n => n[0])
     .join('')
     .toUpperCase()
@@ -341,57 +390,19 @@ function attachEvents(container) {
     }
 
     try {
-      let changes = { [field]: newValue }
+      if (!match) throw new Error('No se encontró el registro de permisos del maestro')
 
-      if (match) {
-        if (newValue) {
-          const key = getPermissionKey(field)
-          const arrayPermisos = match.permisos || []
-          if (!arrayPermisos.includes(key)) {
-            arrayPermisos.push(key)
-          }
-          const solicitudes = (match.solicitudes || []).filter(s => s !== key)
-          const adminUser = useAuth.getUser ? useAuth.getUser() : null
-          const adminName = adminUser?.nombre_completo || adminUser?.email || 'Administrador'
-
-          changes = {
-            ...changes,
-            permisos: arrayPermisos,
-            solicitudes: solicitudes,
-            concedido_por: adminUser?.id || 'admin',
-            concedido_por_nombre: adminName
-          }
-
-          match.permisos = arrayPermisos
-          match.solicitudes = solicitudes
-          match.concedido_por = adminUser?.id || 'admin'
-          match.concedido_por_nombre = adminName
-        } else {
-          const key = getPermissionKey(field)
-          const arrayPermisos = (match.permisos || []).filter(pk => pk !== key)
-          
-          changes = {
-            ...changes,
-            permisos: arrayPermisos
-          }
-          match.permisos = arrayPermisos
-        }
-        match.actualizado_en = new Date().toISOString()
-      }
+      const key = getPermissionKey(field)
+      const changes = newValue
+        ? buildGrantChanges(match, field, key)
+        : buildRevokeChanges(match, field, key)
 
       await actualizarPermiso(maestroId, changes)
-      
-      if (match) {
-        match[field] = newValue
-      }
 
-      AppToast.success(`Permiso actualizado: ${
-        field === 'puede_registrar_alumnos'
-          ? 'Registrar Alumnos'
-          : field === 'puede_crear_clases'
-            ? 'Crear Clases'
-            : 'Gestionar Clases'
-      }`)
+      // El estado local se toca recién después de que la base confirmó.
+      Object.assign(match, changes, { actualizado_en: new Date().toISOString() })
+
+      AppToast.success(`Permiso actualizado: ${fieldLabel(field)}`)
 
       // Volver a renderizar para limpiar badges de solicitudes si existían
       const tbody = container.querySelector('#permisosTBody')
@@ -433,39 +444,11 @@ function attachEvents(container) {
         throw new Error('Asigna al menos una clase al maestro antes de aprobar este acceso')
       }
 
-      const arrayPermisos = match.permisos || []
-      if (!arrayPermisos.includes(permiso)) {
-        arrayPermisos.push(permiso)
-      }
-      const solicitudes = (match.solicitudes || []).filter(s => s !== permiso)
-
-      const adminUser = useAuth.getUser ? useAuth.getUser() : null
-      const adminName = adminUser?.nombre_completo || adminUser?.email || 'Administrador'
-
-      const changes = {
-        permisos: arrayPermisos,
-        solicitudes: solicitudes,
-        concedido_por: adminUser?.id || 'admin',
-        concedido_por_nombre: adminName,
-        [field]: true
-      }
-
+      const changes = buildGrantChanges(match, field, permiso)
       await actualizarPermiso(maestroId, changes)
+      Object.assign(match, changes, { actualizado_en: new Date().toISOString() })
 
-      match.permisos = arrayPermisos
-      match.solicitudes = solicitudes
-      match.concedido_por = adminUser?.id || 'admin'
-      match.concedido_por_nombre = adminName
-      match[field] = true
-      match.actualizado_en = new Date().toISOString()
-
-      AppToast.success(`Solicitud aprobada: ${
-        field === 'puede_registrar_alumnos'
-          ? 'Registrar Alumnos'
-          : field === 'puede_crear_clases'
-            ? 'Crear Clases'
-            : 'Gestionar Clases'
-      }`)
+      AppToast.success(`Solicitud aprobada: ${fieldLabel(field)}`)
 
       const tbody = container.querySelector('#permisosTBody')
       if (tbody) {

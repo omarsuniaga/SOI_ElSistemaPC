@@ -106,6 +106,14 @@ async function login(email, password, remember = false) {
         notifyListeners()
         return { success: true, rejected: true }
       }
+      if (profile?.estado === 'inactivo') {
+        if (supabase?.auth) await supabase.auth.signOut()
+        clearSession()
+        state.user = null
+        state.session = null
+        notifyListeners()
+        return { success: false, error: 'Tu cuenta está desactivada. Contactá al administrador.' }
+      }
 
       // Guarda de rol: el portal admin es exclusivo de administradores.
       // Un maestro (u otro rol) debe usar su propio portal.

@@ -1,8 +1,26 @@
 # Task Board — SOI (`sistema-academico-pwa`)
 
+> ⚠️ **VISTA PARCIAL, NO CANÓNICA.** Confirmado el 2026-09-24: hay al menos
+> otra sesión de agente (local, con Engram conectado y funcionando en
+> escritura) operando un backlog mucho más grande y activo que este —
+> `CDA1-6`, `ACM2-4`, `ESC1`, `LC1/5/8`, `T0.5c`,
+> `decision-maestro-actividad-especial`, `Repertorio R1-B/R1-C`, y más,
+> ninguno reflejado acá. Ese backlog vive en Engram
+> (`mem_search(query, project: "sistema-academico-pwa")`) y **es el que se
+> usa de verdad**. Este archivo nació como Plan B mientras se verificaba si
+> Engram tenía API de escritura — esa duda ya está resuelta (sí la tiene, al
+> menos desde esa sesión), así que este archivo quedó obsoleto en su premisa
+> original.
+>
+> **Antes de tomar cualquier tarea de esta lista, correr primero
+> `mem_search` en Engram** y verificar que la tarea no esté ya tomada, en
+> progreso o resuelta ahí — este archivo puede estar desactualizado respecto
+> a esa fuente. Las 4 filas de abajo siguen siendo válidas como diagnóstico
+> propio de esta sesión (changes reales en `openspec/changes/`, no
+> inventados), pero no reemplazan ni compiten con el backlog de Engram.
+
 Tablero de tareas asignables a agentes. Espejo en archivo del plan de
-`openspec/changes/tablero-tareas-engram/` — ver ahí el protocolo completo y
-por qué existe (Engram no está conectado/verificado todavía como capa 2).
+`openspec/changes/tablero-tareas-engram/` — ver ahí el protocolo completo.
 
 **Protocolo para tomar una tarea:**
 

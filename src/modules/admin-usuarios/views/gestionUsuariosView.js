@@ -11,6 +11,7 @@ import {
   actualizarEstadoUsuario,
   resetearPasswordUsuario,
   eliminarUsuario,
+  actualizarEmailUsuario,
   getPortalCatalog,
   setUserPortales,
   getAssignedPortalIds
@@ -573,22 +574,17 @@ function _renderUsuariosList(container) {
                 <div class="gu-admin-info">
                   <span class="gu-admin-name">${_esc(user.nombre_completo) || '—'}</span>
                   <span class="gu-admin-email">${_esc(user.email)}</span>
+                  <span class="gu-admin-conexion ${_describirConexion(user.last_sign_in_at).clase}">${_esc(_describirConexion(user.last_sign_in_at).texto)}</span>
                 </div>
                 <div class="gu-user-meta">
                   <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-xs btn-outline-secondary gu-btn-cambiar-rol" data-user-id="${_esc(user.id)}" data-user-rol="${_esc(user.rol)}" title="Modificar rol">
+                    <button type="button" class="btn btn-xs btn-outline-secondary gu-btn-cambiar-rol" data-user-id="${_esc(user.id)}" title="Gestionar usuario: correo, rol, contraseña">
                       <span class="gu-role-badge">${_esc(_formatRol(user.rol))}</span>
                       <i class="bi bi-pencil ms-1" style="font-size:0.65rem;"></i>
                     </button>
                     <button type="button" class="btn btn-xs btn-outline-primary gu-btn-portales" data-user-id="${_esc(user.id)}" title="Configurar portales">
                       <i class="bi bi-door-open me-1"></i>
                       ${isSuper ? 'Todos (Super)' : (count > 0 ? `${count} portales` : 'Def. Rol')}
-                    </button>
-                    <button type="button" class="btn btn-xs btn-outline-warning gu-btn-reset-password" data-user-id="${_esc(user.id)}" data-user-email="${_esc(user.email)}" title="Resetear contraseña">
-                      <i class="bi bi-key"></i>
-                    </button>
-                    <button type="button" class="btn btn-xs btn-outline-danger gu-btn-eliminar" data-user-id="${_esc(user.id)}" title="Eliminar usuario">
-                      <i class="bi bi-trash"></i>
                     </button>
                   </div>
                   <div class="d-flex align-items-center gap-1.5 mt-1">
@@ -616,26 +612,8 @@ function _renderUsuariosList(container) {
     })
   })
 
-  // Role change trigger
   listEl.querySelectorAll('.gu-btn-cambiar-rol').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const userId = btn.dataset.userId
-      const currentRol = btn.dataset.userRol
-      _openCambiarRolModal(container, userId, currentRol)
-    })
-  })
-
-  // Password reset trigger
-  listEl.querySelectorAll('.gu-btn-reset-password').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const userId = btn.dataset.userId
-      const email = btn.dataset.userEmail
-      _openResetPasswordModal(container, userId, email)
-    })
-  })
-
-  listEl.querySelectorAll('.gu-btn-eliminar').forEach(btn => {
-    btn.addEventListener('click', () => _openEliminarModal(container, btn.dataset.userId))
+    btn.addEventListener('click', () => _openGestionarUsuarioModal(container, btn.dataset.userId))
   })
 
   // Status toggle trigger
@@ -657,129 +635,91 @@ function _renderUsuariosList(container) {
   })
 }
 
-function _openCambiarRolModal(container, userId, currentRol) {
+function _openGestionarUsuarioModal(container, userId) {
   const state = _getState(container)
   const user = state.usuarios.find(u => u.id === userId)
   if (!user) return
 
-  let rolSeleccionado = currentRol
+  const conexion = _describirConexion(user.last_sign_in_at)
 
   const bodyHTML = `
-    <div class="mb-3">
-      <label class="form-label small fw-semibold">Usuario</label>
-      <div class="form-control-plaintext fw-bold">${_esc(user.nombre_completo || user.email)}</div>
-      <div class="small text-muted">${_esc(user.email)}</div>
-    </div>
-    <div class="mb-3">
-      <label class="form-label small fw-semibold">Nuevo Rol</label>
-      <select class="form-select" id="gu-nuevo-rol-select">
-        ${ROLES_USUARIO.map(r => `
-          <option value="${_esc(r)}" ${r === currentRol ? 'selected' : ''}>${_formatRol(r)}</option>
-        `).join('')}
-      </select>
-      <div class="form-text mt-1">Al cambiar el rol, los accesos por defecto del nuevo rol aplicarán automáticamente.</div>
-    </div>
-  `
-
-  AppModal.open({
-    title: 'Cambiar Rol de Usuario',
-    size: 'sm',
-    saveText: 'Actualizar Rol',
-    body: bodyHTML,
-    onShow: (body) => {
-      const select = body.querySelector('#gu-nuevo-rol-select')
-      select?.addEventListener('change', () => {
-        rolSeleccionado = select.value
-      })
-    },
-    onSave: async () => {
-      if (!rolSeleccionado) return false
-      try {
-        await actualizarRolUsuario(userId, rolSeleccionado)
-        AppToast.success(`Rol de ${user.email} actualizado a "${_formatRol(rolSeleccionado)}"`)
-        user.rol = rolSeleccionado
-        _renderUsuariosList(container)
-        return true
-      } catch (err) {
-        AppToast.error(err.message || 'No se pudo actualizar el rol')
-        return false
-      }
-    }
-  })
-}
-
-function _openResetPasswordModal(container, userId, email) {
-  const state = _getState(container)
-  const user = state.usuarios.find(u => u.id === userId)
-  if (!user) return
-
-  let nuevaPassword = _generatePassword()
-
-  const bodyHTML = `
-    <div class="mb-3">
-      <label class="form-label small fw-semibold">Usuario</label>
-      <div class="form-control-plaintext fw-bold">${_esc(user.nombre_completo || email)}</div>
-      <div class="small text-muted">${_esc(email)}</div>
-    </div>
-    <div class="mb-2">
-      <label class="form-label small fw-semibold">Contraseña nueva</label>
-      <div class="input-group input-group-sm">
-        <input type="text" class="form-control" id="gu-reset-password-input" value="${_esc(nuevaPassword)}" minlength="8">
-        <button class="btn btn-outline-secondary" type="button" id="gu-reset-regenerate">
-          <i class="bi bi-magic me-1"></i> Generar
-        </button>
+    <div class="gu-manage-head mb-3">
+      <div class="fw-bold text-body">${_esc(user.nombre_completo || user.email)}</div>
+      <div class="small text-muted d-flex flex-wrap gap-2 mt-1">
+        <span class="gu-admin-badge gu-admin-badge--${user.estado === 'activo' ? 'active' : 'pending'}">${_esc(user.estado || 'activo')}</span>
+        <span class="${conexion.clase}" title="${_esc(conexion.fecha)}"><i class="bi bi-clock-history me-1"></i>${_esc(conexion.texto)}</span>
       </div>
     </div>
-    <p class="small text-muted mb-0">Comunicale esta contraseña directamente a la persona. No se le envía ningún correo.</p>
+
+    <div class="mb-3">
+      <label class="form-label small fw-semibold" for="gu-manage-email">Correo de acceso</label>
+      <input type="email" class="form-control form-control-sm" id="gu-manage-email" value="${_esc(user.email)}" autocomplete="off">
+      <div class="form-text">Es el correo con el que la persona inicia sesión.</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label small fw-semibold" for="gu-manage-rol">Rol</label>
+      <select class="form-select form-select-sm" id="gu-manage-rol">
+        ${ROLES_USUARIO.map(r => `<option value="${_esc(r)}" ${r === user.rol ? 'selected' : ''}>${_formatRol(r)}</option>`).join('')}
+      </select>
+      <div class="form-text">Los accesos por defecto del nuevo rol aplican automáticamente.</div>
+    </div>
+
+    <div class="gu-manage-section">
+      <label class="form-label small fw-semibold mb-1">Contraseña</label>
+      <p class="small text-muted mb-2">Las contraseñas no se pueden ver: el sistema solo guarda una versión cifrada. Podés asignar una nueva y comunicársela a la persona.</p>
+      <div class="input-group input-group-sm">
+        <input type="text" class="form-control font-monospace" id="gu-manage-password" value="${_esc(_generatePassword())}" minlength="8" autocomplete="off">
+        <button class="btn btn-outline-secondary" type="button" id="gu-manage-regenerate" title="Generar otra"><i class="bi bi-magic"></i></button>
+        <button class="btn btn-warning" type="button" id="gu-manage-reset"><i class="bi bi-key me-1"></i>Asignar</button>
+      </div>
+      <div class="small mt-2 d-none" id="gu-manage-reset-result"></div>
+    </div>
   `
 
   AppModal.open({
-    title: 'Resetear Contraseña',
-    size: 'sm',
-    saveText: 'Resetear',
+    title: 'Gestionar Usuario',
+    size: 'md',
+    saveText: 'Guardar cambios',
+    deleteText: 'Eliminar usuario',
     body: bodyHTML,
     onShow: (body) => {
-      const input = body.querySelector('#gu-reset-password-input')
-      const regenerateBtn = body.querySelector('#gu-reset-regenerate')
-      input?.addEventListener('input', () => { nuevaPassword = input.value })
-      regenerateBtn?.addEventListener('click', () => {
-        nuevaPassword = _generatePassword()
-        if (input) input.value = nuevaPassword
+      const passInput = body.querySelector('#gu-manage-password')
+      body.querySelector('#gu-manage-regenerate')?.addEventListener('click', () => {
+        passInput.value = _generatePassword()
+      })
+      body.querySelector('#gu-manage-reset')?.addEventListener('click', async (ev) => {
+        await _asignarPassword(container, user, passInput.value, ev.currentTarget, body)
       })
     },
-    onSave: async () => {
-      if (!nuevaPassword || nuevaPassword.length < 8) {
-        AppToast.error('La contraseña debe tener al menos 8 caracteres')
-        return false
-      }
+    onSave: async (body) => {
+      const email = body.querySelector('#gu-manage-email').value.trim().toLowerCase()
+      const rol = body.querySelector('#gu-manage-rol').value
+      const cambiaEmail = email && email !== String(user.email || '').toLowerCase()
+      const cambiaRol = rol && rol !== user.rol
+
+      if (!cambiaEmail && !cambiaRol) return true
+
       try {
-        await resetearPasswordUsuario(userId, nuevaPassword)
-        AppToast.success(`Contraseña de ${email} actualizada. Comunicásela directamente.`)
+        if (cambiaEmail) {
+          await actualizarEmailUsuario(userId, email)
+          user.email = email
+        }
+        if (cambiaRol) {
+          await actualizarRolUsuario(userId, rol)
+          user.rol = rol
+        }
+        _renderUsuariosList(container)
+        AppToast.success(`Usuario ${user.email} actualizado`)
         return true
       } catch (err) {
-        AppToast.error(err.message || 'No se pudo resetear la contraseña')
+        // Si el correo se guardó y falló el rol, la lista ya refleja el correo nuevo.
+        _renderUsuariosList(container)
+        AppToast.error(err.message || 'No se pudieron guardar los cambios')
         return false
       }
-    }
-  })
-}
-
-function _openEliminarModal(container, userId) {
-  const state = _getState(container)
-  const user = state.usuarios.find(u => u.id === userId)
-  if (!user) return
-
-  AppModal.open({
-    title: 'Eliminar Usuario',
-    size: 'sm',
-    saveText: 'Eliminar definitivamente',
-    body: `
-      <p class="mb-2">Vas a eliminar la cuenta de:</p>
-      <div class="fw-bold">${_esc(user.nombre_completo || user.email)}</div>
-      <div class="small text-muted mb-3">${_esc(user.email)}</div>
-      <p class="small text-danger mb-0">Esta acción no se puede deshacer. Si la persona tiene historial en el sistema, usá [Desactivar] en su lugar.</p>
-    `,
-    onSave: async () => {
+    },
+    onDelete: async () => {
       try {
         await eliminarUsuario(userId)
         state.usuarios = state.usuarios.filter(u => u.id !== userId)
@@ -792,6 +732,50 @@ function _openEliminarModal(container, userId) {
       }
     }
   })
+}
+
+async function _asignarPassword(container, user, password, btn, body) {
+  const result = body.querySelector('#gu-manage-reset-result')
+  if (!password || password.length < 8) {
+    AppToast.error('La contraseña debe tener al menos 8 caracteres')
+    return
+  }
+
+  const original = btn.innerHTML
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+  try {
+    await resetearPasswordUsuario(user.id, password)
+    _getState(container).credencialesRecientes.unshift({
+      id: `${user.id}-${Date.now()}`,
+      nombre: user.nombre_completo || user.email,
+      email: user.email,
+      password,
+      rol: user.rol,
+      estado: user.estado,
+    })
+    _updateRecientesList(container)
+    result.className = 'small mt-2 text-success'
+    result.innerHTML = `<i class="bi bi-check-circle me-1"></i>Contraseña asignada: <code>${_esc(password)}</code>. Quedó también en "Credenciales Creadas".`
+  } catch (err) {
+    result.className = 'small mt-2 text-danger'
+    result.textContent = err.message || 'No se pudo asignar la contraseña'
+  } finally {
+    btn.disabled = false
+    btn.innerHTML = original
+  }
+}
+
+function _describirConexion(fecha) {
+  if (!fecha) return { texto: 'Nunca inició sesión', clase: 'text-warning', fecha: '' }
+  const d = new Date(fecha)
+  const dias = Math.floor((Date.now() - d.getTime()) / 86400000)
+  const exacta = d.toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+  let texto
+  if (dias <= 0) texto = 'Última conexión: hoy'
+  else if (dias === 1) texto = 'Última conexión: ayer'
+  else texto = `Última conexión: hace ${dias} días`
+  return { texto, clase: dias > 30 ? 'text-danger' : 'text-muted', fecha: exacta }
 }
 
 async function _openPortalesModal(container, userId) {
@@ -1047,6 +1031,9 @@ function _injectStyles() {
     .gu-admin-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .gu-admin-name { font-weight: 600; font-size: 0.88rem; color: var(--bs-body-color, #1e293b); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .gu-admin-email { font-size: 0.76rem; color: var(--bs-secondary-color, #64748b); }
+    .gu-admin-conexion { font-size: 0.7rem; }
+    .gu-manage-section { padding: 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 8px; background: var(--bs-tertiary-bg, #f8fafc); }
+    [data-bs-theme="dark"] .gu-manage-section { background: #2c2c2e; border-color: rgba(255,255,255,0.08); }
     
     .gu-user-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
     .gu-role-badge { font-size: 0.72rem; padding: 2px 6px; background: var(--bs-primary-subtle, #e0f2fe); color: var(--bs-primary, #0369a1); border-radius: 4px; font-weight: 600; }

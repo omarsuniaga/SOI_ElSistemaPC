@@ -7,6 +7,9 @@ vi.mock('../../api/adminUsuariosApi.js', () => ({
   listarUsuarios: vi.fn(),
   actualizarRolUsuario: vi.fn(),
   actualizarEstadoUsuario: vi.fn(),
+  actualizarEmailUsuario: vi.fn(),
+  resetearPasswordUsuario: vi.fn(),
+  eliminarUsuario: vi.fn(),
   getPortalCatalog: vi.fn().mockResolvedValue([]),
   setUserPortales: vi.fn().mockResolvedValue({ success: true }),
   getAssignedPortalIds: vi.fn().mockResolvedValue([])
@@ -25,7 +28,14 @@ vi.mock('../../../../shared/components/AppToast.js', () => ({
 }))
 
 import { renderGestionUsuariosView } from '../gestionUsuariosView.js'
-import { crearUsuario, listarUsuarios } from '../../api/adminUsuariosApi.js'
+import {
+  crearUsuario,
+  listarUsuarios,
+  actualizarRolUsuario,
+  actualizarEmailUsuario,
+  resetearPasswordUsuario,
+  eliminarUsuario,
+} from '../../api/adminUsuariosApi.js'
 import { obtenerMaestros } from '../../../maestros/api/maestrosApi.js'
 import { AppToast } from '../../../../shared/components/AppToast.js'
 
@@ -65,7 +75,17 @@ describe('gestionUsuariosView', () => {
         nombre_completo: 'Admin General',
         rol: 'admin',
         estado: 'activo',
-        portales_asignados: []
+        portales_asignados: [],
+        last_sign_in_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+      },
+      {
+        id: 'u9',
+        email: 'monitora@soi.org',
+        nombre_completo: 'Monitora Prueba',
+        rol: 'maestro',
+        estado: 'activo',
+        portales_asignados: [],
+        last_sign_in_at: null,
       },
     ])
   })
@@ -135,5 +155,74 @@ describe('gestionUsuariosView', () => {
 
     const listText = container.querySelector('#gu-credenciales-list').textContent
     expect(listText).toContain('ana@soi.org')
+  })
+
+  describe('modal Gestionar Usuario', () => {
+    const modalBody = () => document.querySelector('.app-modal-body')
+    const click = (sel) => document.querySelector(sel).click()
+
+    async function abrirModal(userId) {
+      await renderGestionUsuariosView(container)
+      await flush()
+      container.querySelector(`.gu-btn-cambiar-rol[data-user-id="${userId}"]`).click()
+      await flush()
+    }
+
+    it('muestra la última conexión en la lista y en el modal', async () => {
+      await abrirModal('u9')
+      const lista = container.querySelector('#gu-usuarios-list').textContent
+      expect(lista).toContain('Última conexión: hace 3 días')
+      expect(lista).toContain('Nunca inició sesión')
+      expect(modalBody().textContent).toContain('Nunca inició sesión')
+    })
+
+    it('guarda correo y rol cambiados', async () => {
+      actualizarEmailUsuario.mockResolvedValue({ userId: 'u9', email: 'nueva@soi.org' })
+      actualizarRolUsuario.mockResolvedValue({})
+      await abrirModal('u9')
+
+      modalBody().querySelector('#gu-manage-email').value = 'Nueva@SOI.org'
+      modalBody().querySelector('#gu-manage-rol').value = 'monitor'
+      click('.app-modal-btn-save')
+      await flush()
+
+      expect(actualizarEmailUsuario).toHaveBeenCalledWith('u9', 'nueva@soi.org')
+      expect(actualizarRolUsuario).toHaveBeenCalledWith('u9', 'monitor')
+      expect(container.querySelector('#gu-usuarios-list').textContent).toContain('nueva@soi.org')
+    })
+
+    it('no llama al servidor si no hubo cambios', async () => {
+      await abrirModal('u9')
+      click('.app-modal-btn-save')
+      await flush()
+      expect(actualizarEmailUsuario).not.toHaveBeenCalled()
+      expect(actualizarRolUsuario).not.toHaveBeenCalled()
+    })
+
+    it('asigna una contraseña nueva y la deja visible en Credenciales Creadas', async () => {
+      resetearPasswordUsuario.mockResolvedValue({ userId: 'u9', email: 'monitora@soi.org' })
+      await abrirModal('u9')
+
+      modalBody().querySelector('#gu-manage-password').value = 'Clave-Nueva-123'
+      modalBody().querySelector('#gu-manage-reset').click()
+      await flush()
+
+      expect(resetearPasswordUsuario).toHaveBeenCalledWith('u9', 'Clave-Nueva-123')
+      expect(modalBody().querySelector('#gu-manage-reset-result').textContent).toContain('Clave-Nueva-123')
+      expect(container.querySelector('#gu-credenciales-list').textContent).toContain('Clave-Nueva-123')
+    })
+
+    it('elimina al usuario tras confirmar', async () => {
+      eliminarUsuario.mockResolvedValue({ userId: 'u9' })
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+      await abrirModal('u9')
+
+      click('.app-modal-btn-delete')
+      await flush()
+
+      expect(eliminarUsuario).toHaveBeenCalledWith('u9')
+      expect(container.querySelector('#gu-usuarios-list').textContent).not.toContain('monitora@soi.org')
+      confirmSpy.mockRestore()
+    })
   })
 })

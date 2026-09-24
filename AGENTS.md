@@ -45,6 +45,34 @@ Este archivo es la fuente de verdad para humanos y agentes de IA (Claude, Gemini
 - Los cambios significativos deben reflejarse en `docs/` o en las `specs/` correspondientes.
 - Los SPECs deben estar vinculados a historias de usuario y tareas concretas.
 
+## 5bis. Coordinación entre agentes (tablero + lanes)
+
+**Fuente de verdad:** Engram (`mem_search(query, project:
+"sistema-academico-pwa")`) cuando el conector esté disponible en la sesión.
+`openspec/TASK_BOARD.md` es el espejo/fallback para sesiones sin Engram —
+nunca inventar un tercer tablero paralelo.
+
+Antes de tocar código de un área (finanzas, académico, hermes-notificaciones,
+lutería, repertorio, etc.): consultar `coordination/lanes/<area>` en Engram
+— si está `ocupado` con `expira_at` futuro, esperar o coordinar. Es un
+candado *advisory*, no hard-lock: el backstop real es el conflicto de merge
+en git.
+
+Antes de tomar una tarea: consultar el tablero (Engram o `TASK_BOARD.md`),
+elegir una `disponible`, marcarla `tomada` con tu identidad (`tipo_agente` +
+`session_id`) en el mismo commit donde creás la rama. Al terminar, liberar
+el lane y actualizar el estado.
+
+Detalle completo del protocolo y su origen: `openspec/changes/tablero-tareas-engram/`.
+
+## 5ter. Triage de CI con Jev (babysit-PRs)
+
+Antes de re-diagnosticar a mano un fallo de CI mientras se cuida un PR:
+seguir **[`docs/skills/babysit-ci-triage.md`](docs/skills/babysit-ci-triage.md)**
+— `npm run jev:triage-ci` clasifica el fallo (flake / bug real / ambiguo)
+en ~300ms y centavos de costo, como paso previo opcional dentro de las
+reglas de "CI red" ya vigentes (nunca las reemplaza).
+
 ## 6. Decision Autonomy & Execution Mode
 
 - **Full Autonomy on Implementation:** The agent MUST make technical, structural, architectural, and design decisions autonomously without pausing to ask confirmation on standard implementation steps.

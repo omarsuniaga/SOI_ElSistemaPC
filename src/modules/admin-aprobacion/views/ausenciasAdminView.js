@@ -9,6 +9,7 @@ import {
   obtenerHistorialAusencias,
   rechazarAusencia,
 } from '../api/ausenciaAprobacionApi.js'
+import { triageAusenciasPendientes } from '../api/ausenciasTriageJev.js'
 import { createAusenciaAprobacionCard } from '../components/ausenciaAprobacionCard.js'
 
 function showToast(message, type = 'success') {
@@ -854,6 +855,19 @@ async function _loadData(container) {
 
     filterState.ausencias = ausencias || []
     filterState.historial = historial || []
+
+    // Triage con Jev: señal de revisión, nunca decide. Si falla o no está
+    // disponible, las tarjetas se ven exactamente igual que antes — no
+    // bloquea ni retrasa la carga principal.
+    try {
+      const flags = await triageAusenciasPendientes(filterState.ausencias)
+      for (const ausencia of filterState.ausencias) {
+        const flag = flags.get(String(ausencia.id))
+        if (flag) ausencia._jevFlag = flag
+      }
+    } catch (err) {
+      console.warn('[ausenciasAdminView] triage de Jev no disponible, continuando sin señales:', err)
+    }
 
     _updateCountsAndBadges(container)
 

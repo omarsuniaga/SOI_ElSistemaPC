@@ -43,7 +43,10 @@ function errorResponse(message: string, status = 400) {
 
 async function verifyAuth(req: Request): Promise<boolean> {
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return false
+  if (!authHeader) {
+    console.error('[jev-proxy] verifyAuth: no Authorization header present')
+    return false
+  }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -52,6 +55,16 @@ async function verifyAuth(req: Request): Promise<boolean> {
   })
 
   const { error } = await client.auth.getUser()
+  if (error) {
+    // Never log the token itself — only length/prefix, enough to tell
+    // "empty", "malformed", or "well-formed but rejected" apart.
+    console.error(
+      '[jev-proxy] verifyAuth rejected:',
+      error.message,
+      '| header length:', authHeader.length,
+      '| header prefix:', authHeader.slice(0, 12),
+    )
+  }
   return !error
 }
 

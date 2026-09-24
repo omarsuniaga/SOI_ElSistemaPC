@@ -192,6 +192,41 @@ export async function listarUsuariosPorRol(rol) {
   return listarUsuarios({ rol })
 }
 
+/**
+ * Resetea la contraseña de un usuario vía Edge Function (service role).
+ * Atajo administrativo para casos como "olvidé mi contraseña y no me llegó
+ * el correo de recuperación" — no reemplaza el flujo self-service normal.
+ * @param {string} userId
+ * @param {string} password Nueva contraseña, mínimo 8 caracteres
+ * @returns {Promise<{userId:string, email:string}>}
+ */
+export async function resetearPasswordUsuario(userId, password) {
+  if (!userId || !password) {
+    throw new Error('userId y password son obligatorios')
+  }
+
+  const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+    body: { userId, password },
+  })
+
+  if (error) {
+    let detalle = ''
+    try {
+      const body = await error.context?.json()
+      detalle = body?.error || ''
+    } catch (_) { /* context no era JSON o ya se consumió */ }
+    throw new Error(detalle || error.message || 'Error al resetear la contraseña')
+  }
+  if (data?.error) {
+    throw new Error(data.error)
+  }
+  if (!data?.ok) {
+    throw new Error('Respuesta inesperada del servidor')
+  }
+
+  return { userId: data.userId, email: data.email }
+}
+
 export {
   getPortalCatalog,
   getAuthorizedPortales,

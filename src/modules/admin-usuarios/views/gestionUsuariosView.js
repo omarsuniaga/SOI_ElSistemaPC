@@ -9,6 +9,7 @@ import {
   cargarRolesSistema,
   actualizarRolUsuario,
   actualizarEstadoUsuario,
+  resetearPasswordUsuario,
   getPortalCatalog,
   setUserPortales,
   getAssignedPortalIds
@@ -582,6 +583,9 @@ function _renderUsuariosList(container) {
                       <i class="bi bi-door-open me-1"></i>
                       ${isSuper ? 'Todos (Super)' : (count > 0 ? `${count} portales` : 'Def. Rol')}
                     </button>
+                    <button type="button" class="btn btn-xs btn-outline-warning gu-btn-reset-password" data-user-id="${_esc(user.id)}" data-user-email="${_esc(user.email)}" title="Resetear contraseña">
+                      <i class="bi bi-key"></i>
+                    </button>
                   </div>
                   <div class="d-flex align-items-center gap-1.5 mt-1">
                     <span class="gu-admin-badge gu-admin-badge--${user.estado === 'activo' ? 'active' : 'pending'}">
@@ -614,6 +618,15 @@ function _renderUsuariosList(container) {
       const userId = btn.dataset.userId
       const currentRol = btn.dataset.userRol
       _openCambiarRolModal(container, userId, currentRol)
+    })
+  })
+
+  // Password reset trigger
+  listEl.querySelectorAll('.gu-btn-reset-password').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const userId = btn.dataset.userId
+      const email = btn.dataset.userEmail
+      _openResetPasswordModal(container, userId, email)
     })
   })
 
@@ -681,6 +694,62 @@ function _openCambiarRolModal(container, userId, currentRol) {
         return true
       } catch (err) {
         AppToast.error(err.message || 'No se pudo actualizar el rol')
+        return false
+      }
+    }
+  })
+}
+
+function _openResetPasswordModal(container, userId, email) {
+  const state = _getState(container)
+  const user = state.usuarios.find(u => u.id === userId)
+  if (!user) return
+
+  let nuevaPassword = _generatePassword()
+
+  const bodyHTML = `
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Usuario</label>
+      <div class="form-control-plaintext fw-bold">${_esc(user.nombre_completo || email)}</div>
+      <div class="small text-muted">${_esc(email)}</div>
+    </div>
+    <div class="mb-2">
+      <label class="form-label small fw-semibold">Contraseña nueva</label>
+      <div class="input-group input-group-sm">
+        <input type="text" class="form-control" id="gu-reset-password-input" value="${_esc(nuevaPassword)}" minlength="8">
+        <button class="btn btn-outline-secondary" type="button" id="gu-reset-regenerate">
+          <i class="bi bi-magic me-1"></i> Generar
+        </button>
+      </div>
+    </div>
+    <p class="small text-muted mb-0">Comunicale esta contraseña directamente a la persona. No se le envía ningún correo.</p>
+  `
+
+  AppModal.open({
+    title: 'Resetear Contraseña',
+    size: 'sm',
+    saveText: 'Resetear',
+    body: bodyHTML,
+    onShow: (body) => {
+      const input = body.querySelector('#gu-reset-password-input')
+      const regenerateBtn = body.querySelector('#gu-reset-regenerate')
+      input?.addEventListener('input', () => { nuevaPassword = input.value })
+      regenerateBtn?.addEventListener('click', () => {
+        nuevaPassword = _generatePassword()
+        if (input) input.value = nuevaPassword
+      })
+    },
+    onSave: async () => {
+      if (!nuevaPassword || nuevaPassword.length < 8) {
+        AppToast.error('La contraseña debe tener al menos 8 caracteres')
+        return false
+      }
+      try {
+        await resetearPasswordUsuario(userId, nuevaPassword)
+        AppToast.success(`Contraseña de ${email} actualizada. Comunicásela directamente.`)
+        return true
+      } catch (err) {
+        AppToast.error(err.message || 'No se pudo resetear la contraseña')
         return false
       }
     }

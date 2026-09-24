@@ -227,6 +227,33 @@ export async function resetearPasswordUsuario(userId, password) {
   return { userId: data.userId, email: data.email }
 }
 
+/**
+ * Elimina definitivamente una cuenta vía Edge Function. El servidor rechaza
+ * cuentas con ficha de maestro o con historial (sugiere desactivar).
+ * @param {string} userId
+ * @returns {Promise<{userId:string}>}
+ */
+export async function eliminarUsuario(userId) {
+  if (!userId) throw new Error('userId es obligatorio')
+
+  const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+    body: { userId },
+  })
+
+  if (error) {
+    let detalle = ''
+    try {
+      const body = await error.context?.json()
+      detalle = body?.error || ''
+    } catch (_) { /* context no era JSON o ya se consumió */ }
+    throw new Error(detalle || error.message || 'Error al eliminar el usuario')
+  }
+  if (data?.error) throw new Error(data.error)
+  if (!data?.ok) throw new Error('Respuesta inesperada del servidor')
+
+  return { userId: data.userId }
+}
+
 export {
   getPortalCatalog,
   getAuthorizedPortales,

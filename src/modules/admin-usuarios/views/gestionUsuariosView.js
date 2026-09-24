@@ -10,6 +10,7 @@ import {
   actualizarRolUsuario,
   actualizarEstadoUsuario,
   resetearPasswordUsuario,
+  eliminarUsuario,
   getPortalCatalog,
   setUserPortales,
   getAssignedPortalIds
@@ -586,6 +587,9 @@ function _renderUsuariosList(container) {
                     <button type="button" class="btn btn-xs btn-outline-warning gu-btn-reset-password" data-user-id="${_esc(user.id)}" data-user-email="${_esc(user.email)}" title="Resetear contraseña">
                       <i class="bi bi-key"></i>
                     </button>
+                    <button type="button" class="btn btn-xs btn-outline-danger gu-btn-eliminar" data-user-id="${_esc(user.id)}" title="Eliminar usuario">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   </div>
                   <div class="d-flex align-items-center gap-1.5 mt-1">
                     <span class="gu-admin-badge gu-admin-badge--${user.estado === 'activo' ? 'active' : 'pending'}">
@@ -628,6 +632,10 @@ function _renderUsuariosList(container) {
       const email = btn.dataset.userEmail
       _openResetPasswordModal(container, userId, email)
     })
+  })
+
+  listEl.querySelectorAll('.gu-btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', () => _openEliminarModal(container, btn.dataset.userId))
   })
 
   // Status toggle trigger
@@ -750,6 +758,36 @@ function _openResetPasswordModal(container, userId, email) {
         return true
       } catch (err) {
         AppToast.error(err.message || 'No se pudo resetear la contraseña')
+        return false
+      }
+    }
+  })
+}
+
+function _openEliminarModal(container, userId) {
+  const state = _getState(container)
+  const user = state.usuarios.find(u => u.id === userId)
+  if (!user) return
+
+  AppModal.open({
+    title: 'Eliminar Usuario',
+    size: 'sm',
+    saveText: 'Eliminar definitivamente',
+    body: `
+      <p class="mb-2">Vas a eliminar la cuenta de:</p>
+      <div class="fw-bold">${_esc(user.nombre_completo || user.email)}</div>
+      <div class="small text-muted mb-3">${_esc(user.email)}</div>
+      <p class="small text-danger mb-0">Esta acción no se puede deshacer. Si la persona tiene historial en el sistema, usá [Desactivar] en su lugar.</p>
+    `,
+    onSave: async () => {
+      try {
+        await eliminarUsuario(userId)
+        state.usuarios = state.usuarios.filter(u => u.id !== userId)
+        _renderUsuariosList(container)
+        AppToast.success(`Cuenta ${user.email} eliminada`)
+        return true
+      } catch (err) {
+        AppToast.error(err.message || 'No se pudo eliminar el usuario')
         return false
       }
     }

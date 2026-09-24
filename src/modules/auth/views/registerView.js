@@ -130,9 +130,13 @@ function renderContent(container) {
           </form>
 
           <div class="auth-footer">
-            <p class="mb-0">
+            <p class="mb-2">
               ¿Ya tienes cuenta?
               <a href="#" id="linkLogin" class="auth-link">Iniciar sesión</a>
+            </p>
+            <p class="mb-0 text-secondary" style="font-size: 0.8rem;">
+              ¿No podés entrar porque olvidaste tu contraseña? No creés una cuenta nueva —
+              <a href="#" id="linkForgotFromRegister" class="auth-link">restablecé tu contraseña acá</a>.
             </p>
           </div>
         </div>
@@ -256,6 +260,7 @@ function attachEvents(container) {
   const confirmPasswordInput = document.getElementById('registerConfirmPassword')
   const togglePassword = document.getElementById('togglePassword')
   const linkLogin = document.getElementById('linkLogin')
+  const linkForgotFromRegister = document.getElementById('linkForgotFromRegister')
 
   passwordInput?.addEventListener('input', (e) => {
     const password = e.target.value
@@ -281,6 +286,11 @@ function attachEvents(container) {
   linkLogin?.addEventListener('click', (e) => {
     e.preventDefault()
     router.navigate('login')
+  })
+
+  linkForgotFromRegister?.addEventListener('click', (e) => {
+    e.preventDefault()
+    router.navigate('forgot-password')
   })
 }
 

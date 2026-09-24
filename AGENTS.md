@@ -45,6 +45,14 @@ Este archivo es la fuente de verdad para humanos y agentes de IA (Claude, Gemini
 - Los cambios significativos deben reflejarse en `docs/` o en las `specs/` correspondientes.
 - Los SPECs deben estar vinculados a historias de usuario y tareas concretas.
 
+## 5bis. Tablero de tareas
+
+Antes de tomar trabajo nuevo, consultar **[`openspec/TASK_BOARD.md`](openspec/TASK_BOARD.md)**
+— lista las tareas disponibles/tomadas/bloqueadas, cada una vinculada a su
+`openspec/changes/<slug>/` con `proposal.md` + `tasks.md`. Seguir el
+protocolo de "tomar tarea" descrito ahí (claim atómico vía commit). Origen
+del plan: `openspec/changes/tablero-tareas-engram/`.
+
 ## 6. Decision Autonomy & Execution Mode
 
 - **Full Autonomy on Implementation:** The agent MUST make technical, structural, architectural, and design decisions autonomously without pausing to ask confirmation on standard implementation steps.

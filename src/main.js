@@ -913,11 +913,18 @@ async function startApp() {
 
   // 4. Configurar guard de rutas (solo admin)
   const authRoutes = ['login', 'register']
+  // forgot-password/reset-password quedan fuera de authRoutes a propósito:
+  // esa lista además decide "si ya hay sesión, redirigir a clases-hoy" (paso 5),
+  // y un admin que entra al link de recuperación con una sesión vieja todavía
+  // activa no debe ser expulsado antes de poder cambiar su contraseña. Sí van
+  // en la lista de rutas públicas del guard, para no depender de que la sesión
+  // de recuperación ya esté resuelta en el instante exacto de este chequeo.
+  const guardPublicRoutes = [...authRoutes, 'forgot-password', 'reset-password']
   router.setAuthGuard(() => {
     if (!useAuth.isAuthenticated()) return false
     const { user } = useAuth.getState()
     return user?.user_metadata?.rol === 'admin' || user?.app_metadata?.rol === 'admin'
-  }, authRoutes)
+  }, guardPublicRoutes)
 
   // 5. Verificar autenticación Y rol
   const currentRoute = localStorage.getItem('current-view') || 'clases-hoy'
@@ -943,7 +950,7 @@ async function startApp() {
   }
 
   // 5. Lógica de enrutamiento inicial
-  if (!isAuthenticated && !authRoutes.includes(currentRoute)) {
+  if (!isAuthenticated && !guardPublicRoutes.includes(currentRoute)) {
     // Redirigir a login si intenta acceder a ruta protegida
     localStorage.setItem('current-view', 'login')
     router.navigate('login')

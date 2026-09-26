@@ -452,6 +452,11 @@ export async function obtenerEstadoCumplimientoMaestro(maestroId, periodoId = nu
       .from('sesiones_clase')
       .select('id, fecha, borrador, estado, asistencia')
       .eq('maestro_id', maestroId)
+      // clase_id = null son declaraciones de "clase emergente" (actividad
+      // especial), no una clase real que el maestro deba cerrar. Contarlas
+      // como pendientes infla el cumplimiento con deuda falsa (bug real:
+      // "Feriado" x4 en 2026-09-24 sumando pendientes que no eran clases).
+      .not('clase_id', 'is', null)
 
     if (periodo?.fecha_inicio) {
       query = query.gte('fecha', periodo.fecha_inicio)

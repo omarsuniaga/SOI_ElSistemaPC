@@ -72,6 +72,7 @@ function renderContent(container) {
                   Recordar contraseña
                 </label>
               </div>
+              <a href="#" id="linkForgotPassword" class="auth-link" style="font-size: 0.8rem;">¿Olvidaste tu contraseña?</a>
             </div>
 
             <button type="submit" class="btn btn-primary btn-sm-compact w-100" id="btnLogin">
@@ -173,6 +174,7 @@ function attachEvents(container) {
   const passwordInput = document.getElementById('loginPassword')
   const togglePassword = document.getElementById('togglePassword')
   const linkRegister = document.getElementById('linkRegister')
+  const linkForgotPassword = document.getElementById('linkForgotPassword')
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -193,6 +195,11 @@ function attachEvents(container) {
   linkRegister?.addEventListener('click', (e) => {
     e.preventDefault()
     router.navigate('register')
+  })
+
+  linkForgotPassword?.addEventListener('click', (e) => {
+    e.preventDefault()
+    router.navigate('forgot-password')
   })
 }
 

@@ -500,6 +500,16 @@ export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, o
           <span class="aac-urg-chip" style="color:${escHTML(urg.color)};background:${escHTML(urg.bg)}">
             <i class="bi bi-circle-fill" style="font-size:0.45rem"></i> ${escHTML(urg.label)}
           </span>
+          ${ausencia._jevFlag?.discrepancia ? `
+            <span class="aac-urg-chip" style="color:#b45309;background:rgba(245,158,11,0.14)" title="La urgencia que declaró el maestro no coincide con lo que describe el motivo — revisar con más atención antes de decidir.">
+              <i class="bi bi-exclamation-triangle-fill" style="font-size:0.6rem"></i> Revisar urgencia
+            </span>
+          ` : ''}
+          ${ausencia._jevFlag?.motivoVago ? `
+            <span class="aac-urg-chip" style="color:#4b5563;background:rgba(107,114,128,0.14)" title="El motivo parece incompleto — podría valer la pena pedirle más detalle al maestro antes de decidir.">
+              <i class="bi bi-question-circle-fill" style="font-size:0.6rem"></i> Motivo poco claro
+            </span>
+          ` : ''}
         </div>
       </div>
     </div>

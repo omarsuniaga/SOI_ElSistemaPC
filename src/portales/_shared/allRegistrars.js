@@ -36,6 +36,7 @@ import { registerRoutesLuteria } from '../../modules/luteria/index.js'
 import { registerRoutesSimulador } from '../../modules/simulador/index.js'
 import { registerRoutesPeriodos } from '../../modules/periodos/index.js'
 import { registerRoutesSignageAdmin } from '../../modules/signage-admin/signage-admin.router.js'
+import { registerRoutesActividadesInstitucionales } from '../../modules/actividades-institucionales/actividades-institucionales.router.js'
 
 export const allRegistrars = [
   registerRoutesPeriodos,
@@ -69,4 +70,5 @@ export const allRegistrars = [
   registerRoutesLuteria,
   registerRoutesSimulador,
   registerRoutesSignageAdmin,
+  registerRoutesActividadesInstitucionales,
 ]

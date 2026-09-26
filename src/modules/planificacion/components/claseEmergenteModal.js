@@ -69,10 +69,10 @@ export function openClaseEmergenteModal(options = {}) {
               <option value="Concierto">
               <option value="Masterclass">
               <option value="Reunion">
-              <option value="Evento institucional">
               <option value="Capacitacion">
               <option value="Ensayo general anticipado">
             </datalist>
+            <span class="pm-emergente-hint">&iquest;Es un feriado, suspensi&oacute;n o actividad que afecta a todo un programa o a toda la instituci&oacute;n? Debe declararse en Actividades Institucionales, no aqu&iacute;.</span>
           </div>
         </div>
 

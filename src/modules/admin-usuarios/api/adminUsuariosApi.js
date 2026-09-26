@@ -139,10 +139,54 @@ export async function listarUsuarios(options = {}) {
     throw new Error(error.message || 'Error al listar usuarios')
   }
 
+  const ultimaConexion = await _cargarUltimasConexiones()
+
   return (data || []).map(u => ({
     ...u,
-    portales_asignados: (u.user_portal_access || []).map(p => p.portal_id)
+    portales_asignados: (u.user_portal_access || []).map(p => p.portal_id),
+    last_sign_in_at: ultimaConexion.get(u.id) ?? null
   }))
+}
+
+// La última conexión es un dato accesorio: si la RPC falla, la lista se
+// muestra igual, sin ese campo.
+async function _cargarUltimasConexiones() {
+  const mapa = new Map()
+  try {
+    const { data, error } = await supabase.rpc('admin_last_sign_in')
+    if (error) throw error
+    for (const row of data || []) mapa.set(row.id, row.last_sign_in_at)
+  } catch (err) {
+    console.warn('No se pudo cargar la última conexión:', err?.message || err)
+  }
+  return mapa
+}
+
+/**
+ * Cambia el correo de login (auth.users) y lo sincroniza en profiles/maestros.
+ * @param {string} userId
+ * @param {string} email
+ * @returns {Promise<{userId:string, email:string}>}
+ */
+export async function actualizarEmailUsuario(userId, email) {
+  if (!userId || !email) throw new Error('userId y email son obligatorios')
+
+  const { data, error } = await supabase.functions.invoke('admin-update-user', {
+    body: { userId, email },
+  })
+
+  if (error) {
+    let detalle = ''
+    try {
+      const body = await error.context?.json()
+      detalle = body?.error || ''
+    } catch (_) { /* context no era JSON o ya se consumió */ }
+    throw new Error(detalle || error.message || 'Error al actualizar el correo')
+  }
+  if (data?.error) throw new Error(data.error)
+  if (!data?.ok) throw new Error('Respuesta inesperada del servidor')
+
+  return { userId: data.userId, email: data.email }
 }
 
 /**
@@ -190,6 +234,68 @@ export async function actualizarEstadoUsuario(userId, estado) {
  */
 export async function listarUsuariosPorRol(rol) {
   return listarUsuarios({ rol })
+}
+
+/**
+ * Resetea la contraseña de un usuario vía Edge Function (service role).
+ * Atajo administrativo para casos como "olvidé mi contraseña y no me llegó
+ * el correo de recuperación" — no reemplaza el flujo self-service normal.
+ * @param {string} userId
+ * @param {string} password Nueva contraseña, mínimo 8 caracteres
+ * @returns {Promise<{userId:string, email:string}>}
+ */
+export async function resetearPasswordUsuario(userId, password) {
+  if (!userId || !password) {
+    throw new Error('userId y password son obligatorios')
+  }
+
+  const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+    body: { userId, password },
+  })
+
+  if (error) {
+    let detalle = ''
+    try {
+      const body = await error.context?.json()
+      detalle = body?.error || ''
+    } catch (_) { /* context no era JSON o ya se consumió */ }
+    throw new Error(detalle || error.message || 'Error al resetear la contraseña')
+  }
+  if (data?.error) {
+    throw new Error(data.error)
+  }
+  if (!data?.ok) {
+    throw new Error('Respuesta inesperada del servidor')
+  }
+
+  return { userId: data.userId, email: data.email }
+}
+
+/**
+ * Elimina definitivamente una cuenta vía Edge Function. El servidor rechaza
+ * cuentas con ficha de maestro o con historial (sugiere desactivar).
+ * @param {string} userId
+ * @returns {Promise<{userId:string}>}
+ */
+export async function eliminarUsuario(userId) {
+  if (!userId) throw new Error('userId es obligatorio')
+
+  const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+    body: { userId },
+  })
+
+  if (error) {
+    let detalle = ''
+    try {
+      const body = await error.context?.json()
+      detalle = body?.error || ''
+    } catch (_) { /* context no era JSON o ya se consumió */ }
+    throw new Error(detalle || error.message || 'Error al eliminar el usuario')
+  }
+  if (data?.error) throw new Error(data.error)
+  if (!data?.ok) throw new Error('Respuesta inesperada del servidor')
+
+  return { userId: data.userId }
 }
 
 export {

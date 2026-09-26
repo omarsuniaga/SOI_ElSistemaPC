@@ -200,7 +200,7 @@ export async function crearAlumno(alumno) {
     instrumento_previo: alumno.instrumento_previo ?? null,
     nivel_lectura_musical: alumno.nivel_lectura_musical ?? null,
     interes_musical: alumno.interes_musical ?? null,
-    instrumento_interes: alumno.instrumento_interes ?? null,
+    instrumento_interes: (alumno.instrumento_interes || '').trim() || null,
     requiere_iniciacion_musical: alumno.tiene_conocimientos_musicales !== true,
     fecha_ingreso_iniciacion: alumno.tiene_conocimientos_musicales !== true ? new Date().toISOString().slice(0, 10) : null,
     por_que_unirse: alumno.por_que_unirse ?? null,
@@ -273,6 +273,7 @@ export async function actualizarAlumno(id, actualizaciones) {
 
   if (actualizaciones.email !== undefined) datosActualizacion.correo_representante = actualizaciones.email ? actualizaciones.email.trim().toLowerCase() : actualizaciones.email
   if (actualizaciones.instrumento !== undefined) datosActualizacion.instrumento_principal = actualizaciones.instrumento ? actualizaciones.instrumento.trim() : actualizaciones.instrumento
+  if (actualizaciones.instrumento_interes !== undefined) datosActualizacion.instrumento_interes = (actualizaciones.instrumento_interes || '').trim() || null
   if (actualizaciones.cedula !== undefined) datosActualizacion.representante_cedula = actualizaciones.cedula ? actualizaciones.cedula.trim() : actualizaciones.cedula
 
   if (actualizaciones.is_active !== undefined) datosActualizacion.activo = actualizaciones.is_active
@@ -801,7 +802,7 @@ export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) 
 export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
+    .select('clase_id, clases(id, nombre, activo, instrumento, programas:programa_id(nombre), clase_horarios(dia, hora_inicio))')
     .eq('alumno_id', alumnoId)
     .eq('activo', true)
 
@@ -809,5 +810,5 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
     console.error('Error cargando inscripciones detalladas de alumno:', error.message)
     throw new Error('No se pudieron cargar las clases del alumno')
   }
-  return (data || []).map(r => r.clases).filter(Boolean)
+  return (data || []).map(r => r.clases).filter(c => c && c.activo !== false)
 }

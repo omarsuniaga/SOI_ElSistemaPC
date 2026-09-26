@@ -88,4 +88,18 @@ describe('calcularCompletitud (domain)', () => {
     const result = calcularCompletitud(alumno)
     expect(result.camposFaltantes.some(c => c.key === 'centro_estudios')).toBe(true)
   })
+
+  it('no exige instrumento principal sin cátedra, pero sí con matrícula instrumental', () => {
+    const alumno = { ...alumnoCompleto(), instrumento_principal: null }
+    expect(calcularCompletitud(alumno).camposFaltantes.some(c => c.key === 'instrumento_principal')).toBe(false)
+    expect(calcularCompletitud(alumno, { tieneCatedraInstrumental: true }).camposFaltantes
+      .some(c => c.key === 'instrumento_principal')).toBe(true)
+  })
+
+  it('solo pide instrumento de interés si el alumno expresó interés instrumental', () => {
+    const alumno = { ...alumnoCompleto(), instrumento_interes: null, interes_musical: 'cantar' }
+    expect(calcularCompletitud(alumno).camposFaltantes.some(c => c.key === 'instrumento_interes')).toBe(false)
+    alumno.interes_musical = 'ambas'
+    expect(calcularCompletitud(alumno).camposFaltantes.some(c => c.key === 'instrumento_interes')).toBe(true)
+  })
 })

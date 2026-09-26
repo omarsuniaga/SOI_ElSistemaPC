@@ -1,13 +1,15 @@
 import { Modal } from 'bootstrap'
 import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
-import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
+import { calcularCompletitud, NIVEL_COLOR } from '../domain/completitudAlumno.js'
+import { perfilMusicalAlumno } from '../domain/perfilMusicalAlumno.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm, SECTIONS } from '../components/AlumnoForm.js'
 import { PostulanteResolver } from '../components/PostulanteResolver.js'
 import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
+import './alumnoAdminView.css'
 import {
   obtenerAlumno,
   obtenerInscripcionesDetalladasAlumno,
@@ -29,10 +31,9 @@ import {
  */
 // ─── Completitud ─────────────────────────────────────────────────────────────
 
-function renderCompletitudBanner(alumno) {
-  const { porcentaje, nivel, camposFaltantes, porGrupo } = calcularCompletitud(alumno)
+function renderCompletitudBanner(alumno, clases) {
+  const { porcentaje, nivel, camposFaltantes, porGrupo } = calcularCompletitud(alumno, perfilMusicalAlumno(alumno, clases))
   const color = NIVEL_COLOR[nivel]
-  const label = NIVEL_LABEL[nivel]
 
   if (nivel === 'completo') return ''
 
@@ -47,28 +48,23 @@ function renderCompletitudBanner(alumno) {
     .join('')
 
   return `
-    <div class="card border-${color} mb-3" id="completitud-banner">
-      <div class="card-body py-2 px-3">
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-          <div class="flex-grow-1">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-${color}">${label}</span>
-              <span class="small fw-semibold">Perfil ${porcentaje}% completo</span>
-              <span class="text-muted small">· ${camposFaltantes.length} campo(s) pendiente(s)</span>
-              <button class="btn btn-link btn-sm p-0 ms-auto text-muted" id="btn-toggle-completitud">
-                <i class="bi bi-chevron-down"></i> Ver detalle
-              </button>
-            </div>
-            <div class="progress" style="height:6px">
-              <div class="progress-bar bg-${color}" style="width:${porcentaje}%"></div>
-            </div>
-          </div>
-        </div>
-        <div id="completitud-detalle" class="mt-2 pt-2 border-top" style="display:none">
-          ${gruposIncompletos}
-        </div>
+    <section class="alumno-profile-completion" id="completitud-banner" aria-label="Completitud del perfil">
+      <div class="alumno-profile-completion-heading">
+        <span class="small fw-semibold">Perfil ${porcentaje}% completo</span>
+        <span class="text-muted small">· ${camposFaltantes.length} pendientes</span>
+        <button class="btn btn-link btn-sm p-0 ms-auto text-muted alumno-profile-completion-toggle" id="btn-toggle-completitud"
+          type="button" aria-expanded="false" aria-controls="completitud-detalle" aria-label="Ver detalle de campos pendientes" title="Ver detalle">
+          <span class="alumno-profile-action-label">Ver detalle</span>
+          <i class="bi bi-chevron-down" aria-hidden="true"></i>
+        </button>
       </div>
-    </div>`
+      <div class="progress alumno-profile-progress" role="progressbar" aria-label="Perfil completo" aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar bg-${color}" style="width:${porcentaje}%"></div>
+      </div>
+      <div id="completitud-detalle" class="alumno-profile-completion-detail" hidden>
+        ${gruposIncompletos}
+      </div>
+    </section>`
 }
 
 // ─── Multi-phone splitter ─────────────────────────────────────────────────────
@@ -147,11 +143,36 @@ function renderFieldValue(field, alumno) {
 
 function renderFieldList(fields, alumno) {
   return fields.map(f => `
-    <div class="row mb-2 align-items-start">
-      <div class="col-5 col-md-4 text-muted small fw-semibold">${escapeHTML(f.label)}</div>
-      <div class="col-7 col-md-8">${renderFieldValue(f, alumno)}</div>
+    <div class="alumno-profile-field">
+      <div class="alumno-profile-field-label text-muted small fw-semibold">${escapeHTML(f.label)}</div>
+      <div class="alumno-profile-field-value">${renderFieldValue(f, alumno)}</div>
     </div>
   `).join('')
+}
+
+function hasFieldValue(field, alumno) {
+  const value = alumno[field.key]
+  if (field.type === 'checkbox') return value !== null && value !== undefined && value !== ''
+  return value !== null && value !== undefined && String(value).trim() !== ''
+}
+
+function renderProfileFieldList(sectionKey, alumno) {
+  const fields = SECTIONS[sectionKey] || []
+  const populatedFields = fields.filter(field => hasFieldValue(field, alumno))
+  const emptyFields = fields.filter(field => !hasFieldValue(field, alumno))
+  const visibleFields = populatedFields.length ? populatedFields : []
+
+  return `
+    ${visibleFields.length
+      ? renderFieldList(visibleFields, alumno)
+      : '<p class="text-muted small mb-2">No hay datos registrados en esta sección.</p>'}
+    ${emptyFields.length ? `
+      <details class="alumno-profile-empty-fields">
+        <summary><span>Campos sin completar</span><span class="badge rounded-pill text-bg-secondary">${emptyFields.length}</span></summary>
+        <div class="alumno-profile-empty-list">${renderFieldList(emptyFields, alumno)}</div>
+      </details>
+    ` : ''}
+  `
 }
 
 // renderFormField is removed since form rendering is managed by AlumnoForm component
@@ -219,6 +240,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
   function renderView() {
     const initials = getInitials(alumno.nombre_completo)
     const edad = calcularEdad(alumno.fecha_nacimiento)
+    const perfil = perfilMusicalAlumno(alumno, clases)
     const activoBadge = alumno.activo
       ? '<span class="badge bg-success">Activo</span>'
       : '<span class="badge bg-secondary">Inactivo</span>'
@@ -242,16 +264,17 @@ export async function renderAlumnoAdminView(container, params = {}) {
     `).join('')
 
     function renderSectionPanel(sectionKey) {
-      const fields = SECTIONS[sectionKey]
+      const sectionTitle = sectionKey === 'personal' ? 'Datos personales' : TAB_LABELS[sectionKey]
       return `
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold text-uppercase text-muted small mb-0">${escapeHTML(TAB_LABELS[sectionKey])}</h6>
-          <button class="btn btn-sm btn-outline-primary" data-edit-section="${escapeHTML(sectionKey)}">
-            <i class="bi bi-pencil me-1"></i>Editar
+        <div class="alumno-profile-section-heading">
+          <h6 class="fw-bold mb-0">${escapeHTML(sectionTitle)}</h6>
+          <button class="btn btn-sm btn-outline-primary alumno-profile-edit" data-edit-section="${escapeHTML(sectionKey)}"
+            aria-label="Editar ${escapeHTML(sectionTitle)}" title="Editar ${escapeHTML(sectionTitle)}">
+            <i class="bi bi-pencil" aria-hidden="true"></i><span class="alumno-profile-action-label">Editar</span>
           </button>
         </div>
         <div id="fields-${sectionKey}">
-          ${renderFieldList(fields, alumno)}
+          ${renderProfileFieldList(sectionKey, alumno)}
         </div>
       `
     }
@@ -264,7 +287,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
           role="tabpanel"
           aria-labelledby="tab-${key}"
         >
-          <div class="p-3">
+          <div class="alumno-profile-panel">
             ${renderSectionPanel(key)}
           </div>
         </div>
@@ -306,59 +329,63 @@ export async function renderAlumnoAdminView(container, params = {}) {
     `
 
     container.innerHTML = `
-      <div class="container-fluid py-3 px-3 px-md-4">
+      <div class="container-fluid py-3 px-3 px-md-4 alumno-profile-view">
 
         <!-- Back -->
-        <button class="btn btn-link text-decoration-none ps-0 mb-3" id="btn-back">
+        <button class="btn btn-link text-decoration-none ps-0 mb-3 alumno-profile-back" id="btn-back">
           <i class="bi bi-arrow-left me-1"></i>Volver a Alumnos
         </button>
 
-        <div id="completitud-banner-container">
-          ${renderCompletitudBanner(alumno)}
-        </div>
-
         <!-- Header card -->
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-3 alumno-profile-header">
           <div class="card-body">
-            <div class="d-flex flex-wrap gap-3 align-items-start justify-content-between">
-              <div class="d-flex gap-3 align-items-center">
+            <div class="alumno-profile-header-content">
+              <div class="d-flex gap-3 align-items-center alumno-profile-identity">
                 <div
-                  class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
-                  style="width:64px;height:64px;font-size:1.4rem;background:var(--bs-primary,#0d6efd)"
+                  class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0 alumno-profile-avatar"
                 >${escapeHTML(initials)}</div>
-                <div>
-                  <h4 class="mb-1 fw-bold">${val(alumno.nombre_completo)}</h4>
-                  <div class="d-flex flex-wrap gap-2 align-items-center">
-                    ${activoBadge}
-                    ${alumno.instrumento_principal ? `<span class="badge bg-info text-dark">${val(alumno.instrumento_principal)}</span>` : ''}
-                    ${alumno.nivel_actual ? `<span class="badge bg-light text-dark border">${val(alumno.nivel_actual)}</span>` : ''}
-                    ${edad !== null ? `<span class="text-muted small">${escapeHTML(String(edad))} años</span>` : ''}
-                    ${alumno.created_at ? `<span class="text-muted small">Inscrito: ${val(formatDate(alumno.created_at))}</span>` : ''}
+                <div class="alumno-profile-identity-text">
+                  <h4 class="mb-1 fw-bold alumno-profile-name">${val(alumno.nombre_completo)}</h4>
+                  <div class="text-muted small alumno-profile-meta">
+                    ${edad !== null ? `<span>${escapeHTML(String(edad))} años</span>` : ''}
+                    ${edad !== null && alumno.created_at ? '<span aria-hidden="true">·</span>' : ''}
+                    ${alumno.created_at ? `<span>Inscrito ${val(formatDate(alumno.created_at))}</span>` : ''}
                   </div>
+                  <div class="d-flex flex-wrap gap-1 align-items-center alumno-profile-badges">
+                    ${activoBadge}
+                    ${perfil.enIniciacion ? '<span class="badge bg-primary">Iniciación</span>' : ''}
+                    ${perfil.instrumentoPrincipalCoincide ? `<span class="badge bg-info text-dark">Cátedra: ${val(perfil.instrumentoPrincipal)}</span>` : ''}
+                    ${perfil.instrumentoInteres ? `<span class="badge bg-light text-dark border">Interés: ${val(perfil.instrumentoInteres)}</span>` : ''}
+                    ${alumno.nivel_actual ? `<span class="badge bg-light text-dark border">${val(alumno.nivel_actual)}</span>` : ''}
+                  </div>
+                  ${perfil.instrumentoPrincipal && !perfil.instrumentoPrincipalCoincide ? '<div class="small text-muted mt-1">El instrumento principal registrado no coincide con una clase instrumental activa. Revisar el dato en la pestaña Musical.</div>' : ''}
                 </div>
               </div>
-              <div class="d-flex gap-2 flex-wrap">
-                <button class="btn btn-outline-secondary btn-sm" id="btn-postulante">
-                  <i class="bi bi-search me-1"></i>Buscar postulante
+              <div class="alumno-profile-actions">
+                <button class="btn btn-outline-primary btn-sm alumno-profile-icon-action" id="btn-ficha-pdf" type="button"
+                  aria-label="Descargar ficha PDF" title="Ficha PDF">
+                  <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span class="alumno-profile-action-label">Ficha PDF</span>
                 </button>
-                <button class="btn btn-outline-primary btn-sm" id="btn-ficha-pdf">
-                  <i class="bi bi-file-earmark-pdf me-1"></i>Ficha PDF
+                <button class="btn btn-outline-success btn-sm alumno-profile-icon-action" id="btn-constancia" type="button"
+                  aria-label="Descargar constancia" title="Constancia">
+                  <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span class="alumno-profile-action-label">Constancia</span>
                 </button>
-                <button class="btn btn-outline-success btn-sm" id="btn-constancia">
-                  <i class="bi bi-file-earmark-text me-1"></i>Constancia
-                </button>
-                ${alumno.activo !== false ? `
-                  <button class="btn btn-outline-danger btn-sm" id="btn-eliminar-alumno">
-                    <i class="bi bi-person-x me-1"></i>Inactivar alumno
-                  </button>
-                ` : `
-                  <button class="btn btn-outline-success btn-sm" id="btn-reactivar-alumno">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar alumno
-                  </button>
-                `}
+                <div class="dropdown alumno-profile-more">
+                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle alumno-profile-icon-action" type="button" data-bs-toggle="dropdown"
+                    aria-label="Más acciones" title="Más acciones" aria-expanded="false"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i><span class="alumno-profile-action-label">Más</span></button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" id="btn-postulante" type="button"><i class="bi bi-search me-2"></i>Buscar postulante</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    ${alumno.activo !== false ? `
+                      <li><button class="dropdown-item text-danger" id="btn-eliminar-alumno" type="button"><i class="bi bi-person-x me-2"></i>Inactivar alumno</button></li>
+                    ` : `
+                      <li><button class="dropdown-item" id="btn-reactivar-alumno" type="button"><i class="bi bi-arrow-counterclockwise me-2"></i>Reactivar alumno</button></li>
+                    `}
+                  </ul>
+                </div>
               </div>
             </div>
-
+            <div id="completitud-banner-container">${renderCompletitudBanner(alumno, clases)}</div>
           </div>
         </div>
 
@@ -366,7 +393,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
         <div id="postulante-panel"></div>
 
         <!-- Tabs -->
-        <div class="card shadow-sm">
+        <div class="card shadow-sm alumno-profile-details">
           <div class="card-header p-0">
             <ul class="nav nav-tabs border-0 flex-nowrap overflow-auto" role="tablist">
               ${navItems}
@@ -606,17 +633,25 @@ export async function renderAlumnoAdminView(container, params = {}) {
   let activeModalSection = null
   let bsModal = null
 
+  function bindCompletitudToggle(root = container) {
+    const btn = root.querySelector('#btn-toggle-completitud')
+    const detail = root.querySelector('#completitud-detalle')
+    if (!btn || !detail) return
+
+    btn.addEventListener('click', () => {
+      const isOpen = btn.getAttribute('aria-expanded') === 'true'
+      detail.hidden = isOpen
+      btn.setAttribute('aria-expanded', String(!isOpen))
+      btn.setAttribute('aria-label', isOpen ? 'Ver detalle de campos pendientes' : 'Ocultar detalle de campos pendientes')
+      btn.title = isOpen ? 'Ver detalle' : 'Ocultar detalle'
+      btn.querySelector('.alumno-profile-action-label').textContent = isOpen ? 'Ver detalle' : 'Ocultar'
+      btn.querySelector('i').className = `bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-up'}`
+    })
+  }
+
   function attachEvents() {
     // Completitud — toggle detalle
-    document.getElementById('btn-toggle-completitud')?.addEventListener('click', (e) => {
-      const detalle = document.getElementById('completitud-detalle')
-      const btn = e.currentTarget
-      const visible = detalle.style.display !== 'none'
-      detalle.style.display = visible ? 'none' : 'block'
-      btn.innerHTML = visible
-        ? '<i class="bi bi-chevron-down"></i> Ver detalle'
-        : '<i class="bi bi-chevron-up"></i> Ocultar'
-    })
+    bindCompletitudToggle()
 
     // Back button
     const btnBack = document.getElementById('btn-back')
@@ -799,25 +834,14 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
       const fieldsContainer = document.getElementById(`fields-${activeModalSection}`)
       if (fieldsContainer) {
-        fieldsContainer.innerHTML = renderFieldList(SECTIONS[activeModalSection], alumno)
+        fieldsContainer.innerHTML = renderProfileFieldList(activeModalSection, alumno)
       }
 
       // Re-render completitud banner if it exists
       const bannerContainer = container.querySelector('#completitud-banner-container')
       if (bannerContainer) {
-        bannerContainer.innerHTML = renderCompletitudBanner(alumno)
-        // Re-bind completitud details toggle
-        const btnToggle = bannerContainer.querySelector('#btn-toggle-completitud')
-        if (btnToggle) {
-          btnToggle.addEventListener('click', () => {
-            const detail = bannerContainer.querySelector('#completitud-detalle')
-            if (detail) {
-              const hidden = detail.style.display === 'none'
-              detail.style.display = hidden ? 'block' : 'none'
-              btnToggle.innerHTML = hidden ? '<i class="bi bi-chevron-up"></i> Ocultar detalle' : '<i class="bi bi-chevron-down"></i> Ver detalle'
-            }
-          })
-        }
+        bannerContainer.innerHTML = renderCompletitudBanner(alumno, clases)
+        bindCompletitudToggle(bannerContainer)
       }
 
       if (bsModal) bsModal.hide()

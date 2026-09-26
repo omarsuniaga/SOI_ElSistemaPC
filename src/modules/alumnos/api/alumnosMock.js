@@ -52,6 +52,7 @@ function normalizeAlumno(a) {
     nombre: a.nombre_completo ?? '',
     email: a.correo_representante ?? '',
     instrumento: a.instrumento_principal ?? '',
+    instrumento_interes: a.instrumento_interes ?? null,
     is_active: a.activo ?? true,
     clases: studentClasses,
     programas: getProgramasForAlumno(a.id),
@@ -128,6 +129,8 @@ export async function crearAlumno(alumno) {
   if (!Array.isArray(alumnos)) alumnos = getSavedAlumnos()
   const nuevo = {
     ...alumno,
+    instrumento_principal: (alumno.instrumento || '').trim() || null,
+    instrumento_interes: (alumno.instrumento_interes || '').trim() || null,
     id: Math.random().toString(36).substr(2, 9),
     nombre_completo: alumno.nombre || alumno.nombre_completo,
     activo: alumno.is_active !== undefined ? alumno.is_active : true
@@ -143,7 +146,13 @@ export async function actualizarAlumno(id, actualizaciones) {
   const index = alumnos.findIndex(a => a.id === id)
   if (index === -1) throw new Error('Alumno no encontrado (Demo)')
   
-  alumnos[index] = { ...alumnos[index], ...actualizaciones }
+  alumnos[index] = {
+    ...alumnos[index],
+    ...actualizaciones,
+    ...(actualizaciones.instrumento !== undefined
+      ? { instrumento_principal: (actualizaciones.instrumento || '').trim() || null }
+      : {}),
+  }
   saveAlumnos(alumnos)
   return normalizeAlumno(alumnos[index])
 }
@@ -329,7 +338,11 @@ export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) 
 
 export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
   await delay()
-  return [
-    { id: 'clase_001', nombre: 'Violín Principiantes A', clase_horarios: [{ dia: 'Lunes', hora_inicio: '14:00:00' }] }
-  ]
+  return inscripciones.filter(i => i.alumno_id === alumnoId).map(i => ({
+    id: i.clase_id,
+    nombre: i.clase_nombre,
+    instrumento: i.clase_nombre.startsWith('Violín') ? 'Violín' :
+      i.clase_nombre.startsWith('Flauta') ? 'Flauta' : 'no aplica',
+    clase_horarios: [],
+  }))
 }

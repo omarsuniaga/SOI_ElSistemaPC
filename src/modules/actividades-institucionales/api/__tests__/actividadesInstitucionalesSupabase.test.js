@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { listarActividades, obtenerActividad } from '../actividadesInstitucionalesSupabase.js'
+import { listarActividades, obtenerActividad, obtenerAfectacionesVigentes } from '../actividadesInstitucionalesSupabase.js'
 import { supabase } from '../../../../lib/supabaseClient.js'
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({
@@ -89,5 +89,52 @@ describe('actividadesInstitucionalesSupabase — normalización de fechas', () =
     const [actividad] = await listarActividades()
     expect(actividad.fechaInicio).toBeNull()
     expect(actividad.fechaFin).toBeNull()
+  })
+})
+
+describe('actividadesInstitucionalesSupabase — obtenerAfectacionesVigentes (puente a portal-maestros)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('devuelve vacío sin consultar la base si no hay clases', async () => {
+    const result = await obtenerAfectacionesVigentes([], '2026-10-05')
+    expect(result).toEqual([])
+    expect(supabase.from).not.toHaveBeenCalled()
+  })
+
+  it('mapea afectación, actividad de origen y exentos', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+    }
+    chain.eq.mockImplementation((col) => {
+      if (col === 'vigente') {
+        return Promise.resolve({
+          data: [{
+            id: 'af-1',
+            clase_id: 'clase-1',
+            tipo_afectacion: 'impartida_con_exencion',
+            motivo: 'Ensayo general',
+            calendario_institucional: { id: 'act-1', titulo: 'Ensayo General Orquesta', descripcion: 'desc' },
+            calendario_exenciones_alumno: [{ alumno_id: 'al-1', alumnos: { nombre_completo: 'Juan Pérez' } }],
+          }],
+          error: null,
+        })
+      }
+      return chain
+    })
+    supabase.from.mockReturnValue(chain)
+
+    const [af] = await obtenerAfectacionesVigentes(['clase-1'], '2026-10-05')
+    expect(af).toEqual({
+      claseId: 'clase-1',
+      afectacionId: 'af-1',
+      tipoAfectacion: 'impartida_con_exencion',
+      motivo: 'Ensayo general',
+      actividadId: 'act-1',
+      actividadTitulo: 'Ensayo General Orquesta',
+      actividadDescripcion: 'desc',
+      exentos: [{ alumnoId: 'al-1', nombreCompleto: 'Juan Pérez' }],
+    })
   })
 })

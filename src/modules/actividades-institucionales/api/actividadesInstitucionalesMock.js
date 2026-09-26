@@ -142,6 +142,27 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
   })
 }
 
+export async function obtenerAfectacionesVigentes(claseIds, fecha) {
+  await delay()
+  if (!claseIds?.length || !fecha) return []
+  const vigentes = afectacionesPorEvento.get('__todas__') || []
+  return vigentes
+    .filter((a) => claseIds.includes(a.claseId) && a.fecha === fecha)
+    .map((a) => {
+      const clase = (clasesMockData.clases || clasesMockData || []).find((c) => c.id === a.claseId)
+      return {
+        claseId: a.claseId,
+        afectacionId: `${a.claseId}-${a.fecha}`,
+        tipoAfectacion: a.tipoAfectacion,
+        motivo: a.motivo ?? '',
+        actividadId: 'demo-act',
+        actividadTitulo: clase?.nombre ? `Actividad especial (demo)` : 'Actividad especial (demo)',
+        actividadDescripcion: '',
+        exentos: (a.exentos || []).map((alumnoId) => ({ alumnoId, nombreCompleto: `Alumno ${alumnoId}` })),
+      }
+    })
+}
+
 export async function listarAlumnosDeClase(claseId) {
   await delay()
   const clase = (clasesMockData.clases || clasesMockData || []).find((c) => c.id === claseId)

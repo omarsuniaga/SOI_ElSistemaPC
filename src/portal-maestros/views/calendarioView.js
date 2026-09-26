@@ -18,6 +18,14 @@ import {
 } from '../../modules/asistencias/api/asistenciasSupabase.js'
 import { eliminarSesion } from '../../modules/planificacion/api/sesionesSupabase.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
+import { obtenerAfectacionesVigentes } from '../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js'
+
+const TIPO_AFECTACION_LABEL = {
+  suspendida: 'Suspendida',
+  impartida_con_exencion: 'Con exenciones',
+  impartida_sin_cambios: 'Sin cambios',
+  sustituida: 'Sustituida',
+}
 
 const DIAS_HEADER = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 const UMBRAL_VENCIDA = 7
@@ -735,7 +743,7 @@ async function _openActionDrawer(fecha, container) {
   )
 
   const claseIds = clasesDelMaestro.map((x) => x.id)
-  const [horariosRes, cumplimiento] = await Promise.all([
+  const [horariosRes, cumplimiento, afectacionesInstitucionales] = await Promise.all([
     claseIds.length > 0
       ? supabase
           .from('clase_horarios')
@@ -745,8 +753,16 @@ async function _openActionDrawer(fecha, container) {
           .catch(() => [])
       : Promise.resolve([]),
     obtenerEstadoCumplimientoMaestro(maestro.id, periodoActivo?.id).catch(() => ({ esCompleto: true, pendientesCount: 0 })),
+    // Puente hacia Actividades Institucionales (ADM/ACM): feriados,
+    // suspensiones y actividades especiales ya aprobadas que afectan las
+    // clases de este maestro en esta fecha. Solo lectura — nunca falla el
+    // resto del drawer si esto falla.
+    claseIds.length > 0
+      ? obtenerAfectacionesVigentes(claseIds, fecha).catch(() => [])
+      : Promise.resolve([]),
   ])
   const horarios = horariosRes
+  const afectacionPorClase = new Map(afectacionesInstitucionales.map((a) => [a.claseId, a]))
 
   // 2. Filtrar clases programadas para este día de la semana
   const esFueraDePeriodo = periodoActivo && (fecha < periodoActivo.fecha_inicio || fecha > periodoActivo.fecha_fin)
@@ -776,15 +792,34 @@ async function _openActionDrawer(fecha, container) {
     }
   }
 
-  const clasesProgramadas = clasesDelMaestro
+  const clasesDelDiaCompleto = clasesDelMaestro
     .filter((c) => horarios.some((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana))
     .map((c) => {
       const h = horarios.find((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana)
       const s = sesiones.find((s) => s.clase_id === c.id)
       const asistenciasClase = asistencias.filter((a) => a.clase_id === c.id)
-      return { ...c, hora_inicio: h?.hora_inicio, hora_fin: h?.hora_fin, sesion: s, asistencias: asistenciasClase }
+      return {
+        ...c,
+        hora_inicio: h?.hora_inicio,
+        hora_fin: h?.hora_fin,
+        sesion: s,
+        asistencias: asistenciasClase,
+        afectacionInstitucional: afectacionPorClase.get(c.id) || null,
+      }
     })
     .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+
+  // Una actividad institucional aprobada como "suspendida" o "sustituida"
+  // significa que la clase no ocurre — no tiene sentido pasar lista ni
+  // pedirle nada al maestro (§5 del spec: "no pedir lista de una clase que
+  // no ocurrió"). Esas clases salen del listado normal/clickeable y pasan a
+  // su propia sección, igual que ya pasaba con las "Auto-registradas".
+  const clasesProgramadas = clasesDelDiaCompleto.filter(
+    (c) => !['suspendida', 'sustituida'].includes(c.afectacionInstitucional?.tipoAfectacion),
+  )
+  const clasesSuspendidasInstitucional = clasesDelDiaCompleto.filter((c) =>
+    ['suspendida', 'sustituida'].includes(c.afectacionInstitucional?.tipoAfectacion),
+  )
 
   // Sesiones emergentes del día (clase_id = null) — tienen prioridad sobre las programadas
   const emergentesSesiones = sesiones
@@ -837,12 +872,21 @@ async function _openActionDrawer(fecha, container) {
           c.sesion &&
           (c.sesion.estado === 'pendiente' || c.sesion.borrador === true)
 
+        const exencion = c.afectacionInstitucional?.tipoAfectacion === 'impartida_con_exencion'
+          ? c.afectacionInstitucional
+          : null
+
         return `
         <div class="pm-drawer-clase-item btn-ver-sesion" data-clase="${c.id}" style="cursor: pointer;">
           <div class="pm-drawer-clase-info">
             <span class="pm-drawer-clase-hora">${(c.hora_inicio || '--:--').slice(0, 5)} - ${(c.hora_fin || '--:--').slice(0, 5)}</span>
             <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
             <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
+            ${exencion ? `
+              <span class="pm-drawer-clase-instrumento" style="color:#7c3aed;" title="${escHTML(exencion.exentos.map((e) => e.nombreCompleto).join(', '))}">
+                <i class="bi bi-person-dash-fill"></i> ${exencion.exentos.length} alumno(s) exento(s) por "${escHTML(exencion.actividadTitulo)}" — el resto tiene clase normal
+              </span>
+            ` : ''}
           </div>
 
           <div class="pm-clase-status ${tieneSesion ? 'completed' : esPendiente ? 'pending' : ''}" style="margin-left: auto; display:flex; align-items:center;">
@@ -889,6 +933,36 @@ async function _openActionDrawer(fecha, container) {
     `
   }
 
+  // Actividades institucionales aprobadas (ADM/ACM) que suspenden o
+  // sustituyen la clase — distinto del bloque cian de arriba: esas son
+  // sesiones que cada maestro auto-registró por su cuenta; esto viene de
+  // una aprobación institucional real, con el nombre de la actividad.
+  let institucionalSeccionHTML = ''
+  if (clasesSuspendidasInstitucional.length > 0) {
+    institucionalSeccionHTML = `
+      <div style="margin-top:0.75rem;">
+        <p style="font-size:0.7rem; font-weight:600; color:#7c3aed; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 0.5rem;">
+          <i class="bi bi-patch-check-fill"></i> Actividad institucional aprobada
+        </p>
+        ${clasesSuspendidasInstitucional
+          .map((c) => `
+            <div class="pm-drawer-clase-item" style="border-left:3px solid #7c3aed; opacity:0.9;">
+              <div class="pm-drawer-clase-info">
+                <span class="pm-drawer-clase-hora">${(c.hora_inicio || '--:--').slice(0, 5)} - ${(c.hora_fin || '--:--').slice(0, 5)}</span>
+                <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
+                <span class="pm-drawer-clase-instrumento" style="color:#7c3aed;">
+                  <i class="bi bi-info-circle-fill"></i> ${escHTML(TIPO_AFECTACION_LABEL[c.afectacionInstitucional.tipoAfectacion])}: ${escHTML(c.afectacionInstitucional.actividadTitulo)}
+                </span>
+                ${c.afectacionInstitucional.motivo ? `<span class="pm-drawer-clase-instrumento" style="color:var(--pm-text-muted); font-size:0.72rem;">${escHTML(c.afectacionInstitucional.motivo)}</span>` : ''}
+              </div>
+            </div>
+          `)
+          .join('')}
+        <p style="font-size:0.72rem; color:var(--pm-text-muted); margin:0.4rem 0 0;">No hace falta pasar asistencia en estas clases — ya está resuelto.</p>
+      </div>
+    `
+  }
+
   drawer.innerHTML = `
     <div class="pm-drawer-content">
       <div class="pm-drawer-header">
@@ -900,7 +974,9 @@ async function _openActionDrawer(fecha, container) {
                 ? `<span style="color:var(--pm-warning);"><i class="bi bi-lightning-charge-fill"></i> ${emergentesSesiones.length} actividad(es) especial(es)</span>`
                 : clasesProgramadas.length > 0
                   ? `${clasesProgramadas.length} clase(s) programada(s)`
-                  : 'Sin clases programadas'
+                  : clasesSuspendidasInstitucional.length > 0
+                    ? `<span style="color:#7c3aed;"><i class="bi bi-patch-check-fill"></i> Actividad institucional aprobada</span>`
+                    : 'Sin clases programadas'
             }
           </p>
         </div>
@@ -925,6 +1001,7 @@ async function _openActionDrawer(fecha, container) {
         `
         }
         ${suspendidaSeccionHTML}
+        ${institucionalSeccionHTML}
       </div>
     </div>
   `

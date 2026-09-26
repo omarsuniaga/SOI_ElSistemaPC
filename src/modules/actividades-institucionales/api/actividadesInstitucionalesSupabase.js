@@ -262,6 +262,46 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
 }
 
 /**
+ * Puente hacia el portal de maestros (§6): trae las afectaciones vigentes de
+ * un conjunto de clases para una fecha concreta, con el título de la
+ * actividad que las originó y los alumnos exentos (si aplica). Ninguna
+ * escritura acá — es exactamente lo que el maestro necesita ver para saber
+ * "¿qué pasó con mi clase hoy?".
+ * @param {string[]} claseIds
+ * @param {string} fecha 'YYYY-MM-DD'
+ */
+export async function obtenerAfectacionesVigentes(claseIds, fecha) {
+  if (!claseIds?.length || !fecha) return []
+
+  const { data, error } = await supabase
+    .from('calendario_afectaciones_clase')
+    .select(`
+      id, clase_id, tipo_afectacion, motivo,
+      calendario_institucional ( id, titulo, descripcion ),
+      calendario_exenciones_alumno ( alumno_id, alumnos ( nombre_completo ) )
+    `)
+    .in('clase_id', claseIds)
+    .eq('fecha', fecha)
+    .eq('vigente', true)
+
+  if (error) throw new Error(error.message || 'No se pudieron cargar las actividades institucionales del día')
+
+  return (data || []).map((row) => ({
+    claseId: row.clase_id,
+    afectacionId: row.id,
+    tipoAfectacion: row.tipo_afectacion,
+    motivo: row.motivo ?? '',
+    actividadId: row.calendario_institucional?.id ?? null,
+    actividadTitulo: row.calendario_institucional?.titulo ?? '',
+    actividadDescripcion: row.calendario_institucional?.descripcion ?? '',
+    exentos: (row.calendario_exenciones_alumno || []).map((e) => ({
+      alumnoId: e.alumno_id,
+      nombreCompleto: e.alumnos?.nombre_completo ?? '',
+    })),
+  }))
+}
+
+/**
  * Alumnos inscritos en una clase, para elegir exentos al marcar
  * impartida_con_exencion.
  */

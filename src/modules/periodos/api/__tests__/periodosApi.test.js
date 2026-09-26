@@ -27,6 +27,7 @@ function mockChain() {
   chain.neq = vi.fn().mockReturnValue(chain)
   chain.gte = vi.fn().mockReturnValue(chain)
   chain.lte = vi.fn().mockReturnValue(chain)
+  chain.not = vi.fn().mockReturnValue(chain)
   chain.order = vi.fn().mockReturnValue(chain)
   chain.update = vi.fn().mockReturnValue(chain)
   chain.insert = vi.fn().mockReturnValue(chain)

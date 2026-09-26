@@ -59,9 +59,13 @@ export async function getAnalisisContenidoPedagogico({
   // 2. Consultar sesiones en el rango (columnas reales: id, fecha, estado, clase_id, maestro_id, tema_principal, contenido)
   let sesiones = []
   try {
+    // clase_id null son declaraciones de "clase emergente" (feriado, etc.);
+    // su texto libre (p.ej. "Feriado") no es un tema técnico trabajado y no
+    // debe contarse en la cobertura de contenido.
     const { data, error: sesErr } = await supabase
       .from('sesiones_clase')
       .select('id, fecha, estado, clase_id, maestro_id, tema_principal, contenido')
+      .not('clase_id', 'is', null)
       .gte('fecha', inicio)
       .lte('fecha', fin)
 

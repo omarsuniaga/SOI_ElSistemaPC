@@ -171,6 +171,9 @@ async function _fetchSesionesSinAsistencia() {
         maestros:maestro_id(nombre_completo)
       )
     `)
+    // clase_id null son declaraciones de "clase emergente" (feriado, etc.),
+    // no una clase real — no deben generar "X tiene N clases sin asistencia".
+    .not('clase_id', 'is', null)
     .gte('fecha', since)
     .lt('fecha', hoy)         // excluir hoy (puede estar en progreso)
     .order('fecha', { ascending: false })

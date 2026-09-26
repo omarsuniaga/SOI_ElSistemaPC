@@ -126,9 +126,14 @@ export async function obtenerAuditoriaCierrePeriodo(periodoId) {
 
   if (pErr || !periodo) throw new Error('No se pudo encontrar el período seleccionado.')
 
+  // clase_id null son declaraciones de "clase emergente" (feriado, etc.),
+  // no una clase real que el maestro deba cerrar — contarlas infla
+  // "pendientes" con deuda falsa en esta auditoría de cierre de período
+  // (mismo bug ya corregido en obtenerEstadoCumplimientoMaestro).
   const { data: sesiones, error: sErr } = await supabase
     .from('sesiones_clase')
     .select('id, fecha, borrador, estado, maestro_id, asistencia, clase_id')
+    .not('clase_id', 'is', null)
     .gte('fecha', periodo.fecha_inicio)
     .lte('fecha', periodo.fecha_fin)
 

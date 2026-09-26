@@ -712,14 +712,13 @@ async function _openActionDrawer(fecha, container) {
   // depende de los ids de `clasesDelMaestro` y `cumplimiento` depende del
   // id de `periodoActivo`, así que van en una segunda tanda paralela una
   // vez resuelta la primera — 2 idas y vueltas en total en vez de 6.
-  const [emeRes, sesRes, asistRes, clasesRes, periodoActivoRes] = await Promise.allSettled([
-    supabase
-      .from('clases_emergentes')
-      .select('*')
-      .eq('maestro_id', maestro.id)
-      .eq('fecha', fecha)
-      .order('hora_inicio', { ascending: true, nullsFirst: false }),
-    supabase.from('sesiones_clase').select('*').eq('fecha', fecha),
+  const [sesRes, asistRes, clasesRes, periodoActivoRes] = await Promise.allSettled([
+    // Mecanismo viejo (clase emergente por maestro): se mantiene solo para
+    // leer historial ya creado. Ahora filtra por maestro_id — antes traía
+    // las sesiones emergentes de TODOS los maestros, lo que hacía que cada
+    // uno viera actividades especiales ajenas repetidas en su calendario
+    // (bug real reportado: "Feriado" duplicado varias veces el mismo día).
+    supabase.from('sesiones_clase').select('*').eq('fecha', fecha).eq('maestro_id', maestro.id),
     supabase.from('asistencias').select('clase_id, id, estado').eq('fecha', fecha),
     supabase
       .from('clases')
@@ -730,7 +729,6 @@ async function _openActionDrawer(fecha, container) {
     getPeriodoActivo().catch(() => null),
   ])
 
-  const emergentes = (emeRes.status === 'fulfilled' ? emeRes.value.data : null) || []
   const sesiones = (sesRes.status === 'fulfilled' ? sesRes.value.data : null) || []
   const asistencias = (asistRes.status === 'fulfilled' ? asistRes.value.data : null) || []
   const clasesDelMaestro = (clasesRes.status === 'fulfilled' ? clasesRes.value.data : null) || []

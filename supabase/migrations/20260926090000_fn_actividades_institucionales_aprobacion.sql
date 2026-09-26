@@ -25,7 +25,7 @@ AS $$
 DECLARE
   v_evento public.calendario_institucional%ROWTYPE;
   v_afectacion jsonb;
-  v_exento jsonb;
+  v_exento text;
   v_convocado jsonb;
   v_old_id uuid;
   v_old_tipo text;
@@ -44,8 +44,11 @@ BEGIN
     RAISE EXCEPTION 'Actividad % no encontrada', p_evento_id USING ERRCODE = 'P0002';
   END IF;
 
-  IF v_evento.estado NOT IN ('borrador', 'pendiente_revision') THEN
-    RAISE EXCEPTION 'La actividad % no está pendiente de aprobación (estado actual: %)',
+  -- 'aprobado' también es válido de entrada: permite corregir una actividad ya
+  -- aprobada reejecutando este mismo RPC (§3 "una modificación aprobada
+  -- propaga una nueva revisión", §10.3.5). rechazado/cancelado son terminales.
+  IF v_evento.estado NOT IN ('borrador', 'pendiente_revision', 'aprobado') THEN
+    RAISE EXCEPTION 'La actividad % no se puede aprobar/corregir desde su estado actual (%)',
       p_evento_id, v_evento.estado USING ERRCODE = '42501';
   END IF;
 
@@ -102,7 +105,11 @@ BEGIN
         INSERT INTO public.calendario_exenciones_alumno (afectacion_id, alumno_id, creado_por)
         VALUES (v_new_afectacion_id, v_exento::uuid, auth.uid())
         ON CONFLICT (afectacion_id, alumno_id) DO NOTHING;
-        v_count_exenciones := v_count_exenciones + 1;
+        -- ON CONFLICT DO NOTHING no cuenta como fila afectada en ROW_COUNT
+        -- cuando choca: contar así refleja inserciones reales, no intentos.
+        IF FOUND THEN
+          v_count_exenciones := v_count_exenciones + 1;
+        END IF;
       END LOOP;
     END IF;
   END LOOP;
@@ -141,7 +148,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.fn_aprobar_actividad_institucional(uuid, jsonb, jsonb, uuid) IS
-  'Aprueba una actividad institucional y publica sus afectaciones de clase, exenciones y convocatoria en una sola transacción. Idempotente: reintentar con el mismo payload no duplica filas. Solo admin/superadmin vía es_admin(). Precondición: estado en (borrador, pendiente_revision).';
+  'Aprueba (o corrige, si ya estaba aprobado) una actividad institucional y publica sus afectaciones de clase, exenciones y convocatoria en una sola transacción, incrementando version. Idempotente: reintentar con el mismo payload no duplica filas. Solo admin/superadmin vía es_admin(). Precondición: estado en (borrador, pendiente_revision, aprobado) — rechazado/cancelado son terminales.';
 
 REVOKE EXECUTE ON FUNCTION public.fn_aprobar_actividad_institucional(uuid, jsonb, jsonb, uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.fn_aprobar_actividad_institucional(uuid, jsonb, jsonb, uuid) FROM anon;

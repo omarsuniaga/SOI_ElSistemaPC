@@ -819,10 +819,17 @@ async function _openActionDrawer(fecha, container) {
     ['suspendida', 'sustituida'].includes(c.afectacionInstitucional?.tipoAfectacion),
   )
 
-  // Sesiones emergentes del día (clase_id = null) — tienen prioridad sobre las programadas
-  const emergentesSesiones = sesiones
+  // Sesiones emergentes del día (clase_id = null) — la declaración libre de
+  // la actividad ("Feriado", "Concierto"...). Si ya generó su efecto real
+  // (sesionesAutoJustificadas, las clases concretas que quedaron
+  // suspendidas/justificadas), esa declaración es redundante y no se
+  // muestra: mostrar ambas duplica el mismo evento (bug real reportado:
+  // 4 tarjetas "Feriado" repetidas el mismo día, además de "Clases de
+  // Violas" ya marcada como suspendida más abajo).
+  const emergentesSesionesTodas = sesiones
     .filter((s) => !s.clase_id)
     .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+  const emergentesSesiones = sesionesAutoJustificadas.length > 0 ? [] : emergentesSesionesTodas
 
   // 3. Renderizar contenido
   // Si hay emergentes → mostrar solo esas (reemplazan las programadas ese día)

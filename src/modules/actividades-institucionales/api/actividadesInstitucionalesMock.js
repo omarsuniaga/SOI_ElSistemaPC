@@ -205,6 +205,17 @@ export async function registrarAsistenciaActividad(eventoId, alumnoId, estado) {
   return { eventoId, alumnoId, estado }
 }
 
+export async function eliminarActividad(id) {
+  await delay()
+  const index = actividades.findIndex((a) => a.id === id)
+  if (index === -1) throw new Error('Actividad no encontrada')
+  if (!['borrador', 'pendiente_revision'].includes(actividades[index].estado)) {
+    throw new Error('Solo se pueden eliminar propuestas que aún no fueron aprobadas ni rechazadas')
+  }
+  actividades.splice(index, 1)
+  return { id }
+}
+
 export async function rechazarActividad(eventoId, motivo) {
   await delay()
   const row = actividades.find((a) => a.id === eventoId)

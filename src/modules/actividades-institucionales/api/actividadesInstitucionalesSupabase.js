@@ -33,6 +33,16 @@ function diaSemanaDe(fechaISO) {
   return DIAS_ES_LARGO[new Date(y, m - 1, d).getDay()]
 }
 
+// fecha_inicio/fecha_fin son timestamptz (para poder guardar franja horaria a
+// futuro). Postgres las devuelve como "2026-09-24 00:00:00+00" — nada del
+// resto del código debe ver ese formato: se recorta acá, una sola vez, al
+// primer punto de entrada. Escribimos y leemos siempre en el mismo huso
+// horario (session tz = UTC), así que tomar los primeros 10 caracteres da el
+// mismo día calendario que se guardó, sin cálculos de zona horaria.
+function soloFecha(valor) {
+  return valor ? String(valor).slice(0, 10) : null
+}
+
 function normalizeActividad(row) {
   if (!row) return null
   return {
@@ -41,8 +51,8 @@ function normalizeActividad(row) {
     descripcion: row.descripcion ?? '',
     categoria: row.categoria,
     alcance: row.alcance,
-    fechaInicio: row.fecha_inicio,
-    fechaFin: row.fecha_fin,
+    fechaInicio: soloFecha(row.fecha_inicio),
+    fechaFin: soloFecha(row.fecha_fin),
     ubicacion: row.ubicacion ?? '',
     programasConvocados: row.programas_convocados ?? [],
     clasesConvocadas: row.clases_convocadas ?? [],
@@ -298,6 +308,30 @@ export async function aprobarActividad(eventoId, afectaciones, convocatoria = []
 
   if (error) throw new Error(error.message || 'No se pudo aprobar la actividad')
   return data
+}
+
+/**
+ * Elimina una propuesta que todavía no fue aprobada (borrador o
+ * pendiente_revision). Una vez aprobada, se corrige o se rechaza — nunca se
+ * borra, para no perder el historial de lo que se decidió.
+ */
+export async function eliminarActividad(id) {
+  if (!id) throw new Error('id es obligatorio')
+
+  const { data: actual, error: readError } = await supabase
+    .from('calendario_institucional')
+    .select('estado')
+    .eq('id', id)
+    .maybeSingle()
+  if (readError) throw new Error(readError.message || 'No se pudo verificar la actividad')
+  if (!actual) throw new Error('Actividad no encontrada')
+  if (!['borrador', 'pendiente_revision'].includes(actual.estado)) {
+    throw new Error('Solo se pueden eliminar propuestas que aún no fueron aprobadas ni rechazadas')
+  }
+
+  const { error } = await supabase.from('calendario_institucional').delete().eq('id', id)
+  if (error) throw new Error(error.message || 'No se pudo eliminar la actividad')
+  return { id }
 }
 
 /** Rechaza una propuesta pendiente. No afecta clases ni métricas. */

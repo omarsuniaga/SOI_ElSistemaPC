@@ -7,6 +7,7 @@
 import {
   listarActividades,
   crearActividad,
+  eliminarActividad,
   previsualizarImpacto,
   listarAlumnosDeClase,
   aprobarActividad,
@@ -19,6 +20,7 @@ import { obtenerClases } from '../../clases/api/clasesApi.js'
 import { obtenerMaestrosActivos } from '../../maestros/api/maestrosApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import { router } from '../../../core/router/router.js'
 
 const CATEGORIA_LABEL = {
   feriado: 'Feriado / Cierre',
@@ -112,12 +114,15 @@ function _renderLayout(container) {
       <div class="card border-0 shadow-sm rounded-4 p-3 bg-body mb-3 border border-body-tertiary">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div class="d-flex align-items-center gap-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-btn-volver" title="Volver">
+              <i class="bi bi-arrow-left"></i>
+            </button>
             <div class="p-2 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
               <i class="bi bi-calendar-event fs-4"></i>
             </div>
             <div>
               <h4 class="fw-bold mb-0 text-body">Actividades Institucionales</h4>
-              <small class="text-muted">Feriados, suspensiones y actividades especiales con aprobación institucional</small>
+              <small class="text-muted">Feriados, suspensiones y actividades especiales con aprobación institucional.</small>
             </div>
           </div>
           <button type="button" class="btn btn-primary btn-sm" id="ai-btn-crear">
@@ -139,6 +144,7 @@ function _renderLayout(container) {
 
   _renderLista(container)
   container.querySelector('#ai-btn-crear')?.addEventListener('click', () => _openCrearModal(container))
+  container.querySelector('#ai-btn-volver')?.addEventListener('click', () => router.navigate('clases-hoy'))
   container.querySelectorAll('.ai-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.filtroEstado = btn.dataset.estado
@@ -178,6 +184,20 @@ function _renderLista(container) {
   listEl.querySelectorAll('.ai-btn-pasar-lista').forEach((btn) => {
     btn.addEventListener('click', () => _openPasarListaModal(container, btn.dataset.id))
   })
+  listEl.querySelectorAll('.ai-btn-eliminar').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const actividad = state.actividades.find((a) => a.id === btn.dataset.id)
+      if (!confirm(`¿Eliminar la propuesta "${actividad?.titulo}"? No se puede deshacer.`)) return
+      try {
+        await eliminarActividad(btn.dataset.id)
+        state.actividades = await listarActividades()
+        _renderLista(container)
+        AppToast.success('Propuesta eliminada')
+      } catch (err) {
+        AppToast.error(err.message || 'No se pudo eliminar la propuesta')
+      }
+    })
+  })
 }
 
 function _cardHTML(a) {
@@ -203,7 +223,10 @@ function _cardHTML(a) {
         </div>
         <div class="d-flex gap-1">
           ${a.estado === 'pendiente_revision' || a.estado === 'borrador'
-            ? `<button type="button" class="btn btn-sm btn-outline-primary ai-btn-revisar" data-id="${_esc(a.id)}"><i class="bi bi-clipboard-check me-1"></i>Revisar</button>`
+            ? `
+              <button type="button" class="btn btn-sm btn-outline-primary ai-btn-revisar" data-id="${_esc(a.id)}"><i class="bi bi-clipboard-check me-1"></i>Revisar</button>
+              <button type="button" class="btn btn-sm btn-outline-danger ai-btn-eliminar" data-id="${_esc(a.id)}" title="Eliminar propuesta"><i class="bi bi-trash"></i></button>
+            `
             : a.estado === 'aprobado'
               ? `
                 <button type="button" class="btn btn-sm btn-outline-secondary ai-btn-revisar" data-id="${_esc(a.id)}"><i class="bi bi-pencil me-1"></i>Corregir</button>
@@ -246,17 +269,22 @@ function _openCrearModal(container, { fechaInicial } = {}) {
           <option value="programa">Un programa</option>
           <option value="clase">Clases específicas</option>
         </select>
+        <div class="form-text" style="font-size:0.7rem;">Institucional = cierra todo (ej. feriado nacional). Programa = solo un programa, como la Orquesta. Clase = elegís vos cuáles.</div>
       </div>
     </div>
-    <div class="row g-2 mb-3">
+    <div class="row g-2 mb-1">
       <div class="col-6">
         <label class="form-label small fw-semibold">Fecha inicio</label>
         <input type="date" class="form-control form-control-sm" id="ai-c-fecha-inicio" value="${_esc(fechaInicial || '')}">
       </div>
       <div class="col-6">
         <label class="form-label small fw-semibold">Fecha fin</label>
-        <input type="date" class="form-control form-control-sm" id="ai-c-fecha-fin" value="${_esc(fechaInicial || '')}">
+        <input type="date" class="form-control form-control-sm" id="ai-c-fecha-fin" value="${_esc(fechaInicial || '')}" disabled>
       </div>
+    </div>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="ai-c-un-solo-dia" checked>
+      <label class="form-check-label small" for="ai-c-un-solo-dia">Es de un solo día (la mayoría de los casos)</label>
     </div>
     <div class="mb-3" id="ai-c-programa-wrap" style="display:none;">
       <label class="form-label small fw-semibold">Programa convocado</label>
@@ -279,10 +307,14 @@ function _openCrearModal(container, { fechaInicial } = {}) {
     <div class="row g-2">
       <div class="col-6">
         <label class="form-label small fw-semibold">Ubicación</label>
-        <input type="text" class="form-control form-control-sm" id="ai-c-ubicacion">
+        <input type="text" class="form-control form-control-sm" id="ai-c-ubicacion" placeholder="Ej. Auditorio Principal, Salón 4">
+        <div class="form-text" style="font-size:0.7rem;">Dónde ocurre la actividad. Opcional — dejalo vacío si es un cierre general sin lugar puntual.</div>
       </div>
       <div class="col-6">
-        <label class="form-label small fw-semibold">Responsable de asistencia</label>
+        <label class="form-label small fw-semibold">
+          Responsable de asistencia
+          <i class="bi bi-info-circle text-muted" title="La persona que va a pasar lista de presentes/ausentes de esta actividad (distinto de la asistencia a clase normal). Por ejemplo, quien dirige el ensayo."></i>
+        </label>
         <select class="form-select form-select-sm" id="ai-c-responsable">
           <option value="">Sin asignar</option>
           ${state.maestros.map((m) => `<option value="${_esc(m.user_id || m.id)}">${_esc(m.nombre_completo || m.nombre)}</option>`).join('')}
@@ -304,6 +336,18 @@ function _openCrearModal(container, { fechaInicial } = {}) {
       }
       alcanceSelect.addEventListener('change', toggleAlcance)
       toggleAlcance()
+
+      const inicioInput = body.querySelector('#ai-c-fecha-inicio')
+      const finInput = body.querySelector('#ai-c-fecha-fin')
+      const unSoloDiaChk = body.querySelector('#ai-c-un-solo-dia')
+      const sincronizarFin = () => { finInput.value = inicioInput.value }
+      unSoloDiaChk.addEventListener('change', () => {
+        finInput.disabled = unSoloDiaChk.checked
+        if (unSoloDiaChk.checked) sincronizarFin()
+      })
+      inicioInput.addEventListener('change', () => {
+        if (unSoloDiaChk.checked) sincronizarFin()
+      })
     },
     onSave: async (body) => {
       const titulo = body.querySelector('#ai-c-titulo').value.trim()
@@ -367,12 +411,13 @@ async function _openRevisarModal(container, actividadId) {
   const actividad = state.actividades.find((a) => a.id === actividadId)
   if (!actividad) return
 
+  const yaAprobada = actividad.estado === 'aprobado'
   const decisiones = new Map() // claseId -> { tipoAfectacion, motivo, exentos: Set }
 
   AppModal.open({
-    title: `Revisar: ${actividad.titulo}`,
+    title: yaAprobada ? `Corregir: ${actividad.titulo}` : `Revisar: ${actividad.titulo}`,
     size: 'lg',
-    saveText: 'Aprobar y publicar',
+    saveText: yaAprobada ? 'Guardar corrección' : 'Aprobar y publicar',
     cancelText: 'Cerrar',
     body: `
       <div class="mb-3">
@@ -383,11 +428,13 @@ async function _openRevisarModal(container, actividadId) {
         <div class="spinner-border spinner-border-sm me-2"></div>Calculando clases afectadas...
       </div>
       <div id="ai-impacto-lista" class="d-none"></div>
-      <div class="mt-3 pt-2 border-top d-flex justify-content-end">
-        <button type="button" class="btn btn-sm btn-outline-danger" id="ai-btn-rechazar">
-          <i class="bi bi-x-circle me-1"></i>Rechazar propuesta
-        </button>
-      </div>
+      ${yaAprobada ? '' : `
+        <div class="mt-3 pt-2 border-top d-flex justify-content-end">
+          <button type="button" class="btn btn-sm btn-outline-danger" id="ai-btn-rechazar">
+            <i class="bi bi-x-circle me-1"></i>Rechazar propuesta
+          </button>
+        </div>
+      `}
     `,
     onShow: async (body) => {
       let impacto = []
@@ -508,7 +555,7 @@ async function _openRevisarModal(container, actividadId) {
         await aprobarActividad(actividad.id, afectaciones, convocatoria, actividad.responsableAsistenciaId)
         state.actividades = await listarActividades()
         _renderLayout(container)
-        AppToast.success('Actividad aprobada y publicada')
+        AppToast.success(yaAprobada ? 'Corrección guardada' : 'Actividad aprobada y publicada')
         return true
       } catch (err) {
         AppToast.error(err.message || 'No se pudo aprobar la actividad')

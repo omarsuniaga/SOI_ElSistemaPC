@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../api/actividadesInstitucionalesApi.js', () => ({
   listarActividades: vi.fn(),
   crearActividad: vi.fn(),
+  eliminarActividad: vi.fn(),
   previsualizarImpacto: vi.fn(),
   listarAlumnosDeClase: vi.fn(),
   aprobarActividad: vi.fn(),
@@ -16,11 +17,15 @@ vi.mock('../../maestros/api/maestrosApi.js', () => ({ obtenerMaestrosActivos: vi
 vi.mock('../../../shared/components/AppToast.js', () => ({
   AppToast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }))
+vi.mock('../../../core/router/router.js', () => ({
+  router: { navigate: vi.fn() },
+}))
 
 import { renderActividadesInstitucionalesView } from '../views/actividadesInstitucionalesView.js'
 import {
   listarActividades,
   crearActividad,
+  eliminarActividad,
   previsualizarImpacto,
   listarAlumnosDeClase,
   aprobarActividad,
@@ -250,5 +255,76 @@ describe('actividadesInstitucionalesView', () => {
     await flush()
 
     expect(registrarAsistenciaActividad).toHaveBeenCalledWith('act-1', 'al-1', 'presente')
+  })
+
+  it('corregir una actividad aprobada no muestra el botón de rechazar', async () => {
+    listarActividades.mockResolvedValue([actividad({ estado: 'aprobado' })])
+    previsualizarImpacto.mockResolvedValue([])
+
+    await renderActividadesInstitucionalesView(container)
+    await flush()
+    container.querySelector('.ai-tab[data-estado="aprobado"]').click()
+    await flush()
+
+    container.querySelector('.ai-btn-revisar').click()
+    await flush()
+    await flush()
+
+    expect(document.querySelector('.app-modal-title').textContent).toContain('Corregir')
+    expect(document.querySelector('#ai-btn-rechazar')).toBeNull()
+    expect(document.querySelector('.app-modal-save-text').textContent).toContain('corrección')
+  })
+
+  it('elimina una propuesta pendiente desde la bandeja, previa confirmación', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    eliminarActividad.mockResolvedValue({ id: 'act-1' })
+    listarActividades.mockResolvedValueOnce([actividad()]).mockResolvedValueOnce([])
+
+    await renderActividadesInstitucionalesView(container)
+    await flush()
+
+    container.querySelector('.ai-btn-eliminar').click()
+    await flush()
+
+    expect(eliminarActividad).toHaveBeenCalledWith('act-1')
+    expect(AppToast.success).toHaveBeenCalledWith(expect.stringContaining('eliminada'))
+    confirmSpy.mockRestore()
+  })
+
+  it('no elimina si el usuario cancela la confirmación', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    await renderActividadesInstitucionalesView(container)
+    await flush()
+    container.querySelector('.ai-btn-eliminar').click()
+    await flush()
+
+    expect(eliminarActividad).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
+  it('el botón volver navega a Clases de Hoy', async () => {
+    const { router } = await import('../../../core/router/router.js')
+    await renderActividadesInstitucionalesView(container)
+    await flush()
+
+    container.querySelector('#ai-btn-volver').click()
+    expect(router.navigate).toHaveBeenCalledWith('clases-hoy')
+  })
+
+  it('el checkbox "un solo día" mantiene sincronizada la fecha de fin', async () => {
+    await renderActividadesInstitucionalesView(container)
+    await flush()
+    container.querySelector('#ai-btn-crear').click()
+    await flush()
+
+    const modalBody = document.querySelector('.app-modal-body')
+    const inicio = modalBody.querySelector('#ai-c-fecha-inicio')
+    const fin = modalBody.querySelector('#ai-c-fecha-fin')
+    expect(fin.disabled).toBe(true)
+
+    inicio.value = '2026-12-01'
+    inicio.dispatchEvent(new Event('change'))
+    expect(fin.value).toBe('2026-12-01')
   })
 })

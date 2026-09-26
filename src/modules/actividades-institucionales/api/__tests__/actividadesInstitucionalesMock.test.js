@@ -76,6 +76,21 @@ describe('actividadesInstitucionalesMock', () => {
     expect(roster.find((r) => r.alumnoId === 'demo-alumno-1').estado).toBe('presente')
   })
 
+  it('elimina una propuesta pendiente pero no una ya aprobada', async () => {
+    const { crearActividad, eliminarActividad, aprobarActividad, listarActividades } = await import('../actividadesInstitucionalesMock.js')
+    const pendiente = await crearActividad({
+      titulo: 'A eliminar', categoria: 'feriado', alcance: 'institucional', fechaInicio: '2026-11-07', fechaFin: '2026-11-07',
+    })
+    await eliminarActividad(pendiente.id)
+    expect((await listarActividades()).find((a) => a.id === pendiente.id)).toBeUndefined()
+
+    const aprobada = await crearActividad({
+      titulo: 'No se puede borrar', categoria: 'feriado', alcance: 'institucional', fechaInicio: '2026-11-08', fechaFin: '2026-11-08',
+    })
+    await aprobarActividad(aprobada.id, [])
+    await expect(eliminarActividad(aprobada.id)).rejects.toThrow(/no fueron aprobadas/)
+  })
+
   it('no permite aprobar una actividad ya rechazada', async () => {
     const { crearActividad, rechazarActividad, aprobarActividad } = await import('../actividadesInstitucionalesMock.js')
     const nueva = await crearActividad({

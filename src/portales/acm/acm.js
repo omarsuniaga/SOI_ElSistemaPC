@@ -20,6 +20,7 @@ const navGroups = [
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'programas', label: 'Programas', icon: 'bi-book' },
       { id: 'clases', label: 'Gestión de Clases', icon: 'bi-easel2' },
+      { id: 'actividades-institucionales', label: 'Actividades Institucionales', icon: 'bi-calendar-event' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
     ],
   },

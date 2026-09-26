@@ -34,6 +34,7 @@ const navGroups = [
     items: [
       { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
       { id: 'clases', label: 'Gestión de Clases', icon: 'bi-calendar3' },
+      { id: 'actividades-institucionales', label: 'Actividades Institucionales', icon: 'bi-calendar-event' },
       { id: 'salones', label: 'Salones & Espacios', icon: 'bi-door-open' },
       { id: 'asistencias', label: 'Control de Asistencias', icon: 'bi-calendar-check' },
       { id: 'admin-ausencias', label: 'Gestión de Ausencias', icon: 'bi-calendar-x' },

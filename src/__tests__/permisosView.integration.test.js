@@ -21,7 +21,7 @@ vi.mock('../shared/components/AppToast.js', () => ({
 
 vi.mock('../modules/auth/hooks/useAuth.js', () => ({
   useAuth: {
-    getUser: vi.fn(() => ({ nombre_completo: 'Admin Test', email: 'admin@test.com' })),
+    getUser: vi.fn(() => ({ id: 'admin-uuid-001', email: 'admin@test.com', user_metadata: { full_name: 'Admin Test' } })),
   },
 }))
 
@@ -185,7 +185,7 @@ describe('Permisos View — Admin toggle integration', () => {
       puede_inscribir_clases: true,
       permisos: ['clases:enroll'],
       solicitudes: [],
-      concedido_por: 'admin',
+      concedido_por: 'admin-uuid-001',
       concedido_por_nombre: 'Admin Test',
     })
   })
@@ -206,7 +206,7 @@ describe('Permisos View — Admin toggle integration', () => {
       puede_crear_clases: true,
       permisos: ['clases:create'],
       solicitudes: [],
-      concedido_por: 'admin',
+      concedido_por: 'admin-uuid-001',
       concedido_por_nombre: 'Admin Test',
     })
   })

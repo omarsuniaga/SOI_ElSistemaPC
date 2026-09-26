@@ -9,6 +9,11 @@ import { whatsappLink } from '../../../shared/utils/phoneUtils.js'
 
 let _abortController = null
 
+function _todayISO() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
 const ESTADO_LABEL = {
   'en-curso': { label: 'En curso', badge: 'success' },
   proxima: { label: 'Próxima', badge: 'warning' },
@@ -549,6 +554,14 @@ function attachEvents(container, sesiones) {
     abrirModalBuscarAlumnoGlobal(container, sesiones)
   }, { signal })
 
+  container.querySelector('#clasesHoyActividadEspecial')?.addEventListener('click', () => {
+    // dia-pill guarda un nombre de día de semana genérico ("lunes"), no una
+    // fecha calendario — solo tiene sentido precargar si coincide con hoy.
+    const diaActivo = container.querySelector('.clases-hoy__dia-pill.is-active')?.dataset.dia
+    const fecha = diaActivo && diaActivo === obtenerDiaActual() ? _todayISO() : null
+    router.navigate('actividades-institucionales', { crear: true, fecha })
+  }, { signal })
+
   container.querySelectorAll('.clases-hoy__ver-ficha').forEach(btn => {
     btn.addEventListener('click', () => {
       router.navigate('clases', { selectedId: btn.dataset.claseId })
@@ -613,6 +626,10 @@ function renderContent(container, dia, kpis, sesiones) {
           <!-- Toolbar de Botones de Acción -->
           <div class="d-flex align-items-center flex-wrap" style="gap: 0.65rem;">
             ${renderViewInfoButton('clases-hoy')}
+            <button class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="clasesHoyActividadEspecial" title="Registrar feriado, suspensión o actividad especial para este día" style="font-size:0.78rem;">
+              <i class="bi bi-calendar-event"></i>
+              <span>Actividad Especial</span>
+            </button>
             <button class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="clasesHoyBuscarAlumno" title="Buscar alumno y registrar justificación" style="font-size:0.78rem;">
               <i class="bi bi-search-heart"></i>
               <span>Buscar Alumno y Justificar</span>

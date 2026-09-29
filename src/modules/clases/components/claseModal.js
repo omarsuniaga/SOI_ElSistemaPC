@@ -24,6 +24,7 @@ import {
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
 import { alumnoCoincideBusqueda, resolveEsRotativa } from './claseModal.helpers.js'
+import { agruparTurnos, diaEfectivo, DIAS_TURNO, validarTurno } from '../utils/turnosIndividuales.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.
@@ -330,7 +331,7 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) 
             </div>
 
             <div class="flex-grow-1 overflow-auto" id="seccion-alumnos-rotativa" style="display:${esRotativa ? 'block' : 'none'}; max-height: calc(92vh - 240px);">
-              ${_getSlotBuilderHTML(inscritosSlots)}
+              ${_getSlotBuilderHTML(inscritosSlots, clase?.horarios || [])}
             </div>
 
           </div>
@@ -341,34 +342,15 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = [], opts = {}) 
   `
 }
 
-function _getSlotBuilderHTML(inscritosSlots = []) {
+function _getSlotBuilderHTML(inscritosSlots = [], horarios = []) {
   const alumnos = _options.alumnos || []
   const alumnosMap = new Map(alumnos.map(a => [a.id, a]))
 
-  // Agrupar alumnos inscritos por franja horaria (hora_inicio + hora_fin)
-  const slotsGroupMap = new Map()
-
-  inscritosSlots.forEach(s => {
-    const key = `${(s.hora_inicio || '00:00').slice(0, 5)}-${(s.hora_fin || '00:00').slice(0, 5)}`
-    if (!slotsGroupMap.has(key)) {
-      slotsGroupMap.set(key, {
-        hora_inicio: (s.hora_inicio || '00:00').slice(0, 5),
-        hora_fin: (s.hora_fin || '00:00').slice(0, 5),
-        alumnosIds: [],
-      })
-    }
-    if (s.alumno_id) {
-      slotsGroupMap.get(key).alumnosIds.push(s.alumno_id)
-    }
-  })
-
-  const existingCards = Array.from(slotsGroupMap.values()).sort((a, b) => {
-    return timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59')
-  })
+  const existingCards = agruparTurnos(inscritosSlots, horarios)
 
   const cardsHtml = existingCards.length > 0
     ? existingCards.map(s => _renderSlotCardHTML(s, alumnos, alumnosMap)).join('')
-    : _renderSlotCardHTML({ hora_inicio: '15:00', hora_fin: '15:30', alumnosIds: [] }, alumnos, alumnosMap)
+    : _renderSlotCardHTML({ dia: horarios.length === 1 ? horarios[0].dia : null, hora_inicio: '15:00', hora_fin: '15:30', alumnosIds: [] }, alumnos, alumnosMap)
 
   return `
     <div class="rotativa-container">
@@ -434,6 +416,10 @@ function _renderSlotCardHTML(slot, alumnos = [], alumnosMap = new Map()) {
           <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:0.75rem;">
             <i class="bi bi-clock me-1"></i>Turno
           </span>
+          <select class="form-select form-select-sm slot-dia" style="width:125px" aria-label="Día del turno">
+            <option value="">Día pendiente</option>
+            ${DIAS_TURNO.map(d => `<option value="${d}" ${slot.dia === d ? 'selected' : ''}>${d}</option>`).join('')}
+          </select>
           <div class="d-flex align-items-center gap-1">
             <input type="time" class="form-control form-control-sm slot-hora-inicio input-dense" value="${slot.hora_inicio || ''}" style="width:105px;" required>
             <span class="text-muted small">–</span>
@@ -450,7 +436,7 @@ function _renderSlotCardHTML(slot, alumnos = [], alumnosMap = new Map()) {
       <!-- Alumnos Asignados a este Turno (Soporte Multi-Alumno / Micro-Grupo) -->
       <div class="slot-alumnos-container d-flex flex-column gap-1.5 mb-2">
         ${alumnosDelTurno.length > 0 ? alumnosDelTurno.map(a => `
-          <div class="slot-alumno-pill d-flex align-items-center justify-content-between p-1.5 px-2 rounded-2 bg-body-tertiary border" data-alumno-id="${a.id}">
+          <div class="slot-alumno-pill d-flex align-items-center justify-content-between p-1.5 px-2 rounded-2 bg-body-tertiary border" data-alumno-id="${a.id}" data-dia-original="${slot.originalDays?.[a.id] || ''}">
             <div class="d-flex align-items-center gap-2 text-truncate me-2">
               <i class="bi bi-person-fill text-primary"></i>
               <strong class="text-body small text-truncate">${escapeHTML(a.nombre_completo)}</strong>
@@ -622,7 +608,8 @@ function _attachModalEvents(modalBody, _clase) {
     const alumnos = _options.alumnos || []
     const alumnosMap = new Map(alumnos.map(a => [a.id, a]))
     const temp = document.createElement('div')
-    temp.innerHTML = _renderSlotCardHTML({ hora_inicio: '15:00', hora_fin: '15:30', alumnosIds: [] }, alumnos, alumnosMap)
+    const dias = [...new Set(Array.from(modalBody.querySelectorAll('[name="horario-dia"]')).map(el => el.value).filter(Boolean))]
+    temp.innerHTML = _renderSlotCardHTML({ dia: dias.length === 1 ? dias[0] : null, hora_inicio: '15:00', hora_fin: '15:30', alumnosIds: [] }, alumnos, alumnosMap)
     slotsContainer.appendChild(temp.firstElementChild)
     _updateSlotsCount()
   })
@@ -820,6 +807,7 @@ function _attachModalEvents(modalBody, _clase) {
     }
 
     const firstHorarioRow = modalBody.querySelector('#modal-horarios-container .horario-row')
+    const diaHorario = firstHorarioRow?.querySelector('[name="horario-dia"]')?.value
     const startStr = firstHorarioRow?.querySelector('[name="horario-hora_inicio"]')?.value
     const endStr   = firstHorarioRow?.querySelector('[name="horario-hora_fin"]')?.value
 
@@ -849,22 +837,16 @@ function _attachModalEvents(modalBody, _clase) {
       return
     }
 
-    const existingCards = Array.from(slotsContainer.querySelectorAll('.slot-card'))
+    // Generar nuevas franjas sin sobrescribir turnos ya asignados.
+    const existingKeys = new Set(Array.from(slotsContainer.querySelectorAll('.slot-card')).map(card => `${card.querySelector('.slot-dia')?.value}|${card.querySelector('.slot-hora-inicio')?.value}|${card.querySelector('.slot-hora-fin')?.value}`))
     const alumnos = _options.alumnos || []
     const alumnosMap = new Map(alumnos.map(a => [a.id, a]))
 
-    turnosGenerados.forEach((t, idx) => {
-      let card = existingCards[idx]
-      if (!card) {
+    turnosGenerados.forEach((t) => {
+      if (!existingKeys.has(`${diaHorario}|${t.inicio}|${t.fin}`)) {
         const temp = document.createElement('div')
-        temp.innerHTML = _renderSlotCardHTML({ hora_inicio: t.inicio, hora_fin: t.fin, alumnosIds: [] }, alumnos, alumnosMap)
-        card = temp.firstElementChild
-        slotsContainer.appendChild(card)
-      } else {
-        card.querySelector('.slot-hora-inicio').value = t.inicio
-        card.querySelector('.slot-hora-fin').value = t.fin
-        const badge = card.querySelector('.slot-duracion-badge')
-        if (badge) badge.textContent = `${durationMin} min`
+        temp.innerHTML = _renderSlotCardHTML({ dia: diaHorario, hora_inicio: t.inicio, hora_fin: t.fin, alumnosIds: [] }, alumnos, alumnosMap)
+        slotsContainer.appendChild(temp.firstElementChild)
       }
     })
 
@@ -1079,6 +1061,8 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
         if (alumnoId) {
           slots.push({
             alumno_id: alumnoId,
+            dia: card.querySelector('.slot-dia')?.value || null,
+            diaOriginal: pill.dataset.diaOriginal || null,
             hora_inicio: horaInicio,
             hora_fin: horaFin,
           })
@@ -1101,24 +1085,45 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
     ])
   }
 
+  // Validar la nómina antes de escribir la clase o reemplazar sus horarios.
+  const currentSlots = isEdicion && formData.tipo_clase === 'rotativa'
+    ? await obtenerAlumnosInscritos(originalClase.id)
+    : []
+  const currentByAlumno = new Map(currentSlots.map(row => [row.alumno_id, row]))
+  const turnoSinCambios = (slot) => {
+    const current = currentByAlumno.get(slot.alumno_id)
+    if (!current) return false
+    const diaAnterior = diaEfectivo(current, originalClase?.horarios || []).dia
+    return slot.dia === diaAnterior && slot.hora_inicio === String(current.hora_inicio || '').slice(0, 5) && slot.hora_fin === String(current.hora_fin || '').slice(0, 5)
+  }
+  if (formData.tipo_clase === 'rotativa') {
+    const slots = _readSlots()
+    if (!slots.length) { AppToast.warning('Agregue al menos un turno'); return false }
+    const invalid = slots.find(s => !turnoSinCambios(s) && validarTurno({ dia: s.dia, horaInicio: s.hora_inicio, horaFin: s.hora_fin }, formData.horarios))
+    if (invalid) { AppToast.error(validarTurno({ dia: invalid.dia, horaInicio: invalid.hora_inicio, horaFin: invalid.hora_fin }, formData.horarios)); return false }
+    if (new Set(slots.map(s => s.alumno_id)).size !== slots.length) { AppToast.error('Un alumno no puede ocupar dos turnos en la misma clase.'); return false }
+  }
+
   const _syncRotativa = async (claseId) => {
     const slots = _readSlots()
     if (slots.length === 0) { AppToast.warning('Agregue al menos un turno'); return false }
 
-    const incomplete = slots.find(s => !s.hora_inicio || !s.hora_fin)
-    if (incomplete) { AppToast.error('Todos los turnos deben tener hora de inicio y fin'); return false }
+    const horarios = formData.horarios
+    const incomplete = slots.find(s => !turnoSinCambios(s) && validarTurno({ dia: s.dia, horaInicio: s.hora_inicio, horaFin: s.hora_fin }, horarios))
+    if (incomplete) { AppToast.error(validarTurno({ dia: incomplete.dia, horaInicio: incomplete.hora_inicio, horaFin: incomplete.hora_fin }, horarios)); return false }
+    if (new Set(slots.map(s => s.alumno_id)).size !== slots.length) { AppToast.error('Un alumno no puede ocupar dos turnos en la misma clase.'); return false }
 
-    const currentEnrolled = await obtenerAlumnosInscritos(claseId)
+    const currentEnrolled = isEdicion ? currentSlots : await obtenerAlumnosInscritos(claseId)
     const currentIds = (currentEnrolled || []).map(i => i.alumno_id)
     const newIds     = slots.map(s => s.alumno_id)
 
     const toRemove = currentIds.filter(id => !newIds.includes(id))
     await Promise.all(toRemove.map(aid => desinscribirAlumno(claseId, aid)))
 
-    await Promise.all(slots.map(s =>
+    await Promise.all(slots.filter(s => !turnoSinCambios(s)).map(s =>
       currentIds.includes(s.alumno_id)
-        ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
-        : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
+        ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin, s.diaOriginal === null && s.dia === diaEfectivo({ dia: null }, horarios).dia ? null : s.dia)
+        : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin, s.dia)
     ))
     return true
   }
@@ -1131,7 +1136,9 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
   try {
     let resultClase
     if (isEdicion) {
-      resultClase = await actualizarClase(originalClase.id, formData, true)
+      const canonicalHorarios = (items) => JSON.stringify((items || []).map(h => [h.dia, String(h.hora_inicio || '').slice(0, 5), String(h.hora_fin || '').slice(0, 5), h.salon_id || null]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))))
+      const horariosSinCambio = canonicalHorarios(formData.horarios) === canonicalHorarios(originalClase.horarios)
+      resultClase = await actualizarClase(originalClase.id, horariosSinCambio ? { ...formData, horarios: undefined } : formData, true)
       tSave.update('Sincronizando nómina de alumnos...')
       if (formData.tipo_clase === 'rotativa') {
         const ok = await _syncRotativa(resultClase.id)

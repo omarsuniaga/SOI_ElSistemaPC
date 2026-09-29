@@ -39,6 +39,25 @@ export function agruparTurnos(inscripciones = [], horarios = []) {
     (a.dia ? DIAS_TURNO.indexOf(a.dia) : 7) - (b.dia ? DIAS_TURNO.indexOf(b.dia) : 7) || a.hora_inicio.localeCompare(b.hora_inicio))
 }
 
+/** Lee todas las asignaciones, incluso si la hora está incompleta, para que la validación impida perder alumnos. */
+export function leerTurnosRotativos(container) {
+  const slots = []
+  container.querySelectorAll('.slot-card').forEach(card => {
+    const hora_inicio = card.querySelector('.slot-hora-inicio')?.value || ''
+    const hora_fin = card.querySelector('.slot-hora-fin')?.value || ''
+    card.querySelectorAll('.slot-alumno-pill').forEach(pill => {
+      if (pill.dataset.alumnoId) slots.push({
+        alumno_id: pill.dataset.alumnoId,
+        dia: card.querySelector('.slot-dia')?.value || null,
+        diaOriginal: pill.dataset.diaOriginal || null,
+        hora_inicio,
+        hora_fin,
+      })
+    })
+  })
+  return slots
+}
+
 export function validarTurno({ dia, horaInicio, horaFin }, horarios = []) {
   if (dia !== null && !DIAS_TURNO.includes(dia)) return 'Selecciona un día válido.'
   if (!horaInicio || !horaFin || !/^\d{2}:\d{2}$/.test(horaInicio) || !/^\d{2}:\d{2}$/.test(horaFin) || horaInicio >= horaFin) {

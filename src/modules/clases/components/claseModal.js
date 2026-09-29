@@ -24,7 +24,7 @@ import {
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
 import { alumnoCoincideBusqueda, resolveEsRotativa } from './claseModal.helpers.js'
-import { agruparTurnos, diaEfectivo, DIAS_TURNO, validarTurno } from '../utils/turnosIndividuales.js'
+import { agruparTurnos, diaEfectivo, DIAS_TURNO, leerTurnosRotativos, validarTurno } from '../utils/turnosIndividuales.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.
@@ -1049,26 +1049,7 @@ async function _handleSave(modalBody, originalClase, ctx = {}) {
 
   // ── Helpers para leer slots del panel rotativa ───────────────────────────
   const _readSlots = () => {
-    const slots = []
-    modalBody.querySelectorAll('#slots-container .slot-card').forEach(card => {
-      const horaInicio = card.querySelector('.slot-hora-inicio')?.value || ''
-      const horaFin = card.querySelector('.slot-hora-fin')?.value || ''
-      if (!horaInicio || !horaFin) return
-
-      const alumnoPills = card.querySelectorAll('.slot-alumno-pill')
-      alumnoPills.forEach(pill => {
-        const alumnoId = pill.dataset.alumnoId
-        if (alumnoId) {
-          slots.push({
-            alumno_id: alumnoId,
-            dia: card.querySelector('.slot-dia')?.value || null,
-            diaOriginal: pill.dataset.diaOriginal || null,
-            hora_inicio: horaInicio,
-            hora_fin: horaFin,
-          })
-        }
-      })
-    })
+    const slots = leerTurnosRotativos(modalBody.querySelector('#slots-container'))
     return slots.sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agruparTurnos, diaEfectivo, ordenarInscripciones, validarTurno } from './turnosIndividuales.js'
+import { agruparTurnos, diaEfectivo, leerTurnosRotativos, ordenarInscripciones, validarTurno } from './turnosIndividuales.js'
 
 const horarios = [
   { dia: 'jueves', hora_inicio: '14:00:00', hora_fin: '17:00:00' },
@@ -25,6 +25,13 @@ describe('turnos individuales', () => {
   it('rechaza un turno fuera del bloque y acepta uno dentro', () => {
     expect(validarTurno({ dia: 'lunes', horaInicio: '15:00', horaFin: '15:30' }, horarios)).toBeNull()
     expect(validarTurno({ dia: 'martes', horaInicio: '15:00', horaFin: '15:30' }, horarios)).toMatch(/dentro/)
+  })
+  it('no omite al alumno cuando una hora del formulario está vacía', () => {
+    const container = document.createElement('div')
+    container.innerHTML = '<div class="slot-card"><select class="slot-dia"><option value="jueves" selected>jueves</option></select><input class="slot-hora-inicio" value="14:00"><input class="slot-hora-fin" value=""><div class="slot-alumno-pill" data-alumno-id="al-1"></div></div>'
+    const slots = leerTurnosRotativos(container)
+    expect(slots).toHaveLength(1)
+    expect(validarTurno({ dia: slots[0].dia, horaInicio: slots[0].hora_inicio, horaFin: slots[0].hora_fin }, [horarios[0]])).toMatch(/horas válidas/)
   })
 
   it('representa los 18 turnos reales anonimizados de piano de Juan Cardona (29-09-2026)', () => {

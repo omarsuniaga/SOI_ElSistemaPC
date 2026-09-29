@@ -243,18 +243,18 @@ describe('actividadesInstitucionalesView', () => {
     await flush()
 
     container.querySelector('.ai-btn-pasar-lista').click()
-    await flush()
-    await flush()
+    await vi.waitFor(() => {
+      expect(document.querySelector('.app-modal-body')?.textContent).toContain('Alumno Uno')
+    })
 
     const modalBody = document.querySelector('.app-modal-body')
-    expect(modalBody.textContent).toContain('Alumno Uno')
 
     const select = modalBody.querySelector('.ai-select-asistencia')
     select.value = 'presente'
     select.dispatchEvent(new Event('change'))
-    await flush()
-
-    expect(registrarAsistenciaActividad).toHaveBeenCalledWith('act-1', 'al-1', 'presente')
+    await vi.waitFor(() => {
+      expect(registrarAsistenciaActividad).toHaveBeenCalledWith('act-1', 'al-1', 'presente')
+    })
   })
 
   it('corregir una actividad aprobada no muestra el botón de rechazar', async () => {

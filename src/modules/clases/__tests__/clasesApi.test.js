@@ -15,6 +15,29 @@ describe('clasesApi Integration', () => {
     config.isDemoMode = false
   })
 
+  describe('actualizarTurnoIndividual', () => {
+    const horarios = [{ dia: 'viernes', hora_inicio: '14:00:00', hora_fin: '17:00:00' }]
+    it('actualiza solo día y horas de una inscripción activa', async () => {
+      const select = vi.fn().mockResolvedValue({ data: [{ id: 'ins-1', dia: 'viernes', hora_inicio: '15:00:00', hora_fin: '15:30:00' }], error: null })
+      const chain = { eq: vi.fn(), select }
+      chain.eq.mockReturnValue(chain)
+      const eq = chain.eq
+      const update = vi.fn().mockReturnValue({ eq })
+      supabase.from.mockReturnValue({ update })
+      await clasesApi.actualizarTurnoIndividual({ claseId: 'c1', alumnoId: 'a1', dia: 'viernes', horaInicio: '15:00', horaFin: '15:30', horarios })
+      expect(update).toHaveBeenCalledWith({ dia: 'viernes', hora_inicio: '15:00', hora_fin: '15:30' })
+      expect(eq).toHaveBeenCalledWith('clase_id', 'c1')
+      expect(eq).toHaveBeenCalledWith('alumno_id', 'a1')
+      expect(eq).toHaveBeenCalledWith('activo', true)
+    })
+    it('no anuncia éxito cuando la fila ya no está activa', async () => {
+      const chain = { eq: vi.fn(), select: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      chain.eq.mockReturnValue(chain)
+      supabase.from.mockReturnValue({ update: vi.fn().mockReturnValue(chain) })
+      await expect(clasesApi.actualizarTurnoIndividual({ claseId: 'c1', alumnoId: 'a1', dia: 'viernes', horaInicio: '15:00', horaFin: '15:30', horarios })).rejects.toThrow('ya no está activa')
+    })
+  })
+
   describe('buscarSalonDisponible', () => {
     function mockRoomSearch({ count = 0, rooms = [], schedules = [] } = {}) {
       supabase.from.mockImplementation((table) => {

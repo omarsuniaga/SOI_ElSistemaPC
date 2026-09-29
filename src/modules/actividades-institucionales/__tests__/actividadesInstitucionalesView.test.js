@@ -95,7 +95,9 @@ describe('actividadesInstitucionalesView', () => {
     await flush()
 
     container.querySelector('#ai-btn-crear').click()
-    await flush()
+    await vi.waitFor(() => {
+      expect(document.querySelector('.app-modal-body #ai-c-fecha-inicio')).toBeTruthy()
+    })
 
     const modalBody = document.querySelector('.app-modal-body')
     modalBody.querySelector('#ai-c-titulo').value = 'Nueva actividad'
@@ -316,7 +318,9 @@ describe('actividadesInstitucionalesView', () => {
     await renderActividadesInstitucionalesView(container)
     await flush()
     container.querySelector('#ai-btn-crear').click()
-    await flush()
+    await vi.waitFor(() => {
+      expect(document.querySelector('.app-modal-body #ai-c-fecha-fin')).toBeTruthy()
+    })
 
     const modalBody = document.querySelector('.app-modal-body')
     const inicio = modalBody.querySelector('#ai-c-fecha-inicio')

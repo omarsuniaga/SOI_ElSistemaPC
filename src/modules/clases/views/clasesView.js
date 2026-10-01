@@ -19,6 +19,7 @@ import {
   eliminarClase,
   inscribirAlumno,
   desinscribirAlumno,
+  actualizarTurnoIndividual,
   construirDatosClonados,
 } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
@@ -30,6 +31,8 @@ import { openClaseModal } from '../components/claseModal.js'
 import { descargarPdfClase, descargarPdfListadoAlumnosPorClases } from '../domain/generarPdfClase.js'
 import { detectarConflictosDeClases, consolidarBadgesFichaClase } from '../utils/claseConflictDetector.js'
 import { obtenerAcuerdosMaestros, guardarAcuerdoMaestro, eliminarAcuerdoMaestro } from '../api/acuerdosApi.js'
+import { diaEfectivo, ordenarHorarios, ordenarInscripciones, DIAS_TURNO } from '../utils/turnosIndividuales.js'
+import { resolveEsRotativa } from '../components/claseModal.helpers.js'
 
 const state = {
   clases: [],
@@ -707,14 +710,15 @@ function _renderClaseCardV2(c) {
   if (pctOcupacion >= 100) fillClass = 'bg-danger'
 
   // Resolver horario
-  const primerHorario = (c.horarios || c.clase_horarios || [])[0] || {}
-  const diaTexto = primerHorario.dia || primerHorario.dia_semana || 'Por definir'
-  const horaTexto = primerHorario.hora_inicio 
-    ? `${String(primerHorario.hora_inicio).slice(0, 5)} - ${String(primerHorario.hora_fin || '').slice(0, 5)}`
-    : (c.hora_inicio ? `${String(c.hora_inicio).slice(0, 5)} - ${String(c.hora_fin || '').slice(0, 5)}` : 'Horario flexible')
+  const horariosOrdenados = ordenarHorarios(c.horarios || c.clase_horarios || [])
+  const primerHorario = horariosOrdenados[0] || {}
+  const diaTexto = horariosOrdenados.length ? horariosOrdenados.map(h => h.dia).filter((d, i, arr) => arr.indexOf(d) === i).join(' · ') : 'Por definir'
+  const horaTexto = horariosOrdenados.length
+    ? horariosOrdenados.map(h => `${h.dia} ${String(h.hora_inicio || '').slice(0, 5)}–${String(h.hora_fin || '').slice(0, 5)}`).join(' · ')
+    : 'Horario flexible'
 
   // Resolver salón
-  const salonTexto = c.salon || primerHorario.salones?.nombre || primerHorario.salon_nombre || 'Salón por asignar'
+  const salonTexto = horariosOrdenados.length > 1 ? 'Ver salones por día en la nómina' : (c.salon || primerHorario.salones?.nombre || primerHorario.salon_nombre || 'Salón por asignar')
 
   // Resolver maestro
   const maestroObj = state.maestros.find(m => m.id === c.maestro_principal_id || m.id === c.maestro_id)
@@ -1634,7 +1638,7 @@ function _mostrarModalAlumnosSinClase() {
 
     const { data: inscritosData } = await supabase
       .from('alumnos_clases')
-      .select('id, alumno_id, activo, alumnos(*)')
+      .select('id, alumno_id, activo, dia, hora_inicio, hora_fin, alumnos(*)')
       .eq('clase_id', claseId)
 
     const inscritos = (inscritosData || []).map(item => ({
@@ -2102,7 +2106,9 @@ async function _mostrarModalNominaClase(claseId) {
 
     if (error) throw error
 
-    let inscritos = (inscritosData || []).map(row => {
+    const horariosClase = ordenarHorarios(clase.horarios || clase.clase_horarios || [])
+    const esRotativa = resolveEsRotativa({ tipoClase: clase.tipo_clase })
+    const inscritos = ordenarInscripciones(inscritosData || [], horariosClase).map(row => {
       const a = row.alumnos || {}
       return {
         inscripcionId: row.id,
@@ -2111,13 +2117,16 @@ async function _mostrarModalNominaClase(claseId) {
         instrumento: a.instrumento_principal || '—',
         codigo: a.codigo_alumno || a.codigo || '—',
         nivel: a.nivel || 'inicial',
+        dia: row.dia,
+        horaInicio: row.hora_inicio,
+        horaFin: row.hora_fin,
+        diaEfectivo: diaEfectivo(row, horariosClase),
       }
     })
 
     const capacidad = clase.capacidad_maxima || 20
     const pctOcupacion = Math.min(100, Math.round((inscritos.length / capacidad) * 100))
     const maestroObj = state.maestros.find(m => m.id === clase.maestro_principal_id || m.id === clase.maestro_id)
-    const primerHorario = (clase.horarios || clase.clase_horarios || [])[0] || {}
 
     const modalHtml = `
       <div class="container-fluid p-0">
@@ -2142,8 +2151,8 @@ async function _mostrarModalNominaClase(claseId) {
                 <!-- Datos Operativos -->
                 <div class="d-flex flex-column gap-2 mb-3 small text-muted">
                   <div><i class="bi bi-person-badge text-info me-2"></i>Docente: <strong>${escapeHTML(maestroObj?.nombre_completo || 'No asignado')}</strong></div>
-                  <div><i class="bi bi-clock text-primary me-2"></i>Horario: <strong>${escapeHTML(primerHorario.dia || 'Por definir')} ${primerHorario.hora_inicio ? String(primerHorario.hora_inicio).slice(0, 5) + ' - ' + String(primerHorario.hora_fin || '').slice(0, 5) : ''}</strong></div>
-                  <div><i class="bi bi-door-closed text-secondary me-2"></i>Salón: <strong>${escapeHTML(clase.salon || primerHorario.salon_nombre || 'Por asignar')}</strong></div>
+                  <div><i class="bi bi-clock text-primary me-2"></i>Horarios de clase: <strong>${horariosClase.length ? horariosClase.map(h => `${escapeHTML(h.dia)} ${String(h.hora_inicio || '').slice(0, 5)}–${String(h.hora_fin || '').slice(0, 5)}`).join(' · ') : 'Por definir'}</strong></div>
+                  <div><i class="bi bi-door-closed text-secondary me-2"></i>Salones: <strong>${horariosClase.length ? horariosClase.map(h => `${escapeHTML(h.dia)}: ${escapeHTML(state.salones.find(s => s.id === h.salon_id)?.nombre || 'Por asignar')}`).join(' · ') : 'Por asignar'}</strong></div>
                 </div>
 
                 <!-- Capacidad y Ocupación -->
@@ -2192,9 +2201,11 @@ async function _mostrarModalNominaClase(claseId) {
                 <div class="d-flex align-items-center gap-2">
                   <h6 class="fw-bold mb-0 text-body">Estudiantes Inscritos</h6>
                   <span class="badge bg-primary text-white rounded-pill px-2" id="badgeTotalInscritosModal">${inscritos.length}</span>
+                  ${esRotativa ? '<span class="badge bg-info-subtle text-info">Turnos individuales</span>' : ''}
                 </div>
                 
                 <div class="d-flex align-items-center gap-2">
+                  ${esRotativa ? `<select id="filtroDiaNomina" class="form-select form-select-sm" aria-label="Filtrar por día"><option value="">Todos los días</option>${DIAS_TURNO.map(d => `<option value="${d}">${d} (${inscritos.filter(a => a.diaEfectivo.dia === d).length})</option>`).join('')}<option value="pendiente">Por confirmar (${inscritos.filter(a => !a.diaEfectivo.dia).length})</option></select>` : ''}
                   <div class="input-group input-group-sm" style="max-width: 220px;">
                     <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" class="form-control" id="inputBuscarInscritoModal" placeholder="Buscar estudiante...">
@@ -2210,7 +2221,7 @@ async function _mostrarModalNominaClase(claseId) {
                 ${inscritos.length > 0 ? `
                   <div class="d-flex flex-column gap-2" id="itemsInscritosList">
                     ${inscritos.map((al, idx) => `
-                      <div class="d-flex justify-content-between align-items-center p-2.5 rounded-3 bg-body-tertiary border item-alumno-inscrito" data-nombre="${normalizeStr(al.nombre)}" data-codigo="${normalizeStr(al.codigo)}">
+                      <div class="d-flex justify-content-between align-items-center p-2.5 rounded-3 bg-body-tertiary border item-alumno-inscrito" data-nombre="${normalizeStr(al.nombre)}" data-codigo="${normalizeStr(al.codigo)}" data-dia="${al.diaEfectivo.dia || 'pendiente'}">
                         <div class="d-flex align-items-center gap-3">
                           <span class="badge rounded-circle bg-secondary-subtle text-secondary fw-bold" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">${idx + 1}</span>
                           <div>
@@ -2222,11 +2233,13 @@ async function _mostrarModalNominaClase(claseId) {
                               <span>•</span>
                               <span class="badge bg-secondary-subtle text-secondary py-0 px-1.5" style="font-size:0.65rem;">Nivel ${escapeHTML(al.nivel)}</span>
                             </div>
+                            ${esRotativa ? `<div class="small mt-1"><i class="bi bi-clock me-1"></i>${al.diaEfectivo.dia ? escapeHTML(al.diaEfectivo.dia) : 'Día por confirmar'}${al.diaEfectivo.heredado ? ' (de la clase)' : ''} · ${al.horaInicio && al.horaFin ? `${String(al.horaInicio).slice(0, 5)}–${String(al.horaFin).slice(0, 5)}` : 'Turno sin hora'}</div>` : ''}
                           </div>
                         </div>
-                        <button class="btn btn-outline-danger btn-sm py-1 px-2.5" data-action="desinscribir-alumno" data-id="${al.inscripcionId}" data-alumno-id="${al.alumnoId}" data-nombre="${escapeHTML(al.nombre)}" title="Dar de baja a este estudiante">
-                          <i class="bi bi-person-x me-1"></i>Dar de baja
-                        </button>
+                        <div class="d-flex gap-2 flex-wrap justify-content-end">
+                          ${esRotativa ? `<button class="btn btn-outline-primary btn-sm" data-action="editar-turno" data-id="${al.inscripcionId}" type="button">Editar turno</button>` : ''}
+                          <button class="btn btn-outline-danger btn-sm py-1 px-2.5" data-action="desinscribir-alumno" data-id="${al.inscripcionId}" data-alumno-id="${al.alumnoId}" data-nombre="${escapeHTML(al.nombre)}" title="Dar de baja a este estudiante"><i class="bi bi-person-x me-1"></i>Dar de baja</button>
+                        </div>
                       </div>
                     `).join('')}
                   </div>
@@ -2258,13 +2271,16 @@ async function _mostrarModalNominaClase(claseId) {
     // Eventos interactivos
     setTimeout(() => {
       // 1. Buscador dentro de los inscritos
-      document.getElementById('inputBuscarInscritoModal')?.addEventListener('input', (e) => {
-        const val = normalizeStr(e.target.value)
+      const filtrarNomina = () => {
+        const val = normalizeStr(document.getElementById('inputBuscarInscritoModal')?.value || '')
+        const dia = document.getElementById('filtroDiaNomina')?.value || ''
         document.querySelectorAll('.item-alumno-inscrito').forEach(el => {
-          const match = el.dataset.nombre.includes(val) || el.dataset.codigo.includes(val)
+          const match = (el.dataset.nombre.includes(val) || el.dataset.codigo.includes(val)) && (!dia || el.dataset.dia === dia)
           el.style.display = match ? 'flex' : 'none'
         })
-      })
+      }
+      document.getElementById('inputBuscarInscritoModal')?.addEventListener('input', filtrarNomina)
+      document.getElementById('filtroDiaNomina')?.addEventListener('change', filtrarNomina)
 
       // 2. Descargar PDF desde el modal
       document.getElementById('btnPdfNominaModal')?.addEventListener('click', async () => {
@@ -2309,6 +2325,47 @@ async function _mostrarModalNominaClase(claseId) {
 
       // 4. Desinscribir Alumno
       document.getElementById('listaInscritosContainer')?.addEventListener('click', async (e) => {
+        const editar = e.target.closest('[data-action="editar-turno"]')
+        if (editar) {
+          const alumno = inscritos.find(a => a.inscripcionId === editar.dataset.id)
+          const fila = editar.closest('.item-alumno-inscrito')
+          fila.querySelector('.form-turno-adm')?.remove()
+          const form = document.createElement('form')
+          form.className = 'form-turno-adm w-100 mt-2 p-2 border rounded'
+          form.innerHTML = `
+            <label class="small">Día <select name="dia" class="form-select form-select-sm" required>
+              <option value="">Seleccionar día</option>
+              ${DIAS_TURNO.map(d => `<option value="${d}" ${d === alumno.diaEfectivo.dia ? 'selected' : ''}>${d}</option>`).join('')}
+            </select></label>
+            <label class="small ms-2">Inicio <input type="time" name="inicio" class="form-control form-control-sm" value="${String(alumno.horaInicio || '').slice(0, 5)}" required></label>
+            <label class="small ms-2">Fin <input type="time" name="fin" class="form-control form-control-sm" value="${String(alumno.horaFin || '').slice(0, 5)}" required></label>
+            <button type="submit" class="btn btn-primary btn-sm ms-2">Guardar</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm ms-1 cancelar-turno">Cancelar</button>
+            <div class="text-danger small error-turno" role="alert"></div>`
+          fila.appendChild(form)
+          fila.classList.add('flex-wrap')
+          form.querySelector('.cancelar-turno').addEventListener('click', () => form.remove())
+          form.addEventListener('submit', async event => {
+            event.preventDefault()
+            const diaSeleccionado = form.elements.dia.value
+            const dia = alumno.dia == null && diaSeleccionado === alumno.diaEfectivo.dia ? null : diaSeleccionado
+            const horaInicio = form.elements.inicio.value
+            const horaFin = form.elements.fin.value
+            const conflicto = inscritos.some(a => a.inscripcionId !== alumno.inscripcionId && diaEfectivo(a, horariosClase).dia === diaSeleccionado && a.horaInicio && a.horaFin && horaInicio < String(a.horaFin).slice(0, 5) && String(a.horaInicio).slice(0, 5) < horaFin && !(horaInicio === String(a.horaInicio).slice(0, 5) && horaFin === String(a.horaFin).slice(0, 5)))
+            if (conflicto) { form.querySelector('.error-turno').textContent = 'Se cruza con el turno de otro alumno.'; return }
+            const guardar = form.querySelector('[type="submit"]')
+            guardar.disabled = true
+            try {
+              await actualizarTurnoIndividual({ claseId, alumnoId: alumno.alumnoId, dia, horaInicio, horaFin, horarios: horariosClase })
+              AppToast.success('Turno actualizado.')
+              await _mostrarModalNominaClase(claseId)
+            } catch (error) {
+              form.querySelector('.error-turno').textContent = error.message || 'No se pudo guardar el turno.'
+              guardar.disabled = false
+            }
+          })
+          return
+        }
         const btn = e.target.closest('[data-action="desinscribir-alumno"]')
         if (!btn) return
 

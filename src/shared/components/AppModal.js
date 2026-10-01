@@ -199,6 +199,14 @@ export const AppModal = {
       this._closeTimer = null
     }
     ensureDOM()
+
+    // Si se abre otro modal durante la animación de cierre, cancelar el
+    // temporizador anterior para que no borre el contenido del modal nuevo.
+    if (this._closeTimer) {
+      clearTimeout(this._closeTimer)
+      this._closeTimer = null
+    }
+
     const els = getEls()
 
     // Reset footer visibility so a previous call with `!important` inline

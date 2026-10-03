@@ -23,8 +23,22 @@ export function invalidateAllViews() {
   }
 }
 
+/**
+ * 'fechas', 'calendario' y 'clases' son tres nombres de ruta que cargan el
+ * MISMO módulo (calendarioView.js, ver VIEW_LOADERS en portalRoutes.js). El
+ * caché de vistas renderizadas es por nombre de ruta, no por módulo:
+ * invalidar solo 'calendario' deja 'fechas' (la pestaña real del menú) con
+ * el DOM viejo tras registrar una asistencia o descartar un borrador.
+ */
+export function invalidateCalendarioViews() {
+  invalidateView('fechas')
+  invalidateView('calendario')
+  invalidateView('clases')
+}
+
 export default {
   setNavigationCallbacks,
   invalidateView,
-  invalidateAllViews
+  invalidateAllViews,
+  invalidateCalendarioViews
 }

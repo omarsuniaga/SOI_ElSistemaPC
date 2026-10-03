@@ -50,7 +50,12 @@ async function cargarDatos(rango, maestroId) {
 
   const sesiones = await getSesiones(maestroId, fechaInicioStr, fechaFinStr)
   // Filtrar estrictamente por el rango de fechas pedido para evitar fugas de cache
-  const sesionesValidas = (sesiones || []).filter(s => s.fecha >= fechaInicioStr && s.fecha <= fechaFinStr)
+  // clase_id null son declaraciones de "clase emergente" (feriado, etc.),
+  // no una clase real dictada — se excluyen para no inflar "clases
+  // completadas" ni la tasa de asistencia de este dashboard.
+  const sesionesValidas = (sesiones || []).filter(
+    s => s.clase_id && s.fecha >= fechaInicioStr && s.fecha <= fechaFinStr,
+  )
 
   const claseIds = clases.map(c => c.id)
   if (claseIds.length === 0) {

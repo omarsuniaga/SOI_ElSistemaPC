@@ -96,10 +96,15 @@ async function calcularResumenMensualCliente({ periodoId, mes, anio }) {
   const { data: asistencias = [], error: asistErr } = await query
   if (asistErr) console.warn('[AcademicReportsApi] Error al consultar asistencias:', asistErr)
 
-  // Consultar sesiones del mes
+  // Consultar sesiones del mes. clase_id null son declaraciones de "clase
+  // emergente" (actividad especial tipo feriado, no una clase real) —
+  // contarlas aquí infla cumplimiento docente y efectividad de clases con
+  // sesiones que no correspondían a ninguna clase (mismo bug ya corregido
+  // en obtenerEstadoCumplimientoMaestro).
   let sesQuery = supabase
     .from('sesiones_clase')
     .select('id, fecha, estado, clase_id')
+    .not('clase_id', 'is', null)
     .gte('fecha', fechaInicio)
     .lte('fecha', fechaFin)
 
@@ -284,7 +289,9 @@ async function calcularInformeSemestralCliente({ periodoId }) {
     supabase.from('alumnos').select('*'),
     supabase.from('maestros').select('*').eq('activo', true),
     supabase.from('clases').select('id, nombre, maestro_principal_id, maestro_id'),
-    supabase.from('sesiones_clase').select('id, clase_id, maestro_id, fecha, estado').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+    // clase_id null son declaraciones de "clase emergente" (feriado, etc.),
+    // no clases reales — excluidas para no inflar cumplimiento/solvencia docente.
+    supabase.from('sesiones_clase').select('id, clase_id, maestro_id, fecha, estado').not('clase_id', 'is', null).gte('fecha', fechaInicio).lte('fecha', fechaFin),
     supabase.from('asistencias').select('id, fecha, estado, alumno_id, clase_id').gte('fecha', fechaInicio).lte('fecha', fechaFin),
     supabase.from('justificaciones').select('*'),
     supabase.from('observaciones_alumnos').select('id, clase_id, created_at')

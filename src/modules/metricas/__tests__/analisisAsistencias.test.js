@@ -142,6 +142,7 @@ describe('Análisis de Asistencias e Inasistencias del Período Activo', () => {
         if (table === 'sesiones_clase') {
           return {
             select: vi.fn().mockReturnThis(),
+            not: vi.fn().mockReturnThis(),
             gte: vi.fn().mockReturnThis(),
             lte: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({ data: mockSesiones, error: null }),
@@ -190,6 +191,7 @@ describe('Análisis de Asistencias e Inasistencias del Período Activo', () => {
       supabase.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        not: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
         lte: vi.fn().mockReturnThis(),
         order: vi.fn().mockResolvedValue({ data: [], error: null }),

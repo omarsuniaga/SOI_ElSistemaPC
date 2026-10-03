@@ -145,6 +145,10 @@ export async function getAnalisisAsistenciasPeriodoActivo({ fechaInicio = null, 
         )
       )
     `)
+    // clase_id null son declaraciones de "clase emergente" (feriado, etc.),
+    // no una clase real — no deben sumar a "Total Sesiones" ni a las
+    // estadísticas por maestro de este análisis.
+    .not('clase_id', 'is', null)
     .gte('fecha', inicio)
     .lte('fecha', fin)
     .order('fecha', { ascending: true })
@@ -463,6 +467,9 @@ export async function getResumenCierreAcademico({ periodoId = null, fechaInicio,
         nivel_logro
       )
     `)
+    // clase_id null son declaraciones de "clase emergente" (feriado, etc.),
+    // no una clase real cerrada — no deben sumar a totalClases del consolidado.
+    .not('clase_id', 'is', null)
     .order('fecha', { ascending: true })
     .order('hora_inicio', { ascending: true })
 

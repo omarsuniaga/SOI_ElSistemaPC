@@ -9,6 +9,7 @@ import { renderSeguimientoRulesView }          from './views/seguimientoRulesVie
 import { renderEvaluacionesDashboardView }     from './views/evaluacionesDashboardView.js'
 import { renderSeguimientoAusentesView }       from './views/seguimientoAusentesView.js'
 import { renderAusentismoDashboardView }       from './views/AusentismoDashboardView.js'
+import { renderAlumnosCriticosView }           from './views/alumnosCriticosView.js'
 
 export function registerRoutesPedagogico() {
   router.register('pedagogico-dashboard',                 (c) => renderDashboardPedagogicoView(c))
@@ -21,4 +22,5 @@ export function registerRoutesPedagogico() {
   router.register('pedagogico-evaluaciones',              (c) => renderEvaluacionesDashboardView(c))
   router.register('pedagogico-seguimiento-ausentes',      (c) => renderSeguimientoAusentesView(c))
   router.register('pedagogico-ausentismo-dashboard',      (c) => renderAusentismoDashboardView(c))
+  router.register('pedagogico-alumnos-criticos',          (c) => renderAlumnosCriticosView(c))
 }

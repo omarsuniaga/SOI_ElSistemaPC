@@ -201,7 +201,6 @@ export async function getPeriodoActivo() {
  * @param {string} [options.maestroId] - Filter by maestro_id
  * @param {boolean} [options.soloSinContacto] - If true, filter to contacto_telefono IS NULL
  * @param {string} [options.busqueda] - Search alumno_nombre (ILIKE)
- * @param {string} [options.instrumento] - Filter by instrumento_principal
  * @param {number} [options.limit=50] - Pagination limit
  * @param {number} [options.offset=0] - Pagination offset
  * @returns {Promise<{alumnos: Array, totalCount: number}>}
@@ -211,7 +210,6 @@ export async function fetchSeguimientoAusentes({
   maestroId = null,
   soloSinContacto = false,
   busqueda = '',
-  instrumento = null,
   limit = 50,
   offset = 0,
 } = {}) {
@@ -223,10 +221,6 @@ export async function fetchSeguimientoAusentes({
 
   if (maestroId !== null) {
     q = q.eq('maestro_id', maestroId)
-  }
-
-  if (instrumento !== null) {
-    q = q.eq('instrumento_principal', instrumento)
   }
 
   if (soloSinContacto) {
@@ -286,7 +280,6 @@ export async function fetchHistorialSeguimiento(alumnoId) {
  * @param {string} [options.contactoNombre]
  * @param {string} [options.notas]
  * @param {string} [options.responsableId]
- * @param {string} [options.mensajeEnviado] - Optional: exact WhatsApp message sent (audit trail)
  * @returns {Promise<Object>} - Inserted comunicaciones_seguimiento row
  * @throws {Error} 'CONTACTO_DUPLICADO' if duplicate within 120 min
  */
@@ -297,7 +290,6 @@ export async function registrarContacto({
   contactoNombre = '',
   notas = '',
   responsableId = null,
-  mensajeEnviado = null,
 } = {}) {
   // Check for duplicate within 120 minutes
   const minutoAtras = new Date(Date.now() - 120 * 60 * 1000).toISOString()
@@ -329,11 +321,6 @@ export async function registrarContacto({
     contacto_nombre: contactoNombre,
     contacto_telefono: contactoTelefono,
     notas,
-  }
-
-  // Add exact message sent if provided (audit trail)
-  if (mensajeEnviado) {
-    insertData.mensaje_enviado = mensajeEnviado
   }
 
   insertData.responsable_id = responsableId || (await _uidActual())
@@ -372,19 +359,17 @@ export async function registrarContacto({
  * @param {Object} opts.alumno - fila de vw_seguimiento_ausentes (incluye contacto_telefono, contacto_nombre, nivel)
  * @param {1|2|3} [opts.nivel] - por defecto el nivel del alumno
  * @param {'representante'|'maestro'} [opts.destinatario='representante']
- * @param {string} [opts.mensajeOverride] - Optional: use this exact message instead of generating one
  * @returns {Promise<{ waUrl: string, mensaje: string, registro: Object }>}
  * @throws {Error} 'SIN_CONTACTO' si no hay teléfono; 'CONTACTO_DUPLICADO' si ya se contactó en 120 min
  */
-export async function enviarSeguimientoAusentismo({ alumno, nivel, destinatario = 'representante', mensajeOverride = null } = {}) {
+export async function enviarSeguimientoAusentismo({ alumno, nivel, destinatario = 'representante' } = {}) {
   const nivelReal = nivel || alumno?.nivel
   const telefono = alumno?.contacto_telefono
   if (!telefono) {
     throw new Error('SIN_CONTACTO')
   }
 
-  // Use override if provided, otherwise build from template
-  const mensaje = mensajeOverride || construirMensajeAusentismo({ nivel: nivelReal, destinatario, alumno })
+  const mensaje = construirMensajeAusentismo({ nivel: nivelReal, destinatario, alumno })
 
   const registro = await registrarContacto({
     alumnoId: alumno.alumno_id,
@@ -392,46 +377,9 @@ export async function enviarSeguimientoAusentismo({ alumno, nivel, destinatario 
     contactoTelefono: telefono,
     contactoNombre: alumno.contacto_nombre || '',
     notas: `Mensaje de nivel ${nivelReal} enviado por WhatsApp (${destinatario}).`,
-    mensajeEnviado: mensaje,
   })
 
   return { waUrl: whatsappLink(telefono, mensaje), mensaje, registro }
-}
-
-/**
- * Justify an absence for a specific date.
- * Calls the RPC `justificar_alumno_por_dia` which updates attendance and returns affected classes.
- *
- * @param {Object} opts
- * @param {string} opts.alumnoId - UUID of the student
- * @param {string} opts.fecha - Date in 'YYYY-MM-DD' format
- * @param {string} opts.motivo - Justification reason
- * @param {string} opts.creadoPor - User ID that created the justification
- * @returns {Promise<Object>} - { success, message, asistenciasActualizadas, clasesAfectadas }
- * @throws {Error} on RPC error
- */
-export async function justificarAusenciaDia({ alumnoId, fecha, motivo, creadoPor } = {}) {
-  const { data, error } = await supabase.rpc('justificar_alumno_por_dia', {
-    p_alumno_id: alumnoId,
-    p_fecha: fecha,
-    p_motivo: motivo,
-    p_creado_por: creadoPor,
-  })
-
-  if (error) {
-    console.error('[justificarAusenciaDia]', error)
-    throw new Error(error.message || 'No se pudo justificar la ausencia')
-  }
-
-  // Supabase RPC with OUT params returns an array with one row, or a single object depending on client version — handle both.
-  const row = Array.isArray(data) ? data[0] : data
-
-  return {
-    success: row?.success ?? false,
-    message: row?.message ?? '',
-    asistenciasActualizadas: row?.asistencias_updated ?? 0,
-    clasesAfectadas: row?.affected_clases_ids ?? [],
-  }
 }
 
 /**

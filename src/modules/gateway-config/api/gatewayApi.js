@@ -5,16 +5,25 @@
  * - Telemetría de consumo y blindaje Anti-Ban
  * - Monitor de cola de salida
  * - Consola de pruebas y auto-inicialización
+ *
+ * SDD whatsapp-gateway-multidepto · F1: la cola y la config ahora son por
+ * departamento. Este panel legacy queda fijado al departamento ADM. F7 lo
+ * reemplaza por `whatsapp-envios/estadoGatewayView` con selector de departamento.
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
 import { config } from '../../../core/config/config.js'
 
+// Departamento que atiende este panel legacy (F7 lo hace dinámico).
+const DEPTO = 'ADM'
+
 const DEFAULT_CONFIG = {
-  id: '00000000-0000-0000-0000-000000000001',
+  // Sin `id` fijo: la DB lo genera. Un id hardcodeado colisiona con la fila real
+  // y con el índice único parcial `uq_wa_config_depto_activa`.
   gateway_url: 'https://gateway.elsistema.local/api',
   api_key: '***REDACTED-ROTATED***',
-  instance_name: 'soi-main',
+  instance_name: 'adm-gateway',
+  departamento: DEPTO,
   numero_wid: '+1 (829) 555-0188',
   numero_nombre: 'El Sistema Punta Cana (Oficial)',
   cap_diario: 200,
@@ -26,12 +35,15 @@ const DEFAULT_CONFIG = {
   warmup_inicio: 20,
   warmup_dias: 7,
   warmup_desde: new Date(Date.now() - (3 * 86400000)).toISOString().slice(0, 10),
+  ventana_inicio: '10:00',
+  ventana_fin: '19:00',
+  solo_dias_habiles: true,
   consentimiento_registrado: true,
   activo: true,
 }
 
-let mockConfig = { ...DEFAULT_CONFIG }
-let mockQueue = [
+let mockConfig = { ...DEFAULT_CONFIG, id: '00000000-0000-0000-0000-000000000001' }
+const mockQueue = [
   {
     id: 'q-1',
     jid: '+1 (829) 555-0101',
@@ -67,20 +79,17 @@ let mockQueue = [
 export async function obtenerGatewayConfig() {
   if (config.isDemoMode || !supabase) return { ...mockConfig }
 
-  try {
-    const { data, error } = await supabase
-      .from('hermes_whatsapp_config')
-      .select('*')
-      .eq('activo', true)
-      .single()
+  const { data, error } = await supabase
+    .from('hermes_whatsapp_config')
+    .select('*')
+    .eq('activo', true)
+    .eq('departamento', DEPTO)
+    .single()
 
-    if (error && error.code !== 'PGRST116') {
-      return { ...mockConfig }
-    }
-    return data || null
-  } catch {
-    return { ...mockConfig }
-  }
+  // PGRST116 = 0 filas -> aún no hay config (no es un error).
+  if (error && error.code === 'PGRST116') return null
+  if (error) throw error
+  return data || null
 }
 
 export async function actualizarGatewayConfig(updates = {}) {
@@ -89,59 +98,84 @@ export async function actualizarGatewayConfig(updates = {}) {
     return { ...mockConfig }
   }
 
-  try {
-    const cfg = await obtenerGatewayConfig()
-    if (!cfg) {
-      return await crearGatewayConfig(updates)
-    }
-
-    const { data, error } = await supabase
-      .from('hermes_whatsapp_config')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', cfg.id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  } catch {
-    mockConfig = { ...mockConfig, ...updates, updated_at: new Date().toISOString() }
-    return { ...mockConfig }
+  // Un error de escritura NO se traga: la vista muestra AppToast.error. Antes
+  // el fallback a mock hacía que un guardado fallido pareciera exitoso.
+  const cfg = await obtenerGatewayConfig()
+  if (!cfg || !cfg.id) {
+    return await crearGatewayConfig(updates)
   }
+
+  const { data, error } = await supabase
+    .from('hermes_whatsapp_config')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', cfg.id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 }
 
 export async function crearGatewayConfig(payload = {}) {
-  const merged = { ...DEFAULT_CONFIG, ...payload }
+  // Sin `id`: lo genera la DB (evita colisión con la fila real y con el índice
+  // único parcial por departamento).
+  const merged = { ...DEFAULT_CONFIG, ...payload, departamento: DEPTO }
+  delete merged.id
 
   if (config.isDemoMode || !supabase) {
     mockConfig = { ...merged, id: `gw-${Date.now()}` }
     return { ...mockConfig }
   }
 
-  try {
-    const { data, error } = await supabase
-      .from('hermes_whatsapp_config')
-      .insert([merged])
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  } catch {
-    mockConfig = { ...merged, id: `gw-${Date.now()}` }
-    return { ...mockConfig }
+  // No crear una segunda config activa para el departamento: si ya hay una,
+  // actualizarla.
+  const existente = await obtenerGatewayConfig()
+  if (existente && existente.id) {
+    return await actualizarGatewayConfig(payload)
   }
+
+  const { data, error } = await supabase
+    .from('hermes_whatsapp_config')
+    .insert([merged])
+    .select()
+    .single()
+
+  // Carrera (dos "inicializar" concurrentes): el índice único parcial
+  // uq_wa_config_depto_activa rechaza el 2º INSERT. Re-leemos la fila ganadora.
+  if (error?.code === '23505') {
+    const ganadora = await obtenerGatewayConfig()
+    if (ganadora) return ganadora
+  }
+  if (error) throw error
+  return data
 }
 
 export async function inicializarGatewayDefault() {
-  return await crearGatewayConfig({
-    ...DEFAULT_CONFIG,
-    warmup_desde: new Date().toISOString().slice(0, 10),
-  })
+  const payload = { ...DEFAULT_CONFIG, warmup_desde: new Date().toISOString().slice(0, 10) }
+
+  if (config.isDemoMode || !supabase) {
+    mockConfig = { ...payload, id: mockConfig.id || `gw-${Date.now()}` }
+    return { ...mockConfig }
+  }
+
+  // Si ya hay una config activa para el departamento, no se duplica (el índice
+  // único parcial rechazaría una segunda): se re-aplican los defaults sobre ella.
+  const existente = await obtenerGatewayConfig()
+  if (existente && existente.id) {
+    return await actualizarGatewayConfig(payload)
+  }
+  return await crearGatewayConfig(payload)
 }
 
 export async function obtenerGatewayStats() {
-  const gwConfig = (await obtenerGatewayConfig()) || DEFAULT_CONFIG
+  // Telemetría: si la lectura de config falla (blip transitorio), el panel
+  // degrada a defaults en vez de romper. Los guardados sí surfacean el error.
+  let gwConfig
+  try {
+    gwConfig = (await obtenerGatewayConfig()) || DEFAULT_CONFIG
+  } catch {
+    gwConfig = DEFAULT_CONFIG
+  }
 
   // Calcular días de warmup y límite dinámico
   let capHoy = gwConfig.cap_diario || 200
@@ -161,27 +195,32 @@ export async function obtenerGatewayStats() {
       const hoyInicio = new Date().toISOString().slice(0, 10)
 
       const [enviadosRes, pendientesRes, fallidosRes, liveStatusRes] = await Promise.all([
+        // `enviadosHoy` alimenta el % de consumo del cap: excluye origen=test,
+        // igual que fn_whatsapp_enviados_hoy (si no, el panel se desalinea del cap).
         supabase
           .from('hermes_whatsapp_queue')
           .select('*', { count: 'exact', head: true })
+          .eq('departamento', DEPTO)
           .eq('estado', 'enviado')
+          .neq('origen', 'test')
           .gte('procesado_at', `${hoyInicio}T00:00:00Z`),
         supabase
           .from('hermes_whatsapp_queue')
           .select('*', { count: 'exact', head: true })
+          .eq('departamento', DEPTO)
           .eq('estado', 'pendiente'),
         supabase
           .from('hermes_whatsapp_queue')
           .select('*', { count: 'exact', head: true })
+          .eq('departamento', DEPTO)
           .eq('estado', 'fallido'),
         supabase
-          .rpc('fn_hermes_gateway_get_live_status', { p_instance_name: gwConfig.instance_name || 'soi-main' })
+          .rpc('fn_hermes_gateway_get_live_status', { p_instance_name: gwConfig.instance_name || 'adm-gateway' })
           .maybeSingle(),
       ])
 
       const live = liveStatusRes?.data || null
       const isAlive = live ? Boolean(live.is_alive) : false
-      const liveStatus = isAlive ? 'online' : 'offline'
 
       return {
         enviadosHoy: enviadosRes.count ?? 0,
@@ -258,6 +297,7 @@ export async function obtenerColaMensajes(limite = 20) {
       const { data, error } = await supabase
         .from('hermes_whatsapp_queue')
         .select('*')
+        .eq('departamento', DEPTO)
         .order('created_at', { ascending: false })
         .limit(limite)
 
@@ -293,6 +333,8 @@ export async function enviarMensajePrueba(jid, mensaje) {
         .insert([{
           jid: nuevoItem.jid,
           mensaje: nuevoItem.mensaje,
+          departamento: DEPTO,
+          origen: 'test',
           estado: 'enviado',
           intentos: 1,
           procesado_at: new Date().toISOString(),
@@ -317,6 +359,7 @@ export async function reintentarMensajeCola(id) {
         .from('hermes_whatsapp_queue')
         .update({ estado: 'pendiente', intentos: 0, error_msg: null })
         .eq('id', id)
+        .eq('departamento', DEPTO)
         .select()
         .single()
 

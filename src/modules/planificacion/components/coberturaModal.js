@@ -8,6 +8,8 @@
  * onConfirm() is called after teacher saves coverage.
  * onSkip() is called if teacher clicks "Saltar".
  */
+import * as bootstrap from 'bootstrap'
+import { config } from '../../../core/config/config.js'
 import { obtenerCurriculo } from '../api/curriculoApi.js'
 import { obtenerRuta } from '../api/rutasApi.js'
 import { upsertCobertura } from '../api/coberturaApi.js'
@@ -15,6 +17,15 @@ import { extraerCobertura } from '../api/groqService.js'
 import { parseDsl } from '../utils/dslParser.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { supabase } from '../../../lib/supabaseClient.js'
+
+/**
+ * Detect if an id is a real Supabase UUID vs a mock semantic id
+ * (e.g. "clase_004" from Demo Mode fixtures).
+ * Mock IDs hitting Supabase return 400 Bad Request because the column is uuid.
+ */
+const isUuid = (id) =>
+  typeof id === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
 
 const escapeHTML = (s) =>
   String(s).replace(
@@ -104,8 +115,14 @@ export async function openCoberturaModal({
     let todosObjetivos = []
     let ruta = null
 
+    // ── Demo Mode guard ──────────────────────────────────────────────
+    // Mock fixtures use semantic ids (e.g. "clase_004"). Querying Supabase
+    // with a non-UUID id returns 400 Bad Request. Skip Supabase lookups
+    // when we know we're in demo OR when the id is clearly not a UUID.
+    const skipSupabase = config.isDemoMode || (claseId && !isUuid(claseId))
+
     // Try to get clase and its ruta first
-    if (claseId) {
+    if (claseId && !skipSupabase) {
       const { data: claseData } = await supabase
         .from('clases')
         .select('ruta_id')
@@ -148,12 +165,22 @@ export async function openCoberturaModal({
       }
     }
 
-    if (alumnosConId.length === 0 && claseId) {
-      const { data } = await supabase
+    if (alumnosConId.length === 0 && claseId && !skipSupabase) {
+      const { data: inscripciones } = await supabase
         .from('alumnos_clases')
-        .select('alumnos(id, nombre_completo)')
+        .select('alumno_id')
         .eq('clase_id', claseId)
-      alumnosConId = (data || []).map((r) => r.alumnos).filter(Boolean)
+
+      const alumnoIds = [...new Set((inscripciones || []).map((r) => r.alumno_id).filter(Boolean))]
+
+      if (alumnoIds.length > 0) {
+        const { data: alumnos } = await supabase
+          .from('alumnos')
+          .select('id, nombre_completo')
+          .in('id', alumnoIds)
+
+        alumnosConId = alumnos || []
+      }
     }
 
     let aiCoberturas = []

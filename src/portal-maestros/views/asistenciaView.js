@@ -1991,7 +1991,6 @@ function _renderVista(container, ctx) {
     snapshots,
     justificaciones,
     obtenerJustificacion,
-    eliminarJustificacion,
     isRotativa: clase?.tipo_clase === 'rotativa',
     // `turno` llega como {dia, hora_inicio, hora_fin} (mismo shape que el
     // alumno en memoria) — se traduce a los nombres que espera el servicio.
@@ -2004,10 +2003,6 @@ function _renderVista(container, ctx) {
       })
       const alumno = alumnos.find((a) => a.id === alumnoId)
       if (alumno) Object.assign(alumno, turno)
-    },
-    onJustifDeleted: (alumnoId) => {
-      delete justificaciones[alumnoId]
-      _updateProgress()
     },
     onEstadoChange: (id, newEstado) => {
       estado[id] = newEstado

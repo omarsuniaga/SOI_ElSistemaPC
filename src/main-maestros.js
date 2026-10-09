@@ -239,6 +239,16 @@ async function _syncWithSupabase(item) {
     if (operacion === 'insert') {
       const { error } = await supabase.from(tabla).insert([payload])
       if (error) throw error
+    } else if (operacion === 'upsert') {
+      // Evita chocar con restricciones únicas cuando el estado local no
+      // alcanzó a ver una fila creada por otra pestaña/sesión mientras
+      // estuvo offline — en vez de insert ciego, reconcilia por la clave
+      // de negocio real.
+      const onConflict = tabla === 'sesiones_clase' ? 'clase_id,fecha,maestro_id' : undefined
+      const { error } = await supabase
+        .from(tabla)
+        .upsert([payload], onConflict ? { onConflict } : undefined)
+      if (error) throw error
     } else if (operacion === 'update') {
       const { id, ...cleanPayload } = payload
       const { error } = await supabase.from(tabla).update(cleanPayload).eq('id', id)

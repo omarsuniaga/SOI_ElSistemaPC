@@ -2113,16 +2113,19 @@ function _renderVista(container, ctx) {
       if (navigator.onLine) {
         try {
           if (!sesionId) {
-            // Primera vez: INSERT directo para obtener el ID real
+            // Primera vez (o sesionId local no resuelto): UPSERT por la
+            // restricción única (clase_id, fecha, maestro_id). Si ya existe
+            // una sesión para hoy — por ejemplo, otra pestaña o carga previa
+            // ya la creó — la reutiliza en vez de chocar con un INSERT.
             const { data, error } = await supabase
               .from('sesiones_clase')
-              .insert([payload])
+              .upsert([payload], { onConflict: 'clase_id,fecha,maestro_id' })
               .select('id')
               .single()
 
             if (!error && data) {
               sesionId = data.id
-              console.log('[asistencia] Nueva sesión creada:', sesionId)
+              console.log('[asistencia] Sesión creada/reutilizada:', sesionId)
               localStorage.setItem(`${localKey}_updated`, new Date().toISOString())
               return
             }
@@ -2146,7 +2149,7 @@ function _renderVista(container, ctx) {
       }
 
       // Fallback: cola offline (cuando offline o si falla la operación directa)
-      let op = sesionId ? 'update' : 'insert'
+      let op = sesionId ? 'update' : 'upsert'
       await enqueue({
         tabla: 'sesiones_clase',
         operacion: op,

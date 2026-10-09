@@ -4,16 +4,27 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { FileTooLargeError, InvalidMimeError } from './fileUploadService.js'
 
-const BUCKET_DOCUMENTOS = 'documentos-private'
+// Bucket real de Storage usado en todo el portal (ver ausenciaService.js,
+// fileUploadService.js, planningDocService.js). 'documentos-private' no existe
+// en ninguna migración: usarlo hacía que la subida fallara en silencio.
+const BUCKET_DOCUMENTOS = 'documentos'
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png'])
 
 /**
  * Sube un archivo al bucket 'documentos' de Supabase Storage
  * @param {File} file
  * @param {string} folder - subcarpeta dentro del bucket (ej: 'justificaciones')
  * @returns {Promise<string>} URL pública del archivo
+ * @throws {FileTooLargeError} si el archivo supera 5 MB
+ * @throws {InvalidMimeError} si el tipo no es PDF/JPG/PNG
  */
-async function uploadEvidencia(file, folder = 'justificaciones') {
+export async function uploadEvidencia(file, folder = 'justificaciones') {
+  if (file.size > MAX_FILE_SIZE_BYTES) throw new FileTooLargeError()
+  if (!ALLOWED_MIME_TYPES.has(file.type)) throw new InvalidMimeError()
+
   const ext = file.name.split('.').pop()
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
   const path = `${folder}/${filename}`
@@ -35,7 +46,7 @@ async function uploadEvidencia(file, folder = 'justificaciones') {
  * Elimina un archivo de evidencia del storage
  * @param {string} publicUrl
  */
-async function deleteEvidencia(publicUrl) {
+export async function deleteEvidencia(publicUrl) {
   if (!publicUrl) return
   // Extraer la ruta relativa del bucket desde la URL pública
   // ej: https://xxx.supabase.co/storage/v1/object/public/documentos/justificaciones/archivo.jpg
@@ -95,6 +106,45 @@ export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha,
       onConflict: 'sesion_id,alumno_id',
       ignoreDuplicates: false,
     })
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Actualiza una justificación existente: motivo y, opcionalmente, su evidencia.
+ * Distingue tres casos para la evidencia:
+ *  - evidenciaFile presente → reemplaza (sube la nueva ANTES de borrar la vieja,
+ *    para no dejar la referencia rota si la subida falla)
+ *  - evidenciaRemoved true (sin archivo nuevo) → borra la existente y deja null
+ *  - ninguno de los dos → no se toca evidencia_url
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function actualizarJustificacion({ justificacionId, motivo, evidenciaFile = null, evidenciaRemoved = false, existingUrl = null }) {
+  if (!justificacionId) return { error: { message: 'ID requerido' } };
+
+  let urlToSave = existingUrl
+
+  if (evidenciaFile) {
+    try {
+      const nuevaUrl = await uploadEvidencia(evidenciaFile)
+      if (existingUrl) await deleteEvidencia(existingUrl)
+      urlToSave = nuevaUrl
+    } catch (err) {
+      console.warn('[JustificacionService] Error subiendo evidencia a Storage:', err)
+      // Mantener la evidencia anterior en vez de perderla
+    }
+  } else if (evidenciaRemoved) {
+    if (existingUrl) await deleteEvidencia(existingUrl).catch(() => {})
+    urlToSave = null
+  }
+
+  const { data, error } = await supabase
+    .from('justificaciones')
+    .update({ motivo, evidencia_url: urlToSave })
+    .eq('id', justificacionId)
     .select()
     .single();
 

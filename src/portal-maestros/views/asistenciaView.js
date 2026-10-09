@@ -31,6 +31,7 @@ import { createSessionSummaryPanel } from '../components/SessionSummaryPanel.js'
 import { consumeRutaTema } from '../services/rutaTopicStore.js'
 import {
   guardarJustificacion,
+  actualizarJustificacion,
   obtenerJustificacion,
   eliminarJustificacion,
 } from '../services/justificacionService.js'
@@ -1902,8 +1903,8 @@ function _renderVista(container, ctx) {
     claseId,
     fechaHoy,
     maestroId: maestro.id,
-    supabase,
     guardarJustificacion,
+    actualizarJustificacion,
     eliminarJustificacion,
     onJustifDeleted: (alumnoId) => {
       estado[alumnoId] = null

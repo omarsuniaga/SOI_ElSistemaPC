@@ -111,6 +111,7 @@ vi.mock('../../components/routeTreeBar.js', () => ({
 
 vi.mock('../../services/justificacionService.js', () => ({
   guardarJustificacion: vi.fn(),
+  actualizarJustificacion: vi.fn(),
   obtenerJustificacion: vi.fn(),
   eliminarJustificacion: vi.fn(),
 }))

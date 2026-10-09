@@ -102,6 +102,7 @@ vi.mock('../../services/offlineQueue.js', () => ({
 
 vi.mock('../../services/justificacionService.js', () => ({
   guardarJustificacion: vi.fn(),
+  actualizarJustificacion: vi.fn(),
   obtenerJustificacion: vi.fn(),
   eliminarJustificacion: vi.fn(),
 }))

@@ -76,12 +76,12 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
         </div>
         
         <div class="pm-justif-footer">
-          <button class="pm-justif-delete" id="pm-justif-delete" style="display:none;" title="Eliminar justificación">
+          <button class="pm-justif-delete" id="pm-justif-delete" style="display:none;" title="Limpiar justificación (deja el registro vacío)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+              <path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
+              <path d="M19 6v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
             </svg>
-            Eliminar
+            Limpiar
           </button>
           <button class="pm-justif-cancel" id="pm-justif-cancel">Cancelar</button>
           <button class="pm-justif-save" id="pm-justif-save">
@@ -474,7 +474,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
 
   deleteBtn.onclick = () => {
     if (!_currentAlumno) return;
-    if (!confirm(`¿Eliminar la justificación de ${_currentAlumno.nombre_completo}?`)) return;
+    if (!confirm(`¿Limpiar la justificación de ${_currentAlumno.nombre_completo}? El motivo y la evidencia se borrarán y el estado volverá a quedar sin marcar.`)) return;
     if (onDelete) onDelete({ alumnoId: _currentAlumno.id, justificacionId: _currentJustificacion?.id, existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 });
     close(false); // no rollback: la vista maneja el estado
   };

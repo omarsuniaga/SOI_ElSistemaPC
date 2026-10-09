@@ -38,7 +38,7 @@ export function createJustifModalManager(container, {
       onRenderLista(alumnoId)
       onUpdateProgress()
       try { await onAutoSave(true) } catch (_e) { console.warn('[justif] autoSave error:', _e) }
-      if (onAnnounce) onAnnounce('Justificación eliminada.')
+      if (onAnnounce) onAnnounce('Justificación limpiada.')
     },
 
     onSave: async ({ alumnoId, motivo, evidenciaFile, evidenciaRemoved, justificacionId, existingUrl, isEdit }) => {

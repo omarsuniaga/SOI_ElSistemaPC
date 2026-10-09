@@ -76,9 +76,14 @@ import { createAttendanceHeader } from '../components/attendance/AttendanceHeade
 import { createRouteTopicAutoInjector } from '../components/attendance/RouteTopicAutoInjector.js'
 import { createPlanificationCard } from '../components/attendance/PlanificationCard.js'
 import { createDslSection } from '../components/attendance/DslSection.js'
+import {
+  createContentAutosaver,
+  contentStatusLabel,
+  selectAutosavePayload,
+} from '../components/attendance/contentAutosaver.js'
+import { loadPendingSessionContent, pickContentToShow } from '../services/pendingSessionContent.js'
 import { createBulkActions } from '../components/attendance/BulkActions.js'
 import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
-import { shouldQueueDraftSave } from '../components/attendance/draftPolicy.js'
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
 import { createStudentList } from '../components/attendance/StudentList.js'
 import { createGradePanel } from '../components/attendance/GradePanel.js'
@@ -343,6 +348,17 @@ export async function renderAsistenciaView(
     const sesionId = sesionExistenteData?.id || null
     const serverUpdatedAt = sesionExistenteData?.updated_at || null
     const serverDSL = sesionExistenteData?.contenido || ''
+    // Texto escrito sin red que aún no llegó al servidor: se recupera de la cola
+    // local para que reabrir la clase no lo haga parecer perdido.
+    const pendingFound = await loadPendingSessionContent({ sesionId, claseId, fecha: fechaHoy })
+    const pendingContent =
+      pickContentToShow({
+        serverContent: serverDSL,
+        serverUpdatedAt: serverUpdatedAt,
+        pending: pendingFound,
+      }).source === 'queue'
+        ? pendingFound.contenido
+        : null
 
     // ── Batch 2: snapshots + salón + ruta + justificaciones (en paralelo ultra-rápido) ──
     const salonIds = clase.salon ? [clase.salon] : []
@@ -480,6 +496,7 @@ export async function renderAsistenciaView(
       sesionId,
       hasConflict,
       serverDSL,
+      pendingContent,
       snapshots,
       salonNombre,
       rutaId,
@@ -506,6 +523,7 @@ function _renderVista(container, ctx) {
     claseId,
     snapshots,
     serverDSL,
+    pendingContent = null,
     hasConflict,
     salonNombre,
     rutaId,
@@ -531,8 +549,11 @@ function _renderVista(container, ctx) {
   // Cleanup registry — all destroyable sub-components register here
   const _cleanups = []
   const localKey = `pm_asistencia_${claseId || sesionId}_${fechaHoy}`
-  let dslContent = serverDSL
+  // Texto pendiente de la cola local (escrito sin red) gana sobre el del servidor.
+  let dslContent = pendingContent ?? serverDSL
   let _saveTimer = null
+  /** @type {ReturnType<typeof createContentAutosaver> | null} */
+  let contentSaver = null
   const _saveMutex = createAsyncMutex()
   let planificationCard = null
   let _summaryPanel = null
@@ -1506,6 +1527,7 @@ function _renderVista(container, ctx) {
         <div id="pm-dsl-editor-container"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;">
           <div id="pm-draft-indicator" style="display:none; padding:0.25rem 0.5rem; font-size:0.75rem; color:var(--pm-text-muted);"></div>
+          <div id="pm-content-save-status" role="status" aria-live="polite" style="padding:0.25rem 0.5rem; font-size:0.75rem; color:var(--pm-text-muted);"></div>
           <button class="pm-copy-plan-btn" id="btn-copy-as-plan" title="Copiar este contenido como borrador de planificación">
             <i class="bi bi-clipboard-plus"></i> Copiar como planificación
           </button>
@@ -1587,27 +1609,27 @@ function _renderVista(container, ctx) {
   // === Editor DSL & Toolbar Section ===
   let categoriaTrabajo = { codigo: null, origen: null }
 
-  // Lo último que se mandó a persistir. Arranca en `serverDSL` porque el editor
-  // emite `onChange` al montarse con el contenido que vino del servidor.
-  let _contenidoPersistido = serverDSL
+  // El texto solo cuenta como «guardado» cuando la escritura se confirma; ver
+  // contentAutosaver. `serverDSL` es lo que tiene el servidor; `pendingContent`,
+  // lo que quedó en la cola local si se escribió sin red.
+  contentSaver = createContentAutosaver({
+    initialContent: serverDSL,
+    pendingContent,
+    hasSesion: () => Boolean(sesionId),
+    save: () => _autoSave(true, false, { contentOnly: isSessionRegistered }),
+    onStatus: (status) => _renderContentStatus(status),
+  })
+  _cleanups.push(() => contentSaver.destroy())
 
   const dslSection = createDslSection(container, {
-    initialContent: serverDSL,
+    initialContent: dslContent,
     claseId,
     onEditorChange: (value) => {
       dslContent = value
-      // El texto escrito se guarda con el mismo autosave que la asistencia:
-      // crea o actualiza la sesión con `borrador: true`, que es de donde esta
-      // vista recarga el contenido al volver a abrir la clase. Sin esto el
-      // texto solo vivía en memoria y se perdía al salir.
-      if (!shouldQueueDraftSave({
-        value,
-        lastPersisted: _contenidoPersistido,
-        hasSesion: Boolean(sesionId),
-        isRegistered: isSessionRegistered,
-      })) return
-      _contenidoPersistido = value
-      _autoSave()
+      // El editor emite `onChange` también al montarse y al inyectarle texto
+      // (IA, estructura, borrador recuperado): el autosaver ignora lo que ya
+      // está persistido y no crea sesiones vacías.
+      contentSaver.change(value)
     },
   })
   const editor = dslSection.getEditor()
@@ -1615,17 +1637,31 @@ function _renderVista(container, ctx) {
 
   // Salir del editor —o de la vista— persiste ya, sin esperar el debounce de 2 s.
   const _flushContenido = () => {
-    if (!shouldQueueDraftSave({
-      value: dslContent,
-      lastPersisted: _contenidoPersistido,
-      hasSesion: Boolean(sesionId),
-      isRegistered: isSessionRegistered,
-    })) return
-    _contenidoPersistido = dslContent
-    _autoSave(true).catch((err) => console.warn('[asistencia] Error al guardar contenido:', err))
+    contentSaver.flush().catch((err) => console.warn('[asistencia] Error al guardar contenido:', err))
   }
   editorContainer?.querySelector('#pm-dsl-editable')?.addEventListener('blur', _flushContenido)
   _cleanups.push(_flushContenido)
+
+  // Estado visible para el maestro: guardado / pendiente de sincronizar / falló.
+  const statusEl = container.querySelector('#pm-content-save-status')
+  function _renderContentStatus(status) {
+    if (!statusEl) return
+    statusEl.textContent = contentStatusLabel(status)
+    statusEl.dataset.status = status
+    statusEl.style.color =
+      status === 'failed' ? 'var(--pm-danger)' : status === 'pending' ? 'var(--pm-warning, #92400e)' : 'var(--pm-text-muted)'
+  }
+  _renderContentStatus(contentSaver.getStatus())
+
+  // Al reconectar, `main-maestros` drena la cola y avisa: si el texto ya no está
+  // en la cola, el servidor lo tiene.
+  async function _onSyncComplete() {
+    const pending = await loadPendingSessionContent({ sesionId, claseId, fecha: fechaHoy })
+    if (!pending) contentSaver.markSynced()
+    else if (pending.fallido) contentSaver.recordFailure()
+  }
+  window.addEventListener('pm:sync-complete', _onSyncComplete)
+  _cleanups.push(() => window.removeEventListener('pm:sync-complete', _onSyncComplete))
 
   // === Generar Informe Modal ===
   const informeModal = createGenerarInformeModal(container, {
@@ -2068,10 +2104,18 @@ function _renderVista(container, ctx) {
     label.textContent = `${marcados}/${total}`
   }
 
-  async function _autoSave(immediate = false, skipMutex = false) {
+  /**
+   * @param {boolean} [immediate]
+   * @param {boolean} [skipMutex]
+   * @param {{ contentOnly?: boolean }} [opts] - `contentOnly`: sesión ya registrada;
+   *   escribe solo el contenido para no devolverla a borrador.
+   * @returns {Promise<'saved'|'queued'|undefined>} Resultado del guardado inmediato.
+   */
+  async function _autoSave(immediate = false, skipMutex = false, { contentOnly = false } = {}) {
     if (_saveTimer) clearTimeout(_saveTimer)
 
     const saveFn = async () => {
+      const contenidoGuardado = dslContent || ''
       const asistencia = alumnos
         .filter((a) => estado[a.id])
         .map((a) => ({
@@ -2079,7 +2123,7 @@ function _renderVista(container, ctx) {
           estado: estado[a.id],
         }))
 
-      const payload = {
+      const fullPayload = {
         ...(sesionId ? {} : { clase_id: claseId }),
         // Titular preferido (maestroIdSesion): si esto lo guarda el suplente,
         // la fila sigue siendo la del titular — ver comentario junto a su
@@ -2096,15 +2140,18 @@ function _renderVista(container, ctx) {
           ? { node_codigo: categoriaTrabajo.codigo, node_origen: categoriaTrabajo.origen }
           : {}),
       }
+      const payload = selectAutosavePayload({ contentOnly, payload: fullPayload })
 
-      // Si se desmarcaron todos los alumnos y no hay contenido, eliminar borrador automáticamente para limpiar la fecha
-      if (asistencia.length === 0 && !(dslContent || '').trim() && sesionId) {
+      // Si se desmarcaron todos los alumnos y no hay contenido, eliminar borrador automáticamente para limpiar la fecha.
+      // Nunca en modo solo-contenido: esa sesión ya está registrada.
+      if (!contentOnly && asistencia.length === 0 && !(dslContent || '').trim() && sesionId) {
         try {
           await eliminarSesion(sesionId)
           sesionId = null
           localStorage.removeItem(`${localKey}_updated`)
           console.log('[asistencia] Borrador vaciado y eliminado automáticamente')
-          return
+          contentSaver?.record(contenidoGuardado, 'saved')
+          return 'saved'
         } catch (_err) {
           console.warn('[asistencia] Error al autolimpiar borrador:', _err)
         }
@@ -2124,7 +2171,8 @@ function _renderVista(container, ctx) {
               sesionId = data.id
               console.log('[asistencia] Nueva sesión creada:', sesionId)
               localStorage.setItem(`${localKey}_updated`, new Date().toISOString())
-              return
+              contentSaver?.record(contenidoGuardado, 'saved')
+              return 'saved'
             }
             throw error || new Error('No se pudo crear la sesión')
           } else {
@@ -2136,7 +2184,8 @@ function _renderVista(container, ctx) {
 
             if (!error) {
               localStorage.setItem(`${localKey}_updated`, new Date().toISOString())
-              return
+              contentSaver?.record(contenidoGuardado, 'saved')
+              return 'saved'
             }
             throw error
           }
@@ -2147,6 +2196,7 @@ function _renderVista(container, ctx) {
 
       // Fallback: cola offline (cuando offline o si falla la operación directa)
       let op = sesionId ? 'update' : 'insert'
+      // `preservar`: es texto del maestro; si la sincronización falla no se descarta.
       await enqueue({
         tabla: 'sesiones_clase',
         operacion: op,
@@ -2154,24 +2204,28 @@ function _renderVista(container, ctx) {
           ...(sesionId ? { id: sesionId } : {}),
           ...payload,
         },
+        preservar: true,
       })
       localStorage.setItem(`${localKey}_updated`, new Date().toISOString())
+      contentSaver?.record(contenidoGuardado, 'queued')
+      return 'queued'
     }
 
     if (immediate) {
       if (skipMutex) {
         // Caller (button handler) already holds the mutex — run directly to avoid deadlock
-        await saveFn()
-      } else {
-        // Normal autosave: acquire mutex
-        await _saveMutex.run(saveFn)
+        return await saveFn()
       }
-    } else {
-      // Schedule with mutex — deferred 2s, then acquire lock before executing
-      _saveTimer = setTimeout(() => {
-        _saveMutex.run(saveFn).catch((err) => console.error('[asistencia] Autosave error:', err))
-      }, 2000)
+      // Normal autosave: acquire mutex
+      return await _saveMutex.run(saveFn)
     }
+    // Schedule with mutex — deferred 2s, then acquire lock before executing
+    _saveTimer = setTimeout(() => {
+      _saveMutex.run(saveFn).catch((err) => {
+        console.error('[asistencia] Autosave error:', err)
+        contentSaver?.recordFailure()
+      })
+    }, 2000)
   }
 
   // Reportes Institucionales (PDF)
@@ -2401,6 +2455,7 @@ function _renderVista(container, ctx) {
             console.warn('[asistenciaView] Error al actualizar notificaciones:', e),
           )
           isSessionRegistered = true
+          contentSaver?.record(dslContent || '', 'saved')
           if (planificationCard?.refreshTree) {
             await planificationCard.refreshTree()
           }

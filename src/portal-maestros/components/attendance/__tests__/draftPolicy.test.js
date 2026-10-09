@@ -34,15 +34,11 @@ describe('shouldQueueDraftSave', () => {
     expect(shouldQueueDraftSave({ value: '', lastPersisted: 'algo', hasSesion: true })).toBe(true)
   })
 
-  it('no toca una sesión ya registrada', () => {
-    // El autosave escribe siempre `borrador: true`. Dispararlo sobre una sesión
-    // registrada la devolvería a borrador sin que el maestro lo pida: ahí el
-    // texto se guarda solo con el botón Guardar.
+  it('sí guarda el texto de una sesión ya registrada (la vista lo hace en modo solo-contenido)', () => {
     expect(shouldQueueDraftSave({
       value: 'Texto nuevo',
       lastPersisted: 'Texto viejo',
       hasSesion: true,
-      isRegistered: true,
-    })).toBe(false)
+    })).toBe(true)
   })
 })

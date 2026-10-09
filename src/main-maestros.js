@@ -166,6 +166,7 @@ window.bootstrap = bootstrapLib
 import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAuth.js'
 import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
+import { syncQueueItem } from './portal-maestros/services/queueSyncHandler.js'
 import { supabase } from './lib/supabaseClient.js'
 import { prefetchMonthData, invalidateAllCache } from './portal-maestros/services/maestroDataService.js'
 import { cleanupPushService } from './portal-maestros/services/pushService.js'
@@ -218,49 +219,6 @@ const _viewRenderQueue = createViewRenderQueue()
 // ============================================
 // SYNC
 // ============================================
-async function _syncWithSupabase(item) {
-  const { tabla, operacion, payload: rawPayload } = item
-  const payload = { ...rawPayload }
-
-  if (tabla === 'sesiones_clase') {
-    if (payload.contenido_dsl !== undefined) {
-      payload.contenido = payload.contenido_dsl
-      delete payload.contenido_dsl
-    }
-    if (payload.asistencias !== undefined && payload.asistencia === undefined) {
-      payload.asistencia = payload.asistencias
-      delete payload.asistencias
-    }
-  }
-
-  console.log(`[SYNC] Intentando ${operacion} en ${tabla}:`, payload)
-
-  try {
-    if (operacion === 'insert') {
-      const { error } = await supabase.from(tabla).insert([payload])
-      if (error) throw error
-    } else if (operacion === 'update') {
-      const { id, ...cleanPayload } = payload
-      const { error } = await supabase.from(tabla).update(cleanPayload).eq('id', id)
-      if (error) throw error
-    } else if (operacion === 'delete') {
-      const { error } = await supabase.from(tabla).delete().eq('id', payload.id)
-      if (error) throw error
-    }
-  } catch (err) {
-    if (err.code === 'PGRST204') {
-      const { data: testData } = await supabase.from(tabla).select().limit(1)
-      if (testData?.length > 0) {
-        console.warn('[SYNC] Columnas REALES encontradas:', Object.keys(testData[0]))
-      } else {
-        console.warn('[SYNC] No se pueden leer las columnas. ¿Ejecutaste el SQL en Supabase?')
-      }
-    }
-    console.error('[SYNC] Error crítico:', err)
-    throw err
-  }
-}
-
 let _syncTimeout = null
 
 async function updateAppBadge() {
@@ -302,9 +260,12 @@ async function _triggerSync() {
   _syncTimeout = setTimeout(async () => {
     if (!navigator.onLine) return
     try {
-      await processQueue(_syncWithSupabase)
+      await processQueue(syncQueueItem)
     } finally {
       await _updateSyncIndicator()
+      // Avisa a las vistas abiertas (p. ej. el registro de clase) que la cola
+      // se procesó, para que actualicen su estado de «pendiente de sincronizar».
+      window.dispatchEvent(new CustomEvent('pm:sync-complete'))
     }
   }, 1000)
 }

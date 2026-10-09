@@ -1,14 +1,16 @@
 /**
  * Aplica un item de `sync_queue` contra Supabase (portal de maestros).
  *
- * `sesiones_clase` insert va como upsert por clave natural: offline cada
- * autosave de una fecha nueva encola otro `insert` (aún no hay id), y con un
- * insert simple el segundo choca con UNIQUE(clase_id, fecha, maestro_id).
+ * `sesiones_clase` insert: offline cada autosave de una fecha nueva encola otro
+ * `insert` (aún no hay id), y el segundo choca con UNIQUE(clase_id, fecha,
+ * maestro_id). En ese caso (23505) se actualiza la fila existente SOLO con
+ * contenido y asistencia: un upsert completo podría devolver a borrador una
+ * sesión que ya se registró desde otro dispositivo.
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
 
-const SESION_CONFLICT_KEY = 'clase_id,fecha,maestro_id'
+const UNIQUE_VIOLATION = '23505'
 
 function normalizeSesionPayload(payload) {
   const out = { ...payload }
@@ -23,6 +25,19 @@ function normalizeSesionPayload(payload) {
   return out
 }
 
+async function updateExistingSesion({ clase_id, fecha, maestro_id, contenido, asistencia }) {
+  const fields = {}
+  if (contenido !== undefined) fields.contenido = contenido
+  if (asistencia !== undefined) fields.asistencia = asistencia
+  const { error } = await supabase
+    .from('sesiones_clase')
+    .update(fields)
+    .eq('clase_id', clase_id)
+    .eq('fecha', fecha)
+    .eq('maestro_id', maestro_id)
+  if (error) throw error
+}
+
 /**
  * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object }} item
  */
@@ -32,11 +47,14 @@ export async function syncQueueItem(item) {
 
   try {
     if (operacion === 'insert') {
-      const { error } =
-        tabla === 'sesiones_clase'
-          ? await supabase.from(tabla).upsert(payload, { onConflict: SESION_CONFLICT_KEY })
-          : await supabase.from(tabla).insert([payload])
-      if (error) throw error
+      const { error } = await supabase.from(tabla).insert([payload])
+      if (error) {
+        if (tabla === 'sesiones_clase' && error.code === UNIQUE_VIOLATION) {
+          await updateExistingSesion(payload)
+        } else {
+          throw error
+        }
+      }
     } else if (operacion === 'update') {
       const { id, ...cleanPayload } = payload
       const { error } = await supabase.from(tabla).update(cleanPayload).eq('id', id)

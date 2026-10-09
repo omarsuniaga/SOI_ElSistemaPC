@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const calls = []
+let insertError = null
 const chain = (table) => {
-  const rec = { table }
-  const api = {
-    insert: vi.fn((v) => { rec.insert = v; calls.push(rec); return Promise.resolve({ error: null }) }),
-    upsert: vi.fn((v, o) => { rec.upsert = v; rec.opts = o; calls.push(rec); return Promise.resolve({ error: null }) }),
-    update: vi.fn((v) => {
-      rec.update = v
-      return { eq: vi.fn((c, val) => { rec.eq = [c, val]; calls.push(rec); return Promise.resolve({ error: null }) }) }
-    }),
+  const rec = { table, eqs: [] }
+  const eqChain = () => {
+    const c = { eq: vi.fn((col, val) => { rec.eqs.push([col, val]); return c }), then: (res) => { calls.push(rec); return Promise.resolve({ error: null }).then(res) } }
+    return c
   }
-  return api
+  return {
+    insert: vi.fn((v) => { rec.insert = v; calls.push(rec); return Promise.resolve({ error: insertError }) }),
+    upsert: vi.fn((v, o) => { rec.upsert = v; rec.opts = o; calls.push(rec); return Promise.resolve({ error: null }) }),
+    update: vi.fn((v) => { rec.update = v; return eqChain() }),
+  }
 }
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
@@ -21,17 +22,30 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
 import { syncQueueItem } from '../queueSyncHandler.js'
 
 describe('syncQueueItem', () => {
-  beforeEach(() => { calls.length = 0 })
+  beforeEach(() => { calls.length = 0; insertError = null })
 
-  it('sesiones_clase insert se hace como upsert por clave natural, para que dos inserts offline no choquen', async () => {
+  it('sesiones_clase insert simple cuando la fila no existe', async () => {
     await syncQueueItem({
       tabla: 'sesiones_clase',
       operacion: 'insert',
-      payload: { clase_id: 'c1', fecha: '2026-10-08', maestro_id: 'm1', contenido: 'texto' },
+      payload: { clase_id: 'c1', fecha: '2026-10-08', maestro_id: 'm1', contenido: 'texto', borrador: true },
     })
-    expect(calls[0].upsert).toMatchObject({ contenido: 'texto' })
-    expect(calls[0].opts).toEqual({ onConflict: 'clase_id,fecha,maestro_id' })
-    expect(calls[0].insert).toBeUndefined()
+    expect(calls[0].insert).toEqual([{ clase_id: 'c1', fecha: '2026-10-08', maestro_id: 'm1', contenido: 'texto', borrador: true }])
+  })
+
+  it('si la fila ya existe (23505) actualiza contenido y asistencia sin tocar borrador/estado', async () => {
+    insertError = { code: '23505', message: 'duplicate key' }
+    await syncQueueItem({
+      tabla: 'sesiones_clase',
+      operacion: 'insert',
+      payload: {
+        clase_id: 'c1', fecha: '2026-10-08', maestro_id: 'm1',
+        contenido: 'texto', asistencia: [1], borrador: true, estado: 'pendiente',
+      },
+    })
+    const upd = calls.find((c) => c.update)
+    expect(upd.update).toEqual({ contenido: 'texto', asistencia: [1] })
+    expect(upd.eqs).toEqual([['clase_id', 'c1'], ['fecha', '2026-10-08'], ['maestro_id', 'm1']])
   })
 
   it('otras tablas siguen usando insert simple', async () => {
@@ -42,7 +56,7 @@ describe('syncQueueItem', () => {
   it('update por id quita el id del cuerpo', async () => {
     await syncQueueItem({ tabla: 'sesiones_clase', operacion: 'update', payload: { id: 's1', contenido: 'x' } })
     expect(calls[0].update).toEqual({ contenido: 'x' })
-    expect(calls[0].eq).toEqual(['id', 's1'])
+    expect(calls[0].eqs).toEqual([['id', 's1']])
   })
 
   it('traduce contenido_dsl y asistencias a las columnas reales', async () => {

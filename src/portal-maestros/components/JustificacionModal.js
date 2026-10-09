@@ -8,6 +8,10 @@
  * @returns {Object} API del componente
  */
 import { enableTrap } from '../utils/focusTrap.js';
+import { FileTooLargeError, InvalidMimeError } from '../services/fileUploadService.js';
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 
 export function createJustificacionModal(parentContainer, { onSave, onCancel, onDelete }) {
   let modalEl = document.getElementById('pm-justif-modal');
@@ -375,6 +379,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   let _currentJustificacion = null;
   let _currentFile = null;         // File object para Storage
   let _previewUrl = null;          // URL temporal para preview
+  let _evidenciaRemoved = false;   // true = el usuario quitó la evidencia existente explícitamente
   let _isEditing = false;
   let _prevEstado = null;          // Estado anterior para rollback en cancel
   let _focusTrap = null;           // Focus trap instance
@@ -402,6 +407,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
     _currentJustificacion = justificacionExistente;
     _currentFile = null;
     _previewUrl = null;
+    _evidenciaRemoved = false;
     _isEditing = !!justificacionExistente;
     _prevEstado = prevEstado;  // null = crear, 'J' = editar
 
@@ -457,6 +463,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
     _currentJustificacion = null;
     _currentFile = null;
     _previewUrl = null;
+    _evidenciaRemoved = false;
     _prevEstado = null;
     if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null; }
   }
@@ -478,22 +485,36 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   // Preview de imagen (File para Storage + URL temporal para preview)
   fileInput.onchange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      _currentFile = file;
-      _previewUrl = URL.createObjectURL(file);
-      previewImg.src = _previewUrl;
-      filePlaceholder.style.display = 'none';
-      filePreview.style.display = 'block';
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      alert(new FileTooLargeError().message);
+      fileInput.value = '';
+      return;
     }
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      alert(new InvalidMimeError().message);
+      fileInput.value = '';
+      return;
+    }
+
+    _currentFile = file;
+    _evidenciaRemoved = false;
+    _previewUrl = URL.createObjectURL(file);
+    previewImg.src = _previewUrl;
+    filePlaceholder.style.display = 'none';
+    filePreview.style.display = 'block';
   };
 
   // Eliminar archivo
   removeBtn.onclick = () => {
-    if (_previewUrl && !(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64)) {
+    const hadExisting = !!(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64);
+    if (_previewUrl && !hadExisting) {
       URL.revokeObjectURL(_previewUrl);
     }
     _currentFile = null;
     _previewUrl = null;
+    _evidenciaRemoved = hadExisting;
     fileInput.value = '';
     filePlaceholder.style.display = 'flex';
     filePreview.style.display = 'none';
@@ -518,6 +539,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
         motivo,
         evidenciaFile: _currentFile,          // File object para Storage
         evidenciaPreview: _previewUrl,        // URL temporal para mostrar
+        evidenciaRemoved: _evidenciaRemoved,  // true = quitar evidencia existente sin reemplazo
         justificacionId: _currentJustificacion?.id || null,
         existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 || null,
         isEdit: _isEditing,

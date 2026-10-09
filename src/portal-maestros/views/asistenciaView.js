@@ -482,7 +482,9 @@ export async function renderAsistenciaView(
     }
 
     // === Render ===
-    _renderVista(container, {
+    // Se devuelve la limpieza para que el router la ejecute al salir de la vista
+    // (ahí se persiste el contenido pendiente y se destruyen los subcomponentes).
+    return _renderVista(container, {
       clase,
       horario,
       alumnos,

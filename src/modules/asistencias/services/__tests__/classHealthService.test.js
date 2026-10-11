@@ -202,3 +202,165 @@ describe('buildClassHealthData - ordering and summary', () => {
     expect(data.summary.attendanceRatePct).toBeNull()
   })
 })
+
+function sesion(fecha, { clase_id = 'c1', clase_nombre = 'Violín N2', ...campos } = {}) {
+  return {
+    fecha,
+    clases: [{
+      clase_id,
+      clase_nombre,
+      maestro_nombre: 'Omar',
+      instrumento: 'Violín',
+      presentes: 3,
+      justificados: 0,
+      ausentes: 1,
+      observacion_sesion: null,
+      observacion_clase: null,
+      asistencias: [],
+      ...campos,
+    }],
+  }
+}
+
+const SEPTIEMBRE = { year: 2026, monthIndex: 8 }
+
+describe('buildClassHealthData - content topics', () => {
+  it('lists a topic repeated in 2+ sessions with its count, attention % and dates', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escalas mayores en tono de sol' }),
+      sesion('2026-09-17', { observacion_sesion: 'Arpegios de triada' }),
+      sesion('2026-09-24', { observacion_sesion: 'Escalas menores' }),
+    ], SEPTIEMBRE)
+    const topic = data.classes[0].content.topics.find((t) => t.label === 'escalas mayores')
+
+    expect(topic).toEqual({
+      label: 'escalas mayores',
+      sessions: 2,
+      attentionPct: 50,
+      dates: ['2026-09-03', '2026-09-10'],
+    })
+  })
+
+  it('does not treat a term appearing in only one session as a topic', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escalas mayores en tono de sol' }),
+      sesion('2026-09-17', { observacion_sesion: 'Arpegios de triada' }),
+    ], SEPTIEMBRE)
+    const labels = data.classes[0].content.topics.map((t) => t.label)
+
+    expect(labels).not.toContain('arpegios')
+    expect(labels).not.toContain('triada')
+    expect(labels).not.toContain('arpegios triada')
+    expect(data.classes[0].content.topics.every((t) => t.sessions >= 2)).toBe(true)
+  })
+
+  it('drops a unigram that is contained in a kept bigram', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escalas mayores en tono de sol' }),
+    ], SEPTIEMBRE)
+    const labels = data.classes[0].content.topics.map((t) => t.label)
+
+    expect(labels).toContain('escalas mayores')
+    expect(labels).not.toContain('escalas')
+    expect(labels).not.toContain('mayores')
+  })
+
+  it('normalizes accents, case and punctuation before counting', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Práctica del RÍTMO binario' }),
+      sesion('2026-09-10', { observacion_sesion: 'practica: ritmo BINARIO.' }),
+    ], SEPTIEMBRE)
+    const labels = data.classes[0].content.topics.map((t) => t.label)
+
+    expect(labels).toEqual(['practica ritmo', 'ritmo binario'])
+  })
+
+  it('uses observacion_clase when observacion_sesion is empty', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: null, observacion_clase: 'Escalas mayores' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escalas mayores' }),
+    ], SEPTIEMBRE)
+
+    expect(data.classes[0].content.sessionsWithContent).toBe(2)
+    expect(data.classes[0].content.topics.map((t) => t.label)).toContain('escalas mayores')
+  })
+})
+
+describe('buildClassHealthData - content coverage and repetition', () => {
+  it('counts sessions without recorded content and lowers coverage', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores' }),
+      sesion('2026-09-10', { observacion_sesion: '   ' }),
+      sesion('2026-09-17', { observacion_sesion: null }),
+      sesion('2026-09-24', { observacion_sesion: 'Arpegios de triada' }),
+    ], SEPTIEMBRE)
+    const { content } = data.classes[0]
+
+    expect(content.sessionsWithContent).toBe(2)
+    expect(content.sessionsWithoutContent).toBe(2)
+    expect(content.coveragePct).toBe(50)
+  })
+
+  it('detects identical content as repeated, ignoring case, accents and spacing', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores.' }),
+      sesion('2026-09-10', { observacion_sesion: 'escalas   MAYORES' }),
+      sesion('2026-09-17', { observacion_sesion: 'Arpegios' }),
+    ], SEPTIEMBRE)
+    const { content } = data.classes[0]
+
+    expect(content.repeatedContentSessions).toBe(1)
+    expect(content.varietyPct).toBe(66.7)
+  })
+})
+
+describe('buildClassHealthData - health score', () => {
+  it('computes the score with the documented formula', () => {
+    // Attendance 12/16 = 75%. Coverage 3/4 = 75%. Variety 2 distinct / 3 with content = 66.7%.
+    // 0.5*75 + 0.3*75 + 0.2*66.7 = 73.34 -> 73
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escalas mayores en tono de sol' }),
+      sesion('2026-09-17', { observacion_sesion: null }),
+      sesion('2026-09-24', { observacion_sesion: 'Escalas mayores en tono de do' }),
+    ], SEPTIEMBRE)
+    const violin = data.classes[0]
+
+    expect(violin.attendanceRatePct).toBe(75)
+    expect(violin.content.coveragePct).toBe(75)
+    expect(violin.content.varietyPct).toBe(66.7)
+    expect(violin.healthScore).toBe(73)
+    expect(violin.healthLevel).toBe('En observación')
+  })
+
+  it('returns null score and level when the class has no convocations', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores' }),
+      sesion('2026-09-10', { clase_id: 'c9', clase_nombre: 'Coro', presentes: 0, ausentes: 0, justificados: 0 }),
+    ], SEPTIEMBRE)
+    const coro = data.classes.find((c) => c.classId === 'c9')
+
+    expect(coro.healthScore).toBeNull()
+    expect(coro.healthLevel).toBeNull()
+  })
+
+  it('averages non-null scores and counts classes per level in the summary', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escalas mayores en tono de sol' }),
+      sesion('2026-09-17', { observacion_sesion: null }),
+      sesion('2026-09-24', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { clase_id: 'c9', clase_nombre: 'Coro', presentes: 0, ausentes: 0, justificados: 0 }),
+    ], SEPTIEMBRE)
+
+    expect(data.summary.averageHealthScore).toBe(73)
+    expect(data.summary.levelCounts).toEqual({
+      'Saludable': 0,
+      'En observación': 1,
+      'Requiere atención': 0,
+    })
+  })
+})

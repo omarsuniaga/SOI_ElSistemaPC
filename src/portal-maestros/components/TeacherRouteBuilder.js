@@ -302,8 +302,12 @@ export async function openTeacherRouteBuilder({ maestroId, claseId, route = null
     // que el resto, es barato porque el formulario vive solo en memoria.
     unidadesContainer.querySelectorAll('[data-role="toggle-unidad"]').forEach((el) => {
       el.addEventListener('click', (e) => {
+        // Evitar toggle si se hizo click en inputs, botones de borrar o cualquier control interactivo
+        if (e.target.closest('.trb-remove-unidad, input, textarea, button:not(.trb-chevron)')) return
         e.stopPropagation()
-        const localId = state.unidades[+el.dataset.ui]._localId
+        const unidad = state.unidades?.[+el.dataset.ui]
+        if (!unidad?._localId) return
+        const localId = unidad._localId
         if (expandedUnidades.has(localId)) expandedUnidades.delete(localId)
         else expandedUnidades.add(localId)
         _render()
@@ -311,9 +315,12 @@ export async function openTeacherRouteBuilder({ maestroId, claseId, route = null
     })
     unidadesContainer.querySelectorAll('[data-role="toggle-objetivo"]').forEach((el) => {
       el.addEventListener('click', (e) => {
+        if (e.target.closest('.trb-remove-objetivo, input, textarea, button:not(.trb-chevron)')) return
         e.stopPropagation()
         const { ui, oi } = el.dataset
-        const localId = state.unidades[+ui].objetivos[+oi]._localId
+        const objetivo = state.unidades?.[+ui]?.objetivos?.[+oi]
+        if (!objetivo?._localId) return
+        const localId = objetivo._localId
         if (expandedObjetivos.has(localId)) expandedObjetivos.delete(localId)
         else expandedObjetivos.add(localId)
         _render()
@@ -323,50 +330,63 @@ export async function openTeacherRouteBuilder({ maestroId, claseId, route = null
     // Nombres (inputs)
     unidadesContainer.querySelectorAll('[data-role="unidad-nombre"]').forEach((el) => {
       el.addEventListener('input', () => {
-        state.unidades[+el.dataset.ui].nombre = el.value
+        const u = state.unidades?.[+el.dataset.ui]
+        if (u) u.nombre = el.value
       })
       el.addEventListener('click', (e) => e.stopPropagation())
     })
     unidadesContainer.querySelectorAll('[data-role="unidad-descripcion"]').forEach((el) => {
       el.addEventListener('input', () => {
-        state.unidades[+el.dataset.ui].descripcion = el.value
+        const u = state.unidades?.[+el.dataset.ui]
+        if (u) u.descripcion = el.value
       })
+      el.addEventListener('click', (e) => e.stopPropagation())
     })
     unidadesContainer.querySelectorAll('[data-role="objetivo-nombre"]').forEach((el) => {
       el.addEventListener('input', () => {
-        state.unidades[+el.dataset.ui].objetivos[+el.dataset.oi].nombre = el.value
+        const o = state.unidades?.[+el.dataset.ui]?.objetivos?.[+el.dataset.oi]
+        if (o) o.nombre = el.value
       })
       el.addEventListener('click', (e) => e.stopPropagation())
     })
     unidadesContainer.querySelectorAll('[data-role="indicador-nombre"]').forEach((el) => {
       el.addEventListener('input', () => {
         const { ui, oi, ii } = el.dataset
-        state.unidades[+ui].objetivos[+oi].indicadores[+ii].nombre = el.value
+        const ind = state.unidades?.[+ui]?.objetivos?.[+oi]?.indicadores?.[+ii]
+        if (ind) ind.nombre = el.value
       })
       el.addEventListener('click', (e) => e.stopPropagation())
     })
     // Prerrequisito (componente atómico: toggle abre/cierra el panel, pick
     // elige y cierra, clear quita sin abrir nada)
     unidadesContainer.querySelectorAll('[data-role="prereq-toggle"]').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
         const { ui, oi, ii } = el.dataset
-        const localId = state.unidades[+ui].objetivos[+oi].indicadores[+ii]._localId
+        const localId = state.unidades?.[+ui]?.objetivos?.[+oi]?.indicadores?.[+ii]?._localId
+        if (!localId) return
         openPrereqId = openPrereqId === localId ? null : localId
         _render()
       })
     })
     unidadesContainer.querySelectorAll('[data-role="prereq-pick"]').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
         const { ui, oi, ii, value } = el.dataset
-        state.unidades[+ui].objetivos[+oi].indicadores[+ii].prerequisito_local_id = value || null
+        const ind = state.unidades?.[+ui]?.objetivos?.[+oi]?.indicadores?.[+ii]
+        if (!ind) return
+        ind.prerequisito_local_id = value || null
         openPrereqId = null
         _render()
       })
     })
     unidadesContainer.querySelectorAll('[data-role="prereq-clear"]').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
         const { ui, oi, ii } = el.dataset
-        state.unidades[+ui].objetivos[+oi].indicadores[+ii].prerequisito_local_id = null
+        const ind = state.unidades?.[+ui]?.objetivos?.[+oi]?.indicadores?.[+ii]
+        if (!ind) return
+        ind.prerequisito_local_id = null
         openPrereqId = null
         _render()
       })
@@ -375,38 +395,61 @@ export async function openTeacherRouteBuilder({ maestroId, claseId, route = null
     // Agregar — el nuevo hijo se auto-expande para poder escribirle el nombre
     // de inmediato, sin un toque extra para desplegarlo.
     unidadesContainer.querySelectorAll('[data-role="add-objetivo"]').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const unidad = state.unidades?.[+el.dataset.ui]
+        if (!unidad) return
         const nuevo = _nuevoObjetivo()
-        state.unidades[+el.dataset.ui].objetivos.push(nuevo)
+        unidad.objetivos = unidad.objetivos || []
+        unidad.objetivos.push(nuevo)
         expandedObjetivos.add(nuevo._localId)
         _render()
       })
     })
     unidadesContainer.querySelectorAll('[data-role="add-indicador"]').forEach((el) => {
-      el.addEventListener('click', () => {
-        state.unidades[+el.dataset.ui].objetivos[+el.dataset.oi].indicadores.push(_nuevoIndicador())
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const { ui, oi } = el.dataset
+        const objetivo = state.unidades?.[+ui]?.objetivos?.[+oi]
+        if (!objetivo) return
+        objetivo.indicadores = objetivo.indicadores || []
+        objetivo.indicadores.push(_nuevoIndicador())
         _render()
       })
     })
 
     // Quitar
     unidadesContainer.querySelectorAll('.trb-remove-unidad').forEach((el) => {
-      el.addEventListener('click', () => {
-        state.unidades.splice(+el.dataset.ui, 1)
-        _render()
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const ui = +el.dataset.ui
+        if (state.unidades?.[ui]) {
+          const removed = state.unidades.splice(ui, 1)[0]
+          if (removed?._localId) expandedUnidades.delete(removed._localId)
+          _render()
+        }
       })
     })
     unidadesContainer.querySelectorAll('.trb-remove-objetivo').forEach((el) => {
-      el.addEventListener('click', () => {
-        state.unidades[+el.dataset.ui].objetivos.splice(+el.dataset.oi, 1)
-        _render()
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const ui = +el.dataset.ui
+        const oi = +el.dataset.oi
+        if (state.unidades?.[ui]?.objetivos?.[oi]) {
+          const removed = state.unidades[ui].objetivos.splice(oi, 1)[0]
+          if (removed?._localId) expandedObjetivos.delete(removed._localId)
+          _render()
+        }
       })
     })
     unidadesContainer.querySelectorAll('.trb-remove-indicador').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
         const { ui, oi, ii } = el.dataset
-        state.unidades[+ui].objetivos[+oi].indicadores.splice(+ii, 1)
-        _render()
+        if (state.unidades?.[+ui]?.objetivos?.[+oi]?.indicadores?.[+ii]) {
+          state.unidades[+ui].objetivos[+oi].indicadores.splice(+ii, 1)
+          _render()
+        }
       })
     })
   }
@@ -600,26 +643,33 @@ export async function openTeacherRoutePicker(maestroId, claseId, onSaved) {
 
 /** Clona la jerarquía cargada del backend agregando IDs locales estables para el formulario */
 function _cloneUnidadesForEdit(unidades) {
+  if (!Array.isArray(unidades)) return []
   const idMap = new Map() // id real (backend) -> _localId
 
-  const withLocalIds = unidades.map((u) => ({
-    ...u,
-    _localId: _uid('uni'),
-    objetivos: (u.objetivos || []).map((o) => ({
-      ...o,
-      _localId: _uid('obj'),
-      indicadores: (o.indicadores || []).map((ind) => {
-        const localId = _uid('ind')
-        idMap.set(ind.id, localId)
-        return { ...ind, _localId: localId }
-      }),
-    })),
-  }))
+  const withLocalIds = unidades
+    .filter(Boolean)
+    .map((u) => ({
+      ...u,
+      _localId: _uid('uni'),
+      objetivos: (u.objetivos || [])
+        .filter(Boolean)
+        .map((o) => ({
+          ...o,
+          _localId: _uid('obj'),
+          indicadores: (o.indicadores || [])
+            .filter(Boolean)
+            .map((ind) => {
+              const localId = _uid('ind')
+              if (ind.id) idMap.set(ind.id, localId)
+              return { ...ind, _localId: localId }
+            }),
+        })),
+    }))
 
   // Resolver prerequisito_indicador_id (real) -> prerequisito_local_id
   withLocalIds.forEach((u) =>
-    u.objetivos.forEach((o) =>
-      o.indicadores.forEach((ind) => {
+    (u.objetivos || []).forEach((o) =>
+      (o.indicadores || []).forEach((ind) => {
         ind.prerequisito_local_id = ind.prerequisito_indicador_id
           ? idMap.get(ind.prerequisito_indicador_id) || null
           : null

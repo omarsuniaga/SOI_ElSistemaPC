@@ -117,6 +117,7 @@ function buildTopics(withContent) {
 function analyzeContent(sessions) {
   const chronological = [...sessions].sort((a, b) => a.fecha.localeCompare(b.fecha))
   const withContent = []
+  const entries = []
   const distinct = new Set()
   let repeatedContentSessions = 0
 
@@ -131,6 +132,7 @@ function analyzeContent(sessions) {
       fecha: session.fecha,
       terms: contentTerms(content),
     })
+    entries.push({ date: session.fecha, text: content })
   }
 
   const total = sessions.length
@@ -141,6 +143,7 @@ function analyzeContent(sessions) {
     repeatedContentSessions,
     varietyPct: ratioPct(distinct.size, withContent.length),
     topics: buildTopics(withContent),
+    entries,
   }
 }
 

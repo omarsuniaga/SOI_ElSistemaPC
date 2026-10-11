@@ -378,3 +378,28 @@ describe('buildClassHealthData - topic boundaries', () => {
     expect(labels).not.toContain('arco afinacion')
   })
 })
+
+describe('buildClassHealthData - content entries', () => {
+  it('exposes the raw session content per class, chronologically, skipping sessions without content', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-17', { observacion_sesion: '  Arpegios de triada  ', observacion_clase: 'Postura' }),
+      sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
+      sesion('2026-09-10', { observacion_sesion: '   ', observacion_clase: null }),
+      sesion('2026-09-24', { observacion_sesion: null, observacion_clase: 'Afinación grupal' }),
+    ], SEPTIEMBRE)
+
+    expect(data.classes[0].content.entries).toEqual([
+      { date: '2026-09-03', text: 'Escalas mayores en tono de do' },
+      { date: '2026-09-17', text: 'Arpegios de triada\nPostura' },
+      { date: '2026-09-24', text: 'Afinación grupal' },
+    ])
+  })
+
+  it('returns an empty entries list when no session has content', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: null }),
+    ], SEPTIEMBRE)
+
+    expect(data.classes[0].content.entries).toEqual([])
+  })
+})

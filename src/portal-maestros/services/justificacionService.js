@@ -47,13 +47,18 @@ export async function uploadEvidencia(file, folder = 'justificaciones') {
  * @param {string} publicUrl
  */
 export async function deleteEvidencia(publicUrl) {
-  if (!publicUrl) return
-  // Extraer la ruta relativa del bucket desde la URL pública
-  // ej: https://xxx.supabase.co/storage/v1/object/public/documentos/justificaciones/archivo.jpg
+  if (!publicUrl || typeof publicUrl !== 'string') return
+  // Si ya es una ruta relativa dentro del bucket
+  if (publicUrl.startsWith('justificaciones/')) {
+    await supabase.storage.from(BUCKET_DOCUMENTOS).remove([publicUrl])
+    return
+  }
+  // Extraer la ruta relativa del bucket desde la URL pública, autenticada o firmada
+  // ej: https://xxx.supabase.co/storage/v1/object/public/documentos/justificaciones/archivo.jpg?t=123
   // → justificaciones/archivo.jpg
-  const match = publicUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
+  const match = publicUrl.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/[^/]+\/([^?#]+)/)
   if (!match) return
-  const path = match[1]
+  const path = decodeURIComponent(match[1])
   await supabase.storage.from(BUCKET_DOCUMENTOS).remove([path])
 }
 

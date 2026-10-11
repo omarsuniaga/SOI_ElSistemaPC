@@ -210,8 +210,21 @@ describe('uploadEvidencia / deleteEvidencia — bucket y validación', () => {
     expect(removeSpy).toHaveBeenCalledWith(['justificaciones/old.jpg'])
   })
 
-  it('deleteEvidencia no hace nada si no recibe URL', async () => {
+  it('deleteEvidencia limpia query params y tokens de la URL', async () => {
+    await deleteEvidencia('https://test.co/storage/v1/object/sign/documentos/justificaciones/old.jpg?token=secret123&t=999')
+    expect(storageFromSpy).toHaveBeenCalledWith('documentos')
+    expect(removeSpy).toHaveBeenCalledWith(['justificaciones/old.jpg'])
+  })
+
+  it('deleteEvidencia acepta paths relativos directos', async () => {
+    await deleteEvidencia('justificaciones/foto_directa.png')
+    expect(storageFromSpy).toHaveBeenCalledWith('documentos')
+    expect(removeSpy).toHaveBeenCalledWith(['justificaciones/foto_directa.png'])
+  })
+
+  it('deleteEvidencia no hace nada si recibe base64 o null', async () => {
     await deleteEvidencia(null)
+    await deleteEvidencia('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA')
     expect(removeSpy).not.toHaveBeenCalled()
   })
 })

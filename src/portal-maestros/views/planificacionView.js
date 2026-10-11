@@ -14,6 +14,7 @@ import { router as internalRouter } from "../../core/router/router.js"
 import { getMaestroLocal, detectarRolMaestro } from "../auth/maestroAuth.js"
 import { abrirMapaDeRutas } from "../components/teacherRouteMapPanel.js"
 import { openTeacherRoutePicker, openTeacherRouteBuilder } from "../components/TeacherRouteBuilder.js"
+import { createPlanClasePanel } from "../components/planning/PlanClasePanel.js"
 import { supabase } from "../../lib/supabaseClient.js"
 
 function escapeHtml(value) {
@@ -60,6 +61,10 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
             <span class="pm-stat-label">Clases</span>
           </div>
           <div class="pm-stat-card">
+            <span class="pm-stat-num pm-stat-num--plan" id="stat-con-plan">-</span>
+            <span class="pm-stat-label">Con Plan</span>
+          </div>
+          <div class="pm-stat-card">
             <span class="pm-stat-num pm-stat-num--success" id="stat-con-ruta">-</span>
             <span class="pm-stat-label">Con Malla</span>
           </div>
@@ -72,14 +77,28 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
       <!-- Segmented Filter Bar & Guide Button -->
       <div class="pm-planning-toolbar">
+        <!-- Pestañas Principales: Planes de Clase vs Malla Curricular -->
+        <div class="pm-view-modes-control" id="pm-view-modes">
+          <button type="button" class="pm-view-mode-btn active" data-mode="planes">
+            <i class="bi bi-journal-text"></i>
+            <span>Planes de Clase</span>
+            <span class="pm-tab-pill-badge" id="badge-count-planes">0</span>
+          </button>
+          <button type="button" class="pm-view-mode-btn" data-mode="malla">
+            <i class="bi bi-diagram-3-fill"></i>
+            <span>Malla Curricular</span>
+            <span class="pm-tab-pill-badge" id="badge-count-mallas">0</span>
+          </button>
+        </div>
+
         <div class="pm-segmented-control" id="pm-class-filters">
           <button type="button" class="pm-seg-btn active" data-filter="all">
             <i class="bi bi-grid-fill"></i> Todas
           </button>
-          <button type="button" class="pm-seg-btn" data-filter="with-route">
-            <i class="bi bi-check-circle-fill"></i> Con Malla
+          <button type="button" class="pm-seg-btn" data-filter="completed">
+            <i class="bi bi-check-circle-fill"></i> Con Registro
           </button>
-          <button type="button" class="pm-seg-btn" data-filter="no-route">
+          <button type="button" class="pm-seg-btn" data-filter="pending">
             <i class="bi bi-exclamation-circle-fill"></i> Pendientes
           </button>
         </div>
@@ -91,7 +110,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
           </button>
           <div class="pm-search-box">
             <i class="bi bi-search"></i>
-            <input type="text" id="pm-search-clases" placeholder="Buscar clase o instrumento..." />
+            <input type="text" id="pm-search-clases" placeholder="Buscar clase o repertorio..." />
           </div>
         </div>
       </div>
@@ -100,7 +119,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       <div id="pm-classes-grid-host">
         <div class="pm-loading-card">
           <div class="spinner-border text-primary" role="status"></div>
-          <span>Sincronizando mallas curriculares...</span>
+          <span>Sincronizando mallas y planes de clase...</span>
         </div>
       </div>
     </div>
@@ -109,12 +128,23 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
   const gridHost = container.querySelector("#pm-classes-grid-host")
   const searchInput = container.querySelector("#pm-search-clases")
   const filterButtons = container.querySelectorAll("#pm-class-filters .pm-seg-btn")
+  const modeButtons = container.querySelectorAll("#pm-view-modes .pm-view-mode-btn")
 
+  let currentMode = "planes" // "planes" | "malla"
   let currentFilter = "all"
   let currentSearch = ""
   let loadedClases = []
 
   // Event Listeners
+  modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      modeButtons.forEach((b) => b.classList.remove("active"))
+      btn.classList.add("active")
+      currentMode = btn.dataset.mode
+      renderGrid()
+    })
+  })
+
   filterButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       filterButtons.forEach((b) => b.classList.remove("active"))
@@ -133,7 +163,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
     _abrirModalGuiaUso()
   })
 
-  // Load Classes & Route Data (High performance batch query)
+  // Load Classes & Route Data (High performance parallel batch query)
   async function loadData() {
     try {
       const clases = await getMisClases()
@@ -142,17 +172,17 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
           <div class="pm-empty-card">
             <div class="pm-empty-icon">🎼</div>
             <h3 class="pm-empty-title">Sin clases asignadas</h3>
-            <p class="pm-empty-desc">No tienes clases asignadas en este momento. Cuando la coordinación te asigne un grupo podrás diseñar su malla aquí.</p>
+            <p class="pm-empty-desc">No tienes clases asignadas en este momento. Cuando la coordinación te asigne un grupo podrás redactar su plan y diseñar su malla aquí.</p>
           </div>
         `
-        _updateHeroStats(0, 0, 0)
+        _updateHeroStats(0, 0, 0, 0)
         return
       }
 
       const claseIds = clases.map((c) => c.id)
 
-      // Query routes and enrollments in parallel batch (2 requests total instead of N+1)
-      const [routesData, allInscripciones] = await Promise.all([
+      // Query routes, plans and enrollments in parallel batch (3 requests total instead of N+1)
+      const [routesData, plansData, allInscripciones] = await Promise.all([
         supabase
           .from("maestro_routes")
           .select(`
@@ -171,6 +201,16 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
             console.warn("[planificacionView] Batch routes fallback:", err)
             return []
           }),
+        supabase
+          .from("planificaciones")
+          .select("id, clase_id, maestro_id, titulo, periodo_nombre, descripcion, contenidos, obras, tecnicas, escalas_arpegios, estado, activo")
+          .in("clase_id", claseIds)
+          .eq("activo", true)
+          .then((res) => res.data || [])
+          .catch((err) => {
+            console.warn("[planificacionView] Batch plans fallback:", err)
+            return []
+          }),
         getInscripcionesClases(claseIds).catch(() => []),
       ])
 
@@ -178,6 +218,14 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       const routesByClase = {}
       routesData.forEach((r) => {
         routesByClase[r.clase_id] = r
+      })
+
+      // Map plans by clase_id
+      const plansByClase = {}
+      plansData.forEach((p) => {
+        if (!plansByClase[p.clase_id] || p.activo) {
+          plansByClase[p.clase_id] = p
+        }
       })
 
       // Map enrollments count by clase_id
@@ -188,6 +236,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
       const enrichedClases = clases.map((clase) => {
         const primaryRoute = routesByClase[clase.id] || null
+        const primaryPlan = plansByClase[clase.id] || null
         const unidades = primaryRoute?.unidades || []
 
         let totalObjetivos = 0
@@ -201,10 +250,19 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
           })
         })
 
+        const obras = Array.isArray(primaryPlan?.obras) ? primaryPlan.obras : []
+        const contenidos = Array.isArray(primaryPlan?.contenidos) ? primaryPlan.contenidos : []
+        const tecnicas = Array.isArray(primaryPlan?.tecnicas) ? primaryPlan.tecnicas : []
+
         return {
           ...clase,
           hasRoute: Boolean(primaryRoute),
           route: primaryRoute,
+          hasPlan: Boolean(primaryPlan),
+          plan: primaryPlan,
+          obras,
+          contenidos,
+          tecnicas,
           unidadesCount: unidades.length,
           objetivosCount: totalObjetivos,
           indicadoresCount: totalIndicadores,
@@ -216,18 +274,19 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
 
       // Update Hero Metrics
       const totalClases = loadedClases.length
+      const conPlan = loadedClases.filter((c) => c.hasPlan).length
       const conRuta = loadedClases.filter((c) => c.hasRoute).length
       const totalInd = loadedClases.reduce((acc, c) => acc + c.indicadoresCount, 0)
-      _updateHeroStats(totalClases, conRuta, totalInd)
+      _updateHeroStats(totalClases, conPlan, conRuta, totalInd)
 
       renderGrid()
-      announce(`${totalClases} clases cargadas en Malla Curricular.`)
+      announce(`${totalClases} clases cargadas en Planificación.`)
     } catch (err) {
       console.error("[planificacionView] Error loading classes:", err)
       gridHost.innerHTML = `
         <div class="pm-empty-card">
           <div class="pm-empty-icon">⚠️</div>
-          <h3 class="pm-empty-title">Error al sincronizar mallas</h3>
+          <h3 class="pm-empty-title">Error al sincronizar datos</h3>
           <p class="pm-empty-desc">${escapeHtml(err.message)}</p>
           <button type="button" class="pm-btn-primary mt-3" id="btn-retry-planning">
             <i class="bi bi-arrow-clockwise"></i> Reintentar
@@ -238,30 +297,51 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
     }
   }
 
-  function _updateHeroStats(total, conRuta, totalInd) {
+  function _updateHeroStats(total, conPlan, conRuta, totalInd) {
     const elTotal = container.querySelector("#stat-total-clases")
+    const elPlan = container.querySelector("#stat-con-plan")
     const elRuta = container.querySelector("#stat-con-ruta")
     const elInd = container.querySelector("#stat-total-indicadores")
+    const badgePlanes = container.querySelector("#badge-count-planes")
+    const badgeMallas = container.querySelector("#badge-count-mallas")
+
     if (elTotal) elTotal.textContent = total
+    if (elPlan) elPlan.textContent = conPlan
     if (elRuta) elRuta.textContent = conRuta
     if (elInd) elInd.textContent = totalInd
+    if (badgePlanes) badgePlanes.textContent = conPlan
+    if (badgeMallas) badgeMallas.textContent = conRuta
   }
 
   function renderGrid() {
     let filtered = loadedClases
 
-    if (currentFilter === "with-route") {
-      filtered = filtered.filter((c) => c.hasRoute)
-    } else if (currentFilter === "no-route") {
-      filtered = filtered.filter((c) => !c.hasRoute)
+    if (currentMode === "planes") {
+      if (currentFilter === "completed") {
+        filtered = filtered.filter((c) => c.hasPlan)
+      } else if (currentFilter === "pending") {
+        filtered = filtered.filter((c) => !c.hasPlan)
+      }
+    } else {
+      if (currentFilter === "completed" || currentFilter === "with-route") {
+        filtered = filtered.filter((c) => c.hasRoute)
+      } else if (currentFilter === "pending" || currentFilter === "no-route") {
+        filtered = filtered.filter((c) => !c.hasRoute)
+      }
     }
 
     if (currentSearch) {
-      filtered = filtered.filter(
-        (c) =>
-          (c.nombre || "").toLowerCase().includes(currentSearch) ||
-          (c.instrumento || "").toLowerCase().includes(currentSearch)
-      )
+      filtered = filtered.filter((c) => {
+        const text = [
+          c.nombre || "",
+          c.instrumento || "",
+          c.plan?.titulo || "",
+          c.plan?.periodo_nombre || "",
+          ...(c.obras || []),
+          ...(c.contenidos || []),
+        ].join(" ").toLowerCase()
+        return text.includes(currentSearch)
+      })
     }
 
     if (filtered.length === 0) {
@@ -275,6 +355,144 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
       return
     }
 
+    if (currentMode === "planes") {
+      // 📋 Pestaña: Planes de Clase
+      gridHost.innerHTML = `
+        <div class="pm-compact-grid">
+          ${filtered
+            .map((clase) => {
+              const hasPlan = clase.hasPlan
+              const plan = clase.plan
+              const obrasPreview = clase.obras.slice(0, 2).map(escapeHtml).join(", ")
+              const hasMoreObras = clase.obras.length > 2
+
+              return `
+                <div class="pm-compact-card ${hasPlan ? "has-plan" : "no-plan"}" data-clase-id="${clase.id}">
+                  <!-- Top Accent Line -->
+                  <div class="pm-compact-card-accent ${hasPlan ? "accent-cyan" : "accent-amber"}"></div>
+
+                  <!-- Top Row: Full Title + Status Dot Badge -->
+                  <div class="pm-card-top-row">
+                    <div class="pm-card-title-wrap">
+                      <h3 class="pm-compact-title">${escapeHtml(clase.nombre)}</h3>
+                      <div class="pm-card-meta-line">
+                        <span class="pm-meta-text">${escapeHtml(clase.instrumento || "General")}</span>
+                        <span class="pm-dot-separator">·</span>
+                        <span class="pm-meta-text"><i class="bi bi-people-fill"></i> ${clase.totalStudents}</span>
+                      </div>
+                    </div>
+                    <div class="pm-status-indicator ${hasPlan ? "indicator-plan-active" : "indicator-pending"}" title="${hasPlan ? "Plan Activo" : "Sin Plan Redactado"}">
+                      <span class="pm-status-dot"></span>
+                    </div>
+                  </div>
+
+                  <!-- Body: Plan Details & Counts -->
+                  <div class="pm-compact-body">
+                    ${
+                      hasPlan
+                        ? `
+                      <div>
+                        <div class="pm-plan-periodo-badge">
+                          <i class="bi bi-calendar3"></i> ${escapeHtml(plan.periodo_nombre || "Ciclo actual")}
+                        </div>
+                        <div class="pm-plan-title-preview" title="${escapeHtml(plan.titulo)}">
+                          ${escapeHtml(plan.titulo || "Plan de Clase")}
+                        </div>
+
+                        <div class="pm-icon-hierarchy">
+                          <div class="pm-icon-chip" title="${clase.obras.length} Obras">
+                            <span class="pm-chip-symbol">🎵</span>
+                            <span class="pm-chip-val">${clase.obras.length}</span>
+                          </div>
+                          <span class="pm-chip-arrow">·</span>
+                          <div class="pm-icon-chip" title="${clase.contenidos.length} Contenidos">
+                            <span class="pm-chip-symbol">📖</span>
+                            <span class="pm-chip-val">${clase.contenidos.length}</span>
+                          </div>
+                          <span class="pm-chip-arrow">·</span>
+                          <div class="pm-icon-chip" title="${clase.tecnicas.length} Técnicas">
+                            <span class="pm-chip-symbol">🎻</span>
+                            <span class="pm-chip-val">${clase.tecnicas.length}</span>
+                          </div>
+                        </div>
+
+                        ${
+                          clase.obras.length > 0
+                            ? `<div class="pm-plan-repertoire-preview" title="${escapeHtml(clase.obras.join(", "))}">
+                                <i class="bi bi-music-note-beamed text-primary"></i> ${obrasPreview}${hasMoreObras ? "…" : ""}
+                              </div>`
+                            : ""
+                        }
+                      </div>
+                    `
+                        : `
+                      <div class="pm-warning-chip" title="Plan pendiente de redacción">
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        <span>Sin plan de clase</span>
+                      </div>
+                      <p class="pm-plan-empty-note">
+                        Define temas, repertorio, técnicas y escalas para este período.
+                      </p>
+                    `
+                    }
+                  </div>
+
+                  <!-- Compact Actions Row -->
+                  <div class="pm-compact-actions">
+                    <button type="button" class="pm-btn-compact-primary pm-btn-edit-plan" data-clase-id="${clase.id}" title="${hasPlan ? "Editar Plan" : "Redactar Plan"}">
+                      <i class="bi ${hasPlan ? "bi-pencil-square" : "bi-plus-circle-fill"}"></i>
+                      <span>${hasPlan ? "Editar Plan" : "Redactar"}</span>
+                    </button>
+
+                    <button type="button" class="pm-btn-compact-secondary pm-btn-view-malla" data-clase-id="${clase.id}" title="Ver Malla Curricular">
+                      <i class="bi bi-diagram-3"></i>
+                      <span>Malla</span>
+                    </button>
+                  </div>
+                </div>
+              `
+            })
+            .join("")}
+        </div>
+      `
+
+      // Wire plan card clicks & buttons
+      gridHost.querySelectorAll(".pm-compact-card").forEach((card) => {
+        card.style.cursor = "pointer"
+        card.addEventListener("click", () => {
+          const cid = card.dataset.claseId
+          const targetClase = loadedClases.find((c) => c.id === cid)
+          if (targetClase) {
+            _abrirModalPlanClase(targetClase, () => loadData())
+          }
+        })
+      })
+
+      gridHost.querySelectorAll(".pm-btn-edit-plan").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation()
+          const cid = btn.dataset.claseId
+          const targetClase = loadedClases.find((c) => c.id === cid)
+          if (targetClase) {
+            _abrirModalPlanClase(targetClase, () => loadData())
+          }
+        })
+      })
+
+      gridHost.querySelectorAll(".pm-btn-view-malla").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation()
+          currentMode = "malla"
+          modeButtons.forEach((b) => {
+            b.classList.toggle("active", b.dataset.mode === "malla")
+          })
+          renderGrid()
+        })
+      })
+      return
+    }
+
+    // 🗺️ Pestaña: Malla Curricular
     gridHost.innerHTML = `
       <div class="pm-compact-grid">
         ${filtered
@@ -412,6 +630,47 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
   }
 
   await loadData()
+}
+
+/**
+ * Modal para ver y editar la Planificación de Clase (PlanClasePanel)
+ */
+function _abrirModalPlanClase(clase, onComplete) {
+  const backdrop = document.createElement("div")
+  backdrop.className = "pm-plan-modal-backdrop"
+
+  backdrop.innerHTML = `
+    <div class="pm-plan-modal" role="dialog" aria-modal="true" aria-label="Plan de Clase">
+      <div class="pm-plan-modal-header">
+        <div>
+          <span class="pm-plan-modal-badge"><i class="bi bi-journal-bookmark-fill"></i> PLANIFICACIÓN DE CLASE</span>
+          <h3>${escapeHtml(clase.nombre)}</h3>
+          <p class="pm-plan-modal-sub">${escapeHtml(clase.instrumento || "General")} · ${clase.totalStudents} estudiantes</p>
+        </div>
+        <button type="button" class="pm-plan-modal-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="pm-plan-modal-body" id="pm-plan-modal-body-content"></div>
+    </div>
+  `
+
+  document.body.appendChild(backdrop)
+
+  const bodyContent = backdrop.querySelector("#pm-plan-modal-body-content")
+  const closeModal = () => backdrop.remove()
+
+  backdrop.querySelector(".pm-plan-modal-close").addEventListener("click", closeModal)
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeModal()
+  })
+
+  // Montar panel reactivo
+  createPlanClasePanel(bodyContent, {
+    clase,
+    onCambio: () => {
+      AppToast.success("Plan de clase guardado exitosamente.")
+      if (typeof onComplete === "function") onComplete()
+    },
+  })
 }
 
 /**
@@ -737,6 +996,7 @@ function _injectStyles() {
 
     .pm-stat-num--success { color: #34d399; }
     .pm-stat-num--accent { color: #a78bfa; }
+    .pm-stat-num--plan { color: #38bdf8; }
 
     .pm-stat-label {
       font-size: 0.64rem;
@@ -745,6 +1005,59 @@ function _injectStyles() {
       text-transform: uppercase;
       letter-spacing: 0.04em;
       margin-top: 0.2rem;
+    }
+
+    /* ── View Modes Control (Planes vs Malla) ── */
+    .pm-view-modes-control {
+      display: inline-flex;
+      background: rgba(15, 23, 42, 0.07);
+      border: 1px solid var(--pm-border, rgba(0, 0, 0, 0.08));
+      padding: 3px;
+      border-radius: 13px;
+      gap: 3px;
+    }
+
+    .pm-view-mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--pm-text-muted, #64748b);
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 0.48rem 0.95rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .pm-view-mode-btn:hover { color: var(--pm-text, #0f172a); }
+
+    .pm-view-mode-btn.active {
+      background: var(--pm-primary, #4f46e5);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+    }
+
+    .pm-tab-pill-badge {
+      background: rgba(255, 255, 255, 0.25);
+      color: inherit;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: 10px;
+      line-height: 1.2;
+    }
+
+    .pm-view-mode-btn:not(.active) .pm-tab-pill-badge {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--pm-text-muted, #64748b);
+    }
+
+    [data-theme="dark"] .pm-view-mode-btn:not(.active) .pm-tab-pill-badge {
+      background: rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
     }
 
     /* ── Toolbar & Segmented Control ── */
@@ -896,6 +1209,7 @@ function _injectStyles() {
 
     .accent-emerald { background: linear-gradient(90deg, #10b981, #34d399); }
     .accent-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .accent-cyan { background: linear-gradient(90deg, #06b6d4, #38bdf8); }
 
     .pm-card-top-row {
       display: flex;
@@ -955,6 +1269,19 @@ function _injectStyles() {
       box-shadow: 0 0 6px #10b981;
     }
 
+    .indicator-plan-active {
+      background: rgba(6, 182, 212, 0.16);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+
+    .indicator-plan-active .pm-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #06b6d4;
+      box-shadow: 0 0 6px #06b6d4;
+    }
+
     .indicator-pending {
       background: rgba(245, 158, 11, 0.14);
       border: 1px solid rgba(245, 158, 11, 0.3);
@@ -970,6 +1297,56 @@ function _injectStyles() {
 
     .pm-compact-body {
       flex: 1;
+    }
+
+    /* Plan Card Specific Badges & Previews */
+    .pm-plan-periodo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      color: #0284c7;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      margin-bottom: 0.35rem;
+    }
+
+    [data-theme="dark"] .pm-plan-periodo-badge {
+      color: #38bdf8;
+      background: rgba(6, 182, 212, 0.18);
+    }
+
+    .pm-plan-title-preview {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--pm-text, #0f172a);
+      margin-bottom: 0.4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pm-plan-repertoire-preview {
+      font-size: 0.72rem;
+      color: var(--pm-text-muted, #64748b);
+      background: var(--pm-surface-2, #f8fafc);
+      border: 1px solid var(--pm-border, #e2e8f0);
+      border-radius: 7px;
+      padding: 0.3rem 0.5rem;
+      margin-top: 0.35rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pm-plan-empty-note {
+      font-size: 0.73rem;
+      color: var(--pm-text-muted, #64748b);
+      margin: 0.35rem 0 0;
+      line-height: 1.35;
     }
 
     /* Icon Hierarchy */
@@ -1362,6 +1739,92 @@ function _injectStyles() {
       font-weight: 800;
     }
 
+    /* Modal Plan de Clase (PlanClasePanel) */
+    .pm-plan-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .pm-plan-modal {
+      background: var(--pm-surface, #ffffff);
+      color: var(--pm-text, #0f172a);
+      width: 100%;
+      max-width: 780px;
+      max-height: 90vh;
+      border-radius: 20px;
+      border: 1px solid var(--pm-border, rgba(0, 0, 0, 0.1));
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: pmr-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    [data-theme="dark"] .pm-plan-modal {
+      background: #1e293b;
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .pm-plan-modal-header {
+      padding: 1.2rem 1.4rem;
+      border-bottom: 1px solid var(--pm-border, #e2e8f0);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    [data-theme="dark"] .pm-plan-modal-header {
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .pm-plan-modal-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--pm-primary, #4f46e5);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    [data-theme="dark"] .pm-plan-modal-badge {
+      color: #818cf8;
+    }
+
+    .pm-plan-modal-header h3 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin: 0.2rem 0 0;
+    }
+
+    .pm-plan-modal-sub {
+      font-size: 0.78rem;
+      color: var(--pm-text-muted, #64748b);
+      margin: 0.15rem 0 0;
+    }
+
+    .pm-plan-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--pm-text-muted, #94a3b8);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.2rem;
+    }
+
+    .pm-plan-modal-body {
+      padding: 1.2rem 1.4rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
     /* ── Mobile Viewport: Fijo 2 Columnas (repeat(2, 1fr)) ── */
     @media (max-width: 768px) {
       .pm-planning-container { padding: 0.6rem; }
@@ -1377,17 +1840,28 @@ function _injectStyles() {
       .pm-hero-subtitle { font-size: 0.78rem; line-height: 1.3; }
       .pm-hero-stats {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.35rem;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.25rem;
       }
-      .pm-stat-card { padding: 0.4rem 0.2rem; min-width: 0; border-radius: 9px; }
-      .pm-stat-num { font-size: 1.05rem; }
-      .pm-stat-label { font-size: 0.55rem; text-align: center; }
+      .pm-stat-card { padding: 0.4rem 0.15rem; min-width: 0; border-radius: 9px; }
+      .pm-stat-num { font-size: 1rem; }
+      .pm-stat-label { font-size: 0.52rem; text-align: center; }
       .pm-planning-toolbar {
         flex-direction: column;
         align-items: stretch;
         gap: 0.6rem;
         margin-bottom: 0.85rem;
+      }
+      .pm-view-modes-control {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 2px;
+      }
+      .pm-view-mode-btn {
+        justify-content: center;
+        padding: 0.45rem 0.2rem;
+        font-size: 0.74rem;
       }
       .pm-segmented-control { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; }
       .pm-seg-btn { justify-content: center; padding: 0.42rem 0.2rem; font-size: 0.72rem; }

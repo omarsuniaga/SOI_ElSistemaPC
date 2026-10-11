@@ -1268,6 +1268,105 @@ function _renderVista(container, ctx) {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
+      /* ── Banner de Indicador Activo de Hoy (1-Tap Evaluation) ── */
+      .pm-asist-ind-card {
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(56, 189, 248, 0.06) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.28);
+        border-radius: 16px;
+        padding: 0.85rem 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+      }
+      .pm-asist-ind-card--empty {
+        background: rgba(245, 158, 11, 0.06);
+        border-color: rgba(245, 158, 11, 0.25);
+      }
+      .pm-asist-ind-info {
+        flex: 1;
+        min-width: 220px;
+      }
+      .pm-asist-ind-badge {
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #818cf8;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 0.2rem;
+      }
+      .pm-asist-ind-title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--pm-text, #0f172a);
+        line-height: 1.3;
+      }
+      .pm-asist-ind-breadcrumb {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--pm-text-muted, #64748b);
+        margin-top: 0.15rem;
+      }
+      .pm-asist-ind-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .pm-asist-ind-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.5rem 0.95rem;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.18s ease;
+        border: none;
+      }
+      .pm-asist-ind-btn--primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+        color: #fff;
+        box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
+      }
+      .pm-asist-ind-btn--primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+        color: #fff;
+      }
+      .pm-asist-ind-btn--outline {
+        background: var(--pm-surface, #fff);
+        border: 1px solid var(--pm-border, #cbd5e1);
+        color: var(--pm-text, #334155);
+      }
+      .pm-asist-ind-btn--outline:hover {
+        background: var(--pm-surface-2, #f1f5f9);
+        color: #0f172a;
+      }
+      .pm-asist-ind-btn--secondary {
+        background: rgba(245, 158, 11, 0.15);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+      [data-theme="dark"] .pm-asist-ind-card {
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.14) 0%, rgba(56, 189, 248, 0.09) 100%);
+        border-color: rgba(99, 102, 241, 0.35);
+      }
+      [data-theme="dark"] .pm-asist-ind-btn--outline {
+        background: #1e293b;
+        border-color: rgba(255, 255, 255, 0.15);
+        color: #f1f5f9;
+      }
+
       .pm-route-tree-dropdown-box {
         margin-top: 1rem;
         padding-top: 1rem;
@@ -1489,6 +1588,9 @@ function _renderVista(container, ctx) {
         </div>
 
         <div id="pm-asist-announce" role="status" aria-live="polite" aria-atomic="true" class="pm-visually-hidden"></div>
+
+        <!-- Indicador de hoy: Banner de evaluación en 1-tap -->
+        <div id="pm-asist-indicador-banner" class="pm-asist-indicador-banner" style="display:none; margin: 0.85rem 0 1.25rem;"></div>
 
         <div id="pm-alumnos-list" class="pm-alumnos-queue"></div>
 
@@ -1881,6 +1983,194 @@ function _renderVista(container, ctx) {
     getDslContent: () => editor.getValue(),
   })
   _cleanups.push(() => planificationCard.destroy())
+
+  // === Banner de Indicador Activo de Hoy (1-tap evaluation) ===
+  async function _setupIndicadorBanner() {
+    const banner = container.querySelector('#pm-asist-indicador-banner')
+    if (!banner) return
+
+    try {
+      const { data: routeData } = await supabase
+        .from('maestro_routes')
+        .select(`
+          id, nombre,
+          unidades:maestro_unidades(
+            id, orden, nombre,
+            objetivos:maestro_objetivos(
+              id, orden, nombre,
+              indicadores:maestro_indicadores(id, orden, nombre)
+            )
+          )
+        `)
+        .eq('clase_id', claseId)
+        .maybeSingle()
+
+      const allIndicadores = []
+      if (routeData && Array.isArray(routeData.unidades)) {
+        routeData.unidades.forEach((u) => {
+          (u.objetivos || []).forEach((o) => {
+            (o.indicadores || []).forEach((ind) => {
+              allIndicadores.push({
+                ...ind,
+                breadcrumb: `${u.nombre} › ${o.nombre}`,
+              })
+            })
+          })
+        })
+      }
+
+      if (allIndicadores.length === 0) {
+        banner.innerHTML = `
+          <div class="pm-asist-ind-card pm-asist-ind-card--empty">
+            <div class="pm-asist-ind-info">
+              <span class="pm-asist-ind-badge"><i class="bi bi-diagram-3"></i> Malla Curricular</span>
+              <div class="pm-asist-ind-title">Esta clase no tiene indicadores cargados en su malla</div>
+            </div>
+            <a href="#/planificacion" class="pm-asist-ind-btn pm-asist-ind-btn--outline" style="font-size:0.78rem;">
+              <i class="bi bi-pencil-square"></i> Diseñar Malla
+            </a>
+          </div>
+        `
+        banner.style.display = ''
+        return
+      }
+
+      const storageKey = `pm_active_ind_${claseId}`
+      let currentIndId = null
+      try { currentIndId = localStorage.getItem(storageKey) } catch (_) {}
+      let currentInd = allIndicadores.find((i) => i.id === currentIndId) || allIndicadores[0]
+
+      function renderBannerContent() {
+        banner.innerHTML = `
+          <div class="pm-asist-ind-card">
+            <div class="pm-asist-ind-info">
+              <span class="pm-asist-ind-badge"><i class="bi bi-bullseye"></i> INDICADOR DE HOY</span>
+              <div class="pm-asist-ind-title" title="${escHTML(currentInd.nombre)}">
+                🎯 ${escHTML(currentInd.nombre)}
+              </div>
+              ${currentInd.breadcrumb ? `<div class="pm-asist-ind-breadcrumb">${escHTML(currentInd.breadcrumb)}</div>` : ''}
+            </div>
+            <div class="pm-asist-ind-actions">
+              <button type="button" class="pm-asist-ind-btn pm-asist-ind-btn--primary" id="pm-btn-evaluar-hoy" title="Calificar alumnos presentes">
+                <i class="bi bi-star-fill text-warning"></i>
+                <span>Evaluar (1 tap)</span>
+              </button>
+              <button type="button" class="pm-asist-ind-btn pm-asist-ind-btn--outline" id="pm-btn-cambiar-ind" title="Cambiar tema de hoy">
+                <i class="bi bi-arrow-left-right"></i>
+                <span>Cambiar</span>
+              </button>
+            </div>
+          </div>
+        `
+        banner.style.display = ''
+
+        banner.querySelector('#pm-btn-evaluar-hoy')?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          if (editor) editor.insertText(`[${currentInd.nombre}] `)
+          if (toolbar) toolbar.setContext({ indicadorActivo: currentInd.nombre })
+          const obsBtn = container.querySelector('#btn-guardar-obs')
+          if (obsBtn) obsBtn.style.display = ''
+
+          gradePanel.open({
+            id: currentInd.id,
+            indicator_id: currentInd.id,
+            topic: currentInd.nombre,
+            clase_id: claseId,
+          })
+        })
+
+        banner.querySelector('#pm-btn-cambiar-ind')?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          _abrirQuickPickerIndicador(allIndicadores, currentInd, (selectedInd) => {
+            currentInd = selectedInd
+            try { localStorage.setItem(storageKey, selectedInd.id) } catch (_) {}
+            renderBannerContent()
+            if (typeof AppToast !== 'undefined' && AppToast) {
+              AppToast.info(`Indicador de hoy: ${selectedInd.nombre}`)
+            }
+          })
+        })
+      }
+
+      renderBannerContent()
+    } catch (err) {
+      console.warn('[asistenciaView] Error configurando banner de indicador:', err)
+    }
+  }
+
+  function _abrirQuickPickerIndicador(indicadores, currentInd, onSelect) {
+    const backdrop = document.createElement('div')
+    backdrop.className = 'igm-backdrop'
+    backdrop.style.zIndex = '10001'
+
+    backdrop.innerHTML = `
+      <div class="igm-modal" role="dialog" aria-modal="true" aria-label="Seleccionar Indicador de Hoy" style="max-width: 520px;">
+        <div class="igm-header">
+          <div>
+            <div class="igm-breadcrumb">SELECCIÓN DE TEMA</div>
+            <h3>¿Qué indicador trabajarás hoy?</h3>
+          </div>
+          <button class="igm-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="igm-body" style="padding: 1rem 1.25rem; max-height: 60vh; overflow-y: auto;">
+          <input type="text" id="quick-ind-search" class="form-control form-control-sm mb-3 rounded-3" placeholder="Filtrar temas..." style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border);" />
+          <div id="quick-ind-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${indicadores
+              .map(
+                (ind) => `
+              <button type="button" class="quick-ind-item ${ind.id === currentInd?.id ? 'active' : ''}" data-ind-id="${ind.id}" style="
+                text-align: left;
+                background: ${ind.id === currentInd?.id ? 'rgba(79, 70, 229, 0.12)' : 'var(--pm-surface-2, rgba(0,0,0,0.02))'};
+                border: 1px solid ${ind.id === currentInd?.id ? 'var(--pm-primary, #4f46e5)' : 'var(--pm-border, #e2e8f0)'};
+                border-radius: 10px;
+                padding: 0.65rem 0.85rem;
+                cursor: pointer;
+                transition: all 0.15s ease;
+              ">
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--pm-text);">${escHTML(ind.nombre)}</div>
+                ${ind.breadcrumb ? `<div style="font-size: 0.72rem; color: var(--pm-text-muted); margin-top: 2px;">${escHTML(ind.breadcrumb)}</div>` : ''}
+              </button>
+            `,
+              )
+              .join('')}
+          </div>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(backdrop)
+
+    const closeModal = () => backdrop.remove()
+    backdrop.querySelector('.igm-close')?.addEventListener('click', closeModal)
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal()
+    })
+
+    const searchInput = backdrop.querySelector('#quick-ind-search')
+    const listEl = backdrop.querySelector('#quick-ind-list')
+    searchInput?.focus()
+
+    searchInput?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim()
+      listEl?.querySelectorAll('.quick-ind-item').forEach((item) => {
+        const txt = item.textContent.toLowerCase()
+        item.style.display = txt.includes(q) ? '' : 'none'
+      })
+    })
+
+    listEl?.querySelectorAll('.quick-ind-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const iid = btn.dataset.indId
+        const found = indicadores.find((i) => i.id === iid)
+        if (found) {
+          closeModal()
+          onSelect(found)
+        }
+      })
+    })
+  }
+
+  _setupIndicadorBanner()
 
   let sessionRepertoirePanel
   if (!repertoireAdapter) {

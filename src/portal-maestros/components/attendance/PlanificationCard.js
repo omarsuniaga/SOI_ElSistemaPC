@@ -4,6 +4,7 @@ import { renderMapaContenidoSVG } from '../../../modules/planificacion/component
 import { config } from '../../../core/config/config.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { abrirMapaDeRutas } from '../teacherRouteMapPanel.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 const STATUS_META = {
   pending: { label: 'Pendiente', icon: '⚪', className: 'pending' },
@@ -25,6 +26,7 @@ export function createPlanificationCard(container, opts) {
   let weeklyPlan = null
   let progressMap = {}
   let teacherAdjustmentsMap = {}
+  let teacherActiveIndicador = null
   const cleanups = []
 
   const planificacionCard = container.querySelector('#pm-planificacion-card')
@@ -135,8 +137,11 @@ export function createPlanificationCard(container, opts) {
       activeRoute = await weeklyPlanAdapter.obtenerRutaActivaPorGrupo(claseId)
 
       if (!activeRoute) {
-        if (planNombreEl) planNombreEl.textContent = 'Sin guía ACM asignada'
-        renderNoRouteMap()
+        const hasTeacherRoute = await loadTeacherRouteFallback()
+        if (!hasTeacherRoute) {
+          if (planNombreEl) planNombreEl.textContent = 'Sin guía ACM asignada'
+          renderNoRouteMap()
+        }
         return
       }
 
@@ -422,6 +427,120 @@ export function createPlanificationCard(container, opts) {
   // `planificaciones` (objetivosEstructurados) — un cuarto sistema de registro
   // de contenido, aislado de maestro_routes. Auditoría: 0 de 3 filas reales en
   // esa tabla tenían objetivos estructurados; nadie lo estaba usando. Se
+  async function loadTeacherRouteFallback() {
+    if (!claseId) return false
+    try {
+      const { data: route } = await supabase
+        .from('maestro_routes')
+        .select(`
+          id, nombre,
+          unidades:maestro_unidades(
+            id, orden, nombre,
+            objetivos:maestro_objetivos(
+              id, orden, nombre,
+              indicadores:maestro_indicadores(id, orden, nombre)
+            )
+          )
+        `)
+        .eq('clase_id', claseId)
+        .maybeSingle()
+
+      if (!route) return false
+
+      const indList = []
+      ;(route.unidades || []).forEach((u) => {
+        ;(u.objetivos || []).forEach((o) => {
+          ;(o.indicadores || []).forEach((ind) => {
+            indList.push({
+              ...ind,
+              topic: ind.nombre,
+              breadcrumb: `${u.nombre} › ${o.nombre}`,
+            })
+          })
+        })
+      })
+
+      if (indList.length === 0) return false
+
+      if (planNombreEl) {
+        planNombreEl.textContent = `${route.nombre || 'Malla de Clase'} (Malla Docente)`
+      }
+
+      renderTeacherRouteCard(route, indList)
+      return true
+    } catch (e) {
+      console.warn('[PlanificationCard] Error checking teacher route fallback:', e)
+      return false
+    }
+  }
+
+  function renderTeacherRouteCard(route, indList) {
+    if (!treeContainer) return
+
+    const storageKey = `pm_active_ind_${claseId}`
+    let currentIndId = null
+    try { currentIndId = localStorage.getItem(storageKey) } catch (_) {}
+    const activeInd = indList.find((i) => i.id === currentIndId) || indList[0]
+    teacherActiveIndicador = { id: activeInd.id, nombre: activeInd.nombre }
+
+    const activeBadge = container.querySelector('#pm-active-tema-badge')
+    if (activeBadge) {
+      activeBadge.textContent = `🎯 ${activeInd.nombre}`
+      activeBadge.style.display = 'inline-block'
+    }
+
+    treeContainer.innerHTML = `
+      <div class="pm-weekly-box" style="background:var(--pm-surface-2, rgba(0,0,0,0.03)); border:1px solid var(--pm-border, rgba(0,0,0,0.1)); border-radius:12px; padding:12px; margin-bottom:12px;">
+        <div class="pm-weekly-label" style="font-size:0.75rem; font-weight:700; color:var(--pm-text-muted); text-transform:uppercase;">
+          Malla Curricular Personalizada
+        </div>
+        <div style="font-size:0.95rem; font-weight:800; color:var(--pm-text); margin:4px 0 2px;">
+          ${escHTML(route.nombre || 'Malla de la clase')}
+        </div>
+        <div style="font-size:0.78rem; color:var(--pm-text-muted);">
+          ${indList.length} indicadores distribuidos en ${(route.unidades || []).length} unidades
+        </div>
+      </div>
+
+      <div class="pm-weekly-box">
+        <div class="pm-weekly-label">Indicador a Evaluar</div>
+        <div class="pm-weekly-indicator-badge" id="btn-eval-indicator-teacher" style="cursor:pointer;">
+          🎯 ${escHTML(activeInd.nombre)} — Evaluar
+        </div>
+        ${activeInd.breadcrumb ? `<div style="font-size:0.72rem; color:var(--pm-text-muted); margin-top:4px;">${escHTML(activeInd.breadcrumb)}</div>` : ''}
+      </div>
+
+      <div style="display:flex; gap:0.5rem; margin-top:12px;">
+        <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btn-open-teacher-map" style="font-weight:700; border-radius:10px;">
+          <i class="bi bi-diagram-3-fill me-1"></i> Abrir Mapa de Rutas
+        </button>
+      </div>
+    `
+
+    const evalBadge = treeContainer.querySelector('#btn-eval-indicator-teacher')
+    if (evalBadge) {
+      evalBadge.onclick = (e) => {
+        e.stopPropagation()
+        opts.onIndicadorSelect?.({
+          id: activeInd.id,
+          nombre: activeInd.nombre,
+        })
+      }
+    }
+
+    const openMapBtn = treeContainer.querySelector('#btn-open-teacher-map')
+    if (openMapBtn) {
+      openMapBtn.onclick = async (e) => {
+        e.stopPropagation()
+        await abrirMapaDeRutas(claseId, opts.maestro, opts.fechaHoy)
+      }
+    }
+  }
+
+  // Antes, sin guía ACM, esta card caía a un mini-CRUD propio sobre la tabla
+  // `planificaciones` (objetivosEstructurados) — un cuarto sistema de registro
+  // de contenido, aislado de maestro_routes. Auditoría: 0 de 3 filas reales en
+  // esa tabla tenían objetivos estructurados; nadie lo estaba usando. Se
   // reemplaza por un CTA directo al Mapa de Rutas real (maestro_routes), el
   // mismo sistema que ya usan "Hoy", Asistencia (header) y la vista "Plan".
   function renderNoRouteMap() {
@@ -461,6 +580,7 @@ export function createPlanificationCard(container, opts) {
   return {
     destroy,
     getActiveIndicador: () => {
+      if (teacherActiveIndicador) return teacherActiveIndicador
       if (!weeklyPlan || !activeRoute) return null
       const currentItem = weeklyPlan.items.find((item) => item.week_number === activeRoute.current_week)
       return currentItem ? { id: currentItem.indicator_id, nombre: currentItem.topic } : null

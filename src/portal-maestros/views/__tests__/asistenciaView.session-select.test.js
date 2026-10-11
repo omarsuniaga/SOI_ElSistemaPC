@@ -146,6 +146,8 @@ vi.mock('../../services/justificacionService.js', () => ({
   actualizarJustificacion: vi.fn(),
   obtenerJustificacion: vi.fn(),
   eliminarJustificacion: vi.fn(),
+  eliminarJustificacionRegistro: vi.fn().mockResolvedValue(true),
+  deleteEvidencia: vi.fn().mockResolvedValue(true),
 }))
 vi.mock('../../services/substituteAuditService.js', () => ({
   logSubstituteActivity: vi.fn().mockResolvedValue(null),

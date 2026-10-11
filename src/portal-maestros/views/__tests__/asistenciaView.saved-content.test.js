@@ -80,6 +80,8 @@ vi.mock('../../services/justificacionService.js', () => ({
   actualizarJustificacion: vi.fn(),
   obtenerJustificacion: vi.fn(),
   eliminarJustificacion: vi.fn(),
+  eliminarJustificacionRegistro: vi.fn().mockResolvedValue(true),
+  deleteEvidencia: vi.fn().mockResolvedValue(true),
 }))
 
 vi.mock('../../utils/a11yUtils.js', () => ({ announce: vi.fn() }))

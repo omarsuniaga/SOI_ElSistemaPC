@@ -263,7 +263,11 @@ export async function renderAsistenciaView(
       getInscripcionesClases([claseId]), // cache: 2min
       supabase
         .from('sesiones_clase')
-        .select('id, tipo, asistencia, updated_at, contenido, borrador, estado')
+        // Solo columnas que existen en sesiones_clase: PostgREST rechaza la
+        // consulta ENTERA si se pide una inexistente, y la vista mostraría la
+        // clase como vacía. `maestro_id` lo usa el filtro de pertenencia
+        // (idsRelevantes) y `emergente_id` la rama de clase suspendida.
+        .select('id, maestro_id, asistencia, updated_at, contenido, borrador, estado, emergente_id')
         .eq('clase_id', claseId)
         .eq('fecha', fechaHoy)
         .order('borrador', { ascending: true })   // registradas primero

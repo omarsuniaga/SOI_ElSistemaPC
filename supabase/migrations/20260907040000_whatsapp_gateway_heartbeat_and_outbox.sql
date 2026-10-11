@@ -1,0 +1,9 @@
+-- Marcador de historial de migraciones (sin SQL ejecutable).
+--
+-- Esta versión figura como aplicada en supabase_migrations.schema_migrations,
+-- pero se registró sin statements (reparación de historial), por lo que su SQL
+-- original no es recuperable desde la base de datos.
+--
+-- El SQL efectivo equivalente quedó aplicado bajo la versión
+-- 20260907071602_whatsapp_gateway_heartbeat_and_outbox.sql (mismo nombre).
+-- Este archivo existe solo para que el historial local coincida con el remoto.

@@ -1,0 +1,8 @@
+-- Marcador de historial de migraciones (sin SQL ejecutable).
+--
+-- Esta versión figura como aplicada en supabase_migrations.schema_migrations,
+-- pero se registró sin statements (reparación de historial), por lo que su SQL
+-- original no es recuperable desde la base de datos.
+--
+-- No se conoce un equivalente en el repo ni en el historial remoto.
+-- Este archivo existe solo para que el historial local coincida con el remoto.

@@ -1,0 +1,15 @@
+-- trg_hermes_task_wa_alert (fn_trigger_hermes_task_wa_alert) encolaba una alerta
+-- de WhatsApp por cada tarea 'alta'/'critica' usando el JID placeholder
+-- '<DEPT>_coordinator@s.whatsapp.net'. No existe fuente de datos para el teléfono
+-- del coordinador (departamentos solo tiene email/responsable_email), así que la
+-- alerta nunca fue enviable — solo poluía la cola. Con la validación de JID nueva
+-- ahora además genera un WARNING por cada tarea alta/critica.
+--
+-- Las tareas 'alta'/'critica' ya se delegan y notifican por Telegram vía la
+-- cadena soi-event-enrichment + fn_hermes_auto_delegar_tareas. Esta alerta WA
+-- era redundante y rota. Se desactiva.
+--
+-- Si se quiere alerta WhatsApp real a coordinadores: agregar teléfono a
+-- `departamentos` o un directorio de contactos, y reescribir la función para
+-- resolver el número real + respetar whatsapp_optout. Spec pendiente.
+ALTER TABLE public.tareas_institucionales DISABLE TRIGGER trg_hermes_task_wa_alert;

@@ -1,0 +1,9 @@
+-- Marcador de historial de migraciones (sin SQL ejecutable).
+--
+-- Esta versión figura como aplicada en supabase_migrations.schema_migrations,
+-- pero se registró sin statements (reparación de historial), por lo que su SQL
+-- original no es recuperable desde la base de datos.
+--
+-- Equivalente probable (nombre similar, no verificado):
+-- 20260907072159_inventario_materiales_tabla.sql.
+-- Este archivo existe solo para que el historial local coincida con el remoto.

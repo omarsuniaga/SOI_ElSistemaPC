@@ -4,7 +4,8 @@
  * (sidebar, header, footer nav, search, breakpoints).
  */
 
-import { themeToggle } from '../components/themeToggle.js'
+// Side-effect import: themeToggle aplica el tema guardado al cargar. El cambio de modo vive en el perfil.
+import '../components/themeToggle.js'
 import { notificacionesPanel } from '../components/notificacionesPanel.js'
 import { supabase } from '../../lib/supabaseClient.js'
 
@@ -127,8 +128,6 @@ export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator,
             <i class="bi bi-arrow-clockwise"></i>
           </button>
 
-          <div id="pm-theme-toggle-container"></div>
-
           <button id="pm-bell-btn" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
             <i class="bi bi-bell"></i>
             <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
@@ -160,10 +159,6 @@ export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator,
   `
 
   updateSyncIndicator()
-
-  // Theme toggle
-  const themeContainer = document.getElementById('pm-theme-toggle-container')
-  if (themeContainer) themeContainer.appendChild(themeToggle.createToggleButton())
 
   // Footer nav
   document.getElementById('pm-footer-nav')?.querySelectorAll('.pm-nav-tab').forEach((tab) => {

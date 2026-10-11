@@ -15,11 +15,23 @@
  *   3. Hacer commit con mensaje: "chore: bump version to X.Y.Z"
  */
 
-export const APP_VERSION = '1.5.0'
-export const APP_BUILD_DATE = '2026-06-02'
+export const APP_VERSION = '1.5.1'
+export const APP_BUILD_DATE = '2026-10-11'
 
 /** @type {Array<{version: string, date: string, type: string, title: string, changes: string[], author?: string}>} */
 export const CHANGELOG = [
+  {
+    version: '1.5.1',
+    date: '2026-10-11',
+    type: 'refactor',
+    title: 'Cambio de modo claro/oscuro solo desde el perfil',
+    changes: [
+      'Portal de Maestros: eliminado el botón de cambio de modo claro/oscuro del header',
+      'El cambio de modo claro/oscuro se realiza desde Perfil; la preferencia guardada se mantiene',
+      'Eliminados los estilos CSS del botón del header en 03-layout.css',
+    ],
+    author: 'Omar',
+  },
   {
     version: '1.5.0',
     date: '2026-06-02',

@@ -122,8 +122,13 @@ export function createGradePanel(container, opts) {
                   </div>
                   ${
                     hasDebt
-                      ? `<div class="pm-grade-debt-badge" title="Requiere solventar el indicador previo: ${escHTML(debt.prereqNombre)}">
-                           <i class="bi bi-lock-fill"></i> Deuda: ${escHTML(debt.prereqNombre)}
+                      ? `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                           <div class="pm-grade-debt-badge" title="Requiere solventar el indicador previo: ${escHTML(debt.prereqNombre)}">
+                             <i class="bi bi-lock-fill"></i> Deuda: ${escHTML(debt.prereqNombre)}
+                           </div>
+                           <button type="button" class="btn btn-xs pm-btn-exonerar-deuda" data-student-id="${escHTML(student.id)}" data-prereq-id="${escHTML(debt.prereqId)}" style="font-size:0.68rem; padding:2px 8px; border-radius:6px; background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.35); cursor:pointer; font-weight:700;" title="Hacer salvedad docente: técnica aprendida de forma integrada">
+                             <i class="bi bi-shield-check"></i> Exonerar
+                           </button>
                          </div>`
                       : ''
                   }
@@ -206,6 +211,46 @@ export function createGradePanel(container, opts) {
         const current = studentGrades.get(studentId) || { rating: 5, observation: '' }
         current.observation = input.value
         studentGrades.set(studentId, current)
+      })
+    })
+
+    // Exonerate debt listener
+    overlay.querySelectorAll('.pm-btn-exonerar-deuda').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const sid = btn.dataset.studentId
+        const prereqId = btn.dataset.prereqId
+        if (!sid || !prereqId || !claseId) return
+
+        btn.disabled = true
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span>`
+        try {
+          const { error } = await supabase
+            .from('evaluacion_indicador')
+            .upsert(
+              {
+                alumno_id: sid,
+                maestro_indicador_id: prereqId,
+                clase_id: claseId,
+                nota: 3,
+                recovery_status: 'recuperado',
+                recovery_notes: '[EXONERADA] Deuda saldada por competencia técnica integrada en contenido posterior.',
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'alumno_id,maestro_indicador_id,clase_id' }
+            )
+          if (error) throw error
+          const d = studentDebts.get(sid)
+          if (d) d.isSatisfied = true
+          btn.closest('.pm-grade-row')?.classList.remove('has-debt')
+          btn.parentElement.innerHTML = `<span style="font-size:0.72rem; color:#a78bfa; font-weight:700;"><i class="bi bi-shield-check"></i> Exonerada</span>`
+          AppToast.success('Deuda pedagógica exonerada correctamente.')
+        } catch (err) {
+          console.error('[GradePanel] Error exonerating debt:', err)
+          AppToast.error('No se pudo exonerar la deuda: ' + (err.message || err))
+          btn.disabled = false
+          btn.innerHTML = `<i class="bi bi-shield-check"></i> Exonerar`
+        }
       })
     })
 

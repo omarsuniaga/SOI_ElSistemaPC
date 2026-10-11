@@ -1594,53 +1594,55 @@ function _renderVista(container, ctx) {
 
         <div id="pm-alumnos-list" class="pm-alumnos-queue"></div>
 
-        <div id="pm-planificacion-card" class="pm-planificacion-card" style="display:none; margin: 1rem 0;">
-        <div id="pm-planificacion-header" class="pm-planificacion-header">
-          <div class="pm-planificacion-header-left">
-            <div class="pm-planificacion-icon-box">🗺️</div>
-            <div class="pm-planificacion-info">
-              <div class="pm-planificacion-label">Planificación Académica</div>
-              <div id="pm-planificacion-nombre" class="pm-planificacion-nombre">Cargando...</div>
-              <div id="pm-active-tema-badge" class="pm-active-tema-badge" style="display:none;"></div>
+        <!-- 2. Bloque de Observaciones (Registro de Clase) -->
+        <div class="pm-asist-dsl-section" style="margin-top:1.5rem;">
+          <h3 class="pm-asist-section-title"><i class="bi bi-chat-left-text"></i> Observaciones de Clase</h3>
+          <div id="pm-dsl-toolbar-container" style="margin-bottom:0.5rem;"></div>
+          <div id="pm-dsl-editor-container"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;">
+            <div id="pm-draft-indicator" style="display:none; padding:0.25rem 0.5rem; font-size:0.75rem; color:var(--pm-text-muted);"></div>
+            <div id="pm-content-save-status" role="status" aria-live="polite" style="padding:0.25rem 0.5rem; font-size:0.75rem; color:var(--pm-text-muted);"></div>
+            <button class="pm-copy-plan-btn" id="btn-copy-as-plan" title="Copiar este contenido como borrador de planificación">
+              <i class="bi bi-clipboard-plus"></i> Copiar como planificación
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Planificación Académica (Mapa de Contenido y Posición Actual) -->
+        <div id="pm-planificacion-card" class="pm-planificacion-card" style="display:none; margin: 1.5rem 0;">
+          <div id="pm-planificacion-header" class="pm-planificacion-header">
+            <div class="pm-planificacion-header-left">
+              <div class="pm-planificacion-icon-box">🗺️</div>
+              <div class="pm-planificacion-info">
+                <div class="pm-planificacion-label">Planificación Académica</div>
+                <div id="pm-planificacion-nombre" class="pm-planificacion-nombre">Cargando...</div>
+                <div id="pm-active-tema-badge" class="pm-active-tema-badge" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="pm-planificacion-actions">
+              <button id="btn-manage-planning" class="pm-btn-circle" title="Ajustar Estructura">
+                <i class="bi bi-gear-fill"></i>
+              </button>
+              <i class="bi bi-chevron-down pm-planificacion-toggle-btn"></i>
             </div>
           </div>
-          <div class="pm-planificacion-actions">
-            <button id="btn-manage-planning" class="pm-btn-circle" title="Ajustar Estructura">
-              <i class="bi bi-gear-fill"></i>
-            </button>
-            <i class="bi bi-chevron-down pm-planificacion-toggle-btn"></i>
+          <div id="pm-planificacion-dropdown" class="pm-planificacion-dropdown" style="display:none;">
+            <div class="pm-planificacion-tabs-pill">
+              <button class="pm-plan-tab-pill active" data-tab="rutas">Mis Rutas</button>
+              <button class="pm-plan-tab-pill" data-tab="planificaciones">Biblioteca</button>
+            </div>
+            <div id="pm-plan-list-rutas" class="pm-plan-list"></div>
+            <div id="pm-plan-list-planificaciones" class="pm-plan-list" style="display:none;"></div>
+            
+            <!-- EL ARBOL / MAPA VIVE AQUI DENTRO -->
+            <div id="pm-route-tree-container" class="pm-route-tree-dropdown-box"></div>
+            <div id="pm-curriculo-proposal-trigger" style="padding:0.5rem 0.75rem 0.75rem;">
+              <button class="pm-btn pm-btn-outline" id="btn-proponer-curriculo" style="width:100%;font-size:0.82rem;">
+                <i class="bi bi-stars"></i> Proponer plan curricular con IA
+              </button>
+            </div>
           </div>
         </div>
-        <div id="pm-planificacion-dropdown" class="pm-planificacion-dropdown" style="display:none;">
-          <div class="pm-planificacion-tabs-pill">
-            <button class="pm-plan-tab-pill active" data-tab="rutas">Mis Rutas</button>
-            <button class="pm-plan-tab-pill" data-tab="planificaciones">Biblioteca</button>
-          </div>
-          <div id="pm-plan-list-rutas" class="pm-plan-list"></div>
-          <div id="pm-plan-list-planificaciones" class="pm-plan-list" style="display:none;"></div>
-          
-          <!-- EL ARBOL AHORA VIVE AQUI DENTRO -->
-          <div id="pm-route-tree-container" class="pm-route-tree-dropdown-box"></div>
-          <div id="pm-curriculo-proposal-trigger" style="padding:0.5rem 0.75rem 0.75rem;">
-            <button class="pm-btn pm-btn-outline" id="btn-proponer-curriculo" style="width:100%;font-size:0.82rem;">
-              <i class="bi bi-stars"></i> Proponer plan curricular con IA
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="pm-asist-dsl-section" style="margin-top:2rem;">
-        <h3 class="pm-asist-section-title"><i class="bi bi-stars"></i> Registro de Clase</h3>
-        <div id="pm-dsl-toolbar-container" style="margin-bottom:0.5rem;"></div>
-        <div id="pm-dsl-editor-container"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;">
-          <div id="pm-draft-indicator" style="display:none; padding:0.25rem 0.5rem; font-size:0.75rem; color:var(--pm-text-muted);"></div>
-          <div id="pm-content-save-status" role="status" aria-live="polite" style="padding:0.25rem 0.5rem; font-size:0.75rem; color:var(--pm-text-muted);"></div>
-          <button class="pm-copy-plan-btn" id="btn-copy-as-plan" title="Copiar este contenido como borrador de planificación">
-            <i class="bi bi-clipboard-plus"></i> Copiar como planificación
-          </button>
-        </div>
-      </div>
 
       <div id="pm-academic-tools" style="margin-top:1.5rem; display:none;"></div>
       <div id="pm-session-repertoire" style="margin-top:1.5rem;"></div>

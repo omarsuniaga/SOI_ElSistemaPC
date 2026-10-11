@@ -165,14 +165,16 @@ export async function openIndicadorGradingModal({
       const resuelto = ev.recovery_status === 'recuperado' || ev.recovery_status === 'no_recuperable'
 
       if (resuelto) {
-        const label = ev.recovery_status === 'recuperado' ? 'Recuperado' : 'No recuperable'
-        const cls = ev.recovery_status === 'recuperado' ? 'igm-recuperado' : 'igm-no-recuperable'
+        const isExonerado = (ev.recovery_notes || '').includes('[EXONERADA]')
+        const label = isExonerado ? 'Exonerado (Técnica integrada)' : ev.recovery_status === 'recuperado' ? 'Recuperado' : 'No recuperable'
+        const cls = isExonerado ? 'igm-exonerado' : ev.recovery_status === 'recuperado' ? 'igm-recuperado' : 'igm-no-recuperable'
+        const icon = isExonerado ? 'bi-shield-check' : 'bi-check-circle-fill'
         return `
           <div class="igm-alumno-row" data-alumno-id="${alumnoId}">
             <div class="igm-alumno-info">
               <span class="igm-alumno-nombre">${escHTML(alumno.nombre)}</span>
             </div>
-            <span class="igm-deuda-resuelta ${cls}"><i class="bi bi-check-circle-fill"></i> ${label}</span>
+            <span class="igm-deuda-resuelta ${cls}"><i class="bi ${icon}"></i> ${label}</span>
           </div>
         `
       }
@@ -187,11 +189,13 @@ export async function openIndicadorGradingModal({
           </button>
         </div>
         <div class="igm-recovery-form" data-alumno-id="${alumnoId}" hidden>
+          <label style="font-size:0.75rem; font-weight:700; color:var(--pm-text-muted); margin-bottom:3px; display:block;">Resolución de Deuda</label>
           <select class="igm-recovery-select" data-alumno-id="${alumnoId}">
-            <option value="recuperado">Recuperado</option>
-            <option value="no_recuperable">No Recuperable</option>
+            <option value="recuperado">Recuperado en clase (Evaluado)</option>
+            <option value="exonerado">Exonerado (Saldada por competencia superior/integrada)</option>
+            <option value="no_recuperable">No Recuperable / Justificado</option>
           </select>
-          <textarea class="igm-recovery-notes" data-alumno-id="${alumnoId}" placeholder="Nota (opcional)"></textarea>
+          <textarea class="igm-recovery-notes" data-alumno-id="${alumnoId}" placeholder="Salvedad docente (ej: técnica aprendida e integrada en escalas)..."></textarea>
           <div class="igm-recovery-actions">
             <button class="igm-btn igm-btn-ghost igm-recovery-cancel" data-alumno-id="${alumnoId}">Cancelar</button>
             <button class="igm-btn igm-btn-primary igm-recovery-confirm" data-alumno-id="${alumnoId}">Registrar</button>
@@ -289,20 +293,30 @@ export async function openIndicadorGradingModal({
           const alumnoId = btn.dataset.alumnoId
           const select = body.querySelector(`.igm-recovery-select[data-alumno-id="${alumnoId}"]`)
           const notesEl = body.querySelector(`.igm-recovery-notes[data-alumno-id="${alumnoId}"]`)
-          const status = select.value
-          const notes = notesEl.value.trim()
+          const selectedChoice = select.value
+          let finalStatus = selectedChoice
+          let notes = notesEl.value.trim()
+          let recoveryGrade = null
+
+          if (selectedChoice === 'exonerado') {
+            finalStatus = 'recuperado'
+            notes = `[EXONERADA] ${notes}`.trim()
+            recoveryGrade = 3
+          } else if (selectedChoice === 'recuperado') {
+            recoveryGrade = 3
+          }
 
           btn.disabled = true
           try {
-            const saved = await updateRecoveryStatus(alumnoId, indicadorId, claseId, status, notes, null, evaluadoPor)
-            state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, recovery_status: status })
+            const saved = await updateRecoveryStatus(alumnoId, indicadorId, claseId, finalStatus, notes, recoveryGrade, evaluadoPor)
+            state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, recovery_status: finalStatus, recovery_notes: notes })
             dirty = true
 
             const row = body.querySelector(`.igm-alumno-row-deuda[data-alumno-id="${alumnoId}"]`)
             const form = body.querySelector(`.igm-recovery-form[data-alumno-id="${alumnoId}"]`)
             if (row) row.outerHTML = _renderAusente(alumnoId)
             if (form) form.remove()
-            AppToast.success('Recuperación registrada')
+            AppToast.success(selectedChoice === 'exonerado' ? 'Deuda exonerada con salvedad docente' : 'Recuperación registrada')
             _refreshCompletarBtn()
           } catch (err) {
             AppToast.error(`No se pudo registrar la recuperación: ${err.message}`)
@@ -469,6 +483,7 @@ if (!document.getElementById('igm-styles')) {
     }
     .igm-deuda-resuelta { font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; gap: 0.3rem; }
     .igm-recuperado { color: #059669; }
+    .igm-exonerado { color: #8b5cf6; }
     .igm-no-recuperable { color: var(--pm-text-muted); }
 
     .igm-recovery-form {

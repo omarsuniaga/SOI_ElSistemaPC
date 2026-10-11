@@ -36,6 +36,10 @@ export function createPlanificationCard(container, opts) {
   const treeContainer = container.querySelector('#pm-route-tree-container')
 
   if (planHeader) {
+    if (planificacionCard && planDropdown) {
+      planificacionCard.classList.add('open')
+      planDropdown.style.display = 'block'
+    }
     planHeader.onclick = () => {
       const isOpen = planificacionCard.classList.toggle('open')
       planDropdown.style.display = isOpen ? 'block' : 'none'
@@ -466,7 +470,7 @@ export function createPlanificationCard(container, opts) {
         planNombreEl.textContent = `${route.nombre || 'Malla de Clase'} (Malla Docente)`
       }
 
-      renderTeacherRouteCard(route, indList)
+      await renderTeacherRouteCard(route, indList)
       return true
     } catch (e) {
       console.warn('[PlanificationCard] Error checking teacher route fallback:', e)
@@ -474,13 +478,39 @@ export function createPlanificationCard(container, opts) {
     }
   }
 
-  function renderTeacherRouteCard(route, indList) {
+  async function renderTeacherRouteCard(route, indList) {
     if (!treeContainer) return
+
+    let evaluations = []
+    try {
+      const { data } = await supabase
+        .from('evaluacion_indicador')
+        .select('maestro_indicador_id, alumno_id, nota, recovery_status, recovery_notes')
+        .eq('clase_id', claseId)
+      evaluations = data || []
+    } catch (_e) {}
+
+    const evalMap = {}
+    evaluations.forEach((ev) => {
+      if (!evalMap[ev.maestro_indicador_id]) evalMap[ev.maestro_indicador_id] = []
+      evalMap[ev.maestro_indicador_id].push(ev)
+    })
 
     const storageKey = `pm_active_ind_${claseId}`
     let currentIndId = null
     try { currentIndId = localStorage.getItem(storageKey) } catch (_) {}
-    const activeInd = indList.find((i) => i.id === currentIndId) || indList[0]
+
+    // Encontrar posición actual en la planificación: guardado en storage o primer indicador no completado
+    let activeInd = indList.find((i) => i.id === currentIndId)
+    if (!activeInd) {
+      activeInd = indList.find((ind) => {
+        const evs = evalMap[ind.id] || []
+        const totalAlumnos = opts.alumnos?.length || 1
+        const aprobados = evs.filter((e) => (e.nota >= 3) || e.recovery_status === 'recuperado').length
+        return aprobados < totalAlumnos
+      }) || indList[0]
+    }
+
     teacherActiveIndicador = { id: activeInd.id, nombre: activeInd.nombre }
 
     const activeBadge = container.querySelector('#pm-active-tema-badge')
@@ -490,51 +520,161 @@ export function createPlanificationCard(container, opts) {
     }
 
     treeContainer.innerHTML = `
-      <div class="pm-weekly-box" style="background:var(--pm-surface-2, rgba(0,0,0,0.03)); border:1px solid var(--pm-border, rgba(0,0,0,0.1)); border-radius:12px; padding:12px; margin-bottom:12px;">
-        <div class="pm-weekly-label" style="font-size:0.75rem; font-weight:700; color:var(--pm-text-muted); text-transform:uppercase;">
-          Malla Curricular Personalizada
+      <!-- Banner de Posición Actual en la Planificación -->
+      <div class="pm-current-position-banner" style="
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.14) 0%, rgba(59, 130, 246, 0.08) 100%);
+        border: 1px solid rgba(79, 70, 229, 0.35);
+        border-radius: 14px;
+        padding: 1rem 1.15rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      ">
+        <div style="flex: 1; min-width: 240px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.5px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #6366f1; box-shadow: 0 0 8px #6366f1;"></span>
+            Posición Actual en la Planificación
+          </div>
+          <div style="font-size: 1.05rem; font-weight: 800; color: var(--pm-text, #fff); margin-top: 4px;">
+            🎯 ${escHTML(activeInd.nombre)}
+          </div>
+          ${activeInd.breadcrumb ? `<div style="font-size: 0.78rem; color: var(--pm-text-muted, #94a3b8); margin-top: 2px;"><i class="bi bi-diagram-3 me-1"></i>${escHTML(activeInd.breadcrumb)}</div>` : ''}
         </div>
-        <div style="font-size:0.95rem; font-weight:800; color:var(--pm-text); margin:4px 0 2px;">
-          ${escHTML(route.nombre || 'Malla de la clase')}
-        </div>
-        <div style="font-size:0.78rem; color:var(--pm-text-muted);">
-          ${indList.length} indicadores distribuidos en ${(route.unidades || []).length} unidades
+        <div>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-eval-position-now" style="font-weight: 700; border-radius: 10px; padding: 0.45rem 1rem; display: flex; align-items: center; gap: 6px;">
+            <i class="bi bi-star-fill text-warning"></i>
+            <span>Evaluar (1-5★)</span>
+          </button>
         </div>
       </div>
 
-      <div class="pm-weekly-box">
-        <div class="pm-weekly-label">Indicador a Evaluar</div>
-        <div class="pm-weekly-indicator-badge" id="btn-eval-indicator-teacher" style="cursor:pointer;">
-          🎯 ${escHTML(activeInd.nombre)} — Evaluar
+      <!-- Mapa de Contenido Embebido (Unidades y Recorrido de Indicadores) -->
+      <div class="pm-content-map-box" style="
+        background: var(--pm-surface-2, rgba(255, 255, 255, 0.02));
+        border: 1px solid var(--pm-border, rgba(255, 255, 255, 0.08));
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+          <div style="font-size: 0.78rem; font-weight: 800; color: var(--pm-text-muted); text-transform: uppercase;">
+            <i class="bi bi-map-fill me-1 text-primary"></i> Mapa de Contenido de la Malla
+          </div>
+          <span style="font-size: 0.72rem; color: var(--pm-text-muted);">
+            Toca cualquier indicador para evaluar
+          </span>
         </div>
-        ${activeInd.breadcrumb ? `<div style="font-size:0.72rem; color:var(--pm-text-muted); margin-top:4px;">${escHTML(activeInd.breadcrumb)}</div>` : ''}
+
+        <div class="pm-teacher-map-units-list" style="display: flex; flex-direction: column; gap: 1rem;">
+          ${(route.unidades || []).map((unidad, uIdx) => `
+            <div class="pm-unit-trail-card" style="
+              background: var(--pm-surface, rgba(0,0,0,0.2));
+              border: 1px solid var(--pm-border, rgba(255,255,255,0.06));
+              border-radius: 12px;
+              padding: 0.85rem;
+            ">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+                <div style="font-weight: 800; font-size: 0.88rem; color: var(--pm-text, #fff);">
+                  <span style="display: inline-block; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 6px;">U${uIdx + 1}</span>
+                  ${escHTML(unidad.nombre)}
+                </div>
+              </div>
+
+              ${(unidad.objetivos || []).map((obj, oIdx) => `
+                <div style="margin-left: 0.5rem; padding-left: 0.75rem; border-left: 2px dashed rgba(255,255,255,0.1); margin-bottom: 0.65rem;">
+                  <div style="font-size: 0.78rem; font-weight: 700; color: var(--pm-text-muted); margin-bottom: 0.45rem;">
+                    🎯 Obj ${uIdx + 1}.${oIdx + 1}: ${escHTML(obj.nombre)}
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    ${(obj.indicadores || []).map((ind) => {
+                      const isCurrent = ind.id === activeInd.id
+                      const evs = evalMap[ind.id] || []
+                      const totalAlumnos = opts.alumnos?.length || 1
+                      const aprobados = evs.filter((e) => (e.nota >= 3) || e.recovery_status === 'recuperado').length
+                      const isCompleted = aprobados >= totalAlumnos && totalAlumnos > 0
+                      const hasEvals = evs.length > 0
+
+                      let nodeIcon = '⚪'
+                      let nodeBorder = 'var(--pm-border, rgba(255,255,255,0.1))'
+                      let nodeBg = 'var(--pm-surface-2, rgba(255,255,255,0.03))'
+
+                      if (isCurrent) {
+                        nodeIcon = '🎯'
+                        nodeBorder = 'var(--pm-primary, #6366f1)'
+                        nodeBg = 'rgba(99, 102, 241, 0.2)'
+                      } else if (isCompleted) {
+                        nodeIcon = '👑'
+                        nodeBorder = 'rgba(16, 185, 129, 0.4)'
+                        nodeBg = 'rgba(16, 185, 129, 0.1)'
+                      } else if (hasEvals) {
+                        nodeIcon = '⭐'
+                        nodeBorder = 'rgba(59, 130, 246, 0.35)'
+                        nodeBg = 'rgba(59, 130, 246, 0.08)'
+                      }
+
+                      return `
+                        <button type="button" class="pm-inline-ind-node ${isCurrent ? 'pm-ind-node--active' : ''}" data-ind-id="${ind.id}" style="
+                          display: inline-flex;
+                          align-items: center;
+                          gap: 6px;
+                          background: ${nodeBg};
+                          border: 1.5px solid ${nodeBorder};
+                          border-radius: 10px;
+                          padding: 6px 10px;
+                          color: var(--pm-text, #fff);
+                          font-size: 0.78rem;
+                          font-weight: 600;
+                          cursor: pointer;
+                          transition: all 0.15s ease;
+                          ${isCurrent ? 'box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);' : ''}
+                        " title="${escHTML(ind.nombre)} (${isCompleted ? 'Dominado' : hasEvals ? `${aprobados}/${totalAlumnos} aprobados` : 'Pendiente'})">
+                          <span>${nodeIcon}</span>
+                          <span style="max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escHTML(ind.nombre)}</span>
+                          ${isCurrent ? '<span style="font-size:0.65rem; background:#6366f1; color:#fff; padding:1px 5px; border-radius:4px; font-weight:800;">ACTUAL</span>' : ''}
+                        </button>
+                      `
+                    }).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
       </div>
 
-      <div style="display:flex; gap:0.5rem; margin-top:12px;">
-        <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btn-open-teacher-map" style="font-weight:700; border-radius:10px;">
-          <i class="bi bi-diagram-3-fill me-1"></i> Abrir Mapa de Rutas
+      <!-- Acciones de la Malla -->
+      <div style="display: flex; gap: 0.6rem; align-items: center;">
+        <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" id="btn-open-teacher-map" style="font-weight: 700; border-radius: 10px; padding: 0.55rem;">
+          <i class="bi bi-diagram-3-fill me-1"></i> Abrir Mapa Completo Duolingo
         </button>
       </div>
     `
 
-    const evalBadge = treeContainer.querySelector('#btn-eval-indicator-teacher')
-    if (evalBadge) {
-      evalBadge.onclick = (e) => {
+    treeContainer.querySelectorAll('.pm-inline-ind-node').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation()
-        opts.onIndicadorSelect?.({
-          id: activeInd.id,
-          nombre: activeInd.nombre,
-        })
-      }
-    }
+        const iid = btn.dataset.indId
+        const selected = indList.find((i) => i.id === iid)
+        if (selected) {
+          try { localStorage.setItem(storageKey, selected.id) } catch (_) {}
+          opts.onIndicadorSelect?.(selected)
+          renderTeacherRouteCard(route, indList)
+        }
+      })
+    })
 
-    const openMapBtn = treeContainer.querySelector('#btn-open-teacher-map')
-    if (openMapBtn) {
-      openMapBtn.onclick = async (e) => {
-        e.stopPropagation()
-        await abrirMapaDeRutas(claseId, opts.maestro, opts.fechaHoy)
-      }
-    }
+    treeContainer.querySelector('#btn-eval-position-now')?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      opts.onIndicadorSelect?.(activeInd)
+    })
+
+    treeContainer.querySelector('#btn-open-teacher-map')?.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      await abrirMapaDeRutas(claseId, opts.maestro, opts.fechaHoy)
+    })
   }
 
   // Antes, sin guía ACM, esta card caía a un mini-CRUD propio sobre la tabla

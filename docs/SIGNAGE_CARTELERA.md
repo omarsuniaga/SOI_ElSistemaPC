@@ -62,10 +62,10 @@ El **mismo** `public/signage/index.html` sirve para todo. `app.js` detecta el mo
 
 | Archivo | Contenido |
 |---|---|
-| `20260831120000_signage_pantalla_informativa.sql` | Tablas base, vistas adaptador, bucket, RLS, seed, realtime |
-| `20260901090000_signage_anon_read_access.sql` | Lectura anónima de vistas/tablas `signage_*`; bucket → público |
-| `20260901120000_signage_pantalla_identidad.sql` | Columnas `institucion`, `siglas` |
-| `20260901140000_signage_menu_portales.sql` | Columna `menu_portales text[]` |
+| `20260901035325_signage_pantalla_informativa.sql` | Tablas base, vistas adaptador, bucket, RLS, seed, realtime |
+| `20260901042628_signage_anon_read_access.sql` | Lectura anónima de vistas/tablas `signage_*`; bucket → público |
+| `20260901070057_signage_pantalla_identidad.sql` | Columnas `institucion`, `siglas` |
+| `20260901075954_signage_menu_portales.sql` | Columna `menu_portales text[]` |
 
 ### Tablas nuevas
 

@@ -1,7 +1,7 @@
 -- fn_hermes_resolver_caso.test.sql
 -- Panel Hermes Proactivo — Calendario Institucional (PR6 de 6)
 -- Test de integración SQL para public.fn_hermes_resolver_caso (definido en
--- supabase/migrations/20260825145903_fn_hermes_resolver_caso.sql).
+-- supabase/migrations/20260830055108_fn_hermes_resolver_caso.sql).
 --
 -- Formaliza como suite repetible los 4 escenarios de seguridad que fueron
 -- verificados MANUALMENTE en PR1 (commit 84593146) vía una transacción

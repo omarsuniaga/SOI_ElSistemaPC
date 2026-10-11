@@ -190,9 +190,23 @@ export const AppModal = {
   _saveHandler: null,
   _cancelHandler: null,
   _keydownHandler: null,
+  _closeTimer: null,
 
   open({ title = '', body = '', headerActions = '', autoFocus = true, saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
+    // A newly opened dialog must not be cleared by a previous close animation.
+    if (this._closeTimer) {
+      clearTimeout(this._closeTimer)
+      this._closeTimer = null
+    }
     ensureDOM()
+
+    // Si se abre otro modal durante la animación de cierre, cancelar el
+    // temporizador anterior para que no borre el contenido del modal nuevo.
+    if (this._closeTimer) {
+      clearTimeout(this._closeTimer)
+      this._closeTimer = null
+    }
+
     const els = getEls()
 
     // Reset footer visibility so a previous call with `!important` inline
@@ -364,6 +378,7 @@ export const AppModal = {
   close() {
     if (!document.getElementById(MODAL_ID)) return
     const els = getEls()
+    const documentRef = document
 
     els.backdrop.style.opacity = '0'
     els.dialog.style.opacity = '0'
@@ -371,12 +386,15 @@ export const AppModal = {
 
     this._detachHandlers()
 
-    setTimeout(() => {
+    if (this._closeTimer) clearTimeout(this._closeTimer)
+    this._closeTimer = setTimeout(() => {
+      this._closeTimer = null
+      if (documentRef.getElementById(MODAL_ID) !== els.modal) return
       els.backdrop.style.display = 'none'
       els.modal.style.display = 'none'
       els.body.innerHTML = ''
       if (els.headerActions) els.headerActions.innerHTML = ''
-      document.body.style.overflow = ''
+      documentRef.body.style.overflow = ''
     }, 220)
   },
 

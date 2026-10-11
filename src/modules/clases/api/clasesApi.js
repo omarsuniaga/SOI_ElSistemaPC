@@ -4,6 +4,7 @@ import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 import { Clase } from '../models/clase.model.js'
 import { config } from '../../../core/config/config.js'
 import { logSubstituteActivity } from '../../../portal-maestros/services/substituteAuditService.js'
+import { validarTurno } from '../utils/turnosIndividuales.js'
 
 export const NIVELES = [
   { value: '1', label: '1° Año' },
@@ -754,6 +755,19 @@ export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, 
     .select()
 
   if (error) throw error
+  return data[0]
+}
+
+/** Cambia únicamente el turno de una inscripción activa; nunca toca el horario general. */
+export async function actualizarTurnoIndividual({ claseId, alumnoId, dia, horaInicio, horaFin, horarios }) {
+  const mensaje = validarTurno({ dia, horaInicio, horaFin }, horarios)
+  if (mensaje) throw new Error(mensaje)
+  const { data, error } = await supabase.from('alumnos_clases')
+    .update({ dia, hora_inicio: horaInicio, hora_fin: horaFin })
+    .eq('clase_id', claseId).eq('alumno_id', alumnoId).eq('activo', true)
+    .select('id, dia, hora_inicio, hora_fin')
+  if (error) throw error
+  if (data?.length !== 1) throw new Error('La inscripción ya no está activa. Recarga la nómina.')
   return data[0]
 }
 

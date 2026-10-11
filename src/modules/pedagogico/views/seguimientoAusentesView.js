@@ -1,5 +1,7 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { useAuth } from '../../auth/hooks/useAuth.js'
+import { construirMensajeAusentismo } from '../domain/plantillasAusentismo.js'
 import {
   getPeriodoActivo,
   fetchSeguimientoAusentes,
@@ -10,6 +12,7 @@ import {
   reincorporarAlumno,
   reiniciarContadorAusencias,
   suspenderAlumno,
+  justificarAusenciaDia,
 } from '../services/seguimientoAusentesService.js'
 
 const state = {
@@ -24,8 +27,10 @@ const state = {
   loading: false,
   filtroNivel: null,
   filtroMaestro: null,
+  filtroInstrumento: null,
   soloSinContacto: false,
   maestros: [],
+  instrumentos: [],
 }
 
 export async function renderSeguimientoAusentesView(container) {
@@ -50,6 +55,7 @@ async function _loadData() {
   const result = await fetchSeguimientoAusentes({
     nivel: state.filtroNivel,
     maestroId: state.filtroMaestro,
+    instrumento: state.filtroInstrumento,
     soloSinContacto: state.soloSinContacto,
     busqueda: state.busqueda,
     limit: state.limit,
@@ -70,6 +76,15 @@ async function _loadData() {
     }
   })
   state.maestros = Array.from(maestroSet).map((s) => JSON.parse(s))
+
+  // Extract unique instruments for filter dropdown
+  const instrumentoSet = new Set()
+  state.alumnos.forEach((a) => {
+    if (a.instrumento_principal) {
+      instrumentoSet.add(a.instrumento_principal)
+    }
+  })
+  state.instrumentos = Array.from(instrumentoSet).sort()
 
   state.loading = false
 }
@@ -137,13 +152,19 @@ function _render() {
               <option value="3" ${state.filtroNivel === 3 ? 'selected' : ''}>Nivel 3</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <select class="form-select form-select-sm" id="filtro-maestro" data-filter="maestro">
               <option value="">Todos los maestros</option>
               ${state.maestros.map((m) => `<option value="${m.id}" ${state.filtroMaestro === m.id ? 'selected' : ''}>${m.nombre}</option>`).join('')}
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" id="filtro-instrumento" data-filter="instrumento">
+              <option value="">Todos los instrumentos</option>
+              ${state.instrumentos.map((i) => `<option value="${i}" ${state.filtroInstrumento === i ? 'selected' : ''}>${i}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-2">
             <div class="form-check form-check-inline">
               <input class="form-check-input" type="checkbox" id="solo-sin-contacto" data-filter="solo-sin-contacto" ${state.soloSinContacto ? 'checked' : ''}>
               <label class="form-check-label small" for="solo-sin-contacto">Sólo sin contactar</label>
@@ -259,12 +280,58 @@ function _toast(message, type = 'info') {
   window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }))
 }
 
-async function _enviarWhatsApp(alumnoId, nivel) {
+/**
+ * Opens a modal to edit the WhatsApp message before sending.
+ * Pre-fills with the generated message, allows editing, then sends.
+ */
+async function _abrirModalEdicionWhatsApp(alumnoId, nivel) {
   const alumno = state.alumnos.find((a) => a.alumno_id === alumnoId)
   if (!alumno) return
 
   try {
-    const { waUrl } = await enviarSeguimientoAusentismo({ alumno, nivel: Number(nivel) })
+    // Build the initial message
+    const mensajeInicial = construirMensajeAusentismo({
+      nivel: Number(nivel),
+      destinatario: 'representante',
+      alumno,
+    })
+
+    const modalContent = `
+      <div>
+        <p class="text-muted small mb-2">Revise el mensaje antes de enviar. Puede editarlo si es necesario.</p>
+        <label class="form-label">Mensaje de nivel ${nivel}:</label>
+        <textarea id="wa-texto-editable" class="form-control" rows="8" style="white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;">${mensajeInicial}</textarea>
+        <small class="text-muted d-block mt-2">Se registrará exactamente este texto en la auditoría.</small>
+      </div>
+    `
+
+    AppModal.open({
+      title: `Mensaje de nivel ${nivel} — ${alumno.alumno_nombre}`,
+      body: modalContent,
+      size: 'md',
+      saveText: 'Enviar por WhatsApp',
+      onSave: async () => {
+        const textoEditado = document.getElementById('wa-texto-editable')?.value || mensajeInicial
+        await _enviarWhatsApp(alumnoId, nivel, textoEditado)
+        // The modal will close automatically via AppModal's return
+      },
+    })
+  } catch (err) {
+    console.error('[_abrirModalEdicionWhatsApp]', err)
+    _toast('No se pudo preparar el mensaje.', 'error')
+  }
+}
+
+async function _enviarWhatsApp(alumnoId, nivel, mensajePersonalizado = null) {
+  const alumno = state.alumnos.find((a) => a.alumno_id === alumnoId)
+  if (!alumno) return
+
+  try {
+    const { waUrl } = await enviarSeguimientoAusentismo({
+      alumno,
+      nivel: Number(nivel),
+      mensajeOverride: mensajePersonalizado,
+    })
     window.open(waUrl, '_blank', 'noopener')
     _toast(`Mensaje de nivel ${nivel} abierto en WhatsApp y registrado como contacto.`, 'success')
     // refrescar para que el "último seguimiento" de la fila se actualice
@@ -327,6 +394,18 @@ function _attachEvents() {
     })
   }
 
+  // Filtro instrumento
+  const instrumentoSelect = state.container.querySelector('#filtro-instrumento')
+  if (instrumentoSelect) {
+    instrumentoSelect.addEventListener('change', async (e) => {
+      state.filtroInstrumento = e.target.value || null
+      state.offset = 0
+      await _loadData()
+      _render()
+      _attachEvents()
+    })
+  }
+
   // Filtro sin contacto
   const soloSinContactoCheck = state.container.querySelector('#solo-sin-contacto')
   if (soloSinContactoCheck) {
@@ -369,7 +448,8 @@ function _attachEvents() {
       const btn = e.currentTarget
       const nivel = btn.getAttribute('data-nivel')
       btn.disabled = true
-      await _enviarWhatsApp(alumnoId, nivel)
+      await _abrirModalEdicionWhatsApp(alumnoId, nivel)
+      btn.disabled = false
     })
 
     // Click en el resto de la fila → panel de detalle
@@ -484,6 +564,24 @@ async function _openDetailPanel(alumno) {
           `}
       </div>
 
+      <div class="mb-4 border rounded p-3">
+        <h5 class="mb-3"><i class="bi bi-calendar-check me-1"></i>Justificar un día</h5>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small">Fecha:</label>
+            <input type="date" id="justif-fecha-dia" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Motivo de la ausencia:</label>
+            <textarea id="justif-motivo-dia" class="form-control form-control-sm" rows="2" placeholder="Ej.: cita médica, enfermedad, viaje familiar…"></textarea>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline-primary" data-accion-justificar-dia>
+          <i class="bi bi-check2 me-1"></i>Justificar ausencia
+        </button>
+        <p class="small text-muted mt-2 mb-0">Marca la ausencia de este día como justificada. Se actualizarán los registros de asistencia de las clases afectadas.</p>
+      </div>
+
       <div class="border-top pt-3">
         <h5>Gestión del alumno</h5>
         <div class="gap-2 d-flex flex-wrap">
@@ -565,8 +663,49 @@ async function _openDetailPanel(alumno) {
           const nivel = btn.getAttribute('data-nivel')
           btn.disabled = true
           AppModal.close?.()
-          await _enviarWhatsApp(alumno.alumno_id, nivel)
+          await _abrirModalEdicionWhatsApp(alumno.alumno_id, nivel)
         })
+      })
+
+      // Justificar un día
+      modalEl.querySelector('[data-accion-justificar-dia]')?.addEventListener('click', async (e) => {
+        const fecha = modalEl.querySelector('[id="justif-fecha-dia"]')?.value?.trim()
+        const motivo = modalEl.querySelector('[id="justif-motivo-dia"]')?.value?.trim()
+
+        if (!fecha || !motivo) {
+          _toast('Indique la fecha y el motivo de la ausencia.', 'warning')
+          return
+        }
+
+        e.currentTarget.disabled = true
+        try {
+          const userId = useAuth.getUser()?.id
+          if (!userId) {
+            _toast('No se pudo obtener la identidad del usuario.', 'error')
+            e.currentTarget.disabled = false
+            return
+          }
+
+          const resultado = await justificarAusenciaDia({
+            alumnoId: alumno.alumno_id,
+            fecha,
+            motivo,
+            creadoPor: userId,
+          })
+
+          AppModal.close?.()
+          _toast(
+            `Ausencia del ${fecha} justificada (${resultado.asistenciasActualizadas} clases).`,
+            'success'
+          )
+          await _loadData()
+          _render()
+          _attachEvents()
+        } catch (err) {
+          console.error(err)
+          _toast(err.message || 'No se pudo justificar la ausencia.', 'error')
+          e.currentTarget.disabled = false
+        }
       })
 
       // Reiniciar contador

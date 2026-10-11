@@ -10,7 +10,18 @@ describe('AppModal - ESC key close functionality', () => {
 
   afterEach(() => {
     AppModal.close()
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
     vi.restoreAllMocks()
+  })
+
+  it('keeps a newly opened modal visible when an earlier close timer expires', () => {
+    AppModal.open({ title: 'Anterior', body: '<p>Anterior</p>' })
+    AppModal.close()
+    AppModal.open({ title: 'Nueva nómina', body: '<p>Turnos individuales</p>' })
+    vi.runAllTimers()
+    expect(document.querySelector('.app-modal-body').textContent).toContain('Turnos individuales')
+    expect(document.getElementById('app-global-modal').style.display).toBe('flex')
   })
 
   it('should open the modal successfully', () => {

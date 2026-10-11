@@ -95,7 +95,9 @@ describe('actividadesInstitucionalesView', () => {
     await flush()
 
     container.querySelector('#ai-btn-crear').click()
-    await flush()
+    await vi.waitFor(() => {
+      expect(document.querySelector('.app-modal-body #ai-c-fecha-inicio')).toBeTruthy()
+    })
 
     const modalBody = document.querySelector('.app-modal-body')
     modalBody.querySelector('#ai-c-titulo').value = 'Nueva actividad'
@@ -182,10 +184,9 @@ describe('actividadesInstitucionalesView', () => {
     listarActividades.mockResolvedValueOnce([actividad()]).mockResolvedValueOnce([actividad({ estado: 'aprobado' })])
 
     await renderActividadesInstitucionalesView(container)
-    await flush()
+    await vi.waitFor(() => expect(container.querySelector('.ai-btn-revisar')).toBeTruthy())
     container.querySelector('.ai-btn-revisar').click()
-    await flush()
-    await flush()
+    await vi.waitFor(() => expect(document.querySelector('#ai-btn-rechazar')).toBeTruthy())
 
     const modalBody = document.querySelector('.app-modal-body')
     const select = modalBody.querySelector('.ai-select-tipo')
@@ -215,10 +216,9 @@ describe('actividadesInstitucionalesView', () => {
     listarActividades.mockResolvedValueOnce([actividad()]).mockResolvedValueOnce([actividad({ estado: 'rechazado' })])
 
     await renderActividadesInstitucionalesView(container)
-    await flush()
+    await vi.waitFor(() => expect(container.querySelector('.ai-btn-revisar')).toBeTruthy())
     container.querySelector('.ai-btn-revisar').click()
-    await flush()
-    await flush()
+    await vi.waitFor(() => expect(document.querySelector('#ai-btn-rechazar')).toBeTruthy())
 
     document.querySelector('#ai-btn-rechazar').click()
     await flush()
@@ -237,24 +237,24 @@ describe('actividadesInstitucionalesView', () => {
     registrarAsistenciaActividad.mockResolvedValue({ eventoId: 'act-1', alumnoId: 'al-1', estado: 'presente' })
 
     await renderActividadesInstitucionalesView(container)
-    await flush()
+    await vi.waitFor(() => expect(container.querySelector('.ai-tab[data-estado="aprobado"]')).toBeTruthy())
 
     container.querySelector('.ai-tab[data-estado="aprobado"]').click()
-    await flush()
+    await vi.waitFor(() => expect(container.querySelector('.ai-btn-pasar-lista')).toBeTruthy())
 
     container.querySelector('.ai-btn-pasar-lista').click()
-    await flush()
-    await flush()
+    await vi.waitFor(() => {
+      expect(document.querySelector('.app-modal-body')?.textContent).toContain('Alumno Uno')
+    })
 
     const modalBody = document.querySelector('.app-modal-body')
-    expect(modalBody.textContent).toContain('Alumno Uno')
 
     const select = modalBody.querySelector('.ai-select-asistencia')
     select.value = 'presente'
     select.dispatchEvent(new Event('change'))
-    await flush()
-
-    expect(registrarAsistenciaActividad).toHaveBeenCalledWith('act-1', 'al-1', 'presente')
+    await vi.waitFor(() => {
+      expect(registrarAsistenciaActividad).toHaveBeenCalledWith('act-1', 'al-1', 'presente')
+    })
   })
 
   it('corregir una actividad aprobada no muestra el botón de rechazar', async () => {
@@ -316,7 +316,9 @@ describe('actividadesInstitucionalesView', () => {
     await renderActividadesInstitucionalesView(container)
     await flush()
     container.querySelector('#ai-btn-crear').click()
-    await flush()
+    await vi.waitFor(() => {
+      expect(document.querySelector('.app-modal-body #ai-c-fecha-fin')).toBeTruthy()
+    })
 
     const modalBody = document.querySelector('.app-modal-body')
     const inicio = modalBody.querySelector('#ai-c-fecha-inicio')

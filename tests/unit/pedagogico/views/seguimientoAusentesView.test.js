@@ -308,6 +308,11 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     waBtn.click()
     await new Promise((resolve) => setTimeout(resolve, 60))
 
+    // WA button opens an edit modal before sending — simulate user confirming
+    expect(modalOpenMock).toHaveBeenCalled()
+    const { onSave } = modalOpenMock.mock.calls[modalOpenMock.mock.calls.length - 1][0]
+    await onSave()
+
     expect(svc.enviarSeguimientoAusentismo).toHaveBeenCalledWith(
       expect.objectContaining({ nivel: 3, alumno: expect.objectContaining({ alumno_id: 'a1' }) }),
     )
@@ -407,6 +412,12 @@ describe('seguimientoAusentesView (T1b.1)', () => {
     await renderSeguimientoAusentesView(container)
     container.querySelector('[data-alumno-id="a1"] [data-wa]').click()
     await new Promise((resolve) => setTimeout(resolve, 60))
+
+    // WA button opens an edit modal before sending — simulate user confirming
+    expect(modalOpenMock).toHaveBeenCalled()
+    const { onSave } = modalOpenMock.mock.calls[modalOpenMock.mock.calls.length - 1][0]
+    await onSave()
+    await new Promise((resolve) => setTimeout(resolve, 20))
 
     expect(toastSpy).toHaveBeenCalled()
     expect(toastSpy.mock.calls[0][0].detail.type).toBe('warning')

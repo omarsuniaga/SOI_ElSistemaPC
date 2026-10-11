@@ -208,6 +208,29 @@ describe('offlineQueue', () => {
       expect(await getQueueCount()).toBe(0)
     })
 
+    it('never discards a preserved item: after max attempts it is kept and flagged fallido', async () => {
+      await enqueue({ tabla: 'sesiones_clase', operacion: 'update', payload: { id: 's1', contenido: 'texto' }, preservar: true })
+      const syncFn = vi.fn().mockRejectedValue(new Error('DB error'))
+
+      for (let i = 0; i < 8; i++) {
+        await processQueue(syncFn)
+      }
+
+      const queue = await getQueue()
+      expect(queue).toHaveLength(1)
+      expect(queue[0].payload.contenido).toBe('texto')
+      expect(queue[0].fallido).toBe(true)
+    })
+
+    it('a preserved item flagged fallido is retried and cleared once the sync succeeds', async () => {
+      await enqueue({ tabla: 'sesiones_clase', operacion: 'update', payload: { id: 's1', contenido: 'texto' }, preservar: true })
+      const failing = vi.fn().mockRejectedValue(new Error('DB error'))
+      for (let i = 0; i < 8; i++) await processQueue(failing)
+
+      await processQueue(async () => {})
+      expect(await getQueueCount()).toBe(0)
+    })
+
     it('should continue processing remaining items after one fails', async () => {
       await enqueue({ tabla: 'fail', operacion: 'insert', payload: {} })
       await enqueue({ tabla: 'ok', operacion: 'insert', payload: {} })

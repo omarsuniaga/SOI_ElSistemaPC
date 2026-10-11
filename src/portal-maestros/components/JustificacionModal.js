@@ -8,6 +8,10 @@
  * @returns {Object} API del componente
  */
 import { enableTrap } from '../utils/focusTrap.js';
+import { FileTooLargeError, InvalidMimeError } from '../services/fileUploadService.js';
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 
 export function createJustificacionModal(parentContainer, { onSave, onCancel, onDelete }) {
   let modalEl = document.getElementById('pm-justif-modal');
@@ -72,12 +76,12 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
         </div>
         
         <div class="pm-justif-footer">
-          <button class="pm-justif-delete" id="pm-justif-delete" style="display:none;" title="Eliminar justificación">
+          <button class="pm-justif-delete" id="pm-justif-delete" style="display:none;" title="Limpiar justificación (deja el registro vacío)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+              <path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
+              <path d="M19 6v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
             </svg>
-            Eliminar
+            Limpiar
           </button>
           <button class="pm-justif-cancel" id="pm-justif-cancel">Cancelar</button>
           <button class="pm-justif-save" id="pm-justif-save">
@@ -375,6 +379,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   let _currentJustificacion = null;
   let _currentFile = null;         // File object para Storage
   let _previewUrl = null;          // URL temporal para preview
+  let _evidenciaRemoved = false;   // true = el usuario quitó la evidencia existente explícitamente
   let _isEditing = false;
   let _prevEstado = null;          // Estado anterior para rollback en cancel
   let _focusTrap = null;           // Focus trap instance
@@ -402,6 +407,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
     _currentJustificacion = justificacionExistente;
     _currentFile = null;
     _previewUrl = null;
+    _evidenciaRemoved = false;
     _isEditing = !!justificacionExistente;
     _prevEstado = prevEstado;  // null = crear, 'J' = editar
 
@@ -457,6 +463,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
     _currentJustificacion = null;
     _currentFile = null;
     _previewUrl = null;
+    _evidenciaRemoved = false;
     _prevEstado = null;
     if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null; }
   }
@@ -467,7 +474,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
 
   deleteBtn.onclick = () => {
     if (!_currentAlumno) return;
-    if (!confirm(`¿Eliminar la justificación de ${_currentAlumno.nombre_completo}?`)) return;
+    if (!confirm(`¿Limpiar la justificación de ${_currentAlumno.nombre_completo}? El motivo y la evidencia se borrarán y el estado volverá a quedar sin marcar.`)) return;
     if (onDelete) onDelete({ alumnoId: _currentAlumno.id, justificacionId: _currentJustificacion?.id, existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 });
     close(false); // no rollback: la vista maneja el estado
   };
@@ -478,22 +485,36 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   // Preview de imagen (File para Storage + URL temporal para preview)
   fileInput.onchange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      _currentFile = file;
-      _previewUrl = URL.createObjectURL(file);
-      previewImg.src = _previewUrl;
-      filePlaceholder.style.display = 'none';
-      filePreview.style.display = 'block';
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      alert(new FileTooLargeError().message);
+      fileInput.value = '';
+      return;
     }
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      alert(new InvalidMimeError().message);
+      fileInput.value = '';
+      return;
+    }
+
+    _currentFile = file;
+    _evidenciaRemoved = false;
+    _previewUrl = URL.createObjectURL(file);
+    previewImg.src = _previewUrl;
+    filePlaceholder.style.display = 'none';
+    filePreview.style.display = 'block';
   };
 
   // Eliminar archivo
   removeBtn.onclick = () => {
-    if (_previewUrl && !(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64)) {
+    const hadExisting = !!(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64);
+    if (_previewUrl && !hadExisting) {
       URL.revokeObjectURL(_previewUrl);
     }
     _currentFile = null;
     _previewUrl = null;
+    _evidenciaRemoved = hadExisting;
     fileInput.value = '';
     filePlaceholder.style.display = 'flex';
     filePreview.style.display = 'none';
@@ -518,6 +539,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
         motivo,
         evidenciaFile: _currentFile,          // File object para Storage
         evidenciaPreview: _previewUrl,        // URL temporal para mostrar
+        evidenciaRemoved: _evidenciaRemoved,  // true = quitar evidencia existente sin reemplazo
         justificacionId: _currentJustificacion?.id || null,
         existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 || null,
         isEdit: _isEditing,

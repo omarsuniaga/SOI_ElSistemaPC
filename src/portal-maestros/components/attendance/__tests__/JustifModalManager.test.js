@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * error cuando no hay clase asociada.
  */
 
-const { createJustificacionModalMock, capturedHandlers } = vi.hoisted(() => {
+const { createJustificacionModalMock, capturedHandlers, deleteEvidenciaMock } = vi.hoisted(() => {
   const capturedHandlers = {}
   return {
     capturedHandlers,
@@ -24,6 +24,7 @@ const { createJustificacionModalMock, capturedHandlers } = vi.hoisted(() => {
       Object.assign(capturedHandlers, handlers)
       return { open: vi.fn(), close: vi.fn() }
     }),
+    deleteEvidenciaMock: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -31,10 +32,17 @@ vi.mock('../../JustificacionModal.js', () => ({
   createJustificacionModal: createJustificacionModalMock,
 }))
 
+vi.mock('../../../services/justificacionService.js', () => ({
+  deleteEvidencia: deleteEvidenciaMock,
+}))
+
 import { createJustifModalManager } from '../JustifModalManager.js'
 
 function buildManager(overrides = {}) {
   const guardarJustificacion = vi
+    .fn()
+    .mockResolvedValue({ data: { id: 'justif-1' }, error: null })
+  const actualizarJustificacion = vi
     .fn()
     .mockResolvedValue({ data: { id: 'justif-1' }, error: null })
   const onJustifSaved = vi.fn()
@@ -45,8 +53,8 @@ function buildManager(overrides = {}) {
     claseId: null,
     fechaHoy: '2026-09-07',
     maestroId: 'maestro-1',
-    supabase: { storage: { from: vi.fn() } },
     guardarJustificacion,
+    actualizarJustificacion,
     eliminarJustificacion: vi.fn(),
     onJustifSaved,
     onRenderLista: vi.fn(),
@@ -57,7 +65,7 @@ function buildManager(overrides = {}) {
   }
 
   createJustifModalManager(document.body, opts)
-  return { opts, guardarJustificacion, onJustifSaved, onAutoSave }
+  return { opts, guardarJustificacion, actualizarJustificacion, onJustifSaved, onAutoSave }
 }
 
 describe('JustifModalManager — onSave', () => {
@@ -103,5 +111,62 @@ describe('JustifModalManager — onSave', () => {
 
     const [payload] = guardarJustificacion.mock.calls[0]
     expect(payload.claseId).toBe('clase-99')
+  })
+
+  it('al editar, delega en actualizarJustificacion (no en guardarJustificacion ni en Supabase directo)', async () => {
+    const { guardarJustificacion, actualizarJustificacion, onJustifSaved } = buildManager()
+
+    await capturedHandlers.onSave({
+      alumnoId: 'alumno-3',
+      motivo: 'Reposo médico',
+      evidenciaFile: null,
+      evidenciaRemoved: false,
+      justificacionId: 'justif-9',
+      existingUrl: 'https://test.co/storage/v1/object/public/documentos/justificaciones/old.jpg',
+      isEdit: true,
+    })
+
+    expect(actualizarJustificacion).toHaveBeenCalledWith({
+      justificacionId: 'justif-9',
+      motivo: 'Reposo médico',
+      evidenciaFile: null,
+      evidenciaRemoved: false,
+      existingUrl: 'https://test.co/storage/v1/object/public/documentos/justificaciones/old.jpg',
+    })
+    expect(guardarJustificacion).not.toHaveBeenCalled()
+    expect(onJustifSaved).toHaveBeenCalledWith('alumno-3', { id: 'justif-1' })
+  })
+})
+
+describe('JustifModalManager — onDelete', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    document.body.innerHTML = '<button id="pm-justif-save"></button>'
+  })
+
+  it('borra la evidencia del storage (vía deleteEvidencia del servicio) y elimina el registro', async () => {
+    const eliminarJustificacion = vi.fn().mockResolvedValue({ error: null })
+    const onJustifDeleted = vi.fn()
+    buildManager({ eliminarJustificacion, onJustifDeleted })
+
+    await capturedHandlers.onDelete({
+      alumnoId: 'alumno-5',
+      justificacionId: 'justif-5',
+      existingUrl: 'https://test.co/storage/v1/object/public/documentos/justificaciones/old.jpg',
+    })
+
+    expect(deleteEvidenciaMock).toHaveBeenCalledWith('https://test.co/storage/v1/object/public/documentos/justificaciones/old.jpg')
+    expect(eliminarJustificacion).toHaveBeenCalledWith('justif-5')
+    expect(onJustifDeleted).toHaveBeenCalledWith('alumno-5')
+  })
+
+  it('no intenta borrar evidencia si no existía', async () => {
+    const eliminarJustificacion = vi.fn().mockResolvedValue({ error: null })
+    buildManager({ eliminarJustificacion })
+
+    await capturedHandlers.onDelete({ alumnoId: 'alumno-6', justificacionId: 'justif-6', existingUrl: null })
+
+    expect(deleteEvidenciaMock).not.toHaveBeenCalled()
+    expect(eliminarJustificacion).toHaveBeenCalledWith('justif-6')
   })
 })

@@ -25,14 +25,12 @@ export function createStudentList(container, {
   snapshots,
   justificaciones = {},
   obtenerJustificacion,
-  eliminarJustificacion,
   isRotativa = false,
   // callbacks
   onEstadoChange,
   onOpenProgressPanel,
   onOpenEvaluationDrawer,
   onOpenJustifModal,
-  onJustifDeleted,
   onAutoSave,
   onAnnounce,
   onUpdateSnapshots,
@@ -233,31 +231,17 @@ export function createStudentList(container, {
     if (window.navigator.vibrate) window.navigator.vibrate(10)
 
     // Interceptor para estado "J" (Justificado)
+    // Activo o inactivo, el click siempre abre el modal: con el formulario vacío
+    // para registrar, o precargado con el motivo/evidencia existentes para
+    // revisar o editar. Limpiar el registro (y volver 'J' a su estado por
+    // defecto) es una acción explícita dentro del modal, no un click accidental.
     if (action === 'J') {
       const alumno = alumnos.find((a) => a.id === id)
       if (!alumno) return
 
-      if (estado[id] === 'J') {
-        // Al presionar sobre el mismo botón 'J', desmarcar (pasar a null)
-        if (onEstadoChange) onEstadoChange(id, null)
-        let justifExistente = justificaciones?.[id] || null
-        if (justifExistente?.id && typeof eliminarJustificacion === 'function') {
-          eliminarJustificacion(justifExistente.id).catch(console.warn)
-        }
-        if (justificaciones && justificaciones[id]) {
-          delete justificaciones[id]
-        }
-        if (typeof onJustifDeleted === 'function') onJustifDeleted(id)
-        renderLista()
-        if (onAutoSave) await onAutoSave(true)
-        if (onAnnounce) onAnnounce(`Justificación desmarcada para ${alumno.nombre_completo}.`)
-      } else {
-        // Abrir el modal de justificación. NO marcamos 'J' por adelantado;
-        // se marcará cuando el maestro confirme y guarde la justificación en el modal.
-        const prevEstado = estado[id] || null
-        const justifExistente = justificaciones?.[id] || null
-        if (onOpenJustifModal) onOpenJustifModal(alumno, justifExistente, prevEstado)
-      }
+      const prevEstado = estado[id] || null
+      const justifExistente = justificaciones?.[id] || null
+      if (onOpenJustifModal) onOpenJustifModal(alumno, justifExistente, prevEstado)
       return
     }
 

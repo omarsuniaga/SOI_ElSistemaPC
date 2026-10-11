@@ -25,14 +25,18 @@ async function getDB() {
 
 /**
  * Agrega una operación a la cola de sincronización.
- * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object }} item
+ * `preservar: true` marca datos del usuario que no deben descartarse jamás
+ * (p. ej. el texto de una clase): tras agotar los reintentos quedan en la cola
+ * con `fallido: true` y se siguen reintentando en cada sincronización.
+ * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object, preservar?: boolean }} item
  */
-export async function enqueue({ tabla, operacion, payload }) {
+export async function enqueue({ tabla, operacion, payload, preservar = false }) {
   const db = await getDB()
   await db.add(STORE_NAME, {
     tabla,
     operacion,
     payload,
+    ...(preservar ? { preservar: true } : {}),
     intentos: 0,
     created_at: new Date().toISOString(),
   })
@@ -90,7 +94,13 @@ export async function processQueue(syncFn) {
     } catch (_err) {
       const db = await getDB()
       const MAX_INTENTOS = 5
-      if (item.intentos >= MAX_INTENTOS) {
+      if (item.preservar) {
+        await db.put(STORE_NAME, {
+          ...item,
+          intentos: item.intentos + 1,
+          ...(item.intentos + 1 >= MAX_INTENTOS ? { fallido: true } : {}),
+        })
+      } else if (item.intentos >= MAX_INTENTOS) {
         await dequeue(item.id)
       } else {
         await db.put(STORE_NAME, { ...item, intentos: item.intentos + 1 })

@@ -10,25 +10,43 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // vi.hoisted garante que existen ANTES del hoisting de vi.mock
-const { upsertSpy, fromSpy } = vi.hoisted(() => ({
+const { upsertSpy, updateSpy, fromSpy, storageFromSpy, uploadSpy, removeSpy } = vi.hoisted(() => ({
   upsertSpy: vi.fn(),
+  updateSpy: vi.fn(),
   fromSpy: vi.fn(),
+  storageFromSpy: vi.fn(),
+  uploadSpy: vi.fn(),
+  removeSpy: vi.fn(),
 }))
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
     from: (...args) => fromSpy(...args),
     storage: {
-      from: vi.fn(() => ({
-        upload: vi.fn().mockResolvedValue({ data: { path: 'justif/test.jpg' }, error: null }),
-        getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://test.co/test.jpg' } }),
-        remove: vi.fn().mockResolvedValue({ error: null }),
-      })),
+      from: (...args) => {
+        storageFromSpy(...args)
+        return {
+          upload: (...uArgs) => uploadSpy(...uArgs),
+          getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://test.co/documentos/justificaciones/test.jpg' } }),
+          remove: (...rArgs) => removeSpy(...rArgs),
+        }
+      },
     },
   },
 }))
 
-import { guardarJustificacion } from '../justificacionService.js'
+import {
+  guardarJustificacion,
+  actualizarJustificacion,
+  uploadEvidencia,
+  deleteEvidencia,
+} from '../justificacionService.js'
+import { FileTooLargeError, InvalidMimeError } from '../fileUploadService.js'
+
+function makeFile({ name = 'foto.jpg', type = 'image/jpeg', size = 1024 } = {}) {
+  const file = new File([new Uint8Array(size)], name, { type })
+  return file
+}
 
 describe('guardarJustificacion — payload validation', () => {
   beforeEach(() => {
@@ -159,5 +177,121 @@ describe('guardarJustificacion — integration flow', () => {
     const [payloadArr, opts] = upsertSpy.mock.calls[0]
     const payload = Array.isArray(payloadArr) ? payloadArr[0] : payloadArr
     expect(payload).not.toHaveProperty('ausencia_fecha')
+  })
+})
+
+describe('uploadEvidencia / deleteEvidencia — bucket y validación', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    uploadSpy.mockResolvedValue({ data: { path: 'justificaciones/abc.jpg' }, error: null })
+    removeSpy.mockResolvedValue({ error: null })
+  })
+
+  it('sube al bucket "documentos" (regresión: no "documentos-private", que no existe)', async () => {
+    await uploadEvidencia(makeFile())
+    expect(storageFromSpy).toHaveBeenCalledWith('documentos')
+  })
+
+  it('rechaza archivos mayores a 5MB sin llegar a subir', async () => {
+    const file = makeFile({ size: 6 * 1024 * 1024 })
+    await expect(uploadEvidencia(file)).rejects.toBeInstanceOf(FileTooLargeError)
+    expect(uploadSpy).not.toHaveBeenCalled()
+  })
+
+  it('rechaza tipos MIME no permitidos sin llegar a subir', async () => {
+    const file = makeFile({ type: 'application/zip' })
+    await expect(uploadEvidencia(file)).rejects.toBeInstanceOf(InvalidMimeError)
+    expect(uploadSpy).not.toHaveBeenCalled()
+  })
+
+  it('deleteEvidencia borra del bucket "documentos" usando el path de la URL pública', async () => {
+    await deleteEvidencia('https://test.co/storage/v1/object/public/documentos/justificaciones/old.jpg')
+    expect(storageFromSpy).toHaveBeenCalledWith('documentos')
+    expect(removeSpy).toHaveBeenCalledWith(['justificaciones/old.jpg'])
+  })
+
+  it('deleteEvidencia no hace nada si no recibe URL', async () => {
+    await deleteEvidencia(null)
+    expect(removeSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('actualizarJustificacion — edición y borrado de evidencia', () => {
+  const EXISTING_URL = 'https://test.co/storage/v1/object/public/documentos/justificaciones/old.jpg'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    uploadSpy.mockResolvedValue({ data: { path: 'justificaciones/test.jpg' }, error: null })
+    removeSpy.mockResolvedValue({ error: null })
+    fromSpy.mockReturnValue({
+      update: updateSpy.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: { id: 'j-1' }, error: null }),
+          }),
+        }),
+      }),
+    })
+  })
+
+  it('sin archivo nuevo ni remoción explícita: no toca evidencia_url', async () => {
+    await actualizarJustificacion({ justificacionId: 'j-1', motivo: 'x', existingUrl: EXISTING_URL })
+
+    const [payload] = updateSpy.mock.calls[0]
+    expect(payload.evidencia_url).toBe(EXISTING_URL)
+    expect(uploadSpy).not.toHaveBeenCalled()
+    expect(removeSpy).not.toHaveBeenCalled()
+  })
+
+  it('evidenciaRemoved=true sin archivo nuevo: borra la evidencia vieja y deja null (bug #3 corregido)', async () => {
+    await actualizarJustificacion({ justificacionId: 'j-1', motivo: 'x', evidenciaRemoved: true, existingUrl: EXISTING_URL })
+
+    expect(removeSpy).toHaveBeenCalledWith(['justificaciones/old.jpg'])
+    const [payload] = updateSpy.mock.calls[0]
+    expect(payload.evidencia_url).toBeNull()
+  })
+
+  it('archivo nuevo: sube la nueva evidencia antes de borrar la vieja (orden correcto, bug #5 corregido)', async () => {
+    const callOrder = []
+    uploadSpy.mockImplementation(async () => {
+      callOrder.push('upload')
+      return { data: { path: 'justificaciones/new.jpg' }, error: null }
+    })
+    removeSpy.mockImplementation(async () => {
+      callOrder.push('remove')
+      return { error: null }
+    })
+
+    await actualizarJustificacion({
+      justificacionId: 'j-1',
+      motivo: 'x',
+      evidenciaFile: makeFile({ name: 'new.jpg' }),
+      existingUrl: EXISTING_URL,
+    })
+
+    expect(callOrder).toEqual(['upload', 'remove'])
+    const [payload] = updateSpy.mock.calls[0]
+    expect(payload.evidencia_url).not.toBe(EXISTING_URL)
+  })
+
+  it('si la subida del archivo nuevo falla, conserva la evidencia anterior sin borrarla', async () => {
+    uploadSpy.mockResolvedValue({ data: null, error: { message: 'network down' } })
+
+    await actualizarJustificacion({
+      justificacionId: 'j-1',
+      motivo: 'x',
+      evidenciaFile: makeFile({ name: 'new.jpg' }),
+      existingUrl: EXISTING_URL,
+    })
+
+    expect(removeSpy).not.toHaveBeenCalled()
+    const [payload] = updateSpy.mock.calls[0]
+    expect(payload.evidencia_url).toBe(EXISTING_URL)
+  })
+
+  it('retorna error cuando falta justificacionId', async () => {
+    const result = await actualizarJustificacion({ motivo: 'x' })
+    expect(result.error.message).toContain('ID requerido')
+    expect(fromSpy).not.toHaveBeenCalled()
   })
 })

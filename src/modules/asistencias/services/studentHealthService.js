@@ -198,21 +198,17 @@ function planReviewRecommendation(student, dto, reviewBy) {
   const periodRatio = ratioOf(student.period)
   if (!dto || periodRatio === null || periodRatio < PLAN_REVIEW_MIN_ATTENDANCE) return null
 
-  const gradesLow = dto.grades?.count >= THRESHOLDS.grade_window_count
-    && dto.grades.promedio < THRESHOLDS.grade_min_avg
+  // Grades are shown but never trigger this rule: the table allows 0-10 while
+  // the grading form captures 0-5, so no threshold is safe until one scale is
+  // confirmed. Indicator pass rate is scale-free.
   const indicatorsLow = dto.indicators?.total >= PLAN_REVIEW_MIN_INDICATOR_ATTEMPTS
     && dto.indicators.pass_rate < THRESHOLDS.indicator_min_pass_rate
-  if (!gradesLow && !indicatorsLow) return null
+  if (!indicatorsLow) return null
 
   const evidence = [
     `Asistencia del período: ${student.period.attendanceRatePct}% (${student.period.attended} de ${student.period.convoked}).`,
+    `Indicadores: ${dto.indicators.total} intentos con ${Math.round(dto.indicators.pass_rate * 100)}% aprobados (umbral ${Math.round(THRESHOLDS.indicator_min_pass_rate * 100)}%).`,
   ]
-  if (gradesLow) {
-    evidence.push(`Calificaciones: ${dto.grades.count} con promedio ${Math.round(dto.grades.promedio * 100) / 100} (umbral ${THRESHOLDS.grade_min_avg}).`)
-  }
-  if (indicatorsLow) {
-    evidence.push(`Indicadores: ${dto.indicators.total} intentos con ${Math.round(dto.indicators.pass_rate * 100)}% aprobados (umbral ${Math.round(THRESHOLDS.indicator_min_pass_rate * 100)}%).`)
-  }
 
   return {
     type: 'plan_review',

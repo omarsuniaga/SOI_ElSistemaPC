@@ -389,16 +389,16 @@ describe('buildStudentHealthData: recommendations', () => {
     expect(recTypes(exact)).not.toContain('guardian_meeting')
   })
 
-  it('plan_review fires at 80% period attendance with 3+ grades averaging below 6.0', () => {
+  it('plan_review never fires on grades alone: the grade scale in use is not confirmed', () => {
     const timeline = [dia('2026-03-02', [clase('Violín N2', [
       ...Array(4).fill(fila('a1', 'Ana', 'presente')),
       fila('a1', 'Ana', 'justificado'),
     ])])]
-    const low = new Map([['a1', progresoDto({ gradesCount: 3, promedio: 5.5 })]])
-    const boundary = new Map([['a1', progresoDto({ gradesCount: 3, promedio: 6.0 })]])
+    const low = new Map([['a1', progresoDto({ gradesCount: 5, promedio: 1.5 })]])
+    const ana = build(timeline, low).students[0]
 
-    expect(recTypes(build(timeline, low).students[0])).toContain('plan_review')
-    expect(recTypes(build(timeline, boundary).students[0])).not.toContain('plan_review')
+    expect(recTypes(ana)).not.toContain('plan_review')
+    expect(ana.progress.gradesAverage).toBe(1.5)
   })
 
   it('plan_review fires with 4+ indicator attempts below 50% pass rate, not with 3', () => {
@@ -497,7 +497,7 @@ describe('buildStudentHealthData: recommendations', () => {
       [dia('2026-03-02', [clase('Violín N2', [...Array(4).fill(fila('a1', 'Ana', 'presente')), fila('a1', 'Ana', 'justificado')])])],
     ]
     const texts = scenarios.flatMap((timeline, i) => {
-      const progress = i === 1 ? new Map([['a1', progresoDto({ gradesCount: 3, promedio: 4 })]]) : null
+      const progress = i === 1 ? new Map([['a1', progresoDto({ indTotal: 4, indPassed: 1 })]]) : null
       return build(timeline, progress).students[0].recommendations.flatMap((r) =>
         [r.what, r.evidence, r.why, r.action, r.decides])
     })

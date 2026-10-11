@@ -1609,6 +1609,20 @@ function _renderVista(container, ctx) {
   // === Editor DSL & Toolbar Section ===
   let categoriaTrabajo = { codigo: null, origen: null }
 
+  // Estado visible para el maestro: guardado / pendiente de sincronizar / falló.
+  // Debe declararse ANTES de montar el editor: con texto ya guardado, el editor
+  // emite `onChange` al montarse, el autosaver emite su estado y llega aquí. Si
+  // `statusEl` se declarara después, esa primera emisión caería en su zona muerta
+  // temporal y la vista entera moriría con «Cannot access … before initialization».
+  const statusEl = container.querySelector('#pm-content-save-status')
+  function _renderContentStatus(status) {
+    if (!statusEl) return
+    statusEl.textContent = contentStatusLabel(status)
+    statusEl.dataset.status = status
+    statusEl.style.color =
+      status === 'failed' ? 'var(--pm-danger)' : status === 'pending' ? 'var(--pm-warning, #92400e)' : 'var(--pm-text-muted)'
+  }
+
   // El texto solo cuenta como «guardado» cuando la escritura se confirma; ver
   // contentAutosaver. `serverDSL` es lo que tiene el servidor; `pendingContent`,
   // lo que quedó en la cola local si se escribió sin red.
@@ -1642,15 +1656,6 @@ function _renderVista(container, ctx) {
   editorContainer?.querySelector('#pm-dsl-editable')?.addEventListener('blur', _flushContenido)
   _cleanups.push(_flushContenido)
 
-  // Estado visible para el maestro: guardado / pendiente de sincronizar / falló.
-  const statusEl = container.querySelector('#pm-content-save-status')
-  function _renderContentStatus(status) {
-    if (!statusEl) return
-    statusEl.textContent = contentStatusLabel(status)
-    statusEl.dataset.status = status
-    statusEl.style.color =
-      status === 'failed' ? 'var(--pm-danger)' : status === 'pending' ? 'var(--pm-warning, #92400e)' : 'var(--pm-text-muted)'
-  }
   _renderContentStatus(contentSaver.getStatus())
 
   // Al reconectar, `main-maestros` drena la cola y avisa: si el texto ya no está

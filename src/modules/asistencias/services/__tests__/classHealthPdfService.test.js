@@ -23,6 +23,12 @@ vi.mock('jspdf', () => {
     setTextColor() {}
     setPage() {}
     addPage() {}
+    splitTextToSize(text, _width) {
+      const value = String(text)
+      const lines = []
+      for (let i = 0; i < value.length; i += 40) lines.push(value.slice(i, i + 40))
+      return lines.length ? lines : ['']
+    }
     text(value) {
       this.texts.push(String(value))
     }
@@ -122,6 +128,7 @@ function call(overrides = {}) {
     periodName: 'Período Test',
     filters: { catedra: 'todas', clase: 'Todas', maestro: 'todos', busqueda: '' },
     generatedAt: GENERATED,
+    includeNarrative: false,
     ...overrides,
   })
 }
@@ -168,5 +175,82 @@ describe('downloadClassHealthPdf', () => {
     expect(docs[0].save).toHaveBeenCalledTimes(1)
     expect(allTableBodies()).toContain('Sin registros en el mes')
     expect(renderedText()).toContain('Informe de Salud de las Clases')
+  })
+})
+
+describe('downloadClassHealthPdf - AI narrative', () => {
+  beforeEach(() => {
+    docs.length = 0
+    tables.length = 0
+  })
+
+  const narrateOk = (texto) => vi.fn(async (classes) => ({
+    narratives: classes.map((c) => (c.className === 'Violín N2' ? texto : null)),
+    failed: 0,
+  }))
+
+  it('prints the narrative under the class title, labeled as AI-generated', async () => {
+    const narrate = narrateOk('Se trabajaron escalas mayores.')
+
+    await call({ includeNarrative: true, narrate })
+
+    expect(renderedText()).toContain('Resumen del mes (generado por IA)')
+    expect(docs[0].texts).toContain('Se trabajaron escalas mayores.')
+  })
+
+  it('prints "Resumen por IA no disponible" for a class with content and no narrative, and nothing for a class without content', async () => {
+    const narrate = vi.fn(async (classes) => ({ narratives: classes.map(() => null), failed: 1 }))
+
+    await call({ includeNarrative: true, narrate })
+
+    const avisos = docs[0].texts.filter((t) => t === 'Resumen por IA no disponible')
+    expect(avisos).toHaveLength(1)
+  })
+
+  it('still saves the PDF when narrate throws', async () => {
+    const narrate = vi.fn().mockRejectedValue(new Error('proxy caído'))
+
+    await expect(call({ includeNarrative: true, narrate })).resolves.toBeDefined()
+
+    expect(docs[0].save).toHaveBeenCalledWith('Salud_Clases_2026-09.pdf')
+    expect(renderedText()).toContain('Resumen por IA no disponible')
+  })
+
+  it('never calls narrate when includeNarrative is false', async () => {
+    const narrate = vi.fn()
+
+    await call({ includeNarrative: false, narrate })
+
+    expect(narrate).not.toHaveBeenCalled()
+    expect(docs[0].save).toHaveBeenCalledTimes(1)
+  })
+
+  it('never calls narrate for an empty timeline', async () => {
+    const narrate = vi.fn()
+
+    await call({ includeNarrative: true, narrate, timeline: [] })
+
+    expect(narrate).not.toHaveBeenCalled()
+    expect(docs[0].save).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes the month label to narrate and reports narrativeFailed in the summary', async () => {
+    const narrate = vi.fn(async (classes) => ({ narratives: classes.map(() => null), failed: 1 }))
+
+    const data = await call({ includeNarrative: true, narrate })
+
+    expect(narrate).toHaveBeenCalledWith(expect.any(Array), { monthLabel: 'Septiembre 2026' })
+    expect(data.summary.narrativeFailed).toBe(1)
+    expect(data.classes.every((c) => 'narrative' in c)).toBe(true)
+  })
+
+  it('adds the AI methodology row only when narratives are included', async () => {
+    await call({ includeNarrative: true, narrate: narrateOk('x') })
+    expect(allTableBodies()).toContain('Resumen por IA')
+
+    docs.length = 0
+    tables.length = 0
+    await call({ includeNarrative: false })
+    expect(allTableBodies()).not.toContain('Resumen por IA')
   })
 })

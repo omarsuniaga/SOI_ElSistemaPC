@@ -26,6 +26,7 @@ import { openEvaluacionEstrellasModal } from '../../planificacion/components/Eva
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { descargarPdfControlAsistencias, filtrarTimelinePorMes } from '../services/asistenciasPdfService.js'
 import { downloadClassHealthPdf } from '../services/classHealthPdfService.js'
+import { config } from '../../../core/config/config.js'
 
 const state = {
   timeline: [],
@@ -1011,9 +1012,9 @@ function _attachEvents(container) {
   // 8b. Botón Salud de las clases (PDF). Usa el período completo filtrado: el
   // informe compara el mes visible contra el mes anterior.
   container.querySelector('#btnDescargarPdfSaludClases')?.addEventListener('click', async () => {
-    AppToast.info('Generando informe de salud de las clases...')
+    AppToast.info('Generando informe de salud de las clases (incluye resumen por IA)...')
     try {
-      await downloadClassHealthPdf({
+      const data = await downloadClassHealthPdf({
         timeline: getFiltradosTimeline(),
         year: state.calendarYear,
         monthIndex: state.calendarMonth,
@@ -1025,8 +1026,12 @@ function _attachEvents(container) {
           busqueda: state.searchQuery.trim(),
         },
         generatedAt: new Date(),
+        includeNarrative: !config.isDemoMode,
       })
       AppToast.success('Informe de salud de las clases generado exitosamente.')
+      if (data.summary.narrativeFailed > 0) {
+        AppToast.warning('El informe se generó sin algunos resúmenes por IA.')
+      }
     } catch (err) {
       console.error('[asistenciasView] Error al exportar salud de las clases:', err)
       AppToast.error('No se pudo generar el informe de salud de las clases.')

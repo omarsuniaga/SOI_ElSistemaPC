@@ -9,6 +9,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { buildClassHealthData } from './classHealthService.js'
+import { generateClassNarratives } from './classHealthNarrativeService.js'
 
 const COLOR = {
   primario: [37, 99, 235],
@@ -99,8 +100,31 @@ const METODOLOGIA = [
   ['Alcance', 'El informe evalúa clases, no alumnos individuales.'],
 ]
 
+const METODOLOGIA_IA = [
+  ['Resumen por IA', 'Generado automáticamente a partir del contenido registrado en las sesiones del mes. Es una ayuda de lectura: debe verificarse con los temas y fechas listados. No evalúa a personas.'],
+]
+
+/** Adds `narrative` to each class and `summary.narrativeFailed`. Never throws. */
+async function adjuntarResumenes(data, narrate, monthLabel) {
+  let narratives
+  let failed
+  try {
+    ({ narratives, failed } = await narrate(data.classes, { monthLabel }))
+  } catch (err) {
+    console.error('[classHealthPdfService] Error al generar resúmenes por IA:', err)
+    narratives = data.classes.map(() => null)
+    failed = data.classes.filter((c) => c.content.sessionsWithContent > 0).length
+  }
+
+  data.classes.forEach((c, i) => {
+    c.narrative = narratives?.[i] ?? null
+  })
+  data.summary.narrativeFailed = failed
+}
+
 /**
- * @returns {Promise<object>} The data used to render the report (same as buildClassHealthData).
+ * @returns {Promise<object>} The data used to render the report (same as buildClassHealthData,
+ *   plus per-class `narrative` and `summary.narrativeFailed` when includeNarrative is true).
  */
 export async function downloadClassHealthPdf({
   timeline = [],
@@ -109,10 +133,17 @@ export async function downloadClassHealthPdf({
   periodName = 'Período Académico',
   filters = {},
   generatedAt = new Date(),
+  includeNarrative = true,
+  narrate = generateClassNarratives,
 } = {}) {
   const data = buildClassHealthData(timeline, { year, monthIndex })
   const { summary, classes } = data
   const mesNombre = MESES[Number(monthIndex)] || 'Mes'
+
+  if (includeNarrative && classes.length > 0) {
+    await adjuntarResumenes(data, narrate, `${mesNombre} ${year}`)
+  }
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const w = doc.internal.pageSize.getWidth()
 
@@ -251,6 +282,32 @@ export async function downloadClassHealthPdf({
     doc.text(`${c.className} · ${c.teacher}`, 14, y)
     y += 3
 
+    if (c.narrative) {
+      y = asegurarEspacio(doc, y, 10)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(...COLOR.primario)
+      doc.text('Resumen del mes (generado por IA)', 14, y)
+      y += 4
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(...COLOR.grafito)
+      for (const linea of doc.splitTextToSize(c.narrative, w - 28)) {
+        y = asegurarEspacio(doc, y, 5)
+        doc.text(linea, 14, y)
+        y += 4
+      }
+      y += 2
+    } else if (includeNarrative && c.content.sessionsWithContent > 0) {
+      y = asegurarEspacio(doc, y, 6)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7.5)
+      doc.setTextColor(...COLOR.humo)
+      doc.text('Resumen por IA no disponible', 14, y)
+      y += 4
+    }
+
     let body
     if (c.content.sessionsWithContent === 0) {
       body = [['Sin contenido registrado', '—', '—', '—']]
@@ -286,7 +343,7 @@ export async function downloadClassHealthPdf({
 
   autoTable(doc, {
     startY: y,
-    body: METODOLOGIA.map(([etiqueta, texto]) => [
+    body: [...METODOLOGIA, ...(includeNarrative ? METODOLOGIA_IA : [])].map(([etiqueta, texto]) => [
       { content: etiqueta, styles: { fontStyle: 'bold', fillColor: COLOR.fondo } },
       texto,
     ]),

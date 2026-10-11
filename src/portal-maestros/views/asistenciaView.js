@@ -34,6 +34,8 @@ import {
   actualizarJustificacion,
   obtenerJustificacion,
   eliminarJustificacion,
+  eliminarJustificacionRegistro,
+  deleteEvidencia,
 } from '../services/justificacionService.js'
 import { construirJustificaciones, aplicarJustificadosDeAsistencias, justificacionesPorActividad } from '../services/justificacionesAdm.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
@@ -2037,6 +2039,9 @@ function _renderVista(container, ctx) {
     justificaciones,
     obtenerJustificacion,
     isRotativa: clase?.tipo_clase === 'rotativa',
+    onDeleteJustificacion: (alumnoId) => {
+      delete justificaciones[alumnoId]
+    },
     // `turno` llega como {dia, hora_inicio, hora_fin} (mismo shape que el
     // alumno en memoria) — se traduce a los nombres que espera el servicio.
     onTurnoChange: async (alumnoId, turno) => {
@@ -2860,6 +2865,40 @@ function _renderVista(container, ctx) {
   // === Bulk Actions Logic ===
   const _bulkActions = createBulkActions(container, {
     onMarkAll: async (tipo) => {
+      const justificados = alumnos.filter((a) => estado[a.id] === 'J' || Boolean(justificaciones[a.id]))
+      if (justificados.length > 0) {
+        const confirmar = window.confirm(
+          `Hay ${justificados.length} alumno(s) con justificación registrada. ` +
+          `¿Desea cambiar a todos a ${tipo === 'P' ? 'presentes' : 'ausentes'} y eliminar sus justificaciones? ` +
+          `\n\nPresione Aceptar para sobrescribir y eliminar las justificaciones, o Cancelar para mantenerlos justificados.`
+        )
+        if (!confirmar) {
+          // Si cancela, marcar solo los no justificados
+          alumnos.forEach((a) => {
+            if (estado[a.id] !== 'J' && !justificaciones[a.id]) {
+              estado[a.id] = tipo
+            }
+          })
+          studentList.render()
+          _updateProgress()
+          try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on bulk ${tipo}:`, _e) }
+          announce(`Alumnos no justificados marcados como ${tipo === 'P' ? 'presentes' : 'ausentes'}. Se preservaron los justificados.`)
+          return
+        }
+
+        // Si confirma, borrar las justificaciones en Storage y DB
+        for (const a of justificados) {
+          const j = justificaciones[a.id]
+          const existingUrl = j?.evidencia_url || j?.evidencia_base64
+          if (existingUrl) deleteEvidencia(existingUrl).catch?.(() => {})
+          if (j?.id) eliminarJustificacion(j.id).catch?.(console.warn)
+          else if (sesionId) {
+            eliminarJustificacionRegistro({ sesionId, alumnoId: a.id }).catch?.(() => {})
+          }
+          delete justificaciones[a.id]
+        }
+      }
+
       alumnos.forEach((a) => { estado[a.id] = tipo })
       studentList.render()
       _updateProgress()
@@ -2867,6 +2906,38 @@ function _renderVista(container, ctx) {
       announce(`Todos los ${alumnos.length} alumnos marcados como ${tipo === 'P' ? 'presentes' : 'ausentes'}.`)
     },
     onClearAll: async () => {
+      const justificados = alumnos.filter((a) => estado[a.id] === 'J' || Boolean(justificaciones[a.id]))
+      if (justificados.length > 0) {
+        const confirmar = window.confirm(
+          `Hay ${justificados.length} alumno(s) con justificación registrada. ` +
+          `¿Desea desmarcar a todos incluyendo a los justificados? Se eliminarán sus justificaciones.`
+        )
+        if (!confirmar) {
+          // Si cancela, desmarcar solo los no justificados
+          alumnos.forEach((a) => {
+            if (estado[a.id] !== 'J' && !justificaciones[a.id]) {
+              estado[a.id] = null
+            }
+          })
+          studentList.render()
+          _updateProgress()
+          try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on clear all:`, _e) }
+          announce(`Se desmarcaron los alumnos no justificados.`)
+          return
+        }
+
+        for (const a of justificados) {
+          const j = justificaciones[a.id]
+          const existingUrl = j?.evidencia_url || j?.evidencia_base64
+          if (existingUrl) deleteEvidencia(existingUrl).catch?.(() => {})
+          if (j?.id) eliminarJustificacion(j.id).catch?.(console.warn)
+          else if (sesionId) {
+            eliminarJustificacionRegistro({ sesionId, alumnoId: a.id }).catch?.(() => {})
+          }
+          delete justificaciones[a.id]
+        }
+      }
+
       alumnos.forEach((a) => { estado[a.id] = null })
       studentList.render()
       _updateProgress()

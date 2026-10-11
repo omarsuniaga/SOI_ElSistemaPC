@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createStudentList } from '../StudentList.js'
 
 function montar({ estado, justificaciones, ...overrides }) {
@@ -129,4 +129,96 @@ describe('StudentList — botón de comprobante adjunto', () => {
     expect(document.getElementById('pm-evidencia-preview-modal')).toBeNull()
   })
 })
+
+describe('StudentList — cambiar de Justificado a P o A pide confirmación y elimina la justificación', () => {
+  let confirmSpy
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    confirmSpy = vi.spyOn(window, 'confirm')
+  })
+
+  afterEach(() => {
+    confirmSpy?.mockRestore()
+  })
+
+  it('si el usuario cancela la confirmación, no cambia el estado J ni elimina la justificación', () => {
+    confirmSpy.mockReturnValue(false)
+    const eliminarJustificacionFn = vi.fn()
+    const deleteEvidenciaFn = vi.fn()
+    const onEstadoChange = vi.fn()
+    const justificaciones = {
+      a1: { id: 'j-1', motivo: 'Cita con pediatra', evidencia_url: 'https://test.co/foto.png' },
+    }
+    const estado = { a1: 'J', a2: 'P' }
+
+    const c = montar({
+      estado,
+      justificaciones,
+      eliminarJustificacionFn,
+      deleteEvidenciaFn,
+      onEstadoChange,
+    })
+
+    c.querySelector('.pm-asist-item[data-id="a1"] [data-action="P"]').click()
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(confirmSpy.mock.calls[0][0]).toContain('Cita con pediatra')
+    expect(estado.a1).toBe('J')
+    expect(eliminarJustificacionFn).not.toHaveBeenCalled()
+    expect(deleteEvidenciaFn).not.toHaveBeenCalled()
+    expect(justificaciones.a1).toBeDefined()
+    expect(onEstadoChange).not.toHaveBeenCalled()
+  })
+
+  it('si el usuario acepta la confirmación, cambia a P, borra la justificación en BD/Storage y limpia justificaciones', () => {
+    confirmSpy.mockReturnValue(true)
+    const eliminarJustificacionFn = vi.fn().mockResolvedValue({ error: null })
+    const deleteEvidenciaFn = vi.fn().mockResolvedValue()
+    const onEstadoChange = vi.fn()
+    const onAutoSave = vi.fn()
+    const justificaciones = {
+      a1: { id: 'j-1', motivo: 'Cita con pediatra', evidencia_url: 'https://test.co/foto.png' },
+    }
+    const estado = { a1: 'J', a2: 'P' }
+
+    const c = montar({
+      estado,
+      justificaciones,
+      eliminarJustificacionFn,
+      deleteEvidenciaFn,
+      onEstadoChange,
+      onAutoSave,
+    })
+
+    c.querySelector('.pm-asist-item[data-id="a1"] [data-action="P"]').click()
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(estado.a1).toBe('P')
+    expect(eliminarJustificacionFn).toHaveBeenCalledWith(expect.objectContaining({ justificacionId: 'j-1' }))
+    expect(deleteEvidenciaFn).toHaveBeenCalledWith('https://test.co/foto.png')
+    expect(justificaciones.a1).toBeUndefined()
+    expect(onEstadoChange).toHaveBeenCalledWith('a1', 'P')
+    expect(onAutoSave).toHaveBeenCalledWith(true)
+  })
+
+  it('cambiar de P a A en un alumno normal no pide confirmación', () => {
+    confirmSpy.mockReturnValue(true)
+    const onEstadoChange = vi.fn()
+    const estado = { a1: 'P', a2: 'P' }
+
+    const c = montar({
+      estado,
+      justificaciones: {},
+      onEstadoChange,
+    })
+
+    c.querySelector('.pm-asist-item[data-id="a1"] [data-action="A"]').click()
+
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(estado.a1).toBe('A')
+    expect(onEstadoChange).toHaveBeenCalledWith('a1', 'A')
+  })
+})
+
 

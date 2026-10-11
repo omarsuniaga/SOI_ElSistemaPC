@@ -212,3 +212,26 @@ export async function eliminarJustificacion(justificacionId) {
 
   return { error };
 }
+
+/**
+ * Elimina una justificación por ID, o por combinación de sesionId y alumnoId
+ * @param {Object} params
+ * @param {string} [params.justificacionId]
+ * @param {string} [params.sesionId]
+ * @param {string} [params.alumnoId]
+ * @returns {Promise<Object>}
+ */
+export async function eliminarJustificacionRegistro({ justificacionId, sesionId, alumnoId } = {}) {
+  if (justificacionId) {
+    return eliminarJustificacion(justificacionId);
+  }
+  if (sesionId && alumnoId) {
+    const { error } = await supabase
+      .from('justificaciones')
+      .delete()
+      .eq('sesion_id', sesionId)
+      .eq('alumno_id', alumnoId);
+    return { error };
+  }
+  return { error: { message: 'ID o (sesionId + alumnoId) requerido' } };
+}

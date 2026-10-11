@@ -1,5 +1,6 @@
 import { escHTML } from '../../utils/portalUtils.js'
 import { showEvidenciaPreviewModal } from '../EvidenciaPreviewModal.js'
+import { eliminarJustificacionRegistro, deleteEvidencia } from '../../services/justificacionService.js'
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
 
@@ -32,10 +33,13 @@ export function createStudentList(container, {
   onOpenProgressPanel,
   onOpenEvaluationDrawer,
   onOpenJustifModal,
+  onDeleteJustificacion,
   onAutoSave,
   onAnnounce,
   onUpdateSnapshots,
   onTurnoChange,
+  eliminarJustificacionFn = eliminarJustificacionRegistro,
+  deleteEvidenciaFn = deleteEvidencia,
 }) {
   const listEl = container.querySelector('#pm-alumnos-list')
   if (!listEl) return { destroy() {}, render() {} }
@@ -271,6 +275,44 @@ export function createStudentList(container, {
     }
 
     // P/A toggle
+    const justifExistente = justificaciones?.[id] || null
+    const tieneJustif = estado[id] === 'J' || Boolean(justifExistente)
+
+    if (tieneJustif && action !== 'J') {
+      const alumno = alumnos.find((a) => a.id === id)
+      const nombre = alumno?.nombre_completo || 'el alumno'
+      const nuevoEstadoNombre = action === 'P' ? 'Presente' : 'Ausente'
+      const motivoStr = justifExistente?.motivo ? ` ("${justifExistente.motivo}")` : ''
+      const mensajeConfirmacion =
+        `¿Desea cambiar el estado de ${nombre} a ${nuevoEstadoNombre}?\n\n` +
+        `Se eliminará la justificación registrada${motivoStr} y cualquier comprobante adjunto.`
+
+      const confirmado = window.confirm(mensajeConfirmacion)
+      if (!confirmado) {
+        return
+      }
+
+      // Si confirmó, eliminar evidencia de Storage y fila en DB
+      const existingUrl = justifExistente?.evidencia_url || justifExistente?.evidencia_base64
+      if (existingUrl) {
+        try {
+          deleteEvidenciaFn(existingUrl).catch?.(() => {})
+        } catch (_e) { /* ignore */ }
+      }
+      try {
+        eliminarJustificacionFn({
+          justificacionId: justifExistente?.id,
+          sesionId,
+          alumnoId: id,
+        })?.catch?.(console.warn)
+      } catch (_e) { /* ignore */ }
+
+      delete justificaciones[id]
+      if (onDeleteJustificacion) {
+        onDeleteJustificacion(id)
+      }
+    }
+
     const nextState = estado[id] === action ? null : action
     estado[id] = nextState
     if (onEstadoChange) onEstadoChange(id, nextState)

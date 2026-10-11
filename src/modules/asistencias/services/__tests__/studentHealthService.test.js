@@ -272,3 +272,253 @@ describe('buildStudentHealthData: students and summary', () => {
     })
   })
 })
+
+const GENERATED_AT = new Date('2026-03-20T12:00:00Z')
+const build = (timeline, progressByStudent = null) =>
+  buildStudentHealthData(timeline, { ...target, progressByStudent, generatedAt: GENERATED_AT })
+const progresoDto = ({ gradesCount = 0, promedio = null, indTotal = 0, indPassed = 0 } = {}) => ({
+  grades: { count: gradesCount, promedio },
+  indicators: {
+    total: indTotal,
+    passed: indPassed,
+    pass_rate: indTotal > 0 ? indPassed / indTotal : null,
+  },
+})
+const recTypes = (student) => student.recommendations.map((r) => r.type)
+const recOf = (student, type) => student.recommendations.find((r) => r.type === type)
+
+describe('buildStudentHealthData: content received and not received', () => {
+  it('lists content only as received when attended, and as not received with status when absent or justified', () => {
+    const timeline = [
+      dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'presente')], { observacion_clase: 'Escalas mayores' })]),
+      dia('2026-03-09', [clase('Violín N2', [fila('a1', 'Ana', 'ausente')], { observacion_clase: 'Arpegios' })]),
+      dia('2026-03-16', [clase('Violín N2', [fila('a1', 'Ana', 'justificado')], { observacion_sesion: 'Repaso de escalas' })]),
+    ]
+
+    const ana = build(timeline).students[0]
+
+    expect(ana.content.received).toEqual([
+      { date: '2026-03-02', className: 'Violín N2', text: 'Escalas mayores' },
+    ])
+    expect(ana.content.notReceived).toEqual([
+      { date: '2026-03-09', className: 'Violín N2', text: 'Arpegios', status: 'ausente' },
+      { date: '2026-03-16', className: 'Violín N2', text: 'Repaso de escalas', status: 'justificado' },
+    ])
+  })
+
+  it('excludes sessions without content from both lists and from exposure', () => {
+    const timeline = [
+      dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'presente')])]),
+      dia('2026-03-09', [clase('Violín N2', [fila('a1', 'Ana', 'presente')], { observacion_clase: 'Arpegios' })]),
+      dia('2026-03-16', [clase('Violín N2', [fila('a1', 'Ana', 'ausente')], { observacion_sesion: '   ' })]),
+    ]
+
+    const ana = build(timeline).students[0]
+
+    expect(ana.content.received).toHaveLength(1)
+    expect(ana.content.notReceived).toEqual([])
+    expect(ana.content.period).toEqual({ delivered: 1, received: 1, exposurePct: 100 })
+  })
+
+  it('computes period exposure over all sessions with content, while lists cover the month only', () => {
+    const timeline = [
+      dia('2026-02-10', [clase('Violín N2', [fila('a1', 'Ana', 'presente')], { observacion_clase: 'Febrero' })]),
+      dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'ausente')], { observacion_clase: 'Marzo A' })]),
+      dia('2026-03-09', [clase('Violín N2', [fila('a1', 'Ana', 'presente')], { observacion_clase: 'Marzo B' })]),
+    ]
+
+    const ana = build(timeline).students[0]
+
+    expect(ana.content.period).toEqual({ delivered: 3, received: 2, exposurePct: 66.7 })
+    expect(ana.content.received.map((c) => c.text)).toEqual(['Marzo B'])
+    expect(ana.content.notReceived.map((c) => c.text)).toEqual(['Marzo A'])
+  })
+})
+
+describe('buildStudentHealthData: progress merge', () => {
+  const dto = progresoDto({ gradesCount: 4, promedio: 7.25, indTotal: 5, indPassed: 4 })
+  const timeline = [dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'presente')])])]
+
+  it('is null when there is no progress data or no entry for the student', () => {
+    expect(build(timeline).students[0].progress).toBeNull()
+    expect(build(timeline, new Map()).students[0].progress).toBeNull()
+    expect(build(timeline, { other: dto }).students[0].progress).toBeNull()
+  })
+
+  it('merges progress from a Map keyed by student id', () => {
+    const ana = build(timeline, new Map([['a1', dto]])).students[0]
+
+    expect(ana.progress).toEqual({
+      gradesCount: 4, gradesAverage: 7.25, indicatorAttempts: 5, indicatorPassRatePct: 80,
+    })
+  })
+
+  it('merges progress from a plain object keyed by student id', () => {
+    const ana = build(timeline, { a1: dto }).students[0]
+
+    expect(ana.progress.gradesAverage).toBe(7.25)
+    expect(ana.progress.indicatorPassRatePct).toBe(80)
+  })
+})
+
+describe('buildStudentHealthData: recommendations', () => {
+  it('guardian_meeting fires at 3 unjustified absences in the period, not at 2', () => {
+    const febrero = (n) => dia('2026-02-10', [clase('Violín N2', Array(n).fill(fila('a1', 'Ana', 'ausente')))])
+    const marzo = dia('2026-03-02', [clase('Violín N2', Array(5).fill(fila('a1', 'Ana', 'presente')))])
+
+    expect(recTypes(build([febrero(2), marzo]).students[0])).not.toContain('guardian_meeting')
+    expect(recTypes(build([febrero(3), marzo]).students[0])).toContain('guardian_meeting')
+  })
+
+  it('guardian_meeting fires when the month rate is below 70% with two or more convocations', () => {
+    const ana = build([dia('2026-03-02', [clase('Violín N2', [
+      fila('a1', 'Ana', 'presente'), fila('a1', 'Ana', 'justificado'),
+    ])])]).students[0]
+
+    expect(recTypes(ana)).toContain('guardian_meeting')
+  })
+
+  it('guardian_meeting does not fire with a single convocation in the month or at exactly 70%', () => {
+    const single = build([dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'justificado')])])]).students[0]
+    const exact = build([dia('2026-03-02', [clase('Violín N2', [
+      ...Array(7).fill(fila('a1', 'Ana', 'presente')),
+      ...Array(3).fill(fila('a1', 'Ana', 'justificado')),
+    ])])]).students[0]
+
+    expect(recTypes(single)).not.toContain('guardian_meeting')
+    expect(recTypes(exact)).not.toContain('guardian_meeting')
+  })
+
+  it('plan_review fires at 80% period attendance with 3+ grades averaging below 6.0', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', [
+      ...Array(4).fill(fila('a1', 'Ana', 'presente')),
+      fila('a1', 'Ana', 'justificado'),
+    ])])]
+    const low = new Map([['a1', progresoDto({ gradesCount: 3, promedio: 5.5 })]])
+    const boundary = new Map([['a1', progresoDto({ gradesCount: 3, promedio: 6.0 })]])
+
+    expect(recTypes(build(timeline, low).students[0])).toContain('plan_review')
+    expect(recTypes(build(timeline, boundary).students[0])).not.toContain('plan_review')
+  })
+
+  it('plan_review fires with 4+ indicator attempts below 50% pass rate, not with 3', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', [
+      ...Array(4).fill(fila('a1', 'Ana', 'presente')),
+      fila('a1', 'Ana', 'justificado'),
+    ])])]
+    const four = new Map([['a1', progresoDto({ indTotal: 4, indPassed: 1 })]])
+    const three = new Map([['a1', progresoDto({ indTotal: 3, indPassed: 0 })]])
+
+    expect(recTypes(build(timeline, four).students[0])).toContain('plan_review')
+    expect(recTypes(build(timeline, three).students[0])).not.toContain('plan_review')
+  })
+
+  it('plan_review never fires below 80% period attendance, even with weak progress', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', [
+      fila('a1', 'Ana', 'presente'), fila('a1', 'Ana', 'presente'),
+      ...Array(3).fill(fila('a1', 'Ana', 'justificado')),
+    ])])]
+    const weak = new Map([['a1', progresoDto({ gradesCount: 4, promedio: 3, indTotal: 5, indPassed: 0 })]])
+
+    expect(recTypes(build(timeline, weak).students[0])).not.toContain('plan_review')
+  })
+
+  it('plan_review never fires without progress data', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', Array(5).fill(fila('a1', 'Ana', 'presente'))) ])]
+
+    expect(recTypes(build(timeline).students[0])).not.toContain('plan_review')
+  })
+
+  it('preventive_followup fires with trend <= -10 and projection < 70 when no guardian meeting applies', () => {
+    // Rates 90, 80, 70 with justified (not unjustified) absences: slope -10, April projects 60.
+    const timeline = [
+      dia('2026-01-05', [clase('Violín N2', [...Array(9).fill(fila('a1', 'Ana', 'presente')), fila('a1', 'Ana', 'justificado')])]),
+      dia('2026-02-05', [clase('Violín N2', [...Array(8).fill(fila('a1', 'Ana', 'presente')), ...Array(2).fill(fila('a1', 'Ana', 'justificado'))])]),
+      dia('2026-03-05', [clase('Violín N2', [...Array(7).fill(fila('a1', 'Ana', 'presente')), ...Array(3).fill(fila('a1', 'Ana', 'justificado'))])]),
+    ]
+
+    const ana = build(timeline).students[0]
+
+    expect(ana.trendPtsPerMonth).toBe(-10)
+    expect(ana.projectedNextMonthRatePct).toBe(60)
+    expect(recTypes(ana)).toEqual(['preventive_followup'])
+  })
+
+  it('preventive_followup is suppressed when guardian_meeting fires', () => {
+    // Same declining series as the S1 trend test: 6 unjustified absences in the period.
+    const timeline = [
+      dia('2026-01-05', [clase('Violín N2', [
+        fila('a1', 'Ana', 'presente'), fila('a1', 'Ana', 'presente'),
+        fila('a1', 'Ana', 'presente'), fila('a1', 'Ana', 'presente'), fila('a1', 'Ana', 'ausente'),
+      ])]),
+      dia('2026-02-05', [clase('Violín N2', [
+        ...Array(7).fill(fila('a1', 'Ana', 'presente')), ...Array(3).fill(fila('a1', 'Ana', 'ausente')),
+      ])]),
+      dia('2026-03-05', [clase('Violín N2', [
+        ...Array(3).fill(fila('a1', 'Ana', 'presente')), ...Array(2).fill(fila('a1', 'Ana', 'ausente')),
+      ])]),
+    ]
+
+    const ana = build(timeline).students[0]
+
+    expect(ana.trendPtsPerMonth).toBe(-10)
+    expect(recTypes(ana)).toEqual(['guardian_meeting'])
+  })
+
+  it('gives every recommendation the six R6 fields and reviewBy = generatedAt + 30 days', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'ausente'), fila('a1', 'Ana', 'ausente')])])]
+
+    const rec = build(timeline).students[0].recommendations[0]
+
+    expect(rec.type).toBe('guardian_meeting')
+    for (const field of ['what', 'evidence', 'why', 'action', 'decides']) {
+      expect(typeof rec[field]).toBe('string')
+      expect(rec[field].trim()).not.toBe('')
+    }
+    expect(rec.reviewBy).toBe('2026-04-19')
+  })
+
+  it('cites the dates of unjustified absences in the evidence', () => {
+    const timeline = [
+      dia('2026-03-02', [clase('Violín N2', [fila('a1', 'Ana', 'ausente')])]),
+      dia('2026-03-09', [clase('Violín N2', [fila('a1', 'Ana', 'ausente')])]),
+      dia('2026-03-16', [clase('Violín N2', [fila('a1', 'Ana', 'ausente')])]),
+    ]
+
+    const rec = recOf(build(timeline).students[0], 'guardian_meeting')
+
+    expect(rec.evidence).toContain('02/03/2026')
+    expect(rec.evidence).toContain('16/03/2026')
+  })
+
+  it('never labels or diagnoses a student in any recommendation text', () => {
+    const scenarios = [
+      [dia('2026-03-02', [clase('Violín N2', Array(3).fill(fila('a1', 'Ana', 'ausente')))])],
+      [dia('2026-03-02', [clase('Violín N2', [...Array(4).fill(fila('a1', 'Ana', 'presente')), fila('a1', 'Ana', 'justificado')])])],
+    ]
+    const texts = scenarios.flatMap((timeline, i) => {
+      const progress = i === 1 ? new Map([['a1', progresoDto({ gradesCount: 3, promedio: 4 })]]) : null
+      return build(timeline, progress).students[0].recommendations.flatMap((r) =>
+        [r.what, r.evidence, r.why, r.action, r.decides])
+    })
+
+    expect(texts.length).toBeGreaterThan(0)
+    for (const text of texts) {
+      expect(text).not.toMatch(/problem[aá]tic|sin aptitud|talento|incapaz|flojo/i)
+    }
+  })
+
+  it('reports recommendation counts and students with recommendations in the summary', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', [
+      ...Array(3).fill(fila('a1', 'Ana', 'ausente')),
+      fila('a2', 'Beto', 'presente'),
+    ])])]
+
+    const { summary } = build(timeline)
+
+    expect(summary.recommendationCounts).toEqual({
+      guardian_meeting: 1, plan_review: 0, preventive_followup: 0,
+    })
+    expect(summary.studentsWithRecommendations).toBe(1)
+  })
+})

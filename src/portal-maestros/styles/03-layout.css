@@ -668,29 +668,6 @@
     max-width: 40vw !important;
   }
 
-  /* Theme toggle visible en mobile con tamaño reducido */
-  #pm-theme-toggle-container {
-    display: flex;
-    align-items: center;
-  }
-  #pm-theme-toggle-container .pm-theme-toggle {
-    width: 48px;
-    height: 28px;
-  }
-  #pm-theme-toggle-container .pm-theme-toggle-thumb {
-    width: 22px;
-    height: 22px;
-    top: 3px;
-    left: 3px;
-  }
-  #pm-theme-toggle-container .pm-theme-icon {
-    font-size: 0.75rem;
-  }
-  [data-bs-theme='dark'] #pm-theme-toggle-container .pm-theme-toggle-thumb,
-  [data-portal-theme='dark'] #pm-theme-toggle-container .pm-theme-toggle-thumb {
-    transform: translateX(20px);
-  }
-
   /* Barra de búsqueda: oculta por defecto en mobile */
   .pm-header-search-container {
     display: none;

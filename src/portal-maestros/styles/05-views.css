@@ -845,6 +845,52 @@
   color: var(--pm-text-muted);
 }
 
+.pm-asist-razon {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #0891b2;
+  margin-top: 2px;
+}
+
+.pm-asist-ver-evidencia-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.pm-asist-ver-evidencia-btn:hover {
+  background: rgba(2, 132, 199, 0.2);
+  color: #0369a1;
+  border-color: rgba(2, 132, 199, 0.4);
+}
+
+[data-portal-theme='dark'] .pm-asist-ver-evidencia-btn,
+[data-bs-theme='dark'] .pm-asist-ver-evidencia-btn {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+[data-portal-theme='dark'] .pm-asist-ver-evidencia-btn:hover,
+[data-bs-theme='dark'] .pm-asist-ver-evidencia-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  color: #7dd3fc;
+}
+
 /* ── Turno individual (clases rotativas: día+hora por alumno) ── */
 .pm-turno-edit-btn {
   flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;

@@ -9,6 +9,7 @@
  */
 import { enableTrap } from '../utils/focusTrap.js';
 import { FileTooLargeError, InvalidMimeError } from '../services/fileUploadService.js';
+import { showEvidenciaPreviewModal } from './EvidenciaPreviewModal.js';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
@@ -67,8 +68,19 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
                 <span>Adjuntar foto del justificante</span>
               </div>
               <div class="pm-justif-file-preview" id="pm-justif-file-preview" style="display:none;">
-                <img id="pm-justif-preview-img" src="" alt="Vista previa" />
-                <button class="pm-justif-remove-file" id="pm-justif-remove-file" type="button">×</button>
+                <div class="pm-justif-preview-wrapper" id="pm-justif-preview-wrapper" role="button" tabindex="0" title="Clic para ampliar comprobante">
+                  <img id="pm-justif-preview-img" src="" alt="Vista previa" />
+                  <div class="pm-justif-preview-overlay">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"/>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      <line x1="11" y1="8" x2="11" y2="14"/>
+                      <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                    <span>Ver comprobante</span>
+                  </div>
+                </div>
+                <button class="pm-justif-remove-file" id="pm-justif-remove-file" type="button" title="Quitar archivo">×</button>
               </div>
             </div>
             <span class="pm-justif-hint">Ej: foto del certificado médico</span>
@@ -279,12 +291,55 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
         }
         .pm-justif-file-preview {
           position: relative;
+          z-index: 2;
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .pm-justif-preview-wrapper {
+          position: relative;
+          cursor: pointer;
+          border-radius: 8px;
+          overflow: hidden;
+          display: inline-block;
+          border: 1px solid var(--pm-border);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .pm-justif-preview-wrapper:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+        .pm-justif-preview-wrapper:focus-visible {
+          outline: 2px solid var(--pm-primary);
+          outline-offset: 2px;
         }
         .pm-justif-file-preview img {
+          display: block;
           max-width: 100%;
           max-height: 120px;
-          border-radius: 8px;
           object-fit: cover;
+        }
+        .pm-justif-preview-overlay {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: rgba(15, 23, 42, 0.72);
+          backdrop-filter: blur(4px);
+          color: #fff;
+          font-size: 0.72rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          padding: 4px 8px;
+          opacity: 0.9;
+          transition: opacity 0.15s ease, background 0.15s ease;
+        }
+        .pm-justif-preview-wrapper:hover .pm-justif-preview-overlay {
+          opacity: 1;
+          background: rgba(2, 132, 199, 0.88);
         }
         .pm-justif-remove-file {
           position: absolute;
@@ -394,6 +449,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   const filePlaceholder = modalEl.querySelector('.pm-justif-file-placeholder');
   const filePreview = modalEl.querySelector('.pm-justif-file-preview');
   const previewImg = modalEl.querySelector('#pm-justif-preview-img');
+  const previewWrapper = modalEl.querySelector('#pm-justif-preview-wrapper');
   const removeBtn = modalEl.querySelector('#pm-justif-remove-file');
   const deleteBtn = modalEl.querySelector('#pm-justif-delete');
 
@@ -506,8 +562,34 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
     filePreview.style.display = 'block';
   };
 
+  // Abrir vista previa ampliada
+  function openPreviewModal() {
+    if (_previewUrl) {
+      showEvidenciaPreviewModal({
+        url: _previewUrl,
+        alumnoNombre: _currentAlumno?.nombre_completo || '',
+        motivo: motivoInput?.value?.trim() || _currentJustificacion?.motivo || '',
+      });
+    }
+  }
+
+  if (previewWrapper) {
+    previewWrapper.onclick = (e) => {
+      e.stopPropagation();
+      openPreviewModal();
+    };
+    previewWrapper.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        openPreviewModal();
+      }
+    };
+  }
+
   // Eliminar archivo
-  removeBtn.onclick = () => {
+  removeBtn.onclick = (e) => {
+    e.stopPropagation();
     const hadExisting = !!(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64);
     if (_previewUrl && !hadExisting) {
       URL.revokeObjectURL(_previewUrl);

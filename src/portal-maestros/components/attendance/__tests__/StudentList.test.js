@@ -78,3 +78,55 @@ describe('StudentList — botón J siempre abre el modal', () => {
     expect(eliminarJustificacion).not.toHaveBeenCalled()
   })
 })
+
+describe('StudentList — botón de comprobante adjunto', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('muestra botón "Ver comprobante" cuando el alumno justificado tiene evidencia_url', () => {
+    const c = montar({
+      estado: { a1: 'J', a2: 'P' },
+      justificaciones: {
+        a1: { motivo: 'Reposo médico', evidencia_url: 'https://test.co/comprobante.jpg' },
+      },
+    })
+    const btn = c.querySelector('.pm-asist-item[data-id="a1"] [data-action="ver-evidencia"]')
+    expect(btn).not.toBeNull()
+    expect(btn.dataset.url).toBe('https://test.co/comprobante.jpg')
+    expect(btn.textContent).toContain('Ver comprobante')
+  })
+
+  it('no muestra botón "Ver comprobante" si el alumno no tiene evidencia', () => {
+    const c = montar({
+      estado: { a1: 'J', a2: 'P' },
+      justificaciones: {
+        a1: { motivo: 'Reposo médico' },
+      },
+    })
+    const btn = c.querySelector('.pm-asist-item[data-id="a1"] [data-action="ver-evidencia"]')
+    expect(btn).toBeNull()
+  })
+
+  it('hacer click en "Ver comprobante" abre el modal de visualización de evidencia', () => {
+    const c = montar({
+      estado: { a1: 'J', a2: 'P' },
+      justificaciones: {
+        a1: { motivo: 'Reposo médico', evidencia_url: 'https://test.co/comprobante.jpg' },
+      },
+    })
+    const btn = c.querySelector('.pm-asist-item[data-id="a1"] [data-action="ver-evidencia"]')
+    btn.click()
+
+    const modal = document.getElementById('pm-evidencia-preview-modal')
+    expect(modal).not.toBeNull()
+    expect(modal.querySelector('img').src).toBe('https://test.co/comprobante.jpg')
+    expect(modal.textContent).toContain('Ana Pérez')
+    expect(modal.textContent).toContain('Reposo médico')
+
+    // Cerrar el modal
+    modal.querySelector('#pm-evidencia-close').click()
+    expect(document.getElementById('pm-evidencia-preview-modal')).toBeNull()
+  })
+})
+

@@ -1,4 +1,5 @@
 import { escHTML } from '../../utils/portalUtils.js'
+import { showEvidenciaPreviewModal } from '../EvidenciaPreviewModal.js'
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
 
@@ -98,11 +99,18 @@ export function createStudentList(container, {
            <i class="bi bi-clock-history"></i>
          </button>`
       : ''
-    // Razón de la justificación (p. ej. "Actividad especial: Visita Guiada") bajo el nombre
+    // Razón de la justificación (p. ej. "Actividad especial: Visita Guiada") y comprobante bajo el nombre
     const justif = est === 'J' ? justificaciones?.[a.id] : null
-    const razonHTML = justif?.motivo
-      ? `<span class="pm-asist-razon" style="display:block; font-size:0.72rem; color:#0891b2; margin-top:2px;">
-           <i class="bi bi-info-circle"></i> ${escHTML(justif.motivo)}${justif.descripcion ? ` — ${escHTML(justif.descripcion)}` : ''}
+    const evidenciaUrl = justif?.evidencia_url || justif?.evidencia_base64 || null
+    const evidenciaBtnHTML = evidenciaUrl
+      ? `<button type="button" class="pm-asist-ver-evidencia-btn" data-action="ver-evidencia" data-id="${a.id}" data-url="${escHTML(evidenciaUrl)}" title="Ver comprobante adjunto">
+           <i class="bi bi-image"></i> Ver comprobante
+         </button>`
+      : ''
+    const razonHTML = justif?.motivo || evidenciaUrl
+      ? `<span class="pm-asist-razon">
+           ${justif?.motivo ? `<span><i class="bi bi-info-circle"></i> ${escHTML(justif.motivo)}${justif.descripcion ? ` — ${escHTML(justif.descripcion)}` : ''}</span>` : ''}
+           ${evidenciaBtnHTML}
          </span>`
       : ''
     return `
@@ -184,6 +192,23 @@ export function createStudentList(container, {
   }
 
   listEl.onclick = async (e) => {
+    const evidenciaBtn = e.target.closest('[data-action="ver-evidencia"]')
+    if (evidenciaBtn) {
+      e.stopPropagation()
+      const url = evidenciaBtn.dataset.url
+      const id = evidenciaBtn.dataset.id
+      const alumno = alumnos.find((a) => a.id === id)
+      const justif = justificaciones?.[id]
+      if (url) {
+        showEvidenciaPreviewModal({
+          url,
+          alumnoNombre: alumno?.nombre_completo || '',
+          motivo: justif?.motivo || '',
+        })
+      }
+      return
+    }
+
     const turnoBtn = e.target.closest('.pm-turno-edit-btn')
     if (turnoBtn) {
       _openTurnoEditor(turnoBtn.dataset.id)

@@ -134,3 +134,32 @@ describe('JustificacionModal — quitar evidencia existente (bug #3)', () => {
     }))
   })
 })
+
+describe('JustificacionModal — previsualización de evidencia (lightbox)', () => {
+  it('hacer click en el preview de evidencia abre el modal de visualización en tamaño completo', () => {
+    const { modal } = freshModal()
+    modal.open(
+      { id: 'a5', nombre_completo: 'Elena Mora' },
+      { id: 'j-3', motivo: 'Gripe fuerte', evidencia_url: 'https://test.co/certificado.png' },
+      'J',
+    )
+
+    const previewWrapper = document.getElementById('pm-justif-preview-wrapper')
+    expect(previewWrapper).not.toBeNull()
+    previewWrapper.click()
+
+    const lightbox = document.getElementById('pm-evidencia-preview-modal')
+    expect(lightbox).not.toBeNull()
+    expect(lightbox.querySelector('img').src).toBe('https://test.co/certificado.png')
+    expect(lightbox.textContent).toContain('Elena Mora')
+    expect(lightbox.textContent).toContain('Gripe fuerte')
+
+    // Cerrar el lightbox
+    lightbox.querySelector('#pm-evidencia-close').click()
+    expect(document.getElementById('pm-evidencia-preview-modal')).toBeNull()
+
+    // El modal principal de justificación debe seguir abierto
+    expect(document.getElementById('pm-justif-modal').classList.contains('open')).toBe(true)
+  })
+})
+

@@ -271,7 +271,7 @@ describe('buildClassHealthData - content topics', () => {
   it('normalizes accents, case and punctuation before counting', () => {
     const data = buildClassHealthData([
       sesion('2026-09-03', { observacion_sesion: 'Práctica del RÍTMO binario' }),
-      sesion('2026-09-10', { observacion_sesion: 'practica: ritmo BINARIO.' }),
+      sesion('2026-09-10', { observacion_sesion: 'practica del ritmo BINARIO.' }),
     ], SEPTIEMBRE)
     const labels = data.classes[0].content.topics.map((t) => t.label)
 
@@ -362,5 +362,19 @@ describe('buildClassHealthData - health score', () => {
       'En observación': 1,
       'Requiere atención': 0,
     })
+  })
+})
+
+describe('buildClassHealthData - topic boundaries', () => {
+  it('does not build a topic across punctuation or across the two observation fields', () => {
+    const data = buildClassHealthData([
+      sesion('2026-09-03', { observacion_sesion: 'Escala mayor, posición del arco', observacion_clase: 'Afinación grupal' }),
+      sesion('2026-09-10', { observacion_sesion: 'Escala mayor, posición del arco', observacion_clase: 'Afinación grupal' }),
+    ], SEPTIEMBRE)
+    const labels = data.classes[0].content.topics.map((t) => t.label)
+
+    expect(labels).toEqual(expect.arrayContaining(['escala mayor', 'posicion arco', 'afinacion grupal']))
+    expect(labels).not.toContain('mayor posicion')
+    expect(labels).not.toContain('arco afinacion')
   })
 })

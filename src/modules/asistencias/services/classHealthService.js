@@ -64,11 +64,22 @@ function sessionTerms(tokens) {
   return terms
 }
 
+// A topic never spans two phrases: terms are built per fragment.
+const FRAGMENT_SEPARATOR = /[.,;:!?()\n\r/|•·–—-]+/u
+
+function contentTerms(content) {
+  const terms = new Set()
+  for (const fragment of content.split(FRAGMENT_SEPARATOR)) {
+    for (const term of sessionTerms(termTokens(normalizeText(fragment)))) terms.add(term)
+  }
+  return terms
+}
+
 function sessionContent(clase) {
   return [clase.observacion_sesion, clase.observacion_clase]
     .map((text) => String(text ?? '').trim())
     .filter(Boolean)
-    .join(' ')
+    .join('\n')
 }
 
 function buildTopics(withContent) {
@@ -110,14 +121,15 @@ function analyzeContent(sessions) {
   let repeatedContentSessions = 0
 
   for (const session of chronological) {
-    const normalized = normalizeText(sessionContent(session.clase))
+    const content = sessionContent(session.clase)
+    const normalized = normalizeText(content)
     if (!normalized) continue
 
     if (distinct.has(normalized)) repeatedContentSessions++
     distinct.add(normalized)
     withContent.push({
       fecha: session.fecha,
-      terms: sessionTerms(termTokens(normalized)),
+      terms: contentTerms(content),
     })
   }
 

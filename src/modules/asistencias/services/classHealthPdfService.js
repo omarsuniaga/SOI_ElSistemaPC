@@ -95,7 +95,7 @@ const METODOLOGIA = [
   ['Cobertura', 'Sesiones con contenido registrado / total de sesiones del mes.'],
   ['Variedad', 'Contenidos distintos / sesiones con contenido. Un contenido idéntico a una sesión anterior de la misma clase cuenta como repetido.'],
   ['Niveles', 'Saludable: 80 o más. En observación: de 60 a 79. Requiere atención: menos de 60.'],
-  ['Temas', 'Términos de 4 o más letras, sin palabras vacías, que aparecen en 2 o más sesiones del mes. Atención % = sesiones con el tema / sesiones con contenido. Las fechas listadas son la evidencia.'],
+  ['Temas', 'Términos de 4 o más letras, sin palabras vacías, dentro de una misma frase, que aparecen en 2 o más sesiones del mes. Atención % = sesiones con el tema / sesiones con contenido. Las fechas listadas son la evidencia.'],
   ['Alcance', 'El informe evalúa clases, no alumnos individuales.'],
 ]
 

@@ -25,6 +25,7 @@ import {
 import { openEvaluacionEstrellasModal } from '../../planificacion/components/EvaluacionEstrellasModal.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { descargarPdfControlAsistencias, filtrarTimelinePorMes } from '../services/asistenciasPdfService.js'
+import { downloadClassHealthPdf } from '../services/classHealthPdfService.js'
 
 const state = {
   timeline: [],
@@ -276,6 +277,10 @@ function renderContent(container) {
             <!-- Botón PDF -->
             <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" id="btnDescargarPdfAsistencias" title="Descargar Resumen PDF">
               <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </button>
+
+            <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" id="btnDescargarPdfSaludClases" title="Descargar Salud de las clases PDF">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Salud de las clases
             </button>
           </div>
         </div>
@@ -1000,6 +1005,31 @@ function _attachEvents(container) {
     } catch (err) {
       console.error('[asistenciasView] Error al exportar PDF:', err)
       AppToast.error('No se pudo generar el PDF de asistencia.')
+    }
+  })
+
+  // 8b. Botón Salud de las clases (PDF). Usa el período completo filtrado: el
+  // informe compara el mes visible contra el mes anterior.
+  container.querySelector('#btnDescargarPdfSaludClases')?.addEventListener('click', async () => {
+    AppToast.info('Generando informe de salud de las clases...')
+    try {
+      await downloadClassHealthPdf({
+        timeline: getFiltradosTimeline(),
+        year: state.calendarYear,
+        monthIndex: state.calendarMonth,
+        periodName: state.periodos.find((p) => p.id === state.filtroPeriodo)?.nombre || 'Período Académico',
+        filters: {
+          catedra: state.filtroCatedra,
+          clase: state.filtroClase === 'todas' ? 'Todas' : state.clases.find((c) => c.id === state.filtroClase)?.nombre || state.filtroClase,
+          maestro: state.filtroMaestro,
+          busqueda: state.searchQuery.trim(),
+        },
+        generatedAt: new Date(),
+      })
+      AppToast.success('Informe de salud de las clases generado exitosamente.')
+    } catch (err) {
+      console.error('[asistenciasView] Error al exportar salud de las clases:', err)
+      AppToast.error('No se pudo generar el informe de salud de las clases.')
     }
   })
 

@@ -124,6 +124,37 @@ native review ran.
   session in the 2026-09-09 batch (advisory, no expiry recorded). This work
   only adds new files there plus one button in the view.
 
+## AI narrative (accepted change, 2026-10-11)
+
+Omar asked for a narrative summary per class of what was worked on. It was
+out of scope in the first delivery; now in scope.
+
+- [x] T4 — `buildClassHealthData` exposes `content.entries: [{ date, text }]`
+  (raw session content, chronological) per class. Route: delegated writer.
+- [x] T5 — `classHealthNarrativeService.js`: `generateClassNarratives(classes,
+  { monthLabel, callModel })`. Uses the existing `callGroq` / `parseGroqJSON`
+  (groq-proxy). Batches of 8 classes, entries truncated to 400 chars, 20 s
+  timeout per batch, classes without content are never sent. Never throws:
+  a failed batch leaves its classes without narrative. Classes are sent with
+  positional ids, not database ids.
+- [x] T6 — PDF prints "Resumen del mes (generado por IA)" per class in
+  section 4, "Resumen por IA no disponible" on failure, and a methodology row.
+  The PDF is always produced, with or without AI.
+
+Constraints: the narrative is labeled as AI-generated and sits next to the
+deterministic topics and dates (R5). The prompt forbids naming students and
+judging people (R6). Observation text leaves the system through groq-proxy,
+as the existing monthly pedagogical report already does.
+
+Progress (2026-10-11): T4 57784786, T5 d3dd85fa, T6 eda903e3, all by a
+delegated writer; RED/GREEN observed (T5 RED was an import failure, not an
+assertion). Parent re-ran `npx vitest run src/modules/asistencias/`: 9 files,
+69 tests passed, and read the narrative service and the PDF/view diff.
+Narrative is skipped in Demo mode (`config.isDemoMode`). The methodology row
+appears only when the narrative is requested.
+Pending: no real call to groq-proxy was made (all AI behavior tested with
+injected fakes); the PDF has still not been opened in the running app.
+
 ## Next step
 
 Omar opens the PDF from Control de Asistencia and validates it; then the

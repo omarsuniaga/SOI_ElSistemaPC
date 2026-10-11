@@ -2005,14 +2005,49 @@ function _renderVista(container, ctx) {
         .eq('clase_id', claseId)
         .maybeSingle()
 
+      const { data: evaluationsData } = await supabase
+        .from('evaluacion_indicador')
+        .select('maestro_indicador_id, alumno_id, nota, recovery_status')
+        .eq('clase_id', claseId)
+        .then((res) => res.data || [])
+        .catch(() => [])
+
+      const evalCountByInd = {}
+      const masteredCountByInd = {}
+      ;(evaluationsData || []).forEach((ev) => {
+        const iid = ev.maestro_indicador_id
+        evalCountByInd[iid] = (evalCountByInd[iid] || 0) + 1
+        if (ev.nota >= 5 || ev.recovery_status === 'recuperado' || ev.recovery_status === 'passed') {
+          masteredCountByInd[iid] = (masteredCountByInd[iid] || 0) + 1
+        }
+      })
+
       const allIndicadores = []
       if (routeData && Array.isArray(routeData.unidades)) {
         routeData.unidades.forEach((u) => {
           (u.objetivos || []).forEach((o) => {
             (o.indicadores || []).forEach((ind) => {
+              const evalCount = evalCountByInd[ind.id] || 0
+              const masteredCount = masteredCountByInd[ind.id] || 0
+              const totalAlumnos = alumnos.length
+              let status = 'none'
+              if (masteredCount >= totalAlumnos && totalAlumnos > 0) {
+                status = 'double'
+              } else if (evalCount > 0) {
+                status = 'single'
+              }
+
               allIndicadores.push({
                 ...ind,
+                unidadId: u.id,
+                unidadNombre: u.nombre,
+                objetivoId: o.id,
+                objetivoNombre: o.nombre,
                 breadcrumb: `${u.nombre} › ${o.nombre}`,
+                evalCount,
+                masteredCount,
+                totalAlumnos,
+                status,
               })
             })
           })
@@ -2081,7 +2116,7 @@ function _renderVista(container, ctx) {
 
         banner.querySelector('#pm-btn-cambiar-ind')?.addEventListener('click', (e) => {
           e.stopPropagation()
-          _abrirQuickPickerIndicador(allIndicadores, currentInd, (selectedInd) => {
+          _abrirQuickPickerIndicador(routeData, allIndicadores, currentInd, (selectedInd) => {
             currentInd = selectedInd
             try { localStorage.setItem(storageKey, selectedInd.id) } catch (_) {}
             renderBannerContent()
@@ -2098,42 +2133,54 @@ function _renderVista(container, ctx) {
     }
   }
 
-  function _abrirQuickPickerIndicador(indicadores, currentInd, onSelect) {
+  function _abrirQuickPickerIndicador(routeData, indicadores, currentInd, onSelect) {
     const backdrop = document.createElement('div')
     backdrop.className = 'igm-backdrop'
     backdrop.style.zIndex = '10001'
 
+    const unidades = routeData?.unidades || []
+
     backdrop.innerHTML = `
-      <div class="igm-modal" role="dialog" aria-modal="true" aria-label="Seleccionar Indicador de Hoy" style="max-width: 520px;">
+      <div class="igm-modal" role="dialog" aria-modal="true" aria-label="Seleccionar Indicador de Hoy" style="max-width: 560px; width: 95vw;">
         <div class="igm-header">
           <div>
-            <div class="igm-breadcrumb">SELECCIÓN DE TEMA</div>
-            <h3>¿Qué indicador trabajarás hoy?</h3>
+            <div class="igm-breadcrumb">SELECCIÓN PEDAGÓGICA</div>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">¿Qué indicador trabajarás hoy?</h3>
+            <p style="margin: 4px 0 0; font-size: 0.78rem; color: var(--pm-text-muted);">
+              Escoge Unidad y Objetivo para revisar el estado del indicador y evaluar en clase.
+            </p>
           </div>
           <button class="igm-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
         </div>
-        <div class="igm-body" style="padding: 1rem 1.25rem; max-height: 60vh; overflow-y: auto;">
-          <input type="text" id="quick-ind-search" class="form-control form-control-sm mb-3 rounded-3" placeholder="Filtrar temas..." style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border);" />
-          <div id="quick-ind-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
-            ${indicadores
-              .map(
-                (ind) => `
-              <button type="button" class="quick-ind-item ${ind.id === currentInd?.id ? 'active' : ''}" data-ind-id="${ind.id}" style="
-                text-align: left;
-                background: ${ind.id === currentInd?.id ? 'rgba(79, 70, 229, 0.12)' : 'var(--pm-surface-2, rgba(0,0,0,0.02))'};
-                border: 1px solid ${ind.id === currentInd?.id ? 'var(--pm-primary, #4f46e5)' : 'var(--pm-border, #e2e8f0)'};
-                border-radius: 10px;
-                padding: 0.65rem 0.85rem;
-                cursor: pointer;
-                transition: all 0.15s ease;
-              ">
-                <div style="font-size: 0.88rem; font-weight: 700; color: var(--pm-text);">${escHTML(ind.nombre)}</div>
-                ${ind.breadcrumb ? `<div style="font-size: 0.72rem; color: var(--pm-text-muted); margin-top: 2px;">${escHTML(ind.breadcrumb)}</div>` : ''}
-              </button>
-            `,
-              )
-              .join('')}
+        <div class="igm-body" style="padding: 1rem 1.25rem; max-height: 65vh; overflow-y: auto;">
+          <!-- Cascading Filters: Unidad y Objetivo -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.75rem;">
+            <div>
+              <label for="quick-unit-select" style="display: block; font-size: 0.72rem; font-weight: 700; color: var(--pm-text-muted); margin-bottom: 3px;">
+                <i class="bi bi-folder2"></i> UNIDAD
+              </label>
+              <select id="quick-unit-select" class="form-select form-select-sm rounded-3" style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); font-size: 0.8rem;">
+                <option value="all">Todas las Unidades (${unidades.length})</option>
+                ${unidades.map((u, idx) => `<option value="${u.id}">${idx + 1}. ${escHTML(u.nombre)}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label for="quick-obj-select" style="display: block; font-size: 0.72rem; font-weight: 700; color: var(--pm-text-muted); margin-bottom: 3px;">
+                <i class="bi bi-bullseye"></i> OBJETIVO
+              </label>
+              <select id="quick-obj-select" class="form-select form-select-sm rounded-3" style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); font-size: 0.8rem;">
+                <option value="all">Todos los Objetivos</option>
+              </select>
+            </div>
           </div>
+
+          <div style="position: relative; margin-bottom: 0.85rem;">
+            <input type="text" id="quick-ind-search" class="form-control form-control-sm rounded-3" placeholder="Filtrar por texto de indicador..." style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); padding-left: 2rem;" />
+            <i class="bi bi-search" style="position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--pm-text-muted);"></i>
+          </div>
+
+          <!-- Indicator list with state badges -->
+          <div id="quick-ind-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
         </div>
       </div>
     `
@@ -2146,27 +2193,122 @@ function _renderVista(container, ctx) {
       if (e.target === backdrop) closeModal()
     })
 
+    const unitSelect = backdrop.querySelector('#quick-unit-select')
+    const objSelect = backdrop.querySelector('#quick-obj-select')
     const searchInput = backdrop.querySelector('#quick-ind-search')
     const listEl = backdrop.querySelector('#quick-ind-list')
-    searchInput?.focus()
 
-    searchInput?.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim()
-      listEl?.querySelectorAll('.quick-ind-item').forEach((item) => {
-        const txt = item.textContent.toLowerCase()
-        item.style.display = txt.includes(q) ? '' : 'none'
-      })
-    })
+    function updateObjectiveOptions() {
+      const selectedUnitId = unitSelect.value
+      let relevantObjectives = []
+      if (selectedUnitId === 'all') {
+        unidades.forEach((u) => {
+          (u.objetivos || []).forEach((o) => {
+            relevantObjectives.push({ ...o, unitName: u.nombre })
+          })
+        })
+      } else {
+        const u = unidades.find((unit) => unit.id === selectedUnitId)
+        if (u) relevantObjectives = u.objetivos || []
+      }
 
-    listEl?.querySelectorAll('.quick-ind-item').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const iid = btn.dataset.indId
-        const found = indicadores.find((i) => i.id === iid)
-        if (found) {
-          closeModal()
-          onSelect(found)
+      objSelect.innerHTML = `<option value="all">Todos los Objetivos (${relevantObjectives.length})</option>` +
+        relevantObjectives.map((o) => `<option value="${o.id}">${escHTML(o.nombre)}</option>`).join('')
+    }
+
+    function renderFilteredIndicators() {
+      const selectedUnitId = unitSelect.value
+      const selectedObjId = objSelect.value
+      const query = (searchInput.value || '').toLowerCase().trim()
+
+      const filtered = indicadores.filter((ind) => {
+        if (selectedUnitId !== 'all' && ind.unidadId !== selectedUnitId) return false
+        if (selectedObjId !== 'all' && ind.objetivoId !== selectedObjId) return false
+        if (query) {
+          const matchText = `${ind.nombre} ${ind.breadcrumb || ''}`.toLowerCase()
+          if (!matchText.includes(query)) return false
         }
+        return true
       })
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align:center; padding: 2rem 1rem; color: var(--pm-text-muted); font-size: 0.85rem;">
+            <i class="bi bi-search" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+            No hay indicadores para la unidad y objetivo seleccionados.
+          </div>
+        `
+        return
+      }
+
+      listEl.innerHTML = filtered.map((ind) => {
+        const isCurrent = ind.id === currentInd?.id
+        let statusBadge = ''
+        if (ind.status === 'double') {
+          statusBadge = `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:2px 8px; font-size:0.7rem; font-weight:700;">👑 Dominado (${ind.masteredCount}/${ind.totalAlumnos})</span>`
+        } else if (ind.status === 'single') {
+          statusBadge = `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:2px 8px; font-size:0.7rem; font-weight:700;">⭐ Evaluado (${ind.evalCount}/${ind.totalAlumnos})</span>`
+        } else {
+          statusBadge = `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(255,255,255,0.06); color:var(--pm-text-muted); border:1px solid var(--pm-border); border-radius:12px; padding:2px 8px; font-size:0.7rem; font-weight:600;">⚪ Pendiente</span>`
+        }
+
+        return `
+          <button type="button" class="quick-ind-item ${isCurrent ? 'active' : ''}" data-ind-id="${ind.id}" style="
+            text-align: left;
+            background: ${isCurrent ? 'rgba(79, 70, 229, 0.12)' : 'var(--pm-surface-2, rgba(0,0,0,0.02))'};
+            border: 1px solid ${isCurrent ? 'var(--pm-primary, #4f46e5)' : 'var(--pm-border, #e2e8f0)'};
+            border-radius: 12px;
+            padding: 0.75rem 0.95rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+          ">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+              <div style="flex:1; min-width:0;">
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--pm-text); line-height: 1.35;">
+                  ${isCurrent ? '🎯 ' : ''}${escHTML(ind.nombre)}
+                </div>
+                ${ind.breadcrumb ? `<div style="font-size: 0.72rem; color: var(--pm-text-muted); margin-top: 3px;"><i class="bi bi-diagram-2"></i> ${escHTML(ind.breadcrumb)}</div>` : ''}
+              </div>
+              <div style="flex-shrink:0;">
+                ${statusBadge}
+              </div>
+            </div>
+          </button>
+        `
+      }).join('')
+
+      listEl.querySelectorAll('.quick-ind-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const iid = btn.dataset.indId
+          const found = indicadores.find((i) => i.id === iid)
+          if (found) {
+            closeModal()
+            onSelect(found)
+          }
+        })
+      })
+    }
+
+    if (currentInd?.unidadId) {
+      unitSelect.value = currentInd.unidadId
+      updateObjectiveOptions()
+      if (currentInd?.objetivoId) {
+        objSelect.value = currentInd.objetivoId
+      }
+    } else {
+      updateObjectiveOptions()
+    }
+    renderFilteredIndicators()
+
+    unitSelect.addEventListener('change', () => {
+      updateObjectiveOptions()
+      renderFilteredIndicators()
+    })
+    objSelect.addEventListener('change', () => {
+      renderFilteredIndicators()
+    })
+    searchInput.addEventListener('input', () => {
+      renderFilteredIndicators()
     })
   }
 

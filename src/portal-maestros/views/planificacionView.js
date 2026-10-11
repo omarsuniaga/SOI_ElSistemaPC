@@ -540,6 +540,10 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                         <span class="pm-chip-val">${clase.indicadoresCount}</span>
                       </div>
                     </div>
+                    <div class="pm-plan-repertoire-preview" style="margin-top: 0.5rem; font-size: 0.76rem;" title="Flujo de evaluación en clase">
+                      <i class="bi bi-check-circle-fill text-success"></i>
+                      <span>Unidad ➔ Objetivo ➔ Evaluar Indicador</span>
+                    </div>
                   `
                       : `
                     <div class="pm-warning-chip" title="Malla pendiente de diseño">
@@ -557,7 +561,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                     <span>${hasRoute ? "Editar" : "Diseñar"}</span>
                   </button>
 
-                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}" title="Ver Mapa y Deudas">
+                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}" title="Ver Mapa Duolingo y Calificar">
                     <i class="bi bi-diagram-3-fill"></i>
                     <span>Mapa</span>
                   </button>

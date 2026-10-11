@@ -1,6 +1,6 @@
 -- fn_estado_asistencia_cubre_actividad_institucional.test.sql
 -- Test de integración SQL para public.fn_estado_asistencia_maestro, definido en
--- supabase/migrations/20260922120000_fn_estado_asistencia_cubre_actividad_institucional.sql
+-- supabase/migrations/20260922164213_fn_estado_asistencia_cubre_actividad_institucional.sql
 --
 -- Verifica que una actividad especial INSTITUCIONAL (clase_id NULL,
 -- alcance_tipo='institucion'), creada por OTRO maestro, cubre la clase regular

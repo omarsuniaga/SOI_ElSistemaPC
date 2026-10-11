@@ -32,7 +32,7 @@ function round1(value) {
   return Math.round(value * 10) / 10
 }
 
-function pct(numerator, denominator) {
+export function pct(numerator, denominator) {
   return denominator > 0 ? round1((numerator / denominator) * 100) : null
 }
 
@@ -75,7 +75,7 @@ function contentTerms(content) {
   return terms
 }
 
-function sessionContent(clase) {
+export function sessionContent(clase) {
   return [clase.observacion_sesion, clase.observacion_clase]
     .map((text) => String(text ?? '').trim())
     .filter(Boolean)

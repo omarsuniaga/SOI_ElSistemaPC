@@ -2373,6 +2373,7 @@ function _renderVista(container, ctx) {
                 await enqueue({
                   tabla: 'asistencias',
                   operacion: 'upsert',
+                  preservar: true,
                   payload: {
                     clase_id: claseId,
                     alumno_id: a.alumno_id,

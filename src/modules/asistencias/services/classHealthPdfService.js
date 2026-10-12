@@ -259,7 +259,7 @@ export async function downloadClassHealthPdf({
   })
 
   y = doc.lastAutoTable.finalY + 8
-  y = tituloSeccion(doc, '4. Contenido Trabajado por Clase', y)
+  y = tituloSeccion(doc, '4. Contenido Trabajado por Clase', y) + 3
 
   if (classes.length === 0) {
     autoTable(doc, {

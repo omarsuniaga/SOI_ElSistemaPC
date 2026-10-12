@@ -180,14 +180,18 @@ function guardianRecommendation(student, rows, reviewBy) {
   }
   if (monthFires) {
     what.push(`Asistencia del mes de ${month.attendanceRatePct}% en ${month.convoked} convocatorias.`)
-    evidence.push(`Asistencia del mes: ${month.attendanceRatePct}% (${month.attended} de ${month.convoked}).`)
+    evidence.push(`Asistencia del mes: ${month.attendanceRatePct}% (${month.attended} de ${month.convoked}; ${month.justified} justificadas, ${month.unjustified} sin justificar).`)
   }
+
+  const why = periodFires
+    ? 'Las inasistencias sin justificar y la asistencia baja pueden afectar el avance del alumno. Conviene conocer la causa junto con la familia antes de decidir otra medida.'
+    : 'La asistencia baja del mes puede afectar el avance del alumno, aunque las ausencias estén justificadas. Conviene conocer la situación junto con la familia antes de decidir otra medida.'
 
   return {
     type: 'guardian_meeting',
     what: what.join(' '),
     evidence: evidence.join(' '),
-    why: 'Las inasistencias sin justificar y la asistencia baja pueden afectar el avance del alumno. Conviene conocer la causa junto con la familia antes de decidir otra medida.',
+    why,
     action: 'Convocar a la persona encargada del alumno (tutor o tutora) a una reunión de seguimiento académico.',
     decides: 'Coordinación académica',
     reviewBy,

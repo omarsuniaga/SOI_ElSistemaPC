@@ -107,6 +107,14 @@ function tituloSeccion(doc, texto, y) {
   return y + 4
 }
 
+function subtitulo(doc, texto, y) {
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.5)
+  doc.setTextColor(...COLOR.humo)
+  doc.text(texto, 14, y)
+  return y + 2
+}
+
 function filasSinRegistros(columnas, texto = SIN_REGISTROS) {
   return [[texto, ...Array(columnas - 1).fill('—')]]
 }
@@ -217,7 +225,8 @@ function renderDetalle(doc, students, progressAvailable, y) {
     doc.text(`Clases: ${student.classes.join(', ') || '—'}`, 14, y)
     y += 4
     doc.text(progresoLinea(student, progressAvailable), 14, y)
-    y += 3
+    y += 5
+    y = subtitulo(doc, 'Contenido recibido en el mes', y)
 
     const recibido = student.content.received.map((c) => [
       fechaCorta(c.date), c.className, truncar(c.text),
@@ -225,15 +234,18 @@ function renderDetalle(doc, students, progressAvailable, y) {
     autoTable(doc, {
       startY: y,
       head: [['Fecha', 'Clase', 'Contenido']],
-      body: recibido.length ? recibido : filasSinRegistros(3, SIN_CONTENIDO_MES),
+      body: recibido.length ? recibido : [[{ content: SIN_CONTENIDO_MES, colSpan: 3 }]],
       theme: 'striped',
       headStyles: { fillColor: COLOR.primario, textColor: [255, 255, 255], fontSize: 7.5 },
       styles: { fontSize: 7.5, cellPadding: 1.8 },
+      columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 42 } },
       margin: { left: 14, right: 14 },
     })
     y = doc.lastAutoTable.finalY + 4
 
     if (student.content.notReceived.length > 0) {
+      y = asegurarEspacio(doc, y + 2, 20)
+      y = subtitulo(doc, 'Contenido no recibido (ausente o justificado)', y)
       autoTable(doc, {
         startY: y,
         head: [['Fecha', 'Clase', 'Estado', 'Contenido']],
@@ -241,8 +253,9 @@ function renderDetalle(doc, students, progressAvailable, y) {
           fechaCorta(c.date), c.className, ESTADO_LABEL[c.status] || c.status, truncar(c.text),
         ]),
         theme: 'striped',
-        headStyles: { fillColor: COLOR.primario, textColor: [255, 255, 255], fontSize: 7.5 },
+        headStyles: { fillColor: COLOR.humo, textColor: [255, 255, 255], fontSize: 7.5 },
         styles: { fontSize: 7.5, cellPadding: 1.8 },
+        columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 42 }, 2: { cellWidth: 20 } },
         margin: { left: 14, right: 14 },
       })
       y = doc.lastAutoTable.finalY + 4
@@ -384,13 +397,13 @@ export async function downloadStudentHealthPdf({
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...COLOR.humo)
-    doc.text('No se pudieron cargar las evaluaciones; las recomendaciones basadas en progreso no se evaluaron.', 14, y)
-    y += 5
+    doc.text('No se pudieron cargar las evaluaciones; las recomendaciones basadas en progreso no se evaluaron.', 14, y + 1)
+    y += 6
   }
   y = renderRecomendaciones(doc, students, y)
 
   y = asegurarEspacio(doc, y, 40)
-  y = tituloSeccion(doc, '4. Detalle por Estudiante', y + 2)
+  y = tituloSeccion(doc, '4. Detalle por Estudiante', y + 2) + 3
   y = renderDetalle(doc, students, progressAvailable, y)
 
   y = asegurarEspacio(doc, y, 60)

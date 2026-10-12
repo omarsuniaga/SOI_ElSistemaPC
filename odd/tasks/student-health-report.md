@@ -158,6 +158,28 @@ the 32 students with 3+ grades: 17 average below 3.0, 4 below 2.5. Omar chose
   21 files, 179 tests passed. RED observed first (3 failing tests).
 - Not changed: the database CHECK still allows 0-10.
 
+## Visual verification (2026-10-11)
+
+Both PDFs were generated in the running app (local dev server, mock data via
+`VITE_USE_MOCK=true`, May 2026) and read page by page: class health 2 pages,
+student health 5 pages. Tables align and no text is cut.
+
+Found and fixed from that check (RED observed, then 118 tests passing in
+`src/modules/asistencias/`):
+
+- `guardian_meeting` on fully justified absences said "inasistencias sin
+  justificar". The reason now depends on which rule fired, and the month
+  evidence shows the justified / unjustified split.
+- The not-received content table had no title; both detail tables are now
+  titled and the not-received one uses a different header color.
+- Section headings touched the text below them in both PDFs.
+
+Not covered by this check: AI narrative and real evaluations (no Supabase
+session locally). Correction to an earlier claim: the attendance module uses
+mock data only when the app is built with `VITE_USE_MOCK=true`; the demo
+login alone does not make Control de Asistencia work without Supabase
+(pre-existing behavior).
+
 ## Open decisions for Omar
 
 - Recommendation wording and thresholds (3 unjustified absences, 80% floor).

@@ -205,3 +205,13 @@ describe('downloadStudentHealthPdf: progress loading', () => {
     expect(loadProgress).not.toHaveBeenCalled()
   })
 })
+
+describe('downloadStudentHealthPdf: detail tables are labeled', () => {
+  it('titles the received and the not-received content tables', async () => {
+    await call()
+
+    const printed = docs[0].texts
+    expect(printed).toContain('Contenido recibido en el mes')
+    expect(printed).toContain('Contenido no recibido (ausente o justificado)')
+  })
+})

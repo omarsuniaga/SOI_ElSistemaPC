@@ -528,3 +528,24 @@ describe('buildStudentHealthData: recommendations', () => {
     expect(summary.studentsWithRecommendations).toBe(1)
   })
 })
+
+describe('buildStudentHealthData: guardian meeting on justified absences', () => {
+  it('does not describe justified absences as unjustified', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', [
+      fila('a1', 'Ana', 'justificado'), fila('a1', 'Ana', 'justificado'), fila('a1', 'Ana', 'justificado'),
+    ])])]
+    const rec = recOf(build(timeline).students[0], 'guardian_meeting')
+
+    expect(rec.what).not.toMatch(/sin justificar/i)
+    expect(rec.why).not.toMatch(/sin justificar/i)
+    expect(rec.why).toMatch(/justificadas/i)
+    expect(rec.evidence).toContain('3 justificadas, 0 sin justificar')
+  })
+
+  it('keeps the unjustified wording when unjustified absences trigger the rule', () => {
+    const timeline = [dia('2026-03-02', [clase('Violín N2', Array(3).fill(fila('a1', 'Ana', 'ausente')))])]
+    const rec = recOf(build(timeline).students[0], 'guardian_meeting')
+
+    expect(rec.why).toMatch(/sin justificar/i)
+  })
+})

@@ -159,7 +159,7 @@ function _attachEvents() {
         { icon: 'bi-search',                  title: 'Buscador',          description: 'Filtre por nombre del alumno o por instrumento en tiempo real.',                                                                                                color: '#6b7280' },
         { icon: 'bi-exclamation-triangle-fill', title: 'Alerta de riesgo', description: 'Aparece cuando hay alumnos que requieren atención. Muestra el total con algún indicador activo.',                                                              color: '#f59e0b' },
         { icon: 'bi-person-fill',             title: 'Fila del alumno',   description: 'Nombre, instrumento, % de asistencia (últimas 4 semanas) y promedio de las últimas 3 calificaciones. Barra amarilla izquierda = en riesgo.',                   color: '#3b82f6' },
-        { icon: 'bi-tags-fill',               title: 'Badges de riesgo',  description: '"Asistencia baja" < 70% en 4 semanas. "Nota baja" promedio < 6.0. "Observación" cuando hay observaciones de disciplina activas.',                            color: '#ef4444' },
+        { icon: 'bi-tags-fill',               title: 'Badges de riesgo',  description: '"Asistencia baja" < 70% en 4 semanas. "Nota baja" promedio < 2.5 (escala de 1 a 5). "Observación" cuando hay observaciones de disciplina activas.',                            color: '#ef4444' },
         { icon: 'bi-window-sidebar',          title: 'Panel de detalle',  description: 'Clic en cualquier alumno → panel con asistencia reciente (20 clases), últimas calificaciones por clase y observaciones activas.',                              color: '#10b981' },
       ],
     })

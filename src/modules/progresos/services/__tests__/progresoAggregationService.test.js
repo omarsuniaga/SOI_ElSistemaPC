@@ -162,9 +162,9 @@ describe('progresoAggregationService', () => {
         sources: {
           asistencias: [],
           progresos: [
-            { alumno_id: 'alum-001', calificacion: 5.0, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
-            { alumno_id: 'alum-001', calificacion: 5.5, fecha_evaluacion: '2026-05-10', evaluacion_id: 'eval-2' },
-            { alumno_id: 'alum-001', calificacion: 5.8, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-3' },
+            { alumno_id: 'alum-001', calificacion: 2.0, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
+            { alumno_id: 'alum-001', calificacion: 2.5, fecha_evaluacion: '2026-05-10', evaluacion_id: 'eval-2' },
+            { alumno_id: 'alum-001', calificacion: 2.4, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-3' },
           ],
           indicatorAttempts: [],
           observaciones: [],

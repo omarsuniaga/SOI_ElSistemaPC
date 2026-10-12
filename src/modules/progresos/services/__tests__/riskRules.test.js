@@ -7,8 +7,8 @@ describe('riskRules', () => {
       expect(THRESHOLDS.attendance_min_rate).toBe(0.70)
     })
 
-    it('should export grade_min_avg as 6.0', () => {
-      expect(THRESHOLDS.grade_min_avg).toBe(6.0)
+    it('should export grade_min_avg as 2.5 (grades are recorded on a 1-5 scale)', () => {
+      expect(THRESHOLDS.grade_min_avg).toBe(2.5)
     })
 
     it('should export indicator_min_pass_rate as 0.50', () => {
@@ -52,10 +52,10 @@ describe('riskRules', () => {
       expect(result.risk_reasons).not.toContain('attendance_below_threshold')
     })
 
-    it('should trigger grade_below_threshold when promedio < 6.0', () => {
+    it('should trigger grade_below_threshold when promedio < 2.5', () => {
       const progress = {
         indicators: { total: 0, passed: 0, pass_rate: null },
-        grades: { count: 3, promedio: 5.5 },
+        grades: { count: 3, promedio: 2.4 },
         attendance: { total: 0, rate: null },
       }
       const result = evaluate(progress, mockClock)
@@ -63,10 +63,10 @@ describe('riskRules', () => {
       expect(result.risk_reasons).toContain('grade_below_threshold')
     })
 
-    it('should NOT trigger grade_below_threshold when promedio === 6.0 (boundary)', () => {
+    it('should NOT trigger grade_below_threshold when promedio === 2.5 (boundary)', () => {
       const progress = {
         indicators: { total: 0, passed: 0, pass_rate: null },
-        grades: { count: 3, promedio: 6.0 },
+        grades: { count: 3, promedio: 2.5 },
         attendance: { total: 0, rate: null },
       }
       const result = evaluate(progress, mockClock)
@@ -99,7 +99,7 @@ describe('riskRules', () => {
     it('should include all three risk_reasons when multiple thresholds triggered', () => {
       const progress = {
         indicators: { total: 10, passed: 4, pass_rate: 0.40 },
-        grades: { count: 3, promedio: 5.5 },
+        grades: { count: 3, promedio: 2.4 },
         attendance: { total: 10, rate: 0.60 },
       }
       const result = evaluate(progress, mockClock)

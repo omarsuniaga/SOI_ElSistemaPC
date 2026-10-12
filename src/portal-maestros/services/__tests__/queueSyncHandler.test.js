@@ -97,8 +97,40 @@ describe('syncQueueItem', () => {
 
     it('upsert sobre una tabla sin conflicto declarado falla de forma cerrada sin tocar Supabase', async () => {
       await expect(
-        syncQueueItem({ tabla: 'asistencias', operacion: 'upsert', payload: { a: 1 } }),
-      ).rejects.toThrow(/asistencias/)
+        syncQueueItem({ tabla: 'observaciones_sesion', operacion: 'upsert', payload: { a: 1 } }),
+      ).rejects.toThrow(/observaciones_sesion/)
+      expect(calls).toHaveLength(0)
+    })
+
+    it('indicator_attempts usa upsert con onConflict session_id,indicator_id,student_id', async () => {
+      const payload = { session_id: 'ses1', indicator_id: 'i1', student_id: 'st1', nota: 4, status: 'approved' }
+      await syncQueueItem({ tabla: 'indicator_attempts', operacion: 'upsert', payload })
+      expect(calls).toHaveLength(1)
+      expect(calls[0].upsert).toEqual(payload)
+      expect(calls[0].opts).toEqual({ onConflict: 'session_id,indicator_id,student_id' })
+      expect(calls[0].insert).toBeUndefined()
+    })
+
+    it('indicator_attempts sin session_id se rechaza sin tocar Supabase (NULL nunca colisiona)', async () => {
+      await expect(
+        syncQueueItem({ tabla: 'indicator_attempts', operacion: 'upsert', payload: { indicator_id: 'i1', student_id: 'st1' } }),
+      ).rejects.toThrow(/session_id/)
+      expect(calls).toHaveLength(0)
+    })
+
+    it('asistencias usa upsert con onConflict clase_id,alumno_id,fecha', async () => {
+      const payload = { clase_id: 'c1', alumno_id: 'a1', fecha: '2026-10-08', estado: 'presente', sesion_clase_id: 's1' }
+      await syncQueueItem({ tabla: 'asistencias', operacion: 'upsert', payload })
+      expect(calls).toHaveLength(1)
+      expect(calls[0].upsert).toEqual(payload)
+      expect(calls[0].opts).toEqual({ onConflict: 'clase_id,alumno_id,fecha' })
+      expect(calls[0].insert).toBeUndefined()
+    })
+
+    it('asistencias sin sesion_clase_id se rechaza sin tocar Supabase (columna NOT NULL)', async () => {
+      await expect(
+        syncQueueItem({ tabla: 'asistencias', operacion: 'upsert', payload: { clase_id: 'c1', alumno_id: 'a1', fecha: '2026-10-08', estado: 'presente' } }),
+      ).rejects.toThrow(/sesion_clase_id/)
       expect(calls).toHaveLength(0)
     })
 

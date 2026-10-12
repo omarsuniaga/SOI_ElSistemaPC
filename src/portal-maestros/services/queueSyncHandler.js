@@ -13,13 +13,19 @@ import { supabase } from '../../lib/supabaseClient.js'
 const UNIQUE_VIOLATION = '23505'
 
 /**
- * Columnas de conflicto para `upsert`, verificadas contra las restricciones
- * UNIQUE de supabase/migrations/006_academic_route_schema.sql. Solo estas
- * tablas admiten upsert desde la cola; cualquier otra se rechaza.
+ * Configuración de `upsert` por tabla. Solo estas tablas admiten upsert desde
+ * la cola; cualquier otra se rechaza. Cada `onConflict` coincide con una
+ * restricción UNIQUE real: progreso en 006_academic_route_schema.sql,
+ * indicator_attempts en schema_reference.sql (y en la ruta online de
+ * evaluationService) y asistencias en 20260520_add_unique_asistencias_constraint.sql.
+ * `required` lista columnas que deben venir en el payload: NULL nunca colisiona
+ * en un UNIQUE, y las NOT NULL no pueden insertarse sin ellas.
  */
-const UPSERT_ON_CONFLICT = {
-  student_node_progress: 'student_id,node_id',
-  student_level_progress: 'student_id,level_id',
+const UPSERT_CONFIG = {
+  student_node_progress: { onConflict: 'student_id,node_id' },
+  student_level_progress: { onConflict: 'student_id,level_id' },
+  indicator_attempts: { onConflict: 'session_id,indicator_id,student_id', required: ['session_id'] },
+  asistencias: { onConflict: 'clase_id,alumno_id,fecha', required: ['sesion_clase_id'] },
 }
 
 function normalizeSesionPayload(payload) {
@@ -73,9 +79,11 @@ export async function syncQueueItem(item) {
       const { error } = await supabase.from(tabla).delete().eq('id', payload.id)
       if (error) throw error
     } else if (operacion === 'upsert') {
-      const onConflict = UPSERT_ON_CONFLICT[tabla]
-      if (!onConflict) throw new Error(`upsert no soportado para la tabla ${tabla}`)
-      const { error } = await supabase.from(tabla).upsert(payload, { onConflict })
+      const config = UPSERT_CONFIG[tabla]
+      if (!config) throw new Error(`upsert no soportado para la tabla ${tabla}`)
+      const missing = (config.required ?? []).filter((field) => payload[field] == null)
+      if (missing.length > 0) throw new Error(`upsert en ${tabla} sin ${missing.join(', ')}`)
+      const { error } = await supabase.from(tabla).upsert(payload, { onConflict: config.onConflict })
       if (error) throw error
     } else {
       // Falla cerrada: un item no reconocido no debe eliminarse como sincronizado.

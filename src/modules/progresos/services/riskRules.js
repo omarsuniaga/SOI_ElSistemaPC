@@ -6,7 +6,8 @@
 export const THRESHOLDS = {
   attendance_min_rate: 0.70,
   attendance_window_weeks: 4,
-  grade_min_avg: 6.0,
+  // Grades are recorded on a 1-5 scale, where 3 is the usual grade.
+  grade_min_avg: 2.5,
   grade_window_count: 3,
   indicator_min_pass_rate: 0.50,
   indicator_window_weeks: 4,

@@ -389,16 +389,22 @@ describe('buildStudentHealthData: recommendations', () => {
     expect(recTypes(exact)).not.toContain('guardian_meeting')
   })
 
-  it('plan_review never fires on grades alone: the grade scale in use is not confirmed', () => {
+  it('plan_review fires at 80% period attendance with 3+ grades averaging below 2.5 (1-5 scale)', () => {
     const timeline = [dia('2026-03-02', [clase('Violín N2', [
       ...Array(4).fill(fila('a1', 'Ana', 'presente')),
       fila('a1', 'Ana', 'justificado'),
     ])])]
-    const low = new Map([['a1', progresoDto({ gradesCount: 5, promedio: 1.5 })]])
-    const ana = build(timeline, low).students[0]
+    const low = new Map([['a1', progresoDto({ gradesCount: 3, promedio: 2.4 })]])
+    const boundary = new Map([['a1', progresoDto({ gradesCount: 3, promedio: 2.5 })]])
+    const usual = new Map([['a1', progresoDto({ gradesCount: 5, promedio: 3 })]])
+    const fewGrades = new Map([['a1', progresoDto({ gradesCount: 2, promedio: 1 })]])
+    const rec = build(timeline, low).students[0].recommendations.find((r) => r.type === 'plan_review')
 
-    expect(recTypes(ana)).not.toContain('plan_review')
-    expect(ana.progress.gradesAverage).toBe(1.5)
+    expect(rec.evidence).toContain('promedio 2.4')
+    expect(rec.evidence).toContain('escala de 1 a 5')
+    expect(recTypes(build(timeline, boundary).students[0])).not.toContain('plan_review')
+    expect(recTypes(build(timeline, usual).students[0])).not.toContain('plan_review')
+    expect(recTypes(build(timeline, fewGrades).students[0])).not.toContain('plan_review')
   })
 
   it('plan_review fires with 4+ indicator attempts below 50% pass rate, not with 3', () => {

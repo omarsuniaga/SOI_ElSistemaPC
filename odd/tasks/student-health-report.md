@@ -141,9 +141,25 @@ Review: receipt-driven development is off (clone-local); no native review.
 - Progress line prints "Evaluaciones no disponibles" when the load failed and
   "Sin evaluaciones registradas" when there are none.
 
+## Grade threshold (accepted change, 2026-10-11)
+
+Production check (read-only, authorized by Omar): 210 grades, 83 students,
+min 1, max 5, average 2.93, none above 5. The real scale is 1-5 and 3 is the
+usual grade. With 6.0 all 83 graded students were below the threshold. Among
+the 32 students with 3+ grades: 17 average below 3.0, 4 below 2.5. Omar chose
+2.5.
+
+- `THRESHOLDS.grade_min_avg` 6.0 -> 2.5 in `progresos/services/riskRules.js`.
+  This changes who shows the "Nota baja" risk badge in existing screens.
+- `plan_review` triggers again on 3+ grades averaging below 2.5; evidence
+  states the 1-5 scale.
+- Help text in `pedagogico/views/seguimientoAlumnosView.js` updated.
+- Evidence: `npx vitest run src/modules/progresos/ src/modules/asistencias/`:
+  21 files, 179 tests passed. RED observed first (3 failing tests).
+- Not changed: the database CHECK still allows 0-10.
+
 ## Open decisions for Omar
 
-- Which grade scale is the real one (0-5 or 0-10).
 - Recommendation wording and thresholds (3 unjustified absences, 80% floor).
 - Where accepted recommendations get recorded (POLICY-EXCEPTION R2 above).
 

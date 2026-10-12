@@ -1369,13 +1369,20 @@ function _renderVista(container, ctx) {
         color: #f1f5f9;
       }
 
+      .pm-planificacion-toggle-btn {
+        transition: transform 0.25s ease;
+      }
+      .pm-planificacion-card.open .pm-planificacion-toggle-btn {
+        transform: rotate(180deg);
+      }
+
       .pm-route-tree-dropdown-box {
         margin-top: 1rem;
         padding-top: 1rem;
         border-top: 1px dashed rgba(255, 255, 255, 0.1);
-        max-height: 350px;
-        overflow-y: auto;
-        padding-right: 5px;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
       }
       /* Scrollbar minimalista para el árbol */
       .pm-route-tree-dropdown-box::-webkit-scrollbar { width: 4px; }
@@ -1387,53 +1394,64 @@ function _renderVista(container, ctx) {
       [data-theme="light"] .pm-route-tree-dropdown-box {
         border-top-color: #e5e7eb;
       }
-      /* Estilos del tour movidos a AsistenciaTour.js */
+      /* Botón Guardar Flotante (FAB) alineado abajo a la derecha */
       .pm-asist-actions-fixed {
         position: fixed;
-        bottom: 80px; /* Por encima del menú inferior */
-        left: 0; right: 0;
-        padding: 0.75rem 1rem;
-        background: rgba(var(--pm-bg-rgb), 0.8);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        bottom: calc(var(--pm-bottom-nav-h, 72px) + 16px);
+        right: 18px;
+        left: auto;
+        padding: 0;
+        background: transparent;
         display: flex;
-        gap: 0.75rem;
-        z-index: 1000;
-        border-top: 1px solid rgba(255,255,255,0.05);
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+        flex-direction: column-reverse;
+        align-items: flex-end;
+        gap: 0.65rem;
+        z-index: 1050;
+        border: none;
+        box-shadow: none;
+        pointer-events: none; /* No molesta ningún botón de fondo */
       }
       .pm-asist-btn-obs {
-        flex: 1;
-        background: var(--pm-surface-2);
-        color: var(--pm-text);
-        border: 1px solid var(--pm-border);
-        padding: 0.75rem;
-        border-radius: 12px;
+        pointer-events: auto;
+        background: var(--pm-surface, #1e293b);
+        color: var(--pm-text, #fff);
+        border: 1px solid var(--pm-border, rgba(255, 255, 255, 0.15));
+        padding: 0.6rem 1.1rem;
+        border-radius: 999px;
         font-weight: 600;
-        font-size: 0.85rem;
-        display: flex;
+        font-size: 0.82rem;
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
         gap: 0.5rem;
         cursor: pointer;
-        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .pm-asist-btn-obs:hover {
+        background: var(--pm-surface-2, #334155);
+        transform: translateY(-2px);
       }
       .pm-asist-btn-save {
-        flex: 1.5;
-        background: var(--pm-primary);
+        pointer-events: auto;
+        background: linear-gradient(135deg, var(--pm-primary, #2563eb) 0%, #1d4ed8 100%);
         color: #fff;
-        border: none;
-        padding: 0.75rem;
-        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.75rem 1.35rem;
+        border-radius: 999px;
         font-weight: 700;
-        font-size: 0.9rem;
-        display: flex;
+        font-size: 0.92rem;
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
+        gap: 0.55rem;
         cursor: pointer;
-        box-shadow: 0 4px 15px rgba(var(--pm-primary-rgb), 0.3);
-        transition: all 0.2s;
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+      }
+      .pm-asist-btn-save:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 12px 30px rgba(37, 99, 235, 0.55), 0 4px 10px rgba(0, 0, 0, 0.25);
       }
       .pm-asist-btn-obs:active, .pm-asist-btn-save:active { transform: scale(0.96); }
 
@@ -1506,25 +1524,35 @@ function _renderVista(container, ctx) {
           padding: 0.4rem 0.6rem;
         }
 
-        /* ── Actions bar: adjust for mobile nav ── */
+        /* ── Actions bar: floating FAB for mobile ── */
         .pm-asist-actions-fixed {
-          bottom: 65px;
-          padding: 0.6rem 0.75rem;
+          bottom: calc(var(--pm-bottom-nav-h, 64px) + 12px);
+          right: 14px;
+          left: auto;
+          padding: 0;
+          background: transparent;
+          border: none;
+          box-shadow: none;
           gap: 0.5rem;
-          flex-wrap: wrap;
         }
 
-        .pm-asist-btn-obs,
+        .pm-asist-btn-obs {
+          padding: 0.5rem 0.95rem;
+          font-size: 0.78rem;
+          border-radius: 999px;
+          min-height: unset;
+        }
+
         .pm-asist-btn-save {
-          padding: 0.6rem 0.5rem;
-          font-size: 0.8rem;
-          border-radius: 8px;
-          min-height: 40px;
+          padding: 0.65rem 1.15rem;
+          font-size: 0.85rem;
+          border-radius: 999px;
+          min-height: unset;
         }
 
         .pm-asist-btn-obs i,
         .pm-asist-btn-save i {
-          font-size: 1rem;
+          font-size: 0.95rem;
         }
 
         /* ── Planificación card: collapse some info ── */
@@ -1544,9 +1572,10 @@ function _renderVista(container, ctx) {
           font-size: 1rem;
         }
 
-        /* ── Hide non-essential sections to save space ── */
+        /* ── Mapa de contenido de la malla: altura completa para visualización clara ── */
         .pm-route-tree-dropdown-box {
-          max-height: 200px;
+          max-height: none;
+          overflow: visible;
         }
 
         /* ── Reduce section margins ── */
@@ -1609,7 +1638,7 @@ function _renderVista(container, ctx) {
         </div>
 
         <!-- 3. Planificación Académica (Mapa de Contenido y Posición Actual) -->
-        <div id="pm-planificacion-card" class="pm-planificacion-card" style="display:none; margin: 1.5rem 0;">
+        <div id="pm-planificacion-card" class="pm-planificacion-card open" style="margin: 1.5rem 0;">
           <div id="pm-planificacion-header" class="pm-planificacion-header">
             <div class="pm-planificacion-header-left">
               <div class="pm-planificacion-icon-box">🗺️</div>
@@ -1626,7 +1655,7 @@ function _renderVista(container, ctx) {
               <i class="bi bi-chevron-down pm-planificacion-toggle-btn"></i>
             </div>
           </div>
-          <div id="pm-planificacion-dropdown" class="pm-planificacion-dropdown" style="display:none;">
+          <div id="pm-planificacion-dropdown" class="pm-planificacion-dropdown" style="display:block;">
             <div class="pm-planificacion-tabs-pill">
               <button class="pm-plan-tab-pill active" data-tab="rutas">Mis Rutas</button>
               <button class="pm-plan-tab-pill" data-tab="planificaciones">Biblioteca</button>

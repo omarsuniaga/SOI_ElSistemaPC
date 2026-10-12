@@ -138,6 +138,10 @@ export function createPlanificationCard(container, opts) {
   async function init() {
     try {
       planificacionCard.style.display = ''
+      if (planDropdown) {
+        planificacionCard.classList.add('open')
+        planDropdown.style.display = 'block'
+      }
       activeRoute = await weeklyPlanAdapter.obtenerRutaActivaPorGrupo(claseId)
 
       if (!activeRoute) {
@@ -648,7 +652,7 @@ export function createPlanificationCard(container, opts) {
       <!-- Acciones de la Malla -->
       <div style="display: flex; gap: 0.6rem; align-items: center;">
         <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" id="btn-open-teacher-map" style="font-weight: 700; border-radius: 10px; padding: 0.55rem;">
-          <i class="bi bi-diagram-3-fill me-1"></i> Abrir Mapa Completo Duolingo
+          <i class="bi bi-signpost-2-fill me-1"></i> Abrir Mapa de Recorrido Pedagógico
         </button>
       </div>
     `

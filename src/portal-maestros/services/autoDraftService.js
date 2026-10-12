@@ -133,6 +133,8 @@ export async function discardDraft(draftId) {
  *   (puede ser el suplente); si no llega, se asume igual a `maestroId`.
  * @returns {Promise<Object>} saved row
  */
+let _supportsContenidoIaMejorado = null
+
 export async function saveObservation(
   sesionId,
   maestroId,
@@ -154,19 +156,45 @@ export async function saveObservation(
 
     if (deleteError) throw deleteError
 
-    const { data, error } = await supabase
+    const insertPayload = {
+      sesion_id: sesionId,
+      maestro_id: maestroId,
+      contenido_raw: contenidoRaw,
+      contenido_parsed: contenidoParsed,
+      contenido_ia_dsl: contenidoIaDsl,
+      es_borrador: false,
+    }
+
+    if (contenidoIaMejorado && _supportsContenidoIaMejorado !== false) {
+      insertPayload.contenido_ia_mejorado = contenidoIaMejorado
+    }
+
+    let { data, error } = await supabase
       .from('observaciones_sesion')
-      .insert({
-        sesion_id: sesionId,
-        maestro_id: maestroId,
-        contenido_raw: contenidoRaw,
-        contenido_parsed: contenidoParsed,
-        contenido_ia_dsl: contenidoIaDsl,
-        contenido_ia_mejorado: contenidoIaMejorado,
-        es_borrador: false,
-      })
+      .insert(insertPayload)
       .select()
       .single()
+
+    // Si la columna contenido_ia_mejorado no existe en el esquema de Supabase, reintentar sin ella
+    if (
+      error &&
+      (error.message?.includes('contenido_ia_mejorado') ||
+        error.details?.includes('contenido_ia_mejorado') ||
+        error.hint?.includes('contenido_ia_mejorado'))
+    ) {
+      console.warn('[autoDraftService] Columna contenido_ia_mejorado no existe en BD, reintentando sin ella...')
+      _supportsContenidoIaMejorado = false
+      delete insertPayload.contenido_ia_mejorado
+      const retry = await supabase
+        .from('observaciones_sesion')
+        .insert(insertPayload)
+        .select()
+        .single()
+      data = retry.data
+      error = retry.error
+    } else if (!error && insertPayload.contenido_ia_mejorado) {
+      _supportsContenidoIaMejorado = true
+    }
 
     if (error) throw error
 
@@ -192,18 +220,21 @@ export async function saveObservation(
     // Fallback: encolar para sync offline
     if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
       console.warn('[autoDraftService] Offline, encolando saveObservation...')
+      const offlinePayload = {
+        sesion_id: sesionId,
+        maestro_id: maestroId,
+        contenido_raw: contenidoRaw,
+        contenido_parsed: contenidoParsed,
+        contenido_ia_dsl: contenidoIaDsl,
+        es_borrador: false,
+      }
+      if (contenidoIaMejorado && _supportsContenidoIaMejorado !== false) {
+        offlinePayload.contenido_ia_mejorado = contenidoIaMejorado
+      }
       await enqueue({
         tabla: 'observaciones_sesion',
         operacion: 'upsert',
-        payload: {
-          sesion_id: sesionId,
-          maestro_id: maestroId,
-          contenido_raw: contenidoRaw,
-          contenido_parsed: contenidoParsed,
-          contenido_ia_dsl: contenidoIaDsl,
-          contenido_ia_mejorado: contenidoIaMejorado,
-          es_borrador: false,
-        },
+        payload: offlinePayload,
       })
       return { _offline: true, sesion_id: sesionId }
     }

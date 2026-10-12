@@ -562,7 +562,7 @@ export async function renderPlanificacionView(container, { maestroId: explicitMa
                     <span>${hasRoute ? "Editar" : "Diseñar"}</span>
                   </button>
 
-                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}" title="Ver Mapa Duolingo y Calificar">
+                  <button type="button" class="pm-btn-compact-secondary pm-btn-map" data-clase-id="${clase.id}" title="Ver Mapa de Recorrido y Calificar">
                     <i class="bi bi-diagram-3-fill"></i>
                     <span>Mapa</span>
                   </button>
@@ -1463,7 +1463,7 @@ export function _abrirModalGuiaUso() {
           <div class="pm-guide-step">
             <div class="pm-step-num">3</div>
             <div class="pm-step-content">
-              <strong>Califica en el Mapa Duolingo (5★)</strong>
+              <strong>Califica en el Mapa de Recorrido (5★)</strong>
               <p>Abre el <em>"Mapa"</em> de la clase, toca el indicador que trabajaste hoy y califica a los presentes de <strong>1 a 5 estrellas (⭐)</strong>. Con 5★ el indicador se marca como <em>Dominado</em> 👑.</p>
             </div>
           </div>

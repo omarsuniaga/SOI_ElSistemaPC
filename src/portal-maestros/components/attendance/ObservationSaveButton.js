@@ -145,7 +145,7 @@ export function createObservationSaveButton(container, opts) {
       )
       if (!promo.success) console.warn('[Fase C] Fallo parcial en promoción:', promo.error)
 
-      if (opts.planificationCard) await opts.planificationCard.refreshTree()
+      if (opts.planificationCard?.refreshTree) await opts.planificationCard.refreshTree()
 
       opts.setEditorValue('')
       if (opts.onDslContentClear) opts.onDslContentClear()

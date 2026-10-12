@@ -157,5 +157,45 @@ describe('autoDraftService — offline fallback', () => {
         Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
       }
     })
+
+    it('should retry without contenido_ia_mejorado when column does not exist in schema cache', async () => {
+      let callCount = 0
+      const insertCalls = []
+      supabase.from.mockImplementation(() => {
+        const chain = {
+          eq: vi.fn().mockReturnThis(),
+          delete: vi.fn().mockReturnThis(),
+          insert: vi.fn((payload) => {
+            insertCalls.push({ ...payload })
+            callCount++
+            if (callCount === 1) {
+              return {
+                select: () => ({
+                  single: async () => ({
+                    data: null,
+                    error: new Error("Could not find the 'contenido_ia_mejorado' column of 'observaciones_sesion' in the schema cache"),
+                  }),
+                }),
+              }
+            }
+            return {
+              select: () => ({
+                single: async () => ({
+                  data: { id: 'obs-fallback', ...payload },
+                  error: null,
+                }),
+              }),
+            }
+          }),
+        }
+        return chain
+      })
+
+      const result = await saveObservation('s1', 't1', 'raw text', { data: true }, 'ia-dsl', 'mejorado')
+      expect(result.id).toBe('obs-fallback')
+      expect(insertCalls).toHaveLength(2)
+      expect(insertCalls[0].contenido_ia_mejorado).toBe('mejorado')
+      expect(insertCalls[1].contenido_ia_mejorado).toBeUndefined()
+    })
   })
 })

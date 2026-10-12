@@ -5,6 +5,8 @@ import { announce } from '../utils/a11yUtils.js'
 import { enqueue, getQueueCount } from '../services/offlineQueue.js'
 import { createSyncQueueBadge } from '../components/SyncQueueBadge.js'
 import { abrirMapaDeRutas } from '../components/teacherRouteMapPanel.js'
+import { openTeacherRouteBuilder } from '../components/TeacherRouteBuilder.js'
+import { abrirModalMapaDeCalor } from './planificacionView.js'
 
 import {
   improveText,
@@ -1589,9 +1591,7 @@ function _renderVista(container, ctx) {
 
         <div id="pm-asist-announce" role="status" aria-live="polite" aria-atomic="true" class="pm-visually-hidden"></div>
 
-        <!-- Indicador de hoy: Banner de evaluación en 1-tap -->
-        <div id="pm-asist-indicador-banner" class="pm-asist-indicador-banner" style="display:none; margin: 0.85rem 0 1.25rem;"></div>
-
+        <!-- 1. Lista de Alumnos (Asistencia) -->
         <div id="pm-alumnos-list" class="pm-alumnos-queue"></div>
 
         <!-- 2. Bloque de Observaciones (Registro de Clase) -->
@@ -1986,10 +1986,38 @@ function _renderVista(container, ctx) {
   })
   _cleanups.push(() => planificationCard.destroy())
 
-  // === Banner de Indicador Activo de Hoy (1-tap evaluation) ===
-  async function _setupIndicadorBanner() {
-    const banner = container.querySelector('#pm-asist-indicador-banner')
-    if (!banner) return
+  // === Modal de Gestión de Malla Curricular y Planificación ===
+  async function _abrirModalGestionMalla() {
+    const backdrop = document.createElement('div')
+    backdrop.className = 'igm-backdrop'
+    backdrop.style.zIndex = '10000'
+
+    backdrop.innerHTML = `
+      <div class="igm-modal" role="dialog" aria-modal="true" aria-label="Gestión de Planificación Académica" style="max-width: 580px; width: 95vw;">
+        <div class="igm-header">
+          <div>
+            <div class="igm-breadcrumb">PLANIFICACIÓN ACADÉMICA</div>
+            <h3 style="margin: 2px 0 0; font-size: 1.15rem; font-weight: 800;">Gestión de Malla Curricular</h3>
+          </div>
+          <button class="igm-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="igm-body" id="pm-malla-modal-body" style="padding: 1.25rem;">
+          <div class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+            <span>Cargando datos curriculares...</span>
+          </div>
+        </div>
+      </div>
+    `
+    document.body.appendChild(backdrop)
+
+    const closeModal = () => backdrop.remove()
+    backdrop.querySelector('.igm-close')?.addEventListener('click', closeModal)
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal()
+    })
+
+    const modalBody = backdrop.querySelector('#pm-malla-modal-body')
 
     try {
       const { data: routeData } = await supabase
@@ -2026,9 +2054,12 @@ function _renderVista(container, ctx) {
 
       const allIndicadores = []
       if (routeData && Array.isArray(routeData.unidades)) {
-        routeData.unidades.forEach((u) => {
-          (u.objetivos || []).forEach((o) => {
-            (o.indicadores || []).forEach((ind) => {
+        const sortedUnidades = [...routeData.unidades].sort((a, b) => (a.orden || 0) - (b.orden || 0))
+        sortedUnidades.forEach((u) => {
+          const sortedObjetivos = [...(u.objetivos || [])].sort((a, b) => (a.orden || 0) - (b.orden || 0))
+          sortedObjetivos.forEach((o) => {
+            const sortedIndicadores = [...(o.indicadores || [])].sort((a, b) => (a.orden || 0) - (b.orden || 0))
+            sortedIndicadores.forEach((ind) => {
               const evalCount = evalCountByInd[ind.id] || 0
               const masteredCount = masteredCountByInd[ind.id] || 0
               const totalAlumnos = alumnos.length
@@ -2057,18 +2088,31 @@ function _renderVista(container, ctx) {
       }
 
       if (allIndicadores.length === 0) {
-        banner.innerHTML = `
-          <div class="pm-asist-ind-card pm-asist-ind-card--empty">
-            <div class="pm-asist-ind-info">
-              <span class="pm-asist-ind-badge"><i class="bi bi-diagram-3"></i> Malla Curricular</span>
-              <div class="pm-asist-ind-title">Esta clase no tiene indicadores cargados en su malla</div>
+        modalBody.innerHTML = `
+          <div style="text-align: center; padding: 1.5rem 0.5rem;">
+            <div style="width: 52px; height: 52px; border-radius: 16px; background: rgba(59, 130, 246, 0.1); color: var(--pm-primary); display: inline-flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 1rem;">
+              <i class="bi bi-diagram-3"></i>
             </div>
-            <a href="#/planificacion" class="pm-asist-ind-btn pm-asist-ind-btn--outline" style="font-size:0.78rem;">
-              <i class="bi bi-pencil-square"></i> Diseñar Malla
-            </a>
+            <h4 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 0.4rem;">Sin Malla Curricular</h4>
+            <p style="font-size: 0.82rem; color: var(--pm-text-muted); max-width: 380px; margin: 0 auto 1.5rem; line-height: 1.45;">
+              Esta clase aún no tiene indicadores ni objetivos pedagógicos configurados en su ruta de aprendizaje.
+            </p>
+            <button type="button" class="btn btn-primary" id="pm-btn-modal-crear-malla" style="font-weight: 700; border-radius: 12px; padding: 0.65rem 1.25rem;">
+              <i class="bi bi-pencil-square me-1"></i> Diseñar Malla Curricular
+            </button>
           </div>
         `
-        banner.style.display = ''
+        modalBody.querySelector('#pm-btn-modal-crear-malla')?.addEventListener('click', () => {
+          closeModal()
+          openTeacherRouteBuilder({
+            maestroId: maestro?.id || maestroIdSesion,
+            claseId,
+            route: routeData || null,
+            onSaved: async () => {
+              if (planificationCard?.refreshTree) await planificationCard.refreshTree()
+            },
+          })
+        })
         return
       }
 
@@ -2077,32 +2121,71 @@ function _renderVista(container, ctx) {
       try { currentIndId = localStorage.getItem(storageKey) } catch (_) {}
       let currentInd = allIndicadores.find((i) => i.id === currentIndId) || allIndicadores[0]
 
-      function renderBannerContent() {
-        banner.innerHTML = `
-          <div class="pm-asist-ind-card">
-            <div class="pm-asist-ind-info">
-              <span class="pm-asist-ind-badge"><i class="bi bi-bullseye"></i> INDICADOR DE HOY</span>
-              <div class="pm-asist-ind-title" title="${escHTML(currentInd.nombre)}">
-                🎯 ${escHTML(currentInd.nombre)}
-              </div>
-              ${currentInd.breadcrumb ? `<div class="pm-asist-ind-breadcrumb">${escHTML(currentInd.breadcrumb)}</div>` : ''}
+      function renderModalContent() {
+        modalBody.innerHTML = `
+          <!-- Tarjeta de Indicador Activo de Hoy -->
+          <div style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%); border: 1px solid rgba(79, 70, 229, 0.25); border-radius: 14px; padding: 1rem 1.15rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--pm-primary); letter-spacing: 0.5px;">
+                <i class="bi bi-bullseye"></i> Indicador activo de hoy
+              </span>
+              <span style="font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: ${currentInd.status === 'double' ? 'rgba(34, 197, 94, 0.15); color: #16a34a;' : currentInd.status === 'single' ? 'rgba(234, 179, 8, 0.15); color: #ca8a04;' : 'rgba(148, 163, 184, 0.15); color: #64748b;'}">
+                ${currentInd.status === 'double' ? '✅ Dominado' : currentInd.status === 'single' ? '🟡 Evaluado' : '⚪ Pendiente'}
+              </span>
             </div>
-            <div class="pm-asist-ind-actions">
-              <button type="button" class="pm-asist-ind-btn pm-asist-ind-btn--primary" id="pm-btn-evaluar-hoy" title="Calificar alumnos presentes">
-                <i class="bi bi-star-fill text-warning"></i>
-                <span>Evaluar (1 tap)</span>
+            <div style="font-size: 1.05rem; font-weight: 800; color: var(--pm-text, #0f172a); line-height: 1.35; margin-bottom: 0.25rem;">
+              🎯 ${escHTML(currentInd.nombre)}
+            </div>
+            ${currentInd.breadcrumb ? `<div style="font-size: 0.78rem; font-weight: 600; color: var(--pm-text-muted, #64748b); margin-bottom: 0.85rem;">${escHTML(currentInd.breadcrumb)}</div>` : ''}
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-warning btn-sm" id="pm-modal-btn-evaluar-hoy" style="font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-star-fill"></i> Evaluar alumnos (1 tap)
               </button>
-              <button type="button" class="pm-asist-ind-btn pm-asist-ind-btn--outline" id="pm-btn-cambiar-ind" title="Cambiar tema de hoy">
-                <i class="bi bi-arrow-left-right"></i>
-                <span>Cambiar</span>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="pm-modal-btn-cambiar-ind" style="font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-arrow-left-right"></i> Cambiar tema de hoy
               </button>
             </div>
           </div>
-        `
-        banner.style.display = ''
 
-        banner.querySelector('#pm-btn-evaluar-hoy')?.addEventListener('click', (e) => {
-          e.stopPropagation()
+          <!-- Opciones de Gestión de la Malla y Seguimiento -->
+          <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <button type="button" class="pm-modal-action-row" id="pm-modal-btn-editar-malla" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--pm-border, rgba(255,255,255,0.1)); background: var(--pm-surface-2, rgba(255,255,255,0.03)); color: inherit; text-align: left; cursor: pointer; width: 100%; transition: all 0.2s;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(99, 102, 241, 0.15); color: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+                <i class="bi bi-diagram-3-fill"></i>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 0.9rem;">Diseñar / Modificar Malla Curricular</div>
+                <div style="font-size: 0.74rem; color: var(--pm-text-muted);">Ajustar unidades, objetivos pedagógicos e indicadores.</div>
+              </div>
+              <i class="bi bi-chevron-right text-muted"></i>
+            </button>
+
+            <button type="button" class="pm-modal-action-row" id="pm-modal-btn-mapa-rutas" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--pm-border, rgba(255,255,255,0.1)); background: var(--pm-surface-2, rgba(255,255,255,0.03)); color: inherit; text-align: left; cursor: pointer; width: 100%; transition: all 0.2s;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #34d399; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+                <i class="bi bi-signpost-2-fill"></i>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 0.9rem;">Mapa de Recorrido Pedagógico</div>
+                <div style="font-size: 0.74rem; color: var(--pm-text-muted);">Visualizar árbol de ruta, estrellas acumuladas y prelaciones.</div>
+              </div>
+              <i class="bi bi-chevron-right text-muted"></i>
+            </button>
+
+            <button type="button" class="pm-modal-action-row" id="pm-modal-btn-mapa-calor" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--pm-border, rgba(255,255,255,0.1)); background: var(--pm-surface-2, rgba(255,255,255,0.03)); color: inherit; text-align: left; cursor: pointer; width: 100%; transition: all 0.2s;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+                <i class="bi bi-grid-3x3-gap-fill"></i>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 0.9rem;">Mapa de Calor y Deudas Pedagógicas</div>
+                <div style="font-size: 0.74rem; color: var(--pm-text-muted);">Matriz visual por alumno, notas 1-5 y exoneración de deudas.</div>
+              </div>
+              <i class="bi bi-chevron-right text-muted"></i>
+            </button>
+          </div>
+        `
+
+        modalBody.querySelector('#pm-modal-btn-evaluar-hoy')?.addEventListener('click', () => {
+          closeModal()
           if (editor) editor.insertText(`[${currentInd.nombre}] `)
           if (toolbar) toolbar.setContext({ indicadorActivo: currentInd.nombre })
           const obsBtn = container.querySelector('#btn-guardar-obs')
@@ -2116,22 +2199,49 @@ function _renderVista(container, ctx) {
           })
         })
 
-        banner.querySelector('#pm-btn-cambiar-ind')?.addEventListener('click', (e) => {
-          e.stopPropagation()
+        modalBody.querySelector('#pm-modal-btn-cambiar-ind')?.addEventListener('click', () => {
           _abrirQuickPickerIndicador(routeData, allIndicadores, currentInd, (selectedInd) => {
             currentInd = selectedInd
             try { localStorage.setItem(storageKey, selectedInd.id) } catch (_) {}
-            renderBannerContent()
+            renderModalContent()
+            if (planificationCard?.refreshTree) planificationCard.refreshTree()
             if (typeof AppToast !== 'undefined' && AppToast) {
               AppToast.info(`Indicador de hoy: ${selectedInd.nombre}`)
             }
           })
         })
+
+        modalBody.querySelector('#pm-modal-btn-editar-malla')?.addEventListener('click', () => {
+          closeModal()
+          openTeacherRouteBuilder({
+            maestroId: maestro?.id || maestroIdSesion,
+            claseId,
+            route: routeData || null,
+            onSaved: async () => {
+              if (planificationCard?.refreshTree) await planificationCard.refreshTree()
+            },
+          })
+        })
+
+        modalBody.querySelector('#pm-modal-btn-mapa-rutas')?.addEventListener('click', async () => {
+          closeModal()
+          await abrirMapaDeRutas(claseId, maestro, fechaHoy)
+        })
+
+        modalBody.querySelector('#pm-modal-btn-mapa-calor')?.addEventListener('click', async () => {
+          closeModal()
+          await abrirModalMapaDeCalor(clase || { id: claseId, nombre: clase?.nombre || 'Clase' })
+        })
       }
 
-      renderBannerContent()
+      renderModalContent()
     } catch (err) {
-      console.warn('[asistenciaView] Error configurando banner de indicador:', err)
+      console.warn('[asistenciaView] Error configurando modal de gestión de malla:', err)
+      modalBody.innerHTML = `
+        <div class="alert alert-danger" role="alert" style="font-size:0.85rem;">
+          No se pudieron cargar los datos de la planificación: ${escHTML(err?.message || 'Error desconocido')}
+        </div>
+      `
     }
   }
 
@@ -2314,7 +2424,13 @@ function _renderVista(container, ctx) {
     })
   }
 
-  _setupIndicadorBanner()
+  const btnManagePlanning = container.querySelector('#btn-manage-planning')
+  if (btnManagePlanning) {
+    btnManagePlanning.addEventListener('click', (e) => {
+      e.stopPropagation()
+      _abrirModalGestionMalla()
+    })
+  }
 
   let sessionRepertoirePanel
   if (!repertoireAdapter) {

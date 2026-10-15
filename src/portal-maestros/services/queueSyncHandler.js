@@ -12,6 +12,16 @@ import { supabase } from '../../lib/supabaseClient.js'
 
 const UNIQUE_VIOLATION = '23505'
 
+/**
+ * Columnas de conflicto para `upsert`, verificadas contra las restricciones
+ * UNIQUE de supabase/migrations/006_academic_route_schema.sql. Solo estas
+ * tablas admiten upsert desde la cola; cualquier otra se rechaza.
+ */
+const UPSERT_ON_CONFLICT = {
+  student_node_progress: 'student_id,node_id',
+  student_level_progress: 'student_id,level_id',
+}
+
 function normalizeSesionPayload(payload) {
   const out = { ...payload }
   if (out.contenido_dsl !== undefined) {
@@ -39,7 +49,7 @@ async function updateExistingSesion({ clase_id, fecha, maestro_id, contenido, as
 }
 
 /**
- * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object }} item
+ * @param {{ tabla: string, operacion: 'insert'|'update'|'delete'|'upsert', payload: object }} item
  */
 export async function syncQueueItem(item) {
   const { tabla, operacion } = item
@@ -62,6 +72,14 @@ export async function syncQueueItem(item) {
     } else if (operacion === 'delete') {
       const { error } = await supabase.from(tabla).delete().eq('id', payload.id)
       if (error) throw error
+    } else if (operacion === 'upsert') {
+      const onConflict = UPSERT_ON_CONFLICT[tabla]
+      if (!onConflict) throw new Error(`upsert no soportado para la tabla ${tabla}`)
+      const { error } = await supabase.from(tabla).upsert(payload, { onConflict })
+      if (error) throw error
+    } else {
+      // Falla cerrada: un item no reconocido no debe eliminarse como sincronizado.
+      throw new Error(`Operación de sincronización no soportada: ${operacion} en ${tabla}`)
     }
   } catch (err) {
     if (err.code === 'PGRST204') {

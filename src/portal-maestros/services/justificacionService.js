@@ -12,6 +12,7 @@ import { FileTooLargeError, InvalidMimeError } from './fileUploadService.js'
 const BUCKET_DOCUMENTOS = 'documentos'
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png'])
+const EXT_BY_MIME = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' }
 
 /**
  * Sube un archivo al bucket 'documentos' de Supabase Storage
@@ -26,9 +27,14 @@ export async function uploadEvidencia(file, folder = 'justificaciones') {
   if (file.size > MAX_FILE_SIZE_BYTES) throw new FileTooLargeError()
   if (!ALLOWED_MIME_TYPES.has(file.type)) throw new InvalidMimeError()
 
-  const ext = file.name.split('.').pop()
+  // La política RLS exige la forma "<folder>/<auth.uid()>/<archivo>" (maestro propietario).
+  const { data: sessionData } = await supabase.auth.getSession()
+  const uid = sessionData?.session?.user?.id
+  if (!uid) throw new Error('Sesión no válida. Inicie sesión nuevamente.')
+
+  const ext = EXT_BY_MIME[file.type]
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-  const path = `${folder}/${filename}`
+  const path = `${folder}/${uid}/${filename}`
 
   const { error } = await supabase.storage
     .from(BUCKET_DOCUMENTOS)

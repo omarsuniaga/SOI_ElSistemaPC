@@ -22,6 +22,9 @@ const { upsertSpy, updateSpy, fromSpy, storageFromSpy, uploadSpy, removeSpy } = 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
     from: (...args) => fromSpy(...args),
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: { user: { id: 'user-uid-1' } } } }),
+    },
     storage: {
       from: (...args) => {
         storageFromSpy(...args)
@@ -194,7 +197,7 @@ describe('uploadEvidencia / deleteEvidencia — bucket y validación', () => {
 
   it('devuelve la ruta del objeto (bucket privado), nunca una URL pública', async () => {
     const result = await uploadEvidencia(makeFile())
-    expect(result).toMatch(/^justificaciones\/\d+_[a-z0-9]+\.jpg$/)
+    expect(result).toMatch(/^justificaciones\/user-uid-1\/\d+_[a-z0-9]+\.jpg$/)
     expect(result).not.toMatch(/^https?:/)
   })
 

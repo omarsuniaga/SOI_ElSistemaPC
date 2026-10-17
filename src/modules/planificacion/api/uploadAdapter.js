@@ -5,7 +5,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 export function validateFile(file) {
   if (!file) return { valid: false, error: 'No se seleccionó archivo' }
-  const ext = file.name.split('.').pop().toLowerCase()
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin'
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     return {
       valid: false,

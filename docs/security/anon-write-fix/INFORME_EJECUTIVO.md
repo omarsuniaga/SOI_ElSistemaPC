@@ -82,11 +82,25 @@ PostgreSQL 17 en contenedor aislado. La línea base se reconstruye desde `supaba
 
 Reproducir: `npm run test:db:anon-write` (requiere Docker).
 
-## 5. Límites de esta validación
+## 5. Confirmación contra producción (solo lectura, 17-oct-2026)
 
-- **El modelo no es producción.** Se reconstruyó desde el repositorio porque no se autorizó SQL en producción. No refleja cambios hechos a mano en el SQL Editor después del volcado del 8-sep. Por eso el procedimiento incluye capturar el estado real antes de aplicar (`03_capture_current_state.sql`).
-- Los 35 enunciados del volcado que no cargaron (tablas `hermes_inbox`, `applicant_events` y políticas de `maestro_unidades/objetivos/indicadores`) no afectan a las ocho tablas.
-- Otras 47 tablas con escritura abierta a `authenticated` (`01_effective_write_exposure.sql` las lista) **no** se tocaron, a propósito: otra superficie y otro riesgo de regresión.
+Con autorización expresa se ejecutaron únicamente consultas a `pg_catalog` (equivalentes a `01_effective_write_exposure.sql` y `03_capture_current_state.sql`). No se leyó ningún dato de aplicación ni se aplicó la migración.
+
+- **Políticas:** las 39 políticas de las ocho tablas en producción coinciden una a una con el modelo, incluidas `*_authenticated_all`, `programas_anon_read` y `hermes_update_notifications`. El rollback restaura exactamente ese estado.
+- **ACL:** las ocho tablas tienen `anon=arwdDxtm` y `authenticated=arwdDxtm` (acceso total, idéntico al modelo). RLS activo en todas, sin `FORCE`.
+- **Exposición anónima:** exactamente esas ocho tablas, ninguna más.
+- **Escritura abierta a cuentas autenticadas:** 55 tablas en producción (47 además de las ocho), igual que el modelo.
+- **Roles reales en `profiles`:** solo `maestro` (25) y `admin` (5). Ningún usuario tiene `direccion`, `coordinacion_academica` ni `superadmin`, así que la lista de `es_gestor_academico()` cubre a los 5 administradores sin dejar fuera a nadie, y la decisión sobre `direccion` hoy no afecta a ninguna cuenta.
+- **Nombres libres:** `es_gestor_academico` y `puede_escribir_evento_clase` no existen en producción; no hay colisión.
+- **Filas:** estimaciones de estadísticas (`reltuples`): `programas` ≈ 5 y `salones` ≈ 2 (el inventario del repo decía 7 y 11); las demás sin estadísticas (`-1`). Son estimaciones, no conteos.
+
+Pendiente: la consulta de logs de API (`02_api_logs_anon_writes.sql`) se corre en Logs Explorer, no es SQL sobre la base, y no se ejecutó.
+
+## 5b. Límites de la validación
+
+- Las pruebas de comportamiento corren en un modelo aislado, no en producción; el catálogo del modelo coincide con producción en políticas y ACL (sección 5).
+- Los 35 enunciados del volcado que no cargaron (`hermes_inbox`, `applicant_events`, políticas de `maestro_unidades/objetivos/indicadores`) no afectan a las ocho tablas.
+- Las otras 47 tablas con escritura abierta a `authenticated` **no** se tocaron, a propósito: otra superficie y otro riesgo de regresión.
 
 ## 6. Seguimiento fuera de alcance
 

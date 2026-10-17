@@ -9,11 +9,11 @@
 ## Antes de aplicar
 
 1. **Revisar y aprobar** las tres decisiones de negocio del informe (rol `direccion`, maestros sin edición de catálogo, lectura de registros de clase).
-2. **Capturar el estado real** (solo lectura): ejecutar `supabase/tests/anon-write-fix/03_capture_current_state.sql` en el SQL Editor y guardar la salida. Compararla con las políticas listadas en el archivo de rollback. Si hay diferencias, ajustar el rollback **antes** de aplicar.
+2. **Estado real** (ya confirmado el 17-oct contra producción en solo lectura; repetir si pasó tiempo): ejecutar `supabase/tests/anon-write-fix/03_capture_current_state.sql` en el SQL Editor y guardar la salida. Compararla con las políticas listadas en el archivo de rollback. Si hay diferencias, ajustar el rollback **antes** de aplicar.
 3. **Confirmar que nadie legítimo escribe por la API pública:** ejecutar `02_api_logs_anon_writes.sql` en Logs Explorer (consulta el registro de la API, no las tablas). Cualquier `POST/PATCH/DELETE` legítimo contra las ocho tablas debe comprobarse contra las políticas nuevas. Se espera ver solo tráfico de las pantallas ACM/ADM y del portal de maestros con sesión.
 4. **Backup lógico de las tablas con datos** (`programas`, `salones`): exportar a CSV desde el panel. El cambio no destruye datos, pero es barato.
 5. **Ventana:** fuera de horas de clase. La migración corre en una transacción y toma bloqueos breves.
-6. **Verificar que `profiles.rol` no contiene valores fuera de la lista** (`03_…` sección 4). Si algún usuario real que gestiona programas/salones tiene otro rol, debe añadirse a `es_gestor_academico()` antes de aplicar.
+6. **Roles:** el 17-oct `profiles.rol` solo contenía `maestro` (25) y `admin` (5); si cambió, revisar que quien gestiona programas/salones esté en la lista de `es_gestor_academico()`.
 
 ## Aplicación
 

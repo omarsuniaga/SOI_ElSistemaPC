@@ -8,6 +8,7 @@
  * @returns {Object} API del componente
  */
 import { enableTrap } from '../utils/focusTrap.js';
+import { resolveStorageUrl } from '../../lib/storageFiles.js';
 import { FileTooLargeError, InvalidMimeError } from '../services/fileUploadService.js';
 import { showEvidenciaPreviewModal } from './EvidenciaPreviewModal.js';
 
@@ -488,7 +489,11 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
     const existingUrl = justificacionExistente?.evidencia_url || justificacionExistente?.evidencia_base64;
     if (existingUrl) {
       _previewUrl = existingUrl;
-      previewImg.src = existingUrl;
+      // La evidencia vive en un bucket privado: se firma la URL solo para mostrarla.
+      previewImg.src = '';
+      resolveStorageUrl(existingUrl)
+        .then((signed) => { if (_previewUrl === existingUrl && signed) previewImg.src = signed; })
+        .catch((err) => console.error('[JustificacionModal] No se pudo firmar la evidencia:', err));
       filePlaceholder.style.display = 'none';
       filePreview.style.display = 'block';
     } else {
@@ -563,10 +568,17 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
   };
 
   // Abrir vista previa ampliada
-  function openPreviewModal() {
+  async function openPreviewModal() {
     if (_previewUrl) {
+      let url = _previewUrl;
+      try {
+        url = await resolveStorageUrl(_previewUrl);
+      } catch (err) {
+        console.error('[JustificacionModal] No se pudo firmar la evidencia:', err);
+        return;
+      }
       showEvidenciaPreviewModal({
-        url: _previewUrl,
+        url,
         alumnoNombre: _currentAlumno?.nombre_completo || '',
         motivo: motivoInput?.value?.trim() || _currentJustificacion?.motivo || '',
       });

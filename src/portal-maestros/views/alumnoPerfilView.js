@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
+import { storageLinkAttrs } from '../../lib/storageFiles.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { formatPhone } from '../../shared/utils/phoneUtils.js'
@@ -1447,7 +1448,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
                                 <span class="pm-zen-justif-estado" style="color:${justifEstadoColor[justif.estado] || 'var(--pm-text-muted)'};">${justif.estado}</span>
                               </div>
                               <p class="pm-zen-justif-motivo">${escHTML(justif.motivo)}</p>
-                              ${justif.evidencia_url ? `<a class="pm-zen-justif-evidencia" href="${justif.evidencia_url}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Ver evidencia</a>` : ''}
+                              ${justif.evidencia_url ? `<a class="pm-zen-justif-evidencia" ${storageLinkAttrs(justif.evidencia_url)} target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Ver evidencia</a>` : ''}
                             </div>
                           ` : r.estado === 'J' ? `<span class="pm-zen-asistencia-obs" style="color:var(--pm-warning);">Justificado — sin detalle registrado</span>` : ''}
                           ${r.observaciones ? `<span class="pm-zen-asistencia-obs">${escHTML(r.observaciones)}</span>` : ''}

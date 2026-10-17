@@ -44,7 +44,7 @@ describe('fileUploadService.uploadAbsenceDoc', () => {
     })
   })
 
-  it('accepts a valid PDF under 5 MB and returns publicUrl + metadata', async () => {
+  it('accepts a valid PDF under 5 MB and returns the stored path + metadata', async () => {
     const pdf = makeFile('soporte.pdf', 'application/pdf', 1024)
     const mockUpload = vi.fn().mockResolvedValue({ error: null })
     const mockGetPublicUrl = vi.fn().mockReturnValue({
@@ -57,7 +57,9 @@ describe('fileUploadService.uploadAbsenceDoc', () => {
 
     const result = await uploadAbsenceDoc(pdf, 'maestro-1')
 
-    expect(result.publicUrl).toBe('https://cdn.test/ausencias/file.pdf')
+    expect(result.path).toMatch(/^ausencias\/maestro-1\/\d+_[a-z0-9]+\.pdf$/)
+    expect(result.publicUrl).toBeUndefined()
+    expect(mockGetPublicUrl).not.toHaveBeenCalled()
     expect(result.fileName).toContain('soporte.pdf')
     expect(result.uploadedAt).toBeDefined()
   })
@@ -74,10 +76,10 @@ describe('fileUploadService.uploadAbsenceDoc', () => {
     })
 
     const result = await uploadAbsenceDoc(jpg, 'maestro-2')
-    expect(result.publicUrl).toContain('cdn.test')
+    expect(result.path).toMatch(/^ausencias\/maestro-2\/\d+_[a-z0-9]+\.jpg$/)
   })
 
-  it('upload path matches ausencias/{timestamp}_{maestroId}_{rand}.{ext} pattern', async () => {
+  it('upload path matches ausencias/{maestroId}/{timestamp}_{rand}.{ext} pattern', async () => {
     const pdf = makeFile('doc.pdf', 'application/pdf', 512)
     let capturedPath = ''
     const mockUpload = vi.fn().mockImplementation((path) => {
@@ -94,7 +96,7 @@ describe('fileUploadService.uploadAbsenceDoc', () => {
 
     await uploadAbsenceDoc(pdf, 'maestro-99')
 
-    expect(capturedPath).toMatch(/^ausencias\/\d+_maestro-99_[a-z0-9]+\.pdf$/)
+    expect(capturedPath).toMatch(/^ausencias\/maestro-99\/\d+_[a-z0-9]+\.pdf$/)
   })
 
   it('throws UploadError when Supabase storage returns an error', async () => {

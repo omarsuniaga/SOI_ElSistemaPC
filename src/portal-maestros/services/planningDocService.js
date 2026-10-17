@@ -4,17 +4,14 @@ export async function uploadPlanningDoc({ maestroId, claseId, title, file, descr
   if (!file || !title) throw new Error('file and title are required')
   if (file.size > 10 * 1024 * 1024) throw new Error('File size must be < 10MB')
 
-  const path = `planning/${maestroId}/${Date.now()}_${file.name}`
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `planning/${maestroId}/${Date.now()}_${safeName}`
 
   const { error: uploadError } = await supabase.storage
     .from('documentos')
     .upload(path, file, { contentType: file.type })
 
   if (uploadError) throw uploadError
-
-  const { data: urlData } = supabase.storage
-    .from('documentos')
-    .getPublicUrl(path)
 
   const { data, error } = await supabase
     .from('planning_documents')
@@ -23,7 +20,7 @@ export async function uploadPlanningDoc({ maestroId, claseId, title, file, descr
       clase_id: claseId || null,
       title,
       file_name: file.name,
-      file_url: urlData.publicUrl,
+      file_url: path, // ruta en bucket privado (URL firmada al visualizar)
       file_type: file.type,
       file_size: file.size,
       description: description || null,

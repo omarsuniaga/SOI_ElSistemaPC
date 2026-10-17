@@ -108,7 +108,7 @@ describe('StudentList — botón de comprobante adjunto', () => {
     expect(btn).toBeNull()
   })
 
-  it('hacer click en "Ver comprobante" abre el modal de visualización de evidencia', () => {
+  it('hacer click en "Ver comprobante" abre el modal de visualización de evidencia', async () => {
     const c = montar({
       estado: { a1: 'J', a2: 'P' },
       justificaciones: {
@@ -118,8 +118,9 @@ describe('StudentList — botón de comprobante adjunto', () => {
     const btn = c.querySelector('.pm-asist-item[data-id="a1"] [data-action="ver-evidencia"]')
     btn.click()
 
+    // La URL se resuelve de forma asíncrona (resolveStorageUrl): las URLs externas pasan sin firmar.
+    await vi.waitFor(() => expect(document.getElementById('pm-evidencia-preview-modal')).not.toBeNull())
     const modal = document.getElementById('pm-evidencia-preview-modal')
-    expect(modal).not.toBeNull()
     expect(modal.querySelector('img').src).toBe('https://test.co/comprobante.jpg')
     expect(modal.textContent).toContain('Ana Pérez')
     expect(modal.textContent).toContain('Reposo médico')

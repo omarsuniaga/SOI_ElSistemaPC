@@ -75,7 +75,7 @@ function randomId() {
  *
  * @param {File} file - The file to upload
  * @param {string} maestroId - The teacher's ID (used in the storage path)
- * @returns {Promise<{ publicUrl: string, fileName: string, uploadedAt: string }>}
+ * @returns {Promise<{ path: string, fileName: string, uploadedAt: string }>}
  * @throws {FileTooLargeError} When file exceeds 5 MB
  * @throws {InvalidMimeError} When file MIME type is not PDF, JPG, or PNG
  * @throws {UploadError} When the Supabase upload fails
@@ -92,7 +92,7 @@ export async function uploadAbsenceDoc(file, maestroId) {
   const ext = extFromMime(file.type)
   const timestamp = Date.now()
   const rand = randomId()
-  const path = `ausencias/${timestamp}_${maestroId}_${rand}.${ext}`
+  const path = `ausencias/${maestroId}/${timestamp}_${rand}.${ext}`
 
   let uploadError
   try {
@@ -108,10 +108,9 @@ export async function uploadAbsenceDoc(file, maestroId) {
     throw new UploadError(uploadError.message || 'Error al subir el archivo.', uploadError)
   }
 
-  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
-
+  // Bucket privado: se devuelve la ruta; la URL firmada se genera al visualizar.
   return {
-    publicUrl: data.publicUrl,
+    path,
     fileName: file.name,
     uploadedAt: new Date().toISOString(),
   }

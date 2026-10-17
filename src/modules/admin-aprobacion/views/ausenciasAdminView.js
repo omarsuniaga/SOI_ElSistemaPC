@@ -9,6 +9,7 @@ import {
   obtenerHistorialAusencias,
   rechazarAusencia,
 } from '../api/ausenciaAprobacionApi.js'
+import { storageLinkAttrs } from '../../../lib/storageFiles.js'
 import { triageAusenciasPendientes } from '../api/ausenciasTriageJev.js'
 import { createAusenciaAprobacionCard } from '../components/ausenciaAprobacionCard.js'
 
@@ -789,7 +790,7 @@ function _renderHistorialView(container) {
               }
 
               const comprobanteBtn = a.archivo_url ? `
-                <a href="${a.archivo_url}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary rounded-pill py-1 px-2" style="font-size:0.75rem" title="Ver archivo adjunto">
+                <a ${storageLinkAttrs(a.archivo_url)} target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary rounded-pill py-1 px-2" style="font-size:0.75rem" title="Ver archivo adjunto">
                   <i class="bi bi-paperclip me-1"></i>Ver
                 </a>
               ` : '<span class="text-muted small">—</span>'

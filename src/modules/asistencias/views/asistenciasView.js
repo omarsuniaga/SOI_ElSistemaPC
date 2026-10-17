@@ -12,6 +12,7 @@
  */
 
 import '../styles/asistencias.css'
+import { storageLinkAttrs } from '../../../lib/storageFiles.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
@@ -771,7 +772,7 @@ function _mostrarModalJustificacion({ student, clase, docente, fecha, motivo, ev
       <!-- Evidencia / Archivo Adjunto -->
       <div>
         ${evidencia ? `
-          <a href="${escapeHTML(evidencia)}" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between p-3 rounded-3">
+          <a ${storageLinkAttrs(evidencia)} target="_blank" rel="noopener" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between p-3 rounded-3">
             <div class="d-flex align-items-center gap-2">
               <i class="bi bi-paperclip fs-5 text-primary"></i>
               <span class="fw-semibold small">Ver Comprobante / Certificado Adjunto</span>

@@ -5,6 +5,10 @@
 // EARLY ERROR SUPPRESSION (Must be first!)
 import './early-error-suppression.js'
 
+// Enlaces a archivos privados (Storage) → URL firmada al hacer clic
+import { installStorageLinkHandler } from './lib/storageFiles.js'
+installStorageLinkHandler()
+
 // Desactivar gestos de recarga pull-to-refresh (Look and Feel nativo)
 import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
 disablePullToRefresh()

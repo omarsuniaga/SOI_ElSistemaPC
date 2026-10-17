@@ -27,6 +27,7 @@ import {
   findAffectedClasses,
   findAvailableSalons,
   formatWhatsAppMessage,
+  uploadAbsenceSupportFile,
 } from '../ausenciaService.js';
 
 describe('ausenciaService', () => {
@@ -148,5 +149,18 @@ describe('ausenciaService', () => {
       expect(text).toContain('Solución: Reprogramar clase el 2026-05-22 a las 10:00 en Salón A');
       expect(text).toContain('https://soi.test/admin/ausencias/123');
     });
+  });
+});
+
+describe('uploadAbsenceSupportFile', () => {
+  it('devuelve la ruta del objeto en el bucket privado, no una URL pública', async () => {
+    const file = new File([new Uint8Array(10)], 'Certificado médico.pdf', { type: 'application/pdf' });
+    const result = await uploadAbsenceSupportFile({ maestroId: 'm-1', file });
+    expect(result).toMatch(/^ausencias\/m-1\/\d+_[\w.-]+\.pdf$/);
+    expect(result).not.toMatch(/^https?:/);
+  });
+
+  it('devuelve null si no hay archivo', async () => {
+    expect(await uploadAbsenceSupportFile({ maestroId: 'm-1', file: null })).toBeNull();
   });
 });

@@ -17,7 +17,8 @@ const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png'
  * Sube un archivo al bucket 'documentos' de Supabase Storage
  * @param {File} file
  * @param {string} folder - subcarpeta dentro del bucket (ej: 'justificaciones')
- * @returns {Promise<string>} URL pública del archivo
+ * @returns {Promise<string>} ruta (path) del objeto dentro del bucket privado;
+ *   usar resolveStorageUrl() de lib/storageFiles.js para obtener una URL firmada
  * @throws {FileTooLargeError} si el archivo supera 5 MB
  * @throws {InvalidMimeError} si el tipo no es PDF/JPG/PNG
  */
@@ -29,17 +30,14 @@ export async function uploadEvidencia(file, folder = 'justificaciones') {
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
   const path = `${folder}/${filename}`
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(BUCKET_DOCUMENTOS)
     .upload(path, file, { cacheControl: '3600', upsert: false })
 
   if (error) throw error
 
-  const { data: urlData } = supabase.storage
-    .from(BUCKET_DOCUMENTOS)
-    .getPublicUrl(path)
-
-  return urlData.publicUrl
+  // Bucket privado: se persiste la ruta, no una URL pública.
+  return path
 }
 
 /**

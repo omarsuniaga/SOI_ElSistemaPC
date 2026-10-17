@@ -3,6 +3,8 @@
  * Diseño profesional con colores de urgencia, tipo con ícono, y acciones claras.
  */
 
+import { storageLinkAttrs } from '../../../lib/storageFiles.js'
+
 function escHTML(value) {
   if (value === null || value === undefined) return ''
   return String(value)
@@ -526,7 +528,7 @@ export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, o
       
       ${ausencia.archivo_url ? `
         <div class="aac-doc-wrap">
-          <a href="${escHTML(ausencia.archivo_url)}" target="_blank" rel="noopener" class="aac-btn-doc" title="Ver comprobante médico o documento oficial">
+          <a ${storageLinkAttrs(ausencia.archivo_url)} target="_blank" rel="noopener" class="aac-btn-doc" title="Ver comprobante médico o documento oficial">
             <i class="bi bi-paperclip"></i>
             <span>Ver Comprobante / Certificado</span>
             <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;"></i>

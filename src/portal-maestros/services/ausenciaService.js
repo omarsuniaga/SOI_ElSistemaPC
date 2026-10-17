@@ -112,8 +112,8 @@ export async function uploadAbsenceSupportFile({ maestroId, file }) {
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  // Bucket privado: se persiste la ruta; la URL firmada se genera al visualizar.
+  return path;
 }
 
 export function buildAbsencePayload({ maestro, formState, archivoUrl = null }) {

@@ -61,9 +61,9 @@ export async function subirFotoActivo(id, file) {
   try {
     const ext = file.name ? file.name.split(".").pop() : "jpg"
     const path = "activos/" + id + "/foto." + ext
-    const { error: uploadErr } = await supabase.storage.from("inventario").upload(path, file, { upsert: true })
+    const { error: uploadErr } = await supabase.storage.from("instrumentos-fotos").upload(path, file, { upsert: true, contentType: file.type })
     if (uploadErr) return handleError(uploadErr)
-    const { data: urlData } = supabase.storage.from("inventario").getPublicUrl(path)
+    const { data: urlData } = supabase.storage.from("instrumentos-fotos").getPublicUrl(path)
     const { data, error } = await supabase.from("inventario_activos").update({ foto_url: urlData.publicUrl }).eq("id", id).select().single()
     return error ? handleError(error) : { data, error: null }
   } catch (e) { return handleError(e) }
@@ -335,8 +335,8 @@ export async function subirContratoComodato(comodatoId, file) {
     const path = "comodatos/" + comodatoId + "/contrato.pdf"
     const { error: uploadErr } = await supabase.storage.from("documentos").upload(path, file, { upsert: true, contentType: "application/pdf" })
     if (uploadErr) return handleError(uploadErr)
-    const { data: urlData } = supabase.storage.from("documentos").getPublicUrl(path)
-    const { data, error } = await supabase.from("comodatos_activos").update({ contrato_firmado_url: urlData.publicUrl }).eq("id", comodatoId).select().single()
+    // Bucket privado: se persiste la ruta; la URL firmada se genera al visualizar.
+    const { data, error } = await supabase.from("comodatos_activos").update({ contrato_firmado_url: path }).eq("id", comodatoId).select().single()
     return error ? handleError(error) : { data, error: null }
   } catch (e) { return handleError(e) }
 }

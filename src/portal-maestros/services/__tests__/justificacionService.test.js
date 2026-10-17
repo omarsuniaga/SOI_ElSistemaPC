@@ -192,6 +192,12 @@ describe('uploadEvidencia / deleteEvidencia — bucket y validación', () => {
     expect(storageFromSpy).toHaveBeenCalledWith('documentos')
   })
 
+  it('devuelve la ruta del objeto (bucket privado), nunca una URL pública', async () => {
+    const result = await uploadEvidencia(makeFile())
+    expect(result).toMatch(/^justificaciones\/\d+_[a-z0-9]+\.jpg$/)
+    expect(result).not.toMatch(/^https?:/)
+  })
+
   it('rechaza archivos mayores a 5MB sin llegar a subir', async () => {
     const file = makeFile({ size: 6 * 1024 * 1024 })
     await expect(uploadEvidencia(file)).rejects.toBeInstanceOf(FileTooLargeError)

@@ -136,7 +136,7 @@ describe('JustificacionModal — quitar evidencia existente (bug #3)', () => {
 })
 
 describe('JustificacionModal — previsualización de evidencia (lightbox)', () => {
-  it('hacer click en el preview de evidencia abre el modal de visualización en tamaño completo', () => {
+  it('hacer click en el preview de evidencia abre el modal de visualización en tamaño completo', async () => {
     const { modal } = freshModal()
     modal.open(
       { id: 'a5', nombre_completo: 'Elena Mora' },
@@ -148,8 +148,8 @@ describe('JustificacionModal — previsualización de evidencia (lightbox)', () 
     expect(previewWrapper).not.toBeNull()
     previewWrapper.click()
 
+    await vi.waitFor(() => expect(document.getElementById('pm-evidencia-preview-modal')).not.toBeNull())
     const lightbox = document.getElementById('pm-evidencia-preview-modal')
-    expect(lightbox).not.toBeNull()
     expect(lightbox.querySelector('img').src).toBe('https://test.co/certificado.png')
     expect(lightbox.textContent).toContain('Elena Mora')
     expect(lightbox.textContent).toContain('Gripe fuerte')

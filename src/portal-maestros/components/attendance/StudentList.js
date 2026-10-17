@@ -1,4 +1,5 @@
 import { escHTML } from '../../utils/portalUtils.js'
+import { resolveStorageUrl } from '../../../lib/storageFiles.js'
 import { showEvidenciaPreviewModal } from '../EvidenciaPreviewModal.js'
 import { eliminarJustificacionRegistro, deleteEvidencia } from '../../services/justificacionService.js'
 
@@ -204,8 +205,15 @@ export function createStudentList(container, {
       const alumno = alumnos.find((a) => a.id === id)
       const justif = justificaciones?.[id]
       if (url) {
+        let signedUrl = url
+        try {
+          signedUrl = await resolveStorageUrl(url)
+        } catch (err) {
+          console.error('[StudentList] No se pudo firmar la evidencia:', err)
+          return
+        }
         showEvidenciaPreviewModal({
-          url,
+          url: signedUrl,
           alumnoNombre: alumno?.nombre_completo || '',
           motivo: justif?.motivo || '',
         })

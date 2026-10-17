@@ -102,7 +102,10 @@ async function extractDocText(file) {
 
 export async function uploadToStorage(file) {
   const ext = file.name.split('.').pop().toLowerCase()
-  const path = `planificacion-uploads/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const { data: sessionData } = await supabase.auth.getSession()
+  const uid = sessionData?.session?.user?.id
+  if (!uid) throw new Error('Sesión no válida. Inicie sesión nuevamente.')
+  const path = `planificacion-uploads/${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
   const { error } = await supabase.storage
     .from('planificacion-docs')

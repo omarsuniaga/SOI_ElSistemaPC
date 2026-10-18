@@ -11,7 +11,11 @@ Principios: (1) el sitio admin no cambia de configuración; (2) el sitio públic
 - [ ] Revisar el estado de las ramas de seguridad (`anon-write` `…17180000`, R9 `…17190000`, storage `…17200000`): este módulo es independiente de ellas (sin objetos en común); si ya se integraron, repetir `npm run test:db:documentos-qr`.
 - [ ] Ejecutar localmente: `npm run build:public` (incluye la auditoría de aislamiento), `npx vite build`, `npx vitest run src/modules/documentos-publicos apps src/core src/portales`, `node supabase/tests/documentos-qr/run_tests.mjs` (+ `--mutate 1..11`).
 
-## 1. 🔒 Confirmar y crear el sitio público
+## 1. Sitio público — CREADO (2026-10-18), falta configurarlo
+
+> El sitio `elsistemapc` (id `f8578881-…`) ya existe y su URL `https://elsistemapc.netlify.app` quedó reservada; está vacío (sin repo, variables ni deploy). Pendiente de este paso: 1.3, 1.4 y 1.5 en la interfaz de Netlify. Los puntos 1.1 y 1.2 quedaron resueltos.
+
+### (histórico) Confirmar y crear el sitio público
 
 1. Autorización del titular para crear el sitio Netlify `elsistemapc` (equipo `5fe939dd…`). Netlify confirma o rechaza el nombre en ese momento.
 2. Si el nombre **no está disponible**: detenerse y pedir decisión (alternativas en el informe). **No** improvisar otro nombre ni generar QR.

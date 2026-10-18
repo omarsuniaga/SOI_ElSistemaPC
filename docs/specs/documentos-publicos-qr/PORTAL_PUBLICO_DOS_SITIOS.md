@@ -28,11 +28,11 @@ Evidencia exacta:
 2. `GET https://elsistemapc.netlify.app/` → `404 text/plain` «Not Found - Request ID: …» servido por `Server: Netlify`. Idéntico a un nombre de control inexistente (`this-name-should-not-exist-zz9.netlify.app`) y distinto de los sitios existentes (200 `text/html`).
 3. Mismo resultado en `/d/x`.
 
-**Conclusión: no hay un sitio activo con ese nombre; probablemente está libre, pero NO está confirmado.** Límite: los subdominios `*.netlify.app` son un espacio global de nombres; un 404 de Netlify no distingue un nombre libre de uno reservado, de un sitio de otro equipo sin deploy publicado o de un nombre recién liberado. **Solo la creación del sitio lo confirma** (puede fallar por «nombre no disponible»).
+**Conclusión de la comprobación previa: no había un sitio activo con ese nombre; probablemente libre, sin confirmar.** (Confirmado después por la creación autorizada, ver abajo.) Límite: los subdominios `*.netlify.app` son un espacio global de nombres; un 404 de Netlify no distingue un nombre libre de uno reservado, de un sitio de otro equipo sin deploy publicado o de un nombre recién liberado. **Solo la creación del sitio lo confirma** (puede fallar por «nombre no disponible»).
 
 Decisión: **no se creó el sitio ni se eligió otro nombre.** Hasta que el titular autorice la creación y esta resulte exitosa, **no hay QR definitivos** (el panel los bloquea por diseño, §5). Si el nombre no estuviera disponible, alternativas institucionales a proponer al titular (sin elegir): `elsistemapuntacana`, `elsistema-puntacana`, `sistemapuntacana`, o un dominio propio. Cambiar el nombre solo exige actualizar `VITE_PUBLIC_BASE_URL`/`VITE_PUBLIC_ALLOWED_ORIGINS` del sitio admin y el `connect-src`/`img-src` **no** (dependen de Supabase, no del dominio).
 
-**Solicitud de autorización pendiente (crea un recurso en el equipo; puede afectar cuotas):** crear el sitio Netlify `elsistemapc` en el equipo `5fe939dd…` (plan actual `nf_team_dev`), enlazado al mismo repositorio, con la configuración del §4.
+**Actualización — sitio creado con autorización del titular (2026-10-18):** el conector Netlify creó el sitio `elsistemapc` (id `f8578881-f51b-4724-9458-bbbaf07d1df3`, equipo `omareduardo74`, plan `nf_team_dev`). **El nombre estaba disponible: la URL `https://elsistemapc.netlify.app` queda reservada para este sitio.** Estado actual del sitio: **vacío** — sin repositorio enlazado, sin variables, sin ningún deploy (la URL aún no sirve contenido). El conector solo permite crear el proyecto; el enlace al repositorio, el *base directory* y las variables se configuran en la interfaz de Netlify (pasos 1.3–1.5 del runbook). No se publicó nada y **siguen sin existir QR definitivos** hasta cumplir el runbook (deploy del sitio B, migraciones, Edge Function y smoke test).
 
 ## 3. Arquitectura final: un repositorio, dos despliegues
 
@@ -128,7 +128,7 @@ Rutas del sitio público: `/` inicio · `/qr-code` biblioteca · `/d/<slug>` vis
 
 | ID | Riesgo | Mitigación |
 |---|---|---|
-| P1 | El subdominio no está confirmado | Autorización de creación; QR bloqueados mientras tanto; plan B de nombres |
+| P1 | ~~Subdominio no confirmado~~ → **resuelto**: sitio `elsistemapc` creado, URL reservada. Sigue vacío y sin deploy | Completar el runbook §1.3–1.5; QR bloqueados hasta el smoke test |
 | P2 | *Base directory* / `publish` relativo / `ignore` del sitio B no probados en Netlify real | Deploy Preview de B antes de publicar (runbook paso 6) |
 | P3 | El sitio admin se despliega solo desde `master`; el merge publica de inmediato | Merge solo en ventana acordada; el admin no cambia su despliegue; ver runbook |
 | P4 | Edge Function sin desplegar; ventana entre migraciones | Orden y verificación del runbook; subidas bloqueadas en producción por defecto |
@@ -151,4 +151,4 @@ Rama `feat/documentos-qr-publicos` (push hecho). Commits de esta fase sobre `360
 
 **APTO CON CONDICIONES.**
 
-Justificación: el portal público es técnicamente independiente (artefacto de 17 KB sin código admin, auditado automáticamente), el admin conserva su configuración de despliegue (diff vacío), los visitantes consultan sin sesión y solo lo publicado, el QR solo puede codificar el dominio público autorizado y no cambia al reemplazar el archivo, y todo lo ejecutable sin tocar producción pasó. Condiciones: (1) autorización del titular para crear el sitio `elsistemapc` y confirmación del nombre; (2) Deploy Preview del sitio B que confirme la lectura de `apps/public/netlify.toml`; (3) desplegar la Edge Function y aplicar la migración staged **antes** de habilitar subidas; (4) smoke test en producción (expiración de URL firmada y caché); (5) aportar el logotipo oficial y, si procede, la URL institucional.
+Justificación: el portal público es técnicamente independiente (artefacto de 17 KB sin código admin, auditado automáticamente), el admin conserva su configuración de despliegue (diff vacío), los visitantes consultan sin sesión y solo lo publicado, el QR solo puede codificar el dominio público autorizado y no cambia al reemplazar el archivo, y todo lo ejecutable sin tocar producción pasó. Condiciones: (1) ~~crear el sitio y confirmar el nombre~~ **hecho** (queda enlazar repositorio, base directory y variables); (2) Deploy Preview del sitio B que confirme la lectura de `apps/public/netlify.toml`; (3) desplegar la Edge Function y aplicar la migración staged **antes** de habilitar subidas; (4) smoke test en producción (expiración de URL firmada y caché); (5) aportar el logotipo oficial y, si procede, la URL institucional.

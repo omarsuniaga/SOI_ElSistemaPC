@@ -12,6 +12,8 @@ import pg from 'pg';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIG = path.resolve(here, '../../migrations/20261018120000_documentos_publicos_qr.sql');
 const ROLLBACK = path.resolve(here, '../../rollback/20261018120000_documentos_publicos_qr.rollback.sql');
+const STAGED = path.resolve(here, '../../staged/20261018130000_documentos_publicos_verificacion_servidor.sql');
+const STAGED_ROLLBACK = path.resolve(here, '../../rollback/20261018130000_documentos_publicos_verificacion_servidor.rollback.sql');
 const conn = { host: process.env.PGHOST || '127.0.0.1', port: Number(process.env.PGPORT || 54331), user: 'postgres', password: 'test' };
 const mi = process.argv.indexOf('--mutate');
 const mutation = mi > -1 ? Number(process.argv[mi + 1]) : 0;
@@ -256,6 +258,37 @@ try {
     }
     ok((await as('anon', `SELECT * FROM public.obtener_publicacion_publica('${c.rows[0].slug}')`)).rows.every((r) => r.storage_path === b), 'public RPC only ever returns the current version');
     ok((await as('admin', objRead(a))).rows.length === 1, 'admin can still reach the superseded version');
+  }
+
+  // ── J. stage 2: server-side verified registration (staged migration) ──
+  console.log('J. stage 2 (staged migration)');
+  {
+    await sql(fs.readFileSync(STAGED, 'utf8'));
+    const c = await as('admin', create);
+    const id = c.rows[0].id;
+    const pth = objPath(id);
+    await as('admin', ins(pth));
+    const direct = reg(pth, 'application/pdf', 1000, '1'.repeat(64), id);
+    ok(denied(await as('admin', direct)), 'stage 2: direct registration RPC is closed to admin');
+    ok(denied(await as('superadmin', direct)), 'stage 2: direct registration RPC is closed to superadmin');
+    const ver = (actor, p = pth) => `SELECT * FROM public.registrar_version_documento_verificada(${actor}, '${id}', '${p}', 'application/pdf', 1000, '${'2'.repeat(64)}', 'x.pdf', 'm')`;
+    for (const who of ['anon', ...NON_ADMIN, 'admin', 'superadmin']) {
+      ok(denied(await as(who, ver(`'${U.admin}'`))), `stage 2: ${who} cannot call the verified RPC`);
+    }
+    for (const bad of [U.maestro, U.alumno, U.admin_pendiente, U.admin_inactivo, U.inventarista]) {
+      ok(denied(await as('service_role', ver(`'${bad}'`))), 'stage 2: service_role with a non-admin actor is rejected');
+    }
+    ok(denied(await as('service_role', ver('NULL'))), 'stage 2: null actor rejected');
+    ok(denied(await as('service_role', `SELECT * FROM public._registrar_version_documento_core('${U.admin}', '${id}', '${pth}', 'application/pdf', 1000, '${'2'.repeat(64)}', 'x', 'm')`)), 'stage 2: core is not callable');
+    const good = await as('service_role', ver(`'${U.admin}'`));
+    ok(!good.err && good.rows[0]?.numero === 1 && good.rows[0]?.created_by === U.admin, 'stage 2: service_role registers on behalf of an active admin', good.err?.message);
+    const evt = await as('admin', `SELECT detalle FROM public.publicaciones_documentos_eventos WHERE publicacion_id='${id}' AND accion='nueva_version'`);
+    ok(evt.rows[0]?.detalle?.verificada_en_servidor === true, 'stage 2: audit marks the version as server-verified');
+    ok((await as('service_role', ver(`'${U.admin}'`, `${id}/${uuid()}.pdf`))).err !== null, 'stage 2: verified RPC still requires the object to exist');
+    await sql(fs.readFileSync(STAGED_ROLLBACK, 'utf8'));
+    ok((await as('admin', reg(objPath(id), 'application/pdf', 1000, '3'.repeat(64), id))).err?.code !== '42501', 'stage 2 rollback: direct RPC callable again (fails only on missing object)');
+    const gone = (await sql("SELECT count(*) c FROM pg_proc WHERE proname IN ('registrar_version_documento_verificada','_registrar_version_documento_core')")).rows[0].c;
+    ok(Number(gone) === 0, 'stage 2 rollback removes its functions');
   }
 
   // ── G. collateral ──

@@ -15,6 +15,8 @@ Principios: (1) el sitio admin no cambia de configuración; (2) el sitio públic
 
 > El sitio `elsistemapc` (id `f8578881-…`) ya existe y su URL `https://elsistemapc.netlify.app` quedó reservada; está vacío (sin repo, variables ni deploy). Pendiente de este paso: 1.3, 1.4 y 1.5 en la interfaz de Netlify. Los puntos 1.1 y 1.2 quedaron resueltos.
 
+> **Rama de producción del sitio B (hallazgo del primer intento de deploy, 2026-10-18):** el sitio se enlazó a `master`, donde todavía NO existe `apps/public`; Netlify falla en «Reading and parsing configuration files … Base directory does not exist» (no es un error de sintaxis del `netlify.toml`). Mientras el código no esté en `master`, configurar el sitio B con **Branch to deploy = `feat/documentos-qr-publicos`** (Site configuration → Build & deploy → Branches) y volver a `master` tras el merge autorizado. **No** hacer merge a `master` solo para esto: despliega el sitio admin automáticamente.
+
 ### (histórico) Confirmar y crear el sitio público
 
 1. Autorización del titular para crear el sitio Netlify `elsistemapc` (equipo `5fe939dd…`). Netlify confirma o rechaza el nombre en ese momento.

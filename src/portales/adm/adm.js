@@ -77,6 +77,7 @@ const navGroups = [
     icon: 'bi-gear',
     items: [
       { id: 'cartelera', label: 'Cartelera / Pantalla', icon: 'bi-tv' },
+      { id: 'documentos-publicos', label: 'Documentos públicos y QR', icon: 'bi-qr-code' },
       { id: 'cartelera-diapositiva', label: 'Diseñador de Diapositivas', icon: 'bi-easel2' },
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },

@@ -61,6 +61,7 @@ export default defineConfig({
           calendario:   'calendario.html',
           luteria:      'luteria.html',
           simulador:    'simulador.html',
+          documento:    'd.html',
         },
       output: {
         manualChunks(id) {
@@ -140,6 +141,7 @@ export default defineConfig({
             { prefix: '/luteria', file: '/luteria.html' },
             { prefix: '/lut', file: '/luteria.html' },
             { prefix: '/simulador', file: '/simulador.html' },
+            { prefix: '/d', file: '/d.html' },
           ]
 
           for (const p of portalPrefixes) {

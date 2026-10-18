@@ -80,7 +80,7 @@ Diseño adoptado: bucket `soi-publico` **privado** + política `SELECT` para `an
 1. **Cliente** (`validateFile`): tamaño 1 B–10 MB; extensión en lista; **firma real** (`%PDF-`, `FF D8 FF`, firma PNG de 8 bytes, `RIFF…WEBP`); la firma debe coincidir con la extensión; el MIME declarado, si existe, debe coincidir con la firma. SHA-256 con Web Crypto.
 2. **Storage**: límite de tamaño y lista de MIME del bucket; la política `INSERT` exige admin, ruta `<uuid>/<uuid>.<ext>` y que la publicación exista.
 3. **RPC `registrar_version_documento`** (tras subir): verifica que el objeto exista en `storage.objects`, que `metadata.size` y `metadata.mimetype` coincidan con lo declarado, que extensión↔MIME sean coherentes, que la ruta pertenezca a la publicación y que no esté archivada. Falla ⇒ el cliente intenta borrar el objeto (solo superadmin puede; si no, queda huérfano inocuo).
-4. **Límite conocido:** Postgres no puede leer los bytes de un objeto, por lo que la comprobación de firma es del cliente. Un administrador que eluda el cliente (llamada directa a la API) podría subir un archivo con MIME/extensión permitidos pero contenido distinto. Mitigaciones: solo administradores suben; el bucket no admite HTML/SVG; el navegador recibe el `Content-Type` guardado; la página pública no incrusta documentos. **Etapa 2 recomendada:** Edge Function que lea los primeros bytes y registre la versión (no implementada para no desplegar funciones sin autorización).
+4. **Límite conocido:** Postgres no puede leer los bytes de un objeto, por lo que la comprobación de firma es del cliente. Un administrador que eluda el cliente (llamada directa a la API) podría subir un archivo con MIME/extensión permitidos pero contenido distinto. Mitigaciones: solo administradores suben; el bucket no admite HTML/SVG; el navegador recibe el `Content-Type` guardado; la página pública no incrusta documentos. **Etapa 2 (implementada, sin desplegar):** Edge Function `registrar-version-documento` que descarga el objeto, verifica la firma y el tamaño, calcula el SHA-256 real, borra el objeto si es inválido y registra con la RPC `registrar_version_documento_verificada` (solo `service_role`); la migración `supabase/staged/20261018130000…` revoca la RPC directa. Ver `INFORME_ESTADO.md` R1.
 
 ## 7. Ruta pública y QR
 
@@ -117,12 +117,12 @@ Diseño adoptado: bucket `soi-publico` **privado** + política `SELECT` para `an
 
 ## 11. Plan por etapas
 
-1. **Etapa 1 (hecha en la rama):** migración + rollback + suite PostgreSQL (138 comprobaciones, 9 mutaciones) → API/adaptador/mock → panel admin + página pública + QR → pruebas Vitest (33).
+1. **Etapa 1 (hecha en la rama):** migración + rollback + suite PostgreSQL (217 comprobaciones, 9 mutaciones) → API/adaptador/mock → panel admin + página pública + QR → pruebas Vitest (48) → validación con Storage real y navegador en una pila local (`VALIDACION_FUNCIONAL.md`).
 2. **Etapa 2 (previa a producción, requiere autorización):** aplicar en una rama/instancia de staging de Supabase (el costo de una rama de pago debe aprobarse antes); ejecutar la lista de verificación del informe con la API real de Storage; fijar `VITE_PUBLIC_BASE_URL` en Netlify.
 3. **Etapa 3 (producción):** aplicar migración → desplegar frontend (o al revés: el frontend es inerte sin la migración, la ruta admin mostraría error de RPC) → crear primera publicación → imprimir QR.
-4. **Etapa 4 (mejoras):** Edge Function de verificación de firma, delegación a `coordinacion_academica`, categorías configurables, `institucion_id`, métricas de visitas con consentimiento.
+4. **Etapa 4 (mejoras):** antivirus, purga de versiones, delegación a `coordinacion_academica`, categorías configurables, `institucion_id`, métricas de visitas con consentimiento.
 
 ## 12. Pruebas
 
-* `npm run test:db:documentos-qr` — PostgreSQL 17 en Docker (`soi-pg-docqr`, puerto 54331): 138 comprobaciones por rol (anon, user, alumno, representante, maestro, coordinacion_academica, direccion, inventarista, admin, superadmin, admin pendiente/inactivo, service_role), subida/reemplazo/borrado en `storage.objects`, bucket solo lectura de lo publicado, repetición de las 8 políticas de storage de producción con helpers "siempre verdadero", rollback + reaplicación. `node supabase/tests/documentos-qr/run_tests.mjs --mutate N` (N=1..9): cada mutación debe ser detectada.
-* `npx vitest run src/modules/documentos-publicos` — 33 pruebas.
+* `npm run test:db:documentos-qr` — PostgreSQL 17 en Docker (`soi-pg-docqr`, puerto 54331): 217 comprobaciones por rol (anon, user, alumno, representante, maestro, coordinacion_academica, direccion, inventarista, admin, superadmin, admin pendiente/inactivo, service_role), subida/reemplazo/borrado en `storage.objects`, bucket solo lectura de lo publicado, repetición de las 8 políticas de storage de producción con helpers "siempre verdadero", rollback + reaplicación. `node supabase/tests/documentos-qr/run_tests.mjs --mutate N` (N=1..9): cada mutación debe ser detectada.
+* `npx vitest run src/modules/documentos-publicos` — 48 pruebas. Con servicios reales locales: `e2e_storage.mjs` y `e2e_stage2.mjs` (ver `VALIDACION_FUNCIONAL.md`).

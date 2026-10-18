@@ -1,7 +1,7 @@
 # Documentos públicos y QR — Informe de estado, riesgos y condiciones de piloto
 
 Fecha: 2026-10-17 · Rama: `feat/documentos-qr-publicos` · Producción (`zmhmdvmyeyswunurcyow`): **sin cambios** (solo lecturas de catálogo). Sin merge, sin despliegue, sin migraciones en producción.
-Especificación: [`ESPECIFICACION.md`](./ESPECIFICACION.md) · Validación: [`VALIDACION_FUNCIONAL.md`](./VALIDACION_FUNCIONAL.md)
+Especificación: [`ESPECIFICACION.md`](./ESPECIFICACION.md) · Validación: [`VALIDACION_FUNCIONAL.md`](./VALIDACION_FUNCIONAL.md) · **Piloto y veredicto: [`INFORME_PILOTO.md`](./INFORME_PILOTO.md)** (cifras vigentes: PostgreSQL 217/217, Vitest del módulo 50/50)
 
 ## 1. Estado del módulo
 

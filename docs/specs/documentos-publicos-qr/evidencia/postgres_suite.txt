@@ -1,0 +1,24 @@
+# run_tests.mjs PostgreSQL 17 aislado — fase portal público — 2026-10-18T03:13:56Z
+RESULT: 259 passed, 0 failed
+MUTATION 1: insert policy without admin check or publication check
+RESULT (mutation 1): 245 passed, 10 failed
+MUTATION 2: public read policy open to everything
+RESULT (mutation 2): 214 passed, 41 failed
+MUTATION 3: authorization helper always true
+RESULT (mutation 3): 73 passed, 32 failed
+MUTATION 4: direct DML granted to authenticated
+RESULT (mutation 4): 242 passed, 13 failed
+MUTATION 5: anon can read tables
+RESULT (mutation 5): 251 passed, 4 failed
+MUTATION 6: delete policy allows registered versions
+RESULT (mutation 6): 254 passed, 1 failed
+MUTATION 7: storage_objeto_publicado ignores estado
+RESULT (mutation 7): 226 passed, 29 failed
+MUTATION 8: public RPC ignores estado
+RESULT (mutation 8): 233 passed, 22 failed
+MUTATION 9: signature check of path removed from insert policy
+RESULT (mutation 9): 253 passed, 2 failed
+MUTATION 10: library listing ignores estado
+RESULT (mutation 10): 252 passed, 3 failed
+MUTATION 11: slug validation removed from RPC and table check
+RESULT (mutation 11): 246 passed, 9 failed

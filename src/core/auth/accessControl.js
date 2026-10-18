@@ -45,6 +45,7 @@ export const ROUTE_PERMISSIONS = {
   'admin-notificaciones': { requiresAdmin: true },
   'admin-sistema':        { requiresAdmin: true },
   'cierre-academico':     { requiresAdmin: true },
+  'documentos-publicos':  { requiresAdmin: true },
 
   // ── Rutas accesibles a maestros con permiso explícito ─────────
   'admin-alumnos': { requiresPermission: 'puede_registrar_alumnos' },

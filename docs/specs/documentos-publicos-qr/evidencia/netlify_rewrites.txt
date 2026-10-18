@@ -1,0 +1,4 @@
+# Emulador de Netlify (reglas reales de netlify.toml) — rewrites observados durante la validación en navegador
+      3 [rewrite] /d/0f5dadd809 -> /d.html (200)
+      1 [rewrite] /d/507fe6a6cd -> /d.html (200)
+      1 [rewrite] /favicon.ico -> /index.html (200)

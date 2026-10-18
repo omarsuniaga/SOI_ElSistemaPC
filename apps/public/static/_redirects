@@ -1,0 +1,4 @@
+# Portal público — sin catch-all: una ruta inexistente responde 404 real (404.html).
+/qr-code    /qr-code.html   200
+/qr-code/   /qr-code.html   200
+/d/*        /d.html         200

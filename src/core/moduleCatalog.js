@@ -51,6 +51,7 @@ export const moduleCatalog = Object.freeze([
   module('proyecto-manager', 'src/modules/admin-dashboard/admin-dashboard.router.js', 'DIR', [
     ['proyecto-manager'],
   ]),
+  module('documentos-publicos', 'src/modules/documentos-publicos/documentos-publicos.router.js', 'ADM', [['documentos-publicos']]),
   module('admin-notificaciones', 'src/modules/admin-notificaciones/admin-notificaciones.router.js', 'DIR', [['admin-notificaciones']]),
   module('admin-aprobacion', 'src/modules/admin-aprobacion/admin-aprobacion.router.js', 'DIR', [['admin-aprobacion'], ['admin-ausencias']]),
   module('gestion-usuarios', 'src/modules/admin-usuarios/admin-usuarios.router.js', 'DIR', [['gestion-usuarios']]),

@@ -1,0 +1,12 @@
+# e2e_storage.mjs contra Storage real LOCAL (stack docqr) — fase portal público — 2026-10-18T03:09:37Z
+1. anonymous cannot administer
+2. admin creates, uploads, registers (draft)
+3. draft is not reachable by new requests
+4. published: public access without authentication
+   served headers: content-type=application/pdf x-content-type-options=null cache-control=null
+5. replacement keeps slug; old version stops being reachable
+6. unpublish / archive close new requests
+7. known limit: content is not verified server-side (documented risk)
+   register of fake PDF by direct RPC: ACCEPTED (gap closed only by etapa 2)
+
+RESULT: 51 passed, 0 failed

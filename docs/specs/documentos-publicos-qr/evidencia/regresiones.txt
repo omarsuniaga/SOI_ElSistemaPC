@@ -1,0 +1,16 @@
+# Regresiones — 2026-10-18T03:14:30Z
+## vitest: módulo + apps/public + src/core + src/portales
+ Test Files  35 passed (35)
+      Tests  223 passed (223)
+## build admin (vite build, config raíz)
+dist/assets/early-error-suppression-CzCa8ixx.js            2.47 kB │ gzip:   1.08 kB
+[32m✓ built in 35.59s[39m
+ls: cannot access 'dist/d.html': No such file or directory
+dist/adm.html
+dist/index.html
+## build público
+[32m✓ built in 83ms[39m
+  archivos: 13 · tamaño total: 17.2 KB
+✔ Artefacto público aislado: solo páginas públicas, sin rutas, módulos ni código administrativo.
+## eslint (módulo, apps, scripts)
+eslint exit: 0

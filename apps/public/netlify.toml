@@ -1,0 +1,12 @@
+# Sitio PÚBLICO (https://elsistemapc.netlify.app cuando se confirme).
+# En Netlify: Base directory = apps/public  (este archivo se lee desde ahí).
+# El sitio ADMIN usa el netlify.toml de la raíz del repositorio y NO cambia.
+[build]
+  # Instala y compila desde la raíz del repo (dependencias compartidas) y publica solo apps/public/dist.
+  command = "npm --prefix ../.. ci --no-audit --no-fund && npm --prefix ../.. run build:public"
+  publish = "dist"
+  # Solo reconstruye si cambió el portal público o el código que importa.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../../src/modules/documentos-publicos/lib ../../scripts/verify-public-bundle.mjs ../../package.json ../../package-lock.json"
+
+[build.environment]
+  NODE_VERSION = "20"

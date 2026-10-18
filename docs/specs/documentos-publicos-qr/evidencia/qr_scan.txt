@@ -1,0 +1,8 @@
+# Escaneo (jsQR) de los QR descargados desde el panel en el navegador — 2026-10-18T01:32:41Z
+OK   qr-soi-0f5dadd809.png @nativepx -> http://127.0.0.1:4180/d/0f5dadd809
+OK   qr-soi-0f5dadd809.png @512px -> http://127.0.0.1:4180/d/0f5dadd809
+OK   qr-soi-0f5dadd809.png @256px -> http://127.0.0.1:4180/d/0f5dadd809
+OK   qr-soi-0f5dadd809.png @128px -> http://127.0.0.1:4180/d/0f5dadd809
+OK   qr-soi-0f5dadd809.svg @256px -> http://127.0.0.1:4180/d/0f5dadd809
+OK   qr-soi-0f5dadd809.svg @512px -> http://127.0.0.1:4180/d/0f5dadd809
+OK   qr-soi-0f5dadd809.svg @1024px -> http://127.0.0.1:4180/d/0f5dadd809

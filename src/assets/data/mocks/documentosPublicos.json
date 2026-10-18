@@ -1,0 +1,44 @@
+{
+  "publicaciones": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "slug": "demo2026ab1",
+      "titulo": "Calendario académico 2026-2027",
+      "descripcion": "Fechas de inicio, cierre de semestre y actividades institucionales.",
+      "fecha_documento": "2026-09-01",
+      "categoria": "calendario",
+      "estado": "publicado",
+      "version_actual_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "published_at": "2026-09-02T14:00:00Z",
+      "archived_at": null,
+      "created_by": "demo-admin",
+      "updated_by": "demo-admin",
+      "created_at": "2026-09-01T12:00:00Z",
+      "updated_at": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "slug": "demo2026cd2",
+      "titulo": "Reglamento de convivencia (borrador)",
+      "descripcion": null,
+      "fecha_documento": "2026-10-05",
+      "categoria": "reglamento",
+      "estado": "borrador",
+      "version_actual_id": null,
+      "published_at": null,
+      "archived_at": null,
+      "created_by": "demo-admin",
+      "updated_by": "demo-admin",
+      "created_at": "2026-10-05T12:00:00Z",
+      "updated_at": "2026-10-05T12:00:00Z"
+    }
+  ],
+  "versiones": [
+    { "id": "aaaaaaaa-0000-4000-8000-000000000001", "publicacion_id": "11111111-1111-4111-8111-111111111111", "numero": 1, "storage_path": "demo/v1.pdf", "mime_type": "application/pdf", "extension": "pdf", "size_bytes": 120400, "sha256": "0000000000000000000000000000000000000000000000000000000000000001", "nombre_original": "calendario-v1.pdf", "motivo": "Versión inicial", "created_by": "demo-admin", "created_at": "2026-09-01T12:00:00Z" },
+    { "id": "aaaaaaaa-0000-4000-8000-000000000002", "publicacion_id": "11111111-1111-4111-8111-111111111111", "numero": 2, "storage_path": "demo/v2.pdf", "mime_type": "application/pdf", "extension": "pdf", "size_bytes": 131800, "sha256": "0000000000000000000000000000000000000000000000000000000000000002", "nombre_original": "calendario-v2.pdf", "motivo": "Corrección de fechas de cierre", "created_by": "demo-admin", "created_at": "2026-09-10T12:00:00Z" }
+  ],
+  "eventos": [
+    { "id": 1, "publicacion_id": "11111111-1111-4111-8111-111111111111", "accion": "crear", "actor_id": "demo-admin", "detalle": {}, "created_at": "2026-09-01T12:00:00Z" },
+    { "id": 2, "publicacion_id": "11111111-1111-4111-8111-111111111111", "accion": "publicar", "actor_id": "demo-admin", "detalle": {}, "created_at": "2026-09-02T14:00:00Z" }
+  ]
+}

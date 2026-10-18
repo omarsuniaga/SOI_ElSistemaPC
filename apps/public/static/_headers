@@ -1,0 +1,18 @@
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://zmhmdvmyeyswunurcyow.supabase.co; font-src 'self'; connect-src 'self' https://zmhmdvmyeyswunurcyow.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/d/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+/404.html
+  X-Robots-Tag: noindex

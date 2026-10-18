@@ -1,5 +1,7 @@
 # Informe de preparación para un piloto real — Programa de mano de El Sistema Punta Cana
 
+> **Actualización (fase portal público):** el visualizador `/d/<slug>`, la biblioteca `/qr-code` y los QR pasan a vivir en un **segundo sitio Netlify** (`apps/public`, dominio objetivo `elsistemapc.netlify.app`, aún sin confirmar). El sitio admin deja de servir `/d/*`. Donde este informe menciona `/d/<slug>` en el dominio admin, rige [`PORTAL_PUBLICO_DOS_SITIOS.md`](./PORTAL_PUBLICO_DOS_SITIOS.md) y el [runbook](./RUNBOOK_DESPLIEGUE_DOS_SITIOS.md). Las evidencias de esta página siguen siendo válidas para el módulo.
+
 Fecha: 2026-10-18 (UTC) · Rama `feat/documentos-qr-publicos` · Producción (`zmhmdvmyeyswunurcyow`): **sin cambios**; sin merge, despliegue ni migraciones en producción; sin recursos facturables.
 
 ## 0. Veredicto

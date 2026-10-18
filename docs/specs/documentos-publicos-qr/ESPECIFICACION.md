@@ -141,3 +141,7 @@ Diseño adoptado: bucket `soi-publico` **privado** + política `SELECT` para `an
 Repetirla: `bash supabase/tests/documentos-qr/local-stack/start.sh` y luego los scripts `e2e_*` (ver `VALIDACION_FUNCIONAL.md`). Detener: `npx supabase stop --workdir <dir> --no-backup`.
 
 **Límites:** (a) las versiones de las imágenes locales pueden diferir de las del servicio alojado; (b) no hay CDN, ni caché, ni límites de plan del servicio alojado, por lo que la validación de cabeceras de caché y de expiración de URLs firmadas **debe repetirse una vez en producción** con la lista del informe piloto; (c) el esquema es un subconjunto (la interacción con tablas reales de SOI no se prueba; sí se probaron las 8 políticas reales de `storage.objects`); (d) Netlify se emula con las reglas y cabeceras reales de `netlify.toml`, no con Netlify.
+
+## 15. Portal público en un segundo sitio (fase posterior)
+
+El visualizador público, la biblioteca `/qr-code` y la página institucional viven en `apps/public` y se despliegan como segundo sitio Netlify, con el mismo repositorio, proyecto Supabase, tablas, políticas y bucket. Ver [`PORTAL_PUBLICO_DOS_SITIOS.md`](./PORTAL_PUBLICO_DOS_SITIOS.md) (arquitectura, configuración, pruebas, riesgos, veredicto) y [`RUNBOOK_DESPLIEGUE_DOS_SITIOS.md`](./RUNBOOK_DESPLIEGUE_DOS_SITIOS.md). Cambios al modelo: slug legible permanente (3–60, `[a-z0-9-]`) y RPC `listar_publicaciones_publicas`. La URL de los QR es siempre `<dominio público autorizado>/d/<slug>` (lista blanca; bloqueo en el panel).

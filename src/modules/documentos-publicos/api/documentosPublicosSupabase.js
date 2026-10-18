@@ -62,16 +62,31 @@ export async function subirVersion(publicacionId, file, motivo = null) {
   const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: check.mime, upsert: false, cacheControl: '3600' })
   if (up.error) throw new Error(`No se pudo subir el archivo: ${up.error.message}`)
 
-  const reg = await sb.rpc('registrar_version_documento', {
-    p_publicacion_id: publicacionId, p_storage_path: path, p_mime: check.mime, p_size: file.size,
-    p_sha256: sha, p_nombre_original: file.name.slice(0, 255), p_motivo: motivo,
-  })
+  // Etapa 2 (migración staged/20261018130000): el registro pasa por la Edge Function, que verifica
+  // en servidor la firma real del archivo. Mientras no esté desplegada se usa la RPC directa.
+  const serverVerify = import.meta.env?.VITE_DOCS_SERVER_VERIFY === 'true'
+  const reg = serverVerify
+    ? await invokeVerifiedRegistration(sb, { publicacion_id: publicacionId, storage_path: path, nombre_original: file.name.slice(0, 255), motivo })
+    : await sb.rpc('registrar_version_documento', {
+      p_publicacion_id: publicacionId, p_storage_path: path, p_mime: check.mime, p_size: file.size,
+      p_sha256: sha, p_nombre_original: file.name.slice(0, 255), p_motivo: motivo,
+    })
   if (reg.error) {
     // Intento de limpieza; solo superadmin puede borrar huérfanos (si falla queda como huérfano inocuo).
     await sb.storage.from(BUCKET).remove([path]).catch(() => {})
     throw new Error(reg.error.message || 'No se pudo registrar la versión')
   }
   return reg.data
+}
+
+async function invokeVerifiedRegistration(sb, body) {
+  const { data, error } = await sb.functions.invoke('registrar-version-documento', { body })
+  if (error) {
+    let message = error.message
+    try { message = (await error.context?.json?.())?.error ?? message } catch { /* cuerpo no JSON */ }
+    return { data: null, error: { message } }
+  }
+  return { data: data?.version ?? null, error: null }
 }
 
 export async function activarVersion(publicacionId, versionId) {

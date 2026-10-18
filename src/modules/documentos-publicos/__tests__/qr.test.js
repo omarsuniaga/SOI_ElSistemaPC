@@ -6,7 +6,7 @@ describe('qr', () => {
     expect(buildPublicUrl('abc123def0', 'https://soi.example/')).toBe('https://soi.example/d/abc123def0')
   })
   it('rechaza slugs inválidos (evita QR hacia rutas arbitrarias)', () => {
-    for (const bad of ['', 'ABC', '../x', 'abc123def0/extra', 'short', null]) expect(isValidSlug(bad)).toBe(false)
+    for (const bad of ['', 'ABC', '../x', 'abc123def0/extra', 'ab', 'a_b', '-ab', 'ab-', 'a--b', null]) expect(isValidSlug(bad)).toBe(false)
     expect(() => buildPublicUrl('../etc', 'https://x')).toThrow()
   })
   it('genera SVG local con la URL codificada (sin red)', async () => {

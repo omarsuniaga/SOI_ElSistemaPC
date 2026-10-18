@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const slug = 'abc123def0'
 const pub = {
@@ -28,6 +28,7 @@ vi.mock('../lib/qr.js', async (orig) => {
 const { renderDocumentosPublicosView } = await import('../views/documentosPublicosView.js')
 
 describe('el QR codifica solo la URL permanente', () => {
+  beforeEach(() => { vi.stubEnv('VITE_PUBLIC_BASE_URL', 'https://elsistemapc.netlify.app') })
   it('SVG y PNG usan /d/<slug>, nunca la URL firmada ni la ruta del objeto', async () => {
     const el = document.createElement('div')
     document.body.appendChild(el)

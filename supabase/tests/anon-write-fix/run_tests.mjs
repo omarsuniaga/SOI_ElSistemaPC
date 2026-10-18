@@ -26,6 +26,9 @@ const rollbackSql = fs.readFileSync(path.resolve(here, '../../rollback', ROLLBAC
 
 const args = process.argv.slice(2);
 const keep = args.includes('--keep');
+// --baseline prod-subset (default): schema captured from production; --baseline repo-model: rebuilt from the repo
+const baselineKind = args.includes('--baseline') ? args[args.indexOf('--baseline') + 1] : 'prod-subset';
+const subset = baselineKind === 'prod-subset';
 const jsonOut = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
 
 const conn = {
@@ -59,7 +62,7 @@ const ACTORS = {
   admin4:             { role: 'authenticated', uid: U(1015), rol: 'admin' },
   admin5:             { role: 'authenticated', uid: U(1016), rol: 'admin' },
   admin_inactivo:     { role: 'authenticated', uid: U(1017), rol: 'admin', estado: 'inactivo' },
-  maestro_cap:        { role: 'authenticated', uid: U(1018), rol: 'maestro', maestro: ID.m_cap },   // explicit grant: catalogo:escribir
+  maestro_cap:        { role: 'authenticated', uid: U(1018), rol: 'maestro', maestro: ID.m_cap },   // holds 'catalogo:escribir' in permisos_maestros: must NOT be enough
   superadmin:         { role: 'authenticated', uid: U(1010), rol: 'superadmin' },
   finanzas:           { role: 'authenticated', uid: U(1012), rol: 'finanzas' },
   service_role:       { role: 'service_role' },
@@ -78,10 +81,10 @@ INSERT INTO public.maestros (id, nombre_completo, especialidad, correo, user_id)
   ('${ID.m_suplente}', 'Suplente', 'violin', 'suplente@test.local', '${ACTORS.maestro_suplente.uid}'),
   ('${ID.m_otro}',     'Otro',     'viola',  'otro@test.local',     '${ACTORS.maestro_otro.uid}'),
   ('${ID.m_cap}',      'ConCapacidad', 'viola', 'cap@test.local',    '${ACTORS.maestro_cap.uid}');
-INSERT INTO public.permisos_maestros (maestro_id, permisos) VALUES ('${ID.m_cap}', ARRAY['catalogo:escribir']);
+INSERT INTO public.permisos_maestros (maestro_id, permisos) VALUES ('${ID.m_cap}', ARRAY['catalogo:escribir']), ('${ID.m_otro}', '{}');
 INSERT INTO public.nodes (id, level_id, route_version_id, name, type)
   VALUES ('${ID.nodo}', '${U(9101)}', '${U(9102)}', 'nodo fixture', 'topic');
--- sequences used by generate_salon_code (prod ACL: rwU for anon/authenticated/service_role = legacy default)
+${subset ? '' : `-- sequences used by generate_salon_code (prod ACL: rwU for anon/authenticated/service_role = legacy default)
 CREATE SEQUENCE IF NOT EXISTS public.salones_codigo_seq;
 CREATE SEQUENCE IF NOT EXISTS public.salon_code_seq;
 -- production triggers of the eight tables (pg_get_triggerdef, read-only capture 2026-10-17); they are
@@ -92,7 +95,7 @@ CREATE TRIGGER update_horarios_updated_at BEFORE UPDATE ON public.horarios FOR E
 CREATE TRIGGER trg_notif_asistencia_update_timestamp BEFORE UPDATE ON public.notificaciones_asistencia FOR EACH ROW EXECUTE FUNCTION fn_update_notif_asistencia_timestamp();
 CREATE TRIGGER update_programas_updated_at BEFORE UPDATE ON public.programas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER tr_generate_salon_code BEFORE INSERT ON public.salones FOR EACH ROW EXECUTE FUNCTION generate_salon_code();
-CREATE TRIGGER update_salones_updated_at BEFORE UPDATE ON public.salones FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_salones_updated_at BEFORE UPDATE ON public.salones FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();`}
 INSERT INTO public.alumnos (id, nombre_completo) VALUES ('${ID.alumno}', 'Alumno Prueba'), ('${ID.alumno2}', 'Alumno Dos'), ('${ID.alumno3}', 'Alumno Tres');
 INSERT INTO public.clases (id, nombre, maestro_principal_id, maestro_suplente_id)
   VALUES ('${ID.clase}', 'Clase de prueba', '${ID.m_titular}', '${ID.m_suplente}');
@@ -143,14 +146,14 @@ const TABLES = {
     upd: () => `UPDATE public.programas SET descripcion = 'pwned' WHERE id = '${ID.programa}'`,
     del: () => `DELETE FROM public.programas WHERE id = '${ID.programa}'`,
     sel: () => `SELECT id FROM public.programas`,
-    write: [...GESTORES, 'maestro_cap'],
+    write: GESTORES,
   },
   salones: {
     ins: () => `INSERT INTO public.salones (nombre) VALUES ('pwn-${uuid()}')`,
     upd: () => `UPDATE public.salones SET descripcion = 'pwned' WHERE id = '${ID.salon}'`,
     del: () => `DELETE FROM public.salones WHERE id = '${ID.salon}'`,
     sel: () => `SELECT id FROM public.salones`,
-    write: [...GESTORES, 'maestro_cap'],
+    write: GESTORES,
   },
   horarios: {
     ins: () => `INSERT INTO public.horarios (clase_id, maestro_id, salon_id, dia_semana, hora_inicio, hora_fin)
@@ -158,7 +161,7 @@ const TABLES = {
     upd: () => `UPDATE public.horarios SET activo = false WHERE id = '${ID.horario}'`,
     del: () => `DELETE FROM public.horarios WHERE id = '${ID.horario}'`,
     sel: () => `SELECT id FROM public.horarios`,
-    write: [...GESTORES, 'maestro_cap'],
+    write: GESTORES,
   },
   class_events: {
     ins: () => `INSERT INTO public.class_events (teacher_id, student_id, session_id, event_date, status)
@@ -323,7 +326,7 @@ async function runCases(dbName, phase, cases, opts) {
 
 // 1. template database
 console.log('Building modelled production baseline (template)…');
-const b = spawnSync(process.execPath, [path.join(here, 'build_baseline.mjs'), 'soi_tpl', '--through', '20261017170000'], { stdio: 'inherit', env: process.env });
+const b = spawnSync(process.execPath, [path.join(here, 'build_baseline.mjs'), 'soi_tpl', ...(subset ? ['--from-prod-subset'] : ['--through', '20261017170000'])], { stdio: 'inherit', env: process.env });
 if (b.status !== 0) throw new Error('baseline build failed');
 await withDb('soi_tpl', (c) => c.query(fixtureSql));
 

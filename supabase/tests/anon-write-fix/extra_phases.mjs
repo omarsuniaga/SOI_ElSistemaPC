@@ -37,7 +37,7 @@ export function makeExtraPhases({ ID, TABLES }) {
 
   function flowCases() {
     const c = [];
-    for (const a of ['admin', 'admin2', 'admin3', 'admin4', 'admin5', 'coordinacion', 'superadmin', 'maestro_cap']) c.push(catalog(a));
+    for (const a of ['admin', 'admin2', 'admin3', 'admin4', 'admin5', 'coordinacion', 'superadmin']) c.push(catalog(a));
     c.push(teacher('maestro_titular'), teacher('maestro_suplente'));
     c.push({
       name: 'flow: titular plans content and marks it covered', actor: 'maestro_titular', kind: 'flow', expect: 'allowed',
@@ -61,8 +61,22 @@ export function makeExtraPhases({ ID, TABLES }) {
       name: 'flow: service role (Hermes) marks an alert as sent', actor: 'service_role', kind: 'flow', expect: 'allowed',
       sql: `UPDATE public.notificaciones_asistencia SET estado = 'enviado' WHERE id = '${ID.notif}'`,
     });
+    // Why the capability check does not read permisos_maestros: RLS lets every teacher edit their own row.
+    c.push({
+      name: 'known hole (documented): a teacher can write capabilities into their own permisos_maestros row',
+      actor: 'maestro_otro', kind: 'finding', expect: 'allowed',
+      sql: `UPDATE public.permisos_maestros SET permisos = permisos || ARRAY['catalogo:escribir'] WHERE maestro_id = '${ID.m_otro}'`,
+    });
+    c.push({
+      name: 'self-granting in permisos_maestros does NOT unlock the catalogue (grant, then try to write)',
+      actor: 'maestro_otro', kind: 'write', expect: 'denied',
+      sql: `DO $flow$ BEGIN
+        UPDATE public.permisos_maestros SET permisos = permisos || ARRAY['catalogo:escribir', 'registros_clase:gestionar'] WHERE maestro_id = '${ID.m_otro}';
+        INSERT INTO public.programas (nombre) VALUES ('autoconcedido');
+      END $flow$`,
+    });
     // the same end-to-end flow must be refused to anyone without the capability
-    for (const a of ['alumno', 'representante', 'maestro_otro', 'direccion', 'finanzas', 'admin_inactivo', 'anon']) {
+    for (const a of ['alumno', 'representante', 'maestro_otro', 'maestro_cap', 'direccion', 'finanzas', 'admin_inactivo', 'anon']) {
       c.push({ ...catalog(a), name: `flow (must be refused): catalogue maintenance as ${a}`, expect: 'denied', kind: 'write' });
     }
     return c;

@@ -24,15 +24,15 @@
 -- FIX (least privilege)
 -- ---------------------
 --  Catalogue (programas, salones, horarios)
---      write  : capability catalogo:escribir -> admin, superadmin, coordinacion_academica,
---               or an explicit grant in permisos_maestros.permisos. `direccion` has NO default write.
+--      write  : capability catalogo:escribir -> admin, superadmin, coordinacion_academica.
+--               `direccion` and every other role have NO write.
 --      read   : every authenticated user (unchanged); anon keeps SELECT on programas only
 --               (policy programas_anon_read, used by public flows) -- not on the others.
 --  Class records (class_events, class_event_methodology, homework_assignments,
 --  planned_content)
 --      write  : the owning teacher (maestros.id = maestro_actual()) or, for events of a
 --               class, its titular/suplente; plus holders of registros_clase:gestionar
---               (admin, superadmin, coordinacion_academica or an explicit grant).
+--               (admin, superadmin, coordinacion_academica).
 --      delete : registros_clase:gestionar only (no application flow deletes these rows).
 --      read   : every authenticated user (UNCHANGED -- tightening reads needs flow work
 --               and is tracked as a follow-up). anon loses all access.
@@ -63,10 +63,12 @@ BEGIN;
 -- Capability check. Authorisations are defined per capability, never "per role by default":
 --   admin, superadmin        every capability
 --   coordinacion_academica   catalogo:escribir, registros_clase:gestionar, alertas_asistencia:gestionar
---   anyone else (maestro, direccion, finanzas, ...)  only by an explicit, dated grant in
---                            permisos_maestros.permisos (e.g. 'catalogo:escribir'), which requires a
---                            maestros row. direccion therefore has NO write access by default.
--- Uses the existing soi_security.has_role (requires profiles.estado = 'activo').
+--   anyone else (maestro, direccion, finanzas, ...)   none
+-- Giving a capability to anybody else is a deliberate, reviewed change to this function.
+-- It does NOT read permisos_maestros.permisos: the RLS of that table lets every teacher UPDATE their own
+-- row ("Permitir actualizar sus propios permisos o por admin"), so a grant stored there would be
+-- self-assignable. Individual grants need that table fixed first (tracked as a follow-up).
+-- Uses the existing soi_security.has_role, which requires profiles.estado = 'activo' and activo = true.
 CREATE OR REPLACE FUNCTION public.tiene_capacidad_academica(p_capacidad text)
 RETURNS boolean
 LANGUAGE sql
@@ -78,17 +80,10 @@ AS $$
     soi_security.has_role(ARRAY['admin', 'superadmin'])
     OR (soi_security.has_role(ARRAY['coordinacion_academica'])
         AND p_capacidad IN ('catalogo:escribir', 'registros_clase:gestionar', 'alertas_asistencia:gestionar'))
-    OR EXISTS (
-      SELECT 1
-        FROM public.permisos_maestros pm
-       WHERE pm.maestro_id = public.maestro_actual()
-         AND p_capacidad = ANY (pm.permisos)
-         AND (pm.fecha_inicio IS NULL OR pm.fecha_inicio <= current_date)
-         AND (pm.fecha_fin    IS NULL OR pm.fecha_fin    >= current_date))
 $$;
 
 COMMENT ON FUNCTION public.tiene_capacidad_academica(text) IS
-  'Capability check for academic writes. Capabilities: catalogo:escribir (programas, salones, horarios), registros_clase:gestionar (class_events and children, planned_content, homework), alertas_asistencia:gestionar (notificaciones_asistencia).';
+  'Capability check for academic writes. Capabilities: catalogo:escribir (programas, salones, horarios), registros_clase:gestionar (class_events and children, planned_content, homework), alertas_asistencia:gestionar (notificaciones_asistencia). Roles: admin/superadmin all; coordinacion_academica the three. No other role.';
 
 -- Can the caller write a class event (or rows hanging from it)?
 --   · the teacher that owns the event, or

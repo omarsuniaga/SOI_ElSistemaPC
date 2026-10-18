@@ -24,6 +24,7 @@ const dbName = args[0];
 if (!dbName) throw new Error('usage: build_baseline.mjs <dbname> [--through <version>] [--skip a.sql,b.sql]');
 const opt = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : undefined);
 const through = opt('--through');
+const fromProdSubset = args.includes('--from-prod-subset');
 const skip = new Set((opt('--skip') || '').split(',').filter(Boolean));
 
 const conn = {
@@ -117,6 +118,21 @@ await db.query(`SET search_path = public, extensions`);
 // 1. bootstrap
 await db.query(fs.readFileSync(path.join(here, '00_supabase_bootstrap.sql'), 'utf8'));
 await db.query(`SET search_path = public, extensions`);
+
+// Production schema subset (captured read-only on 2026-10-17): already reflects every migration, so
+// nothing else is replayed. Statements run in multiple passes to resolve ordering.
+if (fromProdSubset) {
+  let pend = splitSql(fs.readFileSync(path.join(here, 'prod_schema_subset_2026-10-17.sql'), 'utf8')).map(stripLeadingComments).filter(Boolean);
+  for (let pass = 1; pass <= 8 && pend.length; pass++) {
+    const next = [];
+    for (const st of pend) { const err = await run(db, st); if (err) next.push([st, err.message]); }
+    if (next.length === pend.length) { console.log('prod subset: unresolved statements:'); next.slice(0, 5).forEach(([st, m]) => console.log('  ', m, '::', st.slice(0, 90).replace(/s+/g, ' '))); pend = next.map((x) => x[0]); break; }
+    pend = next.map((x) => x[0]);
+  }
+  console.log(`prod subset loaded; unresolved=${pend.length}`);
+  await db.end();
+  process.exit(pend.length ? 1 : 0);
+}
 
 // 1b. enum types: schema_reference.sql omits them, the 2026-09-10 introspection snapshot lists them
 {

@@ -6,26 +6,26 @@
 
 ## Conclusión: APTO CON CONDICIONES
 
-La corrección es correcta, probada y reversible, y el riesgo que cierra es real y explotable hoy por cualquiera con la clave pública. No la declaro "apto para despliegue" sin condiciones porque faltan tres cosas que solo pueden hacerse con acceso de escritura o con personas:
+La corrección es correcta, probada y reversible, y el riesgo que cierra es real y explotable hoy por cualquiera con la clave pública. El ensayo de migración, rollback y aserciones **ya se hizo** sobre una copia de solo esquema y políticas de producción (sección 6). No la declaro "apto para despliegue" sin condiciones porque faltan dos cosas que solo pueden hacer personas con acceso de escritura:
 
-1. **Ensayo en una rama/staging de Supabase** con copia de producción (no se hizo: crear la rama es un cambio en el proyecto y no estaba autorizado).
-2. **Prueba manual de interfaz por rol** (admin, maestro, sin sesión) en ese ensayo. Las pruebas automáticas cubren la base de datos, no los clics.
-3. **Respaldo tomado y verificado** antes de aplicar (procedimiento abajo).
+1. **Prueba manual de interfaz por rol** (admin, maestro, sin sesión) contra el entorno real o una rama con datos. Las pruebas automáticas cubren la base de datos, no los clics.
+2. **Respaldo tomado y verificado** antes de aplicar (procedimiento en la sección 8).
 
-Con esas tres hechas y las aserciones post-aplicación en verde, pasa a **APTO PARA DESPLIEGUE**. Si alguna falla, el rollback probado la deshace.
+(La rama de Supabase se descartó por decisión del usuario: sus migraciones no arrancan desde cero, así que no habría sido una copia fiel.) Con esas dos hechas y las aserciones post-aplicación en verde, pasa a **APTO PARA DESPLIEGUE**. Si algo falla, el rollback probado lo deshace.
 
 ## 1. Decisiones incorporadas
 
-- **`direccion` sin escritura por defecto.** La autorización ahora es por capacidad, no por rol. Función `tiene_capacidad_academica(capacidad)`:
+- **`direccion` sin escritura por defecto.** La autorización es por capacidad, no por rol. Función `tiene_capacidad_academica(capacidad)`:
 
-  | Capacidad | `admin`, `superadmin` | `coordinacion_academica` | Cualquier otra cuenta |
+  | Capacidad | `admin`, `superadmin` | `coordinacion_academica` | Cualquier otro rol (incl. `direccion`, `maestro`) |
   |---|---|---|---|
-  | `catalogo:escribir` (programas, salones, horarios) | sí | sí | solo con concesión explícita |
-  | `registros_clase:gestionar` (eventos de clase, metodología, tareas, planificado; borrar) | sí | sí | solo con concesión explícita |
-  | `alertas_asistencia:gestionar` (`notificaciones_asistencia`) | sí | sí | solo con concesión explícita |
+  | `catalogo:escribir` (programas, salones, horarios) | sí | sí | no |
+  | `registros_clase:gestionar` (eventos de clase, metodología, tareas, planificado; borrar) | sí | sí | no |
+  | `alertas_asistencia:gestionar` (`notificaciones_asistencia`) | sí | sí | no |
 
-  La concesión explícita reutiliza el mecanismo existente `permisos_maestros.permisos` (con `fecha_inicio`/`fecha_fin`), administrable por un admin; exige una fila en `maestros`. Hoy ninguna cuenta es `direccion`; si algún día necesita una capacidad, se le concede esa capacidad, no un rol.
-- Exige perfil `estado = 'activo'` (reutiliza `soi_security.has_role`). Un admin inactivo no escribe: probado.
+  Dar una capacidad a otro rol es un cambio deliberado y revisado de esa función. Hoy ninguna cuenta es `direccion` ni `coordinacion_academica`.
+- **Hallazgo del ensayo con el esquema real:** mi primer diseño permitía concesiones individuales en `permisos_maestros.permisos`. La política real de esa tabla (`Permitir actualizar sus propios permisos o por admin`) deja que **cada maestro edite su propia fila**, así que cualquier maestro podía auto-concederse la capacidad. Se retiró esa rama; queda probado que auto-concederse no desbloquea nada, y el hueco queda documentado como seguimiento (R9). Las concesiones individuales exigen arreglar antes esa tabla.
+- Exige perfil `estado = 'activo'` **y** `activo = true` (reutiliza `soi_security.has_role` tal como está en producción). Un admin inactivo no escribe: probado. Los 5 admins cumplen ambas.
 - El maestro dueño escribe sus propios registros (`maestro_actual()`), y el titular/suplente de la clase los de su sesión. Un maestro **no** edita el catálogo ni borra registros.
 
 ## 2. Registros de la API (punto 2)
@@ -46,7 +46,7 @@ La suite ejecuta los flujos de extremo a extremo con **triggers activos y claves
 
 | Flujo | Resultado |
 |---|---|
-| **Programas, salones, horarios** (crear, editar, borrar horario) por los 5 admins, coordinación, superadmin y maestro con capacidad | pasa |
+| **Programas, salones, horarios** (crear, editar, borrar horario) por los 5 admins, coordinación y superadmin | pasa |
 | **Asignación de salones** (`clase_horarios` con `salon_id`): admin, coordinación, maestro de la clase | idéntico antes y después |
 | **Calendario** (`calendario_institucional`: leer y crear) | idéntico antes y después |
 | **Tareas académicas**: `tareas_institucionales` (crear) y `homework_assignments` (maestro titular y suplente) | pasa / idéntico |
@@ -75,21 +75,37 @@ Postgres combina políticas permisivas con **OR**: una sola abierta anula todas 
 
 Sin restrictivas, sin permisos por columna, sin `PUBLIC` en la ACL, sin vistas actualizables ni funciones `SECURITY DEFINER` que escriban en estas tablas (consultado en producción).
 
-## 6. Pruebas
+## 6. Ensayo sobre copia de esquema y políticas de producción
 
-PostgreSQL 17 aislado; línea base reconstruida del volcado del repo y **verificada contra producción** (políticas y ACL idénticas). 20 cuentas simuladas, todas las combinaciones tabla × operación.
+Con autorización, se capturó con **consultas de solo lectura a `pg_catalog`** un subconjunto de esquema de producción (`supabase/tests/anon-write-fix/prod_schema_subset_2026-10-17.sql`): columnas, restricciones, RLS, **todas las políticas (incluidas las RESTRICTIVAS)**, ACL de tablas y secuencias, triggers de las ocho tablas, funciones auxiliares y las cuatro vistas de cartelera, textuales. Sin datos. Se cargó en PostgreSQL 17 local y se ejecutó ahí el ciclo completo:
+
+| Paso | Resultado |
+|---|---|
+| Exposición antes | exactamente las ocho tablas, como en producción |
+| `04_post_apply_assertions.sql` antes | falla (4 de 7), como debe |
+| **Migración** (`ON_ERROR_STOP`, transacción única con auto-verificación) | aplicada sin errores |
+| `04_post_apply_assertions.sql` después | **7/7 en `true`** |
+| Filas "abiertas" en las ocho tablas (anon + authenticated) | 0 |
+| **Rollback** | aplicado sin errores; las aserciones vuelven al estado vulnerable original |
+| Reaplicar tras el rollback | 7/7 en `true` |
+
+Reducido a propósito en esa copia: `alumnos`, `levels`, `nodes`, `academic_plans` (solo columnas clave, sin RLS) y los triggers de Hermes de `calendario_institucional`/`tareas_institucionales`, que la migración no toca.
+
+## 6b. Pruebas automáticas
+
+La suite corre contra **dos líneas base**: la copia de producción anterior (por defecto) y el modelo reconstruido desde el repositorio. Ambas dan el mismo resultado.
 
 | Fase | Resultado |
 |---|---|
 | Antes (la vulnerabilidad existe, anónima y por cuenta registrada) | 33/33 |
-| Después: matriz por rol, tabla y operación (negativos y positivos) | 618/618 |
+| Después: matriz por rol, tabla y operación (20 cuentas, negativos y positivos) | 618/618 |
 | Idempotencia (aplicar dos veces) | 1/1 |
-| Flujos de extremo a extremo con triggers | 20/20 |
+| Flujos de extremo a extremo con triggers y claves foráneas; incluye auto-concesión en `permisos_maestros` | 22/22 |
 | Lista blanca de políticas | 8/8 |
 | Colateral (calendario, aulas, tareas, cartelera) | 48/48 |
 | Rollback (restaura ACL y políticas exactas; reaplicable) | 36/36 |
 
-Reproducir: `npm run test:db:anon-write` (requiere Docker).
+Reproducir: `npm run test:db:anon-write` (Docker). Línea base alternativa: `node supabase/tests/anon-write-fix/run_tests.mjs --baseline repo-model`.
 
 ## 7. Riesgos residuales
 
@@ -99,7 +115,8 @@ Reproducir: `npm run test:db:anon-write` (requiere Docker).
 | R2 | 128 funciones `SECURITY DEFINER` ejecutables por `anon` y 13 vistas definer (diagnóstico del 11-oct) | Alta | Análisis propio de consumidores |
 | R3 | La lectura de registros de clase queda abierta a toda cuenta autenticada (incluye `alumno`/`representante`); `notificaciones_asistencia` ya no | Media (tablas vacías hoy) | Requiere revisar flujos de suplentes; seguimiento |
 | R4 | Un escritor anónimo legítimo que opere con menos frecuencia que cada 17 días | Baja | Repetir la consulta de logs el día de aplicar; rollback disponible |
-| R5 | El modelo de pruebas no es producción | Baja | Políticas y ACL verificadas idénticas; el ensayo en rama cierra el resto |
+| R5 | El ensayo usa un subconjunto de esquema de producción, sin datos ni los demás módulos | Baja | Políticas y ACL de las ocho tablas verificadas idénticas; la prueba manual por rol cierra el resto |
+| R9 | `permisos_maestros`: cada maestro puede editar su propia fila (auto-concesión de permisos como `puede_inscribir_clases`) | Media | Fuera de alcance; por eso las capacidades de esta migración no se leen de ahí. Seguimiento |
 | R6 | `classEventService.js` inserta `status = 'pending'` (la tabla solo admite `draft/completed/cancelled`): ese flujo ya falla hoy | Media (funcional) | Corregir en el módulo; no depende de esta migración |
 | R7 | Quien hoy gestione catálogo con un rol distinto de admin/coordinación quedará bloqueado | Baja | No existe ninguno (solo `admin` y `maestro` en producción); se concede por capacidad |
 | R8 | Cambios manuales en producción entre este informe y la aplicación | Baja | Re-ejecutar `03_capture_current_state.sql`; la migración aborta si queda algo abierto |
@@ -125,10 +142,10 @@ Antes de aplicar (ninguno de estos pasos modifica datos):
 
 Ver [`RUNBOOK_APLICACION.md`](./RUNBOOK_APLICACION.md). Resumen:
 
-1. Ensayo en rama de Supabase con copia de producción → `04_post_apply_assertions.sql` (todo `true`) → prueba manual: sin sesión (cartelera), admin (crear/editar programa y salón), maestro (asistencia, planificar), alumno (no puede editar catálogo).
+1. Ensayo ya hecho en copia local de esquema/políticas de producción; en el entorno real: `04_post_apply_assertions.sql` (todo `true`) → prueba manual: sin sesión (cartelera), admin (crear/editar programa y salón), maestro (asistencia, planificar), alumno (no puede editar catálogo).
 2. Producción, fuera de horario de clases, con el mismo archivo (transacción única con auto-verificación).
 3. Validación posterior: `04_post_apply_assertions.sql` en producción; `01_effective_write_exposure.sql` ya no debe listar ninguna de las ocho tablas para `anon`; revisar 30 minutos los logs (`401/403` en estas tablas = alguien dependía de la apertura); registrar la migración en el ledger.
 
 ## 10. Reversión
 
-`supabase/rollback/20261017180000_restrict_write_access_academic_catalog_and_class_records.rollback.sql`: idempotente y probado (restaura políticas y ACL exactas del estado verificado en producción, retira las dos funciones, y la migración se puede reaplicar después). **Reabre la vulnerabilidad**; usar solo si un flujo legítimo falla y no se puede corregir hacia adelante. Antes, intentar siempre la salida menos costosa: conceder la capacidad a quien la necesite (`permisos_maestros.permisos`).
+`supabase/rollback/20261017180000_restrict_write_access_academic_catalog_and_class_records.rollback.sql`: idempotente y probado (restaura políticas y ACL exactas del estado verificado en producción, retira las dos funciones, y la migración se puede reaplicar después). **Reabre la vulnerabilidad**; usar solo si un flujo legítimo falla y no se puede corregir hacia adelante. Antes, intentar siempre la salida menos costosa: ampliar `tiene_capacidad_academica()` con una migración revisada para quien la necesite.

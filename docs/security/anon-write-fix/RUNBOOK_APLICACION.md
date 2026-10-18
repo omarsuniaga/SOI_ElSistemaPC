@@ -17,7 +17,7 @@
 
 ## Aplicación
 
-1. Aplicar primero en una **rama de base de datos de Supabase** (o staging) con copia de producción (condición del veredicto), no en producción directamente:
+1. Ya ensayado en una copia local de esquema/políticas de producción (informe, sección 6). Si hay staging con datos, aplicar ahí primero; si no, ir a producción en horario de baja actividad con el respaldo hecho:
    ```bash
    supabase db push --include-all    # o aplicar el archivo desde el SQL Editor de la rama
    ```

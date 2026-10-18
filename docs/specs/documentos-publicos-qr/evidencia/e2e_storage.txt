@@ -1,4 +1,4 @@
-# e2e_storage.mjs contra Storage real LOCAL (stack docqr) — 2026-10-18T01:30:49Z
+# e2e_storage.mjs contra Storage real LOCAL (stack docqr) — fase portal público — 2026-10-18T03:09:37Z
 1. anonymous cannot administer
 2. admin creates, uploads, registers (draft)
 3. draft is not reachable by new requests

@@ -30,8 +30,9 @@ await svc.from('profiles').insert({ id: u.data.user.id, rol: 'admin', estado: 'a
 const admin = mk(process.env.SUPABASE_ANON_KEY);
 await admin.auth.signInWithPassword({ email, password });
 
-async function make(titulo, bytes, ext, mime, estado) {
-  const p = (await admin.rpc('crear_publicacion_documento', { p_titulo: titulo, p_descripcion: `Documento de validación (${estado})`, p_fecha: null, p_categoria: 'comunicado' })).data;
+async function make(titulo, bytes, ext, mime, estado, slug = null) {
+  const p = (await admin.rpc('crear_publicacion_documento', { p_titulo: titulo, p_descripcion: `Documento de validación (${estado})`, p_fecha: null, p_categoria: 'comunicado', p_slug: slug })).data;
+  if (!p) throw new Error(`could not create ${titulo}`);
   const path = `${p.id}/${randomUUID()}.${ext}`;
   const up = await admin.storage.from('soi-publico').upload(path, bytes, { contentType: mime, upsert: false });
   if (up.error) throw up.error;
@@ -45,7 +46,7 @@ async function make(titulo, bytes, ext, mime, estado) {
 const out = {
   admin: { email, password },
   imagen_publicada: await make('Afiche de bienvenida', png(), 'png', 'image/png', 'publicado'),
-  pdf_publicado: await make('Reglamento interno', pdf(), 'pdf', 'application/pdf', 'publicado'),
+  pdf_publicado: await make('Concierto de Navidad 2026 — programa de mano', pdf(), 'pdf', 'application/pdf', 'publicado', 'concierto-navidad-2026'),
   borrador: await make('Borrador sin publicar', pdf(), 'pdf', 'application/pdf', 'borrador'),
   archivado: await make('Documento archivado', pdf(), 'pdf', 'application/pdf', 'archivado'),
 };

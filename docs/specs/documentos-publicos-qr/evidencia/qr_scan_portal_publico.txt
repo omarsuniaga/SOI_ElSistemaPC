@@ -1,0 +1,8 @@
+# Escaneo (jsQR) de los QR descargados desde el panel — portal público — 2026-10-18T03:12:16Z
+OK   qr-gala-primavera-2027.png @nativepx -> http://127.0.0.1:4181/d/gala-primavera-2027
+OK   qr-gala-primavera-2027.png @512px -> http://127.0.0.1:4181/d/gala-primavera-2027
+OK   qr-gala-primavera-2027.png @256px -> http://127.0.0.1:4181/d/gala-primavera-2027
+OK   qr-gala-primavera-2027.png @128px -> http://127.0.0.1:4181/d/gala-primavera-2027
+OK   qr-gala-primavera-2027.svg @256px -> http://127.0.0.1:4181/d/gala-primavera-2027
+OK   qr-gala-primavera-2027.svg @512px -> http://127.0.0.1:4181/d/gala-primavera-2027
+OK   qr-gala-primavera-2027.svg @1024px -> http://127.0.0.1:4181/d/gala-primavera-2027

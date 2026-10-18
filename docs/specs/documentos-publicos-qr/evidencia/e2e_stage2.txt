@@ -1,0 +1,8 @@
+# e2e_stage2.mjs: Edge Function real + migración staged aplicada (stack local) — 2026-10-18T03:13:34Z
+A. direct RPC is closed, function is the only way
+B. function authorisation
+C. valid PDF is verified and registered
+D. fake content is rejected and removed
+E. published flow still works for anonymous visitors
+
+RESULT: 16 passed, 0 failed

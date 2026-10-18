@@ -1,0 +1,8 @@
+# QR con URL de longitud de producción y zona de silencio de 4 módulos — 2026-10-18T01:36:04Z
+OK   prod-like.png @nativepx -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5
+OK   prod-like.png @512px -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5
+OK   prod-like.png @256px -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5
+OK   prod-like.png @128px -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5
+OK   prod-like.svg @256px -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5
+OK   prod-like.svg @512px -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5
+OK   prod-like.svg @1024px -> https://soi.elsistemapuntacana.example/d/a1b2c3d4e5

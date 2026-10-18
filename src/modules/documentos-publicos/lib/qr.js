@@ -26,7 +26,8 @@ export function buildPublicUrl(slug, base = publicBaseUrl()) {
   return `${String(base).replace(/\/+$/, '')}/d/${slug}`
 }
 
-const QR_OPTS = { errorCorrectionLevel: 'M', margin: 2 }
+// margin 4 = zona de silencio mínima del estándar (ISO/IEC 18004) para que el QR impreso se lea bien.
+const QR_OPTS = { errorCorrectionLevel: 'M', margin: 4 }
 
 /** SVG vectorial (string). */
 export function generateQrSvg(url) {

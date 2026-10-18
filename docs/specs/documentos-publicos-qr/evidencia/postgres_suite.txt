@@ -1,0 +1,31 @@
+# run_tests.mjs PostgreSQL 17 aislado — 2026-10-18T01:30:51Z
+A. direct table access
+B. RPC authorization
+C. storage writes
+D. lifecycle and public read
+E. storage update/delete
+F. immutability and audit
+I. state/role access matrix
+J. stage 2 (staged migration)
+G. collateral
+H. rollback
+
+RESULT: 217 passed, 0 failed
+MUTATION 1: insert policy without admin check or publication check
+RESULT (mutation 1): 203 passed, 10 failed
+MUTATION 2: public read policy open to everything
+RESULT (mutation 2): 172 passed, 41 failed
+MUTATION 3: authorization helper always true
+RESULT (mutation 3): 73 passed, 32 failed
+MUTATION 4: direct DML granted to authenticated
+RESULT (mutation 4): 201 passed, 12 failed
+MUTATION 5: anon can read tables
+RESULT (mutation 5): 210 passed, 3 failed
+MUTATION 6: delete policy allows registered versions
+RESULT (mutation 6): 212 passed, 1 failed
+MUTATION 7: storage_objeto_publicado ignores estado
+RESULT (mutation 7): 184 passed, 29 failed
+MUTATION 8: public RPC ignores estado
+RESULT (mutation 8): 191 passed, 22 failed
+MUTATION 9: signature check of path removed from insert policy
+RESULT (mutation 9): 211 passed, 2 failed

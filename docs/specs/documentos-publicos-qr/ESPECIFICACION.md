@@ -87,7 +87,7 @@ Diseño adoptado: bucket `soi-publico` **privado** + política `SELECT` para `an
 * `d.html` es una entrada Vite independiente (sin shell administrativo, sin sesión). Netlify: `[[redirects]] /d/* → /d.html 200` antes del catch-all; espejo en `public/_redirects` y en el middleware de desarrollo de `vite.config.js`.
 * `obtener_publicacion_publica(slug)` (ejecutable por anon) devuelve metadatos solo si `estado='publicado'`, sin `created_by`, `sha256` ni versiones anteriores. Slug inexistente, borrador, archivado o error de red muestran **el mismo mensaje** (no revela existencia).
 * Imágenes se muestran en línea; PDF mediante "Abrir" y "Descargar" (la CSP del sitio no permite `<iframe>` de otro origen).
-* QR: `qrcode` (nivel de corrección M, margen 2). SVG vectorial y PNG de 1024 px generados en el navegador. `VITE_PUBLIC_BASE_URL` (opcional) fija el dominio codificado para no imprimir QR con un dominio de vista previa; la URL se muestra al administrador para verificarla.
+* QR: `qrcode` (nivel de corrección M, zona de silencio de 4 módulos). SVG vectorial y PNG de 1024 px generados en el navegador. `VITE_PUBLIC_BASE_URL` (opcional) fija el dominio codificado para no imprimir QR con un dominio de vista previa; la URL se muestra al administrador para verificarla.
 
 ## 8. Modo Demo (AGENTS.md §2)
 

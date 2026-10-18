@@ -1,0 +1,14 @@
+# Integridad del build ADMIN — 2026-10-18T03:15:54Z
+git diff origin/master -- vite.config.js netlify.toml public/_redirects public/sw.js public/manifest.json:
+(vacío = sin diferencias)
+HTML publicados por el build admin:
+acm.html adm.html admin.html architecture.html audiciones.html calendario.html com.html fin.html index.html inventario.html luteria.html offline.html simulador.html tecnico.html 
+archivos del repo que cambian respecto de master fuera del módulo y de apps/ (impacto admin):
+.gitignore
+package.json
+src/core/auth/accessControl.js
+src/core/moduleCatalog.js
+src/core/portalModuleMatrix.test.js
+src/portales/_shared/allRegistrars.js
+src/portales/adm/adm.js
+vitest.config.js

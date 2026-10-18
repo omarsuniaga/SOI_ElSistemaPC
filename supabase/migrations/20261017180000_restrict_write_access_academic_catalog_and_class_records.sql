@@ -24,21 +24,22 @@
 -- FIX (least privilege)
 -- ---------------------
 --  Catalogue (programas, salones, horarios)
---      write  : es_gestor_academico()  = admin, superadmin,
---               coordinacion_academica, direccion
+--      write  : capability catalogo:escribir -> admin, superadmin, coordinacion_academica,
+--               or an explicit grant in permisos_maestros.permisos. `direccion` has NO default write.
 --      read   : every authenticated user (unchanged); anon keeps SELECT on programas only
 --               (policy programas_anon_read, used by public flows) -- not on the others.
 --  Class records (class_events, class_event_methodology, homework_assignments,
 --  planned_content)
 --      write  : the owning teacher (maestros.id = maestro_actual()) or, for events of a
---               class, its titular/suplente; plus the catalogue managers above.
---      delete : catalogue managers only (no application flow deletes these rows).
+--               class, its titular/suplente; plus holders of registros_clase:gestionar
+--               (admin, superadmin, coordinacion_academica or an explicit grant).
+--      delete : registros_clase:gestionar only (no application flow deletes these rows).
 --      read   : every authenticated user (UNCHANGED -- tightening reads needs flow work
 --               and is tracked as a follow-up). anon loses all access.
 --  Attendance alerts (notificaciones_asistencia)
 --      The UPDATE-for-everyone policy is removed (its stated purpose was the Hermes service
 --      role, which bypasses RLS anyway). Insert and read move from "any registered account" to
---      the catalogue managers: the queue holds guardian phone numbers and its only application
+--      holders of alertas_asistencia:gestionar: the queue holds guardian phone numbers and its only application
 --      consumer is the admin dashboard widget.
 --
 --  Table privileges are narrowed too: `REVOKE ALL ... FROM anon, authenticated`, then only
@@ -59,27 +60,40 @@ BEGIN;
 
 -- ── 0. Helpers ──────────────────────────────────────────────────────────────
 
-CREATE OR REPLACE FUNCTION public.es_gestor_academico()
+-- Capability check. Authorisations are defined per capability, never "per role by default":
+--   admin, superadmin        every capability
+--   coordinacion_academica   catalogo:escribir, registros_clase:gestionar, alertas_asistencia:gestionar
+--   anyone else (maestro, direccion, finanzas, ...)  only by an explicit, dated grant in
+--                            permisos_maestros.permisos (e.g. 'catalogo:escribir'), which requires a
+--                            maestros row. direccion therefore has NO write access by default.
+-- Uses the existing soi_security.has_role (requires profiles.estado = 'activo').
+CREATE OR REPLACE FUNCTION public.tiene_capacidad_academica(p_capacidad text)
 RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT COALESCE(
-    (SELECT p.rol IN ('admin', 'superadmin', 'coordinacion_academica', 'direccion')
-       FROM public.profiles p
-      WHERE p.id = auth.uid()),
-    false)
+  SELECT
+    soi_security.has_role(ARRAY['admin', 'superadmin'])
+    OR (soi_security.has_role(ARRAY['coordinacion_academica'])
+        AND p_capacidad IN ('catalogo:escribir', 'registros_clase:gestionar', 'alertas_asistencia:gestionar'))
+    OR EXISTS (
+      SELECT 1
+        FROM public.permisos_maestros pm
+       WHERE pm.maestro_id = public.maestro_actual()
+         AND p_capacidad = ANY (pm.permisos)
+         AND (pm.fecha_inicio IS NULL OR pm.fecha_inicio <= current_date)
+         AND (pm.fecha_fin    IS NULL OR pm.fecha_fin    >= current_date))
 $$;
 
-COMMENT ON FUNCTION public.es_gestor_academico() IS
-  'true when the caller may maintain the institutional academic catalogue (programas, salones, horarios) and administer class records. Roles: admin, superadmin, coordinacion_academica, direccion.';
+COMMENT ON FUNCTION public.tiene_capacidad_academica(text) IS
+  'Capability check for academic writes. Capabilities: catalogo:escribir (programas, salones, horarios), registros_clase:gestionar (class_events and children, planned_content, homework), alertas_asistencia:gestionar (notificaciones_asistencia).';
 
 -- Can the caller write a class event (or rows hanging from it)?
 --   · the teacher that owns the event, or
 --   · titular/suplente of the class the event's session belongs to, or
---   · a catalogue manager.
+--   · holder of the capability registros_clase:gestionar.
 CREATE OR REPLACE FUNCTION public.puede_escribir_evento_clase(p_teacher_id uuid, p_session_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -87,7 +101,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT public.es_gestor_academico()
+  SELECT public.tiene_capacidad_academica('registros_clase:gestionar')
       OR (p_teacher_id IS NOT NULL AND p_teacher_id = public.maestro_actual())
       OR (p_session_id IS NOT NULL AND EXISTS (
             SELECT 1
@@ -97,11 +111,11 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public.puede_escribir_evento_clase(uuid, uuid) IS
-  'true when the caller owns the class event (teacher_id), teaches the class of its session, or is a catalogue manager.';
+  'true when the caller owns the class event (teacher_id), teaches the class of its session, or holds registros_clase:gestionar.';
 
-REVOKE ALL ON FUNCTION public.es_gestor_academico()                 FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.tiene_capacidad_academica(text)               FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.puede_escribir_evento_clase(uuid, uuid)        FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.es_gestor_academico()              TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.tiene_capacidad_academica(text)            TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.puede_escribir_evento_clase(uuid, uuid)     TO authenticated, service_role;
 
 -- ── 1. Institutional catalogue: programas, salones, horarios ────────────────
@@ -117,8 +131,8 @@ CREATE POLICY programas_read_authenticated ON public.programas
   FOR SELECT TO authenticated USING (true);
 CREATE POLICY programas_gestor_write ON public.programas
   FOR ALL TO authenticated
-  USING (public.es_gestor_academico())
-  WITH CHECK (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('catalogo:escribir'))
+  WITH CHECK (public.tiene_capacidad_academica('catalogo:escribir'));
 REVOKE ALL ON public.programas FROM anon, authenticated;
 GRANT SELECT ON public.programas TO anon;                                  -- programas_anon_read (public flows)
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.programas TO authenticated;
@@ -134,8 +148,8 @@ CREATE POLICY salones_read_authenticated ON public.salones
   FOR SELECT TO authenticated USING (true);
 CREATE POLICY salones_gestor_write ON public.salones
   FOR ALL TO authenticated
-  USING (public.es_gestor_academico())
-  WITH CHECK (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('catalogo:escribir'))
+  WITH CHECK (public.tiene_capacidad_academica('catalogo:escribir'));
 REVOKE ALL ON public.salones FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.salones TO authenticated;
 
@@ -150,8 +164,8 @@ CREATE POLICY horarios_read_authenticated ON public.horarios
   FOR SELECT TO authenticated USING (true);
 CREATE POLICY horarios_gestor_write ON public.horarios
   FOR ALL TO authenticated
-  USING (public.es_gestor_academico())
-  WITH CHECK (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('catalogo:escribir'))
+  WITH CHECK (public.tiene_capacidad_academica('catalogo:escribir'));
 REVOKE ALL ON public.horarios FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.horarios TO authenticated;
 
@@ -177,7 +191,7 @@ CREATE POLICY class_events_owner_update ON public.class_events
   WITH CHECK (public.puede_escribir_evento_clase(teacher_id, session_id));
 CREATE POLICY class_events_gestor_delete ON public.class_events
   FOR DELETE TO authenticated
-  USING (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('registros_clase:gestionar'));
 REVOKE ALL ON public.class_events FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.class_events TO authenticated;
 
@@ -210,7 +224,7 @@ CREATE POLICY class_event_methodology_owner_update ON public.class_event_methodo
        AND public.puede_escribir_evento_clase(ce.teacher_id, ce.session_id)));
 CREATE POLICY class_event_methodology_gestor_delete ON public.class_event_methodology
   FOR DELETE TO authenticated
-  USING (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('registros_clase:gestionar'));
 REVOKE ALL ON public.class_event_methodology FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.class_event_methodology TO authenticated;
 
@@ -228,7 +242,7 @@ CREATE POLICY homework_assignments_read_authenticated ON public.homework_assignm
 CREATE POLICY homework_assignments_owner_insert ON public.homework_assignments
   FOR INSERT TO authenticated
   WITH CHECK (
-    public.es_gestor_academico()
+    public.tiene_capacidad_academica('registros_clase:gestionar')
     OR (teacher_id IS NOT NULL AND teacher_id = public.maestro_actual())
     OR EXISTS (SELECT 1 FROM public.class_events ce
                 WHERE ce.id = homework_assignments.class_event_id
@@ -236,20 +250,20 @@ CREATE POLICY homework_assignments_owner_insert ON public.homework_assignments
 CREATE POLICY homework_assignments_owner_update ON public.homework_assignments
   FOR UPDATE TO authenticated
   USING (
-    public.es_gestor_academico()
+    public.tiene_capacidad_academica('registros_clase:gestionar')
     OR (teacher_id IS NOT NULL AND teacher_id = public.maestro_actual())
     OR EXISTS (SELECT 1 FROM public.class_events ce
                 WHERE ce.id = homework_assignments.class_event_id
                   AND public.puede_escribir_evento_clase(ce.teacher_id, ce.session_id)))
   WITH CHECK (
-    public.es_gestor_academico()
+    public.tiene_capacidad_academica('registros_clase:gestionar')
     OR (teacher_id IS NOT NULL AND teacher_id = public.maestro_actual())
     OR EXISTS (SELECT 1 FROM public.class_events ce
                 WHERE ce.id = homework_assignments.class_event_id
                   AND public.puede_escribir_evento_clase(ce.teacher_id, ce.session_id)));
 CREATE POLICY homework_assignments_gestor_delete ON public.homework_assignments
   FOR DELETE TO authenticated
-  USING (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('registros_clase:gestionar'));
 REVOKE ALL ON public.homework_assignments FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.homework_assignments TO authenticated;
 
@@ -266,17 +280,17 @@ CREATE POLICY planned_content_read_authenticated ON public.planned_content
   FOR SELECT TO authenticated USING (true);
 CREATE POLICY planned_content_owner_insert ON public.planned_content
   FOR INSERT TO authenticated
-  WITH CHECK (public.es_gestor_academico()
+  WITH CHECK (public.tiene_capacidad_academica('registros_clase:gestionar')
               OR (maestro_id IS NOT NULL AND maestro_id = public.maestro_actual()));
 CREATE POLICY planned_content_owner_update ON public.planned_content
   FOR UPDATE TO authenticated
-  USING (public.es_gestor_academico()
+  USING (public.tiene_capacidad_academica('registros_clase:gestionar')
          OR (maestro_id IS NOT NULL AND maestro_id = public.maestro_actual()))
-  WITH CHECK (public.es_gestor_academico()
+  WITH CHECK (public.tiene_capacidad_academica('registros_clase:gestionar')
               OR (maestro_id IS NOT NULL AND maestro_id = public.maestro_actual()));
 CREATE POLICY planned_content_gestor_delete ON public.planned_content
   FOR DELETE TO authenticated
-  USING (public.es_gestor_academico());
+  USING (public.tiene_capacidad_academica('registros_clase:gestionar'));
 REVOKE ALL ON public.planned_content FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.planned_content TO authenticated;
 
@@ -292,9 +306,9 @@ DROP POLICY IF EXISTS portal_read_own_notifications         ON public.notificaci
 DROP POLICY IF EXISTS notificaciones_asistencia_gestor_read   ON public.notificaciones_asistencia;
 DROP POLICY IF EXISTS notificaciones_asistencia_gestor_insert ON public.notificaciones_asistencia;
 CREATE POLICY notificaciones_asistencia_gestor_read ON public.notificaciones_asistencia
-  FOR SELECT TO authenticated USING (public.es_gestor_academico());
+  FOR SELECT TO authenticated USING (public.tiene_capacidad_academica('alertas_asistencia:gestionar'));
 CREATE POLICY notificaciones_asistencia_gestor_insert ON public.notificaciones_asistencia
-  FOR INSERT TO authenticated WITH CHECK (public.es_gestor_academico());
+  FOR INSERT TO authenticated WITH CHECK (public.tiene_capacidad_academica('alertas_asistencia:gestionar'));
 REVOKE ALL ON public.notificaciones_asistencia FROM anon, authenticated;
 GRANT SELECT, INSERT ON public.notificaciones_asistencia TO authenticated;
 

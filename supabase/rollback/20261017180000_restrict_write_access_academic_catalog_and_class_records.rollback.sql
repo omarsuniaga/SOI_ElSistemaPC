@@ -130,6 +130,6 @@ GRANT ALL ON public.salones                  TO anon, authenticated;
 
 -- ── Helpers: dropped last, once no policy references them ──
 DROP FUNCTION IF EXISTS public.puede_escribir_evento_clase(uuid, uuid);
-DROP FUNCTION IF EXISTS public.es_gestor_academico();
+DROP FUNCTION IF EXISTS public.tiene_capacidad_academica(text);
 
 COMMIT;

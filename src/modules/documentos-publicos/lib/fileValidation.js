@@ -69,7 +69,8 @@ export async function validateFile(file) {
 
 /** SHA-256 hexadecimal del contenido (Web Crypto). */
 export async function sha256Hex(blob) {
-  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+  // new Uint8Array(...) normaliza el buffer (en jsdom/Node 20 el ArrayBuffer de Blob es de otro "realm" y digest lo rechaza)
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(await blob.arrayBuffer()))
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 

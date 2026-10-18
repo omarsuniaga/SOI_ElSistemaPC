@@ -14,6 +14,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { makeExtraPhases } from './extra_phases.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATION_VERSION = '20261017180000';
@@ -40,7 +41,7 @@ const ID = {
   programa: U(9001), salon: U(9002), horario: U(9003), clase: U(9004), sesion: U(9005),
   alumno: U(9006), evento: U(9007), metodologia: U(9008), tarea: U(9009), plan: U(9010),
   notif: U(9011), nodo: U(9012), alumno2: U(9013), evento2: U(9014), alumno3: U(9015),
-  m_titular: U(7001), m_suplente: U(7002), m_otro: U(7003),
+  m_titular: U(7001), m_suplente: U(7002), m_otro: U(7003), m_cap: U(7004),
 };
 const ACTORS = {
   anon:               { role: 'anon' },
@@ -53,22 +54,45 @@ const ACTORS = {
   coordinacion:       { role: 'authenticated', uid: U(1007), rol: 'coordinacion_academica' },
   direccion:          { role: 'authenticated', uid: U(1008), rol: 'direccion' },
   admin:              { role: 'authenticated', uid: U(1009), rol: 'admin' },
+  admin2:             { role: 'authenticated', uid: U(1013), rol: 'admin' },
+  admin3:             { role: 'authenticated', uid: U(1014), rol: 'admin' },
+  admin4:             { role: 'authenticated', uid: U(1015), rol: 'admin' },
+  admin5:             { role: 'authenticated', uid: U(1016), rol: 'admin' },
+  admin_inactivo:     { role: 'authenticated', uid: U(1017), rol: 'admin', estado: 'inactivo' },
+  maestro_cap:        { role: 'authenticated', uid: U(1018), rol: 'maestro', maestro: ID.m_cap },   // explicit grant: catalogo:escribir
   superadmin:         { role: 'authenticated', uid: U(1010), rol: 'superadmin' },
   finanzas:           { role: 'authenticated', uid: U(1012), rol: 'finanzas' },
   service_role:       { role: 'service_role' },
 };
-const GESTORES = ['coordinacion', 'direccion', 'admin', 'superadmin', 'service_role'];
+// Holders of every capability by default. `direccion` is deliberately NOT here.
+const GESTORES = ['coordinacion', 'admin', 'admin2', 'admin3', 'admin4', 'admin5', 'superadmin', 'service_role'];
 const AUTHENTICATED_ALL = Object.keys(ACTORS).filter((a) => a !== 'anon');
 
 const fixtureSql = `
 SET session_replication_role = replica;
 ${Object.entries(ACTORS).filter(([, a]) => a.uid).map(([k, a]) => `
 INSERT INTO auth.users (id, email) VALUES ('${a.uid}', '${k}@test.local');
-INSERT INTO public.profiles (id, email, rol, estado) VALUES ('${a.uid}', '${k}@test.local', '${a.rol}', 'activo');`).join('')}
+INSERT INTO public.profiles (id, email, rol, estado) VALUES ('${a.uid}', '${k}@test.local', '${a.rol}', '${a.estado ?? 'activo'}');`).join('')}
 INSERT INTO public.maestros (id, nombre_completo, especialidad, correo, user_id) VALUES
   ('${ID.m_titular}',  'Titular',  'violin', 'titular@test.local',  '${ACTORS.maestro_titular.uid}'),
   ('${ID.m_suplente}', 'Suplente', 'violin', 'suplente@test.local', '${ACTORS.maestro_suplente.uid}'),
-  ('${ID.m_otro}',     'Otro',     'viola',  'otro@test.local',     '${ACTORS.maestro_otro.uid}');
+  ('${ID.m_otro}',     'Otro',     'viola',  'otro@test.local',     '${ACTORS.maestro_otro.uid}'),
+  ('${ID.m_cap}',      'ConCapacidad', 'viola', 'cap@test.local',    '${ACTORS.maestro_cap.uid}');
+INSERT INTO public.permisos_maestros (maestro_id, permisos) VALUES ('${ID.m_cap}', ARRAY['catalogo:escribir']);
+INSERT INTO public.nodes (id, level_id, route_version_id, name, type)
+  VALUES ('${ID.nodo}', '${U(9101)}', '${U(9102)}', 'nodo fixture', 'topic');
+-- sequences used by generate_salon_code (prod ACL: rwU for anon/authenticated/service_role = legacy default)
+CREATE SEQUENCE IF NOT EXISTS public.salones_codigo_seq;
+CREATE SEQUENCE IF NOT EXISTS public.salon_code_seq;
+-- production triggers of the eight tables (pg_get_triggerdef, read-only capture 2026-10-17); they are
+-- attached here because the catalogue dump does not carry them. Matrix cases run with triggers off,
+-- the flow cases below run with them on.
+CREATE TRIGGER trg_class_events_updated_at BEFORE UPDATE ON public.class_events FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER update_horarios_updated_at BEFORE UPDATE ON public.horarios FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_notif_asistencia_update_timestamp BEFORE UPDATE ON public.notificaciones_asistencia FOR EACH ROW EXECUTE FUNCTION fn_update_notif_asistencia_timestamp();
+CREATE TRIGGER update_programas_updated_at BEFORE UPDATE ON public.programas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER tr_generate_salon_code BEFORE INSERT ON public.salones FOR EACH ROW EXECUTE FUNCTION generate_salon_code();
+CREATE TRIGGER update_salones_updated_at BEFORE UPDATE ON public.salones FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 INSERT INTO public.alumnos (id, nombre_completo) VALUES ('${ID.alumno}', 'Alumno Prueba'), ('${ID.alumno2}', 'Alumno Dos'), ('${ID.alumno3}', 'Alumno Tres');
 INSERT INTO public.clases (id, nombre, maestro_principal_id, maestro_suplente_id)
   VALUES ('${ID.clase}', 'Clase de prueba', '${ID.m_titular}', '${ID.m_suplente}');
@@ -92,15 +116,16 @@ INSERT INTO public.notificaciones_asistencia (id, tipo, canal, prioridad, destin
 `;
 
 // ── attempts ────────────────────────────────────────────────────────────────
-async function attempt(client, actorKey, sql) {
+async function attempt(client, actorKey, sql, { replica = true } = {}) {
   const actor = ACTORS[actorKey];
   await client.query('BEGIN');
   try {
-    await client.query('SET LOCAL session_replication_role = replica');   // FK noise off; RLS stays on
+    if (replica) await client.query('SET LOCAL session_replication_role = replica');   // FK/trigger noise off; RLS stays on
     await client.query(`SET LOCAL ROLE ${actor.role}`);
     await client.query(`SELECT set_config('request.jwt.claims', $1, true)`,
       [JSON.stringify(actor.uid ? { sub: actor.uid, role: actor.role } : { role: actor.role })]);
     const r = await client.query(sql);
+    if (r.command === 'DO') return { outcome: 'allowed', detail: 'do-block completed' };
     return { outcome: r.rowCount >= 1 ? 'allowed' : 'denied', detail: `rows=${r.rowCount}` };
   } catch (e) {
     if (e.code === '42501') return { outcome: 'denied', detail: e.message };
@@ -118,14 +143,14 @@ const TABLES = {
     upd: () => `UPDATE public.programas SET descripcion = 'pwned' WHERE id = '${ID.programa}'`,
     del: () => `DELETE FROM public.programas WHERE id = '${ID.programa}'`,
     sel: () => `SELECT id FROM public.programas`,
-    write: GESTORES,
+    write: [...GESTORES, 'maestro_cap'],
   },
   salones: {
     ins: () => `INSERT INTO public.salones (nombre) VALUES ('pwn-${uuid()}')`,
     upd: () => `UPDATE public.salones SET descripcion = 'pwned' WHERE id = '${ID.salon}'`,
     del: () => `DELETE FROM public.salones WHERE id = '${ID.salon}'`,
     sel: () => `SELECT id FROM public.salones`,
-    write: GESTORES,
+    write: [...GESTORES, 'maestro_cap'],
   },
   horarios: {
     ins: () => `INSERT INTO public.horarios (clase_id, maestro_id, salon_id, dia_semana, hora_inicio, hora_fin)
@@ -133,7 +158,7 @@ const TABLES = {
     upd: () => `UPDATE public.horarios SET activo = false WHERE id = '${ID.horario}'`,
     del: () => `DELETE FROM public.horarios WHERE id = '${ID.horario}'`,
     sel: () => `SELECT id FROM public.horarios`,
-    write: GESTORES,
+    write: [...GESTORES, 'maestro_cap'],
   },
   class_events: {
     ins: () => `INSERT INTO public.class_events (teacher_id, student_id, session_id, event_date, status)
@@ -288,10 +313,10 @@ async function snapshot(client) {
   return JSON.stringify({ pol: pol.rows, acl: acl.rows });
 }
 
-async function runCases(dbName, phase, cases) {
+async function runCases(dbName, phase, cases, opts) {
   return withDb(dbName, async (client) => {
     let bad = 0;
-    for (const c of cases) if (!record(phase, c, await attempt(client, c.actor, c.sql))) bad++;
+    for (const c of cases) if (!record(phase, c, await attempt(client, c.actor, c.sql, opts))) bad++;
     return bad;
   });
 }
@@ -323,6 +348,40 @@ const idempotent = snapAfter1 === snapAfter2;
 results.push({ phase: 'idempotency', name: 'applying the migration twice yields an identical catalog', kind: 'migration', expect: 'same', got: idempotent ? 'same' : 'different', pass: idempotent, detail: '' });
 failAfter += idempotent ? 0 : 1;
 
+// AFTER: end-to-end flows with triggers on and foreign keys enforced
+const extra = makeExtraPhases({ ID, TABLES });
+failAfter += await runCases('soi_t_after', 'flows', extra.flowCases(), { replica: false });
+
+// AFTER: the policy set must equal the whitelist, so no leftover permissive policy can override the new ones
+{
+  const inv = await withDb('soi_t_after', extra.policyInventory);
+  const exp = extra.expectedPolicies();
+  for (const t of Object.keys(exp)) {
+    const have = (inv[t] ?? []).map((r) => r.policyname).sort();
+    const want = [...exp[t]].sort();
+    const restrictive = (inv[t] ?? []).filter((r) => r.permissive !== 'PERMISSIVE').length;
+    const same = JSON.stringify(have) === JSON.stringify(want) && restrictive === 0;
+    results.push({ phase: 'policies', name: `${t}: policy set equals the whitelist`, kind: 'migration', expect: want.join(','), got: have.join(','), pass: same, detail: '' });
+  }
+}
+
+// COLLATERAL: unrelated flows (calendar, rooms, tasks, signage) behave identically before and after
+{
+  const run = (db) => withDb(db, async (client) => {
+    const out = [];
+    for (const c of extra.collateralCases()) {
+      const r = await attempt(client, c.actor, c.sql, { replica: false });
+      out.push([c.name, r.outcome === 'error' ? `error ${r.detail.split(' ')[0]}` : r.outcome]);
+    }
+    return out;
+  });
+  const before = await run('soi_t_before');
+  const after = await run('soi_t_after');
+  before.forEach(([name, outcome], i) => {
+    results.push({ phase: 'collateral', name, kind: 'public-flow', expect: outcome, got: after[i][1], pass: outcome === after[i][1], detail: '' });
+  });
+}
+
 // ROLLBACK
 await clone('soi_t_rb');
 await withDb('soi_t_rb', (c) => c.query(migrationSql));
@@ -330,7 +389,7 @@ await withDb('soi_t_rb', (c) => c.query(rollbackSql));
 const snapRb = await withDb('soi_t_rb', snapshot);
 const restored = snapRb === snapBefore;
 results.push({ phase: 'rollback', name: 'rollback restores the exact pre-migration policies and ACLs', kind: 'migration', expect: 'same', got: restored ? 'same' : 'different', pass: restored, detail: '' });
-const helpers = await withDb('soi_t_rb', (c) => c.query(`SELECT count(*)::int AS n FROM pg_proc WHERE proname IN ('es_gestor_academico','puede_escribir_evento_clase')`));
+const helpers = await withDb('soi_t_rb', (c) => c.query(`SELECT count(*)::int AS n FROM pg_proc WHERE proname IN ('tiene_capacidad_academica','puede_escribir_evento_clase')`));
 const helpersGone = helpers.rows[0].n === 0;
 results.push({ phase: 'rollback', name: 'rollback removes the helper functions', kind: 'migration', expect: 'removed', got: helpersGone ? 'removed' : 'present', pass: helpersGone, detail: '' });
 const failRb = (restored ? 0 : 1) + (helpersGone ? 0 : 1)

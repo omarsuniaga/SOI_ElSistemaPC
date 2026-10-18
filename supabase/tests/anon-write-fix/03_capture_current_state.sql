@@ -26,10 +26,13 @@ ORDER BY c.relname;
 SELECT p.proname, pg_get_function_identity_arguments(p.oid) AS args
 FROM pg_proc p
 WHERE p.pronamespace = 'public'::regnamespace
-  AND p.proname IN ('es_gestor_academico', 'puede_escribir_evento_clase', 'es_admin', 'maestro_actual', 'maestro_en_clase');
+  AND p.proname IN ('tiene_capacidad_academica', 'puede_escribir_evento_clase', 'es_admin', 'maestro_actual', 'maestro_en_clase');
 
 -- 4. profiles.rol values in use (confirms no role outside the helper's list needs write access)
 SELECT rol, count(*) FROM public.profiles GROUP BY rol ORDER BY 2 DESC;
+
+-- 4b. Accounts that would pass soi_security.has_role (estado = activo and activo not false), aggregated
+SELECT rol, estado, (activo IS DISTINCT FROM false) AS has_role_ok, count(*) FROM public.profiles GROUP BY 1,2,3 ORDER BY 1,2;
 
 -- 5. Row-count estimates (statistics only, no table scan)
 SELECT relname, reltuples::bigint AS approx_rows

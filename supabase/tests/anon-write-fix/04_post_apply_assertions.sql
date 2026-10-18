@@ -25,7 +25,7 @@ UNION ALL
 SELECT 'helper functions exist and anon cannot execute them',
        (SELECT count(*) = 2 AND NOT bool_or(has_function_privilege('anon', p.oid, 'EXECUTE'))
           FROM pg_proc p WHERE p.pronamespace='public'::regnamespace
-           AND p.proname IN ('es_gestor_academico','puede_escribir_evento_clase'))
+           AND p.proname IN ('tiene_capacidad_academica','puede_escribir_evento_clase'))
 UNION ALL
 SELECT 'signage views still readable by anon',
        bool_and(has_table_privilege('anon', format('public.%I', v), 'SELECT'))

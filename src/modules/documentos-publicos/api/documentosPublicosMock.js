@@ -4,6 +4,7 @@
  */
 import seed from '../../../assets/data/mocks/documentosPublicos.json'
 import { accionDeTransicion } from '../lib/estados.js'
+import { isValidSlug } from '../lib/slug.js'
 import { validateFile, sha256Hex, buildStoragePath } from '../lib/fileValidation.js'
 
 const ACTOR = 'demo-admin'
@@ -44,12 +45,15 @@ export async function obtenerPublicacion(id) {
   return p ? withVersion(p) : null
 }
 
-export async function crearPublicacion({ titulo, descripcion, fecha, categoria }) {
+export async function crearPublicacion({ titulo, descripcion, fecha, categoria, slug }) {
   const t = String(titulo ?? '').trim()
   if (t.length < 3 || t.length > 160) throw new Error('El título debe tener entre 3 y 160 caracteres')
+  const wanted = String(slug ?? '').trim().toLowerCase()
+  if (wanted && !isValidSlug(wanted)) throw new Error('Identificador inválido: use de 3 a 60 letras minúsculas, números y guiones')
+  if (wanted && publicaciones.some((x) => x.slug === wanted)) throw new Error('Ese identificador ya está en uso')
   const now = nowIso()
   const p = {
-    id: uid(), slug: randomSlug(), titulo: t, descripcion: descripcion?.trim() || null,
+    id: uid(), slug: wanted || randomSlug(), titulo: t, descripcion: descripcion?.trim() || null,
     fecha_documento: fecha || now.slice(0, 10), categoria: categoria || 'general', estado: 'borrador',
     version_actual_id: null, published_at: null, archived_at: null,
     created_by: ACTOR, updated_by: ACTOR, created_at: now, updated_at: now,

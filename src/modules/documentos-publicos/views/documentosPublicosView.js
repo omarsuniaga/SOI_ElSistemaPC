@@ -12,8 +12,16 @@ import { renderAccessDenied } from '../../../core/auth/accessControl.js'
 import { renderPageHeader } from '../../../shared/components/pageShell.js'
 import * as api from '../api/documentosPublicosApi.js'
 import { ESTADOS, CATEGORIAS, categoriaLabel, transicionesDisponibles, ACCION_LABEL } from '../lib/estados.js'
-import { buildPublicUrl, generateQrSvg, generateQrPngDataUrl, dataUrlToBlob, downloadBlob, qrFileName } from '../lib/qr.js'
+import { buildDefinitiveQrUrl, generateQrSvg, generateQrPngDataUrl, dataUrlToBlob, downloadBlob, qrFileName } from '../lib/qr.js'
+import { qrExportStatus } from '../lib/qrDomain.js'
+import { isValidSlug } from '../lib/slug.js'
 import { formatBytes, ALLOWED_TYPES } from '../lib/fileValidation.js'
+
+/**
+ * Las subidas en producción exigen la verificación de contenido en servidor (Edge Function +
+ * migración staged). Sin ella, el panel no sube archivos. En desarrollo/pruebas siempre se permite.
+ */
+const uploadsEnabled = () => !import.meta.env?.PROD || import.meta.env?.VITE_DOCS_SERVER_VERIFY === 'true'
 
 const state = { container: null, items: [], filtro: '', selectedId: null }
 
@@ -87,6 +95,11 @@ function formHtml(p = {}) {
   return `
     <div class="mb-3"><label class="form-label">Título</label>
       <input class="form-control" id="dpTitulo" maxlength="160" value="${escapeHTML(p.titulo ?? '')}" required></div>
+    ${p.id
+    ? `<div class="mb-3"><label class="form-label">Identificador público (permanente)</label><input class="form-control" value="${escapeHTML(p.slug)}" readonly></div>`
+    : `<div class="mb-3"><label class="form-label">Identificador público (opcional)</label>
+      <input class="form-control" id="dpSlug" maxlength="60" placeholder="concierto-navidad-2026" autocomplete="off">
+      <div class="form-text">Forma parte de la dirección y del QR y <strong>no podrá cambiarse</strong>. 3–60 caracteres: minúsculas, números y guiones. Vacío = automático.</div></div>`}
     <div class="mb-3"><label class="form-label">Descripción</label>
       <textarea class="form-control" id="dpDescripcion" rows="3" maxlength="2000">${escapeHTML(p.descripcion ?? '')}</textarea></div>
     <div class="row g-3">
@@ -102,6 +115,7 @@ function readForm(body) {
     descripcion: body.querySelector('#dpDescripcion').value.trim(),
     fecha: body.querySelector('#dpFecha').value,
     categoria: body.querySelector('#dpCategoria').value,
+    slug: body.querySelector('#dpSlug')?.value.trim().toLowerCase() ?? '',
   }
 }
 
@@ -113,6 +127,7 @@ function openForm(p = null) {
     onSave: async (body) => {
       const data = readForm(body)
       if (data.titulo.length < 3) { AppToast.error('El título debe tener al menos 3 caracteres.'); return false }
+      if (!p && data.slug && !isValidSlug(data.slug)) { AppToast.error('Identificador inválido: 3–60 caracteres, minúsculas, números y guiones.'); return false }
       try {
         if (p) {
           await api.actualizarPublicacion(p.id, data)
@@ -136,7 +151,9 @@ async function renderDetail(id) {
   state.selectedId = id
   const [p, versiones, eventos] = await Promise.all([api.obtenerPublicacion(id), api.listarVersiones(id), api.listarEventos(id)])
   if (!p) { renderList(); return }
-  const url = buildPublicUrl(p.slug)
+  const qr = qrExportStatus()
+  const url = qr.ok ? buildDefinitiveQrUrl(p.slug) : ''
+  const uploadsOn = uploadsEnabled()
   const acciones = transicionesDisponibles(p.estado, !!p.version_actual_id)
     .map((t) => `<button class="btn btn-${t.variant} btn-sm" data-estado="${t.hacia}"><i class="bi ${t.icon} me-1"></i>${escapeHTML(t.label)}</button>`).join(' ')
   const verRows = versiones.map((v) => `
@@ -168,11 +185,13 @@ async function renderDetail(id) {
       <div class="row g-3">
         <div class="col-lg-4"><div class="card h-100"><div class="card-body text-center">
           <h3 class="h6">Código QR</h3>
-          <div id="dpQr" class="mx-auto mb-3" style="max-width:240px"></div>
-          <div class="input-group input-group-sm mb-2"><input class="form-control" readonly value="${escapeHTML(url)}" id="dpUrl"><button class="btn btn-outline-secondary" id="dpCopiar" title="Copiar"><i class="bi bi-clipboard"></i></button></div>
+          ${qr.ok
+    ? '<div id="dpQr" class="mx-auto mb-3" style="max-width:240px"></div>'
+    : `<div class="alert alert-warning small text-start" role="alert" id="dpQrBlocked"><strong>Exportación de QR bloqueada.</strong><br>${escapeHTML(qr.message)}</div>`}
+          <div class="input-group input-group-sm mb-2"><input class="form-control" readonly value="${escapeHTML(url)}" id="dpUrl"><button class="btn btn-outline-secondary" id="dpCopiar" title="Copiar" ${qr.ok ? '' : 'disabled'}><i class="bi bi-clipboard"></i></button></div>
           <div class="d-flex gap-2 justify-content-center">
-            <button class="btn btn-primary btn-sm" id="dpPng"><i class="bi bi-download me-1"></i>PNG</button>
-            <button class="btn btn-primary btn-sm" id="dpSvg"><i class="bi bi-download me-1"></i>SVG</button>
+            <button class="btn btn-primary btn-sm" id="dpPng" ${qr.ok ? '' : 'disabled'}><i class="bi bi-download me-1"></i>PNG</button>
+            <button class="btn btn-primary btn-sm" id="dpSvg" ${qr.ok ? '' : 'disabled'}><i class="bi bi-download me-1"></i>SVG</button>
           </div>
           <p class="small text-muted mt-3 mb-0">El QR apunta a la dirección permanente: reemplazar el documento no lo invalida.${p.estado !== 'publicado' ? ' <strong>Aún no está publicada: la página mostrará “no disponible”.</strong>' : ''}</p>
         </div></div></div>
@@ -181,9 +200,10 @@ async function renderDetail(id) {
           <div class="row g-2 align-items-end">
             <div class="col-md-5"><input type="file" class="form-control form-control-sm" id="dpArchivo" accept="${accept}"></div>
             <div class="col-md-5"><input class="form-control form-control-sm" id="dpMotivo" maxlength="500" placeholder="Motivo del cambio (opcional)"></div>
-            <div class="col-md-2 d-grid"><button class="btn btn-success btn-sm" id="dpSubir" ${p.estado === 'archivado' ? 'disabled' : ''}><i class="bi bi-upload me-1"></i>Subir</button></div>
+            <div class="col-md-2 d-grid"><button class="btn btn-success btn-sm" id="dpSubir" ${p.estado === 'archivado' || !uploadsOn ? 'disabled' : ''}><i class="bi bi-upload me-1"></i>Subir</button></div>
           </div>
           <div class="small text-muted mt-1">PDF, JPG, PNG o WebP · máximo 10 MB · se valida el contenido real del archivo.</div>
+          ${uploadsOn ? '' : '<div class="alert alert-warning small mt-2 mb-0" role="alert" id="dpUploadsBlocked"><strong>Subidas deshabilitadas.</strong> Falta activar la verificación de contenido en servidor (VITE_DOCS_SERVER_VERIFY) para producción.</div>'}
           <h3 class="h6 mt-4">Historial de versiones</h3>
           <div class="table-responsive"><table class="table table-sm align-middle mb-0">
             <thead><tr><th>Versión</th><th>Archivo</th><th>Tamaño</th><th>Fecha</th><th>Huella</th><th></th></tr></thead>
@@ -224,10 +244,12 @@ async function renderDetail(id) {
       try { await api.activarVersion(p.id, b.dataset.activar); AppToast.success('Versión reactivada.'); await refresh(true) } catch (e) { AppToast.error(e.message) }
     }
   })
-  $('#dpCopiar').onclick = async () => { try { await navigator.clipboard.writeText(url); AppToast.success('Dirección copiada.') } catch { AppToast.info('Copie la dirección manualmente.') } }
+  $('#dpCopiar').onclick = async () => { if (!url) return; try { await navigator.clipboard.writeText(url); AppToast.success('Dirección copiada.') } catch { AppToast.info('Copie la dirección manualmente.') } }
 
-  const svg = await generateQrSvg(url)
-  $('#dpQr').innerHTML = svg.replace('<svg', '<svg style="width:100%;height:auto"')
-  $('#dpSvg').onclick = () => downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), qrFileName(p.slug, 'svg'))
-  $('#dpPng').onclick = async () => downloadBlob(dataUrlToBlob(await generateQrPngDataUrl(url)), qrFileName(p.slug, 'png'))
+  if (qr.ok) {
+    const svg = await generateQrSvg(url)
+    $('#dpQr').innerHTML = svg.replace('<svg', '<svg style="width:100%;height:auto"')
+    $('#dpSvg').onclick = () => downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), qrFileName(p.slug, 'svg'))
+    $('#dpPng').onclick = async () => downloadBlob(dataUrlToBlob(await generateQrPngDataUrl(url)), qrFileName(p.slug, 'png'))
+  }
 }

@@ -7,23 +7,27 @@
  */
 import QRCode from 'qrcode'
 
-const SLUG_RE = /^[a-z0-9]{10}$/
+import { isValidSlug } from './slug.js'
+import { configuredPublicBase, evaluatePublicBase } from './qrDomain.js'
 
-export function isValidSlug(slug) {
-  return typeof slug === 'string' && SLUG_RE.test(slug)
-}
+export { isValidSlug }
 
-/** Base pública del sitio. VITE_PUBLIC_BASE_URL evita imprimir QR con dominios de preview/localhost. */
+/** Base pública configurada (sin barra final). No hay respaldo en window.location: ver qrDomain.js. */
 export function publicBaseUrl() {
-  const configured = import.meta.env?.VITE_PUBLIC_BASE_URL
-  const base = configured || (typeof window !== 'undefined' ? window.location.origin : '')
-  return String(base).replace(/\/+$/, '')
+  return configuredPublicBase().replace(/\/+$/, '')
 }
 
-/** URL pública permanente de una publicación. */
+/** URL pública permanente de una publicación (base explícita; la usan pruebas y vistas previas). */
 export function buildPublicUrl(slug, base = publicBaseUrl()) {
   if (!isValidSlug(slug)) throw new Error('Identificador público inválido')
   return `${String(base).replace(/\/+$/, '')}/d/${slug}`
+}
+
+/** URL DEFINITIVA para QR: exige que la base pertenezca a la lista blanca; si no, lanza. */
+export function buildDefinitiveQrUrl(slug, base = publicBaseUrl()) {
+  const status = evaluatePublicBase(base)
+  if (!status.ok) throw new Error(`QR definitivo bloqueado: ${status.message}`)
+  return buildPublicUrl(slug, status.origin)
 }
 
 // margin 4 = zona de silencio mínima del estándar (ISO/IEC 18004) para que el QR impreso se lea bien.

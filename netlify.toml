@@ -67,12 +67,6 @@
   to = "/fin.html"
   status = 200
 
-# Página pública de documentos (QR). Sin sesión; debe ir ANTES del catch-all.
-[[redirects]]
-  from = "/d/*"
-  to = "/d.html"
-  status = 200
-
 [[redirects]]
   from = "/*"
   to = "/index.html"

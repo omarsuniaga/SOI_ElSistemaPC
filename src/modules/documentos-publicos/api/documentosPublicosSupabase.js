@@ -38,9 +38,10 @@ export async function obtenerPublicacion(id) {
   return unwrap(await client().from('publicaciones_documentos').select(LIST_SELECT).eq('id', id).maybeSingle())
 }
 
-export async function crearPublicacion({ titulo, descripcion, fecha, categoria }) {
+export async function crearPublicacion({ titulo, descripcion, fecha, categoria, slug }) {
   return unwrap(await client().rpc('crear_publicacion_documento', {
     p_titulo: titulo, p_descripcion: descripcion ?? null, p_fecha: fecha ?? null, p_categoria: categoria ?? 'general',
+    p_slug: slug || null,
   }))
 }
 

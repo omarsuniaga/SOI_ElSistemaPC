@@ -8,17 +8,7 @@ export const ESTADOS = Object.freeze({
   archivado: { label: 'Archivado', badge: 'bg-dark' },
 })
 
-export const CATEGORIAS = Object.freeze([
-  { value: 'general', label: 'General' },
-  { value: 'comunicado', label: 'Comunicado' },
-  { value: 'calendario', label: 'Calendario' },
-  { value: 'reglamento', label: 'Reglamento' },
-  { value: 'formulario', label: 'Formulario' },
-  { value: 'convocatoria', label: 'Convocatoria' },
-  { value: 'boletin', label: 'Boletín' },
-])
-
-export const categoriaLabel = (value) => CATEGORIAS.find((c) => c.value === value)?.label ?? value
+export { CATEGORIAS, categoriaLabel } from './categorias.js'
 
 const TRANSITIONS = {
   'borrador>publicado': 'publicar',

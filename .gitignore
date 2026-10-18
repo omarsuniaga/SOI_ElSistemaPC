@@ -81,3 +81,7 @@ historico-clases-prof-ana-*.pdf
 # Electron UI diagnostic output
 .electron-ui-diagnostic/
 
+
+# Portal público (segundo sitio Netlify)
+apps/public/dist
+apps/public/dist-meta

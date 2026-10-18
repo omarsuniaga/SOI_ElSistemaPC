@@ -16,6 +16,8 @@
     "test:run": "vitest run",
     "test:node": "node --test tests/unit/migrations/attendanceStatusDominicanClock.test.mjs tests/unit/migrations/cepmPublicBalance.test.mjs tests/unit/migrations/serviceBalanceRefreshPolicy.test.mjs",
     "test:safe": "bash scripts/run-tests-from-tmp.sh",
+    "build:public": "vite build --config apps/public/vite.config.mjs && node scripts/verify-public-bundle.mjs",
+    "dev:public": "vite --config apps/public/vite.config.mjs",
     "test:db:documentos-qr": "bash supabase/tests/documentos-qr/start_pg.sh && node supabase/tests/documentos-qr/run_tests.mjs",
     "test:sql": "psql \"$DATABASE_URL\" -f supabase/tests/fn_hermes_resolver_caso.test.sql",
     "jev:triage-ci": "node scripts/jev-triage-ci.mjs",

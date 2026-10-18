@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['src/**/*.test.{js,ts}', 'tests/**/*.test.{js,ts}'],
+    include: ['src/**/*.test.{js,ts}', 'tests/**/*.test.{js,ts}', 'apps/**/*.test.{js,ts}'],
     exclude: [],
     pool: 'forks',
     maxWorkers: 3,

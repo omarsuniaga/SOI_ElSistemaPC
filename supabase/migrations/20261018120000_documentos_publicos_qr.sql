@@ -46,7 +46,7 @@ GRANT EXECUTE ON FUNCTION public.puede_gestionar_documentos_publicos() TO authen
 CREATE TABLE public.publicaciones_documentos (
   -- policy:exento-institucion_id razón: producción no tiene tabla instituciones ni ninguna columna institucion_id; SOI opera una sola organización por despliegue. Se añadirá cuando exista el modelo multi-institución (plan en docs/specs/documentos-publicos-qr/ESPECIFICACION.md §R3).
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug              text NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]{10}$'),
+  slug              text NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(slug) BETWEEN 3 AND 60),
   titulo            text NOT NULL CHECK (char_length(btrim(titulo)) BETWEEN 3 AND 160),
   descripcion       text CHECK (descripcion IS NULL OR char_length(descripcion) <= 2000),
   fecha_documento   date NOT NULL DEFAULT current_date,
@@ -127,8 +127,10 @@ CREATE POLICY pub_doc_ev_admin_select ON public.publicaciones_documentos_eventos
   FOR SELECT TO authenticated USING (public.puede_gestionar_documentos_publicos());
 
 -- ── 3. RPC administrativas (únicas vías de escritura) ───────────────────────
+-- p_slug opcional: identificador legible y PERMANENTE (p. ej. 'concierto-navidad-2026'). Si se omite se
+-- genera uno aleatorio de 10 caracteres. No puede cambiarse después (el QR impreso depende de él).
 CREATE OR REPLACE FUNCTION public.crear_publicacion_documento(
-  p_titulo text, p_descripcion text, p_fecha date, p_categoria text)
+  p_titulo text, p_descripcion text, p_fecha date, p_categoria text, p_slug text DEFAULT NULL)
 RETURNS public.publicaciones_documentos
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $$
@@ -140,12 +142,22 @@ BEGIN
   IF NOT public.puede_gestionar_documentos_publicos() THEN
     RAISE EXCEPTION 'No autorizado' USING ERRCODE = '42501';
   END IF;
-  LOOP
-    v_slug := substr(replace(gen_random_uuid()::text, '-', ''), 1, 10);
-    EXIT WHEN NOT EXISTS (SELECT 1 FROM public.publicaciones_documentos WHERE slug = v_slug);
-    v_try := v_try + 1;
-    IF v_try > 10 THEN RAISE EXCEPTION 'No se pudo generar un identificador único'; END IF;
-  END LOOP;
+  IF nullif(btrim(coalesce(p_slug, '')), '') IS NOT NULL THEN
+    v_slug := lower(btrim(p_slug));
+    IF v_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$' OR char_length(v_slug) NOT BETWEEN 3 AND 60 THEN
+      RAISE EXCEPTION 'Identificador inválido: use de 3 a 60 letras minúsculas, números y guiones' USING ERRCODE = '22023';
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.publicaciones_documentos WHERE slug = v_slug) THEN
+      RAISE EXCEPTION 'Ese identificador ya está en uso' USING ERRCODE = '23505';
+    END IF;
+  ELSE
+    LOOP
+      v_slug := substr(replace(gen_random_uuid()::text, '-', ''), 1, 10);
+      EXIT WHEN NOT EXISTS (SELECT 1 FROM public.publicaciones_documentos WHERE slug = v_slug);
+      v_try := v_try + 1;
+      IF v_try > 10 THEN RAISE EXCEPTION 'No se pudo generar un identificador único'; END IF;
+    END LOOP;
+  END IF;
   INSERT INTO public.publicaciones_documentos
     (slug, titulo, descripcion, fecha_documento, categoria, created_by, updated_by)
   VALUES (v_slug, btrim(p_titulo), nullif(btrim(coalesce(p_descripcion, '')), ''),
@@ -314,6 +326,23 @@ AS $$
    WHERE p.slug = p_slug AND p.estado = 'publicado'
 $$;
 
+-- Biblioteca pública (/qr-code): SOLO publicaciones 'publicado' y su versión vigente. No devuelve la ruta
+-- del objeto ni versiones anteriores, borradores o archivadas. Paginada y acotada (máx. 100 por llamada).
+CREATE OR REPLACE FUNCTION public.listar_publicaciones_publicas(p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
+RETURNS TABLE (slug text, titulo text, descripcion text, fecha_documento date, categoria text,
+               published_at timestamptz, version_numero int, mime_type text, extension text, size_bytes bigint)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+  SELECT p.slug, p.titulo, p.descripcion, p.fecha_documento, p.categoria, p.published_at,
+         v.numero, v.mime_type, v.extension, v.size_bytes
+    FROM public.publicaciones_documentos p
+    JOIN public.publicaciones_documentos_versiones v ON v.id = p.version_actual_id
+   WHERE p.estado = 'publicado'
+   ORDER BY p.fecha_documento DESC, p.published_at DESC, p.slug
+   LIMIT least(greatest(coalesce(p_limit, 50), 1), 100)
+  OFFSET greatest(coalesce(p_offset, 0), 0)
+$$;
+
 -- Usada por la política de Storage: ¿este objeto es la versión vigente de algo publicado?
 CREATE OR REPLACE FUNCTION public.storage_objeto_publicado(p_name text)
 RETURNS boolean
@@ -326,7 +355,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION
-  public.crear_publicacion_documento(text, text, date, text),
+  public.crear_publicacion_documento(text, text, date, text, text),
   public.actualizar_publicacion_documento(uuid, text, text, date, text),
   public.registrar_version_documento(uuid, text, text, bigint, text, text, text),
   public.activar_version_documento(uuid, uuid),
@@ -334,15 +363,15 @@ REVOKE ALL ON FUNCTION
   public.publicaciones_documentos_inmutable()
   FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION
-  public.crear_publicacion_documento(text, text, date, text),
+  public.crear_publicacion_documento(text, text, date, text, text),
   public.actualizar_publicacion_documento(uuid, text, text, date, text),
   public.registrar_version_documento(uuid, text, text, bigint, text, text, text),
   public.activar_version_documento(uuid, uuid),
   public.cambiar_estado_publicacion_documento(uuid, text)
   TO authenticated, service_role;
 
-REVOKE ALL ON FUNCTION public.obtener_publicacion_publica(text), public.storage_objeto_publicado(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.obtener_publicacion_publica(text), public.storage_objeto_publicado(text)
+REVOKE ALL ON FUNCTION public.obtener_publicacion_publica(text), public.listar_publicaciones_publicas(integer, integer), public.storage_objeto_publicado(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.obtener_publicacion_publica(text), public.listar_publicaciones_publicas(integer, integer), public.storage_objeto_publicado(text)
   TO anon, authenticated, service_role;
 
 -- ── 5. Bucket exclusivo y políticas de storage.objects ──────────────────────

@@ -28,6 +28,8 @@ export const MUTATIONS = {
   6: ['delete policy allows registered versions', (s) => s.replace('AND NOT EXISTS (SELECT 1 FROM public.publicaciones_documentos_versiones v WHERE v.storage_path = name)', '')],
   7: ['storage_objeto_publicado ignores estado', (s) => s.replace("WHERE p.estado = 'publicado' AND v.storage_path = p_name", 'WHERE v.storage_path = p_name')],
   8: ['public RPC ignores estado', (s) => s.replace("WHERE p.slug = p_slug AND p.estado = 'publicado'", 'WHERE p.slug = p_slug')],
+  10: ['library listing ignores estado', (s) => s.replace("   WHERE p.estado = 'publicado'\n   ORDER BY p.fecha_documento", '   WHERE true\n   ORDER BY p.fecha_documento')],
+  11: ['slug validation removed from RPC and table check', (s) => s.replace("IF v_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$' OR char_length(v_slug) NOT BETWEEN 3 AND 60 THEN", 'IF false THEN').replace("CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(slug) BETWEEN 3 AND 60)", '')],
   9: ['signature check of path removed from insert policy', (s) => s.replace(/AND name ~ '\^\[0-9a-f\]\{8\}[^\n]*\n/, '\n')],
 };
 
@@ -258,6 +260,48 @@ try {
     }
     ok((await as('anon', `SELECT * FROM public.obtener_publicacion_publica('${c.rows[0].slug}')`)).rows.every((r) => r.storage_path === b), 'public RPC only ever returns the current version');
     ok((await as('admin', objRead(a))).rows.length === 1, 'admin can still reach the superseded version');
+  }
+
+  // ── K. friendly permanent slug and public library listing ──
+  console.log('K. slug and public library');
+  {
+    const friendly = (slugArg) => `SELECT * FROM public.crear_publicacion_documento('Concierto de Navidad','d',current_date,'boletin',${slugArg})`;
+    const ok1 = await as('admin', friendly("'concierto-navidad-2026'"));
+    ok(!ok1.err && ok1.rows[0]?.slug === 'concierto-navidad-2026', 'admin creates a publication with a friendly slug', ok1.err?.message);
+    ok((await as('admin', friendly("'concierto-navidad-2026'"))).err?.code === '23505', 'duplicate slug rejected');
+    for (const bad of ["'A B'", "'--x'", "'ab'", "'x_y_z'", "'con espacio'", "'-inicio'", "'fin-'", "'a--b'", `'${'x'.repeat(61)}'`]) {
+      ok((await as('admin', friendly(bad))).err !== null, `invalid slug rejected: ${bad.slice(0, 20)}`);
+    }
+    ok(denied(await as('maestro', friendly("'otro-slug-valido'"))), 'maestro cannot create with a slug');
+    ok(denied(await as('anon', friendly("'otro-slug-valido'"))), 'anon cannot create with a slug');
+    const fid = ok1.rows[0].id;
+    const fpath = objPath(fid);
+    await as('admin', ins(fpath));
+    await as('admin', reg(fpath, 'application/pdf', 1000, '7'.repeat(64), fid));
+    await as('admin', setState('publicado', fid));
+    ok((await as('anon', "SELECT * FROM public.obtener_publicacion_publica('concierto-navidad-2026')")).rows.length === 1, 'friendly slug resolves publicly once published');
+    ok((await as('admin', `UPDATE public.publicaciones_documentos SET slug='otro-cambio' WHERE id='${fid}'`)).err !== null, 'slug cannot be changed afterwards (no direct DML)');
+
+    for (const who of everyone) {
+      const list = await as(who, 'SELECT * FROM public.listar_publicaciones_publicas(100, 0)');
+      const slugs = list.rows.map((r) => r.slug);
+      ok(!list.err && slugs.includes('concierto-navidad-2026'), `${who} can list the library`);
+      ok(list.rows.every((r) => !('storage_path' in r) && !('created_by' in r) && !('sha256' in r)), `${who}: listing leaks no storage path or audit fields`);
+    }
+    // Every row of the listing must be a published publication, with its current version number.
+    const list = (await as('anon', 'SELECT * FROM public.listar_publicaciones_publicas(100, 0)')).rows;
+    const truth = (await sql("SELECT p.slug, v.numero FROM public.publicaciones_documentos p JOIN public.publicaciones_documentos_versiones v ON v.id=p.version_actual_id WHERE p.estado='publicado'")).rows;
+    ok(list.length === truth.length && list.every((r) => truth.some((t) => t.slug === r.slug && t.numero === r.version_numero)), 'listing = exactly the published publications with their current version');
+    const notPublished = (await sql("SELECT slug FROM public.publicaciones_documentos WHERE estado <> 'publicado'")).rows.map((r) => r.slug);
+    ok(notPublished.length > 0 && list.every((r) => !notPublished.includes(r.slug)), 'drafts and archived never appear in the listing');
+    ok((await as('anon', 'SELECT * FROM public.listar_publicaciones_publicas(1, 0)')).rows.length === 1, 'limit is honoured');
+    ok((await as('anon', 'SELECT * FROM public.listar_publicaciones_publicas(100000, 0)')).rows.length <= 100, 'limit is capped at 100');
+    ok((await as('anon', 'SELECT * FROM public.listar_publicaciones_publicas(-5, -5)')).err === null, 'negative paging values are clamped');
+    ok(denied(await as('anon', 'SELECT * FROM public.publicaciones_documentos')), 'anon still cannot read the tables');
+    // unpublish removes it from the listing
+    await as('admin', setState('borrador', fid));
+    ok(!(await as('anon', 'SELECT slug FROM public.listar_publicaciones_publicas(100, 0)')).rows.some((r) => r.slug === 'concierto-navidad-2026'), 'unpublished publication leaves the listing');
+    await as('admin', setState('publicado', fid));
   }
 
   // ── J. stage 2: server-side verified registration (staged migration) ──

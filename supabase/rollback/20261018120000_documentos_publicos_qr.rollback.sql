@@ -12,12 +12,13 @@ DROP POLICY IF EXISTS docs_publicos_insert_admin     ON storage.objects;
 DROP POLICY IF EXISTS docs_publicos_delete_huerfano  ON storage.objects;
 
 DROP FUNCTION IF EXISTS public.obtener_publicacion_publica(text);
+DROP FUNCTION IF EXISTS public.listar_publicaciones_publicas(integer, integer);
 DROP FUNCTION IF EXISTS public.storage_objeto_publicado(text);
 DROP FUNCTION IF EXISTS public.cambiar_estado_publicacion_documento(uuid, text);
 DROP FUNCTION IF EXISTS public.activar_version_documento(uuid, uuid);
 DROP FUNCTION IF EXISTS public.registrar_version_documento(uuid, text, text, bigint, text, text, text);
 DROP FUNCTION IF EXISTS public.actualizar_publicacion_documento(uuid, text, text, date, text);
-DROP FUNCTION IF EXISTS public.crear_publicacion_documento(text, text, date, text);
+DROP FUNCTION IF EXISTS public.crear_publicacion_documento(text, text, date, text, text);
 
 DROP TABLE IF EXISTS public.publicaciones_documentos_eventos;
 ALTER TABLE IF EXISTS public.publicaciones_documentos DROP CONSTRAINT IF EXISTS publicaciones_documentos_version_actual_fk;

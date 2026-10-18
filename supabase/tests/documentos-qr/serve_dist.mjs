@@ -38,6 +38,13 @@ if (publicSite) {
   redirects = toml.split('[[redirects]]').slice(1).map((b) => ({
     from: /from\s*=\s*"([^"]+)"/.exec(b)?.[1], to: /to\s*=\s*"([^"]+)"/.exec(b)?.[1], status: Number(/status\s*=\s*(\d+)/.exec(b)?.[1] ?? 301),
   }));
+  // Netlify procesa primero el archivo _redirects del dist y luego netlify.toml.
+  const fileRulesPath = path.join(dist, '_redirects');
+  if (fs.existsSync(fileRulesPath)) {
+    const fileRules = fs.readFileSync(fileRulesPath, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+      .map((l) => { const [from, to, status] = l.split(/\s+/); return { from, to, status: Number(status ?? 301) }; });
+    redirects = [...fileRules, ...redirects];
+  }
   headerBlocks = toml.split('[[headers]]').slice(1).map((b) => ({
     for: /for\s*=\s*"([^"]+)"/.exec(b)?.[1],
     values: Object.fromEntries([...b.matchAll(/^\s{4}([A-Za-z-]+)\s*=\s*"((?:[^"\\]|\\.)*)"/gm)].map((m) => [m[1], m[2].replace(/\\"/g, '"')])),

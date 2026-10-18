@@ -9,3 +9,6 @@ revoke all on function soi_security.has_role(text[]) from public, anon;
 grant execute on function soi_security.has_role(text[]) to authenticated;
 alter table public.profiles enable row level security;
 grant all on public.profiles to service_role;
+-- Como en producción (f0_profiles_read): cada usuario lee su propio perfil; admin/superadmin leen todos.
+grant select on public.profiles to authenticated;
+create policy profiles_self_or_admin_read on public.profiles for select to authenticated using (id = auth.uid() or soi_security.has_role(array['admin','superadmin']));

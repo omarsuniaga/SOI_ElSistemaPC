@@ -217,6 +217,47 @@ try {
   const exec = (await sql("SELECT grantee FROM information_schema.routine_privileges WHERE routine_name='crear_publicacion_documento' AND grantee IN ('anon','PUBLIC')")).rows;
   ok(exec.length === 0, 'admin RPC not executable by anon/PUBLIC');
 
+  // ── I. state x role matrix for NEW requests, and superseded versions ──
+  console.log('I. state/role access matrix');
+  const everyone = ['anon', ...NON_ADMIN, 'admin_pendiente', 'admin_inactivo'];
+  for (const estado of ['borrador', 'publicado', 'archivado']) {
+    const c = await as('admin', create);
+    const id = c.rows[0].id;
+    const sl = c.rows[0].slug;
+    const pth = objPath(id);
+    await as('admin', ins(pth));
+    await as('admin', reg(pth, 'application/pdf', 1000, 'd'.repeat(64), id));
+    if (estado === 'publicado') await as('admin', setState('publicado', id));
+    if (estado === 'archivado') await as('admin', setState('archivado', id));
+    const open = estado === 'publicado';
+    for (const who of everyone) {
+      const rpcRows = (await as(who, `SELECT * FROM public.obtener_publicacion_publica('${sl}')`)).rows.length;
+      const objRows = (await as(who, objRead(pth))).rows.length;
+      const listRows = (await as(who, `SELECT name FROM storage.objects WHERE bucket_id='soi-publico' AND name LIKE '${id}/%'`)).rows.length;
+      const expected = open ? 1 : 0;
+      ok(rpcRows === expected && objRows === expected && listRows === expected, `${estado}: ${who} gets ${expected} via RPC/object/list (got ${rpcRows}/${objRows}/${listRows})`);
+    }
+    ok((await as('admin', objRead(pth))).rows.length === 1, `${estado}: admin can still reach it`);
+  }
+  {
+    // superseded version: unreachable for every non-admin even while the publication is published
+    const c = await as('admin', create);
+    const id = c.rows[0].id;
+    const a = objPath(id);
+    const b = objPath(id, 'png');
+    await as('admin', ins(a));
+    await as('admin', reg(a, 'application/pdf', 1000, 'e'.repeat(64), id));
+    await as('admin', ins(b, 'image/png', 2000));
+    await as('admin', reg(b, 'image/png', 2000, 'f'.repeat(64), id));
+    await as('admin', setState('publicado', id));
+    for (const who of everyone) {
+      ok((await as(who, objRead(a))).rows.length === 0, `superseded version hidden from ${who}`);
+      ok((await as(who, 'SELECT 1 FROM public.publicaciones_documentos_versiones')).rows.length === 0 || (await as(who, 'SELECT 1 FROM public.publicaciones_documentos_versiones')).err !== null, `version history rows hidden from ${who}`);
+    }
+    ok((await as('anon', `SELECT * FROM public.obtener_publicacion_publica('${c.rows[0].slug}')`)).rows.every((r) => r.storage_path === b), 'public RPC only ever returns the current version');
+    ok((await as('admin', objRead(a))).rows.length === 1, 'admin can still reach the superseded version');
+  }
+
   // ── G. collateral ──
   console.log('G. collateral');
   ok((await snapPolicies()) === basePolicies, 'pre-existing storage policies unchanged');

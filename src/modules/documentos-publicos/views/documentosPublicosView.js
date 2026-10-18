@@ -16,8 +16,11 @@ import { formatBytes, ALLOWED_TYPES } from '../lib/fileValidation.js'
 
 const state = { container: null, items: [], filtro: '', selectedId: null }
 
-const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('es-DO', { year: 'numeric', month: 'short', day: 'numeric' }) : '—')
+// 'YYYY-MM-DD' se interpreta como fecha local (new Date('2026-10-17') sería UTC y mostraría el día anterior).
+const fmtDate = (iso) => (iso ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso).toLocaleDateString('es-DO', { year: 'numeric', month: 'short', day: 'numeric' }) : '—')
 const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString('es-DO') : '—')
+/** Fecha de hoy en hora local (toISOString() daría el día UTC, adelantado por la noche en RD). */
+export const todayLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const badge = (estado) => `<span class="badge ${ESTADOS[estado]?.badge ?? 'bg-secondary'}">${escapeHTML(ESTADOS[estado]?.label ?? estado)}</span>`
 
 export async function renderDocumentosPublicosView(container) {
@@ -82,7 +85,7 @@ function formHtml(p = {}) {
       <textarea class="form-control" id="dpDescripcion" rows="3" maxlength="2000">${escapeHTML(p.descripcion ?? '')}</textarea></div>
     <div class="row g-3">
       <div class="col-6"><label class="form-label">Fecha del documento</label>
-        <input type="date" class="form-control" id="dpFecha" value="${escapeHTML(p.fecha_documento ?? new Date().toISOString().slice(0, 10))}"></div>
+        <input type="date" class="form-control" id="dpFecha" value="${escapeHTML(p.fecha_documento ?? todayLocal())}"></div>
       <div class="col-6"><label class="form-label">Categoría</label><select class="form-select" id="dpCategoria">${cats}</select></div>
     </div>`
 }

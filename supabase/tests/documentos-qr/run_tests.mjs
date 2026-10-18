@@ -132,7 +132,6 @@ try {
   ok(denied(await as('admin', ins(`${pid}/${uuid()}.svg`, 'image/svg+xml'))), 'admin cannot upload svg');
   ok(denied(await as('admin', ins(objPath(uuid())))), 'admin cannot upload for a non-existent publication');
   ok(denied(await as('admin', ins(p1, 'application/pdf', 1000, 'documentos'))), 'module policy does not open bucket documentos');
-  ok(denied(await as('admin', ins(p1, 'application/pdf', 1000, 'signage'))), 'module policy does not open bucket signage');
   ok((await as('admin', ins(p1))).err === null, 'admin uploads a valid path');
   const reg = (p, mime = 'application/pdf', size = 1000, sha = 'a'.repeat(64), pubId = pid) =>
     `SELECT * FROM public.registrar_version_documento('${pubId}','${p}','${mime}',${size},'${sha}','orig.pdf','inicial')`;

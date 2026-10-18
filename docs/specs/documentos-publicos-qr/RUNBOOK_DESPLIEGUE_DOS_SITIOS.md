@@ -4,6 +4,8 @@ Estado: **procedimiento preparado, NADA ejecutado.** Cada paso marcado 🔒 requ
 
 Principios: (1) el sitio admin no cambia de configuración; (2) el sitio público se crea y se prueba **antes** de que exista ningún QR; (3) nada de subidas hasta que la validación de contenido en servidor esté activa; (4) cada paso tiene verificación y marcha atrás.
 
+> **Estado de ejecución (2026-10-18):** hechas con autorización del titular — variables del sitio público `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (clave anónima, solo build) y del sitio admin `VITE_PUBLIC_BASE_URL=https://elsistemapc.netlify.app` (solo build, producción; sin efecto hasta el próximo deploy admin). **Pendientes:** despliegue de la Edge Function y migraciones en Supabase de producción (el despliegue de la función fue **rechazado por el clasificador de permisos de la sesión**, que lo trata como despliegue a producción; requiere permiso explícito del usuario), `VITE_DOCS_SERVER_VERIFY=true` en el admin (se pone después de desplegar la función) y el merge. Comprobaciones previas de solo lectura en producción: sin tablas/funciones/bucket/políticas del módulo, `soi_security.has_role`, `profiles` y `storage.foldername` presentes; sin función `registrar-version-documento`.
+
 ## 0. Antes de empezar (solo lectura)
 
 - [ ] Confirmar en la interfaz de Netlify la configuración REAL del sitio admin (comando de build, directorio de publicación, variables). Se asume `npm run build` → `dist` (coincide con `netlify.toml`). Anotar las variables existentes.

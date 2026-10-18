@@ -72,4 +72,5 @@ export const allRegistrars = [
   registerRoutesSimulador,
   registerRoutesSignageAdmin,
   registerRoutesActividadesInstitucionales,
+  registerRoutesDocumentosPublicos,
 ]

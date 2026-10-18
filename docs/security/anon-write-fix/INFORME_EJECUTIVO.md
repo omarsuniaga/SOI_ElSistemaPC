@@ -3,6 +3,8 @@
 **Fecha:** 17 de octubre de 2026 · **Rama:** `claude/anon-write-vulnerability-fix-69c2fe`
 **Estado:** propuesta validada en PostgreSQL aislado. **No aplicada en producción. Sin fusión a `master`. Sin despliegue.**
 
+> **Actualización:** el informe vigente para la decisión de despliegue es [`INFORME_PREPARACION_PRODUCCION.md`](./INFORME_PREPARACION_PRODUCCION.md) (modelo por capacidades, `direccion` sin escritura por defecto, revisión de logs, flujos, riesgos residuales y veredicto). Este documento conserva el análisis de riesgo original; donde difiera (nombres de función, cifras de pruebas), prevalece el nuevo.
+
 ## 1. Riesgo demostrado
 
 La clave pública `anon` de Supabase viaja en el paquete del navegador, así que cualquier persona la tiene. Con solo esa clave y sin iniciar sesión, en el modelo aislado de producción:
@@ -20,7 +22,7 @@ La clave pública `anon` de Supabase viaja en el paquete del navegador, así que
 
 **Nota sobre UPDATE/DELETE.** PostgreSQL exige que el rol *vea* las filas para modificarlas. `salones`, `horarios` y `notificaciones_asistencia` no tienen política de lectura para `anon`, así que ahí el anónimo solo logra inserciones a ciegas. Para `notificaciones_asistencia` la apertura real es otra: la política `hermes_update_notifications` (`UPDATE … TO public USING (true)`) deja que **cualquier cuenta registrada** (alumno, representante) altere el estado de las alertas, y otra política deja a cualquier cuenta registrada **leer teléfonos de tutores** e insertar alertas arbitrarias.
 
-**Segunda exposición, más sutil.** `programas`, `salones` y `horarios` tienen además una política `*_authenticated_all` (`ALL TO authenticated USING (true)`). Cambiar solo `public` por `authenticated` dejaría a cualquier cuenta registrada reescribir el catálogo institucional. La suite lo confirma: la "corrección ingenua" falla 161 de 426 casos.
+**Segunda exposición, más sutil.** `programas`, `salones` y `horarios` tienen además una política `*_authenticated_all` (`ALL TO authenticated USING (true)`). Cambiar solo `public` por `authenticated` dejaría a cualquier cuenta registrada reescribir el catálogo institucional. La suite lo confirma: la "corrección ingenua" falla 161 casos.
 
 **Evidencia (rol `anon`, sin sesión, base aislada):**
 
@@ -55,7 +57,7 @@ Flujos **sin sesión** revisados: la cartelera (`public/signage/js/core.js`) lee
 
 Migración `supabase/migrations/20261017180000_restrict_write_access_academic_catalog_and_class_records.sql`, independiente de Storage y del módulo QR.
 
-- **Catálogo (`programas`, `salones`, `horarios`):** escribe solo `es_gestor_academico()` = `admin`, `superadmin`, `coordinacion_academica`, `direccion`. Lectura: toda cuenta autenticada (sin cambios). `anon` conserva únicamente `SELECT` sobre `programas`.
+- **Catálogo (`programas`, `salones`, `horarios`):** escribe solo quien tenga la capacidad `catalogo:escribir` (`tiene_capacidad_academica()`): `admin`, `superadmin`, `coordinacion_academica`, o una concesión explícita. `direccion` no escribe por defecto. Lectura: toda cuenta autenticada (sin cambios). `anon` conserva únicamente `SELECT` sobre `programas`.
 - **Registros de clase (`class_events`, `class_event_methodology`, `homework_assignments`, `planned_content`):** escribe el maestro dueño (`maestro_actual()`), el titular o suplente de la clase de la sesión, y los gestores. `DELETE` solo gestores (ningún flujo borra estas filas). `anon` pierde todo acceso.
 - **`notificaciones_asistencia`:** se elimina la política UPDATE abierta (Hermes usa service role); `INSERT` y `SELECT` pasan de "cualquier cuenta" a gestores.
 - **Privilegios de tabla:** `REVOKE ALL … FROM anon, authenticated` y se devuelve solo lo que las políticas usan. Esto elimina también `TRUNCATE`, que RLS no restringe.
@@ -63,18 +65,18 @@ Migración `supabase/migrations/20261017180000_restrict_write_access_academic_ca
 - Dos funciones nuevas (`SECURITY DEFINER`, `search_path` fijo, sin `EXECUTE` para `anon`). No se modifica ningún archivo de la aplicación.
 
 **Decisiones que debe confirmar (negocio):**
-1. `direccion` puede escribir el catálogo (hoy accede al portal ACM). Si solo debe leer, se quita de la lista de `es_gestor_academico()`.
+1. ~~`direccion` puede escribir el catálogo~~ **Resuelto:** `direccion` no tiene escritura por defecto; las autorizaciones son por capacidad.
 2. Maestros **no** pueden editar el catálogo ni borrar sus propios registros de clase. Hoy ningún flujo lo hace; si aparece uno, se añade una política puntual.
 3. La lectura de los cuatro registros de clase sigue abierta a toda cuenta autenticada (incluye `alumno`/`representante`). Cerrarla requiere revisar flujos de suplentes; queda como seguimiento.
 
 ## 4. Resultados de las pruebas
 
-PostgreSQL 17 en contenedor aislado. La línea base se reconstruye desde `supabase/migrations/schema_reference.sql` (volcado del 8-sep, 216 tablas, 591 políticas) más los `GRANT/REVOKE` de migraciones anteriores y las migraciones posteriores. Se prueban 13 actores: `anon`, `user`, `alumno`, `representante`, `finanzas`, tres maestros (titular, suplente, ajeno), `coordinacion`, `direccion`, `admin`, `superadmin` y `service_role`.
+PostgreSQL 17 en contenedor aislado. La línea base se reconstruye desde `supabase/migrations/schema_reference.sql` (volcado del 8-sep, 216 tablas, 591 políticas) más los `GRANT/REVOKE` de migraciones anteriores y las migraciones posteriores. Se prueban 20 cuentas simuladas (anónimo, user, alumno, representante, finanzas, cuatro maestros, coordinación, dirección, cinco admins, un admin inactivo, superadmin y service role).
 
 | Fase | Resultado | Qué prueba |
 |---|---|---|
 | Antes | 33/33 | La vulnerabilidad existe (anónima y por cuenta registrada) |
-| Después | 426/426 | Casos negativos y positivos por rol, tabla y operación; lecturas; flujos públicos (vistas de cartelera, `signage_*`); suplencia; intento de suplantar al titular; cambio de dueño bloqueado por `WITH CHECK` |
+| Después | 618/618 | Casos negativos y positivos por rol, tabla y operación; lecturas; flujos públicos (vistas de cartelera, `signage_*`); suplencia; intento de suplantar al titular; cambio de dueño bloqueado por `WITH CHECK` |
 | Idempotencia | 1/1 | Aplicar dos veces deja el catálogo idéntico |
 | Rollback | 36/36 | Restaura las políticas y ACL exactas previas, retira las funciones y la migración se puede reaplicar |
 
@@ -90,7 +92,7 @@ Con autorización expresa se ejecutaron únicamente consultas a `pg_catalog` (eq
 - **ACL:** las ocho tablas tienen `anon=arwdDxtm` y `authenticated=arwdDxtm` (acceso total, idéntico al modelo). RLS activo en todas, sin `FORCE`.
 - **Exposición anónima:** exactamente esas ocho tablas, ninguna más.
 - **Escritura abierta a cuentas autenticadas:** 55 tablas en producción (47 además de las ocho), igual que el modelo.
-- **Roles reales en `profiles`:** solo `maestro` (25) y `admin` (5). Ningún usuario tiene `direccion`, `coordinacion_academica` ni `superadmin`, así que la lista de `es_gestor_academico()` cubre a los 5 administradores sin dejar fuera a nadie, y la decisión sobre `direccion` hoy no afecta a ninguna cuenta.
+- **Roles reales en `profiles`:** solo `maestro` (25) y `admin` (5). Ningún usuario tiene `direccion`, `coordinacion_academica` ni `superadmin`, así que la lista de `tiene_capacidad_academica()` cubre a los 5 administradores sin dejar fuera a nadie.
 - **Nombres libres:** `es_gestor_academico` y `puede_escribir_evento_clase` no existen en producción; no hay colisión.
 - **Filas:** estimaciones de estadísticas (`reltuples`): `programas` ≈ 5 y `salones` ≈ 2 (el inventario del repo decía 7 y 11); las demás sin estadísticas (`-1`). Son estimaciones, no conteos.
 

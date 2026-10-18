@@ -8,16 +8,16 @@
 
 ## Antes de aplicar
 
-1. **Revisar y aprobar** las tres decisiones de negocio del informe (rol `direccion`, maestros sin edición de catálogo, lectura de registros de clase).
+1. **Decisiones de negocio** (ya tomadas: `direccion` sin escritura por defecto, autorización por capacidad). Pendiente de confirmar: maestros sin edición de catálogo y lectura de registros de clase abierta a autenticados (ver riesgos residuales).
 2. **Estado real** (ya confirmado el 17-oct contra producción en solo lectura; repetir si pasó tiempo): ejecutar `supabase/tests/anon-write-fix/03_capture_current_state.sql` en el SQL Editor y guardar la salida. Compararla con las políticas listadas en el archivo de rollback. Si hay diferencias, ajustar el rollback **antes** de aplicar.
-3. **Confirmar que nadie legítimo escribe por la API pública:** ejecutar `02_api_logs_anon_writes.sql` en Logs Explorer (consulta el registro de la API, no las tablas). Cualquier `POST/PATCH/DELETE` legítimo contra las ocho tablas debe comprobarse contra las políticas nuevas. Se espera ver solo tráfico de las pantallas ACM/ADM y del portal de maestros con sesión.
-4. **Backup lógico de las tablas con datos** (`programas`, `salones`): exportar a CSV desde el panel. El cambio no destruye datos, pero es barato.
+3. **Confirmar que nadie legítimo escribe por la API pública:** el 17-oct se revisaron los logs del 1 al 17 de octubre (0 escrituras, 0 peticiones anónimas); repetir `02_api_logs_anon_writes.sql` en Logs Explorer el día de aplicar. Cualquier `POST/PATCH/DELETE` legítimo contra las ocho tablas debe comprobarse contra las políticas nuevas. Se espera ver solo tráfico de las pantallas ACM/ADM y del portal de maestros con sesión.
+4. **Respaldo:** seguir la sección 8 de `INFORME_PREPARACION_PRODUCCION.md` (copia automática/PITR verificada + `pg_dump` de las ocho tablas + salida de `03_capture_current_state.sql`).
 5. **Ventana:** fuera de horas de clase. La migración corre en una transacción y toma bloqueos breves.
-6. **Roles:** el 17-oct `profiles.rol` solo contenía `maestro` (25) y `admin` (5); si cambió, revisar que quien gestiona programas/salones esté en la lista de `es_gestor_academico()`.
+6. **Roles:** el 17-oct `profiles.rol` solo contenía `maestro` (25) y `admin` (5); si cambió, revisar que quien gestiona programas/salones esté en la lista de `tiene_capacidad_academica()`.
 
 ## Aplicación
 
-1. Aplicar primero en un **proyecto de staging o rama de base de datos de Supabase** con una copia de producción, no en producción directamente:
+1. Aplicar primero en una **rama de base de datos de Supabase** (o staging) con copia de producción (condición del veredicto), no en producción directamente:
    ```bash
    supabase db push --include-all    # o aplicar el archivo desde el SQL Editor de la rama
    ```
@@ -34,7 +34,7 @@
 
 | Síntoma | Causa probable | Acción |
 |---|---|---|
-| Usuario de coordinación recibe "permission denied"/RLS al guardar programa o salón | Su `profiles.rol` no está en la lista | Corregir el rol o ampliar `es_gestor_academico()` con una migración nueva (no revertir) |
+| Usuario de coordinación recibe "permission denied"/RLS al guardar programa o salón | Su `profiles.rol` no está en la lista | Corregir el rol o ampliar `tiene_capacidad_academica()` con una migración nueva (no revertir) |
 | Maestro no puede guardar un registro de clase | `maestro_actual()` no lo resuelve (sin fila en `maestros`) | Revisar `maestros.user_id`; no revertir |
 | La cartelera queda vacía | No debería ocurrir (las vistas corren como dueño) | Revisar `signage_v_*`; solo entonces considerar rollback |
 | Un proceso externo con la clave `anon` falla | Dependía de escritura anónima | Moverlo a service role o a una RPC; **no** reabrir `anon` |

@@ -24,6 +24,12 @@ function unwrap({ data, error }) {
   return data
 }
 
+/** ¿El usuario actual es admin/superadmin activo? Solo mejora la UX; la autorización real es de la base de datos. */
+export async function puedeGestionar() {
+  const { data, error } = await client().rpc('puede_gestionar_documentos_publicos')
+  return !error && data === true
+}
+
 export async function listarPublicaciones() {
   return unwrap(await client().from('publicaciones_documentos').select(LIST_SELECT).order('updated_at', { ascending: false })) ?? []
 }
@@ -59,7 +65,7 @@ export async function subirVersion(publicacionId, file, motivo = null) {
   const path = buildStoragePath(publicacionId, check.ext)
   const sb = client()
 
-  const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: check.mime, upsert: false, cacheControl: '3600' })
+  const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: check.mime, upsert: false, cacheControl: '60' })
   if (up.error) throw new Error(`No se pudo subir el archivo: ${up.error.message}`)
 
   // Etapa 2 (migración staged/20261018130000): el registro pasa por la Edge Function, que verifica

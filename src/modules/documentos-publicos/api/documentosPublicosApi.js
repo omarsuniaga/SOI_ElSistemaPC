@@ -8,6 +8,7 @@ import * as mockImpl from './documentosPublicosMock.js'
 
 const getApi = () => (config.isDemoMode ? mockImpl : supabaseImpl)
 
+export const puedeGestionar = (...a) => getApi().puedeGestionar(...a)
 export const listarPublicaciones = (...a) => getApi().listarPublicaciones(...a)
 export const obtenerPublicacion = (...a) => getApi().obtenerPublicacion(...a)
 export const crearPublicacion = (...a) => getApi().crearPublicacion(...a)

@@ -58,7 +58,7 @@ Obligatorias:
 2. Aplicar la migración `20261018120000` y ejecutar en staging la lista de `VALIDACION_FUNCIONAL.md` §3 (incluye Storage real con la URL de staging).
 3. Desplegar la Edge Function y pasar a producción la migración staged **antes** de abrir el piloto a usuarios reales (cierra R1), con `VITE_DOCS_SERVER_VERIFY=true`.
 4. Fijar `VITE_PUBLIC_BASE_URL` al dominio definitivo; deploy preview de Netlify y prueba de `/d/<slug>` en frío y con recarga.
-5. Recorrer el panel dentro del portal ADM con un administrador real (menú "Documentos públicos y QR", ruta solo-admin) y confirmar que un maestro/coordinación no ve la entrada ni accede a la ruta.
+5. Recorrer el panel dentro del portal ADM con un administrador real (menú "Documentos públicos y QR") y confirmar que coordinación académica —que sí ve el menú del portal ADM— obtiene la pantalla "Acceso restringido" y que cualquier intento de escritura es rechazado por la base de datos. (El shell ADM no aplica `ROUTE_PERMISSIONS`; la entrada de `accessControl.js` solo rige en el portal de maestros. Por eso el panel verifica `puede_gestionar_documentos_publicos()` al abrir.)
 6. Imprimir un QR de prueba y leerlo con al menos un iOS y un Android.
 7. Definir quién administra (hoy `admin`/`superadmin`), qué se puede publicar y la regla "sin datos personales".
 

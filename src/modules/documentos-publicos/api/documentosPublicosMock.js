@@ -31,6 +31,10 @@ const withVersion = (p) => {
   }
 }
 
+export async function puedeGestionar() {
+  return true
+}
+
 export async function listarPublicaciones() {
   return [...publicaciones].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).map(withVersion)
 }

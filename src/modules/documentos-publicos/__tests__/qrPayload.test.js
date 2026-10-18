@@ -9,6 +9,7 @@ const pub = {
 }
 const generated = []
 vi.mock('../api/documentosPublicosApi.js', () => ({
+  puedeGestionar: async () => true,
   listarPublicaciones: async () => [pub],
   obtenerPublicacion: async () => pub,
   listarVersiones: async () => [{ id: 'v1', numero: 1, nombre_original: 'a.pdf', size_bytes: 10, created_at: '2026-10-17T12:00:00Z', sha256: 'a'.repeat(64), storage_path: pub.version.storage_path }],

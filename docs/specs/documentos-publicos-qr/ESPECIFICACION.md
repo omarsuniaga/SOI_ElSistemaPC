@@ -126,3 +126,18 @@ Diseño adoptado: bucket `soi-publico` **privado** + política `SELECT` para `an
 
 * `npm run test:db:documentos-qr` — PostgreSQL 17 en Docker (`soi-pg-docqr`, puerto 54331): 217 comprobaciones por rol (anon, user, alumno, representante, maestro, coordinacion_academica, direccion, inventarista, admin, superadmin, admin pendiente/inactivo, service_role), subida/reemplazo/borrado en `storage.objects`, bucket solo lectura de lo publicado, repetición de las 8 políticas de storage de producción con helpers "siempre verdadero", rollback + reaplicación. `node supabase/tests/documentos-qr/run_tests.mjs --mutate N` (N=1..9): cada mutación debe ser detectada.
 * `npx vitest run src/modules/documentos-publicos` — 48 pruebas. Con servicios reales locales: `e2e_storage.mjs` y `e2e_stage2.mjs` (ver `VALIDACION_FUNCIONAL.md`).
+
+## 13. Decisiones cerradas del titular (2026-10-17)
+
+1. Arquitectura aprobada: bucket **privado** `soi-publico` + URL firmada de corta duración (300 s). El QR contiene **exclusivamente** `<base>/d/<slug>` (prueba: `qrPayload.test.js`; verificado además escaneando el PNG y el SVG descargados, `evidencia/qr_scan.txt`).
+2. Solo **admin** y **superadmin** crean, suben, editan, publican, archivan, reemplazan y reactivan versiones. Anónimos (y cualquier otro rol) solo consultan la **versión vigente** de publicaciones **publicadas**.
+3. **`coordinacion_academica` NO publica en esta primera versión** (decisión cerrada). Para otorgar capacidades específicas más adelante se modifica un único punto, `public.puede_gestionar_documentos_publicos()`, p. ej.: `soi_security.has_role(ARRAY['admin','superadmin']) OR soi_security.has_role(ARRAY['comunicaciones'])`, o se separan capacidades (`documentos:publicar`, `documentos:subir`) con una función `tiene_capacidad_documentos(text)` análoga a `tiene_capacidad_academica` de la rama anon-write. Cada ampliación exige: cambio en la función, caso nuevo en la matriz de `run_tests.mjs` y revisión. No se debe usar `permisos_maestros` (auto-editable).
+4. **Sin recursos facturables**: no se contrata staging ni ramas de Supabase. Ver §14.
+
+## 14. Alternativa de prueba sin costo (en lugar de una rama de Supabase)
+
+**Elegida:** un stack local completo e independiente, levantado con el CLI de Supabase desde un directorio temporal con otro `project_id` (`docqr`) y otros puertos (54420–54439), sin Studio/Realtime/Analytics. Incluye **GoTrue, PostgREST, Kong y el servicio Storage reales**, y opcionalmente el runtime real de Edge Functions (`supabase functions serve`). Solo contiene un subconjunto de producción (`profiles`, `soi_security.has_role`) y la migración del módulo; **sin datos de producción**. No toca los contenedores `supabase_*_zmhmdvmyeyswunurcyow` del usuario (verificado: siguen en marcha y sin reiniciar).
+
+Repetirla: `bash supabase/tests/documentos-qr/local-stack/start.sh` y luego los scripts `e2e_*` (ver `VALIDACION_FUNCIONAL.md`). Detener: `npx supabase stop --workdir <dir> --no-backup`.
+
+**Límites:** (a) las versiones de las imágenes locales pueden diferir de las del servicio alojado; (b) no hay CDN, ni caché, ni límites de plan del servicio alojado, por lo que la validación de cabeceras de caché y de expiración de URLs firmadas **debe repetirse una vez en producción** con la lista del informe piloto; (c) el esquema es un subconjunto (la interacción con tablas reales de SOI no se prueba; sí se probaron las 8 políticas reales de `storage.objects`); (d) Netlify se emula con las reglas y cabeceras reales de `netlify.toml`, no con Netlify.

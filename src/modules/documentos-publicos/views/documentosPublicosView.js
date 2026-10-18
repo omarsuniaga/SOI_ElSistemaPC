@@ -8,6 +8,7 @@
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import { renderAccessDenied } from '../../../core/auth/accessControl.js'
 import { renderPageHeader } from '../../../shared/components/pageShell.js'
 import * as api from '../api/documentosPublicosApi.js'
 import { ESTADOS, CATEGORIAS, categoriaLabel, transicionesDisponibles, ACCION_LABEL } from '../lib/estados.js'
@@ -28,6 +29,11 @@ export async function renderDocumentosPublicosView(container) {
   state.selectedId = null
   container.innerHTML = '<div class="p-4 text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Cargando documentos…</div>'
   try {
+    // El shell ADM no aplica ROUTE_PERMISSIONS: se verifica aquí (UX); la base de datos es la autoridad.
+    if (!(await api.puedeGestionar())) {
+      container.innerHTML = renderAccessDenied('Solo administradores pueden gestionar documentos públicos.')
+      return
+    }
     state.items = await api.listarPublicaciones()
     renderList()
   } catch (error) {

@@ -9,7 +9,7 @@
 // Si el contenido no es válido, borra el objeto subido y responde 422.
 //
 // No usa secretos propios: SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY los
-// inyecta la plataforma. NO está desplegada (pendiente de autorización).
+// inyecta la plataforma. Desplegada en producción el 2026-10-18 (v1, verify_jwt=true).
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { ALLOWED, verifyObject } from './signature.ts'
 

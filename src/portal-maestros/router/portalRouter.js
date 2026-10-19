@@ -117,6 +117,8 @@ export function createPortalRouter() {
   }
 
   function _dispatch(fullRoute) {
+    // Cancelar trabajo transitorio incluso si la ruta ya estaba seleccionada.
+    window.dispatchEvent(new CustomEvent('portal:before-navigate', { detail: { route: fullRoute } }))
     if (_currentRoute === fullRoute && _currentRoute !== null) {
       return
     }

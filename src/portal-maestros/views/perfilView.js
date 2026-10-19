@@ -13,6 +13,7 @@ import { notifConfigModal } from '../components/notifConfigModal.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 import { normalizePhone } from '../../shared/utils/phoneUtils.js';
 import { pushDiagnostic } from '../components/pushDiagnostic.js';
+import { renderNavigationSettings } from '../components/navigationSettings.js';
 import {
   FONT_SCALES, normalizeFontScale, scaleIndex, scaleLabel,
   resolveFontFamily,
@@ -102,6 +103,7 @@ export function renderPerfilView(container) {
   // [OCULTO] Sección "Disponibilidad Horaria" — descomentar para reactivar.
   // renderAvailability(colIzq, maestro);
   renderAppearance(colDer);
+  renderNavigationSettings(colDer, maestro.id);
   renderNotifications(colDer, maestro);
   renderAbsences(colDer);
   renderSolicitudesNecesidades(colDer, maestro);

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../../styles/salones.css', () => ({}))
-vi.mock('../../../shared/components/AppModal.js', () => ({
+vi.mock('../../../../shared/components/AppModal.js', () => ({
   AppModal: { open: vi.fn(), close: vi.fn() },
 }))
-vi.mock('../../../shared/components/AppToast.js', () => ({
+vi.mock('../../../../shared/components/AppToast.js', () => ({
   AppToast: { progress: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }))
-vi.mock('../../../shared/components/ViewInfoModal.js', () => ({
+vi.mock('../../../../shared/components/ViewInfoModal.js', () => ({
   renderViewInfoButton: vi.fn(() => '<button id="btnInfo">Info</button>'),
   attachViewInfoEvents: vi.fn(),
 }))
@@ -68,4 +68,50 @@ describe('salonesView 4-card desktop grid and mobile adaptation', () => {
     const buttons = cards[0].querySelectorAll('.salon-btn-action')
     expect(buttons.length).toBe(2)
   })
+})
+
+it('opens the detail when a salon card is clicked', async () => {
+  const { AppModal } = await import('../../../../shared/components/AppModal.js')
+  document.body.innerHTML = ''
+  useSalones.listeners = []
+  useSalones.salones = []
+  const container = document.body.appendChild(document.createElement('div'))
+  obtenerSalones.mockResolvedValue([{ id: 's1', nombre: 'Salón A', ubicacion: '', equipamiento: '' }])
+  renderSalonesView(container)
+  await useSalones.fetchSalones()
+  container.querySelector('.salon-card-item strong').click()
+  expect(AppModal.open).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('Detalle del Salón') }))
+  container.cleanup()
+})
+
+it('exports only the filtered salones', async () => {
+  document.body.innerHTML = ''
+  useSalones.listeners = []
+  useSalones.salones = []
+  const container = document.body.appendChild(document.createElement('div'))
+  obtenerSalones.mockResolvedValue([
+    { id: 's1', nombre: 'Mozart', equipamiento: '' },
+    { id: 's2', nombre: 'Beethoven', equipamiento: '' },
+  ])
+  const makeUrl = vi.fn(() => 'blob:test')
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: makeUrl, revokeObjectURL: vi.fn() }))
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  renderSalonesView(container)
+  await useSalones.fetchSalones()
+  const search = container.querySelector('#searchSalon')
+  search.value = 'Mozart'
+  search.dispatchEvent(new Event('input', { bubbles: true }))
+  await vi.waitFor(() => expect(container.querySelectorAll('.salon-card-item')).toHaveLength(1))
+  container.querySelector('#btnExportarCSVSalones').click()
+  const blob = makeUrl.mock.lastCall[0]
+  const text = await new Promise(resolve => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.readAsText(blob)
+  })
+  expect(text).toContain('Mozart')
+  expect(text).not.toContain('Beethoven')
+  container.cleanup()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })

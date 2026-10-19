@@ -104,3 +104,24 @@ describe('defaultRangoReincorporaciones', () => {
     expect(defaultRangoReincorporaciones(new Date('2026-01-31T12:00:00Z')).desde).toBe('2025-12-31')
   })
 })
+
+it('distinguishes failed KPI loading from zero alumnos', async () => {
+  fetchKpisAusentismo.mockRejectedValueOnce(new Error('Indicadores no disponibles'))
+  const container = document.body.appendChild(document.createElement('div'))
+  await renderAusentismoDashboardView(container)
+  expect(container.textContent).toContain('No se pudieron cargar los indicadores')
+  expect(container.querySelector('[data-kpi="retenciones-activas"]')).toBeNull()
+})
+
+it('rejects an inverted date range without requesting cases', async () => {
+  document.body.innerHTML = ''
+  fetchKpisAusentismo.mockResolvedValue({})
+  const container = document.body.appendChild(document.createElement('div'))
+  await renderAusentismoDashboardView(container)
+  fetchCasosCerrados.mockClear()
+  container.querySelector('[data-desde]').value = '2026-10-19'
+  container.querySelector('[data-hasta]').value = '2026-10-01'
+  container.querySelector('[data-filtrar]').click()
+  expect(fetchCasosCerrados).not.toHaveBeenCalled()
+  expect(container.textContent).toContain('La fecha inicial debe ser anterior')
+})

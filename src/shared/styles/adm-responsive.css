@@ -1,0 +1,31 @@
+/* Shared touch and record layouts for the repaired ADM views. */
+.adm-responsive-view { min-width: 0; }
+.adm-responsive-view :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--bs-primary, #2563eb);
+  outline-offset: 3px;
+}
+@media (max-width: 1024px), (pointer: coarse) {
+  .adm-responsive-view :is(.btn, .form-control, .form-select, .aav-tab-btn, .aav-refresh-btn, .salon-btn-action) {
+    min-height: 44px;
+  }
+}
+@media (max-width: 575.98px) {
+  .adm-responsive-view .adm-record-table thead { display: none; }
+  .adm-responsive-view .adm-record-table tbody,
+  .adm-responsive-view .adm-record-table tr,
+  .adm-responsive-view .adm-record-table td { display: block; width: 100%; }
+  .adm-responsive-view .adm-record-table tr { padding: .75rem; border-bottom: 1px solid var(--bs-border-color, #ddd); }
+  .adm-responsive-view .adm-record-table td {
+    max-width: none !important; padding: .35rem 0; border: 0; text-align: left !important;
+    overflow-wrap: anywhere;
+  }
+  .adm-responsive-view .adm-record-table td::before {
+    content: attr(data-label); display: block; font-size: .7rem;
+    font-weight: 600; color: var(--bs-secondary-color, #64748b); margin-bottom: .15rem;
+  }
+  .adm-responsive-view .adm-record-table .text-truncate { white-space: normal; }
+  .adm-responsive-view .aav-filter-bar > div { width: 100%; max-width: none !important; }
+}
+@media (min-width: 576px) and (max-width: 1199.98px) {
+  .adm-responsive-view #salonesTableBody > .col { flex: 0 0 auto; width: 50%; }
+}

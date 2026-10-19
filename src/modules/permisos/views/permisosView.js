@@ -10,8 +10,7 @@ import { useAuth } from '../../auth/hooks/useAuth.js'
 const state = {
   permisos: [],
   cargando: false,
-  togglingId: null,
-  togglingField: null,
+  savingTeachers: new Set(),
 }
 
 function canGrantClassManagement(permiso) {
@@ -225,9 +224,9 @@ function renderContent(container) {
   `
 }
 
-function renderTableRows() {
-  return state.permisos.map(p => {
-    const isToggling = state.togglingId === p.maestro_id
+function renderTableRows(permisos = state.permisos) {
+  return permisos.map(p => {
+    const isToggling = state.savingTeachers.has(p.maestro_id)
     const actualizado = p.actualizado_en
       ? new Date(p.actualizado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
       : '-'
@@ -351,6 +350,13 @@ function getInitials(nombre) {
     .slice(0, 2)
 }
 
+function refreshTeacherRow(container, maestroId) {
+  const rows = container.querySelectorAll('#permisosTBody tr')
+  const row = [...rows].find(item => item.dataset.maestroId === maestroId)
+  const permiso = state.permisos.find(item => item.maestro_id === maestroId)
+  if (row && permiso) row.outerHTML = renderTableRows([permiso])
+}
+
 function attachEvents(container) {
   const table = container.querySelector('#permisosTable')
   if (!table) return
@@ -377,10 +383,16 @@ function attachEvents(container) {
       return
     }
 
-    // Optimistic: disable the toggle
-    toggle.disabled = true
-    state.togglingId = maestroId
-    state.togglingField = field
+    // Serialize mutations per teacher, while other teachers remain editable.
+    if (state.savingTeachers.has(maestroId)) {
+      toggle.checked = Boolean(match?.[field])
+      return
+    }
+    state.savingTeachers.add(maestroId)
+    const row = toggle.closest('tr')
+    row?.querySelectorAll('.permiso-toggle, .aprobar-btn').forEach(control => {
+      control.disabled = true
+    })
 
     // Update the label next to the toggle immediately
     const label = toggle.closest('.form-check')?.querySelector('span')
@@ -404,11 +416,6 @@ function attachEvents(container) {
 
       AppToast.success(`Permiso actualizado: ${fieldLabel(field)}`)
 
-      // Volver a renderizar para limpiar badges de solicitudes si existían
-      const tbody = container.querySelector('#permisosTBody')
-      if (tbody) {
-        tbody.innerHTML = renderTableRows()
-      }
     } catch (err) {
       // Rollback on error
       toggle.checked = !newValue
@@ -418,9 +425,10 @@ function attachEvents(container) {
       }
       AppToast.error('Error al actualizar permiso: ' + err.message)
     } finally {
-      toggle.disabled = false
-      state.togglingId = null
-      state.togglingField = null
+      state.savingTeachers.delete(maestroId)
+      // Render after releasing the lock, including on errors. Eligibility rules
+      // still decide which switches can be enabled.
+      refreshTeacherRow(container, maestroId)
     }
   })
 
@@ -430,10 +438,14 @@ function attachEvents(container) {
     if (!btn) return
 
     const maestroId = btn.dataset.maestroId
+    if (state.savingTeachers.has(maestroId)) return
     const permiso = btn.dataset.permiso
     const field = btn.dataset.field
 
-    btn.disabled = true
+    state.savingTeachers.add(maestroId)
+    btn.closest('tr')?.querySelectorAll('.permiso-toggle, .aprobar-btn').forEach(control => {
+      control.disabled = true
+    })
     const originalHtml = btn.innerHTML
     btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`
 
@@ -450,14 +462,14 @@ function attachEvents(container) {
 
       AppToast.success(`Solicitud aprobada: ${fieldLabel(field)}`)
 
-      const tbody = container.querySelector('#permisosTBody')
-      if (tbody) {
-        tbody.innerHTML = renderTableRows()
-      }
+
     } catch (err) {
       AppToast.error('Error al aprobar solicitud: ' + err.message)
       btn.disabled = false
       btn.innerHTML = originalHtml
+    } finally {
+      state.savingTeachers.delete(maestroId)
+      refreshTeacherRow(container, maestroId)
     }
   })
 }

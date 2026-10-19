@@ -1,3 +1,4 @@
+import '../../../shared/styles/adm-responsive.css'
 /**
  * AusentismoDashboardView — panel de solo lectura para ADM.
  * KPIs del ausentismo, histórico de casos cerrados y export a CSV.
@@ -13,6 +14,9 @@ import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import '../styles/ausentismo.css'
+
+let dashboardRequest = 0
+let casesRequest = 0
 
 const PAGE_SIZE = 25
 
@@ -48,56 +52,76 @@ const state = {
   ...defaultRangoReincorporaciones(),
   page: 1,
   pageSize: PAGE_SIZE,
+  kpiError: false,
+  casesError: false,
+  rangeError: false,
   loading: false,
   loadingCasos: false,
 }
 
 export async function renderAusentismoDashboardView(container) {
   if (!container) return
+  container.cleanup?.()
   state.container = container
+  container.cleanup = () => { dashboardRequest++; casesRequest++ }
   state.page = 1
   container.innerHTML = _renderLoading()
   try {
-    await _loadData()
+    if (!await _loadData()) return
     _render()
     _attachEvents()
   } catch (err) {
     console.error('[AusentismoDashboard]', err)
-    container.innerHTML = `<div class="page-container"><div class="alert alert-warning">${escapeHTML(err.message)}</div></div>`
+    container.innerHTML = `<div class="page-container adm-responsive-view"><div class="alert alert-warning">${escapeHTML(err.message)}</div></div>`
   }
 }
 
 async function _loadData() {
-  state.loading = true
-  try { state.periodo = await getPeriodoActivo() } catch (err) { console.error(err) }
-  const [kpis, casos] = await Promise.all([
-    fetchKpisAusentismo().catch((e) => { console.error(e); return null }),
-    fetchCasosCerrados({ desde: state.desde || null, hasta: state.hasta || null }).catch((e) => { console.error(e); return [] }),
+  const request = ++dashboardRequest
+  const results = await Promise.allSettled([
+    getPeriodoActivo(),
+    fetchKpisAusentismo(),
+    fetchCasosCerrados({ desde: state.desde || null, hasta: state.hasta || null }),
   ])
-  state.kpis = kpis
-  state.casos = casos
-  state.loading = false
+  if (request !== dashboardRequest) return false
+  state.periodo = results[0].status === 'fulfilled' ? results[0].value : null
+  state.kpiError = results[1].status === 'rejected'
+  state.kpis = state.kpiError ? null : results[1].value
+  state.casesError = results[2].status === 'rejected'
+  state.casos = state.casesError ? [] : results[2].value
+  state.rangeError = false
+  state.loadingCasos = false
+  return true
 }
 
 async function _refreshCasosOnly() {
+  const request = ++casesRequest
+  state.casesError = false
+  state.rangeError = Boolean(state.desde && state.hasta && state.desde > state.hasta)
+  if (state.rangeError) { state.loadingCasos = false; _renderCasosSection(); return }
   state.loadingCasos = true
   state.page = 1
   _renderCasosSection()
 
   try {
-    state.casos = await fetchCasosCerrados({ desde: state.desde || null, hasta: state.hasta || null })
+    const cases = await fetchCasosCerrados({ desde: state.desde || null, hasta: state.hasta || null })
+    if (request !== casesRequest) return
+    state.casos = cases
   } catch (err) {
+    if (request !== casesRequest) return
     console.error('[AusentismoDashboard] Error al refrescar casos:', err)
-    state.casos = []
+    state.casesError = true
   } finally {
-    state.loadingCasos = false
-    _renderCasosSection()
+    if (request === casesRequest) {
+      state.loadingCasos = false
+      _renderCasosSection()
+    }
   }
 }
 
 function _renderLoading() {
   return `
-    <div class="page-container">
+    <div class="page-container adm-responsive-view">
       <div class="d-flex align-items-center justify-content-center" style="height:300px;">
         <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
       </div>
@@ -203,7 +227,7 @@ function _render() {
   const sinContacto = k.sinContacto || 0
 
   state.container.innerHTML = `
-    <div class="page-container">
+    <div class="page-container adm-responsive-view">
       <div class="d-flex align-items-center gap-3 mb-3">
         <div class="brand-badge bg-danger bg-opacity-10 text-danger rounded-3 d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
           <i class="bi bi-graph-up fs-4"></i>
@@ -213,7 +237,7 @@ function _render() {
             <h1 class="page-title mb-0">Ausencias — Resumen del Período</h1>
             ${sinContacto > 0 ? `<span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-sm-2" title="Alumnos en seguimiento sin teléfono"><i class="bi bi-telephone-x me-1"></i>${sinContacto} sin contacto</span>` : ''}
           </div>
-          <p class="text-muted small mb-0">${escapeHTML(state.periodo?.nombre || 'Período actual')} · ${k.totalAusentes ?? 0} alumnos en seguimiento</p>
+          <p class="text-muted small mb-0">${escapeHTML(state.periodo?.nombre || 'Período actual')} · ${state.kpiError ? 'Indicadores no disponibles' : `${k.totalAusentes ?? 0} alumnos en seguimiento`}</p>
         </div>
         <button class="btn-help-trigger" id="btn-help-ausentismo-adm" title="¿Cómo funciona este panel?" aria-label="Ayuda sobre ausentismo ADM">
           <i class="bi bi-question"></i>
@@ -227,16 +251,16 @@ function _render() {
 
       <!-- Métricas clave agrupadas 3+3 (VD1, VD2, VD3, VD8, VD9) -->
       <div class="mb-4" aria-live="polite">
-        ${renderSeguimientoAusentesCardADM(_statsForCards())}
+        ${state.kpiError ? '<div class="alert alert-warning" role="alert">No se pudieron cargar los indicadores. <button class="btn btn-sm btn-outline-secondary" data-retry-dashboard>Reintentar</button></div>' : renderSeguimientoAusentesCardADM(_statsForCards())}
       </div>
 
       <!-- Embudo visual de distribución (VD5) -->
-      ${_renderFunnelChart()}
+      ${state.kpiError ? '' : _renderFunnelChart()}
 
       <!-- Tabla de casos cerrados (VD6, VD7) -->
       <div class="card border-0 shadow-sm mb-4 ausentismo-kpi-card" id="card-casos-cerrados">
         <div class="card-header bg-body-tertiary d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-          <h2 class="h5 mb-0 fw-semibold">Reincorporaciones</h2>
+          <div><h2 class="h5 mb-0 fw-semibold">Reincorporaciones</h2><span class="small text-muted">El rango de fechas filtra solo este historial.</span></div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input type="date" class="form-control form-control-sm w-auto" data-desde value="${escapeHTML(state.desde)}" aria-label="Fecha desde">
             <span class="text-muted small">a</span>
@@ -256,6 +280,9 @@ function _render() {
 }
 
 function _renderCasosBodyHTML() {
+  if (state.rangeError) return '<div class="alert alert-warning m-3" role="alert">La fecha inicial debe ser anterior o igual a la fecha final.</div>'
+  if (state.casesError) return '<div class="alert alert-warning m-3" role="alert">No se pudo cargar el historial. <button class="btn btn-sm btn-outline-secondary" data-retry-cases>Reintentar</button></div>'
+
   if (state.loadingCasos) {
     return `
       <div class="d-flex align-items-center justify-content-center p-5">
@@ -284,7 +311,7 @@ function _renderCasosBodyHTML() {
 
   return `
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0 align-middle">
+      <table class="table table-sm table-hover mb-0 align-middle adm-record-table">
         <caption class="visually-hidden">Histórico de casos de ausentismo cerrados, justificados o reincorporados</caption>
         <thead class="table-light">
           <tr>
@@ -305,13 +332,13 @@ function _renderCasosBodyHTML() {
             const hasNotas = Boolean(c.notas && c.notas.trim() && c.notas !== '—')
             return `
             <tr>
-              <td class="small">${escapeHTML(String(c.fecha || '').slice(0, 10))}</td>
-              <td class="small fw-semibold">${escapeHTML(alumnoNombre)}</td>
-              <td class="small">N${escapeHTML(c.nivel ?? '—')}</td>
-              <td class="small text-capitalize">${escapeHTML(c.canal || '—')}</td>
-              <td class="small">${escapeHTML(c.resultado || '—')}</td>
-              <td class="small">${escapeHTML(c.contacto_nombre || '—')}</td>
-              <td class="small" style="max-width:280px">
+              <td data-label="Fecha" class="small">${escapeHTML(String(c.fecha || '').slice(0, 10))}</td>
+              <td data-label="Alumno" class="small fw-semibold">${escapeHTML(alumnoNombre)}</td>
+              <td data-label="Nivel" class="small">N${escapeHTML(c.nivel ?? '—')}</td>
+              <td data-label="Canal" class="small text-capitalize">${escapeHTML(c.canal || '—')}</td>
+              <td data-label="Resultado" class="small">${escapeHTML(c.resultado || '—')}</td>
+              <td data-label="Contacto" class="small">${escapeHTML(c.contacto_nombre || '—')}</td>
+              <td data-label="Notas" class="small" style="max-width:280px">
                 <div class="d-flex align-items-center gap-1">
                   <span class="text-truncate" title="${escapeHTML(notasRaw)}">${escapeHTML(notasRaw)}</span>
                   ${hasNotas ? `
@@ -352,7 +379,7 @@ function _renderCasosSection() {
   // Sync CSV button state
   const csvBtn = state.container?.querySelector('[data-csv]')
   if (csvBtn) {
-    if (state.casos.length > 0) {
+    if (state.casos.length > 0 && !state.casesError && !state.rangeError && !state.loadingCasos) {
       csvBtn.removeAttribute('disabled')
     } else {
       csvBtn.setAttribute('disabled', 'disabled')
@@ -419,6 +446,8 @@ function _attachCasosEvents() {
   const body = state.container?.querySelector('#casos-card-body')
   if (!body) return
 
+  body.querySelector('[data-retry-cases]')?.addEventListener('click', _refreshCasosOnly)
+
   // Pagination buttons
   body.querySelector('[data-page-prev]')?.addEventListener('click', () => {
     if (state.page > 1) {
@@ -450,6 +479,8 @@ function _attachEvents() {
   const c = state.container
   if (!c) return
 
+  c.querySelector('[data-retry-dashboard]')?.addEventListener('click', () => renderAusentismoDashboardView(c))
+
   // Ayuda HelpPanel
   c.querySelector('#btn-help-ausentismo-adm')?.addEventListener('click', _abrirAyuda)
 
@@ -480,7 +511,7 @@ function _attachEvents() {
 
 function _exportCsv() {
   const rows = state.casos
-  if (!rows.length) return
+  if (!rows.length || state.casesError || state.rangeError || state.loadingCasos) return
   const head = ['fecha', 'alumno', 'nivel', 'canal', 'resultado', 'contacto', 'notas']
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
   const body = rows.map((r) => {

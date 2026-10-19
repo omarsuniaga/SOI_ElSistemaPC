@@ -38,9 +38,9 @@ class UseSalones {
   getFiltered(query = '', piso = '', condicion = '') {
     return this.salones.filter(salon => {
       const q = query.toLowerCase();
-      const matchQuery = salon.nombre.toLowerCase().includes(q) || 
-                         (salon.codigo && salon.codigo.toLowerCase().includes(q)) ||
-                         salon.ubicacion.toLowerCase().includes(q);
+      const matchQuery = (salon.nombre || '').toLowerCase().includes(q) ||
+                         String(salon.codigo_salon || salon.codigo || '').toLowerCase().includes(q) ||
+                         (salon.ubicacion || '').toLowerCase().includes(q);
       const matchPiso = piso === '' || String(salon.piso) === String(piso);
       const matchCondicion = condicion === '' || salon.condicion === condicion;
       return matchQuery && matchPiso && matchCondicion;

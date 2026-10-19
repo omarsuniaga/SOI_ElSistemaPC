@@ -1,3 +1,5 @@
+import '../../../shared/styles/adm-responsive.css'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 /**
  * ausenciasAdminView — Vista de aprobación de ausencias para el portal Admin
  * Header con stats, cards redesignadas, empty state amigable.
@@ -195,7 +197,7 @@ function _injectStyles() {
     /* ── List ── */
     .aav-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
       gap: 1.25rem;
     }
 
@@ -359,7 +361,7 @@ function _injectStyles() {
 function _renderShell(container) {
   _injectStyles()
   container.innerHTML = `
-    <div class="aav-root">
+    <div class="aav-root adm-responsive-view">
       <div class="aav-header">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div class="aav-title-row">
@@ -397,7 +399,7 @@ function _renderShell(container) {
         <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 420px;">
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control border-start-0" id="aav-search-input" placeholder="Buscar por maestro o motivo...">
+            <input type="text" class="form-control border-start-0" id="aav-search-input" value="${escapeHTML(filterState.searchQuery)}" aria-label="Buscar por maestro o motivo" placeholder="Buscar por maestro o motivo...">
           </div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap" id="aav-filter-controls">
@@ -429,6 +431,15 @@ function _renderShell(container) {
       </div>
     </div>
   `
+}
+
+let loadRequest = 0
+
+function safeAttachmentUrl(value) {
+  try {
+    const url = new URL(value)
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : ''
+  } catch { return '' }
 }
 
 const filterState = {
@@ -745,7 +756,7 @@ function _renderHistorialView(container) {
   contentEl.innerHTML = `
     <div class="aav-log-wrap shadow-sm">
       <div class="aav-table-responsive">
-        <table class="aav-log-table">
+        <table class="aav-log-table adm-record-table">
           <thead>
             <tr>
               <th>Estado</th>
@@ -788,40 +799,41 @@ function _renderHistorialView(container) {
                 urgBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.65rem">Baja</span>'
               }
 
-              const comprobanteBtn = a.archivo_url ? `
-                <a href="${a.archivo_url}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary rounded-pill py-1 px-2" style="font-size:0.75rem" title="Ver archivo adjunto">
+              const attachmentUrl = safeAttachmentUrl(a.archivo_url)
+              const comprobanteBtn = attachmentUrl ? `
+                <a href="${escapeHTML(attachmentUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary rounded-pill py-1 px-2" style="font-size:0.75rem" title="Ver archivo adjunto">
                   <i class="bi bi-paperclip me-1"></i>Ver
                 </a>
               ` : '<span class="text-muted small">—</span>'
 
               return `
                 <tr>
-                  <td>${estadoBadge}</td>
-                  <td>
+                  <td data-label="Estado">${estadoBadge}</td>
+                  <td data-label="Docente">
                     <div class="d-flex align-items-center gap-2">
                       <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px;font-size:0.85rem">
-                        ${initial}
+                        ${escapeHTML(initial)}
                       </div>
                       <div>
-                        <div class="fw-bold text-body">${teacherName}</div>
-                        <div class="text-muted small" style="font-size:0.72rem">${teacherEmail}</div>
+                        <div class="fw-bold text-body">${escapeHTML(teacherName)}</div>
+                        <div class="text-muted small" style="font-size:0.72rem">${escapeHTML(teacherEmail)}</div>
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <span class="text-capitalize fw-semibold text-body">${a.tipo_ausencia || 'General'}</span>
+                  <td data-label="Tipo y urgencia">
+                    <span class="text-capitalize fw-semibold text-body">${escapeHTML(a.tipo_ausencia || 'General')}</span>
                     ${urgBadge}
                   </td>
-                  <td>
-                    <div class="fw-semibold text-body">${fechaIni}${fechaFin}</div>
+                  <td data-label="Período de ausencia">
+                    <div class="fw-semibold text-body">${escapeHTML(fechaIni)}${escapeHTML(fechaFin)}</div>
                   </td>
-                  <td style="max-width:240px">
-                    <div class="text-truncate text-body-secondary small" title="${a.motivo || ''}">${a.motivo || 'Sin motivo registrado'}</div>
+                  <td data-label="Motivo" style="max-width:240px">
+                    <div class="text-truncate text-body-secondary small" title="${escapeHTML(a.motivo || '')}">${escapeHTML(a.motivo || 'Sin motivo registrado')}</div>
                   </td>
-                  <td>
-                    <span class="text-muted small">${fechaRegistro}</span>
+                  <td data-label="Fecha de solicitud">
+                    <span class="text-muted small">${escapeHTML(fechaRegistro)}</span>
                   </td>
-                  <td style="text-align:right">
+                  <td data-label="Comprobante" style="text-align:right">
                     ${comprobanteBtn}
                   </td>
                 </tr>
@@ -835,11 +847,7 @@ function _renderHistorialView(container) {
 }
 
 async function _loadData(container) {
-  // TEMP DEBUG (2026-09-24): incondicional, sin try/catch de por medio —
-  // confirma en vivo si este build realmente ejecuta _loadData. Quitar una
-  // vez confirmado el diagnóstico del triage de Jev.
-  console.log('[JEV-DEBUG] _loadData ejecutando, build con triage de Jev activo')
-
+  const request = ++loadRequest
   const contentEl = container.querySelector('#aav-content')
   const refreshBtn = container.querySelector('#aav-refresh-btn')
 
@@ -858,21 +866,9 @@ async function _loadData(container) {
       obtenerHistorialAusencias()
     ])
 
-    filterState.ausencias = ausencias || []
+    if (request !== loadRequest || !container.isConnected) return
+    filterState.ausencias = (ausencias || []).map((absence) => ({ ...absence, archivo_url: safeAttachmentUrl(absence.archivo_url) }))
     filterState.historial = historial || []
-
-    // Triage con Jev: señal de revisión, nunca decide. Si falla o no está
-    // disponible, las tarjetas se ven exactamente igual que antes — no
-    // bloquea ni retrasa la carga principal.
-    try {
-      const flags = await triageAusenciasPendientes(filterState.ausencias)
-      for (const ausencia of filterState.ausencias) {
-        const flag = flags.get(String(ausencia.id))
-        if (flag) ausencia._jevFlag = flag
-      }
-    } catch (err) {
-      console.warn('[ausenciasAdminView] triage de Jev no disponible, continuando sin señales:', err)
-    }
 
     _updateCountsAndBadges(container)
 
@@ -882,18 +878,40 @@ async function _loadData(container) {
     }
 
     _applyFiltersAndRender(container)
+    // Enrich the existing cards without replacing controls or unsaved notes.
+    void triageAusenciasPendientes(filterState.ausencias).then((flags) => {
+      if (request !== loadRequest || !container.isConnected) return
+      for (const absence of filterState.ausencias) {
+        const flag = flags.get(String(absence.id))
+        if (!flag || (!flag.discrepancia && !flag.motivoVago)) continue
+        absence._jevFlag = flag
+        const card = [...container.querySelectorAll('[data-ausencia-card]')]
+          .find((node) => node.dataset.ausenciaCard === String(absence.id))
+        if (card && !card.querySelector('[data-triage-note]')) {
+          const note = document.createElement('p')
+          note.dataset.triageNote = ''
+          note.className = 'small text-warning-emphasis px-3'
+          note.textContent = 'Señal auxiliar: revisar urgencia o ampliar el motivo antes de decidir.'
+          card.appendChild(note)
+        }
+      }
+    }).catch((error) => console.warn('[ausenciasAdminView] Análisis auxiliar no disponible:', error))
   } catch (error) {
+    if (request !== loadRequest) return
     if (contentEl) {
       contentEl.innerHTML = `
         <div class="aav-error">
           <i class="bi bi-exclamation-triangle"></i>
-          Error al cargar solicitudes: ${error.message}
+          Error al cargar solicitudes: ${escapeHTML(error.message)}
         </div>
       `
     }
-    showToast(`Error al cargar ausencias: ${error.message}`, 'error')
+    showToast(`Error al cargar ausencias: ${escapeHTML(error.message)}`, 'error')
   } finally {
-    if (refreshBtn) refreshBtn.classList.remove('spinning')
+    if (refreshBtn && request === loadRequest) {
+      refreshBtn.classList.remove('spinning')
+      refreshBtn.disabled = false
+    }
   }
 }
 
@@ -943,12 +961,17 @@ function _attachEventListeners(container) {
   // 4. Botón de Actualizar
   const refreshBtn = container.querySelector('#aav-refresh-btn')
   refreshBtn?.addEventListener('click', async () => {
+    if (refreshBtn.disabled) return
+    refreshBtn.disabled = true
     refreshBtn.classList.add('spinning')
     await _loadData(root)
   })
 }
 
 export async function renderAusenciasAdminView(container) {
+  container.cleanup?.()
+  container.cleanup = () => { loadRequest++ }
+  filterState.currentTab = 'pendientes'
   _renderShell(container)
   _attachEventListeners(container)
 

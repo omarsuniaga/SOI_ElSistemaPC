@@ -1,3 +1,4 @@
+import '../../../shared/styles/adm-responsive.css'
 import '../styles/salones.css'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
@@ -48,10 +49,10 @@ function renderContent(container) {
   const totalSalones = useSalones.salones.length
   const totalActivos = useSalones.salones.filter(s => s.is_active !== false).length
   const totalCapacidad = useSalones.salones.reduce((acc, s) => acc + (Number(s.capacidad) || 0), 0)
-  const totalEquipados = useSalones.salones.filter(s => !!s.equipamiento && s.equipamiento.trim() !== '').length
+  const totalEquipados = useSalones.salones.filter(s => !!s.equipamiento && String(s.equipamiento).trim() !== '').length
 
   container.innerHTML = `
-    <div class="page-container">
+    <div class="page-container adm-responsive-view">
       
       <!-- Header & Toolbar Unificada V2 -->
       <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
@@ -97,7 +98,7 @@ function renderContent(container) {
 
         <!-- Fila 2: Búsqueda y Botón Desplegable de Filtros & Orden -->
         <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
-          <div class="flex-grow-1" style="min-width: 260px;">
+          <div class="flex-grow-1" style="min-width: 0; flex-basis: 240px;">
             <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
               <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
               <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="searchSalon" placeholder="Buscar salón por nombre, código o ubicación..." autocomplete="off" style="font-size:0.8rem;">
@@ -177,7 +178,7 @@ function renderContent(container) {
 
       <!-- Contenedor de Cuadrícula de Salones (Hasta 4 por fila en desktop, adaptado a móviles) -->
       <div class="w-100">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2.5 g-md-3 w-100 m-0" id="salonesTableBody">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-2.5 g-md-3 w-100 m-0" id="salonesTableBody">
           <div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>
         </div>
       </div>
@@ -191,11 +192,14 @@ function renderTable() {
   const tbody = container.querySelector('#salonesTableBody')
   if (!tbody) return
 
+  const exportButton = container.querySelector('#btnExportarCSVSalones')
+  if (exportButton) exportButton.disabled = useSalones.cargando || Boolean(useSalones.error)
+
   // Actualizar badges del header
   const totalSalones = useSalones.salones.length
   const totalActivos = useSalones.salones.filter(s => s.is_active !== false).length
   const totalCapacidad = useSalones.salones.reduce((acc, s) => acc + (Number(s.capacidad) || 0), 0)
-  const totalEquipados = useSalones.salones.filter(s => !!s.equipamiento && s.equipamiento.trim() !== '').length
+  const totalEquipados = useSalones.salones.filter(s => !!s.equipamiento && String(s.equipamiento).trim() !== '').length
 
   const badgeActivos = container.querySelector('#badgeActivosCount')
   const badgeCapacidad = container.querySelector('#badgeCapacidadCount')
@@ -227,6 +231,8 @@ function renderTable() {
     if (sortVal === 'piso_asc') return (Number(a.piso) || 0) - (Number(b.piso) || 0)
     return 0
   })
+
+  state.visibleSalones = salones
 
   // Contador de filtros activos
   let activos = 0
@@ -268,7 +274,7 @@ function renderTable() {
 
       return `
         <div class="col p-1.5">
-          <div class="salon-card-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden ${!active ? 'salon-card-item--inactivo' : ''}" data-id="${salon.id}" style="cursor: pointer;">
+          <div tabindex="0" role="group" aria-label="${escapeHTML(salon.nombre)}" class="salon-card-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden ${!active ? 'salon-card-item--inactivo' : ''}" data-id="${salon.id}" style="cursor: pointer;">
             
             <!-- Parte Superior: Nombre, Piso, Capacidad y Condición -->
             <div class="mb-2">
@@ -315,7 +321,7 @@ function renderTable() {
                 <span>Editar</span>
               </button>
 
-              <button class="btn btn-sm btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center px-2.5 salon-btn-action" data-action="delete" data-id="${salon.id}" title="${active ? 'Inactivar salón' : 'Eliminar salón'}">
+              <button class="btn btn-sm btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center px-2.5 salon-btn-action" data-action="delete" data-id="${salon.id}" title="Inactivar salón" ${!active ? 'disabled' : ''}>
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -334,7 +340,7 @@ function renderTable() {
 
 
 function exportarSalonesCSV() {
-  const salones = useSalones.salones || []
+  const salones = state.visibleSalones || []
   if (!salones.length) {
     AppToast.warning('No hay salones para exportar')
     return
@@ -360,22 +366,26 @@ function exportarSalonesCSV() {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
   AppToast.success('Listado de salones exportado a CSV')
 }
 
 function attachEvents(container) {
+  const controller = new AbortController()
+  const { signal } = controller
+  const listen = (type, handler) => container.addEventListener(type, handler, { signal })
   attachViewInfoEvents(container)
   const unsubscribe = useSalones.subscribe(renderTable)
 
   let debounceTimer
-  container.addEventListener('input', (e) => {
+  listen('input', (e) => {
     if (e.target.id === 'searchSalon') {
       clearTimeout(debounceTimer)
       debounceTimer = setTimeout(renderTable, 200)
     }
   })
 
-  container.addEventListener('change', (e) => {
+  listen('change', (e) => {
     if (
       e.target.id === 'filterCondicion' ||
       e.target.id === 'filterPiso' ||
@@ -438,13 +448,22 @@ function attachEvents(container) {
       return
     }
 
-    const item = e.target.closest('.list-group-item[data-id]')
+    const item = e.target.closest('.salon-card-item[data-id]')
     if (item) {
       openViewModal(item.dataset.id)
     }
   })
 
+  listen('keydown', (event) => {
+    if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.salon-card-item')) {
+      event.preventDefault()
+      openViewModal(event.target.dataset.id)
+    }
+  })
+
   container.cleanup = () => {
+    controller.abort()
+    clearTimeout(debounceTimer)
     unsubscribe()
   }
 }
@@ -522,7 +541,7 @@ function openCreateModal() {
         equipamiento,
         descripcion,
       })
-      useSalones.fetchSalones()
+      await useSalones.fetchSalones()
       AppToast.success('Salón creado correctamente')
       return true
     },
@@ -738,7 +757,7 @@ function openDeleteModal(id) {
            <p class="text-muted small mb-0">Esta acción lo ocultará de las asignaciones de clases.</p>`,
     onSave: async () => {
       await salonesApi.eliminarSalon(id)
-      useSalones.fetchSalones()
+      await useSalones.fetchSalones()
       AppToast.success('Salón inactivado correctamente')
     },
   })

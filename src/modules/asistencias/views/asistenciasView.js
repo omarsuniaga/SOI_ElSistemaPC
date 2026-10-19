@@ -1,3 +1,4 @@
+import '../../../shared/styles/adm-responsive.css'
 /**
  * asistenciasView.js — Control de Asistencia y Evaluación Didáctica.
  *
@@ -50,6 +51,10 @@ const state = {
   container: null,
 }
 
+let eventsController
+let reportRequest = 0
+let viewRequest = 0
+
 const DIAS_HEADER = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MESES_NOMBRES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -61,6 +66,9 @@ const MESES_NOMBRES = [
  */
 export async function renderAsistenciasView(container) {
   if (!container) return
+  container.cleanup?.()
+  const view = ++viewRequest
+  container.cleanup = () => { eventsController?.abort(); reportRequest++; viewRequest++ }
   try {
     state.container = container
     state.cargando = true
@@ -72,6 +80,7 @@ export async function renderAsistenciasView(container) {
       getClases(),
     ])
 
+    if (view !== viewRequest) return
     state.periodos = periodos || []
     state.periodoActivo = periodoActivo
     state.clases = clases || []
@@ -94,59 +103,46 @@ export async function renderAsistenciasView(container) {
       state.filtroPeriodo = null
     }
 
-    await _loadData()
+    if (!await _loadData()) return
     renderContent(container)
     _attachEvents(container)
   } catch (error) {
+    if (view !== viewRequest) return
     console.error('[asistenciasView] Error al inicializar:', error)
     renderError(container, error.message)
   }
 }
 
 async function _loadData() {
+  const request = ++reportRequest
+  let result
   try {
-    const { timelineByDate, resumenGlobal } = await getReporteConsolidado({
-      periodoId: state.filtroPeriodo,
-    })
-
-    state.timeline = Array.isArray(timelineByDate) ? timelineByDate : []
-    state.resumenGlobal = resumenGlobal || {
-      totalClases: 0,
-      totalPresentes: 0,
-      totalAusentes: 0,
-      totalJustificados: 0,
-      totalRegistros: 0,
-      totalSesiones: 0,
-    }
-
-    // Si la fecha seleccionada no tiene sesiones, apuntar a la fecha más reciente con datos
-    if (state.timeline.length > 0) {
-      const fechasDisponibles = state.timeline.map(t => t.fecha)
-      if (!fechasDisponibles.includes(state.selectedFecha)) {
-        state.selectedFecha = fechasDisponibles[0]
-        const d = new Date(state.selectedFecha + 'T00:00:00')
-        state.calendarYear = d.getFullYear()
-        state.calendarMonth = d.getMonth()
-      }
-    }
-  } catch (err) {
-    console.warn('[asistenciasView] Warning al cargar datos consolidados:', err)
-    state.timeline = []
-    state.resumenGlobal = {
-      totalClases: 0,
-      totalPresentes: 0,
-      totalAusentes: 0,
-      totalJustificados: 0,
-      totalRegistros: 0,
-      totalSesiones: 0,
+    result = await getReporteConsolidado({ periodoId: state.filtroPeriodo })
+  } catch (error) {
+    if (request !== reportRequest) return false
+    throw error
+  }
+  const { timelineByDate, resumenGlobal } = result
+  if (request !== reportRequest) return false
+  state.timeline = Array.isArray(timelineByDate) ? timelineByDate : []
+  state.resumenGlobal = resumenGlobal || {}
+  // Si la fecha seleccionada no tiene sesiones, apuntar a la fecha más reciente con datos
+  if (state.timeline.length > 0) {
+    const fechasDisponibles = state.timeline.map(t => t.fecha)
+    if (!fechasDisponibles.includes(state.selectedFecha)) {
+      state.selectedFecha = fechasDisponibles[0]
+      const d = new Date(state.selectedFecha + 'T00:00:00')
+      state.calendarYear = d.getFullYear()
+      state.calendarMonth = d.getMonth()
     }
   }
+  return true
 }
 
 function renderLoading(container) {
   container.innerHTML = `
     <div class="d-flex flex-column justify-content-center align-items-center py-5" style="min-height: 350px;">
-      <div class="spinner-border text-primary mb-2" role="status"></div>
+      <div class="spinner-border text-primary mb-2" role="status"><span class="visually-hidden">Cargando</span></div>
       <div class="text-muted small fw-semibold">Cargando control de asistencia...</div>
     </div>
   `
@@ -222,7 +218,8 @@ function contarFiltrosActivos() {
   return count
 }
 
-function renderContent(container) {
+function renderContent(container, preserveSearch = false) {
+  const target = preserveSearch ? document.createElement('div') : container
   const timelineFiltrada = getFiltradosTimeline()
   const totalRegistrosFiltrados = timelineFiltrada.reduce((sum, d) => sum + d.clases.reduce((s, c) => s + (c.total_alumnos || 0), 0), 0)
   const totalPresentesFiltrados = timelineFiltrada.reduce((sum, d) => sum + d.clases.reduce((s, c) => s + (c.presentes || 0), 0), 0)
@@ -238,8 +235,8 @@ function renderContent(container) {
   }
   const diaSeleccionadoData = fechasMap.get(state.selectedFecha)
 
-  container.innerHTML = `
-    <div class="asistencias-view-container p-2 p-md-3">
+  target.innerHTML = `
+    <div class="asistencias-view-container adm-responsive-view p-2 p-md-3">
       
       <!-- TOOLBAR COMPACTA PRINCIPAL -->
       <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
@@ -252,7 +249,7 @@ function renderContent(container) {
             </h5>
             
             <!-- Badges Inline Compactos -->
-            <div class="d-flex align-items-center gap-1 ms-1">
+            <div class="d-flex align-items-center gap-1 ms-1" data-attendance-summary>
               <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size:0.75rem;" title="Presentes">
                 <i class="bi bi-check-circle-fill me-1"></i>${totalPresentesFiltrados} P
               </span>
@@ -268,7 +265,7 @@ function renderContent(container) {
             </div>
           </div>
           
-          <div class="d-flex gap-2 align-items-center">
+          <div class="d-flex flex-wrap gap-2 align-items-center">
             <!-- Botón Desplegar/Contraer Filtros -->
             <button class="btn btn-sm ${state.filtrosAbiertos ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center" id="btnToggleFiltros">
               <i class="bi bi-funnel me-1"></i>Filtros
@@ -351,6 +348,14 @@ function renderContent(container) {
 
     </div>
   `
+  if (preserveSearch) {
+    const currentRoot = container.querySelector('.asistencias-view-container')
+    const nextRoot = target.querySelector('.asistencias-view-container')
+    currentRoot.lastElementChild.replaceWith(nextRoot.lastElementChild)
+    currentRoot.querySelector('[data-attendance-summary]').innerHTML = target.querySelector('[data-attendance-summary]').innerHTML
+    currentRoot.querySelector('#btnToggleFiltros').innerHTML = target.querySelector('#btnToggleFiltros').innerHTML
+  }
+
 }
 
 /**
@@ -901,37 +906,47 @@ function getPrioridadBadgeClass(prioridad) {
 }
 
 function _attachEvents(container) {
+  eventsController?.abort()
+  eventsController = new AbortController()
+  const { signal } = eventsController
+  const listen = (target, type, handler) => target?.addEventListener(type, handler, { signal })
+  container.cleanup = () => { eventsController?.abort(); reportRequest++; viewRequest++ }
+
   // 1. Botón Toggle Filtros Desplegables
-  container.querySelector('#btnToggleFiltros')?.addEventListener('click', () => {
+  listen(container.querySelector('#btnToggleFiltros'), 'click', () => {
     state.filtrosAbiertos = !state.filtrosAbiertos
     renderContent(container)
     _attachEvents(container)
   })
 
   // 2. Selector de Período
-  container.querySelector('#selectPeriodo')?.addEventListener('change', async (e) => {
+  listen(container.querySelector('#selectPeriodo'), 'change', async (e) => {
     state.filtroPeriodo = e.target.value
-    await _loadData()
-    renderContent(container)
-    _attachEvents(container)
+    try {
+      if (!await _loadData()) return
+      renderContent(container)
+      _attachEvents(container)
+    } catch (error) {
+      renderError(container, error.message)
+    }
   })
 
   // 3. Selector de Cátedra
-  container.querySelector('#selectCatedra')?.addEventListener('change', (e) => {
+  listen(container.querySelector('#selectCatedra'), 'change', (e) => {
     state.filtroCatedra = e.target.value
     renderContent(container)
     _attachEvents(container)
   })
 
   // 4. Selector de Clase
-  container.querySelector('#selectClase')?.addEventListener('change', (e) => {
+  listen(container.querySelector('#selectClase'), 'change', (e) => {
     state.filtroClase = e.target.value
     renderContent(container)
     _attachEvents(container)
   })
 
   // 5. Selector de Maestro
-  container.querySelector('#selectMaestro')?.addEventListener('change', (e) => {
+  listen(container.querySelector('#selectMaestro'), 'change', (e) => {
     state.filtroMaestro = e.target.value
     renderContent(container)
     _attachEvents(container)
@@ -939,14 +954,14 @@ function _attachEvents(container) {
 
   // 6. Buscador
   const searchInput = container.querySelector('#inputBuscarAsistencias')
-  searchInput?.addEventListener('input', (e) => {
+  listen(searchInput, 'input', (e) => {
     state.searchQuery = e.target.value
-    renderContent(container)
+    renderContent(container, true)
     _attachEvents(container)
   })
 
   // 7. Navegación Mes Calendario
-  container.querySelector('#btnMesAnterior')?.addEventListener('click', () => {
+  listen(container.querySelector('#btnMesAnterior'), 'click', () => {
     if (state.calendarMonth === 0) {
       state.calendarMonth = 11
       state.calendarYear -= 1
@@ -957,7 +972,7 @@ function _attachEvents(container) {
     _attachEvents(container)
   })
 
-  container.querySelector('#btnMesSiguiente')?.addEventListener('click', () => {
+  listen(container.querySelector('#btnMesSiguiente'), 'click', () => {
     if (state.calendarMonth === 11) {
       state.calendarMonth = 0
       state.calendarYear += 1
@@ -968,7 +983,7 @@ function _attachEvents(container) {
     _attachEvents(container)
   })
 
-  container.querySelector('#btnHoyCalendar')?.addEventListener('click', () => {
+  listen(container.querySelector('#btnHoyCalendar'), 'click', () => {
     const now = new Date()
     state.calendarYear = now.getFullYear()
     state.calendarMonth = now.getMonth()
@@ -980,7 +995,7 @@ function _attachEvents(container) {
   // 8. Botón Descargar PDF
   // El informe representa el mes visible del calendario y respeta exactamente
   // los filtros activos de cátedra, clase, maestro y búsqueda.
-  container.querySelector('#btnDescargarPdfAsistencias')?.addEventListener('click', async () => {
+  listen(container.querySelector('#btnDescargarPdfAsistencias'), 'click', async () => {
     AppToast.info('Generando informe mensual de asistencia...')
     try {
       const timelineFiltrada = getFiltradosTimeline()
@@ -1016,7 +1031,7 @@ function _attachEvents(container) {
 
   // 8b. Botón Salud de las clases (PDF). Usa el período completo filtrado: el
   // informe compara el mes visible contra el mes anterior.
-  container.querySelector('#btnDescargarPdfSaludClases')?.addEventListener('click', async () => {
+  listen(container.querySelector('#btnDescargarPdfSaludClases'), 'click', async () => {
     AppToast.info('Generando informe de salud de las clases (incluye resumen por IA)...')
     try {
       const data = await downloadClassHealthPdf({
@@ -1044,7 +1059,7 @@ function _attachEvents(container) {
   })
 
   // 8c. Botón Salud de los estudiantes (PDF). Mismo período y filtros que la salud de clases.
-  container.querySelector('#btnDescargarPdfSaludEstudiantes')?.addEventListener('click', async () => {
+  listen(container.querySelector('#btnDescargarPdfSaludEstudiantes'), 'click', async () => {
     AppToast.info('Generando informe de salud de los estudiantes...')
     try {
       const data = await downloadStudentHealthPdf({
@@ -1072,7 +1087,7 @@ function _attachEvents(container) {
   })
 
   // 9. Delegación de Clics para selección de día y modal de justificación
-  container.addEventListener('click', (e) => {
+  listen(container, 'click', (e) => {
     // Selección de día en el calendario
     const dayCell = e.target.closest('[data-action="select-day"]')
     if (dayCell && dayCell.dataset.fecha) {

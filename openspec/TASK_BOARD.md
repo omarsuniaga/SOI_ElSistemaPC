@@ -45,6 +45,7 @@ cualquier tarea `disponible` según su contexto o especialidad.
 
 | task_id | título | estado | prioridad | agente_asignado | rama_git | openspec_change | notas | última_actualización |
 |---|---|---|---|---|---|---|---|---|
+| `adm-permission-switch-reactivity` | Corregir bloqueo de switches de permisos ADM | en_revision | alta | Codex / 09a7f6673c6b | `fix/adm-permission-switch-reactivity` | `docs/planning/FIX_PERMISOS_ADM_REACTIVIDAD.md` | Autorizado por Omar; 47 tests, build, tipos y lint aprobados; lane liberado | 2026-10-19 |
 | `optional-active-class-navigation` | Hacer opcional la apertura de clase en curso y respetar navegación manual | completada | alta | Codex / aa0fc8a3d1e7 | `fix/optional-active-class-navigation` | `docs/planning/SPEC_NAVEGACION_CLASE_EN_CURSO.md` | PR #142; 4.711 tests aprobados; lane liberado; publicación autorizada por Omar | 2026-10-19 |
 | `planificacion-dataadapter-migracion-restante` | Migrar 4 consumidores restantes al DataAdapter de planificación | disponible | media | — | — | `openspec/changes/planificacion-dataadapter-migracion-restante/` | 3 PRs encadenados; empezar por Phase 1 (extender adapter) | 2026-09-24 |
 | `fn-decrementar-stock-accesorios-huerfano` | Cerrar la capacidad huérfana `accesorios`/`fn_decrementar_stock` | bloqueada | media | — | — | `openspec/changes/fn-decrementar-stock-accesorios-huerfano/` | Phase 0 (diagnóstico de datos) sí se puede correr ya; Phase 1 requiere decisión de Omar (Opción A reconstruir vs. B archivar) antes de tocar código | 2026-09-24 |

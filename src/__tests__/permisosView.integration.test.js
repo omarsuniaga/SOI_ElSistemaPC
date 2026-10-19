@@ -267,4 +267,77 @@ describe('Permisos View — Admin toggle integration', () => {
       'No puedes habilitar crear clases hasta asignarle al menos una clase al maestro.',
     )
   })
+  it('allows consecutive grants and revocations of all three permissions without reloading', async () => {
+    await renderPermisosView(container)
+    const fields = ['puede_registrar_alumnos', 'puede_inscribir_clases', 'puede_crear_clases']
+    for (const value of [true, false, true]) {
+      for (const field of fields) {
+        const toggle = container.querySelector(`tr[data-maestro-id="maestro_001"] input[data-field="${field}"]`)
+        expect(toggle.disabled).toBe(false)
+        toggle.checked = value
+        toggle.dispatchEvent(new window.Event('change', { bubbles: true }))
+        await vi.waitFor(() => {
+          const visible = container.querySelector(`tr[data-maestro-id="maestro_001"] input[data-field="${field}"]`)
+          expect(visible.disabled).toBe(false)
+          expect(visible.checked).toBe(value)
+        })
+      }
+    }
+    expect(actualizarPermiso).toHaveBeenCalledTimes(9)
+    expect(obtenerPermisos).toHaveBeenCalledTimes(1)
+  })
+
+  it('locks only the saving teacher row and unlocks it after a failed save', async () => {
+    let rejectSave
+    actualizarPermiso.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectSave = reject }))
+    await renderPermisosView(container)
+    const toggle = container.querySelector('tr[data-maestro-id="maestro_001"] input')
+    toggle.checked = false
+    toggle.dispatchEvent(new window.Event('change', { bubbles: true }))
+    const rowInputs = () => [...container.querySelectorAll('tr[data-maestro-id="maestro_001"] input')]
+    expect(rowInputs().every(input => input.disabled)).toBe(true)
+    expect(container.querySelector('tr[data-maestro-id="maestro_002"] input').disabled).toBe(false)
+    rejectSave(new Error('Save failed'))
+    await vi.waitFor(() => expect(rowInputs().every(input => !input.disabled)).toBe(true))
+    expect(rowInputs()[0].checked).toBe(true)
+  })
+
+  it('keeps another teacher row intact when a concurrent save finishes', async () => {
+    const resolveSaves = {}
+    actualizarPermiso.mockImplementation(id => new Promise(resolve => { resolveSaves[id] = resolve }))
+    await renderPermisosView(container)
+    const first = container.querySelector('tr[data-maestro-id="maestro_001"] input')
+    const second = container.querySelector('tr[data-maestro-id="maestro_002"] input')
+    first.checked = false
+    first.dispatchEvent(new window.Event('change', { bubbles: true }))
+    second.checked = true
+    second.dispatchEvent(new window.Event('change', { bubbles: true }))
+    resolveSaves.maestro_001({})
+    await vi.waitFor(() => expect(container.querySelector('tr[data-maestro-id="maestro_001"] input').disabled).toBe(false))
+    expect(container.contains(second)).toBe(true)
+    expect(second.checked).toBe(true)
+    expect(second.disabled).toBe(true)
+    resolveSaves.maestro_002({})
+    await vi.waitFor(() => expect(container.querySelector('tr[data-maestro-id="maestro_002"] input').disabled).toBe(false))
+    expect(container.querySelector('tr[data-maestro-id="maestro_002"] input').checked).toBe(true)
+    expect(container.querySelector('tr[data-maestro-id="maestro_002"] input[data-field="puede_crear_clases"]').disabled).toBe(true)
+  })
+
+  it('allows another switch change after approving a permission request', async () => {
+    const permisos = structuredClone(mockPermisos)
+    permisos[0].puede_registrar_alumnos = false
+    permisos[0].solicitudes = ['alumnos:create']
+    obtenerPermisos.mockResolvedValueOnce(permisos)
+    await renderPermisosView(container)
+    container.querySelector('.aprobar-btn').click()
+    await vi.waitFor(() => expect(container.querySelector('.aprobar-btn')).toBeNull())
+    const toggle = container.querySelector('tr[data-maestro-id="maestro_001"] input[data-field="puede_crear_clases"]')
+    expect(toggle.disabled).toBe(false)
+    toggle.checked = true
+    toggle.dispatchEvent(new window.Event('change', { bubbles: true }))
+    await vi.waitFor(() => expect(actualizarPermiso).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(container.querySelector('tr[data-maestro-id="maestro_001"] input[data-field="puede_crear_clases"]').disabled).toBe(false))
+    expect(actualizarPermiso.mock.calls[1][1].permisos).toEqual(['alumnos:create', 'clases:create'])
+  })
+
 })

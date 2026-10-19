@@ -15,6 +15,7 @@ import { obtenerRutasActivas } from '../../modules/planificacion/api/weeklyPlanA
 import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
 import { openClaseEmergenteModal } from '../../modules/planificacion/components/claseEmergenteModal.js'
 import { abrirMapaDeRutas } from '../components/teacherRouteMapPanel.js'
+import { createClassAutoNavigation } from '../services/classAutoNavigation.js'
 
 // ─── Detección de clase en curso ───────────────────────────────
 
@@ -45,59 +46,6 @@ function _estadoTemporal(horaInicio, horaFin, ahoraMin) {
 }
 
 /**
- * Muestra un countdown de 3 s y luego navega a la clase en curso.
- * El maestro puede cancelarlo tocando el banner.
- * @param {string} claseId
- * @param {string} fechaHoy
- * @param {Function} onClaseClick
- */
-function _autoNavigateClaseEnCurso(claseId, fechaHoy, onClaseClick) {
-  // Crear banner de countdown
-  const banner = document.createElement('div')
-  banner.id = 'pm-hoy-autonav-banner'
-  banner.innerHTML = `
-    <div class="pm-autonav-content">
-      <i class="bi bi-play-circle-fill pm-autonav-icon"></i>
-      <span class="pm-autonav-msg">Abriendo clase en curso…</span>
-      <span class="pm-autonav-count" id="pm-autonav-count">3</span>
-      <button class="pm-autonav-cancel" id="pm-autonav-cancel">Cancelar</button>
-    </div>
-  `
-  document.body.appendChild(banner)
-
-  let segundos = 3
-  let cancelado = false
-
-  const countEl = document.getElementById('pm-autonav-count')
-
-  const tick = setInterval(() => {
-    if (cancelado) return
-    segundos--
-    if (countEl) countEl.textContent = segundos
-    if (segundos <= 0) {
-      clearInterval(tick)
-      banner.remove()
-      if (!cancelado) {
-        // Generar snapshot y navegar (mismo flujo que el click manual)
-        if (window.router) window.router.navigate(`asistencia?clase=${claseId}&fecha=${fechaHoy}`)
-        else if (typeof onClaseClick === 'function') {
-          onClaseClick(claseId, fechaHoy)
-        } else if (window.router?.navigate) {
-          window.router.navigate('asistencia?clase=' + claseId + '&fecha=' + fechaHoy)
-        }
-      }
-    }
-  }, 1000)
-
-  document.getElementById('pm-autonav-cancel')?.addEventListener('click', () => {
-    cancelado = true
-    clearInterval(tick)
-    banner.remove()
-    AppToast.show('Auto-navegación cancelada', 'info')
-  })
-}
-
-/**
  * Renderiza la vista Hoy: lista de clases del día actual ordenadas por hora.
  * @param {HTMLElement} container
  * @param {{ onClaseClick?: (claseId: string) => void }} options
@@ -110,6 +58,17 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     container.innerHTML = `<p class="pm-empty">No hay sesión activa.</p>`
     return
   }
+
+  const autoNavigation = createClassAutoNavigation({
+    maestroId: maestro.id,
+    container,
+    isCurrent: () => getMaestroLocal()?.id === maestro.id
+      && (!window.router?.currentRoute || window.router.currentRoute().split('?')[0] === 'hoy'),
+    navigate: (claseId, fecha) => {
+      if (typeof onClaseClick === 'function') onClaseClick(claseId, fecha)
+      else window.router?.navigate(`asistencia?clase=${claseId}&fecha=${fecha}`)
+    },
+  })
 
   const hoy = new Date()
   const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
@@ -129,6 +88,7 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     if (emergentesHoy && emergentesHoy.length > 0) {
       container.innerHTML = _renderEmergentes(emergentesHoy, diaHoy, hoy)
       _bindEmergenteClicks(container, fechaHoy, maestro.id)
+      autoNavigation.cancel()
       return
     }
 
@@ -146,6 +106,7 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         </div>
       `
       _bindEmptyStateEmergente(container, fechaHoy, maestro.id, [])
+      autoNavigation.cancel()
       return
     }
 
@@ -189,6 +150,7 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         </div>
       `
       _bindEmptyStateEmergente(container, fechaHoy, maestro.id, misClases)
+      autoNavigation.cancel()
       return
     }
 
@@ -417,16 +379,12 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         }
       })
 
-      // Auto-navegar solo si la clase está en curso Y no registrada
-      if (claseEnCursoId) {
-        // Pequeño delay para que el maestro vea la vista antes del countdown
-        setTimeout(() => {
-          _autoNavigateClaseEnCurso(claseEnCursoId, fechaHoy, onClaseClick)
-        }, 800)
-      }
     }
+    // La preferencia y el ciclo de vida se resuelven fuera de la vista.
+    autoNavigation.schedule(claseEnCursoId, fechaHoy)
 
   } catch (err) {
+    autoNavigation.cancel()
     container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${escHTML(err.message)}</p>`
   }
 }

@@ -25,11 +25,12 @@ seleccionar cualquier otra clase sin que una redirección reemplace mi elección
 - [x] Encapsular preferencia y temporizadores; integrar cancelación con el router.
 - [x] Añadir switch accesible en Perfil con guardado inmediato.
 - [x] Verificar apagado/encendido, cancelación, persistencia y aislamiento.
-- [ ] Ejecutar verificaciones y abrir PR para revisión.
+- [x] Ejecutar verificaciones y abrir PR para revisión (#142).
 
 ## Validación
 - 13 pruebas nuevas: reproducción previa en rojo y corrección en verde.
 - 88 pruebas del área en verde (router, calendario, shell, Hoy y preferencias).
+- Suite general: 4.711 pruebas aprobadas y 7 omitidas (553 archivos).
 - Compilación, lint general y typecheck correctos.
 - El control estructural R1/R3 ya falla en master: salida idéntica en el
   worktree base y en esta rama. No se modifica esquema ni baseline.

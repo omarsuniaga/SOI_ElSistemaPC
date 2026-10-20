@@ -58,6 +58,9 @@ export const MUTATIONS = {
   9: ['refuerzo/tarea do not start abierto', rep(
     "THEN 'abierto' ELSE NULL END,\n      v_maestro, now(), now(), now()",
     "THEN NULL ELSE NULL END,\n      v_maestro, now(), now(), now()")],
+  11: ['session jsonb stores DB words instead of UI codes', rep(
+    "CASE a.estado WHEN 'presente' THEN 'P' WHEN 'ausente' THEN 'A' WHEN 'justificado' THEN 'J' WHEN 'tarde' THEN 'T' ELSE a.estado END",
+    'a.estado')],
   10: ['zero-present grupo check removed (BR-03)', rep(
     'IF cardinality(v_presentes) = 0 THEN',
     'IF false THEN')],
@@ -220,6 +223,10 @@ try {
   ok(sr.contenido === NOTA, 'original note stored verbatim (BR-11)');
   ok(sr.estado === 'registrada' && sr.borrador === false, 'session marked registrada and not draft');
   ok(Array.isArray(sr.asistencia) && sr.asistencia.length === 4, 'session asistencia jsonb mirrors attendance');
+  // Producción guarda en este jsonb los códigos de la interfaz (P/A/J/T), no las palabras de asistencias.estado.
+  const codes = Object.fromEntries((sr.asistencia || []).map((x) => [x.alumno_id, x.estado]));
+  ok(codes[AL.ana] === 'P' && codes[AL.luis] === 'T' && codes[AL.marta] === 'A' && codes[AL.pedro] === 'J',
+    'session asistencia jsonb keeps the UI codes P/T/A/J that the app reads', JSON.stringify(codes));
 
   // ── C. idempotence (BR-10) ──
   console.log('C. idempotence');

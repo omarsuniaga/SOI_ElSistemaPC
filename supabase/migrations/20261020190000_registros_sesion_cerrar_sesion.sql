@@ -278,7 +278,11 @@ BEGIN
   UPDATE public.sesiones_clase s
      SET contenido = COALESCE(p_payload ->> 'contenido', s.contenido),
          asistencia = (
-           SELECT COALESCE(jsonb_agg(jsonb_build_object('alumno_id', a.alumno_id, 'estado', a.estado) ORDER BY a.alumno_id), '[]'::jsonb)
+           -- sesiones_clase.asistencia guarda los códigos de la interfaz (P/A/J/T), no las palabras de
+           -- asistencias.estado: así lo escribe y lo lee el resto de la app (verificado en producción).
+           SELECT COALESCE(jsonb_agg(jsonb_build_object('alumno_id', a.alumno_id, 'estado',
+                    CASE a.estado WHEN 'presente' THEN 'P' WHEN 'ausente' THEN 'A' WHEN 'justificado' THEN 'J' WHEN 'tarde' THEN 'T' ELSE a.estado END)
+                  ORDER BY a.alumno_id), '[]'::jsonb)
              FROM public.asistencias a
             WHERE a.sesion_clase_id = v_sesion.id
          ),

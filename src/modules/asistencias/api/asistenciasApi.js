@@ -24,6 +24,14 @@ export async function getDetalleSesion(sesionId) {
   return impl.getDetalleSesion(sesionId)
 }
 
+export async function getValoracionesSesion(sesionId) {
+  return impl.getValoracionesSesion(sesionId)
+}
+
+export async function guardarValoracionesSesion(sesionId, items, options) {
+  return impl.guardarValoracionesSesion(sesionId, items, options)
+}
+
 export async function getReporteCompleto(params) {
   return impl.getReporteCompleto(params)
 }
@@ -72,4 +80,8 @@ export async function obtenerAsistenciaDelDia(params) {
 
 export async function obtenerAsistenciasPorClasesFecha(claseIds, fecha) {
   return impl.obtenerAsistenciasPorClasesFecha(claseIds, fecha)
+}
+
+export async function getClassRoster(classId) {
+  return impl.getClassRoster(classId)
 }

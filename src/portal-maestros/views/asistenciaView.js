@@ -40,10 +40,12 @@ import {
   deleteEvidencia,
 } from '../services/justificacionService.js'
 import { construirJustificaciones, aplicarJustificadosDeAsistencias, justificacionesPorActividad } from '../services/justificacionesAdm.js'
-import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
+import { registrarAsistenciaBulk, getValoracionesSesion, guardarValoracionesSesion } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
-import { analyzeObservation } from '../services/groqService.js'
-import { saveProgressFromAI, linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
+import { reviewLessonObservation } from '../services/lessonReviewService.js'
+import { createLessonReviewPanel } from '../components/LessonReviewPanel.js'
+import { isLessonPresent, attendanceSignature } from '../utils/lessonReview.js'
+import { linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
 
 /**
  * Wraps an async function with consistent error handling.
@@ -65,7 +67,6 @@ async function safeAsync(fn, { onError, silent = false } = {}) {
     return null
   }
 }
-import { createProgressPreviewPanel } from '../components/ProgressPreviewPanel.js'
 import { fetchInsights } from '../services/progressInsightService.js'
 import { proposeCurriculum } from '../services/groqService.js'
 import { createCurriculumProposalPanel } from '../components/CurriculumProposalPanel.js'
@@ -92,6 +93,7 @@ import { createJustifModalManager } from '../components/attendance/JustifModalMa
 import { createStudentList } from '../components/attendance/StudentList.js'
 import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
+import { createPresentRatingsPanel } from '../components/attendance/PresentRatingsPanel.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
 import { renderSessionRepertoirePanel } from '../components/SessionRepertoirePanel.js'
 import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
@@ -1638,7 +1640,7 @@ function _renderVista(container, ctx) {
         </div>
 
         <!-- 3. Planificación Académica (Mapa de Contenido y Posición Actual) -->
-        <div id="pm-planificacion-card" class="pm-planificacion-card open" style="margin: 1.5rem 0;">
+        <div id="pm-planificacion-card" class="pm-planificacion-card" style="margin: 1.5rem 0;">
           <div id="pm-planificacion-header" class="pm-planificacion-header">
             <div class="pm-planificacion-header-left">
               <div class="pm-planificacion-icon-box">🗺️</div>
@@ -1655,7 +1657,7 @@ function _renderVista(container, ctx) {
               <i class="bi bi-chevron-down pm-planificacion-toggle-btn"></i>
             </div>
           </div>
-          <div id="pm-planificacion-dropdown" class="pm-planificacion-dropdown" style="display:block;">
+          <div id="pm-planificacion-dropdown" class="pm-planificacion-dropdown" style="display:none;">
             <div class="pm-planificacion-tabs-pill">
               <button class="pm-plan-tab-pill active" data-tab="rutas">Mis Rutas</button>
               <button class="pm-plan-tab-pill" data-tab="planificaciones">Biblioteca</button>
@@ -1680,6 +1682,9 @@ function _renderVista(container, ctx) {
       <div class="pm-asist-actions-fixed">
         <button id="btn-guardar-obs" class="pm-asist-btn-obs" style="display:none;">
           <i class="bi bi-chat-left-text"></i> Observación
+        </button>
+        <button id="btn-evaluar-presentes" type="button" class="pm-asist-btn-obs">
+          <i class="bi bi-star"></i> Evaluar presentes
         </button>
         <button id="btn-guardar" class="pm-asist-btn-save">
           <i class="bi bi-cloud-upload"></i> Guardar sesión
@@ -1786,6 +1791,7 @@ function _renderVista(container, ctx) {
     },
   })
   const editor = dslSection.getEditor()
+  _cleanups.push(() => dslSection.getToolbar()?.destroy())
   const editorContainer = container.querySelector('#pm-dsl-editor-container')
 
   // Salir del editor —o de la vista— persiste ya, sin esperar el debounce de 2 s.
@@ -1821,40 +1827,30 @@ function _renderVista(container, ctx) {
     },
   })
 
-  // === Progress Preview Panel ===
-  const progressPanel = createProgressPreviewPanel(editorContainer.parentNode, {
-    onConfirm: async (records) => {
-      try {
-        const alumnosConId = alumnos.map((a) => ({
-          id: a.id,
-          nombre: a.nombre_completo || a.nombre || '',
-          nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
-        }))
-        const { saved, errors } = await saveProgressFromAI({
-          sesionId,
-          claseId,
-          maestroId: maestro.id,
-          fechaHoy,
-          progressRecords: records,
-          alumnos: alumnosConId,
-        })
-        if (errors.length) console.warn('[Progress] Errores parciales:', errors)
-        // Restore the save button and immediately trigger the full session save
-        // (which handles attendance, session state update and shows the overlay)
-        const btnGuardar = container.querySelector('#btn-guardar')
-        if (btnGuardar) {
-          btnGuardar.style.removeProperty('display')
-          btnGuardar.click()
-        }
-      } catch (err) {
-        container.querySelector('#btn-guardar')?.style.removeProperty('display')
-        AppToast.error('Error al guardar progreso: ' + err.message)
+  let lessonReviewDisposed = false
+  editor.setContext({
+    claseId,
+    getAlumnos: () => alumnos,
+    getPresentes: () => alumnos.filter(a => isLessonPresent(estado[a.id])),
+  })
+  const lessonReview = createLessonReviewPanel(editorContainer.parentNode, {
+    getAlumnos: () => alumnos,
+    getEstado: () => estado,
+    getContent: () => editor.getValue(),
+    onConfirm: async ({ dsl, evaluate }) => {
+      editor.setValue(dsl)
+      const result = await _autoSave(true, false, { contentOnly: isSessionRegistered })
+      if (lessonReviewDisposed) return false
+      if (result !== 'saved') {
+        AppToast.warning('Contenido conservado; pendiente de sincronizar. Evalúa cuando se complete el guardado.')
+        return true
       }
-    },
-    onCancel: () => {
-      container.querySelector('#btn-guardar')?.style.removeProperty('display')
+      AppToast.success('Contenido y destinatarios confirmados.')
+      if (evaluate) await openPresentRatings({ prepared: true })
+      return true
     },
   })
+  _cleanups.push(() => { lessonReviewDisposed = true; lessonReview.destroy() })
 
   // === Curriculum Proposal Panel ===
   const curricPanel = createCurriculumProposalPanel(
@@ -1915,56 +1911,33 @@ function _renderVista(container, ctx) {
       }
     },
     onAnalyzeClick: async (text) => {
-      await safeAsync(
-        async () => {
-          const alumnosPresentes = alumnos.filter((a) => estado[a.id] && estado[a.id] !== 'A')
-          const _buildNombreCorto = (fullName, allNames) => {
-            const parts = fullName.trim().split(/\s+/)
-            const first = parts[0]
-            const hasDuplicate =
-              allNames.filter((n) => n.trim().split(/\s+/)[0] === first).length > 1
-            return hasDuplicate ? parts.slice(0, 2).join(' ') : first
-          }
-          const allNombresFull = alumnos.map((a) => a.nombre_completo || a.nombre || '')
-          const alumnosMapped = alumnos.map((a) => {
-            const nombre = a.nombre_completo || a.nombre || ''
-            return { id: a.id, nombre, nombreCorto: _buildNombreCorto(nombre, allNombresFull) }
-          })
-          const presentesMapped = alumnosPresentes.map((a) => {
-            const nombre = a.nombre_completo || a.nombre || ''
-            return { id: a.id, nombre, nombreCorto: _buildNombreCorto(nombre, allNombresFull) }
-          })
-          const contextoGroq = {
-            alumnos: alumnosMapped,
-            presentes: presentesMapped,
-            tipoClase: inferirTipoClase(clase),
-            instrumento: clase.instrumento || '',
-            sesionesRecientes: (snapshots || [])
-              .slice(-2)
-              .map((s) => s.contenido || '')
-              .filter(Boolean),
-            indicadorActivo: planificationCard?.getActiveIndicador()?.nombre || '',
-          }
-          container.querySelector('#btn-guardar')?.style.setProperty('display', 'none')
-          const result = await analyzeObservation(text, contextoGroq)
-          if (!result?.progreso?.length) {
-            container.querySelector('#btn-guardar')?.style.removeProperty('display')
-            if (typeof AppToast !== 'undefined' && AppToast) {
-              AppToast.warning('La IA no detectó registros de progreso en este texto.')
-            }
-            return
-          }
-          progressPanel.open({ progreso: result.progreso, resumen: result.resumen })
-        },
-        {
-          onError: (err) => {
-            container.querySelector('#btn-guardar')?.style.removeProperty('display')
-            if (typeof AppToast !== 'undefined' && AppToast) {
-              AppToast.error('Error al analizar con IA: ' + err.message)
-            }
-          },
-        },
-      )
+      const attendanceAtAnalysis = { ...estado }
+      const sourceSignature = attendanceSignature(alumnos, attendanceAtAnalysis)
+      const [analysisResult, ratingsResult] = await Promise.allSettled([
+        reviewLessonObservation(text, { roster: alumnos, attendance: attendanceAtAnalysis }),
+        sesionId ? getValoracionesSesion(sesionId) : Promise.resolve([]),
+      ])
+      if (analysisResult.status !== 'fulfilled') {
+        AppToast.error('No se pudo revisar el contenido. Tu texto sigue intacto.')
+        return
+      }
+      const proposal = analysisResult.value
+      const presentIds = alumnos.filter(a => isLessonPresent(attendanceAtAnalysis[a.id])).map(a => a.id)
+      const existing = ratingsResult.status === 'fulfilled' ? ratingsResult.value : null
+      const graded = new Set((existing || []).filter(row => row.valoracion !== null && row.valoracion !== undefined).map(row => row.alumno_id))
+      proposal.ratingSummary = existing
+        ? `${presentIds.filter(id => !graded.has(id)).length} de ${presentIds.length} presentes sin evaluar.`
+        : 'No se pudieron consultar las valoraciones guardadas. El contenido se puede revisar igualmente.'
+      if (attendanceSignature(alumnos, estado) !== sourceSignature) {
+        AppToast.warning('La asistencia cambió durante el análisis. Pulsa IA otra vez.')
+        return
+      }
+      if (lessonReviewDisposed) return
+      if (editor.getValue() !== text) {
+        AppToast.warning('El texto cambió mientras se analizaba. Pulsa IA otra vez para revisar la versión actual.')
+        return
+      }
+      lessonReview.open(proposal)
     },
   })
 
@@ -2578,6 +2551,41 @@ function _renderVista(container, ctx) {
   // Nota: Eliminamos la carga global de ContentSelectionPanel aquí
   // para evitar el error de studentId requerido.
   // El flujo ahora es 100% contextual al interactuar con un alumno.
+
+  // === Evaluar presentes (valoración 0–5 por alumno) ===
+  // sesionId se lee en cada apertura: la sesión puede crearse después de montar la vista.
+  const presentRatingsPanel = createPresentRatingsPanel({
+    getAlumnos: () => alumnos,
+    getEstado: () => estado,
+    getSesionId: () => sesionId,
+    getContent: () => editor.getValue(),
+    loadRatings: (id) => getValoracionesSesion(id),
+    saveRatings: (id, items) => guardarValoracionesSesion(id, items, { actorId: maestro.user_id || null }),
+  })
+  async function openPresentRatings({ prepared = false } = {}) {
+    try {
+      if (!alumnos.some(a => isLessonPresent(estado[a.id]))) {
+        AppToast.warning('Marca al menos un alumno presente para evaluar.')
+        return
+      }
+      const result = prepared ? 'saved' : await _autoSave(true, false, { contentOnly: isSessionRegistered })
+      if (result !== 'saved' || !sesionId) {
+        AppToast.warning('La evaluación estará disponible cuando la asistencia se sincronice.')
+        return
+      }
+      if (claseId) {
+        await registrarAsistenciaBulk(alumnos.filter(a => estado[a.id]).map(a => ({
+          clase_id: claseId, alumno_id: a.id, fecha: fechaHoy, estado: estado[a.id],
+          registrado_por: maestro.user_id, sesion_clase_id: sesionId,
+        })), { clase, maestroId: maestro.id || maestro.user_id || null, fecha: fechaHoy, sesionId })
+      }
+      if (!lessonReviewDisposed) await presentRatingsPanel.open()
+    } catch (error) {
+      AppToast.error('No se pudo preparar la evaluación: ' + error.message)
+    }
+  }
+  container.querySelector('#btn-evaluar-presentes')?.addEventListener('click', openPresentRatings)
+  _cleanups.push(() => presentRatingsPanel.destroy())
 
   // === Save Observation Button ===
   createObservationSaveButton(container, {

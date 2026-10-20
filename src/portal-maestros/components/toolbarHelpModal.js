@@ -49,35 +49,14 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
       ]
     },
     {
-      category: 'Técnico',
-      items: [
-        {
-          icon: '🎯',
-          label: '$',
-          title: 'Medida',
-          description: 'Término técnico musical',
-          example: '$vibrato, $legato',
-          color: '#06b6d4'
-        },
-        {
-          icon: '🎓',
-          label: '>',
-          title: 'Objetivo',
-          description: 'Meta curricular o achievement',
-          example: '>NIVEL-3',
-          color: '#6366f1'
-        }
-      ]
-    },
-    {
       category: 'Inteligencia Artificial',
       items: [
         {
           icon: '✨',
-          label: 'Mejorar',
-          title: 'Mejorar Texto',
-          description: 'Mejora gramática y claridad con IA',
-          example: '"María no entiende" → texto mejorado',
+          label: 'IA',
+          title: 'Analizar con IA',
+          description: 'Propone avances por alumno a partir del texto para su revisión',
+          example: '"María avanzó en escalas" → propuesta para revisar',
           color: '#ec4899'
         },
         {
@@ -89,6 +68,15 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           color: '#f97316'
         }
       ]
+    },
+    {
+      category: 'Dictado',
+      items: [{
+        icon: '🎤', label: 'Voz', title: 'Dictar observación',
+        description: 'Pulsa el micrófono, permite su acceso y dicta en español. Vuelve a pulsarlo para terminar. Puedes corregir el texto antes de guardarlo.',
+        example: 'Si no está disponible, usa el micrófono del teclado del teléfono.',
+        color: '#06b6d4'
+      }]
     }
   ]
 

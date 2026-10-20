@@ -92,9 +92,9 @@ function filasSinRegistros(columnas) {
 const METODOLOGIA = [
   ['Asistencia', 'Tasa = (presentes + tardanzas) / (presentes + tardanzas + justificadas + ausentes). Las tardanzas cuentan como asistencia. Si la sesión no tiene registro por alumno, se usan los contadores de la sesión.'],
   ['Comparativo', 'Variación en puntos porcentuales frente al mes anterior de la misma clase. "Sin datos" indica que la clase no tuvo sesiones en el mes anterior.'],
-  ['Puntuación', '0 a 100 = 0,5 × % asistencia + 0,3 × % cobertura de contenido + 0,2 × % variedad de contenido. Una clase sin convocatorias en el mes no recibe puntuación.'],
+  ['Puntuación', '0 a 100 = 0,625 × % asistencia + 0,375 × % cobertura de contenido. Una clase sin convocatorias en el mes no recibe puntuación.'],
   ['Cobertura', 'Sesiones con contenido registrado / total de sesiones del mes.'],
-  ['Variedad', 'Contenidos distintos / sesiones con contenido. Un contenido idéntico a una sesión anterior de la misma clase cuenta como repetido.'],
+  ['Variedad', 'Contenidos distintos / sesiones con contenido. Un contenido idéntico a una sesión anterior de la misma clase cuenta como repetido. La repetición es descriptiva y no reduce la puntuación.'],
   ['Niveles', 'Saludable: 80 o más. En observación: de 60 a 79. Requiere atención: menos de 60.'],
   ['Temas', 'Términos de 4 o más letras, sin palabras vacías, dentro de una misma frase, que aparecen en 2 o más sesiones del mes. Atención % = sesiones con el tema / sesiones con contenido. Las fechas listadas son la evidencia.'],
   ['Alcance', 'El informe evalúa clases, no alumnos individuales.'],

@@ -147,13 +147,12 @@ function analyzeContent(sessions) {
   }
 }
 
-/** 0.5 * attendance + 0.3 * content coverage + 0.2 * content variety, rounded. */
+/** 0.625 * attendance + 0.375 * content coverage, rounded. */
 function healthScoreOf(attendanceRatePct, content) {
   if (attendanceRatePct === null) return null
   return Math.round(
-    0.5 * attendanceRatePct +
-    0.3 * content.coveragePct +
-    0.2 * content.varietyPct,
+    0.625 * attendanceRatePct +
+    0.375 * content.coveragePct,
   )
 }
 

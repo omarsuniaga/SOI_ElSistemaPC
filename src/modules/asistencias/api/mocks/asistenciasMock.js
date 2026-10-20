@@ -2,6 +2,7 @@ import clasesMock from '../../../../assets/data/mocks/clases.json'
 import maestrosMock from '../../../../assets/data/mocks/maestros.json'
 import alumnosMock from '../../../../assets/data/mocks/alumnos.json'
 import sesionesMock from '../../../../assets/data/mocks/sesiones.json'
+import { partitionRatings, isRatableState } from '../../services/presentRatingsService.js'
 
 // ─── MEMORY DB ───────────────────────────────────────────────────────────────
 
@@ -28,7 +29,9 @@ dbSesiones.forEach(s => {
         fecha: s.fecha,
         estado: estado,
         justificacion_texto: estado === 'justificado' ? 'Presentó justificativo médico' : null,
-        observaciones: idx % 3 === 0 ? 'Llegó con retraso pero recuperó clase.' : null
+        observaciones: idx % 3 === 0 ? 'Llegó con retraso pero recuperó clase.' : null,
+        // Demo: 0 explícito, valoraciones y «sin evaluar» (null) para ver las tres situaciones.
+        valoracion: { 0: 5, 1: 0, 2: null, 5: 3 }[idx % states.length] ?? null,
       })
 
       if (estado === 'justificado') {
@@ -129,6 +132,24 @@ export async function getSesionesPorRango({
     .map(([fecha, sesiones]) => ({ fecha, sesiones }))
 }
 
+// ─── VALORACIÓN DE CLASE (0–5) ───────────────────────────────────────────────
+
+export async function getValoracionesSesion(sesionId) {
+  return dbAsistencias
+    .filter(a => a.sesion_clase_id === sesionId)
+    .map(a => ({ id: a.id, alumno_id: a.alumno_id, estado: a.estado, valoracion: a.valoracion ?? null }))
+}
+
+export async function guardarValoracionesSesion(sesionId, items) {
+  const rows = await getValoracionesSesion(sesionId)
+  const { updates, rejected } = partitionRatings(rows, items)
+  for (const u of updates) {
+    const idx = dbAsistencias.findIndex(a => a.id === u.id)
+    if (idx >= 0) dbAsistencias[idx] = { ...dbAsistencias[idx], valoracion: u.valoracion }
+  }
+  return { saved: updates.map(u => u.alumno_id), rejected }
+}
+
 // ─── DETALLE SESIÓN ──────────────────────────────────────────────────────────
 
 export async function getDetalleSesion(sesionId) {
@@ -169,8 +190,10 @@ export async function getDetalleSesion(sesionId) {
         alumnoId: a.alumno_id,
         alumnoNombre: studentInfo.nombre_completo ?? 'Estudiante Mock',
         justificacion: justif ?? null,
+        valoracion: a.valoracion ?? null,
       }
     }),
+    valoracionesDisponibles: true,
     observaciones: observaciones.map(o => {
       const studentInfo = (alumnosMock || []).find(st => st.id === o.alumno_id) || {}
       return {
@@ -277,8 +300,11 @@ export async function crearAsistencia(asistencia) {
 export async function registrarAsistenciaBulk(asistencias) {
   asistencias.forEach(a => {
     const idx = dbAsistencias.findIndex(da => da.clase_id === a.clase_id && da.alumno_id === a.alumno_id && da.fecha === a.fecha)
+    const previous = idx >= 0 ? dbAsistencias[idx] : null
+    const ratable = isRatableState(a.estado)
     const record = {
-      id: idx >= 0 ? dbAsistencias[idx].id : `mock-ast-${Date.now()}-${a.alumno_id}`,
+      id: previous ? previous.id : `mock-ast-${Date.now()}-${a.alumno_id}`,
+      valoracion: ratable ? (previous?.valoracion ?? null) : null,
       sesion_clase_id: a.sesion_clase_id,
       clase_id: a.clase_id,
       alumno_id: a.alumno_id,
@@ -400,4 +426,10 @@ export async function getReporteConsolidado({ fecha, claseId } = {}) {
     timelineByDate: timeline,
     resumenGlobal,
   }
+}
+
+export async function getClassRoster(classId) {
+  if (!clasesMock.clases.some(c => c.id === classId)) return []
+  // Same simulated enrollment used when initializing attendance above.
+  return (alumnosMock || []).slice(0, 8).map(a => ({ id: a.id, name: a.nombre_completo || a.id }))
 }

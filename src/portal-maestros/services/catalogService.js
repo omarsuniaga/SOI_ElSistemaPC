@@ -388,7 +388,13 @@ export async function getOptionsForTrigger(trigger, query = '', context = {}) {
       options = [
         { label: 'todos', value: 'todos', icon: '👥', description: 'Todos los presentes' }
       ];
-      options = options.concat(await getAlumnos(context.claseId));
+      {
+        const roster = context.getAlumnos ? context.getAlumnos() : await getAlumnos(context.claseId);
+        const presentIds = new Set((context.getPresentes?.() || []).map(a => a.id));
+        options = options.concat(roster.map(a => ({ ...a, nombre: a.nombre_completo || a.nombre || '',
+          description: presentIds.has(a.id) ? 'Presente en esta clase' : 'Alumno de esta clase',
+        })).sort((a, b) => Number(presentIds.has(b.id)) - Number(presentIds.has(a.id))));
+      }
       break;
       
     case '[': // Contenidos

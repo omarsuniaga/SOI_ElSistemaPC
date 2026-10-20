@@ -37,13 +37,25 @@ export function createPlanificationCard(container, opts) {
 
   if (planHeader) {
     if (planificacionCard && planDropdown) {
-      planificacionCard.classList.add('open')
-      planDropdown.style.display = 'block'
+      planificacionCard.classList.remove('open')
+      planDropdown.style.display = 'none'
     }
-    planHeader.onclick = () => {
+    planHeader.setAttribute('role', 'button')
+    planHeader.setAttribute('tabindex', '0')
+    planHeader.setAttribute('aria-controls', 'pm-planificacion-dropdown')
+    planHeader.setAttribute('aria-expanded', 'false')
+    planHeader.onclick = (event) => {
+      if (event.target.closest('button')) return
       const isOpen = planificacionCard.classList.toggle('open')
       planDropdown.style.display = isOpen ? 'block' : 'none'
+      planHeader.setAttribute('aria-expanded', String(isOpen))
     }
+    planHeader.onkeydown = (event) => {
+      if (event.target !== planHeader || !['Enter', ' '].includes(event.key)) return
+      event.preventDefault()
+      planHeader.click()
+    }
+    cleanups.push(() => { planHeader.onclick = null; planHeader.onkeydown = null })
   }
 
   const tabsEl = container.querySelector('.pm-planificacion-tabs-pill')
@@ -138,10 +150,7 @@ export function createPlanificationCard(container, opts) {
   async function init() {
     try {
       planificacionCard.style.display = ''
-      if (planDropdown) {
-        planificacionCard.classList.add('open')
-        planDropdown.style.display = 'block'
-      }
+      // Cargar/refrescar datos conserva la apertura elegida por el maestro.
       activeRoute = await weeklyPlanAdapter.obtenerRutaActivaPorGrupo(claseId)
 
       if (!activeRoute) {

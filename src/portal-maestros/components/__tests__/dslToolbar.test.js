@@ -1,270 +1,99 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDslToolbar } from '../dslToolbar.js'
 
-describe('dslToolbar - Improve with AI button', () => {
-  let container
-
+describe('Observation toolbar', () => {
+  let container, toolbar
+  function mount(options = {}) {
+    toolbar = createDslToolbar(container, {
+      onInsert: vi.fn(), getEditorContent: () => 'Escala de Sol', ...options,
+    })
+    return toolbar
+  }
   beforeEach(() => {
     container = document.createElement('div')
     document.body.appendChild(container)
   })
-
   afterEach(() => {
-    if (container && container.parentNode) {
-      container.parentNode.removeChild(container)
-    }
+    toolbar?.destroy()
+    container.remove()
+    document.getElementById('pm-toolbar-help-modal')?.remove()
   })
 
-  it('should have "✨ Mejorar con IA" button', () => {
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-    })
-
-    const informeBtn = container.querySelector('#btn-generar-informe')
-    expect(informeBtn).toBeTruthy()
-    expect(informeBtn.textContent).toContain('📋')
-    expect(informeBtn.getAttribute('title')).toContain('informe')
+  it('keeps four token tools and removes the three crossed-out controls', () => {
+    mount()
+    expect([...container.querySelectorAll('[data-token]')].map(b => b.dataset.token))
+      .toEqual(['alumno', 'contenido', 'sugerencia', 'tarea'])
+    expect(container.querySelector('[data-token="medida"]')).toBeNull()
+    expect(container.querySelector('[data-token="objetivo"]')).toBeNull()
+    expect(container.querySelector('#btn-snippets')).toBeNull()
+    expect(container.querySelector('#btn-generar-informe')).toBeNull()
   })
 
-  it('should call onImproveClick callback when button is clicked', () => {
-    const onImproveClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => 'some text'),
-      onImproveClick,
-    })
-
-    const informeBtn = container.querySelector('#btn-generar-informe')
-    informeBtn.click()
-    expect(onImproveClick).toHaveBeenCalledTimes(1)
-    expect(onImproveClick).toHaveBeenCalledWith('some text')
+  it.each([
+    ['alumno', '#', '#'], ['contenido', '[]', '['],
+    ['sugerencia', '()', '('], ['tarea', '{}', '{'],
+  ])('preserves token insertion for %s', (token, text, trigger) => {
+    const onInsert = vi.fn()
+    mount({ onInsert })
+    container.querySelector('[data-token="' + token + '"]').click()
+    expect(onInsert).toHaveBeenCalledWith(text, 1, trigger)
   })
 
-  it('should disable button while processing', () => {
-    const onImproveClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => 'text'),
-      onImproveClick,
-    })
-
-    const informeBtn = container.querySelector('#btn-generar-informe')
-
-    // Simulate button disabled state during processing
-    informeBtn.disabled = true
-    expect(informeBtn.disabled).toBe(true)
-
-    informeBtn.disabled = false
-    expect(informeBtn.disabled).toBe(false)
+  it('uses a compact AI label and an accessible full name', () => {
+    mount()
+    const button = container.querySelector('#btn-analizar-progreso')
+    expect(button.textContent).toBe('✨ IA')
+    expect(button.getAttribute('aria-label')).toBe('Analizar con IA')
+    expect(container.querySelector('.pm-dsl-toolbar').lastElementChild.id)
+      .toBe('btn-dictar-observacion')
   })
 
-  it('should not call onImproveClick when editor is empty', () => {
-    const onImproveClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-      onImproveClick,
-    })
-
-    const informeBtn = container.querySelector('#btn-generar-informe')
-    informeBtn.click()
-
-    // Should not call handler for empty text
-    expect(onImproveClick).not.toHaveBeenCalled()
+  it('awaits analysis and restores the compact label after failure', async () => {
+    let reject
+    const onAnalyzeClick = vi.fn(() => new Promise((resolve, fail) => { reject = fail }))
+    mount({ onAnalyzeClick })
+    const button = container.querySelector('#btn-analizar-progreso')
+    button.click()
+    expect(onAnalyzeClick).toHaveBeenCalledWith('Escala de Sol')
+    expect(button.disabled).toBe(true)
+    reject(new Error('offline'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(button.disabled).toBe(false)
+    expect(button.textContent).toBe('✨ IA')
+    expect(button.getAttribute('aria-busy')).toBe('false')
   })
 
-  it('should pass editor content to onImproveClick', () => {
-    const content = 'This is test content that needs improvement'
-    const onImproveClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => content),
-      onImproveClick,
-    })
-
-    const informeBtn = container.querySelector('#btn-generar-informe')
-    informeBtn.click()
-
-    expect(onImproveClick).toHaveBeenCalledWith(content)
-  })
-})
-
-describe('dslToolbar - Estructura con IA button', () => {
-  let container
-
-  beforeEach(() => {
-    container = document.createElement('div')
-    document.body.appendChild(container)
+  it('does not analyze an empty observation', () => {
+    const onAnalyzeClick = vi.fn()
+    mount({ getEditorContent: () => ' ', onAnalyzeClick })
+    container.querySelector('#btn-analizar-progreso').click()
+    expect(onAnalyzeClick).not.toHaveBeenCalled()
   })
 
-  afterEach(() => {
-    if (container && container.parentNode) {
-      container.parentNode.removeChild(container)
-    }
-  })
-
-  it('should have "🚀 Estructurar con IA" button', () => {
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-    })
-
-    const structureBtn = container.querySelector('#btn-ia-magic')
-    expect(structureBtn).toBeTruthy()
-    expect(structureBtn.textContent).toContain('🚀')
-    expect(structureBtn.getAttribute('title')).toContain('Estructurar')
-  })
-
-  it('should call onStructureClick callback when button is clicked', () => {
+  it('keeps the structure action connected to the current text', () => {
     const onStructureClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => 'María no entendió bien los acordes'),
-      onStructureClick,
-    })
-
-    const structureBtn = container.querySelector('#btn-ia-magic')
-    structureBtn.click()
-
-    expect(onStructureClick).toHaveBeenCalledTimes(1)
-    expect(onStructureClick).toHaveBeenCalledWith('María no entendió bien los acordes')
+    mount({ onStructureClick })
+    container.querySelector('#btn-ia-magic').click()
+    expect(onStructureClick).toHaveBeenCalledWith('Escala de Sol')
   })
 
-  it('should not call onStructureClick when editor is empty', () => {
-    const onStructureClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-      onStructureClick,
-    })
-
-    const structureBtn = container.querySelector('#btn-ia-magic')
-    structureBtn.click()
-
-    expect(onStructureClick).not.toHaveBeenCalled()
-  })
-
-  it('should disable button while processing', () => {
-    const onStructureClick = vi.fn()
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => 'text'),
-      onStructureClick,
-    })
-
-    const structureBtn = container.querySelector('#btn-ia-magic')
-
-    // Simulate button disabled state during processing
-    structureBtn.disabled = true
-    expect(structureBtn.disabled).toBe(true)
-
-    structureBtn.disabled = false
-    expect(structureBtn.disabled).toBe(false)
-  })
-})
-
-describe('dslToolbar - Help button', () => {
-  let container
-
-  beforeEach(() => {
-    container = document.createElement('div')
-    document.body.appendChild(container)
-  })
-
-  afterEach(() => {
-    if (container && container.parentNode) {
-      container.parentNode.removeChild(container)
-    }
-    // Clean up modal if created
-    const modal = document.getElementById('pm-toolbar-help-modal')
-    if (modal && modal.parentNode) {
-      modal.parentNode.removeChild(modal)
-    }
-  })
-
-  it('should have "❓ Ayuda" help button', () => {
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-    })
-
-    const helpBtn = container.querySelector('#btn-help')
-    expect(helpBtn).toBeTruthy()
-    expect(helpBtn.textContent).toContain('❓')
-    expect(helpBtn.getAttribute('title')).toContain('Ayuda')
-  })
-
-  it('should open help modal when button is clicked', () => {
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-    })
-
-    const helpBtn = container.querySelector('#btn-help')
-    helpBtn.click()
-
-    const modal = document.getElementById('pm-toolbar-help-modal')
-    expect(modal).toBeTruthy()
-    expect(modal.classList.contains('open')).toBe(true)
-  })
-
-  it('should display help cards for all toolbar tools', () => {
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-    })
-
-    const helpBtn = container.querySelector('#btn-help')
-    helpBtn.click()
-
-    const modal = document.getElementById('pm-toolbar-help-modal')
-    const helpCards = modal.querySelectorAll('.pm-help-card')
-
-    // Should have 8 help cards (one for each tool)
-    expect(helpCards.length).toBe(8)
-  })
-
-  it('should close help modal when close button is clicked', () => {
-    createDslToolbar(container, {
-      onInsert: vi.fn(),
-      onLoading: vi.fn(),
-      onIaProposal: vi.fn(),
-      getEditorContent: vi.fn(() => ''),
-    })
-
-    const helpBtn = container.querySelector('#btn-help')
-    helpBtn.click()
-
+  it('opens updated help with dictation instructions', () => {
+    mount()
+    container.querySelector('#btn-help').click()
     const modal = document.getElementById('pm-toolbar-help-modal')
     expect(modal.classList.contains('open')).toBe(true)
-
-    const closeBtn = modal.querySelector('#pm-help-close')
-    closeBtn.click()
+    expect(modal.textContent).toContain('Dictar observación')
+    expect(modal.textContent).not.toContain('Mejorar Texto')
+    modal.querySelector('#pm-help-close').click()
     expect(modal.classList.contains('open')).toBe(false)
+  })
+
+  it('releases toolbar callbacks on destruction', () => {
+    const onInsert = vi.fn()
+    mount({ onInsert })
+    toolbar.destroy()
+    container.querySelector('[data-token="alumno"]').click()
+    expect(onInsert).not.toHaveBeenCalled()
   })
 })

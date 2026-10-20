@@ -74,3 +74,12 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
   (parcial), `seguimiento-ausentes` (0/muchas). `soi-event-spine` necesita
   reconciliación contra prod antes de convertirse en tarea tomable (ver
   `openspec/TRIAGE.md`).
+
+| `class-history-report` | Informe individual e historial de clase | en_revision | alta | Codex / 7c4d3317573e | `feat/class-history-report` | `docs/planning/CLASS_HISTORY_REPORT.md` | Autorizado por Omar; 247 pruebas + 105 focalizadas, build/tipos aprobados; revisión visual pendiente; lane liberado | 2026-10-20 |
+| `class-present-ratings` | Evaluar presentes (0–5) en asistencia del portal e informe de clase | en_revision | alta | Claude Code / session_01D1nsfKJMXGVzFYWdGmPZfP | `feat/class-history-report` | `docs/planning/CLASS_HISTORY_REPORT.md` | Migración pendiente de aplicar; sin fusionar ni desplegar | 2026-10-20 |
+
+| `observations-toolbar-dictation` | Simplificar barra de observaciones y añadir dictado según imagen de Omar | en_revision | alta | Codex / observations-toolbar-20261020 | `fix/observations-toolbar-dictation` | `docs/planning/OBSERVATION_TOOLBAR_DICTATION.md` | 13 comprobaciones aisladas del dictado aprobadas; suite/build y prueba visual pendientes; lane liberado; sin producción | 2026-10-20 |
+
+| `assisted-lesson-review` | Mejorar etiquetas, revisar destinatarios y evaluar presentes; planificación contraída | en_revision | alta | Codex / lesson-review-20261020 | `fix/observations-toolbar-dictation` | `docs/planning/ASSISTED_LESSON_REVIEW.md` | Implementado para revisión; pruebas CI pendientes; columnas de valoración ausentes confirmadas con lectura de esquema; sin nueva migración ni producción; lane liberado | 2026-10-20 |
+
+| `ratings-schema-missing-fix` | Corregir valoraciones sin migración aplicada y manejar indisponibilidad | en_revision | alta | Codex / rating-schema-20261020 | `fix/observations-toolbar-dictation` | `docs/planning/ASSISTED_LESSON_REVIEW.md` | Migración 20261020170631 aplicada; regresión reproducida/corregida; pruebas SQL con rollback aprobadas; CI pendiente; lane liberado; frontend sin fusionar | 2026-10-20 |

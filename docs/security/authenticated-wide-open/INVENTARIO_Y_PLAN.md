@@ -70,3 +70,12 @@ Ninguno está aplicado en producción; todos esperan autorización del titular.
 | 2, 3, 4 (documentos y planificación), 6 | 27 | — | pendientes |
 
 Versiones de migración reservadas: `20261020120000` (bloque 1), `20261020130000` (grupo 1 de funciones `SECURITY DEFINER` de `anon`, rama `secdef-anon-audit`), `20261020131000` (bloque 5), `20261020132000` (cierre de las dos funciones).
+
+## 6. Aplicación en producción (20-oct-2026, con autorización expresa del titular)
+
+| Migración del repo | Ledger de producción | Validación (solo lectura) |
+|---|---|---|
+| `20261020131000` bloque 5 | `20261020175213 restrict_authenticated_write_catalogs_config_block5` | 9 tablas con RLS activo; `anon` sin ningún privilegio; 20 políticas = lista blanca; `authenticated` con los privilegios exactos esperados; ninguna política permisiva de escritura incondicional |
+| `20261020132000` cierre de dos funciones | ledger: `close_secdef_email_departamento_and_instrument_report` | `fn_email_departamento`: solo `service_role`; `fn_reportar_instrumento_danado`: `authenticated` con guarda; `_impl` sin `EXECUTE`; hash del cuerpo original idéntico al capturado antes (`806ddf72…`) |
+
+Antes de aplicar se comprobó que el estado de producción coincidía con la captura (15 políticas, 9 ACL, funciones sin cambios). **Respaldo:** no se pudo verificar desde la sesión; ambas migraciones solo tocan políticas, privilegios y funciones (ninguna fila), y el rollback es exacto. **Pendiente:** pruebas manuales por rol, revisión de logs durante 30 minutos tras aplicar y comprobar el secreto `SUPABASE_SERVICE_ROLE_KEY` de `send-email`.

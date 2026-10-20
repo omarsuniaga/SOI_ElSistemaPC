@@ -7,9 +7,12 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   let phase = 'idle'
   let disposed = false
   let stopRequested = false
-  let restarts = 0
+  let fastFailures = 0
   let receivedText = false
-  const MAX_AUTO_RESTARTS = 20
+  // Sin límite de tiempo: solo se frena si el motor falla en bucle (sesiones que mueren al instante).
+  const MAX_FAST_FAILURES = 5
+  const FAST_FAILURE_MS = 1500
+  let sessionStartedAt = 0
   let permission = 'unknown'
   let requesting = false
   let permissionStatus = null
@@ -96,7 +99,7 @@ export function createObservationDictation(button, status, { onInsert, getEditor
 
     if (requesting) return
     stopRequested = false
-    restarts = 0
+    fastFailures = 0
     receivedText = false
     phase = 'starting'
     render()
@@ -157,6 +160,8 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       }
       current.onerror = (event) => {
         if (recognition !== current) return
+        // Silencio prolongado: el navegador cierra la sesión; onend la reinicia.
+        if (event.error === 'no-speech' && !stopRequested) return
         const messages = {
           'not-allowed': 'Permite el acceso al micrófono en tu navegador para dictar.',
           'service-not-allowed': 'El navegador no permite el dictado. Puedes usar el micrófono del teclado.',
@@ -174,8 +179,8 @@ export function createObservationDictation(button, status, { onInsert, getEditor
         current.onstart = current.onresult = current.onerror = current.onend = null
         // El navegador corta la escucha continua tras unos segundos de silencio:
         // seguimos escuchando hasta que el usuario pulse el micrófono.
-        if (!stopRequested && !disposed && !document.hidden && restarts < MAX_AUTO_RESTARTS) {
-          restarts++
+        fastFailures = Date.now() - sessionStartedAt < FAST_FAILURE_MS ? fastFailures + 1 : 0
+        if (!stopRequested && !disposed && !document.hidden && fastFailures < MAX_FAST_FAILURES) {
           startSession()
           return
         }
@@ -183,6 +188,7 @@ export function createObservationDictation(button, status, { onInsert, getEditor
         render()
         show(receivedText ? 'Dictado añadido. Puedes corregir el texto.' : 'Dictado terminado sin texto.')
       }
+      sessionStartedAt = Date.now()
       current.start()
     } catch {
       release()

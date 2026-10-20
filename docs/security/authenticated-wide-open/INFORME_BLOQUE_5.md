@@ -1,7 +1,7 @@
 # Informe — Bloque 5: catálogos y configuración abiertos a cualquier cuenta autenticada
 
 **Fecha:** 20 de octubre de 2026 · **Rama:** `claude/bloque5-catalogos-e2b160` (parte de `claude/authenticated-wide-open-tables-8c6153`, bloque 1)
-**Migración:** `20261020130000_restrict_authenticated_write_catalogs_config_block5.sql` · **Estado:** nada aplicado en producción, nada fusionado. Producción solo se consultó en lectura (`pg_catalog`, agregados, estadísticas).
+**Migración:** `20261020131000_restrict_authenticated_write_catalogs_config_block5.sql` · **Estado:** nada aplicado en producción, nada fusionado. Producción solo se consultó en lectura (`pg_catalog`, agregados, estadísticas).
 
 ## Veredicto: APTO CON CONDICIONES
 
@@ -82,8 +82,8 @@ Línea base: subconjunto de producción anterior + migración ya aplicada de las
 
 | # | Hallazgo | Severidad |
 |---|---|---|
-| L1 | `fn_email_departamento(text)` es `SECURITY DEFINER` y **ejecutable por `anon`**: cualquiera sin sesión obtiene el correo de un departamento dado su código. Cerrar RLS no la afecta. | Media |
-| L2 | `fn_reportar_instrumento_danado(...)` es `SECURITY DEFINER`, ejecutable por cualquier cuenta autenticada y **sin comprobación de rol** en su cuerpo: marca cualquier instrumento como dañado y crea cinco tareas (LUT/LOG/FIN/ACM/COM). Mismo patrón que R2 del bloque 1. | Alta |
+| L1 | `fn_email_departamento(text)` es `SECURITY DEFINER` y **ejecutable por `anon`**: cualquiera sin sesión obtiene el correo de un departamento dado su código. Cerrar RLS no la afecta. | Media. **Cerrado** en `20261020132000` (ver [CIERRE_FUNCIONES_EMAIL_INSTRUMENTO](./CIERRE_FUNCIONES_EMAIL_INSTRUMENTO.md)). |
+| L2 | `fn_reportar_instrumento_danado(...)` es `SECURITY DEFINER`, ejecutable por cualquier cuenta autenticada y **sin comprobación de rol** en su cuerpo: marca cualquier instrumento como dañado y crea cinco tareas (LUT/LOG/FIN/ACM/COM). Mismo patrón que R2 del bloque 1. | Alta. **Cerrado** en `20261020132000`. |
 | L3 | `es_admin()` incluye el rol `inventarista`, que `profiles_rol_check` no permite: rama muerta, pero el rol existiría si se ampliara la restricción. Este bloque usa `soi_security.has_role`, que no lo incluye. | Informativo |
 | L4 | `fn_sincronizar_arbol_curricular` es ejecutable por `anon` pero su guarda (`es_admin()` o maestro de la clase) lo detiene (visto en su cuerpo; no se auditó el resto de la función). | Informativo |
 

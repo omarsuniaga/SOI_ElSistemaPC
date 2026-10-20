@@ -57,3 +57,16 @@ Cada bloque repite el método: subconjunto de esquema capturado en solo lectura,
 | L4 | `generate_pending_class_notifications()` es `SECURITY INVOKER` y ejecutable por `anon`/`authenticated` por RPC; solo el cron (dueño) la ejecuta con éxito tras este cambio. | Baja |
 | L5 | Los 5/6 `admin` y los maestros con `profiles.activo=false`: tratados como en la migración anterior (`maestro_actual()`). | Informativo |
 | L6 | `on_notification_inserted` incluye la clave publicable en el cuerpo de la función. Es la clave pública (anon), pero conviene moverla a configuración. | Baja |
+
+## 5. Estado de los bloques (actualizado el 20-oct-2026)
+
+Ninguno está aplicado en producción; todos esperan autorización del titular.
+
+| Bloque | Tablas | Rama / migración | Estado |
+|---|---|---|---|
+| 1 — datos de alumnos | 11 | `claude/authenticated-wide-open-tables-8c6153` · `20261020120000` | listo (APTO CON CONDICIONES), sin aplicar |
+| 5 — catálogos y configuración | 9 (`departamentos`, `instrumentos`, `niveles`, `modulos`, `unidades`, `ejercicios`, `configuracion_recordatorios`, `seguimiento_reglas`, `soi_process_contracts`) | `claude/bloque5-catalogos-e2b160` · `20261020131000` | listo (APTO CON CONDICIONES), sin aplicar. Ver [INFORME](./INFORME_BLOQUE_5.md) y [RUNBOOK](./RUNBOOK_BLOQUE_5.md) |
+| Funciones `fn_email_departamento` / `fn_reportar_instrumento_danado` | — | misma rama · `20261020132000` | listo, sin aplicar. Ver [CIERRE](./CIERRE_FUNCIONES_EMAIL_INSTRUMENTO.md) |
+| 2, 3, 4 (documentos y planificación), 6 | 27 | — | pendientes |
+
+Versiones de migración reservadas: `20261020120000` (bloque 1), `20261020130000` (grupo 1 de funciones `SECURITY DEFINER` de `anon`, rama `secdef-anon-audit`), `20261020131000` (bloque 5), `20261020132000` (cierre de las dos funciones).

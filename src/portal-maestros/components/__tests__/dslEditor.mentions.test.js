@@ -55,6 +55,14 @@ describe('Student mention insertion', () => {
     mocks.visible = false
   }
 
+  it('merges later context updates instead of dropping the roster', async () => {
+    component.setContext({ claseId: 'clase-1' })
+    await choose(roster[0])
+    const context = mocks.options.mock.calls.at(-1)[2]
+    expect(context.claseId).toBe('clase-1')
+    expect(context.getAlumnos()).toBe(roster)
+  })
+
   it('reproduces the screenshot: two selected students become two independent chips in insertion order', async () => {
     await choose(roster[0])
     await choose(roster[1])

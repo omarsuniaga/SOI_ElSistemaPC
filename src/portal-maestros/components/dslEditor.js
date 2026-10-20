@@ -484,7 +484,8 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       _applyHighlight()
     },
     setContext: (context) => {
-      _context = context
+      // Fusionar: una actualización parcial (p. ej. solo claseId) no debe borrar la nómina.
+      _context = { ..._context, ...context }
       _applyHighlight()
     },
   }

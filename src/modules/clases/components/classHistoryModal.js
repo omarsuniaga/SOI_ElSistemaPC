@@ -2,7 +2,7 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { escapeHTML } from '../utils/clasesUtils.js'
 import { getReporteConsolidado, getPeriodos, getClassRoster, getDetalleSesion } from '../../asistencias/api/asistenciasApi.js'
-import { buildClassHistory, buildStudentClassHistory, defaultClassHistoryRange } from '../../asistencias/services/classHistoryService.js'
+import { buildClassHistory, buildStudentClassHistory, defaultClassHistoryRange, findStudentMention } from '../../asistencias/services/classHistoryService.js'
 import { downloadClassHistoryPdf } from '../../asistencias/services/classHistoryPdfService.js'
 import { generateClassNarratives } from '../../asistencias/services/classHealthNarrativeService.js'
 import { config } from '../../../core/config/config.js'
@@ -32,6 +32,14 @@ export async function openClassHistoryModal(classInfo) {
     }
     enrich(report)
     let generation = 0
+    const renderContent = (record, student) => {
+      const text = record.content || 'Sin contenido registrado'
+      const mention = findStudentMention(text, student, report.studentHistories || [])
+      const content = mention
+        ? escapeHTML(text.slice(0, mention.start)) + '<mark>' + escapeHTML(text.slice(mention.start, mention.end)) + '</mark>' + escapeHTML(text.slice(mention.end))
+        : escapeHTML(text)
+      return `<div class="mt-2"><div class="small fw-semibold text-secondary">${mention ? 'Contenido del maestro · menciona al alumno' : 'Contenido del maestro'}</div><p class="mt-1" style="white-space:pre-wrap;line-height:1.65">${content}</p></div>${record.notes.length ? `<div class="border-start border-primary ps-3"><div class="small fw-semibold text-secondary">Comentario vinculado al alumno</div><p style="white-space:pre-wrap">${escapeHTML(record.notes.join('\n'))}</p></div>` : ''}`
+    }
     const draw = body => {
       body.querySelector('[data-history-results]').innerHTML = `
         <p>Primera clase registrada: <strong>${escapeHTML(report.firstRecorded || 'Sin registros')}</strong> · ${report.entries.length} clases registradas · ${report.students.length} alumnos únicos con registros.</p>
@@ -43,7 +51,7 @@ export async function openClassHistoryModal(classInfo) {
         <h3 class="h6">Alumnos de la clase y seguimiento individual</h3>
         <p class="small text-muted">Nómina actual y alumnos con registros en el rango. Los contenidos son grupales salvo observación individual explícita. Ausencia no demuestra deuda ni falta de dominio.</p>
         ${report.detailsIncomplete ? '<p role="status">No se pudieron cargar algunas observaciones individuales. El informe está incompleto en ese apartado.</p>' : ''}
-        ${(report.studentHistories || []).map(student => `<details class="border rounded p-2 mb-2"><summary>${escapeHTML(student.name)} · ${student.current ? 'Nómina actual' : 'Con registros históricos'}</summary>${student.records.length ? student.records.map(r => `<article class="border-top mt-2 pt-2"><strong>${escapeHTML(r.date)} · ${escapeHTML(r.state || 'Sin estado')}</strong><p>${escapeHTML(r.participation)}</p><p style="white-space:pre-wrap">Contenido grupal: ${escapeHTML(r.content || 'Sin contenido registrado')}</p><p style="white-space:pre-wrap">Observaciones individuales del maestro: ${escapeHTML(r.notes.join('\n') || 'Sin observación individual registrada')}</p></article>`).join('') : '<p>Sin evidencia individual en el rango seleccionado.</p>'}</details>`).join('')}
+        ${(report.studentHistories || []).map(student => `<details class="border rounded p-2 mb-2"><summary>${escapeHTML(student.name)} · ${student.current ? 'Nómina actual' : 'Con registros históricos'}</summary>${student.records.length ? student.records.map(r => `<article class="border-top mt-2 pt-2"><strong>${escapeHTML(r.date)} · ${escapeHTML(r.state || 'Sin estado')}</strong><p class="small text-secondary mb-2">${escapeHTML(r.participation)}</p>${renderContent(r, student)}</article>`).join('') : '<p>Sin evidencia individual en el rango seleccionado.</p>'}</details>`).join('')}
         <h3 class="h6">Contenido en bruto y evidencia de asistencia</h3>
         ${report.entries.length ? report.entries.map(e => `<details class="border rounded p-2 mb-2"><summary>${escapeHTML(e.date)} · ${escapeHTML(e.teacher)}</summary><p class="mt-2" style="white-space:pre-wrap">${escapeHTML(e.content || 'Sin contenido registrado')}</p><ul>${e.attendance.map(a => `<li>${escapeHTML(a.alumno_nombre || a.alumnoNombre || a.alumno_id || 'Alumno')}: ${escapeHTML(a.estado || 'Sin estado')}</li>`).join('')}</ul></details>`).join('') : '<p>Sin registros en el rango seleccionado.</p>'}`
     }

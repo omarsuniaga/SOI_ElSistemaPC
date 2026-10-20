@@ -40,3 +40,12 @@ it('defaults to three calendar months ending today in Santo Domingo', () => {
   expect(defaultClassHistoryRange(new Date('2026-10-20T15:00:00Z'))).toEqual({ from: '2026-07-20', to: '2026-10-20' })
   expect(defaultClassHistoryRange(new Date('2026-05-31T15:00:00Z'))).toEqual({ from: '2026-02-28', to: '2026-05-31' })
 })
+
+import { findStudentMention } from '../classHistoryService.js'
+it('finds explicit names, preserves offsets, rejects ambiguous first names and partial words', () => {
+  const a = { id: 'a', name: 'María Pérez' }
+  expect(findStudentMention('María mejoró el arco', a, [a])).toEqual({ start: 0, end: 5 })
+  expect(findStudentMention('María mejoró', a, [a, { name: 'María Díaz' }])).toBeNull()
+  expect(findStudentMention('Mariana mejoró', a, [a])).toBeNull()
+  expect(findStudentMention('MARIA PEREZ mejoró', a, [a, { name: 'María Díaz' }])).toEqual({ start: 0, end: 11 })
+})

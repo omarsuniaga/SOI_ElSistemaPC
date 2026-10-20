@@ -64,3 +64,27 @@ export function defaultClassHistoryRange(now = new Date()) {
   target.setUTCDate(Math.min(day, lastDay))
   return { from: target.toISOString().slice(0, 10), to }
 }
+
+/** Literal, unambiguous name mention; does not infer an individual assessment. */
+export function findStudentMention(text, student, roster = []) {
+  const normalize = value => String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  const name = String(student.name || '').trim()
+  const full = normalize(name)
+  if (!full) return null
+  const words = full.split(/\s+/)
+  const first = words[0]
+  const candidates = [full]
+  if (first.length >= 3 && roster.filter(s => normalize(s.name).split(/\s+/)[0] === first).length === 1) candidates.push(first)
+  const original = String(text || '')
+  // Scan original word sequences to preserve exact spelling and markup offsets.
+  for (const candidate of candidates) {
+    const tokens = [...original.matchAll(/[\p{L}\p{M}]+/gu)]
+    const size = candidate.split(/\s+/).length
+    for (let i = 0; i <= tokens.length - size; i++) {
+      const start = tokens[i].index
+      const end = tokens[i + size - 1].index + tokens[i + size - 1][0].length
+      if (normalize(original.slice(start, end)).replace(/\s+/g, ' ') === candidate) return { start, end }
+    }
+  }
+  return null
+}

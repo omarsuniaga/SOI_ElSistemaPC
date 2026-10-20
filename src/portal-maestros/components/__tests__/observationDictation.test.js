@@ -82,6 +82,27 @@ describe('Observation dictation', () => {
     expect(button.getAttribute('aria-pressed')).toBe('false')
   })
 
+  it('keeps listening through no-speech silence and many restarts', () => {
+    vi.useFakeTimers()
+    button.click()
+    for (let i = 0; i < 30; i++) {
+      instances[i].onstart()
+      vi.advanceTimersByTime(8000)
+      instances[i].onerror({ error: 'no-speech' })
+      instances[i].onend()
+    }
+    expect(instances).toHaveLength(31)
+    expect(button.getAttribute('aria-pressed')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  it('gives up if the engine dies instantly in a loop', () => {
+    button.click()
+    for (let i = 0; i < 10 && instances[i]; i++) instances[i].onend()
+    expect(instances.length).toBeLessThan(10)
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+  })
+
   it('does not restart after an error', () => {
     button.click()
     instances[0].onerror({ error: 'not-allowed' })

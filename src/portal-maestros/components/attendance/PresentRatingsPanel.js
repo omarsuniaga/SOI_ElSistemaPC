@@ -99,10 +99,21 @@ export function createPresentRatingsPanel(opts) {
 
     const body = `
       <p class="small mb-2">Elige de 0 a ${RATING_MAX} estrellas para cada alumno presente. <strong>«Sin evaluar» no es 0</strong>: significa que aún no valoraste a ese alumno.</p>
+      <p class="small" data-pr-coverage role="status"></p>
+      ${opts.getContent ? `<details><summary>Contenido de esta clase</summary><p style="white-space:pre-wrap">${escHTML(opts.getContent())}</p></details>` : ''}
+      <p class="small">Valora el desempeño respecto al contenido trabajado. Si no tienes evidencia, deja «Sin evaluar».</p>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <label><input type="checkbox" data-pr-all> Seleccionar presentes</label>
+        <select data-pr-bulk-value class="form-select form-select-sm" style="width:auto" aria-label="Valoración para los seleccionados">
+          <option value="">Sin evaluar</option>
+          ${[0, 1, 2, 3, 4, 5].map(n => `<option value="${n}">${n}★</option>`).join('')}
+        </select>
+        <button type="button" data-pr-apply class="pm-pr-btn">Aplicar a seleccionados</button>
+      </div>
       <div data-pr-list>
         ${present.map((a) => `
           <div class="pm-pr-row" data-student-id="${escHTML(a.id)}" data-disabled="${savable.has(a.id) ? 'false' : 'true'}">
-            <div class="pm-pr-name">${escHTML(nameOf(a))}</div>
+            <div class="pm-pr-name"><label><input type="checkbox" data-pr-selected value="${escHTML(a.id)}"${savable.has(a.id) ? '' : ' disabled'}> ${escHTML(nameOf(a))}</label></div>
             <div class="pm-pr-status" data-pr-status role="status" aria-live="polite"></div>
             ${scale(a)}
           </div>`).join('')}
@@ -111,6 +122,11 @@ export function createPresentRatingsPanel(opts) {
     `
 
     const paint = (root) => {
+      const coverage = root.querySelector('[data-pr-coverage]')
+      if (coverage) {
+        const missing = present.filter(a => current.get(a.id) == null).length
+        coverage.textContent = `${present.length - missing}/${present.length} evaluados · ${missing} sin evaluar`
+      }
       root.querySelectorAll('.pm-pr-row').forEach((row) => {
         const id = row.dataset.studentId
         const value = current.get(id)
@@ -135,6 +151,14 @@ export function createPresentRatingsPanel(opts) {
       body,
       onShow: (root) => {
         paint(root)
+        root.querySelector('[data-pr-all]').addEventListener('change', (event) => {
+          root.querySelectorAll('[data-pr-selected]:not(:disabled)').forEach(input => { input.checked = event.target.checked })
+        })
+        root.querySelector('[data-pr-apply]').addEventListener('click', () => {
+          const value = normalizeRating(root.querySelector('[data-pr-bulk-value]').value)
+          root.querySelectorAll('[data-pr-selected]:checked:not(:disabled)').forEach(input => current.set(input.value, value))
+          paint(root)
+        })
         root.querySelector('[data-pr-list]').addEventListener('click', (e) => {
           const btn = e.target.closest('[data-rate]')
           if (!btn || btn.disabled) return
@@ -145,7 +169,7 @@ export function createPresentRatingsPanel(opts) {
       },
       onSave: async (root) => {
         const items = present
-          .filter((a) => savable.has(a.id) && current.get(a.id) !== (saved.get(a.id) ?? null))
+          .filter((a) => savable.has(a.id) && isRatableState(opts.getEstado()?.[a.id]) && current.get(a.id) !== (saved.get(a.id) ?? null))
           .map((a) => ({ alumno_id: a.id, valoracion: current.get(a.id) }))
         if (items.length === 0) {
           AppToast.info('No hay cambios que guardar.')

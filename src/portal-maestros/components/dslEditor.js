@@ -7,12 +7,12 @@ import autocompletePopup, {
 import * as catalogService from '../services/catalogService.js'
 
 const DSL_PLACEHOLDER_HTML = `
-  <div class="pm-dsl-placeholder-title">✨ Escriba lo que pasó en clase con sus propias palabras</div>
+  <div class="pm-dsl-placeholder-title">Registra qué trabajaron y cómo les fue</div>
   <div class="pm-dsl-placeholder-example" style="font-style:italic;color:var(--pm-text-muted,#888);font-size:0.85rem;margin-bottom:6px">
     "Yereni y Santa avanzaron muy bien hoy con el cambio de posición. Santiago necesita practicar más el arco."
   </div>
   <div class="pm-dsl-placeholder-guide">
-    Presione <strong>✨ Analizar con IA</strong> y el sistema extraerá los avances automáticamente. · O use los tokens de la barra si prefiere escribir directo: # alumno · [] contenido · {} tarea
+    Escribe o dicta con el micrófono. <strong>✨ IA</strong> propone una redacción para revisar y te ayuda a confirmar para quién es. Usa <strong># alumno · [] contenido · () reforzar · {} tarea</strong>. Después valora a los presentes; la IA no pone estrellas por ti.
   </div>
 `
 

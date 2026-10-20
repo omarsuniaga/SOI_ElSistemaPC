@@ -132,3 +132,27 @@ describe('PresentRatingsPanel', () => {
     expect(mocks.open.mock.calls.at(-1)[0].body).not.toContain('<img')
   })
 })
+
+
+describe('PresentRatingsPanel bulk review', () => {
+  beforeEach(() => { vi.clearAllMocks(); document.body.innerHTML = '' })
+  it('applies only to explicitly selected present students, then permits individual correction', async () => {
+    const ctx = setup()
+    const { root, options } = await openPanel(ctx)
+    root.querySelector('[data-pr-selected][value="e"]').checked = true
+    root.querySelector('[data-pr-bulk-value]').value = '3'
+    root.querySelector('[data-pr-apply]').click()
+    expect(checked(root, 'a')).toBe('4')
+    expect(checked(root, 'e')).toBe('3')
+    pick(root, 'e', 0)
+    await options.onSave(root)
+    expect(ctx.saveRatings).toHaveBeenCalledWith('ses', [{ alumno_id: 'e', valoracion: 0 }])
+  })
+  it('reports missing evaluations and does not fill them by default', async () => {
+    const { root } = await openPanel(setup())
+    expect(root.querySelector('[data-pr-coverage]').textContent).toBe('1/2 evaluados · 1 sin evaluar')
+    root.querySelector('[data-pr-bulk-value]').value = '5'
+    root.querySelector('[data-pr-apply]').click()
+    expect(checked(root, 'e')).toBe('')
+  })
+})

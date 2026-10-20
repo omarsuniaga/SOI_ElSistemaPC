@@ -30,8 +30,8 @@ describe('Observation toolbar', () => {
   })
 
   it.each([
-    ['alumno', '#', '#'], ['contenido', '[]', null],
-    ['sugerencia', '()', null], ['tarea', '{}', null],
+    ['alumno', '#', '#'], ['contenido', '[]', '['],
+    ['sugerencia', '()', '('], ['tarea', '{}', '{'],
   ])('preserves token insertion for %s', (token, text, trigger) => {
     const onInsert = vi.fn()
     mount({ onInsert })

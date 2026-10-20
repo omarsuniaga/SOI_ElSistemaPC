@@ -6,17 +6,17 @@ export function createDslToolbar(container, { onInsert, getEditorContent, onStru
   let destroyed = false
   let context = {}
   const tools = [
-    { token: 'alumno', label: '#', title: 'Etiquetar alumno', text: '#', trigger: '#' },
-    { token: 'contenido', label: '[ ]', title: 'Contenido de clase', text: '[]' },
-    { token: 'sugerencia', label: '( )', title: 'Sugerencia pedagógica', text: '()' },
-    { token: 'tarea', label: '{ }', title: 'Tarea / Asignación', text: '{}' },
+    { token: 'alumno', label: '#', name: 'Alumno', title: 'Etiquetar alumno', text: '#', trigger: '#' },
+    { token: 'contenido', label: '[ ]', name: 'Contenido', title: 'Contenido de clase', text: '[]', trigger: '[' },
+    { token: 'sugerencia', label: '( )', name: 'Reforzar', title: 'Sugerencia pedagógica', text: '()', trigger: '(' },
+    { token: 'tarea', label: '{ }', name: 'Tarea', title: 'Tarea / Asignación', text: '{}', trigger: '{' },
   ]
 
   container.innerHTML = `
     <div class="pm-dsl-toolbar" role="group" aria-label="Herramientas de observaciones">
       ${tools.map(tool => `
         <button type="button" class="pm-dsl-tool-btn" data-token="${tool.token}" title="${tool.title}" aria-label="${tool.title}">
-          <span class="pm-dsl-tool-symbol" aria-hidden="true">${tool.label}</span>
+          <span class="pm-dsl-tool-symbol" aria-hidden="true">${tool.label}</span><span class="pm-dsl-tool-text">${tool.name}</span>
         </button>
       `).join('')}
       <div class="pm-dsl-divider" aria-hidden="true"></div>
@@ -80,6 +80,8 @@ export function createDslToolbar(container, { onInsert, getEditorContent, onStru
         font-size: 0.75rem;
         padding: 0 0.4rem;
       }
+      .pm-dsl-tool-text { font-size:0.72rem; margin-left:.3rem; }
+      .pm-dsl-toolbar { flex-wrap:wrap; }
       .pm-dsl-tool-symbol { font-family: ui-monospace, monospace; font-weight: 800; }
       .pm-dsl-divider { flex: 0 0 1px; background: var(--pm-border); height: 20px; }
       .pm-dsl-dictation { margin-left: auto; }
@@ -89,6 +91,7 @@ export function createDslToolbar(container, { onInsert, getEditorContent, onStru
         background: rgba(220, 53, 69, 0.1);
       }
       .pm-dsl-dictation-status { margin: 0.35rem 0; color: var(--pm-text-muted); font-size: 0.8rem; }
+      @media (max-width: 600px) { .pm-dsl-tool-text { display:none; } }
       @media (max-width: 767px) {
         .pm-dsl-toolbar { flex-wrap: wrap; }
         .pm-dsl-tool-btn.ai { flex: 0 0 auto; }

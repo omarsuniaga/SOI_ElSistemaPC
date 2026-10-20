@@ -57,7 +57,7 @@ export function buildStudentClassHistory(report, student, details = {}) {
         ratingStatus = rating === null ? 'unrated' : 'rated'
       }
     }
-    return { date: entry.date, sessionId: entry.id, content: entry.content, state,
+    return { date: entry.date, sessionId: entry.id, content: studentLessonContent(entry.content, student, attended), state,
       rating, ratingStatus,
       ratingText: ratingStatus === 'unavailable' ? 'Valoración no disponible'
         : ratingStatus === 'not_applicable' ? 'No aplica (no asistió)' : ratingLabel(rating),
@@ -103,4 +103,16 @@ export function findStudentMention(text, student, roster = []) {
     }
   }
   return null
+}
+
+/** Las líneas etiquetadas confirmadas se muestran solo a su destinatario. */
+export function studentLessonContent(content, student, attended = true) {
+  const normalize = text => String(text || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  const prefix = normalize('#' + student.name + ' ')
+  return String(content || '').split('\n').filter(line => {
+    if (!line.trimStart().startsWith('#')) return true // histórico sin etiquetado
+    if (!attended) return false
+    const normalized = normalize(line.trimStart())
+    return normalized.startsWith(prefix) || /^#todos(?:\s|$)/i.test(line.trimStart())
+  }).map(line => line.replace(/^#todos\s*/i, '')).join('\n')
 }

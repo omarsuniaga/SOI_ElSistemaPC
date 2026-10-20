@@ -10,13 +10,72 @@ export const isLessonPresent = state => ['P', 'T', 'presente', 'tarde', 'tardanz
 export const lessonName = student => student.nombre_completo || student.nombre || student.name || ''
 const normalize = text => String(text).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
-/** Conserva literalmente el original si no se puede validar toda la respuesta. */
-export function fallbackLessonReview(original, message = '') {
-  return {
-    original, warning: message, blocks: [{
-      source: original, text: original, kind: 'contenido', scope: 'seleccionar', studentIds: [],
-    }],
+// Plegado carácter a carácter: conserva la longitud para mapear posiciones al original.
+const fold = text => Array.from(text, ch => {
+  const folded = ch.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  return folded.length === 1 ? folded : ch
+}).join('')
+const CONNECTOR = /^\s*(?:,|;|&|\/|y|e)?\s*$/
+const hasLetters = text => /[\p{L}\p{N}]/u.test(text)
+
+/**
+ * Divide el texto en las menciones explícitas `#Nombre` / `#todos`: cada alumno recibe
+ * solo su frase. Un nombre ambiguo o ajeno a la nómina no se interpreta como mención.
+ * Devuelve null si no se puede resolver ninguna mención.
+ */
+export function splitByMentions(original, roster = []) {
+  const folded = fold(original)
+  const names = new Map()
+  for (const student of roster) {
+    const key = fold(lessonName(student)).trim()
+    if (key) names.set(key, names.has(key) ? null : student.id)
   }
+  names.set('todos', 'todos')
+  const keys = [...names.keys()].sort((a, b) => b.length - a.length)
+
+  const mentions = []
+  for (let i = 0; i < folded.length; i++) {
+    if (folded[i] !== '#') continue
+    const key = keys.find(name => folded.startsWith(name, i + 1) && !/[\p{L}\p{N}]/u.test(folded[i + 1 + name.length] || ''))
+    if (!key || names.get(key) === null) continue
+    mentions.push({ start: i, end: i + 1 + key.length, id: names.get(key) })
+    i += key.length
+  }
+  if (!mentions.length) return null
+
+  // "#Ana y #Luis hicieron…" es un solo mensaje con dos destinatarios.
+  const groups = []
+  for (const mention of mentions) {
+    const last = groups.at(-1)
+    if (last && CONNECTOR.test(folded.slice(last.end, mention.start))) {
+      last.end = mention.end
+      last.ids.push(mention.id)
+    } else groups.push({ start: mention.start, end: mention.end, ids: [mention.id] })
+  }
+
+  const blocks = []
+  const leading = original.slice(0, groups[0].start).trim()
+  if (hasLetters(leading)) blocks.push({ source: leading, text: leading, kind: 'contenido', scope: 'seleccionar', studentIds: [] })
+  groups.forEach((group, i) => {
+    const stop = groups[i + 1]?.start ?? original.length
+    const source = original.slice(group.start, stop).trim()
+    const text = original.slice(group.end, stop).trim() || source
+    const everyone = group.ids.includes('todos')
+    blocks.push({
+      source, text, kind: 'observacion',
+      scope: everyone ? 'presentes' : 'seleccionar',
+      studentIds: everyone ? [] : [...new Set(group.ids)],
+    })
+  })
+  return blocks
+}
+
+/** Conserva literalmente el original si no se puede validar toda la respuesta. */
+export function fallbackLessonReview(original, message = '', roster = []) {
+  const blocks = splitByMentions(original, roster) || [{
+    source: original, text: original, kind: 'contenido', scope: 'seleccionar', studentIds: [],
+  }]
+  return { original, warning: message, blocks }
 }
 
 /** IDs fuera de nómina, evidencia inventada y texto omitido invalidan la propuesta completa. */

@@ -79,3 +79,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `class-present-ratings` | Evaluar presentes (0–5) en asistencia del portal e informe de clase | en_revision | alta | Claude Code / session_01D1nsfKJMXGVzFYWdGmPZfP | `feat/class-history-report` | `docs/planning/CLASS_HISTORY_REPORT.md` | Migración pendiente de aplicar; sin fusionar ni desplegar | 2026-10-20 |
 
 | `observations-toolbar-dictation` | Simplificar barra de observaciones y añadir dictado según imagen de Omar | en_revision | alta | Codex / observations-toolbar-20261020 | `fix/observations-toolbar-dictation` | `docs/planning/OBSERVATION_TOOLBAR_DICTATION.md` | 13 comprobaciones aisladas del dictado aprobadas; suite/build y prueba visual pendientes; lane liberado; sin producción | 2026-10-20 |
+
+| `assisted-lesson-review` | Mejorar etiquetas, revisar destinatarios y evaluar presentes; planificación contraída | en_progreso | alta | Codex / lesson-review-20261020 | `fix/observations-toolbar-dictation` | `docs/planning/ASSISTED_LESSON_REVIEW.md` | Autorizado por Omar; reutilizar dictado, proxy IA y valoraciones; sin nueva migración; sin conector Engram | 2026-10-20 |

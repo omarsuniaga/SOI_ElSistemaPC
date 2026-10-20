@@ -308,7 +308,7 @@ Orden de consumidores a migrar en F4 (según impacto): `reportService.generateDa
 | ID | Decisión | Recomendación |
 |---|---|---|
 | D1 | ¿Una fila por destinatario o registro + tabla puente? | **Una fila por destinatario** + `grupo_registro_id`: consultas de informe triviales; el grupal usa `destinatarios_ids`. |
-| D2 | Tabla canónica de indicadores para `indicador_id` (`maestro_indicadores` 31 filas, `clase_mapa_indicadores` 0, `plan_indicadores` 15, `indicator_attempts.indicator_id`). | Alinear con la spec de malla curricular antes de F2; hasta entonces `indicador_id` sin FK y con `indicador_fuente text`. |
+| D2 | Tabla canónica de indicadores para `indicador_id`. | **Resuelta (2026-10-20): `maestro_indicadores`** (31 filas, `id uuid`). `registros_sesion.indicador_id` es FK a `maestro_indicadores(id)` con `on delete set null`. Las otras candidatas (`plan_indicadores`, `clase_mapa_indicadores`, `indicator_attempts.indicator_id`) no se enlazan en F2. |
 | D3 | ¿Valoración por sesión (`asistencias.valoracion`) o por registro? | **Por sesión** (ya existe); la evaluación por indicador sigue en su flujo. |
 | D4 | Ventana de reapertura sin motivo | Mismo día. |
 | D5 | ¿Qué hacer con las 213 notas de `progresos`? | Auditar origen en F0; no alimentan informes nuevos si no fueron explícitas. |

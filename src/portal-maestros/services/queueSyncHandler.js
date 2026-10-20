@@ -9,6 +9,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { syncRpcItem } from './queueRpcHandler.js'
 
 const UNIQUE_VIOLATION = '23505'
 
@@ -43,6 +44,7 @@ async function updateExistingSesion({ clase_id, fecha, maestro_id, contenido, as
  */
 export async function syncQueueItem(item) {
   const { tabla, operacion } = item
+  if (operacion === 'rpc') return syncRpcItem(item)
   const payload = tabla === 'sesiones_clase' ? normalizeSesionPayload(item.payload) : { ...item.payload }
 
   try {

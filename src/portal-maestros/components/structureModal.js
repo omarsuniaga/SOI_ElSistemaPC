@@ -31,7 +31,7 @@ export function createStructureModal(parentContainer, { onAccept }) {
             </div>
           </div>
 
-          <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <div class="pm-structure-actions" style="display: flex; gap: 0.75rem;">
             <button class="pm-btn" id="pm-structure-reject" style="flex: 1; background: var(--pm-surface); border: 1px solid var(--pm-border);">Descartar</button>
             <button class="pm-btn pm-btn-primary" id="pm-structure-accept" style="flex: 1;">Insertar</button>
           </div>
@@ -45,15 +45,39 @@ export function createStructureModal(parentContainer, { onAccept }) {
       const style = document.createElement('style')
       style.id = 'pm-structure-modal-styles'
       style.textContent = `
+        /* El modal nunca supera el viewport: el cuerpo se desplaza y la
+           cabecera (cerrar) y los botones quedan siempre al alcance. */
         .pm-structure-content {
           max-width: 900px;
           width: 90vw;
+          display: flex;
+          flex-direction: column;
+          max-height: calc(100vh - 2rem);
+          max-height: calc(100dvh - 2rem);
         }
+
+        .pm-structure-content .pm-modal-header { flex-shrink: 0; }
 
         .pm-structure-body {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .pm-structure-text { max-height: 45vh; }
+
+        .pm-structure-actions {
+          position: sticky;
+          bottom: -1rem;
+          margin: 0 -1rem -1rem;
+          padding: 0.75rem 1rem;
+          background: var(--pm-surface);
+          border-top: 1px solid var(--pm-border);
         }
 
         .pm-structure-panels {

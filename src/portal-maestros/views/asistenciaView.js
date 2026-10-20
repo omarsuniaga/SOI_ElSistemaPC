@@ -1405,8 +1405,11 @@ function _renderVista(container, ctx) {
         padding: 0;
         background: transparent;
         display: flex;
-        flex-direction: column-reverse;
-        align-items: flex-end;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        max-width: calc(100vw - 28px);
         gap: 0.65rem;
         z-index: 1050;
         border: none;

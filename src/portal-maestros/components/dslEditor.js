@@ -1,4 +1,4 @@
-import { highlightDSL } from '../utils/dslParser.js'
+import { getAutocompleteTarget, replaceAutocompleteTarget, renderMentionMarkup, removeAdjacentMention } from './editorMentions.js'
 import autocompletePopup, {
   getCursorPosition,
   isOpen,
@@ -31,6 +31,9 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   let _value = initialContent
   let _isUpdating = false
   let _isComposing = false // blocks highlight during IME composition (mobile keyboards)
+  let _destroyed = false
+  let _autocompleteRequest = 0
+  let _activeAutocompleteTarget = null
   let _context = {} // Para pasar contexto (claseId, nivelId, etc.)
 
   container.innerHTML = `
@@ -77,7 +80,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   container.appendChild(tooltip)
 
   function _updateValue() {
-    _value = editor.innerText
+    _value = editor.innerText ?? editor.textContent ?? ''
     _updatePlaceholderVisibility()
     if (onChange) onChange(_value)
   }
@@ -105,7 +108,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     // Replacing innerHTML in a focused contenteditable changes the browser's
     // line-break nodes. After Enter that can restore the caret on the prior
     // line, so highlighting is intentionally deferred until blur.
-    if (_isComposing) return
+    if (_isComposing || _destroyed || isOpen()) return
     if (document.activeElement === editor) return
     _isUpdating = true
 
@@ -113,15 +116,15 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       // The editor has no focus here, so there is no caret to preserve.
       const savedScrollY = window.scrollY
 
-      _value = editor.innerText
-      editor.innerHTML = highlightDSL(_value)
+      _value = editor.innerText ?? editor.textContent ?? ''
+      editor.innerHTML = renderMentionMarkup(_value, _context.getAlumnos?.() || [])
 
       if (window.scrollY !== savedScrollY) {
         window.scrollTo({ top: savedScrollY, behavior: 'instant' })
       }
     } catch (err) {
       console.warn('[DSL] Error en highlight:', err)
-      _value = editor.innerText
+      _value = editor.innerText ?? editor.textContent ?? ''
     } finally {
       _isUpdating = false
     }
@@ -134,26 +137,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
    * @returns {{ trigger: string, query: string }|null}
    */
   function _detectTrigger() {
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return null
-
-    const range = sel.getRangeAt(0)
-    const preCaretRange = document.createRange()
-    preCaretRange.selectNodeContents(editor)
-    preCaretRange.setEnd(range.endContainer, range.endOffset)
-    const textBeforeCursor = preCaretRange.toString()
-
-    // Detectar último trigger (#, [, (, {, $, >)
-    const triggerMatch = textBeforeCursor.match(/([#([{$>])\s*([^([{$]*)$/)
-
-    if (triggerMatch) {
-      return {
-        trigger: triggerMatch[1],
-        query: triggerMatch[2] || '',
-      }
-    }
-
-    return null
+    return getAutocompleteTarget(editor)
   }
 
   let _savedCaretOffset = null
@@ -174,27 +158,33 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   editor.addEventListener('mouseup', _saveCaretOffset)
   editor.addEventListener('keyup', _saveCaretOffset)
   editor.addEventListener('touchend', _saveCaretOffset)
-  document.addEventListener('selectionchange', () => {
-    if (document.activeElement === editor) {
-      _saveCaretOffset()
-    }
-  })
+  function _onSelectionChange() {
+    if (document.activeElement !== editor || _destroyed) return
+    _saveCaretOffset()
+    if (_activeAutocompleteTarget && _savedCaretOffset !== _activeAutocompleteTarget.end) _cancelAutocomplete()
+  }
+  document.addEventListener('selectionchange', _onSelectionChange)
+  function _onOutsidePointer(event) {
+    if (!container.contains(event.target) && !event.target.closest?.('#pm-autocomplete-popup')) _cancelAutocomplete()
+  }
+  document.addEventListener('pointerdown', _onOutsidePointer)
 
   /**
    * Restaura el foco y la posición del caret guardada.
    */
   function _restoreCaret() {
+    const selection = window.getSelection()
+    if (document.activeElement === editor && selection?.rangeCount &&
+        editor.contains(selection.getRangeAt(0).commonAncestorContainer)) return
+    const storedOffset = _savedCaretOffset
     editor.focus()
-    if (_savedRange && (editor.contains(_savedRange.commonAncestorContainer) || _savedRange.commonAncestorContainer === editor)) {
-      const sel = window.getSelection()
-      if (sel) {
-        sel.removeAllRanges()
-        sel.addRange(_savedRange.cloneRange())
-        return
-      }
-    }
-    if (_savedCaretOffset !== null) {
-      _setCaretOffset(editor, _savedCaretOffset)
+    if (storedOffset !== null) _setCaretOffset(editor, storedOffset)
+    else {
+      const end = document.createRange()
+      end.selectNodeContents(editor)
+      end.collapse(false)
+      selection.removeAllRanges()
+      selection.addRange(end)
     }
   }
 
@@ -203,152 +193,48 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
    * @param {string|null} forceTrigger — Si se pasa, usa este trigger en vez de detectar
    */
   let _autocompleteDebounce = null
-  async function _showAutocomplete(forceTrigger = null) {
-    let trigger, query
-
-    if (forceTrigger) {
-      trigger = forceTrigger
-      query = ''
-    } else {
-      const triggerData = _detectTrigger()
-      if (!triggerData) {
-        autocompletePopup.hide()
-        return
-      }
-      trigger = triggerData.trigger
-      query = triggerData.query
-    }
-
-    // Capturar la posición del cursor y del caret ANTES del await: la
-    // llamada a catalogService es async, y mientras está en vuelo el
-    // resaltado de sintaxis puede reemplazar el innerHTML (colapsando la
-    // selección) o el usuario puede mover el foco/scroll — leer la posición
-    // después del await hacía que el popup apareciera en la selección
-    // "de donde sea" en vez de en el cursor real donde se escribió el trigger.
-    const pos = getCursorPosition()
-    _saveCaretOffset()
-
-    if (!pos) return
-
-    try {
-      const options = await catalogService.getOptionsForTrigger(trigger, query, _context)
-
-      if (options.length > 0) {
-        autocompletePopup.show(
-          options,
-          (selected) => {
-            _insertAutocomplete(selected, trigger, query)
-          },
-          { trigger, position: pos },
-        )
-      } else {
-        autocompletePopup.hide()
-      }
-    } catch (err) {
-      console.warn('[DSL] Error en autocompletado:', err)
-    }
+  let _triggerTimer = null
+  function _cancelAutocomplete() {
+    _autocompleteRequest++
+    _activeAutocompleteTarget = null
+    clearTimeout(_autocompleteDebounce)
+    clearTimeout(_triggerTimer)
+    autocompletePopup.hide()
+    editor.setAttribute('aria-expanded', 'false')
   }
 
-  /**
-   * Inserta la opción seleccionada del autocompletado
-   */
-  function _insertAutocomplete(selected, trigger, query) {
-    // Extraer texto plano del label (puede contener HTML del popup)
-    const labelHtml =
-      selected.nombre || selected.name || selected.label || selected.descripcion || ''
-    const label = _stripHtml(labelHtml)
-
-    // Construir el texto según el trigger
-    let finalText = ''
-
-    switch (trigger) {
-      case '#':
-        finalText = label
-        break
-      case '[':
-        finalText = label + ']'
-        break
-      case '(':
-        finalText = label + ')'
-        break
-      case '{':
-        finalText = label + '}'
-        break
-      case '$':
-        finalText = selected.codigo || label
-        break
-      case '>':
-        if (selected.level_number) {
-          finalText = `NIVEL-${selected.level_number}`
-        } else if (selected.type) {
-          finalText = `NODO:${selected.type}`
-        } else {
-          finalText = label
-        }
-        break
-    }
-
-    // El editor puede haber perdido el foco al hacer click en el popup.
-    // Restauramos el caret guardado antes de insertar.
-    _restoreCaret()
-
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) {
-      console.warn('[DSL] Sin selección activa al insertar autocomplete')
+  async function _showAutocomplete(forceTrigger = null) {
+    if (_destroyed || _isComposing) return
+    const target = _detectTrigger()
+    if (!target || (forceTrigger && target.trigger !== forceTrigger)) {
+      _cancelAutocomplete()
       return
     }
-
-    // Si hay query parcial escrito después del trigger, borrarlo primero
-    if (query.length > 0) {
-      const range = sel.getRangeAt(0)
-      const preCaretRange = document.createRange()
-      preCaretRange.selectNodeContents(editor)
-      preCaretRange.setEnd(range.endContainer, range.endOffset)
-      const textBeforeCursor = preCaretRange.toString()
-      const queryStart = textBeforeCursor.length - query.length
-
-      try {
-        const deleteRange = document.createRange()
-        _setRangeFromOffset(editor, deleteRange, queryStart, textBeforeCursor.length)
-        deleteRange.deleteContents()
-      } catch (e) {
-        console.warn('[DSL] Error limpiando query parcial:', e)
-      }
-    }
-
-    // Insertar el texto final
-    _insertRawText(finalText + ' ')
-
-    // Registrar la selección para fuzzy search
-    catalogService.recordSelection(trigger, label)
-  }
-
-  /**
-   * Helper: establece un Range basado en offsets de texto plano
-   */
-  function _setRangeFromOffset(element, range, startOffset, endOffset) {
-    let charCount = 0
-    const nodeStack = [element]
-    let startSet = false
-
-    while (nodeStack.length > 0) {
-      const node = nodeStack.pop()
-      if (node.nodeType === 3) {
-        const nextCount = charCount + node.length
-        if (!startSet && startOffset <= nextCount) {
-          range.setStart(node, startOffset - charCount)
-          startSet = true
-        }
-        if (startSet && endOffset <= nextCount) {
-          range.setEnd(node, endOffset - charCount)
-          return
-        }
-        charCount = nextCount
-      } else {
-        for (let i = node.childNodes.length - 1; i >= 0; i--) {
-          nodeStack.push(node.childNodes[i])
-        }
-      }
+    const request = ++_autocompleteRequest
+    const pos = getCursorPosition()
+    _saveCaretOffset()
+    if (!pos) return
+    try {
+      const options = await catalogService.getOptionsForTrigger(target.trigger, target.query, _context)
+      if (_destroyed || request !== _autocompleteRequest || editor.textContent !== target.snapshot) return
+      const current = _detectTrigger()
+      if (!current || current.start !== target.start || current.end !== target.end) return
+      if (!options.length) { _cancelAutocomplete(); return }
+      _activeAutocompleteTarget = target
+      editor.setAttribute('aria-controls', 'pm-autocomplete-popup')
+      editor.setAttribute('aria-expanded', 'true')
+      autocompletePopup.show(options, selected => {
+        if (_destroyed || request !== _autocompleteRequest) return
+        if (!replaceAutocompleteTarget(editor, target, selected)) { _cancelAutocomplete(); return }
+        _cancelAutocomplete()
+        _saveCaretOffset()
+        _updateValue()
+        const label = selected.nombre_completo || selected.nombre || selected.name || selected.label || ''
+        Promise.resolve(catalogService.recordSelection(target.trigger, label)).catch(() => {})
+      }, { trigger: target.trigger, position: pos })
+    } catch (error) {
+      if (request === _autocompleteRequest) _cancelAutocomplete()
+      console.warn('[DSL] Error en autocompletado:', error)
     }
   }
 
@@ -357,25 +243,6 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     const d = document.createElement('div')
     d.innerHTML = str
     return d.textContent || d.innerText || ''
-  }
-
-  /**
-   * Inserta texto plano en la posición actual del cursor (sin mover ni re-posicionar).
-   */
-  function _insertRawText(text) {
-    const clean = _stripHtml(text)
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
-    const range = sel.getRangeAt(0)
-    range.deleteContents()
-    const textNode = document.createTextNode(clean)
-    range.insertNode(textNode)
-    range.setStartAfter(textNode)
-    range.collapse(true)
-    sel.removeAllRanges()
-    sel.addRange(range)
-    _updateValue()
-    _applyHighlight()
   }
 
   // === FIN AUTOCOMPLETADO ===
@@ -392,6 +259,8 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     const range = document.createRange()
     const sel = window.getSelection()
     if (!sel) return
+    range.selectNodeContents(element)
+    range.collapse(false)
 
     let charCount = 0
     let nodeStack = [element]
@@ -403,7 +272,11 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       if (node.nodeType === 3) {
         const nextCharCount = charCount + node.length
         if (offset <= nextCharCount) {
-          range.setStart(node, offset - charCount)
+          const chip = node.parentElement?.closest('.pm-student-mention')
+          if (chip) {
+            if (offset - charCount === 0) range.setStartBefore(chip)
+            else range.setStartAfter(chip)
+          } else range.setStart(node, offset - charCount)
           range.collapse(true)
           found = true
         }
@@ -423,6 +296,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   // IME composition guards for predictive text and accent pickers.
   editor.addEventListener('compositionstart', () => {
     _isComposing = true
+    _cancelAutocomplete()
   })
   editor.addEventListener('compositionend', () => {
     _isComposing = false
@@ -439,6 +313,8 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   })
 
   editor.oninput = () => {
+    _autocompleteRequest++
+    _activeAutocompleteTarget = null
     _updateValue()
 
     // Keep the text node tree stable while typing. Highlighting occurs on blur.
@@ -446,13 +322,21 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
     // Autocompletado con debounce
     clearTimeout(_autocompleteDebounce)
-    _autocompleteDebounce = setTimeout(() => _showAutocomplete(), 300)
+    if (!_isComposing) _autocompleteDebounce = setTimeout(() => _showAutocomplete(), 200)
   }
 
   // Keyboard navigation para el popup de autocompletado
   editor.addEventListener('keydown', (e) => {
     if (isOpen()) {
       acHandleKeyDown(e)
+      if (!isOpen()) editor.setAttribute('aria-expanded', 'false')
+      if (e.defaultPrevented) return
+    }
+    if (['Backspace', 'Delete'].includes(e.key) && removeAdjacentMention(editor, e.key)) {
+      e.preventDefault()
+      _cancelAutocomplete()
+      _saveCaretOffset()
+      _updateValue()
     }
   })
 
@@ -485,7 +369,9 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
    * @param {string|null} triggerAC — Si se pasa, auto-dispara autocomplete para este trigger
    */
   function insertText(text, cursorOffset = 0, triggerAC = null) {
-    editor.focus()
+    if (_destroyed) return
+    _cancelAutocomplete()
+    _restoreCaret()
     const sel = window.getSelection()
     if (!sel) return
 
@@ -511,7 +397,18 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     }
 
     const selectedText = range.toString()
-    const cleanText = _stripHtml(text)
+    let cleanText = _stripHtml(text)
+    if (cleanText === '#' && range.collapsed) {
+      const pending = _detectTrigger()
+      if (pending?.trigger === '#') {
+        _triggerTimer = setTimeout(() => _showAutocomplete('#'), 0)
+        return
+      }
+      const before = range.cloneRange()
+      before.selectNodeContents(editor)
+      before.setEnd(range.startContainer, range.startOffset)
+      if (before.toString() && !/\s$/.test(before.toString())) cleanText = ' #'
+    }
 
     // Si el usuario tenía texto seleccionado y presiona [], (), {}, envolver el texto!
     if (selectedText.length > 0 && cleanText.length === 2 && ['[]', '()', '{}'].includes(cleanText)) {
@@ -554,7 +451,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
     // Auto-disparar autocomplete SOLO si triggerAC fue solicitado
     if (triggerAC) {
-      setTimeout(() => _showAutocomplete(triggerAC), 50)
+      _triggerTimer = setTimeout(() => _showAutocomplete(triggerAC), 50)
     }
   }
 
@@ -566,17 +463,29 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   }
 
   return {
+    destroy() {
+      _destroyed = true
+      _cancelAutocomplete()
+      clearTimeout(_debounceTimer)
+      document.removeEventListener('selectionchange', _onSelectionChange)
+      document.removeEventListener('pointerdown', _onOutsidePointer)
+      editor.oninput = null
+    },
     insertText,
     getValue: () => _value,
     setValue: (newContent) => {
+      _cancelAutocomplete()
       const nextValue = String(newContent || '')
       if (nextValue === _value) return
+      _savedRange = null
+      _savedCaretOffset = null
       editor.innerText = nextValue
       _updateValue()
       _applyHighlight()
     },
     setContext: (context) => {
       _context = context
+      _applyHighlight()
     },
   }
 }

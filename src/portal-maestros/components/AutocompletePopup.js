@@ -18,11 +18,13 @@ let initialPos = { x: 0, y: 0 };
  * Crea e inicializa el popup de autocompletado
  */
 function initPopup() {
-  if (popupEl) return;
+  if (popupEl?.isConnected) return;
   
   popupEl = document.createElement('div');
   popupEl.id = 'pm-autocomplete-popup';
   popupEl.className = 'pm-autocomplete-popup';
+  popupEl.setAttribute('role', 'listbox');
+  popupEl.setAttribute('aria-label', 'Sugerencias para etiquetar');
   popupEl.style.cssText = `
     position: fixed;
     display: none;
@@ -31,8 +33,9 @@ function initPopup() {
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     z-index: 9999;
-    min-width: 280px;
-    max-width: 360px;
+    min-width: min(280px, calc(100vw - 20px));
+    width: min(320px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
     max-height: 280px;
     overflow-y: auto;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -167,12 +170,12 @@ export function show(options, callback, config = {}) {
     const pos = config.position;
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
-    const popupW = 320;
-    const popupH = 280;
+    const popupW = Math.min(320, viewportW - 20);
+    const popupH = Math.min(280, viewportH - 20);
 
     // CAMBIO: usar pos.y directamente (getCursorPosition() ahora devuelve bottom)
     // + 6px para un pequeño gap entre cursor y popup (no solapamiento)
-    let left = pos.x;
+    let left = Math.max(10, Math.min(pos.x, viewportW - popupW - 10));
     let top = pos.y + 6;
 
     // Si se sale por la derecha, mostrar a la izquierda del cursor
@@ -200,7 +203,10 @@ export function show(options, callback, config = {}) {
 }
 
 function _startDrag(e) {
-  if (e.target.closest('.pm-ac-option')) return;
+  if (e.target.closest('.pm-ac-option')) {
+    e.preventDefault(); // Mantener el cursor del editor mientras se elige un alumno.
+    return;
+  }
   isDragging = true;
   dragOffsetX = e.clientX - popupEl.offsetLeft;
   dragOffsetY = e.clientY - popupEl.offsetTop;
@@ -277,7 +283,7 @@ function render(options) {
     const badge = opt.is_historial ? '<span class="pm-ac-badge">Reciente</span>' : '';
     
     html += `
-      <div class="pm-ac-option ${isSelected ? 'selected' : ''}" data-index="${idx}">
+      <div class="pm-ac-option ${isSelected ? 'selected' : ''}" role="option" aria-selected="${isSelected}" data-index="${idx}">
         <div class="pm-ac-icon">${icon}</div>
         <div class="pm-ac-text">
           <div class="pm-ac-label">${escapeHtml(label)}</div>
@@ -352,11 +358,9 @@ export function handleKeyDown(e) {
       break;
       
     case 'Tab':
-      // Completar con primera opción
-      if (currentOptions.length > 0 && selectedIndex === -1) {
-        e.preventDefault();
-        selectOption(0);
-      }
+      // Completar la opción resaltada, o la primera si todavía no se navegó.
+      e.preventDefault();
+      selectOption(selectedIndex >= 0 ? selectedIndex : 0);
       break;
   }
 }
@@ -452,7 +456,8 @@ export function getCursorPosition() {
   if (!sel || sel.rangeCount === 0) return null;
 
   const range = sel.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
+  const rect = range.getBoundingClientRect?.() || (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.getBoundingClientRect();
+  if (!rect) return null;
 
   // IMPORTANTE: usar rect.bottom (debajo del cursor) en lugar de rect.top
   // Esto hace que el popup aparezca debajo de la línea de texto donde escribes

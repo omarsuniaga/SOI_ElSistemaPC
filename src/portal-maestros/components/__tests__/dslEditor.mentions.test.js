@@ -109,6 +109,21 @@ describe('Student mention insertion', () => {
     expect(component.getValue()).toBe('#Santa Isaura Castillo Diaz ')
   })
 
+  it('deletes the last tag as one unit with Backspace', async () => {
+    await choose(roster[0])
+    await choose(roster[1])
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
+    expect(component.getValue()).toBe('#Santa Isaura Castillo Diaz ')
+    expect(editable.querySelectorAll('.pm-student-mention')).toHaveLength(1)
+  })
+
+  it('keeps the caret after existing tags across blur and focus', async () => {
+    await choose(roster[0])
+    editable.blur()
+    await choose(roster[1])
+    expect(component.getValue()).toBe('#Santa Isaura Castillo Diaz #Gerali Denisse Lugo Batista ')
+  })
+
   it('cancels pending work on destruction', async () => {
     component.insertText('#', 1, '#')
     expect(component.destroy).toBeTypeOf('function')

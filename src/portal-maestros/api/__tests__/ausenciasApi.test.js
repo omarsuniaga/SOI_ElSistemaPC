@@ -119,17 +119,9 @@ describe('ausenciasApi - new functions', () => {
 
   describe('crearNotificacionAusencia', () => {
     it('should create absence notification', async () => {
-      const mockNotification = {
-        id: 'notif-1',
-        profile_id: null,
-        tipo: 'sistema',
-        titulo: 'Nueva Solicitud de Ausencia'
-      }
-
+      // The teacher cannot read management's notification back (RLS), so the insert is not chained to select()
       const mockChain = {
-        insert: vi.fn(function() { return this }),
-        select: vi.fn(function() { return this }),
-        single: vi.fn().mockResolvedValue({ data: mockNotification, error: null })
+        insert: vi.fn().mockResolvedValue({ error: null })
       }
 
       supabaseModule.supabase.from.mockReturnValue(mockChain)
@@ -148,14 +140,12 @@ describe('ausenciasApi - new functions', () => {
         approvalUrl: '/ausencias/ausencia-1'
       })
 
-      expect(result).toEqual(mockNotification)
+      expect(result).toMatchObject({ enviada: true, titulo: 'Nueva Solicitud de Ausencia' })
     })
 
     it('does not insert columns absent from notificaciones', async () => {
       const mockChain = {
-        insert: vi.fn(function () { return this }),
-        select: vi.fn(function () { return this }),
-        single: vi.fn().mockResolvedValue({ data: { id: 'n1' }, error: null })
+        insert: vi.fn().mockResolvedValue({ error: null })
       }
       supabaseModule.supabase.from.mockReturnValue(mockChain)
 

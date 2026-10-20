@@ -377,7 +377,9 @@ export async function crearNotificacionAusencia({ ausencia, maestro, approvalUrl
 
   const mensaje = `Nueva solicitud de ausencia: ${maestro.nombre_completo || maestro.nombre} (${fechas}) - Tipo: ${ausencia.tipo_ausencia}`;
 
-  const { data, error } = await supabase
+  // No `.select()`: a teacher may insert a notification for management but cannot read it back
+  // (RLS: notificaciones are readable by their recipient or by notificaciones:administrar).
+  const { error } = await supabase
     .from('notificaciones')
     .insert([{
       profile_id: null, // Will be set by trigger to director
@@ -387,10 +389,8 @@ export async function crearNotificacionAusencia({ ausencia, maestro, approvalUrl
       deep_link: approvalUrl || '/ausencias/pendientes',
       estado: 'pendiente'
       // `notificaciones` has no `ausencia_id`; `created_at` uses the column default
-    }])
-    .select()
-    .single();
+    }]);
 
   if (error) throw error;
-  return data;
+  return { enviada: true, titulo: 'Nueva Solicitud de Ausencia', mensaje };
 }

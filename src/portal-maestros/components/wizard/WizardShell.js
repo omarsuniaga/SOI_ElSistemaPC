@@ -167,10 +167,13 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
       const postulanteId = state.draft._postulante_id
       if (postulanteId && alumnoGuardado?.id) {
         try {
-          await supabase
-            .from('postulantes')
-            .update({ estado: 'inscrito', alumno_id: alumnoGuardado.id })
-            .eq('id', postulanteId)
+          // RPC: teachers no longer have table-level UPDATE on postulantes (block 1 of the
+          // authenticated-wide-open remediation); the function can only touch estado/alumno_id.
+          const { error: rpcError } = await supabase.rpc('marcar_postulante_inscrito', {
+            p_postulante_id: postulanteId,
+            p_alumno_id: alumnoGuardado.id,
+          })
+          if (rpcError) throw rpcError
         } catch (_e) {
           console.warn('[Wizard] Could not update postulante estado:', _e.message)
         }

@@ -88,21 +88,21 @@ export async function registrarAusencia(payload) {
 export async function crearNotificacionAusencia({ ausencia, maestro, directorProfileId, approvalUrl }) {
   if (!directorProfileId) return null;
 
-  const { data, error } = await supabase
+  const mensaje = `${maestro?.nombre_completo || 'Un maestro'} solicitó ausencia del ${ausencia.fecha_inicio} al ${ausencia.fecha_fin}.`
+  // No `.select()`: the teacher cannot read management's notifications back under RLS.
+  const { error } = await supabase
     .from('notificaciones')
     .insert({
       profile_id: directorProfileId,
       tipo: 'sistema',
       titulo: 'Nueva solicitud de ausencia',
-      mensaje: `${maestro?.nombre_completo || 'Un maestro'} solicitó ausencia del ${ausencia.fecha_inicio} al ${ausencia.fecha_fin}.`,
+      mensaje,
       deep_link: approvalUrl || null,
       estado: 'pendiente',
     })
-    .select()
-    .single();
 
   if (error) throw error;
-  return data;
+  return { enviada: true, titulo: 'Nueva solicitud de ausencia', mensaje };
 }
 
 export async function obtenerSalonPorId(id) {

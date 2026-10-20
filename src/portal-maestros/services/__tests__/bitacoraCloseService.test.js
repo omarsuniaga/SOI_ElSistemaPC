@@ -276,6 +276,25 @@ describe('cerrarSesion', () => {
   })
 })
 
+describe('cerrarSesion: a server answer is never a network failure', () => {
+  it('throws instead of enqueueing a business error even if the browser reports offline', async () => {
+    const client = { rpc: vi.fn(async () => ({ data: null, error: { code: '42501', message: 'No autorizado para cerrar esta sesión' } })) }
+    const enqueueFn = vi.fn(async () => {})
+    const error = await cerrarSesion({ sesion_id: 's1' }, { client, enqueueFn, isOnline: () => false }).catch(e => e)
+    expect(error).toBeInstanceOf(Error)
+    expect(error.code).toBe('42501')
+    expect(enqueueFn).not.toHaveBeenCalled()
+  })
+
+  it('still enqueues when offline and there is no server code', async () => {
+    const client = { rpc: vi.fn(async () => ({ data: null, error: { code: '', message: 'TypeError: Failed to fetch' } })) }
+    const enqueueFn = vi.fn(async () => {})
+    const result = await cerrarSesion({ sesion_id: 's1' }, { client, enqueueFn, isOnline: () => false })
+    expect(result).toEqual({ data: null, queued: true })
+    expect(enqueueFn).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('getRegistrosSesion', () => {
   function queryClient(result) {
     const chain = {}

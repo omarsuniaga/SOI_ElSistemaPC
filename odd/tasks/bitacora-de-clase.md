@@ -113,13 +113,23 @@ Server rules (one transaction; any violation raises and nothing is written):
 ## Tasks
 
 - [x] T0 Decision D2 recorded in spec; F2 design documented here. Route: inline.
-- [ ] T1 Migration + rollback + local Docker SQL suite (RED → GREEN, mutation checks). Route: delegated writer.
-- [ ] T2 Offline queue `rpc` operation. Route: delegated writer.
-- [ ] T3 `bitacoraCloseService` (payload builder from `parseBitacora`, RPC call, offline fallback, reader). Route: delegated writer.
-- [ ] T4 Verification of T1–T3 (suite, build, `npm run policy:check` must not grow the debt, independent verifier). Route: inline + verifier.
+- [x] T1 Migration + rollback + local Docker SQL suite: 32be5753, af7b8f00; fix f000a103 (UI codes P/A/J/T kept in `sesiones_clase.asistencia`, verified in production: P 4544, A 2259, J 409, plus legacy words). Suite 81 assertions, 11 mutations killed.
+- [x] T2 Offline queue `rpc` operation (inline: tiny, already understood). Commit `see git log`.
+- [x] T3 `bitacoraCloseService` (16733c05 + follow-up: a server error code is never treated as a network failure) (payload builder from `parseBitacora`, RPC call, offline fallback, reader). Route: delegated writer.
+- [ ] T4 Verification: suite 148 files / 1200 tests and build OK; `npm run policy:check` result still to compare with the baseline; independent verifier of the migration still pending.
 - [ ] T5 (F2b) "Cerrar clase" UI behind pilot flag. Route: delegated writer, after T4.
 - [ ] T6 Production apply (manual, Dashboard) — **only with explicit user authorization**; record first real row and its date (R1).
 
 ## R1 declaration (to carry in the PR)
 
 Writer: RPC `cerrar_sesion`, called from `src/portal-maestros/services/bitacoraCloseService.js`. Who produces the first real row: a pilot teacher closing a class with the new flow after the migration is applied by hand. Proposed date: **2026-11-03** (to be confirmed by the user). Exemption R3: production has no `instituciones` table or `institucion_id` on the core tables (same exemption as `20261018120000_documentos_publicos_qr.sql`); plan: add the column to the model when the multi-institution model exists (spec §7.5).
+
+## Open points for the next session
+
+- Not yet applied to production (manual, needs explicit user authorization). First-row date 2026-11-03 still to be confirmed by the user.
+- `service_role` keeps default table privileges on `registros_sesion` (the spec only revokes PUBLIC/anon/authenticated); decide whether to revoke it or add a DML-blocking trigger.
+- `cerrar_sesion` writes `asistencias` for any `alumno_id` in the payload without checking enrollment (same as the legacy RLS); decide if F2 must restrict it.
+- No test for two concurrent closes of the same session (`FOR UPDATE` covers it at code level).
+- Registros refresh `confirmado_at`/`updated_at` on every close (state identical, timestamps move).
+- `buildCierrePayload` iterates the `alumnos` roster; students present only in the `estado` map are dropped.
+- T5 (UI "Cerrar clase" behind a pilot flag) not started.

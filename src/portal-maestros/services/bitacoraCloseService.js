@@ -105,7 +105,9 @@ export async function cerrarSesion(
   const { data, error } = response ?? {}
   if (!error) return { data, queued: false }
 
-  if (!isOnline() || isNetworkFailure(error)) {
+  // Un código del servidor significa que respondió: reintentar no arregla un error de negocio.
+  const serverAnswered = Boolean(error.code)
+  if (!serverAnswered && (!isOnline() || isNetworkFailure(error))) {
     await enqueueFn({
       tabla: 'registros_sesion',
       operacion: 'rpc',

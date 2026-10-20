@@ -1,4 +1,4 @@
-// Role-by-role regression suite for migration 20261020130000 (block 5: institutional catalogues and configuration
+// Role-by-role regression suite for migration 20261020131000 (block 5: institutional catalogues and configuration
 // open to any authenticated account). Runs on a throw-away PostgreSQL (never production).
 //
 //   BEFORE     the exposure is real (any signed-in account rewrites/deletes; anon holds every privilege)
@@ -21,7 +21,7 @@ import pg from 'pg';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIG_DIR = path.resolve(here, '../../migrations');
 const ROLLBACK_DIR = path.resolve(here, '../../rollback');
-const VERSION = '20261020130000';
+const VERSION = '20261020131000';
 const BASE_VERSION = '20261017180000';
 const find = (dir, v) => fs.readdirSync(dir).find((f) => f.startsWith(`${v}_`));
 const migrationSql = fs.readFileSync(process.env.MIGRATION_OVERRIDE || path.join(MIG_DIR, find(MIG_DIR, VERSION)), 'utf8');

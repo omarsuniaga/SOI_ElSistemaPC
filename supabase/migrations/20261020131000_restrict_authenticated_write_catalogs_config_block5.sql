@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- 20261020130000_restrict_authenticated_write_catalogs_config_block5.sql
+-- 20261020131000_restrict_authenticated_write_catalogs_config_block5.sql
 --
 -- BLOCK 5 of the "authenticated wide open" remediation: institutional catalogues and configuration.
 -- Any signed-in account (`alumno`, `representante`, `user`…) could read, rewrite and delete the rows of nine
@@ -39,7 +39,7 @@
 -- The SECURITY DEFINER functions that touch these tables (fn_email_departamento, fn_hermes_*, fn_generate_class_
 -- start_reminders, fn_sincronizar_arbol_curricular, fn_reportar_instrumento_danado…) run as owner and are unaffected.
 --
--- ROLLBACK: supabase/rollback/20261020130000_restrict_authenticated_write_catalogs_config_block5.rollback.sql
+-- ROLLBACK: supabase/rollback/20261020131000_restrict_authenticated_write_catalogs_config_block5.rollback.sql
 -- TESTS   : supabase/tests/authenticated-wide-open-block5/ (npm run test:db:authenticated-wide-open-block5)
 --
 -- POLICY-EXCEPTION R3: no table is created; the nine tables predate R3 and carry no institucion_id. They are

@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const migDir = path.resolve(here, '../../migrations');
-const original = fs.readFileSync(path.join(migDir, fs.readdirSync(migDir).find((f) => f.startsWith('20261020130000_'))), 'utf8');
+const original = fs.readFileSync(path.join(migDir, fs.readdirSync(migDir).find((f) => f.startsWith('20261020131000_'))), 'utf8');
 
 const replaceOnce = (s, a, b) => {
   if (!s.includes(a)) throw new Error(`mutation anchor not found: ${a.slice(0, 60)}`);

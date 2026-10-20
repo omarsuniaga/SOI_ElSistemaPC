@@ -1,7 +1,7 @@
 # Runbook de aplicación — Bloque 5 (catálogos y configuración)
 
-Migración: `supabase/migrations/20261020130000_restrict_authenticated_write_catalogs_config_block5.sql`
-Rollback: `supabase/rollback/20261020130000_restrict_authenticated_write_catalogs_config_block5.rollback.sql`
+Migración: `supabase/migrations/20261020131000_restrict_authenticated_write_catalogs_config_block5.sql`
+Rollback: `supabase/rollback/20261020131000_restrict_authenticated_write_catalogs_config_block5.rollback.sql`
 **Nada de esto se ha ejecutado en producción.** Aplicar solo con autorización expresa del titular.
 
 ## Antes de aplicar
@@ -39,7 +39,7 @@ Con el archivo tal cual (una sola transacción, `ON_ERROR_STOP`). No usar el led
 
 ## Rollback
 
-`supabase/rollback/20261020130000_…rollback.sql` restaura las políticas y ACL exactas capturadas en producción y retira las tres funciones auxiliares (no toca `tiene_capacidad_academica`). **Reabre la vulnerabilidad** (incluidos los privilegios de `anon` sobre siete tablas). Antes de usarlo, intentar corregir hacia adelante ampliando `tiene_capacidad_configuracion()` o `puede_leer_*()` en una migración revisada. Es idempotente y se puede volver a aplicar después.
+`supabase/rollback/20261020131000_…rollback.sql` restaura las políticas y ACL exactas capturadas en producción y retira las tres funciones auxiliares (no toca `tiene_capacidad_academica`). **Reabre la vulnerabilidad** (incluidos los privilegios de `anon` sobre siete tablas). Antes de usarlo, intentar corregir hacia adelante ampliando `tiene_capacidad_configuracion()` o `puede_leer_*()` en una migración revisada. Es idempotente y se puede volver a aplicar después.
 
 ## Reproducir las pruebas
 

@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- ROLLBACK of 20261020130000_restrict_authenticated_write_catalogs_config_block5.sql
+-- ROLLBACK of 20261020131000_restrict_authenticated_write_catalogs_config_block5.sql
 --
 -- Restores the policies and ACLs captured read-only from production on 2026-10-20
 -- (pg_policies / pg_class.relacl) and removes the three helper functions of block 5.

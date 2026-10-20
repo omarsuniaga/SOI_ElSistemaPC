@@ -36,7 +36,8 @@ vi.mock('idb', () => ({
 // ── Mock supabase ────────────────────────────────────────
 const mockChain = (result) => ({
   eq: vi.fn().mockReturnThis(),
-  select: vi.fn().mockResolvedValue(result),
+  select: vi.fn().mockReturnThis(),
+  in: vi.fn().mockResolvedValue({ data: [], error: null }),
   single: vi.fn().mockResolvedValue(result),
   limit: vi.fn().mockReturnThis(),
   order: vi.fn().mockReturnThis(),
@@ -128,6 +129,8 @@ describe('observationPromotionService — offline fallback', () => {
       expect(queue[0].operacion).toBe('upsert')
       expect(queue[0].payload.alumno_id).toBe('alumno-1')
       expect(queue[1].payload.alumno_id).toBe('alumno-2')
+      expect(queue.map(q => q.onConflict)).toEqual(['id', 'id'])
+      expect(new Set(queue.map(q => q.payload.id)).size).toBe(2)
 
       expect(result).toHaveProperty('_offline', true)
     } finally {

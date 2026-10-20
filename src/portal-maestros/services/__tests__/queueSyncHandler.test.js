@@ -59,6 +59,45 @@ describe('syncQueueItem', () => {
     expect(calls[0].eqs).toEqual([['id', 's1']])
   })
 
+  describe('upsert encolado offline', () => {
+    it.each([
+      ['asistencias', 'clase_id,alumno_id,fecha'],
+      ['indicator_attempts', 'session_id,indicator_id,student_id'],
+      ['observaciones_sesion', 'id'],
+      ['observaciones_alumnos', 'id'],
+    ])('escribe %s con la clave única real (%s)', async (tabla, key) => {
+      await syncQueueItem({ tabla, operacion: 'upsert', payload: { id: 'x1', a: 1 } })
+      expect(calls).toHaveLength(1)
+      expect(calls[0].table).toBe(tabla)
+      expect(calls[0].upsert).toEqual({ id: 'x1', a: 1 })
+      expect(calls[0].opts).toMatchObject({ onConflict: key })
+    })
+
+    it('respeta el onConflict guardado en el ítem', async () => {
+      await syncQueueItem({ tabla: 'asistencias', operacion: 'upsert', onConflict: 'sesion_clase_id,alumno_id', payload: { a: 1 } })
+      expect(calls[0].opts).toMatchObject({ onConflict: 'sesion_clase_id,alumno_id' })
+    })
+
+    it('rechaza un upsert por id sin id (no es idempotente)', async () => {
+      await expect(syncQueueItem({ tabla: 'observaciones_sesion', operacion: 'upsert', payload: { a: 1 } }))
+        .rejects.toThrow(/id/)
+      expect(calls).toHaveLength(0)
+    })
+
+    it('rechaza un upsert sin clave conocida en vez de escribir a ciegas', async () => {
+      await expect(syncQueueItem({ tabla: 'tabla_desconocida', operacion: 'upsert', payload: { a: 1 } }))
+        .rejects.toThrow(/onConflict/)
+      expect(calls).toHaveLength(0)
+    })
+  })
+
+  it('una operación desconocida falla en vez de darse por sincronizada', async () => {
+    const err = await syncQueueItem({ tabla: 'asistencias', operacion: 'merge', payload: {} }).catch(e => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err.permanent).toBe(true)
+    expect(calls).toHaveLength(0)
+  })
+
   it('traduce contenido_dsl y asistencias a las columnas reales', async () => {
     await syncQueueItem({
       tabla: 'sesiones_clase',

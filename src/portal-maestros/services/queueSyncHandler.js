@@ -12,6 +12,25 @@ import { supabase } from '../../lib/supabaseClient.js'
 
 const UNIQUE_VIOLATION = '23505'
 
+/**
+ * Clave de conflicto por tabla para los `upsert` encolados offline. Debe
+ * coincidir con una restricción UNIQUE real (verificado en producción el
+ * 2026-10-20). `observaciones_sesion` y `observaciones_alumnos` no tienen
+ * clave natural única: se escriben por `id` generado en el cliente, que hace
+ * el reintento idempotente.
+ */
+export const UPSERT_KEYS = {
+  asistencias: 'clase_id,alumno_id,fecha',
+  indicator_attempts: 'session_id,indicator_id,student_id',
+  observaciones_sesion: 'id',
+  observaciones_alumnos: 'id',
+}
+
+/** Error que ningún reintento puede resolver: la cola lo conserva, no lo descarta. */
+function permanentError(message) {
+  return Object.assign(new Error(message), { permanent: true })
+}
+
 function normalizeSesionPayload(payload) {
   const out = { ...payload }
   if (out.contenido_dsl !== undefined) {
@@ -39,7 +58,7 @@ async function updateExistingSesion({ clase_id, fecha, maestro_id, contenido, as
 }
 
 /**
- * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object }} item
+ * @param {{ tabla: string, operacion: 'insert'|'update'|'delete'|'upsert', payload: object, onConflict?: string }} item
  */
 export async function syncQueueItem(item) {
   const { tabla, operacion } = item
@@ -59,9 +78,18 @@ export async function syncQueueItem(item) {
       const { id, ...cleanPayload } = payload
       const { error } = await supabase.from(tabla).update(cleanPayload).eq('id', id)
       if (error) throw error
+    } else if (operacion === 'upsert') {
+      const onConflict = item.onConflict || UPSERT_KEYS[tabla]
+      if (!onConflict) throw permanentError(`[SYNC] upsert sin onConflict conocido para ${tabla}`)
+      if (onConflict === 'id' && !payload.id) throw permanentError(`[SYNC] upsert por id sin id en ${tabla}`)
+      const { error } = await supabase.from(tabla).upsert(payload, { onConflict })
+      if (error) throw error
     } else if (operacion === 'delete') {
       const { error } = await supabase.from(tabla).delete().eq('id', payload.id)
       if (error) throw error
+    } else {
+      // Antes se daba por sincronizado sin escribir nada: pérdida silenciosa.
+      throw permanentError(`[SYNC] operación no soportada: ${operacion} (${tabla})`)
     }
   } catch (err) {
     if (err.code === 'PGRST204') {

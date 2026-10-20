@@ -54,3 +54,45 @@ La nómina Demo coincide con la matrícula simulada del adaptador existente.
 
 Validación actualizada: 249 pruebas aprobadas; build, lint focalizado y typecheck
 aprobados. Sigue pendiente validación visual y autenticada con datos reales.
+
+## Ampliación: «Evaluar presentes» (valoración 0–5)
+
+Solicitada por Omar el 20 de octubre de 2026. El prototipo `PresentRatings.js` del
+entorno de ChatGPT **no estaba en GitHub** y no se usó: se construyó sobre los
+servicios existentes (`asistenciasApi`, `AppModal`, `AppToast`, `IndicadorLogro`).
+`EvaluacionEstrellasModal` y `GradePanel` no se reutilizaron como UI porque son por
+indicador, solo admiten 1–5 y GradePanel arranca en 5★; aquí la valoración es de la
+clase y el 0 es válido.
+
+**Dónde:** vista de asistencia del portal de maestros, botón «Evaluar presentes»
+junto a «Observación». Requiere la sesión guardada (las filas de asistencia nacen al
+guardar).
+
+**Comportamiento:** selección directa de 0 a 5 con un toque; «Sin evaluar» (`NULL`)
+es un botón aparte y distinto de 0. Solo presentes y tarde; ausentes, justificados y
+sin marcar se excluyen. Al abrir se recuperan las notas guardadas; solo se envían las
+filas cambiadas.
+
+**Persistencia:** columnas `valoracion` (0–5, `NULL` = sin evaluar), `valorada_por` y
+`valorada_at` en `asistencias` (migración `20261020120000_asistencias_valoracion_clase.sql`).
+Sin tabla nueva: existe una fila única por (sesión, alumno), así que corregir es un
+`UPDATE` y no puede duplicarse; el adaptador nunca inserta. Un trigger descarta la
+valoración si la asistencia se corrige a ausente/justificado. El upsert de asistencia
+no toca estas columnas, por lo que re-guardar la sesión no las borra.
+
+**Informe de clase:** cada registro por alumno muestra estrellas o «Sin evaluar»,
+«No aplica (no asistió)» o «Valoración no disponible»; el encabezado del alumno resume
+«promedio X/5 (n evaluadas, m sin evaluar)». El promedio usa solo lo evaluado (los 0
+cuentan). PDF incluye ambos. Es el juicio del maestro por clase, no un diagnóstico
+automático ni una etiqueta al alumno (R6); cada valor se rastrea a su fecha y sesión (R5).
+
+**Riesgos conocidos:**
+- La migración debe aplicarse **antes** de usar el botón en producción. El informe
+  tolera su ausencia (consulta aparte, muestra «no disponible»); el botón fallaría con
+  un error claro al cargar.
+- Hay dos conceptos de «estrellas» en el portal: por indicador (GradePanel,
+  `evaluacion_indicador`) y por clase (esta). No se mezclan ni se promedian entre sí.
+- Primera fila real: la primera clase valorada tras el despliegue (R1).
+
+Validación: ver la descripción del PR. Pendiente: comprobación en el portal con sesión
+real autenticada y aplicar la migración en un entorno de prueba.

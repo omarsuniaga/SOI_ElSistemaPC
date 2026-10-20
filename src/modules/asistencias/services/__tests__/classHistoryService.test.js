@@ -49,3 +49,24 @@ it('finds explicit names, preserves offsets, rejects ambiguous first names and p
   expect(findStudentMention('Mariana mejoró', a, [a])).toBeNull()
   expect(findStudentMention('MARIA PEREZ mejoró', a, [a, { name: 'María Díaz' }])).toEqual({ start: 0, end: 11 })
 })
+
+it('shows the teacher rating only for attendees, keeps 0 apart from unrated, and flags missing data', () => {
+  const report = { entries: [
+    { id: 's1', date: '2026-09-01', content: 'Arco', attendance: [] },
+    { id: 's2', date: '2026-09-08', content: 'Escalas', attendance: [] },
+    { id: 's3', date: '2026-09-15', content: 'Vibrato', attendance: [] },
+  ] }
+  const asis = (estado, valoracion) => ({ asistencias: [{ alumnoId: 'a', estado, valoracion }], observaciones: [], valoracionesDisponibles: true })
+  const details = { s1: asis('presente', 0), s2: asis('tarde', null), s3: asis('ausente', 5) }
+  const { records, ratingSummary } = buildStudentClassHistory(report, { id: 'a' }, details)
+  expect(records.map(r => [r.ratingStatus, r.rating])).toEqual([['rated', 0], ['unrated', null], ['not_applicable', null]])
+  expect(records[0].ratingText).toBe('0 estrellas')
+  expect(records[1].ratingText).toBe('Sin evaluar')
+  expect(records[2].ratingText).toContain('No aplica')
+  expect(ratingSummary).toEqual({ rated: 1, unrated: 1, average: 0 })
+
+  const missing = buildStudentClassHistory(report, { id: 'a' }, { s1: { asistencias: [{ alumnoId: 'a', estado: 'presente' }], observaciones: [], valoracionesDisponibles: false } })
+  expect(missing.records[0].ratingStatus).toBe('unavailable')
+  const noDetail = buildStudentClassHistory({ entries: [{ id: 'x', date: '2026-09-01', content: '', attendance: [{ alumno_id: 'a', estado: 'presente' }] }] }, { id: 'a' }, {})
+  expect(noDetail.records[0].ratingStatus).toBe('unavailable')
+})

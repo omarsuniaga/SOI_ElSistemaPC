@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { findStudentMention } from './classHistoryService.js'
+import { ratingSummaryText } from './presentRatingsService.js'
 
 export function downloadClassHistoryPdf(report, classInfo) {
   const doc = new jsPDF()
@@ -35,10 +36,10 @@ export function downloadClassHistoryPdf(report, classInfo) {
     body: report.students.map(s => [s.name, s.id]),
   })
   if (report.studentHistories) autoTable(doc, { startY: doc.lastAutoTable.finalY + 8,
-    head: [['Alumno / nómina', 'Fecha', 'Participación', 'Contenido del maestro']],
+    head: [['Alumno / nómina', 'Fecha', 'Participación y valoración', 'Contenido del maestro']],
     body: report.studentHistories.flatMap(student => student.records.length ? student.records.map(r => [
-      student.name + (student.current ? ' · Nómina actual' : ' · Histórico'),
-      r.date, r.participation, (findStudentMention(r.content, student, report.studentHistories) ? 'Menciona al alumno: ' : '') + (r.content || 'Sin contenido registrado') + (r.notes.length ? '\nComentario vinculado al alumno: ' + r.notes.join('\n') : ''),
+      student.name + (student.current ? ' · Nómina actual' : ' · Histórico') + (ratingSummaryText(student.ratingSummary) ? '\nValoración: ' + ratingSummaryText(student.ratingSummary) : ''),
+      r.date, r.participation + '\nValoración del maestro: ' + r.ratingText, (findStudentMention(r.content, student, report.studentHistories) ? 'Menciona al alumno: ' : '') + (r.content || 'Sin contenido registrado') + (r.notes.length ? '\nComentario vinculado al alumno: ' + r.notes.join('\n') : ''),
     ]) : [[student.name, 'Sin registros en el rango', '', '']]),
     styles: { fontSize: 8, overflow: 'linebreak' },
   })

@@ -40,7 +40,7 @@ import {
   deleteEvidencia,
 } from '../services/justificacionService.js'
 import { construirJustificaciones, aplicarJustificadosDeAsistencias, justificacionesPorActividad } from '../services/justificacionesAdm.js'
-import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
+import { registrarAsistenciaBulk, getValoracionesSesion, guardarValoracionesSesion } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
 import { saveProgressFromAI, linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
@@ -92,6 +92,7 @@ import { createJustifModalManager } from '../components/attendance/JustifModalMa
 import { createStudentList } from '../components/attendance/StudentList.js'
 import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
+import { createPresentRatingsPanel } from '../components/attendance/PresentRatingsPanel.js'
 import { logSubstituteActivity } from '../services/substituteAuditService.js'
 import { renderSessionRepertoirePanel } from '../components/SessionRepertoirePanel.js'
 import { getRepertoireAdapter, RepertoireUnavailableError } from '../../modules/repertoire/api/repertoireRuntime.js'
@@ -1681,6 +1682,9 @@ function _renderVista(container, ctx) {
         <button id="btn-guardar-obs" class="pm-asist-btn-obs" style="display:none;">
           <i class="bi bi-chat-left-text"></i> Observación
         </button>
+        <button id="btn-evaluar-presentes" type="button" class="pm-asist-btn-obs">
+          <i class="bi bi-star"></i> Evaluar presentes
+        </button>
         <button id="btn-guardar" class="pm-asist-btn-save">
           <i class="bi bi-cloud-upload"></i> Guardar sesión
         </button>
@@ -2578,6 +2582,17 @@ function _renderVista(container, ctx) {
   // Nota: Eliminamos la carga global de ContentSelectionPanel aquí
   // para evitar el error de studentId requerido.
   // El flujo ahora es 100% contextual al interactuar con un alumno.
+
+  // === Evaluar presentes (valoración 0–5 por alumno) ===
+  // sesionId se lee en cada apertura: la sesión puede crearse después de montar la vista.
+  const presentRatingsPanel = createPresentRatingsPanel({
+    getAlumnos: () => alumnos,
+    getEstado: () => estado,
+    getSesionId: () => sesionId,
+    loadRatings: (id) => getValoracionesSesion(id),
+    saveRatings: (id, items) => guardarValoracionesSesion(id, items, { actorId: maestro.user_id || null }),
+  })
+  container.querySelector('#btn-evaluar-presentes')?.addEventListener('click', () => presentRatingsPanel.open())
 
   // === Save Observation Button ===
   createObservationSaveButton(container, {

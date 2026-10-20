@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 import { logSubstituteActivity, isSubstituteAssignment } from '../../../portal-maestros/services/substituteAuditService.js'
+import { partitionRatings } from '../services/presentRatingsService.js'
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
@@ -241,6 +242,21 @@ export async function getDetalleSesion(sesionId) {
 
   if (errA) throwError('No se pudieron cargar las asistencias', errA)
 
+  // Consulta aparte y tolerante: PostgREST rechaza la consulta ENTERA si se pide una
+  // columna inexistente, y la migración de `valoracion` puede no estar aplicada aún.
+  const valoracionesMap = new Map()
+  let valoracionesDisponibles = true
+  const { data: valoraciones, error: errV } = await supabase
+    .from('asistencias')
+    .select('alumno_id, valoracion')
+    .eq('sesion_clase_id', sesionId)
+  if (errV) {
+    valoracionesDisponibles = false
+    console.warn('[asistenciasApi] Valoraciones no disponibles:', errV.message)
+  } else {
+    for (const v of valoraciones || []) valoracionesMap.set(v.alumno_id, v.valoracion ?? null)
+  }
+
   const { data: justificaciones } = await supabase
     .from('justificaciones')
     .select('motivo, descripcion, archivo_url, estado, alumno_id')
@@ -302,7 +318,9 @@ export async function getDetalleSesion(sesionId) {
       alumnoId: a.alumno_id,
       alumnoNombre: a.alumnos?.nombre_completo ?? '—',
       justificacion: justificacionesMap[a.alumno_id] ?? null,
+      valoracion: valoracionesMap.get(a.alumno_id) ?? null,
     })),
+    valoracionesDisponibles,
     observaciones: (observaciones || []).map((o) => ({
       id: o.id,
       tipo: o.tipo,
@@ -319,6 +337,50 @@ export async function getDetalleSesion(sesionId) {
       planTitulo: c.planificaciones?.titulo,
     })),
   }
+}
+
+// ─── 2b. VALORACIÓN DE CLASE POR ALUMNO PRESENTE (0–5) ──────────────────────
+
+/** Filas de asistencia de la sesión con su valoración (null = sin evaluar). */
+export async function getValoracionesSesion(sesionId) {
+  if (!sesionId) throwError('Se requiere sesionId')
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('id, alumno_id, estado, valoracion, valorada_at')
+    .eq('sesion_clase_id', sesionId)
+  if (error) throwError('No se pudieron cargar las valoraciones', error)
+  return (data || []).map((r) => ({ ...r, valoracion: r.valoracion ?? null }))
+}
+
+/**
+ * Guarda o corrige valoraciones sobre las filas existentes de la sesión.
+ * Solo UPDATE por (sesión, alumno): no inserta, así que no duplica; `null` borra.
+ * Ausentes, justificados y alumnos sin asistencia guardada se rechazan.
+ */
+export async function guardarValoracionesSesion(sesionId, items, { actorId = null } = {}) {
+  if (!sesionId) throwError('Se requiere sesionId')
+  const rows = await getValoracionesSesion(sesionId)
+  const { updates, rejected } = partitionRatings(rows, items)
+  const now = new Date().toISOString()
+  const results = await Promise.all(
+    updates.map(async (u) => {
+      const { error } = await supabase
+        .from('asistencias')
+        .update({
+          valoracion: u.valoracion,
+          valorada_por: u.valoracion === null ? null : actorId,
+          valorada_at: u.valoracion === null ? null : now,
+        })
+        .eq('id', u.id)
+        .eq('sesion_clase_id', sesionId)
+      return { u, error }
+    }),
+  )
+  const failed = results.filter((r) => r.error)
+  if (failed.length) {
+    throwError(`No se pudieron guardar ${failed.length} valoración(es)`, failed[0].error)
+  }
+  return { saved: updates.map((u) => u.alumno_id), rejected }
 }
 
 // ─── 3. REPORTE COMPLETO DEL PERÍODO ─────────────────────────────────────────

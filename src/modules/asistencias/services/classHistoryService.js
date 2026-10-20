@@ -1,4 +1,5 @@
 import { buildClassHealthData, sessionContent } from './classHealthService.js'
+import { isRatableState, ratingLabel, summarizeRatings } from './presentRatingsService.js'
 
 /** Only evidence for the exact class ID; no inferred enrollment or start dates. */
 export function buildClassHistory(timeline, classId, { from = '', to = '' } = {}) {
@@ -46,13 +47,28 @@ export function buildStudentClassHistory(report, student, details = {}) {
       .map(o => o.descripcion || o.observacion || o.titulo).filter(Boolean)
     const direct = attendance?.observacion || attendance?.observaciones
     if (direct) notes.unshift(direct)
+    // Valoración del maestro (0–5). Solo aplica a quien asistió; «Sin evaluar» (null) ≠ 0.
+    let ratingStatus = 'not_applicable'
+    let rating = null
+    if (isRatableState(state)) {
+      if (!detail || detail.valoracionesDisponibles === false) ratingStatus = 'unavailable'
+      else {
+        rating = attendance.valoracion ?? null
+        ratingStatus = rating === null ? 'unrated' : 'rated'
+      }
+    }
     return { date: entry.date, sessionId: entry.id, content: entry.content, state,
+      rating, ratingStatus,
+      ratingText: ratingStatus === 'unavailable' ? 'Valoración no disponible'
+        : ratingStatus === 'not_applicable' ? 'No aplica (no asistió)' : ratingLabel(rating),
       participation: attended ? 'Asistió: contenido grupal, dominio no evaluado' : missed
         ? 'No asistió: contenido pendiente de verificar o recuperar' : 'Sin evidencia de participación',
       notes, detailsAvailable: Boolean(detail),
     }
   }).filter(r => r.state || r.notes.length)
-  return { ...student, records }
+  const ratingSummary = summarizeRatings(records
+    .filter(r => r.ratingStatus === 'rated' || r.ratingStatus === 'unrated').map(r => r.rating))
+  return { ...student, records, ratingSummary }
 }
 
 /** Rolling three calendar months, clamped at month end; Dominican calendar dates. */

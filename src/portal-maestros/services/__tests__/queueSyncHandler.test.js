@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const calls = []
 let insertError = null
+let upsertError = null
 const chain = (table) => {
   const rec = { table, eqs: [] }
   const eqChain = () => {
@@ -10,7 +11,7 @@ const chain = (table) => {
   }
   return {
     insert: vi.fn((v) => { rec.insert = v; calls.push(rec); return Promise.resolve({ error: insertError }) }),
-    upsert: vi.fn((v, o) => { rec.upsert = v; rec.opts = o; calls.push(rec); return Promise.resolve({ error: null }) }),
+    upsert: vi.fn((v, o) => { rec.upsert = v; rec.opts = o; calls.push(rec); return Promise.resolve({ error: upsertError }) }),
     update: vi.fn((v) => { rec.update = v; return eqChain() }),
   }
 }
@@ -22,7 +23,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
 import { syncQueueItem } from '../queueSyncHandler.js'
 
 describe('syncQueueItem', () => {
-  beforeEach(() => { calls.length = 0; insertError = null })
+  beforeEach(() => { calls.length = 0; insertError = null; upsertError = null })
 
   it('sesiones_clase insert simple cuando la fila no existe', async () => {
     await syncQueueItem({
@@ -66,5 +67,46 @@ describe('syncQueueItem', () => {
       payload: { id: 's1', contenido_dsl: 'viejo', asistencias: [1] },
     })
     expect(calls[0].update).toEqual({ contenido: 'viejo', asistencia: [1] })
+  })
+
+  describe('operacion upsert (progreso académico)', () => {
+    it('student_node_progress usa upsert con onConflict student_id,node_id y no insert', async () => {
+      const payload = { student_id: 'st1', node_id: 'n1', status: 'approved', last_attempt_at: '2026-10-11T00:00:00.000Z' }
+      await syncQueueItem({ tabla: 'student_node_progress', operacion: 'upsert', payload })
+      expect(calls).toHaveLength(1)
+      expect(calls[0].upsert).toEqual(payload)
+      expect(calls[0].opts).toEqual({ onConflict: 'student_id,node_id' })
+      expect(calls[0].insert).toBeUndefined()
+    })
+
+    it('student_level_progress usa upsert con onConflict student_id,level_id y no insert', async () => {
+      const payload = { student_id: 'st1', level_id: 'l1', status: 'approved', completed_at: '2026-10-11T00:00:00.000Z' }
+      await syncQueueItem({ tabla: 'student_level_progress', operacion: 'upsert', payload })
+      expect(calls).toHaveLength(1)
+      expect(calls[0].upsert).toEqual(payload)
+      expect(calls[0].opts).toEqual({ onConflict: 'student_id,level_id' })
+      expect(calls[0].insert).toBeUndefined()
+    })
+
+    it('un error de Supabase en upsert se propaga para que la cola conserve el item', async () => {
+      upsertError = { code: '42501', message: 'permission denied' }
+      await expect(
+        syncQueueItem({ tabla: 'student_level_progress', operacion: 'upsert', payload: { student_id: 'st1', level_id: 'l1' } }),
+      ).rejects.toEqual(upsertError)
+    })
+
+    it('upsert sobre una tabla sin conflicto declarado falla de forma cerrada sin tocar Supabase', async () => {
+      await expect(
+        syncQueueItem({ tabla: 'asistencias', operacion: 'upsert', payload: { a: 1 } }),
+      ).rejects.toThrow(/asistencias/)
+      expect(calls).toHaveLength(0)
+    })
+
+    it('una operación desconocida lanza error y no se trata como éxito', async () => {
+      await expect(
+        syncQueueItem({ tabla: 'student_node_progress', operacion: 'merge', payload: { student_id: 'st1' } }),
+      ).rejects.toThrow(/merge/)
+      expect(calls).toHaveLength(0)
+    })
   })
 })

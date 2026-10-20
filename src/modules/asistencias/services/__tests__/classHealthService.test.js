@@ -320,7 +320,7 @@ describe('buildClassHealthData - content coverage and repetition', () => {
 describe('buildClassHealthData - health score', () => {
   it('computes the score with the documented formula', () => {
     // Attendance 12/16 = 75%. Coverage 3/4 = 75%. Variety 2 distinct / 3 with content = 66.7%.
-    // 0.5*75 + 0.3*75 + 0.2*66.7 = 73.34 -> 73
+    // 0.625*75 + 0.375*75 = 75; repetition is descriptive
     const data = buildClassHealthData([
       sesion('2026-09-03', { observacion_sesion: 'Escalas mayores en tono de do' }),
       sesion('2026-09-10', { observacion_sesion: 'Escalas mayores en tono de sol' }),
@@ -332,7 +332,7 @@ describe('buildClassHealthData - health score', () => {
     expect(violin.attendanceRatePct).toBe(75)
     expect(violin.content.coveragePct).toBe(75)
     expect(violin.content.varietyPct).toBe(66.7)
-    expect(violin.healthScore).toBe(73)
+    expect(violin.healthScore).toBe(75)
     expect(violin.healthLevel).toBe('En observación')
   })
 
@@ -356,7 +356,7 @@ describe('buildClassHealthData - health score', () => {
       sesion('2026-09-10', { clase_id: 'c9', clase_nombre: 'Coro', presentes: 0, ausentes: 0, justificados: 0 }),
     ], SEPTIEMBRE)
 
-    expect(data.summary.averageHealthScore).toBe(73)
+    expect(data.summary.averageHealthScore).toBe(75)
     expect(data.summary.levelCounts).toEqual({
       'Saludable': 0,
       'En observación': 1,

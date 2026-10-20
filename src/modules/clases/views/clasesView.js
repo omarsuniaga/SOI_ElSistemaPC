@@ -12,6 +12,7 @@
  */
 
 import '../styles/clases.css'
+import { openClassHistoryModal } from '../components/classHistoryModal.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -751,6 +752,7 @@ function _renderClaseCardV2(c) {
               <h6 class="clase-card-v2-title" title="${escapeHTML(c.nombre || 'Clase')}">${escapeHTML(c.nombre || 'Clase')}</h6>
             </div>
             
+            <button class="btn btn-outline-primary btn-sm" data-action="class-history" data-id="${c.id}" title="Ver historial y análisis mensual">Informe de clase</button>
             ${issues.length > 0 ? `
               <button class="btn btn-warning btn-sm clase-btn-warning-corner flex-shrink-0 shadow-xs"
                       data-action="resolver-conflicto"
@@ -2591,6 +2593,13 @@ function attachEvents(container) {
     // 0. Crear clase desde estado vacío
     if (e.target.closest('#btnCrearClaseEmpty')) {
       abrirModalCrear()
+      return
+    }
+
+    const historyButton = e.target.closest('[data-action="class-history"]')
+    if (historyButton) {
+      const classInfo = state.clasesOriginales.find(c => c.id === historyButton.dataset.id)
+      if (classInfo) await openClassHistoryModal(classInfo)
       return
     }
 

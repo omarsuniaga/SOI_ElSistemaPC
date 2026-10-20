@@ -74,3 +74,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
   (parcial), `seguimiento-ausentes` (0/muchas). `soi-event-spine` necesita
   reconciliación contra prod antes de convertirse en tarea tomable (ver
   `openspec/TRIAGE.md`).
+
+| `class-history-report` | Informe individual e historial de clase | en_revision | alta | Codex / 7c4d3317573e | `feat/class-history-report` | `docs/planning/CLASS_HISTORY_REPORT.md` | Autorizado por Omar; 247 pruebas + 105 focalizadas, build/tipos aprobados; revisión visual pendiente; lane liberado | 2026-10-20 |

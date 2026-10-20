@@ -401,3 +401,9 @@ export async function getReporteConsolidado({ fecha, claseId } = {}) {
     resumenGlobal,
   }
 }
+
+export async function getClassRoster(classId) {
+  if (!clasesMock.clases.some(c => c.id === classId)) return []
+  // Same simulated enrollment used when initializing attendance above.
+  return (alumnosMock || []).slice(0, 8).map(a => ({ id: a.id, name: a.nombre_completo || a.id }))
+}

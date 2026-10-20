@@ -73,3 +73,7 @@ export async function obtenerAsistenciaDelDia(params) {
 export async function obtenerAsistenciasPorClasesFecha(claseIds, fecha) {
   return impl.obtenerAsistenciasPorClasesFecha(claseIds, fecha)
 }
+
+export async function getClassRoster(classId) {
+  return impl.getClassRoster(classId)
+}

@@ -751,7 +751,7 @@ export async function registrarAsistenciaBulk(asistencias, auditContext = {}) {
 
 // ─── REPORTE CONSOLIDADO POR CLASE ──────────────────────────────────────
 
-export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) {
+export async function getReporteConsolidado({ periodoId, fecha, claseId, fullHistory = false } = {}) {
   try {
     let periodoFechaInicio, periodoFechaFin
     if (periodoId) {
@@ -794,10 +794,24 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     if (fecha) query = query.eq('fecha', fecha)
     if (claseId) query = query.eq('clase_id', claseId)
 
-    let { data: sesiones, error } = await query
-      .order('fecha', { ascending: false })
+    query = query.order('fecha', { ascending: false })
       .order('hora_inicio', { ascending: true })
-    if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
+    let sesiones
+    if (fullHistory) {
+      // Stable tie-breaker and pagination avoid silently truncating long histories.
+      query = query.order('sesion_clase_id', { ascending: true })
+      sesiones = []
+      for (let offset = 0; ; offset += 500) {
+        const { data, error } = await query.range(offset, offset + 499)
+        if (error) throwError('No se pudo cargar el historial completo', error)
+        sesiones.push(...(data || []))
+        if (!data || data.length < 500) break
+      }
+    } else {
+      const { data, error } = await query
+      if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
+      sesiones = data
+    }
 
     if (!Array.isArray(sesiones)) {
       sesiones = []
@@ -964,4 +978,12 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
   } catch (err) {
     throwError('Error en getReporteConsolidado', err)
   }
+}
+
+export async function getClassRoster(classId) {
+  const { data, error } = await supabase.from('alumnos_clases')
+    .select('alumno_id, alumno:alumnos(id,nombre_completo)')
+    .eq('clase_id', classId).eq('activo', true)
+  if (error) throwError('No se pudo cargar la nómina de clase', error)
+  return (data || []).map(row => ({ id: row.alumno_id, name: row.alumno?.nombre_completo || row.alumno_id }))
 }

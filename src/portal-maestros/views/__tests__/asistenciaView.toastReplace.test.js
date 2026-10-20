@@ -24,15 +24,15 @@ describe('asistenciaView - Toast Replacement', () => {
     expect(content).not.toContain("alert('Error al generar informe:")
   })
 
-  it('should replace alert for "Error al estructurar con IA" with AppToast.error', async () => {
+  it('has no separate "Estructurar con IA" flow nor its alert (merged into the IA review)', async () => {
     const fs = await import('fs')
     const path = await import('path')
 
     const filePath = path.resolve('./src/portal-maestros/views/asistenciaView.js')
     const content = fs.readFileSync(filePath, 'utf-8')
 
-    expect(content).toContain("AppToast.error('Error al estructurar con IA: ' + err.message)")
-    expect(content).not.toContain("alert('Error al estructurar con IA:")
+    expect(content).not.toContain('Error al estructurar con IA')
+    expect(content).not.toContain('createStructureModal')
   })
 
   it('should replace alert for "Error al guardar la planificación" with AppToast.error (in PlanificationCard.js)', async () => {

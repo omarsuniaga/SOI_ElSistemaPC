@@ -31,7 +31,7 @@ export function createImproveTextModal(parentContainer, { onAccept }) {
             </div>
           </div>
 
-          <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <div class="pm-improve-actions" style="display: flex; gap: 0.75rem;">
             <button class="pm-btn" id="pm-improve-reject" style="flex: 1; background: var(--pm-surface); border: 1px solid var(--pm-border);">Descartar</button>
             <button class="pm-btn pm-btn-primary" id="pm-improve-accept" style="flex: 1;">Aceptar</button>
           </div>
@@ -44,14 +44,34 @@ export function createImproveTextModal(parentContainer, { onAccept }) {
       const style = document.createElement('style')
       style.id = 'pm-improve-modal-styles'
       style.textContent = `
+        /* El modal nunca supera el viewport: el cuerpo se desplaza y los botones quedan al alcance. */
         .pm-improve-content {
           max-width: 900px;
           width: 90vw;
+          display: flex;
+          flex-direction: column;
+          max-height: calc(100vh - 2rem);
+          max-height: calc(100dvh - 2rem);
         }
+        .pm-improve-content .pm-modal-header { flex-shrink: 0; }
         .pm-improve-body {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+        }
+        .pm-improve-text { max-height: 45vh; }
+        .pm-improve-actions {
+          position: sticky;
+          bottom: -1rem;
+          margin: 0 -1rem -1rem;
+          padding: 0.75rem 1rem;
+          background: var(--pm-surface);
+          border-top: 1px solid var(--pm-border);
         }
         .pm-improve-panels {
           display: grid;
@@ -289,4 +309,4 @@ export function createGenerarInformeModal(parentContainer, { onAceptar }) {
   }
 
   return { open, close }
-}
+}

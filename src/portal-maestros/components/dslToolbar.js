@@ -2,7 +2,7 @@ import { createToolbarHelpModal } from './toolbarHelpModal.js'
 import { createObservationDictation } from './observationDictation.js'
 
 /** Barra compacta de observaciones: etiquetas, IA, ayuda y dictado. */
-export function createDslToolbar(container, { onInsert, getEditorContent, onStructureClick, onAnalyzeClick }) {
+export function createDslToolbar(container, { onInsert, getEditorContent, onAnalyzeClick }) {
   let destroyed = false
   let context = {}
   const tools = [
@@ -20,7 +20,6 @@ export function createDslToolbar(container, { onInsert, getEditorContent, onStru
         </button>
       `).join('')}
       <div class="pm-dsl-divider" aria-hidden="true"></div>
-      <button type="button" class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA" aria-label="Estructurar con IA">🚀</button>
       <button type="button" class="pm-dsl-tool-btn ai ai-primary" id="btn-analizar-progreso" title="Analizar con IA" aria-label="Analizar con IA">✨ IA</button>
       <button type="button" class="pm-dsl-tool-btn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
       <button type="button" class="pm-dsl-tool-btn pm-dsl-dictation" id="btn-dictar-observacion" title="Dictar observación" aria-label="Dictar observación" aria-pressed="false" aria-describedby="pm-dictation-status">
@@ -108,16 +107,6 @@ export function createDslToolbar(container, { onInsert, getEditorContent, onStru
     container.querySelector(`[data-token="${tool.token}"]`).onclick = () =>
       onInsert(tool.text, 1, tool.trigger || null)
   })
-
-  const structureButton = container.querySelector('#btn-ia-magic')
-  structureButton.onclick = async () => {
-    const text = getEditorContent?.() || ''
-    if (destroyed || !text.trim() || !onStructureClick || structureButton.disabled) return
-    structureButton.disabled = true
-    try { await onStructureClick(text) }
-    catch (error) { if (!destroyed) window.alert('Error al estructurar con IA: ' + error.message) }
-    finally { if (!destroyed) structureButton.disabled = false }
-  }
 
   const analyzeButton = container.querySelector('#btn-analizar-progreso')
   analyzeButton.onclick = async () => {

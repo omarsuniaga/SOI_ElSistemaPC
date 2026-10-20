@@ -23,7 +23,7 @@ Los source, en orden, deben cubrir TODAS las palabras del texto original, sin om
 
 /** Una sola llamada al proxy existente; sin ejecutar el evaluador antiguo que infiere notas. */
 export async function reviewLessonObservation(text, { roster = [], attendance = {} } = {}) {
-  if (config.isDemoMode) return fallbackLessonReview(text, 'Modo Demo: organiza el texto y confirma sus destinatarios; no se envía a IA.')
+  if (config.isDemoMode) return fallbackLessonReview(text, 'Modo Demo: organiza el texto y confirma sus destinatarios; no se envía a IA.', roster)
   try {
     const raw = await callGroq([
       { role: 'system', content: PROMPT },
@@ -33,6 +33,6 @@ export async function reviewLessonObservation(text, { roster = [], attendance = 
     ])
     return validateLessonReview(text, parseGroqJSON(raw), roster)
   } catch (error) {
-    return fallbackLessonReview(text, 'No se pudo verificar la propuesta de IA. Conservamos tu texto completo: ' + error.message)
+    return fallbackLessonReview(text, 'No se pudo verificar la propuesta de IA. Revisa los fragmentos y destinatarios propuestos: ' + error.message, roster)
   }
 }

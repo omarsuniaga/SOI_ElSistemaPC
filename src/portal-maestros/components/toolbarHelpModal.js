@@ -55,17 +55,9 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           icon: '✨',
           label: 'IA',
           title: 'Analizar con IA',
-          description: 'Propone avances por alumno a partir del texto para su revisión',
-          example: '"María avanzó en escalas" → propuesta para revisar',
+          description: 'Ordena tu nota por alumno y por tipo (contenido, refuerzo, tarea, desempeño) para que la revises antes de guardar',
+          example: '"#María avanzó en escalas" → tarjeta de María para revisar',
           color: '#ec4899'
-        },
-        {
-          icon: '🚀',
-          label: 'Estructurar',
-          title: 'Estructurar con DSL',
-          description: 'Convierte texto libre a formato DSL',
-          example: '"María tocando escalas" → #María [Escalas]',
-          color: '#f97316'
         }
       ]
     },

@@ -45,6 +45,47 @@ describe('lesson review guardrails', () => {
   it('retains the complete original in demo/offline fallback', () => {
     expect(fallbackLessonReview(original).blocks[0]).toMatchObject({ text: original, scope: 'seleccionar', studentIds: [] })
   })
+  describe('fallback split by explicit mentions', () => {
+    const group = [
+      { id: 'g', nombre_completo: 'Gerali Denisse Lugo Batista' },
+      { id: 'le', nombre_completo: 'Lesly Ramírez Leonardo' },
+      { id: 'sa', nombre_completo: 'Santa Isaura Castillo Diaz' },
+      { id: 'ye', nombre_completo: 'Yereni Esther Germain Michel' },
+    ]
+    const att = { g: 'P', le: 'P', sa: 'P', ye: 'P' }
+    const text = '#Gerali Denisse Lugo Batista ha perdido agilidad. #Lesly Ramírez Leonardo esta mejorando. ' +
+      '#Santa Isaura Castillo Diaz y #Yereni Esther Germain Michel estan ganando afinacion. #todos tienen problemas en la proyeccion.'
+
+    it('gives each student only their own sentence instead of repeating the whole text', () => {
+      const review = fallbackLessonReview(text, '', group)
+      expect(review.blocks.map(b => b.studentIds)).toEqual([['g'], ['le'], ['sa', 'ye'], []])
+      expect(review.blocks[3].scope).toBe('presentes')
+      const dsl = buildConfirmedLesson(review.blocks, group, att)
+      const lines = dsl.split('\n')
+      expect(lines).toHaveLength(5)
+      expect(lines.filter(l => l.includes('ha perdido agilidad'))).toHaveLength(1)
+      expect(lines.filter(l => l.includes('mejorando'))).toHaveLength(1)
+      expect(lines[0]).toMatch(/^#Gerali Denisse Lugo Batista /)
+      expect(lines.at(-1)).toMatch(/^#todos /)
+    })
+    it('covers every letter of the original so the review stays lossless', () => {
+      const review = fallbackLessonReview(text, '', group)
+      const sources = review.blocks.map(b => b.source).join('')
+      expect(sources.replace(/\s/g, '')).toBe(text.replace(/\s/g, ''))
+    })
+    it('keeps text before the first mention as an unassigned block', () => {
+      const review = fallbackLessonReview('Clase muy buena. #Lesly Ramírez Leonardo avanza.', '', group)
+      expect(review.blocks).toHaveLength(2)
+      expect(review.blocks[0]).toMatchObject({ studentIds: [], scope: 'seleccionar' })
+      expect(review.blocks[1].studentIds).toEqual(['le'])
+    })
+    it('ignores unknown names and keeps one block when nothing can be resolved', () => {
+      expect(fallbackLessonReview('#Desconocido hizo algo.', '', group).blocks).toHaveLength(1)
+    })
+    it('matches names without regard to accents or case', () => {
+      expect(fallbackLessonReview('#lesly ramirez leonardo avanza.', '', group).blocks[0].studentIds).toEqual(['le'])
+    })
+  })
   it('handles emoji offsets and rejects stale attendance snapshots', () => {
     const text = '🎻 Hoy escalas.'
     expect(validateLessonReview(text, { blocks: [{ source: text, text, kind: 'contenido' }] }, roster).blocks).toHaveLength(1)

@@ -16,7 +16,7 @@ describe('assisted lesson review service', () => {
     mocks.call.mockResolvedValue('{}')
     expect((await reviewLessonObservation('No logró la escala.')).blocks[0].text).toBe('No logró la escala.')
     mocks.call.mockRejectedValue(new Error('offline'))
-    expect((await reviewLessonObservation('No logró la escala.')).warning).toContain('Conservamos')
+    expect((await reviewLessonObservation('No logró la escala.')).warning).toContain('No se pudo verificar')
   })
   it('does not send demo student data to AI', async () => {
     mocks.config.isDemoMode = true

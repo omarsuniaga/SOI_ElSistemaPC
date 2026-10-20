@@ -10,12 +10,10 @@ import { abrirModalMapaDeCalor } from './planificacionView.js'
 
 import {
   improveText,
-  structureTextToDSL,
 } from '../services/groqService.js'
 import { createEvaluationDrawer } from '../components/EvaluationDrawer.js'
 import { createImproveTextModal } from '../components/improveTextModal.js'
 import { createGenerarInformeModal } from '../components/improveTextModal.js'
-import { createStructureModal } from '../components/structureModal.js'
 import {
   getMisClases,
   getHorariosClases,
@@ -1405,8 +1403,11 @@ function _renderVista(container, ctx) {
         padding: 0;
         background: transparent;
         display: flex;
-        flex-direction: column-reverse;
-        align-items: flex-end;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        max-width: calc(100vw - 28px);
         gap: 0.65rem;
         z-index: 1050;
         border: none;
@@ -1820,13 +1821,6 @@ function _renderVista(container, ctx) {
     },
   })
 
-  // === Structure Modal ===
-  const structureModal = createStructureModal(container, {
-    onAccept: (dslText) => {
-      editor.setValue(dslText)
-    },
-  })
-
   let lessonReviewDisposed = false
   editor.setContext({
     claseId,
@@ -1889,25 +1883,6 @@ function _renderVista(container, ctx) {
         AppToast.error('Error al generar informe: ' + err.message)
       } finally {
         if (informeBtn) informeBtn.disabled = false
-      }
-    },
-    onStructureClick: async (text) => {
-      const structureBtn = container.querySelector('#btn-ia-magic')
-      if (structureBtn) structureBtn.disabled = true
-      try {
-        const indicadorActivo = planificationCard?.getActiveIndicador()
-        const alumnosPresentes = alumnos
-          .filter((a) => estado[a.id] === 'P')
-          .map((p) => p.nombre_completo)
-        const dsl = await structureTextToDSL(text, {
-          presentes: alumnosPresentes,
-          indicadorActivo: indicadorActivo?.nombre || null,
-        })
-        structureModal.open({ original: text, dsl })
-      } catch (err) {
-        AppToast.error('Error al estructurar con IA: ' + err.message)
-      } finally {
-        if (structureBtn) structureBtn.disabled = false
       }
     },
     onAnalyzeClick: async (text) => {

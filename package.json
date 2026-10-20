@@ -19,6 +19,7 @@
     "test:db:anon-write": "bash supabase/tests/anon-write-fix/start_pg.sh && node supabase/tests/anon-write-fix/run_tests.mjs",
     "test:db:authenticated-wide-open": "bash supabase/tests/anon-write-fix/start_pg.sh && node supabase/tests/authenticated-wide-open/run_tests.mjs",
     "test:db:authenticated-wide-open-block5": "bash supabase/tests/anon-write-fix/start_pg.sh && node supabase/tests/authenticated-wide-open-block5/run_tests.mjs",
+    "test:db:secdef-email-instrument": "bash supabase/tests/anon-write-fix/start_pg.sh && node supabase/tests/secdef-email-instrument/run_tests.mjs",
     "test:sql": "psql \"$DATABASE_URL\" -f supabase/tests/fn_hermes_resolver_caso.test.sql",
     "jev:triage-ci": "node scripts/jev-triage-ci.mjs",
     "lint": "eslint src/",

@@ -88,6 +88,33 @@ describe('Observation dictation', () => {
     expect(instances).toHaveLength(1)
   })
 
+  it('requests microphone permission before listening and stops the probe stream', async () => {
+    const track = { stop: vi.fn() }
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [track] })
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia } })
+    button.click()
+    expect(instances).toHaveLength(0)
+    await vi.waitFor(() => expect(instances).toHaveLength(1))
+    expect(getUserMedia).toHaveBeenCalledWith({ audio: true })
+    expect(track.stop).toHaveBeenCalled()
+    instances[0].onstart()
+    button.click()
+    instances[0].onend()
+    button.click()
+    expect(instances).toHaveLength(2)
+    expect(getUserMedia).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not listen and explains it when the system denies the microphone', async () => {
+    const getUserMedia = vi.fn().mockRejectedValue(new Error('denied'))
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia } })
+    button.click()
+    await vi.waitFor(() => expect(status.textContent).toContain('Permite el acceso'))
+    expect(instances).toHaveLength(0)
+    expect(button.disabled).toBe(false)
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+  })
+
   it('explains denied microphone permission and can retry', () => {
     button.click()
     instances[0].onerror({ error: 'not-allowed' })

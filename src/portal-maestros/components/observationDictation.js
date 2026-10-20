@@ -10,6 +10,44 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   let restarts = 0
   let receivedText = false
   const MAX_AUTO_RESTARTS = 20
+  let permission = 'unknown'
+  let requesting = false
+  let permissionStatus = null
+
+  // Pide el permiso del micrófono al sistema (en una PWA instalada lo recuerda el teléfono).
+  // Solo abre y cierra el stream: el reconocimiento de voz usa su propia captura.
+  async function requestMic() {
+    if (!navigator.mediaDevices?.getUserMedia) return true
+    if (requesting) return false
+    requesting = true
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop())
+      permission = 'granted'
+      return true
+    } catch {
+      permission = 'denied'
+      return false
+    } finally {
+      requesting = false
+    }
+  }
+
+  function watchPermission() {
+    if (!navigator.permissions?.query) return
+    navigator.permissions.query({ name: 'microphone' }).then((status) => {
+      if (disposed) return
+      permissionStatus = status
+      permission = status.state
+      status.onchange = () => { permission = status.state }
+    }).catch(() => { /* Navegador sin Permissions API para micrófono. */ })
+  }
+
+  // Primer toque en la vista: si aún no se decidió, pedir el permiso por adelantado.
+  function preRequestOnFirstGesture() {
+    if (permission !== 'prompt') return
+    requestMic()
+  }
 
   const LISTENING_SHORT = 'Escuchando…'
   const LISTENING = 'Escuchando… Pulsa el micrófono para terminar.'
@@ -56,13 +94,30 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       return
     }
 
+    if (requesting) return
     stopRequested = false
     restarts = 0
     receivedText = false
     phase = 'starting'
     render()
-    show('Activando micrófono…')
-    startSession()
+
+    if (permission === 'granted' || !navigator.mediaDevices?.getUserMedia) {
+      show('Activando micrófono…')
+      startSession()
+      return
+    }
+    show('Permite el micrófono cuando el teléfono te lo pregunte…')
+    requestMic().then((granted) => {
+      if (disposed || phase !== 'starting' || recognition) return
+      if (!granted) {
+        phase = 'idle'
+        render()
+        show('Permite el acceso al micrófono en tu navegador para dictar.')
+        return
+      }
+      show('Activando micrófono…')
+      startSession()
+    })
   }
 
   function startSession() {
@@ -147,6 +202,8 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   }
 
   button.addEventListener('click', toggle)
+  watchPermission()
+  document.addEventListener('pointerdown', preRequestOnFirstGesture, { once: true })
   window.addEventListener('pagehide', suspend)
   document.addEventListener('visibilitychange', onVisibilityChange)
   render()
@@ -157,6 +214,8 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       disposed = true
       release()
       button.removeEventListener('click', toggle)
+      document.removeEventListener('pointerdown', preRequestOnFirstGesture)
+      if (permissionStatus) permissionStatus.onchange = null
       window.removeEventListener('pagehide', suspend)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     },

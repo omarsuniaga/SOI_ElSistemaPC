@@ -23,7 +23,6 @@ export function createDslSection(container, opts) {
       onLoading: () => {},
       onIaProposal: (proposal) => toolbarCallbacks.onIaProposal?.(proposal),
       onImproveClick: (text) => toolbarCallbacks.onImproveClick?.(text),
-      onStructureClick: (text) => toolbarCallbacks.onStructureClick?.(text),
       onAnalyzeClick: (text) => toolbarCallbacks.onAnalyzeClick?.(text),
     })
   }

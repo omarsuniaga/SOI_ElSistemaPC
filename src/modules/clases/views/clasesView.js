@@ -752,7 +752,7 @@ function _renderClaseCardV2(c) {
               <h6 class="clase-card-v2-title" title="${escapeHTML(c.nombre || 'Clase')}">${escapeHTML(c.nombre || 'Clase')}</h6>
             </div>
             
-            <button class="btn btn-outline-primary btn-sm" data-action="class-history" data-id="${c.id}" title="Ver historial y análisis mensual">Informe de clase</button>
+            <button class="btn btn-outline-primary btn-sm clase-btn-action-icon flex-shrink-0" data-action="class-history" data-id="${c.id}" title="Informe de clase" aria-label="Informe de clase"><i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i></button>
             ${issues.length > 0 ? `
               <button class="btn btn-warning btn-sm clase-btn-warning-corner flex-shrink-0 shadow-xs"
                       data-action="resolver-conflicto"

@@ -2,7 +2,7 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { escapeHTML } from '../utils/clasesUtils.js'
 import { getReporteConsolidado, getPeriodos, getClassRoster, getDetalleSesion } from '../../asistencias/api/asistenciasApi.js'
-import { buildClassHistory, buildStudentClassHistory } from '../../asistencias/services/classHistoryService.js'
+import { buildClassHistory, buildStudentClassHistory, defaultClassHistoryRange } from '../../asistencias/services/classHistoryService.js'
 import { downloadClassHistoryPdf } from '../../asistencias/services/classHistoryPdfService.js'
 import { generateClassNarratives } from '../../asistencias/services/classHealthNarrativeService.js'
 import { config } from '../../../core/config/config.js'
@@ -14,9 +14,10 @@ export async function openClassHistoryModal(classInfo) {
       getReporteConsolidado({ claseId: classInfo.id, fullHistory: true }), getPeriodos(), getClassRoster(classInfo.id),
     ])
     const timeline = timelineByDate || []
-    let report = buildClassHistory(timeline, classInfo.id)
+    const initialRange = defaultClassHistoryRange()
+    let report = buildClassHistory(timeline, classInfo.id, initialRange)
     const details = {}
-    const ids = [...new Set(report.entries.map(e => e.id).filter(Boolean))]
+    const ids = [...new Set(buildClassHistory(timeline, classInfo.id).entries.map(e => e.id).filter(Boolean))]
     for (let i = 0; i < ids.length; i += 5) {
       await Promise.all(ids.slice(i, i + 5).map(async id => {
         try { details[id] = await getDetalleSesion(id) } catch { details[id] = null }
@@ -50,9 +51,9 @@ export async function openClassHistoryModal(classInfo) {
       body: `<p><strong>Maestro actual:</strong> ${escapeHTML(classInfo.maestro_nombre || classInfo.maestroNombre || 'Sin asignar')}</p>
       <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
       <label>Período académico<select class="form-select" data-history-period><option value="">Todo el historial disponible</option>${(periods || []).map(p => `<option value="${escapeHTML(p.id)}">${escapeHTML(p.nombre)}</option>`).join('')}</select></label>
-      <label>Desde<input type="date" class="form-control" data-history-from></label><label>Hasta<input type="date" class="form-control" data-history-to></label>
+      <label>Desde<input type="date" class="form-control" value="${initialRange.from}" data-history-from></label><label>Hasta<input type="date" class="form-control" value="${initialRange.to}" data-history-to></label>
       <label>Contenido<select class="form-select" data-history-mode><option value="raw">Contenido en bruto</option><option value="ai">Análisis por IA y evidencia</option></select></label>
-      <button class="btn btn-primary" data-history-filter>Visualizar informe</button><button class="btn btn-outline-primary" data-history-export>Descargar PDF de esta vista</button></div><p class="small text-muted">Los filtros se aplican al pulsar Visualizar informe. El PDF reproduce el último informe visualizado.</p><div data-history-results></div>`,
+      <button class="btn btn-primary" data-history-filter>Visualizar informe</button><button class="btn btn-outline-primary" data-history-export>Descargar PDF de esta vista</button></div><p class="small text-muted">Los filtros se aplican al pulsar Visualizar informe. El PDF reproduce el último informe visualizado.</p><p data-history-status role="status" aria-live="polite">Informe inicial: últimos tres meses (${initialRange.from} a ${initialRange.to}). Puedes cambiar las fechas.</p><div data-history-results tabindex="-1"></div>`,
       onShow: body => {
         draw(body)
         body.querySelector('[data-history-export]').onclick = () => downloadClassHistoryPdf(report, classInfo)
@@ -69,6 +70,10 @@ export async function openClassHistoryModal(classInfo) {
           const request = ++generation
           const button = body.querySelector('[data-history-filter]')
           button.disabled = true
+          button.textContent = next.mode === 'ai' ? 'Generando análisis…' : 'Actualizando…'
+          const status = body.querySelector('[data-history-status]')
+          status.textContent = next.mode === 'ai' ? 'Generando resumen por IA. Puede tardar unos segundos…' : 'Aplicando filtros…'
+          body.querySelector('[data-history-export]').disabled = true
           try {
             if (next.mode === 'ai') {
               if (config.isDemoMode) AppToast.info('En modo Demo se muestra la evidencia sin consultar IA.')
@@ -83,8 +88,12 @@ export async function openClassHistoryModal(classInfo) {
             if (request !== generation || !body.isConnected) return
             report = enrich(next)
             draw(body)
+            status.textContent = `Informe actualizado · ${next.periodName} · ${from || 'Primer registro'} a ${to || 'Último registro'} · ${next.entries.length} clases · ${next.mode === 'ai' ? 'Análisis por IA y evidencia' : 'Contenido en bruto'}.`
+            const results = body.querySelector('[data-history-results]')
+            results.focus({ preventScroll: true })
+            results.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
           } catch { AppToast.error('No se pudo generar el análisis. El historial anterior sigue disponible.') }
-          finally { button.disabled = false }
+          finally { button.disabled = false; button.textContent = 'Visualizar informe'; body.querySelector('[data-history-export]').disabled = false }
         }
       },
     })

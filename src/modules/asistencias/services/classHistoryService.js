@@ -54,3 +54,13 @@ export function buildStudentClassHistory(report, student, details = {}) {
   }).filter(r => r.state || r.notes.length)
   return { ...student, records }
 }
+
+/** Rolling three calendar months, clamped at month end; Dominican calendar dates. */
+export function defaultClassHistoryRange(now = new Date()) {
+  const to = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santo_Domingo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  const [year, month, day] = to.split('-').map(Number)
+  const target = new Date(Date.UTC(year, month - 4, 1))
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate()
+  target.setUTCDate(Math.min(day, lastDay))
+  return { from: target.toISOString().slice(0, 10), to }
+}

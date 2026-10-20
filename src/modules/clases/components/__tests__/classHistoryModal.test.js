@@ -18,13 +18,16 @@ it('explores HTML without export and downloads the same selected analysis withou
   const options = mocks.open.mock.calls[0][0]
   const body = document.createElement('div'); body.innerHTML = options.body; document.body.append(body)
   options.onShow(body)
-  expect(body.querySelector('[data-history-results]').textContent).toContain('2026-09-02')
+  expect(body.querySelector('[data-history-from]').value).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   expect(body.querySelector('script')).toBeNull()
   expect(mocks.pdf).not.toHaveBeenCalled()
+  body.querySelector('[data-history-from]').value = ''
+  body.querySelector('[data-history-to]').value = ''
   body.querySelector('[data-history-period]').value = 'p'
   body.querySelector('[data-history-mode]').value = 'ai'
   await body.querySelector('[data-history-filter]').onclick()
   expect(body.textContent).toContain('Trabajo de escalas')
+  expect(body.querySelector('[data-history-status]').textContent).toContain('Informe actualizado')
   body.querySelector('[data-history-export]').click()
   expect(mocks.pdf.mock.calls[0][0]).toMatchObject({ from: '2026-09-01', to: '2026-09-30', mode: 'ai' })
   expect(mocks.narrative).toHaveBeenCalledTimes(1)

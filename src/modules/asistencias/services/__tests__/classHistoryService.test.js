@@ -34,3 +34,9 @@ it('links notes by ID and marks missed content for verification without assertin
   expect(buildStudentClassHistory(report, { id: 'b' }, details).records[0].participation).toContain('pendiente de verificar')
   expect(buildStudentClassHistory(report, { id: 'c' }, details).records).toEqual([])
 })
+
+import { defaultClassHistoryRange } from '../classHistoryService.js'
+it('defaults to three calendar months ending today in Santo Domingo', () => {
+  expect(defaultClassHistoryRange(new Date('2026-10-20T15:00:00Z'))).toEqual({ from: '2026-07-20', to: '2026-10-20' })
+  expect(defaultClassHistoryRange(new Date('2026-05-31T15:00:00Z'))).toEqual({ from: '2026-02-28', to: '2026-05-31' })
+})

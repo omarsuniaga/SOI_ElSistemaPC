@@ -39,7 +39,7 @@ export function getAutocompleteTarget(editor, selection = window.getSelection())
   before.selectNodeContents(editor)
   before.setEnd(caret.endContainer, caret.endOffset)
   const prefix = before.toString()
-  const match = prefix.match(/([#\[({$>])([^#\[\](){}\n$>]*)$/)
+  const match = prefix.match(/([#[({$>])([^#[\](){}\n$>]*)$/)
   if (!match) return null
   let start = prefix.length - match[0].length
   if (match[1] === '#') while (start > 0 && prefix[start - 1] === '#') start--

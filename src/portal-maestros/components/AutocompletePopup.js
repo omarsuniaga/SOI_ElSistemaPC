@@ -456,7 +456,28 @@ export function getCursorPosition() {
   if (!sel || sel.rangeCount === 0) return null;
 
   const range = sel.getRangeAt(0);
-  const rect = range.getBoundingClientRect?.() || (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.getBoundingClientRect();
+  let rect = range.getBoundingClientRect?.();
+  let atPreviousCharacter = false;
+  if (!rect || (!rect.width && !rect.height)) {
+    let previous = range.startContainer;
+    let offset = range.startOffset;
+    if (previous.nodeType === 1) {
+      previous = previous.childNodes[offset - 1];
+      while (previous?.lastChild) previous = previous.lastChild;
+      offset = previous?.textContent?.length || 0;
+    }
+    if (previous?.nodeType === 3 && offset > 0) {
+      const probe = range.cloneRange();
+      probe.setStart(previous, offset - 1);
+      probe.setEnd(previous, offset);
+      rect = probe.getBoundingClientRect?.();
+      atPreviousCharacter = true;
+    }
+  }
+  if (!rect || (!rect.width && !rect.height)) {
+    rect = (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.getBoundingClientRect();
+    atPreviousCharacter = false;
+  }
   if (!rect) return null;
 
   // IMPORTANTE: usar rect.bottom (debajo del cursor) en lugar de rect.top
@@ -464,7 +485,7 @@ export function getCursorPosition() {
   // rect.left: posición horizontal del cursor
   // rect.bottom: base de la línea de texto (más legible que rect.top)
   return {
-    x: rect.left,
+    x: atPreviousCharacter ? rect.right : rect.left,
     y: rect.bottom  // ← Cambio crucial: debajo del cursor, no arriba
   };
 }

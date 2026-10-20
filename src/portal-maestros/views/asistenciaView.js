@@ -1790,6 +1790,7 @@ function _renderVista(container, ctx) {
     },
   })
   const editor = dslSection.getEditor()
+  _cleanups.push(() => dslSection.getToolbar()?.destroy())
   const editorContainer = container.querySelector('#pm-dsl-editor-container')
 
   // Salir del editor —o de la vista— persiste ya, sin esperar el debounce de 2 s.

@@ -15,7 +15,7 @@ const original = fs.readFileSync(path.join(migDir, fs.readdirSync(migDir).find((
 
 const replaceOnce = (s, a, b) => {
   if (!s.includes(a)) throw new Error(`mutation anchor not found: ${a.slice(0, 60)}`);
-  return s.replace(a, b);
+  return s.replace(a, () => b);
 };
 // appended after the self-check, i.e. a regression the migration itself cannot see
 const beforeCommit = (sql) => original.replace(/COMMIT;\s*$/, `${sql}\nCOMMIT;\n`);

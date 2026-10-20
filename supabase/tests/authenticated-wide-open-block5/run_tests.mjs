@@ -190,6 +190,7 @@ function matrixCases() {
   add('configuracion_recordatorios SELECT another teacher\'s row', [...ADMIN_ONLY, 'maestro_otro'], () => `SELECT id FROM ${T('configuracion_recordatorios')} WHERE id = '${ID.cfg_otro}'`, 'read');
   add('configuracion_recordatorios upsert own preferences (portal save)', SIGNED_IN, (a) => upsert(a));
   add('configuracion_recordatorios upsert onto ANOTHER profile (allowed only to its owner)', [...SVC, 'maestro_otro'], (a) => upsert(a, ACTORS.maestro_otro.uid));
+  add('configuracion_recordatorios INSERT a row for ANOTHER profile that has none (no conflict path)', [...SVC, 'user'], () => `INSERT INTO ${T('configuracion_recordatorios')} (profile_id, push_activo) VALUES ('${ACTORS.user.uid}', true)`);
   add('configuracion_recordatorios UPDATE own row', [...SVC, 'maestro_titular'], () => `UPDATE ${T('configuracion_recordatorios')} SET push_activo = false WHERE id = '${ID.cfg_titular}'`);
   add('configuracion_recordatorios UPDATE another teacher\'s row', [...SVC, 'maestro_otro'], () => `UPDATE ${T('configuracion_recordatorios')} SET push_activo = true WHERE id = '${ID.cfg_otro}'`);
   add('configuracion_recordatorios UPDATE re-address profile_id', SVC, () => `UPDATE ${T('configuracion_recordatorios')} SET profile_id = '${ACTORS.user.uid}' WHERE id = '${ID.cfg_titular}'`);

@@ -71,11 +71,19 @@ describe('Observation toolbar', () => {
     expect(onAnalyzeClick).not.toHaveBeenCalled()
   })
 
-  it('keeps the structure action connected to the current text', () => {
-    const onStructureClick = vi.fn()
-    mount({ onStructureClick })
-    container.querySelector('#btn-ia-magic').click()
-    expect(onStructureClick).toHaveBeenCalledWith('Escala de Sol')
+  it('exposes a single AI action: the review button also structures the text', () => {
+    mount()
+    expect(container.querySelector('#btn-ia-magic')).toBeNull()
+    expect(container.querySelectorAll('.pm-dsl-tool-btn.ai')).toHaveLength(1)
+    expect(container.querySelector('.pm-dsl-tool-btn.ai').id).toBe('btn-analizar-progreso')
+  })
+
+  it('does not advertise a separate structure action in the help', () => {
+    mount()
+    container.querySelector('#btn-help').click()
+    const modal = document.getElementById('pm-toolbar-help-modal')
+    expect(modal.textContent).not.toContain('Estructurar')
+    expect(modal.textContent).toContain('Analizar con IA')
   })
 
   it('opens updated help with dictation instructions', () => {

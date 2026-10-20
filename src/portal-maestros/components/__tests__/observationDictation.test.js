@@ -41,11 +41,14 @@ describe('Observation dictation', () => {
     expect(status.textContent).toContain('Escuchando')
   })
 
-  it('inserts final text once without sending interim results or repeated indexes', () => {
+  it('shows interim text live and inserts final text once without repeated indexes', () => {
     button.click()
     const recognition = instances[0]
+    expect(recognition.interimResults).toBe(true)
+    recognition.onstart()
     recognition.onresult({ resultIndex: 0, results: [result('Escala', false)] })
     expect(onInsert).not.toHaveBeenCalled()
+    expect(status.textContent).toContain('«Escala»')
     recognition.onresult({ resultIndex: 0, results: [result('Escala de Sol')] })
     recognition.onresult({ resultIndex: 0, results: [result('Escala de Sol'), result('Arco recto')] })
     expect(onInsert.mock.calls).toEqual([[' Escala de Sol '], [' Arco recto ']])
@@ -64,6 +67,73 @@ describe('Observation dictation', () => {
     expect(button.getAttribute('aria-pressed')).toBe('false')
     button.click()
     expect(instances).toHaveLength(2)
+  })
+
+  it('keeps listening after the browser ends the session on silence, until the user stops', () => {
+    button.click()
+    instances[0].onstart()
+    instances[0].onend()
+    expect(instances).toHaveLength(2)
+    expect(instances[1].start).toHaveBeenCalledTimes(1)
+    instances[1].onstart()
+    button.click()
+    instances[1].onend()
+    expect(instances).toHaveLength(2)
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('keeps listening through no-speech silence and many restarts', () => {
+    vi.useFakeTimers()
+    button.click()
+    for (let i = 0; i < 30; i++) {
+      instances[i].onstart()
+      vi.advanceTimersByTime(8000)
+      instances[i].onerror({ error: 'no-speech' })
+      instances[i].onend()
+    }
+    expect(instances).toHaveLength(31)
+    expect(button.getAttribute('aria-pressed')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  it('gives up if the engine dies instantly in a loop', () => {
+    button.click()
+    for (let i = 0; i < 10 && instances[i]; i++) instances[i].onend()
+    expect(instances.length).toBeLessThan(10)
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('does not restart after an error', () => {
+    button.click()
+    instances[0].onerror({ error: 'not-allowed' })
+    expect(instances).toHaveLength(1)
+  })
+
+  it('requests microphone permission before listening and stops the probe stream', async () => {
+    const track = { stop: vi.fn() }
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [track] })
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia } })
+    button.click()
+    expect(instances).toHaveLength(0)
+    await vi.waitFor(() => expect(instances).toHaveLength(1))
+    expect(getUserMedia).toHaveBeenCalledWith({ audio: true })
+    expect(track.stop).toHaveBeenCalled()
+    instances[0].onstart()
+    button.click()
+    instances[0].onend()
+    button.click()
+    expect(instances).toHaveLength(2)
+    expect(getUserMedia).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not listen and explains it when the system denies the microphone', async () => {
+    const getUserMedia = vi.fn().mockRejectedValue(new Error('denied'))
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia } })
+    button.click()
+    await vi.waitFor(() => expect(status.textContent).toContain('Permite el acceso'))
+    expect(instances).toHaveLength(0)
+    expect(button.disabled).toBe(false)
+    expect(button.getAttribute('aria-pressed')).toBe('false')
   })
 
   it('explains denied microphone permission and can retry', () => {

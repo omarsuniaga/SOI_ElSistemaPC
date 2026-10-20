@@ -62,8 +62,9 @@ function initPopup() {
         gap: 10px;
       }
       .pm-ac-option:last-child { border-bottom: none; }
+      /* Tinte translúcido: legible con el texto del tema claro y del oscuro. */
       .pm-ac-option:hover, .pm-ac-option.selected {
-        background: var(--pm-primary-light, #f0f4ff);
+        background: color-mix(in srgb, var(--pm-primary, #007aff) 16%, transparent);
       }
       .pm-ac-option.selected {
         background: var(--pm-primary, #007aff);

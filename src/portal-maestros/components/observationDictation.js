@@ -6,6 +6,54 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   let recognition = null
   let phase = 'idle'
   let disposed = false
+  let stopRequested = false
+  let fastFailures = 0
+  let receivedText = false
+  // Sin límite de tiempo: solo se frena si el motor falla en bucle (sesiones que mueren al instante).
+  const MAX_FAST_FAILURES = 5
+  const FAST_FAILURE_MS = 1500
+  let sessionStartedAt = 0
+  let permission = 'unknown'
+  let requesting = false
+  let permissionStatus = null
+
+  // Pide el permiso del micrófono al sistema (en una PWA instalada lo recuerda el teléfono).
+  // Solo abre y cierra el stream: el reconocimiento de voz usa su propia captura.
+  async function requestMic() {
+    if (!navigator.mediaDevices?.getUserMedia) return true
+    if (requesting) return false
+    requesting = true
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop())
+      permission = 'granted'
+      return true
+    } catch {
+      permission = 'denied'
+      return false
+    } finally {
+      requesting = false
+    }
+  }
+
+  function watchPermission() {
+    if (!navigator.permissions?.query) return
+    navigator.permissions.query({ name: 'microphone' }).then((status) => {
+      if (disposed) return
+      permissionStatus = status
+      permission = status.state
+      status.onchange = () => { permission = status.state }
+    }).catch(() => { /* Navegador sin Permissions API para micrófono. */ })
+  }
+
+  // Primer toque en la vista: si aún no se decidió, pedir el permiso por adelantado.
+  function preRequestOnFirstGesture() {
+    if (permission !== 'prompt') return
+    requestMic()
+  }
+
+  const LISTENING_SHORT = 'Escuchando…'
+  const LISTENING = 'Escuchando… Pulsa el micrófono para terminar.'
 
   function show(message = '') {
     status.textContent = message
@@ -35,6 +83,7 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   function toggle() {
     if (disposed) return
     if (recognition) {
+      stopRequested = true
       phase = 'stopping'
       render()
       show('Terminando dictado…')
@@ -48,36 +97,71 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       return
     }
 
+    if (requesting) return
+    stopRequested = false
+    fastFailures = 0
+    receivedText = false
+    phase = 'starting'
+    render()
+
+    if (permission === 'granted' || !navigator.mediaDevices?.getUserMedia) {
+      show('Activando micrófono…')
+      startSession()
+      return
+    }
+    show('Permite el micrófono cuando el teléfono te lo pregunte…')
+    requestMic().then((granted) => {
+      if (disposed || phase !== 'starting' || recognition) return
+      if (!granted) {
+        phase = 'idle'
+        render()
+        show('Permite el acceso al micrófono en tu navegador para dictar.')
+        return
+      }
+      show('Activando micrófono…')
+      startSession()
+    })
+  }
+
+  function startSession() {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
     let current
     const inserted = new Set()
-    let receivedText = false
     try {
       current = new Recognition()
       recognition = current
       current.lang = 'es-DO'
       current.continuous = true
-      current.interimResults = false
+      current.interimResults = true
       current.onstart = () => {
         if (disposed || recognition !== current || phase === 'stopping') return
         phase = 'listening'
         render()
-        show('Escuchando… Pulsa el micrófono para terminar.')
+        show(LISTENING)
       }
       current.onresult = (event) => {
         if (disposed || recognition !== current || !button.isConnected) return
+        let interim = ''
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i]
-          if (!result.isFinal || inserted.has(i)) continue
           const text = result[0]?.transcript?.trim()
           if (!text) continue
+          if (!result.isFinal) {
+            interim += (interim ? ' ' : '') + text
+            continue
+          }
+          if (inserted.has(i)) continue
           inserted.add(i)
           const prefix = getEditorContent?.() ? ' ' : ''
           onInsert(prefix + text + ' ')
           receivedText = true
         }
+        if (phase === 'listening') show(interim ? `${LISTENING_SHORT} «${interim}»` : LISTENING)
       }
       current.onerror = (event) => {
         if (recognition !== current) return
+        // Silencio prolongado: el navegador cierra la sesión; onend la reinicia.
+        if (event.error === 'no-speech' && !stopRequested) return
         const messages = {
           'not-allowed': 'Permite el acceso al micrófono en tu navegador para dictar.',
           'service-not-allowed': 'El navegador no permite el dictado. Puedes usar el micrófono del teclado.',
@@ -93,13 +177,18 @@ export function createObservationDictation(button, status, { onInsert, getEditor
         if (recognition !== current) return
         recognition = null
         current.onstart = current.onresult = current.onerror = current.onend = null
+        // El navegador corta la escucha continua tras unos segundos de silencio:
+        // seguimos escuchando hasta que el usuario pulse el micrófono.
+        fastFailures = Date.now() - sessionStartedAt < FAST_FAILURE_MS ? fastFailures + 1 : 0
+        if (!stopRequested && !disposed && !document.hidden && fastFailures < MAX_FAST_FAILURES) {
+          startSession()
+          return
+        }
         phase = 'idle'
         render()
         show(receivedText ? 'Dictado añadido. Puedes corregir el texto.' : 'Dictado terminado sin texto.')
       }
-      phase = 'starting'
-      render()
-      show('Activando micrófono…')
+      sessionStartedAt = Date.now()
       current.start()
     } catch {
       release()
@@ -119,6 +208,8 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   }
 
   button.addEventListener('click', toggle)
+  watchPermission()
+  document.addEventListener('pointerdown', preRequestOnFirstGesture, { once: true })
   window.addEventListener('pagehide', suspend)
   document.addEventListener('visibilitychange', onVisibilityChange)
   render()
@@ -129,6 +220,8 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       disposed = true
       release()
       button.removeEventListener('click', toggle)
+      document.removeEventListener('pointerdown', preRequestOnFirstGesture)
+      if (permissionStatus) permissionStatus.onchange = null
       window.removeEventListener('pagehide', suspend)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     },

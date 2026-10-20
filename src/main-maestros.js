@@ -5,6 +5,8 @@ import './early-error-suppression.js'
 
 // Desactivar gestos de recarga pull-to-refresh (Look and Feel nativo)
 import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
+import { renderFatalErrorPanel } from './shared/utils/errorPanel.js'
+import { createTextElement } from './shared/utils/safeDom.js'
 disablePullToRefresh()
 
 // Evitar zoom accidental en la versión móvil instalada, sin bloquear el scroll.
@@ -356,7 +358,7 @@ async function _renderViewSerial(route, params = {}, { silent = false } = {}) {
     }
   } catch (err) {
     clearTimeout(spinnerTimeout)
-    targetContainer.innerHTML = `<p class="pm-error">Error cargando vista: ${err.message}</p>`
+    targetContainer.replaceChildren(createTextElement('p', `Error cargando vista: ${err.message}`, 'pm-error'))
   }
 }
 
@@ -665,17 +667,6 @@ async function initPortal() {
 // ============================================
 // GLOBAL ERROR HANDLERS
 // ============================================
-const _errorTemplate = (icon, title, subtitle, detail) => `
-  <div style="padding:40px;color:#fff;font-family:'Outfit',sans-serif;background:radial-gradient(circle at top right,#1e293b,#0f172a);z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
-    <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:40px;max-width:600px;width:90%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-      <div style="width:80px;height:80px;background:rgba(239,68,68,0.1);color:#ef4444;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 24px;"><i class="bi ${icon}"></i></div>
-      <h2 style="margin-bottom:16px;font-weight:700;">${title}</h2>
-      <p style="color:rgba(255,255,255,0.6);margin-bottom:24px;">${subtitle}</p>
-      <div style="background:rgba(0,0,0,0.3);padding:16px;border-radius:12px;text-align:left;font-family:monospace;font-size:13px;margin-bottom:24px;overflow:auto;max-height:200px;border-left:4px solid #ef4444;">${detail}</div>
-      <button onclick="window.location.reload()" style="background:var(--pm-primary,#3b82f6);color:white;border:none;padding:12px 32px;border-radius:12px;font-weight:600;cursor:pointer;">Recargar Aplicación</button>
-    </div>
-  </div>`
-
 window.addEventListener('error', (e) => {
   const ignoredPatterns = ['useCache', 'WebSocket', 'content.js']
   if (ignoredPatterns.some((p) => (e.message || '').includes(p))) {
@@ -689,12 +680,15 @@ window.addEventListener('error', (e) => {
   })
   const app = document.getElementById('portal-app')
   if (app)
-    app.innerHTML = _errorTemplate(
-      'bi-x-circle-fill',
-      'Ups! Algo salió mal',
-      'Se ha producido un error inesperado en la aplicación.',
-      `<div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">${e.message}</div><div style="color:rgba(255,255,255,0.4);">${e.filename?.split('/').pop()}:${e.lineno}</div>`,
-    )
+    renderFatalErrorPanel(app, {
+      icon: 'bi-x-circle-fill',
+      title: 'Ups! Algo salió mal',
+      subtitle: 'Se ha producido un error inesperado en la aplicación.',
+      details: [
+        { text: e.message, style: 'color:#ef4444;font-weight:bold;margin-bottom:8px;' },
+        { text: `${e.filename?.split('/').pop()}:${e.lineno}`, style: 'color:rgba(255,255,255,0.4);' },
+      ],
+    })
 })
 
 window.addEventListener('unhandledrejection', (e) => {
@@ -710,16 +704,27 @@ window.addEventListener('unhandledrejection', (e) => {
   })
   const app = document.getElementById('portal-app')
   if (app)
-    app.innerHTML = _errorTemplate(
-      'bi-exclamation-triangle-fill',
-      'Error de Sincronización',
-      'Hubo un problema al procesar una solicitud de red.',
-      `<div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">Promise Rejection</div><div style="color:rgba(255,255,255,0.4);">${String(e.reason)}</div>`,
-    )
+    renderFatalErrorPanel(app, {
+      icon: 'bi-exclamation-triangle-fill',
+      title: 'Error de Sincronización',
+      subtitle: 'Hubo un problema al procesar una solicitud de red.',
+      details: [
+        { text: 'Promise Rejection', style: 'color:#ef4444;font-weight:bold;margin-bottom:8px;' },
+        { text: String(e.reason), style: 'color:rgba(255,255,255,0.4);' },
+      ],
+    })
 })
 
 initPortal().catch((err) => {
   const app = document.getElementById('portal-app')
-  if (app)
-    app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ initPortal() falló</h2><pre>${err?.message || err}\n${err?.stack || ''}</pre></div>`
+  if (!app) return
+  // La traza completa solo se muestra en desarrollo; en producción queda fuera de la UI.
+  const trace = import.meta.env.DEV && err?.stack ? `\n${err.stack}` : ''
+  const panel = document.createElement('div')
+  panel.style.cssText = 'padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;'
+  panel.append(
+    createTextElement('h2', '❌ initPortal() falló'),
+    createTextElement('pre', `${err?.message || String(err)}${trace}`),
+  )
+  app.replaceChildren(panel)
 })

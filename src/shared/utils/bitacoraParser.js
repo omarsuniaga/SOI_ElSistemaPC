@@ -63,30 +63,47 @@ export function findMentionGroups(text, roster = []) {
   return { groups, ambiguous }
 }
 
-/** Trozos de un segmento: tokens `[ ] ( ) { }` y texto libre con letras (desempeño). */
-function piecesOf(source, from, to) {
-  const pieces = []
-  let gapStart = from
-  const flushGap = end => {
-    const raw = source.slice(gapStart, end)
-    const trimmed = raw.trim()
-    if (!hasLetters(trimmed)) return
-    const inicio = gapStart + raw.indexOf(trimmed)
-    pieces.push({ tipo: 'desempeno', inicio, fin: inicio + trimmed.length, texto: trimmed })
-  }
-  let i = from
-  while (i < to) {
+/**
+ * Rangos de tokens `[ ] ( ) { }` en toda la nota (sin anidar). Se calculan antes de segmentar
+ * para que una mención escrita dentro de un corchete no lo parta en dos.
+ */
+function tokenSpans(source) {
+  const spans = []
+  let i = 0
+  while (i < source.length) {
     const token = TOKEN_KINDS[source[i]]
     const close = token ? source.indexOf(token.close, i + 1) : -1
-    const inner = close > i && close < to ? source.slice(i + 1, close).trim() : ''
-    if (inner) {
-      flushGap(i)
-      pieces.push({ tipo: token.tipo, inicio: i, fin: close + 1, texto: inner })
+    if (close > i && hasLetters(source.slice(i + 1, close))) {
+      spans.push({ start: i, end: close + 1, tipo: token.tipo, mentions: [] })
       i = close + 1
-      gapStart = i
     } else i++
   }
-  flushGap(to)
+  return spans
+}
+
+/** Trozos de un segmento: tokens (ya localizados) y texto libre con letras (desempeño). */
+function piecesOf(source, from, to, spans) {
+  const pieces = []
+  const flushGap = (start, end) => {
+    const raw = source.slice(start, end)
+    const trimmed = raw.trim()
+    if (!hasLetters(trimmed)) return
+    const inicio = start + raw.indexOf(trimmed)
+    pieces.push({ tipo: 'desempeno', inicio, fin: inicio + trimmed.length, texto: trimmed })
+  }
+  let cursor = from
+  for (const span of spans) {
+    if (span.start < from || span.end > to) continue
+    flushGap(cursor, span.start)
+    // El texto del token sin las menciones que contiene.
+    let inner = ''
+    let at = span.start + 1
+    for (const m of span.mentions) { inner += source.slice(at, m.start) + ' '; at = m.end }
+    inner += source.slice(at, span.end - 1)
+    pieces.push({ tipo: span.tipo, inicio: span.start, fin: span.end, texto: inner.replace(/\s+/g, ' ').trim(), span })
+    cursor = span.end
+  }
+  flushGap(cursor, to)
   return pieces
 }
 
@@ -108,35 +125,42 @@ export function parseBitacora(text = '', { roster = [], attendance = {} } = {}) 
   const { groups, ambiguous } = findMentionGroups(source, roster)
   const avisos = new Map()
   const addAviso = (key, aviso) => { if (!avisos.has(key)) avisos.set(key, aviso) }
-  const boundaries = [
+  const resolve = ids => {
+    if (ids.includes('todos')) return presentIds.length ? { alcance: 'grupo', ids: presentIds } : null
+    const recipients = []
+    for (const id of ids) {
+      const student = roster.find(a => a.id === id)
+      if (attendance[id] && !isPresentState(attendance[id])) {
+        addAviso(`ausente:${id}`, { tipo: 'ausente', alumnoId: id, nombre: studentName(student) })
+      } else if (!recipients.includes(id)) recipients.push(id)
+    }
+    return recipients.length ? { alcance: 'alumno', ids: recipients } : null
+  }
+
+  // Una mención dentro de un token pertenece a ese token y no corta la nota en segmentos.
+  const spans = tokenSpans(source)
+  const spanOf = pos => spans.find(span => pos > span.start && pos < span.end - 1)
+  const boundaries = []
+  for (const mark of [
     ...groups.map(g => ({ start: g.start, end: g.end, ids: g.ids, ambiguous: false })),
     ...ambiguous.map(a => ({ start: a.start, end: a.end, ids: [], ambiguous: true, nombre: a.nombre })),
-  ].sort((a, b) => a.start - b.start)
+  ].sort((a, b) => a.start - b.start)) {
+    if (mark.ambiguous) addAviso(`ambiguo:${mark.nombre}`, { tipo: 'ambiguo', nombre: mark.nombre })
+    const span = spanOf(mark.start)
+    if (span) span.mentions.push(mark)
+    else boundaries.push(mark)
+  }
 
   const segments = [{ lead: null, body: [0, boundaries[0]?.start ?? source.length], target: null }]
   boundaries.forEach((boundary, i) => {
     const next = boundaries[i + 1]?.start ?? source.length
-    let target = null
-    if (boundary.ambiguous) {
-      addAviso(`ambiguo:${boundary.nombre}`, { tipo: 'ambiguo', nombre: boundary.nombre })
-    } else if (boundary.ids.includes('todos')) {
-      target = presentIds.length ? { alcance: 'grupo', ids: presentIds } : null
-    } else {
-      const recipients = []
-      for (const id of boundary.ids) {
-        const student = roster.find(a => a.id === id)
-        if (attendance[id] && !isPresentState(attendance[id])) {
-          addAviso(`ausente:${id}`, { tipo: 'ausente', alumnoId: id, nombre: studentName(student) })
-        } else if (!recipients.includes(id)) recipients.push(id)
-      }
-      target = recipients.length ? { alcance: 'alumno', ids: recipients } : null
-    }
+    const target = boundary.ambiguous ? null : resolve(boundary.ids)
     segments.push({ lead: { start: boundary.start, end: boundary.end }, body: [boundary.end, next], target })
   })
 
   const reached = new Set()
   for (const segment of segments) {
-    const pieces = piecesOf(source, ...segment.body)
+    const pieces = piecesOf(source, ...segment.body, spans)
     if (!pieces.length) {
       if (segment.lead) result.sinAsignar.push({ texto: source.slice(segment.lead.start, segment.lead.end), inicio: segment.lead.start, fin: segment.lead.end })
       continue
@@ -145,7 +169,9 @@ export function parseBitacora(text = '', { roster = [], attendance = {} } = {}) 
       const inicio = index === 0 && segment.lead ? segment.lead.start : piece.inicio
       const fin = piece.fin
       // Sin mención, solo el contenido `[ ]` se atribuye al grupo presente (la maestra lo confirma en F2).
-      const target = segment.lead ? segment.target
+      const inner = piece.span?.mentions.filter(m => !m.ambiguous) || []
+      const target = piece.span?.mentions.length ? (inner.length ? resolve(inner.flatMap(m => m.ids)) : null)
+        : segment.lead ? segment.target
         : piece.tipo === 'contenido' && presentIds.length ? { alcance: 'grupo', ids: presentIds } : null
       if (!target) {
         result.sinAsignar.push({ texto: source.slice(inicio, fin), inicio, fin })

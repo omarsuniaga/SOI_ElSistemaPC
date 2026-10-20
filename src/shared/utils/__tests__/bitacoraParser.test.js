@@ -149,3 +149,31 @@ describe('shared mention helpers', () => {
     expect(fold('Ñandú Á')).toBe('nandu a')
   })
 })
+
+describe('parseBitacora: mentions inside brackets', () => {
+  it('keeps the bracket type and recipient when the mention is inside it', () => {
+    const result = parseBitacora('[#Lesly Ramírez Leonardo Escala de Sol]', { roster, attendance: allPresent })
+    expect(result.registros.map(r => [r.tipo, r.alcance, r.alumnoIds, r.texto]))
+      .toEqual([['contenido', 'alumno', ['le'], 'Escala de Sol']])
+    expect(result.sinAsignar).toEqual([])
+  })
+
+  it('never splits a bracket across two students nor leaves stray bracket characters', () => {
+    const text = '#Gerali Denisse Lugo Batista bien [arco #Lesly Ramírez Leonardo afinación]'
+    const result = parseBitacora(text, { roster, attendance: allPresent })
+    expect(result.registros.map(r => [r.tipo, r.alumnoIds, r.texto])).toEqual([
+      ['desempeno', ['g'], 'bien'],
+      ['contenido', ['le'], 'arco afinación'],
+    ])
+    for (const r of result.registros) expect(r.texto).not.toMatch(/[[\]()]/)
+    const covered = coveredIndexes(result)
+    expect([...text].every((ch, i) => !/[\p{L}\p{N}]/u.test(ch) || covered.has(i))).toBe(true)
+  })
+
+  it('drops an absent student mentioned inside a bracket and warns', () => {
+    const result = parseBitacora('(#Lesly Ramírez Leonardo arco)', { roster, attendance: { ...allPresent, le: 'A' } })
+    expect(result.registros).toEqual([])
+    expect(result.sinAsignar.map(s => s.texto)).toEqual(['(#Lesly Ramírez Leonardo arco)'])
+    expect(result.avisos).toEqual([{ tipo: 'ausente', alumnoId: 'le', nombre: 'Lesly Ramírez Leonardo' }])
+  })
+})

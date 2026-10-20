@@ -156,3 +156,25 @@ describe('PresentRatingsPanel bulk review', () => {
     expect(checked(root, 'e')).toBe('')
   })
 })
+
+
+describe('PresentRatingsPanel incomplete schema', () => {
+  beforeEach(() => { vi.clearAllMocks(); document.body.innerHTML = '' })
+  it('explains unavailable ratings without opening or fabricating an editable scale', async () => {
+    const error = Object.assign(new Error('Unavailable'), { code: 'RATINGS_SCHEMA_UNAVAILABLE' })
+    const loadRatings = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce([])
+    const saveRatings = vi.fn()
+    const panel = createPresentRatingsPanel({
+      getAlumnos: () => alumnos, getEstado: () => estado, getSesionId: () => 'ses',
+      loadRatings, saveRatings,
+    })
+    await panel.open()
+    expect(mocks.toast.warning).toHaveBeenCalledWith(expect.stringContaining('aún no están habilitadas'))
+    expect(mocks.open).not.toHaveBeenCalled()
+    expect(mocks.toast.error).not.toHaveBeenCalled()
+    expect(saveRatings).not.toHaveBeenCalled()
+    await panel.open()
+    expect(loadRatings).toHaveBeenCalledTimes(2)
+    expect(mocks.open).toHaveBeenCalledTimes(1)
+  })
+})

@@ -70,6 +70,11 @@ export function createPresentRatingsPanel(opts) {
     try {
       rows = await opts.loadRatings(sesionId)
     } catch (err) {
+      if (err.code === 'RATINGS_SCHEMA_UNAVAILABLE') {
+        AppToast.warning('Las valoraciones aún no están habilitadas. Puedes seguir guardando asistencia y contenido de clase.')
+        opening = false
+        return
+      }
       console.error('[PresentRatings] No se pudieron cargar las valoraciones:', err)
       AppToast.error('No se pudieron cargar las valoraciones guardadas. Intenta de nuevo.')
       opening = false

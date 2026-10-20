@@ -79,3 +79,18 @@ export function ratingSummaryText({ rated, unrated, average }) {
     ? `promedio ${formatAverage(average)}/5 (${rated} evaluadas, ${unrated} sin evaluar)`
     : `sin valoraciones (${unrated} sin evaluar)`
 }
+
+/** Diferencia despliegue incompleto de permisos/red; nunca devuelve notas ficticias. */
+export function isRatingSchemaMissing(error) {
+  const message = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ')
+  return ['42703', 'PGRST204'].includes(error?.code) &&
+    /\b(valoracion|valorada_por|valorada_at)\b/i.test(message)
+}
+
+export class RatingSchemaUnavailableError extends Error {
+  constructor(cause) {
+    super('Las valoraciones de clase todavía no están habilitadas.', { cause })
+    this.name = 'RatingSchemaUnavailableError'
+    this.code = 'RATINGS_SCHEMA_UNAVAILABLE'
+  }
+}

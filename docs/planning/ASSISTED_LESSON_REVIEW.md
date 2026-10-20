@@ -35,9 +35,10 @@ pendiente de sincronización y no se afirma haber guardado una valoración.
 Se reemplaza en esta vista la ruta de IA que infería 3/5 por actividad. Se conservan
 servicios anteriores para consumidores ajenos a este cambio.
 
-Consulta de solo lectura al esquema SOI: asistencias NO tiene valoracion,
-valorada_por ni valorada_at. La migración de Claude sigue pendiente; no se ha
-aplicado ni modificado producción. Si no se pueden consultar las notas, la revisión
+Consulta inicial: faltaban las columnas de valoraciones. Tras el error reportado por
+Omar, se aplicó la migración aditiva `20261020170631_asistencias_valoracion_clase.sql`
+al proyecto SOI el 20-10-2026. El nombre de archivo coincide con la versión generada
+por Supabase, sin duplicar la migración previa pendiente de la rama. Si no se pueden consultar las notas, la revisión
 de contenido continúa y muestra disponibilidad desconocida, sin asumir cero.
 Los presentes se confirman por ID en UI; el DSL existente conserva nombres completos,
 por eso se bloquean duplicados y se requiere validación institucional antes de fusionar.
@@ -48,3 +49,12 @@ Nuevos tests de modelo, servicio, UI de revisión, destinatarios en historial,
 selección múltiple y planificación. Suite completa, lint, tipos y build se delegan
 a CI de PR #147 porque no hay entorno local ejecutable.
 Pendiente prueba autenticada del proveedor IA, micrófono, guardado y recarga en móvil.
+
+## Corrección de esquema · 20-10-2026
+La base ya tiene valoracion, valorada_por y valorada_at, con RLS conservada.
+Pruebas en transacción revertida: 0, corrección a 5, rechazo de 6, borrado a NULL,
+limpieza al pasar a ausente o justificado y no reaparición al volver a presente.
+Se comprobaron cero notas persistidas tras las pruebas. Se solicitó recarga de caché
+PostgREST. El frontend distingue columnas faltantes de errores de red/permisos y
+presenta aviso sin fabricar notas ni abrir una escala editable en ese caso.
+Validación autenticada del maestro en el navegador aún pendiente; frontend no fusionado.

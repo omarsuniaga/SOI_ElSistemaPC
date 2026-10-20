@@ -74,7 +74,7 @@ sin marcar se excluyen. Al abrir se recuperan las notas guardadas; solo se enví
 filas cambiadas.
 
 **Persistencia:** columnas `valoracion` (0–5, `NULL` = sin evaluar), `valorada_por` y
-`valorada_at` en `asistencias` (migración `20261020120000_asistencias_valoracion_clase.sql`).
+`valorada_at` en `asistencias` (migración `20261020170631_asistencias_valoracion_clase.sql`).
 Sin tabla nueva: existe una fila única por (sesión, alumno), así que corregir es un
 `UPDATE` y no puede duplicarse; el adaptador nunca inserta. Un trigger descarta la
 valoración si la asistencia se corrige a ausente/justificado. El upsert de asistencia
@@ -96,3 +96,9 @@ automático ni una etiqueta al alumno (R6); cada valor se rastrea a su fecha y s
 
 Validación: ver la descripción del PR. Pendiente: comprobación en el portal con sesión
 real autenticada y aplicar la migración en un entorno de prueba.
+
+### Actualización 20-10-2026: migración aplicada
+La migración de valoraciones ya se aplicó al proyecto SOI. Pruebas SQL con rollback
+aprobadas, sin notas ficticias persistidas. El frontend permanece en revisión y la
+prueba autenticada final sigue pendiente. Ante otra base sin columnas se explica la
+indisponibilidad sin inventar valoraciones.

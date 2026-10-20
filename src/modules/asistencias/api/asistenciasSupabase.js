@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 import { logSubstituteActivity, isSubstituteAssignment } from '../../../portal-maestros/services/substituteAuditService.js'
-import { partitionRatings } from '../services/presentRatingsService.js'
+import { partitionRatings, isRatingSchemaMissing, RatingSchemaUnavailableError } from '../services/presentRatingsService.js'
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
@@ -348,6 +348,7 @@ export async function getValoracionesSesion(sesionId) {
     .from('asistencias')
     .select('id, alumno_id, estado, valoracion, valorada_at')
     .eq('sesion_clase_id', sesionId)
+  if (isRatingSchemaMissing(error)) throw new RatingSchemaUnavailableError(error)
   if (error) throwError('No se pudieron cargar las valoraciones', error)
   return (data || []).map((r) => ({ ...r, valoracion: r.valoracion ?? null }))
 }

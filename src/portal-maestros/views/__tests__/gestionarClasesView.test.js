@@ -77,6 +77,16 @@ describe('gestionarClasesView', () => {
     })
   })
 
+  it('muestra la condición de invitado de la matrícula en la nómina del maestro', async () => {
+    obtenerAlumnos.mockResolvedValue([])
+    obtenerAlumnosInscritos.mockResolvedValue([
+      { alumno_id: 'guest', condicion: 'invitado', invitacion_revision: '2026-12-01', alumno: { id: 'guest', nombre_completo: 'Alumno de Prueba', activo: true } },
+    ])
+    const container = document.getElementById('app')
+    await renderGestionarClasesView(container)
+    expect(container.querySelector('[data-enrollment="invitado"]').textContent).toContain('Invitado · revisión 2026-12-01')
+  })
+
   it('normaliza el payload de alumnos y renderiza sin romper cuando viene como { alumnos, total }', async () => {
     obtenerAlumnos.mockResolvedValue({
       alumnos: [

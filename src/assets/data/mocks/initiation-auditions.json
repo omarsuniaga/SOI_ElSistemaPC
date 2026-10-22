@@ -1,0 +1,6 @@
+{
+ "actors": [{"id":"demo-admin","nombre":"Coordinación Demo","canManage":true},{"id":"demo-jury","nombre":"Jurado Demo","canManage":false},{"id":"demo-receiver","nombre":"Maestro Receptor Demo","canManage":false}],
+ "classes": [{"id":"source","nombre":"Iniciación · Grupo A","es_clase_iniciacion":true,"activo":true,"capacidad_maxima":20,"tipo_clase":"grupal"},{"id":"choir","nombre":"Coro Infantil · Grupo A","es_clase_iniciacion":false,"activo":true,"capacidad_maxima":20,"tipo_clase":"grupal","teacher_user_id":"demo-receiver"}],
+ "students": [{"id":"demo-student-1","nombre_completo":"Alumno de Prueba A","fecha_ingreso_iniciacion":"2026-01-15","activo":true},{"id":"demo-student-2","nombre_completo":"Alumno de Prueba B","fecha_ingreso_iniciacion":null,"activo":true}],
+ "enrollments": [{"id":"enrollment-1","alumno_id":"demo-student-1","clase_id":"source","activo":true,"condicion":"fijo"},{"id":"enrollment-2","alumno_id":"demo-student-2","clase_id":"source","activo":true,"condicion":"fijo"}]
+}

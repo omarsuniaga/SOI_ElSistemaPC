@@ -78,3 +78,7 @@ Este documento establece el **Lenguaje Ubicuo (Domain-Driven Design)** para desa
 ### Modo Demo vs Modo Real
 * **Modo Demo (JSON First):** Permite ejecutar y probar toda la aplicación localmente sin credenciales de red, leyendo y simulando mutaciones sobre `src/assets/data/mocks/*.json`.
 * **Modo Real (Supabase):** Persistencia sobre PostgreSQL gestionado en Supabase con Row-Level Security (RLS).
+
+### Invitación a clase y audición de Iniciación
+* `Invitado` es condición temporal de una matrícula en una clase de destino, no estado global del alumno. Su matrícula de Iniciación se conserva.
+* Una convocatoria fija cohorte, clase de origen, jurados reales y rúbrica. Una candidatura pasa por valoración, decisión, invitación y revisiones por ronda. Solo coordinación confirma como fijo, prorroga o registra continuidad en Iniciación con evidencia y observación.

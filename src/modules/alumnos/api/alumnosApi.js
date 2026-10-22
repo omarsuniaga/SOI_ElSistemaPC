@@ -64,3 +64,6 @@ export const getParentescoLabel = (value) => {
   const p = PARENTESCOS.find(x => x.value === value)
   return p ? p.label : value
 }
+
+// Minimal active-alumno directory for enrollment; does not expose full records.
+export const obtenerAlumnosParaInscripcion = (...args) => getApi().obtenerAlumnosParaInscripcion(...args)

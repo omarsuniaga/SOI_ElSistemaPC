@@ -820,3 +820,18 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
       turno: (r.dia || r.hora_inicio || r.hora_fin) ? { dia: r.dia, hora_inicio: r.hora_inicio, hora_fin: r.hora_fin } : null,
     }))
 }
+
+/** Enrollment directory has separate authorization from full alumno records. */
+export async function obtenerAlumnosParaInscripcion() {
+  const alumnos = []
+  const pageSize = 500
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.rpc('obtener_alumnos_para_inscripcion', {
+      p_offset: offset, p_limit: pageSize,
+    })
+    if (error) throw new Error('No se pudo cargar el catálogo de inscripción. Reintente o contacte a administración.')
+    const page = data || []
+    alumnos.push(...page)
+    if (page.length < pageSize) return alumnos
+  }
+}

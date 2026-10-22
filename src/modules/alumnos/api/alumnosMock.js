@@ -346,3 +346,14 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
     clase_horarios: [],
   }))
 }
+
+export async function obtenerAlumnosParaInscripcion() {
+  await delay()
+  return alumnos.filter(a => a.activo === true).map(a => ({
+    id: a.id,
+    nombre_completo: a.nombre_completo,
+    instrumento_principal: a.instrumento_principal ?? null,
+    activo: true,
+    sin_clase: !inscripciones.some(i => i.alumno_id === a.id),
+  })).sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo, 'es'))
+}

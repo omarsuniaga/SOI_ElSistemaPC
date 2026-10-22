@@ -11,12 +11,11 @@
 import {
   obtenerClasesPorMaestro,
   obtenerAlumnosInscritos,
-  obtenerAlumnosSinClase,
   inscribirAlumno,
   desinscribirAlumno,
   eliminarClase,
 } from '../../modules/clases/api/clasesApi.js'
-import { obtenerAlumnos, crearAlumno } from '../../modules/alumnos/api/alumnosApi.js'
+import { obtenerAlumnosParaInscripcion, crearAlumno } from '../../modules/alumnos/api/alumnosApi.js'
 import { openClaseModal } from '../../modules/clases/components/claseModal.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { obtenerDatosCreadorClases } from '../api/crearClasePortalApi.js'
@@ -71,11 +70,6 @@ function normalizeAlumnosPayload(payload) {
   if (Array.isArray(payload?.alumnos)) return payload.alumnos
   if (Array.isArray(payload?.data)) return payload.data
   return []
-}
-
-function flattenAlumnosSinClase(grupos = []) {
-  if (!Array.isArray(grupos)) return []
-  return grupos.flatMap((grupo) => (Array.isArray(grupo?.alumnos) ? grupo.alumnos : [])).filter(Boolean)
 }
 
 function normalizeSearch(value = '') {
@@ -164,16 +158,15 @@ export async function renderGestionarClasesView(container) {
       return
     }
 
-    const [clases, alumnosPayload, gruposSinClase] = await Promise.all([
+    const [clases, alumnosPayload] = await Promise.all([
       obtenerClasesPorMaestro(maestro.id),
-      obtenerAlumnos().catch(() => ({ alumnos: [] })),
-      obtenerAlumnosSinClase().catch(() => []),
+      obtenerAlumnosParaInscripcion(),
     ])
 
     const todosAlumnos = normalizeAlumnosPayload(alumnosPayload)
 
     _allStudents = (todosAlumnos || []).filter((a) => a && a.activo !== false && a.is_active !== false)
-    _studentsWithoutClassIds = new Set(flattenAlumnosSinClase(gruposSinClase).map((alumno) => alumno.id))
+    _studentsWithoutClassIds = new Set(_allStudents.filter(a => a.sin_clase === true).map(a => a.id))
     _canEditClasses = permisos.puede_inscribir_clases === true
 
     container.innerHTML = _buildShell(clases, { canCreateClasses: permisos.puede_crear_clases })
@@ -884,8 +877,6 @@ function _attachPanelEvents(claseId, clases) {
       })
       await inscribirAlumno(claseId, nuevoAlumno.id)
       AppToast.success(`${nombre} registrado e inscrito exitosamente`)
-      const todosActualizados = normalizeAlumnosPayload(await obtenerAlumnos().catch(() => _allStudents))
-      _allStudents = (todosActualizados || []).filter((a) => a && a.activo !== false && a.is_active !== false)
       await _refreshStudentsWithoutClass()
       _classEditorSupport = null
       await _selectClase(claseId, clases)
@@ -964,12 +955,8 @@ function _resetNewForm() {
 }
 
 async function _refreshStudentsWithoutClass() {
-  try {
-    const gruposSinClase = await obtenerAlumnosSinClase()
-    _studentsWithoutClassIds = new Set(flattenAlumnosSinClase(gruposSinClase).map((alumno) => alumno.id))
-  } catch {
-    _studentsWithoutClassIds = new Set()
-  }
+  _allStudents = normalizeAlumnosPayload(await obtenerAlumnosParaInscripcion())
+  _studentsWithoutClassIds = new Set(_allStudents.filter(a => a.sin_clase === true).map(a => a.id))
 }
 
 async function _ensureClassEditorSupport() {

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../../../modules/clases/api/clasesApi.js', () => ({
   obtenerClasesPorMaestro: vi.fn(),
   obtenerAlumnosInscritos: vi.fn(),
-  obtenerAlumnosSinClase: vi.fn(),
   inscribirAlumno: vi.fn(),
   desinscribirAlumno: vi.fn(),
   eliminarClase: vi.fn(),
@@ -11,6 +10,7 @@ vi.mock('../../../modules/clases/api/clasesApi.js', () => ({
 
 vi.mock('../../../modules/alumnos/api/alumnosApi.js', () => ({
   obtenerAlumnos: vi.fn(),
+  obtenerAlumnosParaInscripcion: vi.fn(),
   crearAlumno: vi.fn(),
 }))
 
@@ -42,10 +42,10 @@ import { renderGestionarClasesView } from '../gestionarClasesView.js'
 import {
   obtenerClasesPorMaestro,
   obtenerAlumnosInscritos,
-  obtenerAlumnosSinClase,
   eliminarClase,
+  inscribirAlumno,
 } from '../../../modules/clases/api/clasesApi.js'
-import { obtenerAlumnos } from '../../../modules/alumnos/api/alumnosApi.js'
+import { obtenerAlumnos, obtenerAlumnosParaInscripcion } from '../../../modules/alumnos/api/alumnosApi.js'
 import { openClaseModal } from '../../../modules/clases/components/claseModal.js'
 import { getMaestroLocal } from '../../auth/maestroAuth.js'
 import { obtenerDatosCreadorClases } from '../../api/crearClasePortalApi.js'
@@ -67,8 +67,8 @@ describe('gestionarClasesView', () => {
         maestro_principal_id: 'maestro-1',
       },
     ])
+    obtenerAlumnosParaInscripcion.mockResolvedValue([])
     obtenerAlumnosInscritos.mockResolvedValue([])
-    obtenerAlumnosSinClase.mockResolvedValue([])
     obtenerDatosCreadorClases.mockResolvedValue({
       maestros: [{ id: 'maestro-1', nombre_completo: 'Maestro Uno' }],
       salones: [],
@@ -77,10 +77,39 @@ describe('gestionarClasesView', () => {
     })
   })
 
+  it('busca alumnos de otras clases usando el catálogo mínimo de inscripción', async () => {
+    obtenerAlumnos.mockResolvedValue({ alumnos: [] })
+    obtenerAlumnosParaInscripcion.mockResolvedValue([
+      { id: 'external', nombre_completo: 'Alumno Externo de Prueba', instrumento_principal: null, activo: true, sin_clase: false },
+    ])
+    const container = document.getElementById('app')
+    await renderGestionarClasesView(container)
+    const search = container.querySelector('#gcv-disponibles-search')
+    search.value = 'Externo'
+    search.dispatchEvent(new Event('input'))
+    const row = container.querySelector('[data-alumno-id="external"]')
+    expect(row).toBeTruthy()
+    expect(row.style.display).not.toBe('none')
+    expect(obtenerAlumnosParaInscripcion).toHaveBeenCalled()
+    const checkbox = row.querySelector('input[type="checkbox"]')
+    checkbox.checked = true
+    checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    container.querySelector('#gcv-btn-inscribir').click()
+    await vi.waitFor(() => expect(inscribirAlumno).toHaveBeenCalledWith('clase-1', 'external'))
+  })
+
+  it('muestra el error de carga del catálogo en lugar de fingir que no hay alumnos', async () => {
+    obtenerAlumnosParaInscripcion.mockRejectedValueOnce(new Error('Catálogo no disponible'))
+    const container = document.getElementById('app')
+    await renderGestionarClasesView(container)
+    expect(container.textContent).toContain('Catálogo no disponible')
+    expect(container.querySelector('#gcv-disponibles-search')).toBeNull()
+  })
+
   it('normaliza el payload de alumnos y renderiza sin romper cuando viene como { alumnos, total }', async () => {
-    obtenerAlumnos.mockResolvedValue({
+    obtenerAlumnosParaInscripcion.mockResolvedValue({
       alumnos: [
-        { id: 'alumno-1', nombre_completo: 'Ana', instrumento_principal: 'Violin', activo: true },
+        { id: 'alumno-1', nombre_completo: 'Ana', instrumento_principal: 'Violin', activo: true, sin_clase: true },
       ],
       total: 1,
     })
@@ -90,24 +119,18 @@ describe('gestionarClasesView', () => {
     await renderGestionarClasesView(container)
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(obtenerAlumnos).toHaveBeenCalled()
+    expect(obtenerAlumnosParaInscripcion).toHaveBeenCalled()
     expect(container.querySelector('#gcv-clase-list')).toBeTruthy()
     expect(container.querySelector('#gcv-panel')).toBeTruthy()
     expect(container.textContent).toContain('Mis Clases')
   })
 
   it('permite filtrar disponibles para mostrar solo alumnos sin clase', async () => {
-    obtenerAlumnos.mockResolvedValue([
-      { id: 'alumno-1', nombre_completo: 'Ana', instrumento_principal: 'Violin', activo: true },
+    obtenerAlumnosParaInscripcion.mockResolvedValue([
+      { id: 'alumno-1', nombre_completo: 'Ana', instrumento_principal: 'Violin', activo: true, sin_clase: true },
       { id: 'alumno-2', nombre_completo: 'Pedro', instrumento_principal: 'Piano', activo: true },
     ])
-    obtenerAlumnosSinClase.mockResolvedValue([
-      {
-        instrumento: 'Violin',
-        total: 1,
-        alumnos: [{ id: 'alumno-1', nombre_completo: 'Ana', instrumento_principal: 'Violin' }],
-      },
-    ])
+
 
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
@@ -126,7 +149,7 @@ describe('gestionarClasesView', () => {
   })
 
   it('abre el editor de clase desde la vista del maestro usando el modal real', async () => {
-    obtenerAlumnos.mockResolvedValue([])
+    obtenerAlumnosParaInscripcion.mockResolvedValue([])
 
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
@@ -150,12 +173,11 @@ describe('gestionarClasesView', () => {
   })
 
   it('permite buscar alumnos disponibles ignorando acentos y mayúsculas', async () => {
-    obtenerAlumnos.mockResolvedValue([
+    obtenerAlumnosParaInscripcion.mockResolvedValue([
       { id: 'alumno-1', nombre_completo: 'Iriam Méndez José', instrumento_principal: 'Violín', activo: true },
       { id: 'alumno-2', nombre_completo: 'Ángel Ramírez', instrumento_principal: 'Flauta', activo: true },
       { id: 'alumno-3', nombre_completo: 'Dylan Machillanda', instrumento_principal: 'Coro', activo: true },
     ])
-    obtenerAlumnosSinClase.mockResolvedValue([])
 
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
@@ -191,12 +213,11 @@ describe('gestionarClasesView', () => {
   })
 
   it('mantiene seleccionados alumnos en la cola entre múltiples búsquedas consecutivas e inscribe a todos', async () => {
-    obtenerAlumnos.mockResolvedValue([
+    obtenerAlumnosParaInscripcion.mockResolvedValue([
       { id: 'alumno-1', nombre_completo: 'Iriam Méndez José', instrumento_principal: 'Violín', activo: true },
       { id: 'alumno-2', nombre_completo: 'Ángel Ramírez', instrumento_principal: 'Flauta', activo: true },
       { id: 'alumno-3', nombre_completo: 'Dylan Machillanda', instrumento_principal: 'Coro', activo: true },
     ])
-    obtenerAlumnosSinClase.mockResolvedValue([])
 
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
@@ -253,10 +274,9 @@ describe('gestionarClasesView', () => {
   })
 
   it('detecta duplicados en tiempo real al escribir en el formulario de nuevo alumno y permite inscribir existente', async () => {
-    obtenerAlumnos.mockResolvedValue([
+    obtenerAlumnosParaInscripcion.mockResolvedValue([
       { id: 'alumno-99', nombre_completo: 'Dylan Machillanda', instrumento_principal: 'Iniciación', familiar_telefono: '8293159040', activo: true },
     ])
-    obtenerAlumnosSinClase.mockResolvedValue([])
 
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
@@ -290,11 +310,10 @@ describe('gestionarClasesView', () => {
     obtenerAlumnosInscritos.mockResolvedValue([
       { alumno_id: 'alumno-1', alumno: { id: 'alumno-1', nombre_completo: 'Ana Inscrita', instrumento_principal: 'Violín', activo: true } },
     ])
-    obtenerAlumnos.mockResolvedValue([
+    obtenerAlumnosParaInscripcion.mockResolvedValue([
       { id: 'alumno-1', nombre_completo: 'Ana Inscrita', instrumento_principal: 'Violín', activo: true },
       { id: 'alumno-2', nombre_completo: 'Pedro Disponible', instrumento_principal: 'Piano', activo: true },
     ])
-    obtenerAlumnosSinClase.mockResolvedValue([])
 
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
@@ -322,7 +341,7 @@ describe('gestionarClasesView', () => {
 
   it('muestra el botón con icono para eliminar la clase y solicita confirmación antes de eliminar', async () => {
     obtenerAlumnosInscritos.mockResolvedValue([])
-    obtenerAlumnos.mockResolvedValue([])
+    obtenerAlumnosParaInscripcion.mockResolvedValue([])
     eliminarClase.mockResolvedValue(true)
 
     const confirmSpy = vi.spyOn(window, 'confirm')

@@ -1,6 +1,6 @@
 # Audiciones semestrales e invitados — SPEC 2.2
 
-Estado: integración funcional en desarrollo y revisión, sin activación en producción. Esta versión sustituye la propuesta 2.1 y sus apéndices. PR #159 depende del #158; no basta fusionar el segundo sobre master sin su base.
+Estado: integración funcional en desarrollo y revisión, sin activación en producción. Esta versión sustituye la propuesta 2.1 y sus apéndices. PR #159 consolida toda la base del #158 y esta evolución sobre master; ambas migraciones están incluidas en orden.
 
 ## Propósito y orden académico
 
@@ -73,3 +73,5 @@ Ver `TEST_PLAN.md` y `VALIDACION_V2.md`. Se exige ensayo con RLS/grants/core equ
 R1: coordinación será escritora de la primera convocatoria y autorización; maestros designados escribirán valoraciones, incorporación y seguimiento. La fecha de primeras filas reales y los responsables/jurados del piloto deben fijarse antes de aplicar tablas a producción. No se inventan designaciones para completar ese requisito.
 
 No ejecutar migraciones históricas en masa. Aplicar solo la base del PR158 y su evolución, en ese orden. Para revertir interfaz conservar historial, invitaciones y matrículas; no borrar tablas con alumnos reales.
+
+La vista previa Netlify permite `audiciones.html?demo=1#iniciacion` únicamente con el flag de compilación `VITE_AUDITION_PREVIEW=true` del contexto deploy-preview. Usa exclusivamente el adapter sintético del módulo y no activa modo demo global ni relaja RPC/RLS. En producción ese parámetro no cambia el adapter real.

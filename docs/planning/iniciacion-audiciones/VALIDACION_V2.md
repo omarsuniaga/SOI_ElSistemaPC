@@ -23,7 +23,7 @@ Las tablas nuevas siguen ausentes en la lectura del esquema de producción. No s
 
 Se requiere comprobar respaldo/restauración y ensayo equivalente de esquema, validar contención entre conexiones independientes y fijar fecha/responsables del piloto. No existe en este entorno una conexión de servidor PostgreSQL de ensayo con varias sesiones: el servidor nativo descargado no puede iniciar como root y el entorno no permite cambiar a otro UID. PGlite sí ejecuta el SQL real, pero sus pruebas no sustituyen esa contención.
 
-No se confirmó Deploy Preview: GitHub no devolvía estados Netlify para el PR159 y el conector Netlify no respondió en la consulta acotada. El navegador remoto muestra inicio de sesión en Netlify. Este bloqueo de publicación es distinto de la conexión GitHub autorizada.
+Tras consolidar el PR159 sobre master, Netlify inició Deploy Preview y GitHub activó CI. Su resultado y URL se comprueban por separado antes de entregar. La preview permite demo sintética por parámetro explícito y flag exclusivo de deploy-preview; no equivale a backend real activado.
 
 ## Resultado final de esta sesión
 

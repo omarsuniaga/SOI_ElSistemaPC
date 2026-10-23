@@ -3,7 +3,9 @@ import { supabase } from '../../lib/supabaseClient.js'
 async function main() {
   if (!['#evaluacion', '#resultados', '#tareas'].includes(window.location.hash)) {
     const { mountSemester } = await import('../../modules/audiciones/initiation/semesterView.js')
-    await mountSemester(document.getElementById('app'))
+    const previewDemo = import.meta.env.VITE_AUDITION_PREVIEW === 'true' && new URLSearchParams(window.location.search).get('demo') === '1'
+    const adapter = previewDemo ? (await import('../../modules/audiciones/initiation/semesterMock.js')).createSemesterAdapter({ storage: localStorage }) : undefined
+    await mountSemester(document.getElementById('app'), adapter)
     return
   }
   const { data: { user }, error } = await supabase.auth.getUser()

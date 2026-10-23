@@ -6,6 +6,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Solo permite activar el adaptador sintético de audiciones con ?demo=1 en previews.
+[context.deploy-preview.environment]
+  VITE_AUDITION_PREVIEW = "true"
+
 [[headers]]
   for = "/*"
   [headers.values]

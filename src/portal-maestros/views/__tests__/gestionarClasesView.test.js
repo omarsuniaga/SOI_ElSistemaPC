@@ -84,7 +84,7 @@ describe('gestionarClasesView', () => {
     ])
     const container = document.getElementById('app')
     await renderGestionarClasesView(container)
-    expect(container.querySelector('[data-enrollment="invitado"]').textContent).toContain('Invitado · revisión 2026-12-01')
+    expect(container.querySelector('[data-enrollment="invitado"]').textContent).toContain('Invitado · En periodo de prueba · revisión 2026-12-01')
   })
 
   it('normaliza el payload de alumnos y renderiza sin romper cuando viene como { alumnos, total }', async () => {

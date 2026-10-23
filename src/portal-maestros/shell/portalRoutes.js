@@ -38,6 +38,8 @@ const VIEW_LOADERS = {
   'ruta-semanal':    () => import('../views/weeklyPlanView.js'),
   'ruta-libreria':   () => import('../views/routeLibraryView.js'),
   'ruta-detalle':    () => import('../views/routeDetailView.js'),
+  'mis-audiciones': () => import('../../modules/audiciones/initiation/semesterView.js'),
+  'mis-invitados': () => import('../../modules/audiciones/initiation/semesterView.js'),
   'gestionar-clases':() => import('../views/gestionarClasesView.js'),
   'gestionar-horario':() => import('../views/disponibilidadView.js'),
   'proponer-contenido':() => import('../views/proponerContenidoView.js'),
@@ -303,6 +305,11 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'ruta-detalle':
       mod.RouteDetailView.render(params).then((view) => { container.innerHTML = ''; container.appendChild(view) })
       break
+    case 'mis-audiciones':
+    case 'mis-invitados':
+      container._semesterView?.destroy()
+      container._semesterView = await mod.mountSemester(container, undefined, { section: route === 'mis-invitados' ? 'invitaciones' : 'convocatorias' })
+      return container._semesterView
     case 'gestionar-clases':
       return await mod.renderGestionarClasesView(container)
     case 'gestionar-horario':

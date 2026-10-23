@@ -1,3 +1,5 @@
+> Integración semestral vigente: [SPEC_V2.md](SPEC_V2.md) y [VALIDACION_V2.md](VALIDACION_V2.md). Los documentos iniciales describen la base histórica del PR158.
+
 # Audiciones de Iniciación — paquete de primera integración
 
 1. [Lo que ya existe y lo comprobado en la base](INVENTARIO.md)

@@ -1,0 +1,34 @@
+name: Initiation auditions verification
+on:
+  push:
+    branches: [feat/initiation-auditions-v2]
+  pull_request:
+    paths:
+      - 'src/modules/audiciones/**'
+      - 'src/portal-maestros/shell/**'
+      - 'supabase/migrations/*initiation*.sql'
+      - '.github/workflows/initiation-auditions.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Jury, database and teacher portal regression
+        run: npx vitest run src/modules/audiciones src/portal-maestros/shell/__tests__ src/portal-maestros/views/__tests__/gestionarClasesView.test.js
+      - run: npm run typecheck
+      - name: Build synthetic evaluation preview
+        run: npm run build
+        env:
+          VITE_USE_MOCK: 'true'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: initiation-auditions-synthetic-preview
+          path: dist/
+          retention-days: 7

@@ -50,5 +50,5 @@ export function escapeText(value) {
 export function renderEnrollmentBadge(enrollment) {
   if (enrollment?.condicion !== 'invitado') return ''
   const date = enrollment.invitacion_revision
-  return `<span class="badge bg-warning text-dark" data-enrollment="invitado">Invitado${date ? ` · revisión ${escapeText(date)}` : ''}</span>`
+  return `<span class="badge bg-warning text-dark" data-enrollment="invitado">Invitado · En periodo de prueba${date ? ` · revisión ${escapeText(date)}` : ''}</span>`
 }

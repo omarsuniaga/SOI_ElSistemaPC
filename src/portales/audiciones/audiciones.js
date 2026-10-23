@@ -2,8 +2,8 @@ import { supabase } from '../../lib/supabaseClient.js'
 
 async function main() {
   if (!['#evaluacion', '#resultados', '#tareas'].includes(window.location.hash)) {
-    const { mountInitiation } = await import('../../modules/audiciones/initiation/view.js')
-    await mountInitiation(document.getElementById('app'))
+    const { mountSemester } = await import('../../modules/audiciones/initiation/semesterView.js')
+    await mountSemester(document.getElementById('app'))
     return
   }
   const { data: { user }, error } = await supabase.auth.getUser()

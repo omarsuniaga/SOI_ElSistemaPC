@@ -280,7 +280,6 @@ function _buildShell(clases, { canCreateClasses = false } = {}) {
             <p class="gcv-subtitle">${clases.length} clase${clases.length !== 1 ? 's' : ''} asignada${clases.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
-        <a class="gcv-btn gcv-btn-ghost" href="/audiciones.html#iniciacion">Audiciones de Iniciación</a>
         ${canCreateClasses ? `
           <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-crear-clase">
             <i class="bi bi-plus-circle"></i> Nueva clase

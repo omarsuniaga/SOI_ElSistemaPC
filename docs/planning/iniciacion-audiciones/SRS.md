@@ -1,3 +1,5 @@
+> Evolución vigente: SPEC_V2.md sustituye las restricciones iniciales de un origen, un destino y matrícula unida a la decisión. Admite varios grupos/destinos, autorización separada de inscripción, responsables explícitos y seguimiento/final por invitación.
+
 # SRS — Audición de Iniciación y participación como invitado
 
 Versión 1.0, 22-10-2026. Solicitante: Omar. Propuesta pedagógica: maestro de Iniciación. Estado: primera integración para revisión, sin publicación automática.

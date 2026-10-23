@@ -62,6 +62,13 @@ export function setActiveTab(route) {
 }
 
 export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator, onRefresh) {
+  queueMicrotask(() => {
+    const targets = [app.querySelector('.pm-sidebar-nav'), app.querySelector('.pm-footer-nav__inner')].filter(Boolean)
+    if (!targets.length) return
+    import('../../modules/audiciones/initiation/semesterPortalLinks.js').then(({ installAuditionLinks }) => {
+      targets.forEach(nav => installAuditionLinks(nav, onNavigate))
+    }).catch(() => {})
+  })
   // Admin que también es maestro: mostrar botón de acceso al panel admin
   const adminLink = maestro?.es_admin
     ? `<a href="/admin" class="pm-admin-link" title="Ir al Panel Admin">

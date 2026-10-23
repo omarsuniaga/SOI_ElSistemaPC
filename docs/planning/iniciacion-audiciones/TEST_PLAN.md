@@ -16,3 +16,11 @@ SQL se ejecuta con PostgreSQL embebido PGlite fijado a versión exacta en devDep
 Regresión relacionada: tests legacy de audiciones, gestión de clases del portal y clases del administrador. Si aparece un fallo previo en master, reproducirlo con la misma versión de dependencias en checkout base antes de atribuirlo al cambio.
 
 Aceptación manual pendiente para piloto: dispositivo real de jurado y receptor, sesiones separadas, doble envío concurrente, conservación de asistencia, conflicto de dos candidatos por último cupo y fallos de red. El test PostgreSQL verifica restricciones y transacciones; no representa una prueba de concurrencia de varios navegadores.
+
+
+## Integración semestral 2.2
+
+- `semesterDatabase.test.js`: RPC real en PostgreSQL embebido; permisos, recursos, quórum, versiones, publicación, dos destinos, prórroga y comunicación idempotente.
+- `semesterView.test.js`: UI con adapter, conservación ante error, criterios humanos, receptor sin jurado, asignación de navegación, demo persistente e informe individual.
+- `scripts/verification/initiation-semester-browser.mjs`: recorrido Chromium de cuatro perfiles y dos destinos, revisión final independiente, recarga y viewport móvil.
+- Pendiente de liberación: contención nativa de dos alumnos por último cupo, clon completo de grants/RLS y sesiones reales de jurado/receptor.

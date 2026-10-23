@@ -1,0 +1,106 @@
+{
+  "actors": [
+    {
+      "id": "demo-admin",
+      "nombre": "Coordinación Demo",
+      "canManage": true
+    },
+    {
+      "id": "demo-jury",
+      "nombre": "Jurado Demo",
+      "canManage": false
+    },
+    {
+      "id": "demo-receiver",
+      "nombre": "Receptor Demo",
+      "canManage": false
+    },
+    {
+      "id": "demo-other",
+      "nombre": "Maestro sin asignación",
+      "canManage": false
+    }
+  ],
+  "classes": [
+    {
+      "id": "source",
+      "nombre": "Iniciación Musical · Grupo A",
+      "es_clase_iniciacion": true,
+      "capacidad_maxima": 20,
+      "horarios": [
+        {
+          "dia": "lunes",
+          "inicio": "15:00",
+          "fin": "16:00"
+        }
+      ]
+    },
+    {
+      "id": "source-b",
+      "nombre": "Iniciación Musical · Grupo B",
+      "es_clase_iniciacion": true,
+      "capacidad_maxima": 20,
+      "horarios": [
+        {
+          "dia": "jueves",
+          "inicio": "15:00",
+          "fin": "16:00"
+        }
+      ]
+    },
+    {
+      "id": "choir",
+      "nombre": "Coro Infantil",
+      "instrumento": "Coro",
+      "teacher_user_id": "demo-receiver",
+      "capacidad_maxima": 20,
+      "horarios": [
+        {
+          "dia": "martes",
+          "inicio": "15:00",
+          "fin": "16:00"
+        }
+      ]
+    },
+    {
+      "id": "flute",
+      "nombre": "Flauta inicial",
+      "instrumento": "Flauta",
+      "teacher_user_id": "demo-receiver",
+      "capacidad_maxima": 2,
+      "horarios": [
+        {
+          "dia": "miércoles",
+          "inicio": "15:00",
+          "fin": "16:00"
+        }
+      ]
+    }
+  ],
+  "students": [
+    {
+      "id": "demo-student-a",
+      "nombre_completo": "Alumno Sintético A"
+    },
+    {
+      "id": "demo-student-b",
+      "nombre_completo": "Alumna Sintética B"
+    }
+  ],
+  "enrollments": [
+    {
+      "id": "regular-a",
+      "alumno_id": "demo-student-a",
+      "clase_id": "source",
+      "activo": true,
+      "condicion": "fijo"
+    },
+    {
+      "id": "regular-b",
+      "alumno_id": "demo-student-b",
+      "clase_id": "source-b",
+      "activo": true,
+      "condicion": "fijo"
+    }
+  ]
+}

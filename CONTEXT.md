@@ -78,3 +78,12 @@ Este documento establece el **Lenguaje Ubicuo (Domain-Driven Design)** para desa
 ### Modo Demo vs Modo Real
 * **Modo Demo (JSON First):** Permite ejecutar y probar toda la aplicación localmente sin credenciales de red, leyendo y simulando mutaciones sobre `src/assets/data/mocks/*.json`.
 * **Modo Real (Supabase):** Persistencia sobre PostgreSQL gestionado en Supabase con Row-Level Security (RLS).
+
+### Invitación a clase y audición de Iniciación
+* `Invitado` es condición temporal de una matrícula en una clase de destino, no estado global del alumno. Su matrícula de Iniciación se conserva.
+* Una convocatoria fija cohorte, clase de origen, jurados reales y rúbrica. Una candidatura pasa por valoración, decisión, invitación y revisiones por ronda. Solo coordinación confirma como fijo, prorroga o registra continuidad en Iniciación con evidencia y observación.
+
+### Convocatoria semestral e invitación por destino
+* La convocatoria admite varios grupos de origen y designa jurados y responsables académicos de forma explícita. La conclusión del jurado es distinta de la resolución académica.
+* Aprobar precede la consulta de preferencia y no crea una matrícula. La autorización de destino y la incorporación del receptor son operaciones distintas.
+* Cada invitación tiene objetivos, recurso comprobado, revisión, ronda y resultado propios. Una audición final enlaza el diagnóstico y seguimiento de cada destino. La matrícula regular de teoría/solfeo se conserva; las excepciones son decisiones académicas temporales documentadas.

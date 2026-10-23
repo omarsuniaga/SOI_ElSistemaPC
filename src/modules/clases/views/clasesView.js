@@ -1,3 +1,4 @@
+import { renderEnrollmentBadge } from '../../audiciones/initiation/domain.js'
 /**
  * clasesView.js — Gestión y Catálogo de Clases Académicas (Rediseño Premium).
  *
@@ -2102,7 +2103,7 @@ async function _mostrarModalNominaClase(claseId) {
   try {
     const { data: inscritosData, error } = await supabase
       .from('alumnos_clases')
-      .select('id, alumno_id, activo, alumnos(*)')
+      .select('*, alumnos(*)')
       .eq('clase_id', claseId)
       .eq('activo', true)
 
@@ -2114,6 +2115,8 @@ async function _mostrarModalNominaClase(claseId) {
       const a = row.alumnos || {}
       return {
         inscripcionId: row.id,
+        condicion: row.condicion,
+        invitacion_revision: row.invitacion_revision,
         alumnoId: a.id || row.alumno_id,
         nombre: a.nombre_completo || `${a.nombre || ''} ${a.apellido || ''}`.trim() || 'Estudiante',
         instrumento: a.instrumento_principal || '—',
@@ -2227,7 +2230,7 @@ async function _mostrarModalNominaClase(claseId) {
                         <div class="d-flex align-items-center gap-3">
                           <span class="badge rounded-circle bg-secondary-subtle text-secondary fw-bold" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">${idx + 1}</span>
                           <div>
-                            <div class="fw-bold text-body" style="font-size:0.88rem;">${escapeHTML(al.nombre)}</div>
+                            <div class="fw-bold text-body" style="font-size:0.88rem;">${escapeHTML(al.nombre)} ${renderEnrollmentBadge(al)}</div>
                             <div class="d-flex align-items-center gap-2 small text-muted" style="font-size:0.72rem;">
                               <span><i class="bi bi-qr-code me-1"></i>${escapeHTML(al.codigo)}</span>
                               <span>•</span>

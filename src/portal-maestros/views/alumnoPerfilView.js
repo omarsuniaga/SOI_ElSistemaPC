@@ -2093,6 +2093,15 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
       </style>
     `
 
+    // La ficha reutiliza el DataAdapter de audiciones; sin consulta directa adicional.
+    const guestPanel = document.createElement('section')
+    guestPanel.hidden = true
+    guestPanel.className = 'pm-zen-card'
+    container.querySelector('.pm-zen-body')?.prepend(guestPanel)
+    import('../../modules/audiciones/initiation/semesterProfileSummary.js').then(({ renderSemesterProfileSummary }) => {
+      renderSemesterProfileSummary(guestPanel, alumnoId)
+    }).catch(() => {})
+
     // Eventos
     container.querySelector('#pm-alumno-back').onclick = () => window.history.back()
     container.querySelector('#pm-alumno-rango').onchange = (e) => {

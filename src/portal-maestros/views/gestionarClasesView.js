@@ -1,3 +1,4 @@
+import { renderEnrollmentBadge } from '../../modules/audiciones/initiation/domain.js'
 /**
  * gestionarClasesView.js
  * Teacher-facing class management portal.
@@ -354,7 +355,7 @@ async function _selectClase(claseId, clases) {
 
   try {
     const inscritosRaw = await obtenerAlumnosInscritos(claseId)
-    const inscritos = inscritosRaw.map((r) => r.alumno).filter(Boolean)
+    const inscritos = inscritosRaw.filter(r => r.alumno).map(r => ({ ...r.alumno, condicion: r.condicion, invitacion_revision: r.invitacion_revision }))
     _enrolledIds = new Set(inscritosRaw.map((r) => r.alumno_id))
     const disponibles = _allStudents.filter((a) => !_enrolledIds.has(a.id))
 
@@ -504,7 +505,7 @@ function _rowInscrito(a) {
       <div class="gcv-student-avatar gcv-avatar-success">${getInitials(nombre)}</div>
       <div class="gcv-student-data">
         <div style="display:flex;align-items:center;gap:.5rem;">
-          <span class="gcv-student-name">${nombre}</span>
+          <span class="gcv-student-name">${nombre}</span>${renderEnrollmentBadge(a)}
           <span class="gcv-badge-enrolled"><i class="bi bi-check-circle-fill"></i> Inscrito</span>
         </div>
         ${instrumento ? `<span class="gcv-student-sub"><i class="bi bi-music-note"></i> ${instrumento}</span>` : ''}

@@ -45,6 +45,7 @@ cualquier tarea `disponible` según su contexto o especialidad.
 
 | task_id | título | estado | prioridad | agente_asignado | rama_git | openspec_change | notas | última_actualización |
 |---|---|---|---|---|---|---|---|---|
+| `initiation-auditions-v2` | Audiciones semestrales, múltiples destinos y seguimiento | en_progreso | alta | Codex / a5a9276e8361 | `feat/initiation-auditions-v2` | `docs/planning/iniciacion-audiciones/SPEC_V2.md` | Desarrollo autorizado por Omar; fase inicial de dominio y demo; sin activación en producción | 2026-10-22 |
 | `adm-five-views-usability` | Reparar cinco vistas ADM y adaptar móvil | en_revision | alta | Codex / c0b56369375d | `fix/adm-views-usability` | `docs/planning/SPEC_REPARACION_VISTAS_ADM.md` | Autorizado por Omar; pruebas focalizadas, lint/tipos/build aprobados; revisión visual pendiente; lane liberado | 2026-10-19 |
 | `adm-permission-switch-reactivity` | Corregir bloqueo de switches de permisos ADM | en_revision | alta | Codex / 09a7f6673c6b | `fix/adm-permission-switch-reactivity` | `docs/planning/FIX_PERMISOS_ADM_REACTIVIDAD.md` | Autorizado por Omar; 47 tests, build, tipos y lint aprobados; lane liberado | 2026-10-19 |
 | `optional-active-class-navigation` | Hacer opcional la apertura de clase en curso y respetar navegación manual | completada | alta | Codex / aa0fc8a3d1e7 | `fix/optional-active-class-navigation` | `docs/planning/SPEC_NAVEGACION_CLASE_EN_CURSO.md` | PR #142; 4.711 tests aprobados; lane liberado; publicación autorizada por Omar | 2026-10-19 |

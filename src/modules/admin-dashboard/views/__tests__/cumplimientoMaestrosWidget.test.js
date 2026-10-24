@@ -1,3 +1,5 @@
+const mockOpenDatePicker = vi.hoisted(() => vi.fn())
+vi.mock('../../../asistencias/components/exemptionDatePicker.js', () => ({ openExemptionDatePicker: mockOpenDatePicker }))
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 /**
@@ -228,6 +230,15 @@ describe('CumplimientoMaestrosWidget — propagación del rango al detalle de ma
     await widget.init()
     return widget
   }
+
+  it('offers Exonerar clases directly on the teacher card', async () => {
+    await initWidget()
+    const button = container.querySelector('.btn-exonerar-clases')
+    expect(button.textContent).toContain('Exonerar clases')
+    button.click()
+    expect(mockOpenDatePicker).toHaveBeenCalledWith(expect.objectContaining({ maestroId: 'maestro-1', nombre: 'Prof. Ana' }))
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
 
   it('"Ver detalle" navega con el mismo rango (desde/hasta) que está activo en la lista', async () => {
     await initWidget()

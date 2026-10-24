@@ -39,3 +39,7 @@ Publicación pendiente: la revisión automática rechazó `git push` por conside
 ## Acceso visible (seguimiento del 24 de octubre)
 
 El menú usa la etiqueta «Pendientes y exoneraciones» tanto en administración general como en ADM. En ADM se ubica junto a Control de Asistencias, dentro de Operación & Clases. Las cabeceras de Maestros y Control de Asistencias ofrecen enlaces directos a la misma ruta `#/admin-dashboard`. La vista explica que Ver detalle permite exonerar registros con motivo y ajustar vigencia. No hay rutas ni permisos nuevos.
+
+## Flujo compacto y explícito
+
+Las tarjetas del balance se compactan a nombre/estado, cátedra, conteos en una fila, barra fina y acciones. El botón primario «Exonerar clases» abre un selector de fecha y clase independiente del rango del panel. Continúa al formulario de motivo y confirmación; usa los mismos permisos y persistencia existentes. Las fechas sin clases o los errores de consulta se explican y bloquean Continuar. El selector descarta respuestas obsoletas si cambia la fecha.

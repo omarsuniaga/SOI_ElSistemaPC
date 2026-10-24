@@ -1,3 +1,4 @@
+import { openExemptionDatePicker } from '../../asistencias/components/exemptionDatePicker.js'
 /**
  * Admin Dashboard Widget: Cumplimiento de Maestros (Canonical Attendance Solvency)
  * Rediseñado con la estructura, metodología y estética unificada de la vista Salones.
@@ -516,7 +517,7 @@ export class CumplimientoMaestrosWidget {
 
         <!-- Contenedor de Cuadrícula de Cumplimiento (Estructura Salones responsive - 4 columnas en desktop) -->
         <div class="w-100">
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2.5 w-100 m-0" id="maestrosGridBody">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-2.5 w-100 m-0" id="maestrosGridBody">
             ${this.renderGridItemsHTML()}
           </div>
         </div>
@@ -610,70 +611,26 @@ export class CumplimientoMaestrosWidget {
 
     return `
       <div class="col p-1">
-        <div class="list-group-item card h-100 rounded-4 border bg-body shadow-xs hover-shadow transition-all d-flex flex-column justify-content-between position-relative overflow-hidden" style="padding: 0.85rem 0.85rem 1.05rem 0.85rem !important;">
-          
-          <!-- Parte Superior: Nombre, Especialidad, Solvencia y Métricas -->
-          <div class="mb-2">
-            
-            <!-- Nombre del Maestro -->
-            <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(nombre)}">
-              ${escapeHTML(nombre)}
-            </strong>
-
-            <!-- Cátedra / Especialidad -->
-            <div class="mb-2">
-              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2 text-truncate w-100 text-start d-block rounded-3" style="font-size: 0.72rem;" title="${escapeHTML(especialidad)}">
-                <i class="bi bi-music-note-beamed me-1 text-primary"></i>${escapeHTML(especialidad)}
-              </span>
-            </div>
-
-            <!-- Solvencia Badge -->
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="text-muted small" style="font-size:0.75rem;"><i class="bi bi-shield-check me-1 text-secondary"></i>Solvencia:</span>
-              <span class="badge ${config.badgeClass} py-0.5 px-2 rounded-2" style="font-size: 0.7rem;">
-                <i class="bi ${config.icon} me-1"></i>${config.label}
-              </span>
-            </div>
-
-            <!-- Barra de Progreso de Asistencia -->
-            <div class="mb-2">
-              <div class="d-flex justify-content-between text-muted small mb-1" style="font-size: 0.72rem;">
-                <span>Cumplimiento:</span>
-                <span class="fw-semibold text-body">${pct}% (${registradas}/${totalClases})</span>
-              </div>
-              <div class="progress" style="height: 6px; border-radius: 4px; background-color: var(--bs-tertiary-bg);">
-                <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${pct}%;" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-            </div>
-
-            <!-- Métricas Clave -->
-            <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">
-              <div class="d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-clock me-1 text-warning"></i>Pendientes (&le;7d):</span>
-                <span class="fw-semibold ${pendientes > 0 ? "text-warning-emphasis" : "text-body"}">${pendientes}</span>
-              </div>
-
-              <div class="d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-exclamation-circle me-1 text-danger"></i>Vencidas (&gt;7d):</span>
-                <span class="fw-bold ${vencidas > 0 ? "text-danger" : "text-body"}">${vencidas}</span>
-              </div>
-            </div>
-
+        <article class="card h-100 rounded-3 border bg-body shadow-sm p-3 attendance-teacher-card">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+            <strong class="text-body text-truncate" style="font-size:.87rem" title="${escapeHTML(nombre)}">${escapeHTML(nombre)}</strong>
+            <span class="badge ${config.badgeClass}" style="font-size:.62rem">${config.label}</span>
           </div>
-
-          <!-- Footer con Acciones (WhatsApp y Ver Detalle) -->
-          <div class="pt-2 border-top border-body-tertiary d-flex align-items-center justify-content-between mt-auto" style="gap: 0.4rem;">
-            <button class="btn btn-sm btn-outline-success rounded-3 shadow-xs d-inline-flex align-items-center gap-1 py-1 px-2 btn-contactar" data-maestro-id="${maestro.maestro_id}" title="Enviar recordatorio por WhatsApp" style="font-size:0.75rem;">
-              <i class="bi bi-whatsapp"></i>
-              <span class="d-none d-sm-inline">Recordar</span>
-            </button>
-            <button class="btn btn-sm btn-outline-primary rounded-3 shadow-xs d-inline-flex align-items-center gap-1 py-1 px-2.5 btn-detalle" data-maestro-id="${maestro.maestro_id}" title="Ver detalle por clase" style="font-size:0.75rem;">
-              <i class="bi bi-eye-fill"></i>
-              <span>Ver Detalle</span>
-            </button>
+          <div class="text-muted small text-truncate mb-2" style="font-size:.74rem" title="${escapeHTML(especialidad)}">${escapeHTML(especialidad)}</div>
+          <div class="d-flex flex-wrap gap-2 small mb-2" style="font-size:.72rem">
+            <span class="text-muted">${registradas}/${totalClases} registradas</span>
+            <span class="${pendientes ? 'text-warning-emphasis fw-semibold' : 'text-muted'}">${pendientes} pendientes</span>
+            <span class="${vencidas ? 'text-danger fw-semibold' : 'text-muted'}">${vencidas} vencidas</span>
           </div>
-
-        </div>
+          <div class="progress mb-3" style="height:4px" aria-label="Cumplimiento">
+            <div class="progress-bar ${progressColor}" role="progressbar" style="width:${pct}%" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex align-items-center flex-wrap gap-2 mt-auto">
+            <button type="button" class="btn btn-primary btn-sm flex-grow-1 btn-exonerar-clases" data-maestro-id="${escapeHTML(maestro.maestro_id)}" style="min-height:36px;font-size:.76rem"><i class="bi bi-calendar-minus me-1" aria-hidden="true"></i>Exonerar clases</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm btn-detalle" data-maestro-id="${escapeHTML(maestro.maestro_id)}" style="min-height:36px;font-size:.76rem">Ver detalle</button>
+            <button type="button" class="btn btn-outline-success btn-sm btn-contactar" data-maestro-id="${escapeHTML(maestro.maestro_id)}" aria-label="Recordar por WhatsApp a ${escapeHTML(nombre)}" title="Recordar por WhatsApp" style="min-height:36px"><i class="bi bi-whatsapp" aria-hidden="true"></i></button>
+          </div>
+        </article>
       </div>
     `
   }
@@ -855,6 +812,12 @@ export class CumplimientoMaestrosWidget {
    * Card Action Listeners (WhatsApp and Detalle)
    */
   attachCardListeners() {
+    this.container.querySelectorAll('.btn-exonerar-clases').forEach(button => {
+      button.addEventListener('click', () => {
+        const maestro = this.maestros.find(item => item.maestro_id === button.dataset.maestroId)
+        if (maestro) openExemptionDatePicker({ maestroId: maestro.maestro_id, nombre: maestro.maestros?.nombre_completo || 'Maestro', onSaved: async () => { await this.loadData(); this.render(); this.attachEventListeners() } })
+      })
+    })
     this.container.querySelectorAll('.btn-contactar').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation()

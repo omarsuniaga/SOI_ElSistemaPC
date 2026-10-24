@@ -62,3 +62,12 @@ export async function saveClassValidity(claseId, start, schedules) {
   }
   assertResult(await supabase.rpc('save_class_validity', { p_clase_id: claseId, p_fecha_inicio: start || null, p_horarios: schedules }))
 }
+
+export async function getExemptionCandidates(maestroId, fecha) {
+  if (demo) {
+    const classes = Array.isArray(classesFixture) ? classesFixture : classesFixture.clases || []
+    const day = new Intl.DateTimeFormat('es-DO', { weekday:'long',timeZone:'UTC' }).format(new Date(`${fecha}T12:00:00Z`)).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    return classes.filter(c => [c.maestro_titular_id,c.maestro_principal_id,c.maestro_auxiliar_id].includes(maestroId)).flatMap(c => (c.horarios || []).filter(h => h.dia.normalize('NFD').replace(/[\u0300-\u036f]/g,'') === day).map(h => ({clase_id:c.id,clase_nombre:c.nombre,fecha,hora_inicio:h.hora_inicio,estado:'pendiente'})))
+  }
+  return assertResult(await supabase.rpc('fn_estado_asistencia_maestro', {p_maestro_id:maestroId,p_desde:fecha,p_hasta:fecha})) || []
+}

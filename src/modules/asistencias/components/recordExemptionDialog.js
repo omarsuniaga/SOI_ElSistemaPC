@@ -4,7 +4,7 @@ import { escapeHTML as esc } from '../../../shared/utils/sanitize.js'
 /** One transaction per administrative decision; success is shown only after persistence. */
 export async function openRecordExemptionDialog({ row, maestroId, exemptions = [], onSaved, validity = false }) {
   const dialog = document.createElement('dialog')
-  dialog.setAttribute('aria-label', validity ? 'Vigencia de la clase' : 'Exonerar registro')
+  dialog.setAttribute('aria-label', validity ? 'Vigencia de la clase' : 'Exonerar clase')
   dialog.style.cssText = 'max-width:600px;width:calc(100% - 24px);max-height:90vh;overflow:auto;border-radius:16px;padding:24px;background:var(--bs-body-bg,#fff);color:var(--bs-body-color,#222)'
   document.body.append(dialog)
   const restoreFocus = document.activeElement
@@ -18,8 +18,8 @@ export async function openRecordExemptionDialog({ row, maestroId, exemptions = [
     if (!dialog.isConnected) return
     const history = exemptions.filter(x => x.clase_id === row.clase_id && x.fecha === row.fecha)
     dialog.innerHTML = `<form>
-      <h3>${validity ? 'Vigencia de la clase' : 'Exonerar registro'}</h3>
-      <p>${esc(row.clase_nombre)} · ${esc(row.fecha)}</p>
+      <h3>${validity ? 'Vigencia de la clase' : 'Exonerar clase'}</h3>
+      <p class="fw-semibold">${esc(row.clase_nombre)} · ${esc(row.fecha)}</p>
       ${validity ? `<p>Vacío: se usa la fecha de creación en Santo Domingo. Los registros históricos reales se conservan.</p>
         <label>Inicio efectivo de la clase <input class="form-control" name="start" type="date" value="${esc(data.clase.fecha_inicio || '')}"></label>
         ${data.horarios.map((h, i) => `<fieldset class="border rounded p-2 mt-2"><legend class="fs-6">${esc(h.dia)} ${esc(h.hora_inicio || '')}</legend>
@@ -31,7 +31,7 @@ export async function openRecordExemptionDialog({ row, maestroId, exemptions = [
         ${history.length ? `<h4 class="fs-6 mt-3">Historial de decisiones</h4>${history.map(x => `<div class="border rounded p-2 mt-2"><strong>${esc(x.alcance)} · ${x.revocado_en ? 'Revocada' : 'Activa'}</strong><p>${esc(x.motivo)}</p><small>Autor: ${esc(x.creado_por)} · ${esc(x.creado_en)}</small>${x.revocado_en ? `<p>Revocación: ${esc(x.motivo_revocacion)} · ${esc(x.revocado_por)} · ${esc(x.revocado_en)}</p>` : `<button type="button" class="btn btn-sm btn-outline-danger d-block" data-revoke="${esc(x.id)}">Revocar con motivo</button>`}</div>`).join('')}` : ''}`}
       <p role="alert" class="text-danger" data-error></p>
       <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
-      <button type="submit" class="btn btn-primary">${validity ? 'Guardar vigencia' : 'Registrar exoneración'}</button>
+      <button type="submit" class="btn btn-primary">${validity ? 'Guardar vigencia' : 'Confirmar exoneración'}</button>
     </form>`
     const form = dialog.querySelector('form')
     let revokeId = null

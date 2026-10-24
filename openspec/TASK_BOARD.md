@@ -87,3 +87,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `class-validity-exemptions` | Vigencia y exoneración administrativa de registros | en_revision | alta | Codex / c16e853e5497 | `fix/class-validity-exemptions` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Implementado y probado; publicación bloqueada por revisión automática hasta autorización explícita; lane liberado | 2026-10-24 |
 
 | `attendance-entry-point` | Acceso visible a pendientes y exoneraciones | en_revision | alta | Codex / c16e853e5497 | `fix/attendance-entry-point` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Accesos en menú, Maestros y Asistencias; pruebas de navegación; lane liberado | 2026-10-24 |
+
+| `compact-exemption-flow` | Tarjetas compactas y flujo explícito Exonerar clases | en_revision | alta | Codex / c16e853e5497 | `fix/compact-exemption-flow` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Flujo fecha → clase → motivo y confirmación; tarjetas compactas; lane liberado | 2026-10-24 |

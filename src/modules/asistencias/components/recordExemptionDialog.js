@@ -1,3 +1,4 @@
+import { AppToast } from '../../../shared/components/AppToast.js'
 import { createRecordExemption, revokeRecordExemption, getClassValidity, saveClassValidity } from '../api/recordExemptionsAdapter.js'
 import { escapeHTML as esc } from '../../../shared/utils/sanitize.js'
 
@@ -55,6 +56,7 @@ export async function openRecordExemptionDialog({ row, maestroId, exemptions = [
         else if (revokeId) await revokeRecordExemption(revokeId, fields.get('reason'))
         else await createRecordExemption({ claseId: row.clase_id, maestroId, fecha: row.fecha, alcance: fields.get('scope'), motivo: fields.get('reason') })
         close()
+        AppToast.show(validity ? 'Vigencia guardada.' : revokeId ? 'Exoneración revocada.' : `Exoneración registrada: ${row.clase_nombre}, ${row.fecha}.`, 'success')
         await onSaved?.()
       } catch (error) {
         form.querySelector('[data-error]').textContent = error.message

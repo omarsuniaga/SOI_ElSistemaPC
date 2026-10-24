@@ -299,7 +299,7 @@ export async function getMaestroHistoricoDesempeno(maestroId) {
     })
 
     const lista = Array.isArray(registrosRpc) ? registrosRpc : []
-    const total = lista.length
+    const total = lista.filter(r => r.estado !== 'exonerada').length
     const registradas = lista.filter(r => r.estado === 'registrada' || r.estado === 'cubierta_emergente').length
     const pendientes = lista.filter(r => r.estado === 'pendiente').length
     const vencidas = lista.filter(r => r.estado === 'vencida').length

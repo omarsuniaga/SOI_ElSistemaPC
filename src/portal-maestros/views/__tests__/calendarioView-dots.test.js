@@ -1,3 +1,4 @@
+vi.mock('../../../modules/asistencias/api/recordExemptionsAdapter.js', () => ({ listRecordExemptions: vi.fn(async () => []) }))
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderCalendarioView } from '../calendarioView.js'
 import * as maestroDataService from '../../services/maestroDataService.js'
@@ -109,4 +110,15 @@ describe('calendarioView - puntos por clase y fondo de alerta', () => {
     expect(cell.querySelectorAll('.pm-day-dot').length).toBe(0)
     expect(cell.classList.contains('dia-alerta')).toBe(false)
   })
+  it('no genera deuda en agosto de una clase y horario creados en septiembre', async () => {
+    vi.setSystemTime(new Date(2026, 7, 20, 12))
+    maestroDataService.getMisClases.mockResolvedValue([{ id: 'new', created_at: '2026-09-02T18:00Z' }])
+    maestroDataService.getHorariosClases.mockResolvedValue([{ clase_id: 'new', dia: 'miércoles', created_at: '2026-09-23T19:00Z' }])
+    maestroDataService.getSesiones.mockResolvedValue([])
+    await renderCalendarioView(container)
+    const day = container.querySelector('[data-fecha="2026-08-12"]')
+    expect(day.querySelector('.pm-day-dot')).toBeNull()
+    expect(day.classList.contains('dia-alerta')).toBe(false)
+  })
+
 })

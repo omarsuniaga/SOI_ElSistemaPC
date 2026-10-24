@@ -498,58 +498,29 @@ export async function getPeriodoActivo() {
 export async function obtenerEstadoCumplimientoMaestro(maestroId, periodoId = null) {
   if (!maestroId) return { esCompleto: true, pendientesCount: 0, totalCount: 0 }
 
-  try {
-    const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test'
-    if (isTestEnv) return { esCompleto: true, pendientesCount: 0, totalCount: 0 }
-
-    let periodo = null
-    if (periodoId) {
-      const { data } = await supabase.from('periodos').select('*').eq('id', periodoId).single()
-      periodo = data
-    }
-    if (!periodo) {
-      periodo = await getPeriodoActivo()
-    }
-
-    let query = supabase
-      .from('sesiones_clase')
-      .select('id, fecha, borrador, estado, asistencia')
-      .eq('maestro_id', maestroId)
-      // clase_id = null son declaraciones de "clase emergente" (actividad
-      // especial), no una clase real que el maestro deba cerrar. Contarlas
-      // como pendientes infla el cumplimiento con deuda falsa (bug real:
-      // "Feriado" x4 en 2026-09-24 sumando pendientes que no eran clases).
-      .not('clase_id', 'is', null)
-
-    if (periodo?.fecha_inicio) {
-      query = query.gte('fecha', periodo.fecha_inicio)
-    }
-    if (periodo?.fecha_fin) {
-      query = query.lte('fecha', periodo.fecha_fin)
-    }
-
-    const { data: sesiones, error } = await query
-    if (error || !sesiones || sesiones.length === 0) {
-      return { esCompleto: true, pendientesCount: 0, totalCount: 0 }
-    }
-
-    let pendientesCount = 0
-    sesiones.forEach((s) => {
-      const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
-      const esCompletada = !s.borrador && s.estado !== 'pendiente' && (s.estado === 'registrada' || s.estado === 'cerrada' || tieneAsistencia)
-      if (!esCompletada) {
-        pendientesCount++
-      }
-    })
-
-    return {
-      esCompleto: pendientesCount === 0,
-      pendientesCount,
-      totalCount: sesiones.length,
-    }
-  } catch (e) {
-    return { esCompleto: true, pendientesCount: 0, totalCount: 0 }
+  let periodo = null
+  if (periodoId) {
+    const { data, error } = await supabase.from('periodos').select('*').eq('id', periodoId).single()
+    if (error) throwError('No se pudo consultar el período', error)
+    periodo = data
   }
+  periodo ||= await getPeriodoActivo()
+  if (!periodo?.fecha_inicio || !periodo?.fecha_fin) return { esCompleto: true, pendientesCount: 0, totalCount: 0 }
+  const rows = []
+  // La RPC admite hasta 93 días; un semestre se consulta en bloques, sin un segundo evaluador.
+  let from = periodo.fecha_inicio
+  while (from <= periodo.fecha_fin) {
+    const end = new Date(`${from}T12:00:00Z`)
+    end.setUTCDate(end.getUTCDate() + 92)
+    const to = [end.toISOString().slice(0, 10), periodo.fecha_fin].sort()[0]
+    rows.push(...await obtenerEstadosAsistenciaMaestro(maestroId, from, to))
+    end.setTime(new Date(`${to}T12:00:00Z`).getTime())
+    end.setUTCDate(end.getUTCDate() + 1)
+    from = end.toISOString().slice(0, 10)
+  }
+  const required = rows.filter(row => !['exonerada', 'futura'].includes(row.estado))
+  const pendientesCount = required.filter(row => ['pendiente', 'vencida'].includes(row.estado)).length
+  return { esCompleto: pendientesCount === 0, pendientesCount, totalCount: required.length }
 }
 
 /**

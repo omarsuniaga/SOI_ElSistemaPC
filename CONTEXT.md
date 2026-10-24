@@ -78,3 +78,7 @@ Este documento establece el **Lenguaje Ubicuo (Domain-Driven Design)** para desa
 ### Modo Demo vs Modo Real
 * **Modo Demo (JSON First):** Permite ejecutar y probar toda la aplicación localmente sin credenciales de red, leyendo y simulando mutaciones sobre `src/assets/data/mocks/*.json`.
 * **Modo Real (Supabase):** Persistencia sobre PostgreSQL gestionado en Supabase con Row-Level Security (RLS).
+
+### Exoneración de registro
+* Decisión administrativa sobre la obligación de registrar asistencia, contenido o ambos para una clase, maestro y fecha. Conserva motivo, autoría y eventual revocación. No equivale a asistencia del alumno ni a clase impartida/registrada.
+* Vigencia: intervalo efectivo de una clase y su horario; fuera de él no se generan obligaciones sintéticas. Una sesión histórica registrada sigue siendo evidencia aunque la carga del horario sea posterior.

@@ -370,7 +370,7 @@ export class CumplimientoMaestrosWidget {
               </div>
               <div>
                 <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Pendientes y exoneraciones ${InfoTooltip("cumplimiento_sesiones")}</h5>
-                <small class="text-muted d-block" style="font-size:0.75rem;">Revisa los pendientes por maestro. En Ver detalle puedes exonerar registros con motivo y ajustar la vigencia de las clases.</small>
+                <small class="text-muted d-block" style="font-size:0.75rem;">Elige un maestro y pulsa Exonerar clases. Después selecciona la fecha y la clase.</small>
               </div>
               
               <!-- Badges de Resumen en Tiempo Real -->
@@ -613,7 +613,7 @@ export class CumplimientoMaestrosWidget {
       <div class="col p-1">
         <article class="card h-100 rounded-3 border bg-body shadow-sm p-3 attendance-teacher-card">
           <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
-            <strong class="text-body text-truncate" style="font-size:.87rem" title="${escapeHTML(nombre)}">${escapeHTML(nombre)}</strong>
+            <strong class="text-body" style="font-size:.87rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden" title="${escapeHTML(nombre)}">${escapeHTML(nombre)}</strong>
             <span class="badge ${config.badgeClass}" style="font-size:.62rem">${config.label}</span>
           </div>
           <div class="text-muted small text-truncate mb-2" style="font-size:.74rem" title="${escapeHTML(especialidad)}">${escapeHTML(especialidad)}</div>

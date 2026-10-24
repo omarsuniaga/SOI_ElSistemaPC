@@ -37,6 +37,7 @@ const navGroups = [
       { id: 'actividades-institucionales', label: 'Actividades Institucionales', icon: 'bi-calendar-event' },
       { id: 'salones', label: 'Salones & Espacios', icon: 'bi-door-open' },
       { id: 'asistencias', label: 'Control de Asistencias', icon: 'bi-calendar-check' },
+      { id: 'admin-dashboard', label: 'Pendientes y exoneraciones', icon: 'bi-clipboard-check' },
       { id: 'admin-ausencias', label: 'Gestión de Ausencias', icon: 'bi-calendar-x' },
       { id: 'pedagogico-ausentismo-dashboard', label: 'Ausentismo de Alumnos', icon: 'bi-person-exclamation' },
       { id: 'pedagogico-seguimiento-ausentes', label: 'Alumnos Ausentes', icon: 'bi-exclamation-circle' },
@@ -49,7 +50,6 @@ const navGroups = [
     icon: 'bi-file-earmark-bar-graph',
     items: [
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
-      { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
       { id: 'reporte-mensual', label: 'Resumen del Mes', icon: 'bi-graph-up' },
       { id: 'analisis-contenido', label: 'Análisis Pedagógico', icon: 'bi-journal-text' },
       {

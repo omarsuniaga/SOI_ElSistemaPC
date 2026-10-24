@@ -259,6 +259,7 @@ function renderContent(container) {
 
           <!-- Toolbar de Botones con 0.85rem de separación -->
           <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
+            <a href="#/admin-dashboard" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Pendientes y exoneraciones</a>
             <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnExportarCSV" title="Exportar listado a CSV" style="font-size:0.78rem;">
               <i class="bi bi-file-earmark-spreadsheet"></i>
               <span class="d-none d-sm-inline">CSV</span>

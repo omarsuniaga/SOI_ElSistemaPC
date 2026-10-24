@@ -35,3 +35,7 @@ Las consultas iniciales no encontraban contenido en esas fechas. Una comprobaci�
 247 pruebas de integración aprobadas; build y typecheck aprobados; ESLint sin errores. Las pruebas PostgreSQL embebidas incluyen además acceso de otro maestro y bloqueo de cambios en created_at para impedir evitar la vigencia por esa vía.
 
 Publicación pendiente: la revisión automática rechazó `git push` por considerar insuficiente la autorización para publicar código en el remoto. No se intenta otro mecanismo de subida ni se aplica la migración a producción. Se requiere autorización explícita de Omar para subir la rama, fusionar/publicar el frontend y aplicar la migración.
+
+## Acceso visible (seguimiento del 24 de octubre)
+
+El menú usa la etiqueta «Pendientes y exoneraciones» tanto en administración general como en ADM. En ADM se ubica junto a Control de Asistencias, dentro de Operación & Clases. Las cabeceras de Maestros y Control de Asistencias ofrecen enlaces directos a la misma ruta `#/admin-dashboard`. La vista explica que Ver detalle permite exonerar registros con motivo y ajustar vigencia. No hay rutas ni permisos nuevos.

@@ -471,7 +471,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
       { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
-      { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
+      { id: 'admin-dashboard', label: 'Pendientes y exoneraciones', icon: 'bi-clipboard-check' },
       { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
       { id: 'metricas', label: 'Dashboard Métricas', icon: 'bi-bar-chart-line' },
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },

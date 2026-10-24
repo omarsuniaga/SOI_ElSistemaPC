@@ -36,3 +36,11 @@ it('registers one delegated click handler after repeated filter redraws', async 
   const listeners = add.mock.calls.filter(([type]) => type === 'click')
   expect(listeners.filter(([, , options]) => !options?.signal?.aborted)).toHaveLength(1)
 })
+
+it('offers a visible entry to teacher pending records and exemptions', async () => {
+  const container = document.body.appendChild(document.createElement('div'))
+  await renderAsistenciasView(container)
+  const entry = container.querySelector('a[href="#/admin-dashboard"]')
+  expect(entry).not.toBeNull()
+  expect(entry.textContent).toContain('Pendientes y exoneraciones')
+})

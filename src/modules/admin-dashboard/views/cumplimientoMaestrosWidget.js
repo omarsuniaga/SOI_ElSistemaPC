@@ -368,8 +368,8 @@ export class CumplimientoMaestrosWidget {
                 <i class="bi bi-person-check-fill fs-5"></i>
               </div>
               <div>
-                <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Balance de Asistencia & Solvencia Docente ${InfoTooltip("cumplimiento_sesiones")}</h5>
-                <small class="text-muted d-block" style="font-size:0.75rem;">Fuente canónica de clases programadas vs asistencia registrada en el ciclo lectivo</small>
+                <h5 class="fw-bold mb-0 text-body d-flex align-items-center">Pendientes y exoneraciones ${InfoTooltip("cumplimiento_sesiones")}</h5>
+                <small class="text-muted d-block" style="font-size:0.75rem;">Revisa los pendientes por maestro. En Ver detalle puedes exonerar registros con motivo y ajustar la vigencia de las clases.</small>
               </div>
               
               <!-- Badges de Resumen en Tiempo Real -->

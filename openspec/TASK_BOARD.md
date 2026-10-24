@@ -85,3 +85,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `ratings-schema-missing-fix` | Corregir valoraciones sin migración aplicada y manejar indisponibilidad | en_revision | alta | Codex / rating-schema-20261020 | `fix/observations-toolbar-dictation` | `docs/planning/ASSISTED_LESSON_REVIEW.md` | Migración 20261020170631 aplicada; regresión reproducida/corregida; pruebas SQL con rollback aprobadas; CI pendiente; lane liberado; frontend sin fusionar | 2026-10-20 |
 
 | `class-validity-exemptions` | Vigencia y exoneración administrativa de registros | en_revision | alta | Codex / c16e853e5497 | `fix/class-validity-exemptions` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Implementado y probado; publicación bloqueada por revisión automática hasta autorización explícita; lane liberado | 2026-10-24 |
+
+| `attendance-entry-point` | Acceso visible a pendientes y exoneraciones | en_revision | alta | Codex / c16e853e5497 | `fix/attendance-entry-point` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Accesos en menú, Maestros y Asistencias; pruebas de navegación; lane liberado | 2026-10-24 |

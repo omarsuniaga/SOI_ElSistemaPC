@@ -266,6 +266,7 @@ function renderContent(container, preserveSearch = false) {
           </div>
           
           <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="#/admin-dashboard" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Pendientes y exoneraciones</a>
             <!-- Botón Desplegar/Contraer Filtros -->
             <button class="btn btn-sm ${state.filtrosAbiertos ? 'btn-primary' : 'btn-outline-secondary'} d-inline-flex align-items-center" id="btnToggleFiltros">
               <i class="bi bi-funnel me-1"></i>Filtros

@@ -52,6 +52,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       
+      - name: Run attendance database regressions
+        run: npm run test:db:class-exemptions
+
       - name: Run tests
         run: npm run test:run
         env:

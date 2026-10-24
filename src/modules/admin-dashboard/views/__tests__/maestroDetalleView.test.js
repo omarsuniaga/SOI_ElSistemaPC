@@ -1,3 +1,4 @@
+vi.mock('../../../asistencias/api/recordExemptionsAdapter.js', () => ({ listRecordExemptions: vi.fn(async () => []) }))
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 /**

@@ -80,7 +80,7 @@ export async function getMisClases(forceRefresh = false) {
       // el filtro .or() ya los use: sin esto, el resto del portal no puede
       // saber si el maestro logueado es titular o suplente de esta clase.
       .select(
-        'id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, maestro_suplente_id, maestro_auxiliar_id, maestro_id, route_version_id, tipo_clase',
+        'id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, maestro_suplente_id, maestro_auxiliar_id, maestro_id, route_version_id, tipo_clase, created_at, fecha_inicio',
       )
       .or(
         `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
@@ -123,7 +123,7 @@ export async function getHorariosClases(claseIds, forceRefresh = false) {
   return _singleFlight(cacheKey, async (generation) => {
     const { data, error } = await supabase
       .from('clase_horarios')
-      .select('hora_inicio, hora_fin, salon_id, clase_id, dia')
+      .select('id, hora_inicio, hora_fin, salon_id, clase_id, dia, created_at, vigente_desde, vigente_hasta')
       .in('clase_id', stableClaseIds)
     if (error) {
       console.warn('[MaestroData] Error cargando horarios:', error.message)

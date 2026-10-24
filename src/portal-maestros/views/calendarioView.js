@@ -1,3 +1,5 @@
+import { isClassScheduledOn } from '../../modules/asistencias/utils/classValidity.js'
+import { listRecordExemptions } from '../../modules/asistencias/api/recordExemptionsAdapter.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML, MESES_ES, DIAS_ES } from '../utils/portalUtils.js'
@@ -158,7 +160,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const estados = await obtenerEstadosAsistenciaMaestro(maestroId, desde, hasta)
     const estadoMap = new Map()
     const dotsMap = new Map()
-    const prioridad = { futura: 0, registrada: 1, 'cubierta_emergente': 1, pendiente: 2, vencida: 3 }
+    const prioridad = { futura: 0, exonerada: 1, registrada: 1, 'cubierta_emergente': 1, pendiente: 2, vencida: 3 }
 
     for (const item of estados) {
       const estadoCalendario = item.estado === 'cubierta_emergente'
@@ -171,7 +173,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       }
 
       if (!dotsMap.has(item.fecha)) dotsMap.set(item.fecha, [])
-      const dot = item.estado === 'registrada' || item.estado === 'cubierta_emergente'
+      const dot = item.estado === 'exonerada' ? 'exonerada' : item.estado === 'registrada' || item.estado === 'cubierta_emergente'
         ? 'verde'
         : item.estado === 'futura'
           ? 'gris'
@@ -191,12 +193,12 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   }
 
   // 2 & 3. Horarios y sesiones del mes en paralelo (con cache)
-  const [horarios, todasSesiones] = await Promise.all([
+  const [horarios, todasSesiones, exemptions] = await Promise.all([
     getHorariosClases(claseIds).catch(() => []),
     getSesiones(maestroId, desde, hasta).catch(() => []),
+    listRecordExemptions(maestroId, desde, hasta),
   ])
 
-  const diasConClase = new Set((horarios || []).map((h) => h.dia?.toLowerCase()))
   const horaFinPorDia = new Map() // Map<"lunes"|"martes"|..., max_hora_fin>
   ;(horarios || []).forEach((h) => {
     const dia = h.dia?.toLowerCase()
@@ -272,7 +274,8 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const dia = String(d.getDate()).padStart(2, '0')
     const fecha = `${y}-${m}-${dia}`
     const diaEs = DIAS_ES[d.getDay()]
-    const tieneCl = diasConClase.has(diaEs)
+    const validSchedules = horarios.filter(h => h.dia?.toLowerCase() === diaEs && isClassScheduledOn(clases.find(c => c.id === h.clase_id), h, fecha, sesionPorClaseFecha.get(`${fecha}|${h.clase_id}`)))
+    const tieneCl = validSchedules.length > 0
     const emergentesFecha = emergentePorFecha.get(fecha) || []
     const fechaDate = new Date(d)
     const diffDias = Math.floor((hoy - fechaDate) / 86400000)
@@ -298,8 +301,9 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
     // Puntos por clase: verde registrada, amarillo borrador, rojo sin registrar, gris futura/en curso
     const dots = []
-    const clasesDelDia = clasesPorDiaSem.get(diaEs) || new Set()
+    const clasesDelDia = new Set(validSchedules.map(h => h.clase_id))
     clasesDelDia.forEach((claseId) => {
+      if (exemptions.some(x => x.clase_id === claseId && x.fecha === fecha && !x.revocado_en && x.alcance !== 'contenido')) { dots.push('exonerada'); return }
       const s = sesionPorClaseFecha.get(`${fecha}|${claseId}`)
       if (diffDias === 0) {
         // HOY: verde solo si la sesión está guardada como finalizada/registrada (no borrador)
@@ -319,6 +323,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       dots.push(esSesionRegistrada(s) ? 'verde' : 'amarillo')
     })
     dotsMap.set(fecha, dots)
+    if (dots.length && dots.every(dot => dot === 'exonerada')) { estadoMap.set(fecha, 'exonerada'); continue }
 
     // Si no hay clase programada pero sí hay sesión emergente, evaluarla
     if (!tieneCl && emergentesFecha.length === 0) {
@@ -468,7 +473,7 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
     const dots = dotsMap?.get(fecha) || []
     const hayAlerta = dots.includes('rojo') || dots.includes('amarillo')
     const dotsHTML = dots.length
-      ? `<div class="pm-day-dots">${dots.map((c) => `<span class="pm-day-dot pm-dot-${c}"></span>`).join('')}</div>`
+      ? `<div class="pm-day-dots">${dots.map((c) => `<span class="pm-day-dot pm-dot-${c}" ${c === 'exonerada' ? 'style="background:#8b5cf6" title="Registro exonerado"' : ''}></span>`).join('')}</div>`
       : ''
     const esHoy = fecha === hoyStr ? 'today' : ''
     const isActive = fecha === activeDate
@@ -519,6 +524,7 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
           </div>
 
           <div class="pm-cal-legend" aria-label="Leyenda del calendario">
+            <div class="pm-cal-legend-item"><div class="pm-cal-legend-dot" style="background:#8b5cf6"></div><span>Registro exonerado</span></div>
             <div class="pm-cal-legend-item">
               <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div>
               <span>Clase registrada</span>
@@ -790,8 +796,9 @@ async function _openActionDrawer(fecha, container) {
     }
   }
 
+  const exemptions = await listRecordExemptions(maestro.id, fecha, fecha)
   const clasesDelDiaCompleto = clasesDelMaestro
-    .filter((c) => horarios.some((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana))
+    .filter((c) => horarios.some((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana && isClassScheduledOn(c, h, fecha, sesiones.find(s => s.clase_id === c.id))))
     .map((c) => {
       const h = horarios.find((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana)
       const s = sesiones.find((s) => s.clase_id === c.id)
@@ -861,6 +868,7 @@ async function _openActionDrawer(fecha, container) {
   } else if (clasesProgramadas.length > 0) {
     clasesHTML = clasesProgramadas
       .map((c) => {
+        const activeExemptions = exemptions.filter(x => x.clase_id === c.id && !x.revocado_en)
         const tieneAsistenciaEnTabla = Array.isArray(c.asistencias) && c.asistencias.length > 0
         const tieneAsistenciaEnSesion = Array.isArray(c.sesion?.asistencia) && c.sesion.asistencia.length > 0
         const tieneContenidoConfirmado =
@@ -887,6 +895,7 @@ async function _openActionDrawer(fecha, container) {
             <span class="pm-drawer-clase-hora">${(c.hora_inicio || '--:--').slice(0, 5)} - ${(c.hora_fin || '--:--').slice(0, 5)}</span>
             <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
             <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
+            ${activeExemptions.map(x => `<span class="pm-clase-exoneracion" style="display:block;color:#a78bfa">Registro exonerado (${escHTML(x.alcance)}): ${escHTML(x.motivo)}</span>`).join('')}
             ${exencion ? `
               <span class="pm-drawer-clase-instrumento" style="color:#7c3aed;" title="${escHTML(exencion.exentos.map((e) => e.nombreCompleto).join(', '))}">
                 <i class="bi bi-person-dash-fill"></i> ${exencion.exentos.length} alumno(s) exento(s) por "${escHTML(exencion.actividadTitulo)}" — el resto tiene clase normal

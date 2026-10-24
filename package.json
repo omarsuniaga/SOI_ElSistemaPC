@@ -32,9 +32,11 @@
     "unicode:auto": "node tools/unicode-reviewer/revisar-textos.js ./src --auto-fix",
     "policy:check": "node scripts/check-structural-policy.mjs",
     "policy:list": "node scripts/check-structural-policy.mjs --list",
-    "policy:record": "node scripts/check-structural-policy.mjs --record"
+    "policy:record": "node scripts/check-structural-policy.mjs --record",
+    "test:db:class-exemptions": "node supabase/tests/classValidityExemptions.test.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@types/canvas-confetti": "^1.9.0",

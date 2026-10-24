@@ -1,3 +1,5 @@
+import { listRecordExemptions } from '../../asistencias/api/recordExemptionsAdapter.js'
+import { openRecordExemptionDialog } from '../../asistencias/components/recordExemptionDialog.js'
 import {
   getMaestroProfile,
   getMaestroClasesDetalle,
@@ -67,6 +69,7 @@ export class MaestroDetalleView {
         getMaestroNotificationHistory(this.maestroId),
       ])
 
+      this.exemptions = await listRecordExemptions(this.maestroId, this.rangoActivo.desde, this.rangoActivo.hasta)
       this.maestro = maestro
       this.clasesProgramadas = clasesProgramadas || []
       this.historico = historico
@@ -328,7 +331,11 @@ export class MaestroDetalleView {
                     let estadoLabel = 'REGISTRADA'
                     let estadoIcon = 'bi-check-circle-fill'
 
-                    if (r.estado === 'cubierta_emergente') {
+                    if (r.estado === 'exonerada') {
+                      estadoLabel = 'EXONERADA'
+                      estadoIcon = 'bi-shield-check'
+                      badgeBg = 'background:#ede9fe;color:#6d28d9;'
+                    } else if (r.estado === 'cubierta_emergente') {
                       badgeBg = 'background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);'
                       estadoLabel = 'CUBIERTA EMERGENTE'
                       estadoIcon = 'bi-shield-fill-check'
@@ -388,6 +395,8 @@ export class MaestroDetalleView {
 
                         <!-- ACCIÓN -->
                         <td style="padding:1rem;border-radius:0 12px 12px 0;border:1px solid rgba(255,255,255,0.05);border-left:none;text-align:right;">
+                          <button class="btn btn-sm btn-outline-info" data-record-exemption="${escHTML(r.id)}">${r.estado === 'exonerada' ? 'Ver exoneración' : 'Exonerar / Historial'}</button>
+                          <button class="btn btn-sm btn-outline-secondary" data-class-validity="${escHTML(r.id)}">Vigencia</button>
                           <button class="btn btn-sm btn-outline-success btnRecordarClaseWA" data-clase="${escHTML(nombreClase)}" data-fecha="${escHTML(fechaStr)}" style="border-radius:8px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;border-color:rgba(37,211,102,0.4);color:#34d399;background:rgba(37,211,102,0.08);display:inline-flex;align-items:center;gap:0.35rem;">
                             <i class="bi bi-whatsapp"></i> Recordar
                           </button>
@@ -492,6 +501,13 @@ export class MaestroDetalleView {
   }
 
   attachEvents() {
+    for (const [selector, validity] of [['[data-record-exemption]', false], ['[data-class-validity]', true]]) {
+      this.container.querySelectorAll(selector).forEach(button => button.addEventListener('click', () => {
+        const id = validity ? button.dataset.classValidity : button.dataset.recordExemption
+        const row = this.clasesProgramadas.find(item => item.id === id)
+        if (row) openRecordExemptionDialog({ row, maestroId: this.maestroId, exemptions: this.exemptions || [], validity, onSaved: () => this.init() })
+      }))
+    }
     document.getElementById('btnVolver')?.addEventListener('click', () => {
       router.navigate('admin-dashboard')
     })

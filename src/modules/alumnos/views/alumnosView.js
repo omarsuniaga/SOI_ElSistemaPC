@@ -25,6 +25,7 @@ import {
 } from '../utils/alumnosUtils.js'
 import { getInstrumentoIcon } from '../../clases/utils/clasesUtils.js'
 import { agruparAlumnosPorPrograma } from '../domain/agruparAlumnosPorPrograma.js'
+import { renderEtiquetasSeleccion } from '../domain/seleccionesIniciacion.js'
 
 // D03: AbortController for SPA event-listener cleanup
 let _abortController = null
@@ -348,6 +349,11 @@ export async function renderAlumnosView(container) {
                   `).join('')}
                 </div>
               ` : ''}
+
+              ${renderEtiquetasSeleccion(a) ? `
+                <div class="d-flex flex-wrap gap-1 mb-2" aria-label="Selecciones académicas">
+                  ${renderEtiquetasSeleccion(a)}
+                </div>` : ''}
 
               <!-- Teléfono y Representante -->
               <div class="d-flex flex-column gap-1 text-muted small" style="font-size: 0.76rem;">

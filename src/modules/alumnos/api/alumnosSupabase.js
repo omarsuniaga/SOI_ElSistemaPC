@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 
-const ALUMNO_PROGRAMS_SELECT = '*, alumnos_programas(activo,programa:programas(id,nombre))'
+const ALUMNO_PROGRAMS_SELECT = '*, alumnos_programas(activo,programa:programas(id,nombre)), alumnos_selecciones_iniciacion(destino,activo,fecha_seleccion)'
 
 export const PARENTESCOS = [
   { value: 'madre', label: 'Madre' },
@@ -32,6 +32,7 @@ function normalizeAlumno(a) {
 
   return {
     ...a,
+    selecciones_iniciacion: (a.alumnos_selecciones_iniciacion || []).map(s => ({ destino: s.destino, activo: s.activo, fecha_seleccion: s.fecha_seleccion })),
     id: a.id,
     nombre: a.nombre_completo ?? '',
     email: a.correo_representante ?? '',
@@ -116,7 +117,7 @@ export async function obtenerAlumnos({ page = 0, pageSize = 1000, soloActivos = 
 export async function obtenerAlumno(id) {
   const { data, error } = await supabase
     .from('alumnos')
-    .select('*, alumnos_programas(activo,programa:programas(id,nombre))')
+    .select(ALUMNO_PROGRAMS_SELECT)
     .eq('id', id)
     .single()
 
@@ -819,4 +820,26 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
       ...r.clases,
       turno: (r.dia || r.hora_inicio || r.hora_fin) ? { dia: r.dia, hora_inicio: r.hora_inicio, hora_fin: r.hora_fin } : null,
     }))
+}
+
+
+/** Selección = decisión académica; NO inscribe en alumnos_programas ni alumnos_clases. */
+export async function actualizarSeleccionIniciacion(alumnoId, destino, activo) {
+  if (!['orquesta', 'coro'].includes(destino) || typeof activo !== 'boolean') {
+    throw new Error('Selección de Iniciación inválida')
+  }
+  const { data: actual, error: consultaError } = await supabase
+    .from('alumnos_selecciones_iniciacion')
+    .select('id')
+    .eq('alumno_id', alumnoId)
+    .eq('destino', destino)
+    .maybeSingle()
+  if (consultaError) throw new Error(`No se pudo consultar la selección: ${consultaError.message}`)
+
+  const operacion = actual
+    ? supabase.from('alumnos_selecciones_iniciacion').update({ activo }).eq('id', actual.id)
+    : supabase.from('alumnos_selecciones_iniciacion').insert({ alumno_id: alumnoId, destino, activo })
+  const { data, error } = await operacion.select('destino,activo,fecha_seleccion').single()
+  if (error) throw new Error(`No se pudo guardar la selección: ${error.message}`)
+  return data
 }

@@ -9,6 +9,7 @@ const getApi = () => config.isDemoMode ? mockImpl : supabaseImpl
 export const obtenerAlumnos = (...args) => getApi().obtenerAlumnos(...args)
 export const getAlumnos = (...args) => getApi().obtenerAlumnos(...args) // Alias para compatibilidad
 export const obtenerAlumno = (...args) => getApi().obtenerAlumno(...args)
+export const actualizarSeleccionIniciacion = (...args) => getApi().actualizarSeleccionIniciacion(...args)
 
 /**
  * Create a new alumno from a wizard InscripcionDraft.

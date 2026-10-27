@@ -3,6 +3,7 @@ import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR } from '../domain/completitudAlumno.js'
 import { perfilMusicalAlumno } from '../domain/perfilMusicalAlumno.js'
+import { esAlumnoDeIniciacion, seleccionActiva, renderEtiquetasSeleccion } from '../domain/seleccionesIniciacion.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -18,6 +19,7 @@ import {
   obtenerResumenAcademico,
   obtenerAsistenciasAlumno,
   actualizarAlumno,
+  actualizarSeleccionIniciacion,
   reactivarAlumno,
 } from '../api/alumnosApi.js'
 import {
@@ -397,6 +399,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
                   </div>
                   <div class="d-flex flex-wrap gap-1 align-items-center alumno-profile-badges">
                     ${activoBadge}
+                    <span id="seleccion-badges" class="d-inline-flex flex-wrap gap-1">${renderEtiquetasSeleccion(alumno)}</span>
                     ${perfil.enIniciacion ? '<span class="badge bg-primary">Iniciación</span>' : ''}
                     ${perfil.instrumentoPrincipalCoincide ? `<span class="badge bg-info text-dark">Cátedra: ${val(perfil.instrumentoPrincipal)}</span>` : ''}
                     ${perfil.instrumentoInteres ? `<span class="badge bg-light text-dark border">Interés: ${val(perfil.instrumentoInteres)}</span>` : ''}
@@ -429,6 +432,24 @@ export async function renderAlumnoAdminView(container, params = {}) {
                 </div>
               </div>
             </div>
+            ${esAlumnoDeIniciacion(alumno, clases) ? `
+              <section class="alumno-profile-seleccion mt-3" aria-label="Selección desde Iniciación">
+                <div class="fw-semibold small mb-1">Selección para agrupaciones</div>
+                <p class="small text-muted mb-2">Registra una decisión académica. No inscribe automáticamente al alumno en Coro, Orquesta ni en otras clases.</p>
+                <div class="d-flex flex-wrap gap-3">
+                  <label class="form-check form-switch d-inline-flex align-items-center gap-2 mb-0">
+                    <input class="form-check-input mt-0" type="checkbox" data-seleccion-destino="orquesta"
+                      ${seleccionActiva(alumno, 'orquesta') ? 'checked' : ''}>
+                    <span class="form-check-label small">Seleccionado para Orquesta</span>
+                  </label>
+                  <label class="form-check form-switch d-inline-flex align-items-center gap-2 mb-0">
+                    <input class="form-check-input mt-0" type="checkbox" data-seleccion-destino="coro"
+                      ${seleccionActiva(alumno, 'coro') ? 'checked' : ''}>
+                    <span class="form-check-label small">Seleccionado para Coro</span>
+                  </label>
+                </div>
+              </section>
+            ` : ''}
             <div id="completitud-banner-container">${renderCompletitudBanner(alumno, clases)}</div>
           </div>
         </div>
@@ -1005,6 +1026,30 @@ export async function renderAlumnoAdminView(container, params = {}) {
     if (asistenciasTab) {
       asistenciasTab.addEventListener('shown.bs.tab', loadAsistencias)
     }
+
+    // Esta decisión no escribe ni en matrículas ni en clases.
+    container.querySelectorAll('[data-seleccion-destino]').forEach(input => {
+      input.addEventListener('change', async () => {
+        const destino = input.dataset.seleccionDestino
+        const activo = input.checked
+        input.disabled = true
+        try {
+          const guardado = await actualizarSeleccionIniciacion(alumno.id, destino, activo)
+          alumno.selecciones_iniciacion = [
+            ...(alumno.selecciones_iniciacion || []).filter(s => s.destino !== destino),
+            guardado,
+          ]
+          const badges = container.querySelector('#seleccion-badges')
+          if (badges) badges.innerHTML = renderEtiquetasSeleccion(alumno)
+          AppToast.success(activo ? 'Selección registrada' : 'Selección retirada')
+        } catch (err) {
+          input.checked = !activo
+          AppToast.error(err.message || 'No se pudo actualizar la selección')
+        } finally {
+          input.disabled = false
+        }
+      })
+    })
 
     // Edit section buttons — scoped to container to avoid leaking to sibling views
     container.querySelectorAll('[data-edit-section]').forEach(btn => {

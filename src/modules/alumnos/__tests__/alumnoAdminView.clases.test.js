@@ -14,16 +14,20 @@ vi.mock('../../../shared/components/AppToast.js', () => ({
   AppToast: { success: vi.fn(), error: vi.fn() },
 }))
 
+const guardarSeleccionMock = vi.fn(async (_id, destino, activo) => ({ destino, activo, fecha_seleccion: new Date().toISOString() }))
 const inscripcionesMock = vi.fn()
 vi.mock('../api/alumnosApi.js', () => ({
-  obtenerAlumno: vi.fn().mockResolvedValue({
+  obtenerAlumno: vi.fn().mockImplementation(async () => ({
     id: 'al-1', nombre_completo: 'Daraling Peguero', activo: true, instrumento_principal: 'Violín',
-  }),
+    programas: [{ id: 'ini', nombre: 'Iniciación Musical' }],
+    selecciones_iniciacion: [],
+  })),
   obtenerInscripcionesDetalladasAlumno: (...args) => inscripcionesMock(...args),
   obtenerProgresoAlumno: vi.fn().mockResolvedValue(null),
   obtenerResumenAcademico: vi.fn().mockResolvedValue(null),
   obtenerAsistenciasAlumno: vi.fn().mockResolvedValue([]),
   actualizarAlumno: vi.fn(),
+  actualizarSeleccionIniciacion: (...args) => guardarSeleccionMock(...args),
   reactivarAlumno: vi.fn(),
 }))
 
@@ -82,6 +86,24 @@ describe('alumnoAdminView — gestión de clases del alumno', () => {
   })
 
   afterEach(() => vi.unstubAllGlobals())
+
+  it('marca dos selecciones sin añadir ni quitar matrículas', async () => {
+    const container = await montar()
+    const orquesta = container.querySelector('[data-seleccion-destino="orquesta"]')
+    const coro = container.querySelector('[data-seleccion-destino="coro"]')
+    expect(orquesta).not.toBeNull()
+    expect(coro).not.toBeNull()
+    orquesta.checked = true
+    orquesta.dispatchEvent(new Event('change', { bubbles: true }))
+    await vi.waitFor(() => expect(guardarSeleccionMock).toHaveBeenCalledWith('al-1', 'orquesta', true))
+    await vi.waitFor(() => expect(container.querySelector('#seleccion-badges').textContent).toContain('Orquesta'))
+    coro.checked = true
+    coro.dispatchEvent(new Event('change', { bubbles: true }))
+    await vi.waitFor(() => expect(guardarSeleccionMock).toHaveBeenCalledWith('al-1', 'coro', true))
+    await vi.waitFor(() => expect(container.querySelector('#seleccion-badges').textContent).toContain('Coro'))
+    expect(inscribirAlumnoMock).not.toHaveBeenCalled()
+    expect(desinscribirAlumnoMock).not.toHaveBeenCalled()
+  })
 
   it('cada clase inscrita tiene un botón para quitarla', async () => {
     const container = await montar()

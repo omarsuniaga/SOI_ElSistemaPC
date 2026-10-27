@@ -11,6 +11,9 @@ const inscripciones = [
   { alumno_id: '4', clase_id: 'clase_004', clase_nombre: 'Flauta Travesera' },
 ]
 
+// Selecciones independientes de la matrícula, editables durante la sesión demo.
+const seleccionesIniciacionMock = new Map()
+
 // Catálogo y membresías deterministas para demostrar la clasificación en Modo Demo.
 const programas = [
   { id: 'prog_001', nombre: 'Programa de Cuerdas' },
@@ -49,6 +52,7 @@ function normalizeAlumno(a) {
     .join(', ') || 'Sin clases'
   return {
     ...a,
+    selecciones_iniciacion: [...(seleccionesIniciacionMock.get(a.id) || [])],
     nombre: a.nombre_completo ?? '',
     email: a.correo_representante ?? '',
     instrumento: a.instrumento_principal ?? '',
@@ -345,4 +349,18 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
       i.clase_nombre.startsWith('Flauta') ? 'Flauta' : 'no aplica',
     clase_horarios: [],
   }))
+}
+
+
+export async function actualizarSeleccionIniciacion(alumnoId, destino, activo) {
+  await delay()
+  if (!['orquesta', 'coro'].includes(destino) || typeof activo !== 'boolean') {
+    throw new Error('Selección de Iniciación inválida')
+  }
+  if (!alumnos.some(a => a.id === alumnoId)) throw new Error('Alumno no encontrado')
+  const prev = seleccionesIniciacionMock.get(alumnoId) || []
+  const fecha_seleccion = new Date().toISOString()
+  const nueva = { destino, activo, fecha_seleccion }
+  seleccionesIniciacionMock.set(alumnoId, [...prev.filter(s => s.destino !== destino), nueva])
+  return nueva
 }

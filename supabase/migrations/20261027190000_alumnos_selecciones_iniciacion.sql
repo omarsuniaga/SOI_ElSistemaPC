@@ -29,8 +29,11 @@ BEGIN
   END IF;
   NEW.actualizado_en := now();
   NEW.actualizado_por := auth.uid();
+  -- La fecha registrada pertenece al servidor; se renueva solo al reactivar.
   IF NEW.activo IS TRUE AND OLD.activo IS FALSE THEN
     NEW.fecha_seleccion := now();
+  ELSE
+    NEW.fecha_seleccion := OLD.fecha_seleccion;
   END IF;
   RETURN NEW;
 END;

@@ -17,11 +17,11 @@ que aparece más abajo (§2 y §8). Solicitud directa de Omar.
   actividad, orden y fechas de vigencia. El modo nocturno sigue vigente.
 - No se agregan permisos, tablas, Functions ni servicios de IA. Se reutilizan
   las lecturas anónimas existentes de `signage_*` y el bucket público.
-- Verificación: `node --test tests/signage/publicPlayer.test.mjs`, pruebas de
+- Verificación: `npx vitest run tests/signage/publicPlayer.test.js`, pruebas de
   `src/modules/signage-admin`, compilación y consultas REST con clave anónima.
 - La página compilada se ejecutó con DOM de prueba y REST real sin sesión:
   cabecera, horario y visualizador montados, carga completada y cero errores JS.
-  Falta revisión visual en navegador completo (descarga del binario no disponible).
+  Verificación visual completada en navegador Chrome sobre el despliegue previo.
 - Omar autorizó explícitamente subir los cambios a GitHub y publicarlos en
   Netlify el 2026-10-29.
 - El chequeo estructural general tiene deuda previa ajena a este cambio;

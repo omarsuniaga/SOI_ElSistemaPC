@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
-import { test } from 'node:test'
+import { test } from 'vitest'
 import assert from 'node:assert/strict'
 
-const source = readFileSync(new URL('../../public/signage/js/app.js', import.meta.url), 'utf8')
+const source = readFileSync('public/signage/js/app.js', 'utf8')
 async function run({ search = '', mode = 'web', screen = true } = {}) {
   const calls = [], updates = [], intervals = [], listeners = {}
   const nodes = new Map()
@@ -72,7 +72,7 @@ test('el caché no mezcla contenido entre pantallas', () => {
   const values = new Map()
   const config = { screenSlug: 'uno', supabaseUrl: 'https://example.invalid', defaultLayout: {} }
   const window = { SIGNAGE_CONFIG: config }
-  vm.runInNewContext(readFileSync(new URL('../../public/signage/js/core.js', import.meta.url), 'utf8'), {
+  vm.runInNewContext(readFileSync('public/signage/js/core.js', 'utf8'), {
     window, localStorage: { setItem: (k, v) => values.set(k, v), getItem: k => values.get(k) || null },
   })
   window.SIG.cache.put('media', ['contenido-uno'])
@@ -83,7 +83,7 @@ test('el caché no mezcla contenido entre pantallas', () => {
 })
 
 test('la ruta /cartelera sirve el reproductor antes del fallback del portal', () => {
-  const redirects = readFileSync(new URL('../../public/_redirects', import.meta.url), 'utf8')
+  const redirects = readFileSync('public/_redirects', 'utf8')
   assert.match(redirects, /^\/cartelera\s+\/signage\/index.html\s+200$/m)
   assert.ok(redirects.indexOf('/cartelera') < redirects.indexOf('/*             /index.html'))
 })

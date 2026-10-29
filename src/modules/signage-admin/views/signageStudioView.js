@@ -16,7 +16,11 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import * as api from '../api/signageAdminApi.js'
 
-const PREVIEW_SRC = '/signage/index.html?preview=1&v=1.2.0'
+const PLAYER_SRC = '/signage/index.html'
+const publicDisplayUrl = () => state.pantalla?.slug === 'punta-cana-vestibulo'
+  ? '/cartelera'
+  : `/cartelera?pantalla=${encodeURIComponent(state.pantalla?.slug || '')}`
+const previewUrl = () => `${PLAYER_SRC}?pantalla=${encodeURIComponent(state.pantalla?.slug || '')}&preview=1&v=1.2.0`
 
 const state = {
   container: null,
@@ -154,9 +158,10 @@ function renderToolbar() {
     .join('')
   tb.innerHTML = `
     ${state.pantallas.length > 1 ? `<select class="form-select form-select-sm" id="ss-pantalla" style="width:auto">${opts}</select>` : ''}
-    <a class="btn btn-sm btn-outline-secondary" href="${PREVIEW_SRC}" target="_blank" rel="noopener" title="Abrir la cartelera en una pestaña">
-      <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+    <a class="btn btn-sm btn-outline-secondary" href="${escapeHTML(publicDisplayUrl())}" target="_blank" rel="noopener" title="Abrir la cartelera pública sin iniciar sesión">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Visualización pública
     </a>
+    <button class="btn btn-sm btn-outline-secondary" id="ss-copy-link" type="button"><i class="bi bi-link-45deg me-1"></i>Copiar enlace</button>
     <button class="btn btn-sm btn-primary" id="ss-guardar" ${state.guardando ? 'disabled' : ''}>
       <i class="bi bi-check-lg me-1"></i>${state.dirty ? 'Guardar diseño' : 'Guardado'}
     </button>`
@@ -168,7 +173,7 @@ function renderBody() {
       <div class="ss-stage">
         <div class="ss-stage-viewport">
           <div class="ss-stage-frame">
-            <iframe id="ss-preview" src="${PREVIEW_SRC}" title="Vista previa de la cartelera"
+            <iframe id="ss-preview" src="${escapeHTML(previewUrl())}" title="Vista previa de la cartelera"
               referrerpolicy="no-referrer" loading="eager"></iframe>
           </div>
         </div>
@@ -535,6 +540,15 @@ function attachShell(host) {
 
   host.querySelector('#ss-pantalla')?.addEventListener('change', (e) => seleccionarPantalla(e.target.value))
   host.querySelector('#ss-guardar')?.addEventListener('click', guardar)
+  host.querySelector('#ss-copy-link')?.addEventListener('click', async () => {
+    const url = new URL(publicDisplayUrl(), window.location.origin).href
+    try {
+      await navigator.clipboard.writeText(url)
+      AppToast.success('Enlace público copiado. Muestra los cambios guardados.')
+    } catch {
+      window.prompt('Copia el enlace público de la cartelera:', url)
+    }
+  })
 
   // reintenta pintar el modelo por si el iframe ya estaba listo
   if (state.iframeReady) postModel()

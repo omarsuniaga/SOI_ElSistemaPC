@@ -1,5 +1,33 @@
 # Cartelera / Pantalla informativa — Handoff
 
+## Actualización — visualización pública (2026-10-29)
+
+El modo `web` ahora reproduce la cartelera guardada sin sesión de usuario, igual
+que el dispositivo. Sustituye la decisión histórica de bloquear el modo web
+que aparece más abajo (§2 y §8). Solicitud directa de Omar.
+
+- URL pública para televisores: `/cartelera` (pantalla del vestíbulo).
+  Otras pantallas: `/cartelera?pantalla=<slug>`. La ruta antigua sigue funcionando.
+- El Estudio ofrece **Visualización pública** y **Copiar enlace**. La vista
+  previa conserva `preview=1` y muestra cambios sin guardar; el enlace público
+  solo muestra los datos persistidos y se actualiza cada tres minutos.
+- Solo se seleccionan pantallas activas; si no existe la pantalla, se muestra
+  un aviso y no se consultan medios de otras pantallas. Caché separado por slug.
+- La playlist se consulta por pantalla (más medios globales), respetando
+  actividad, orden y fechas de vigencia. El modo nocturno sigue vigente.
+- No se agregan permisos, tablas, Functions ni servicios de IA. Se reutilizan
+  las lecturas anónimas existentes de `signage_*` y el bucket público.
+- Verificación: `npx vitest run tests/signage/publicPlayer.test.js`, pruebas de
+  `src/modules/signage-admin`, compilación y consultas REST con clave anónima.
+- La página compilada se ejecutó con DOM de prueba y REST real sin sesión:
+  cabecera, horario y visualizador montados, carga completada y cero errores JS.
+  Verificación visual completada en navegador Chrome sobre el despliegue previo.
+- Omar autorizó explícitamente subir los cambios a GitHub y publicarlos en
+  Netlify el 2026-10-29.
+- El chequeo estructural general tiene deuda previa ajena a este cambio;
+  no se modifica ninguna migración ni su baseline.
+
+
 **Última actualización:** 2026-09-01
 **Rama:** `feat/signage-pantalla-informativa` (aún sin merge a su trunk)
 **Estado:** funcionando de punta a punta en el TV real; el Estudio construido y

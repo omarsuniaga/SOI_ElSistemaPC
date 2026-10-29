@@ -15,9 +15,12 @@
                         calendario se siguen trayendo reales (solo lectura).
   */
   var PREVIEW = /[?&]preview=1\b/.test(location.search);
-  // 'device' = la copia de la Raspberry (device.js la marca); 'web' = una carga
-  // suelta en Netlify (no hace consultas: la cartelera se administra desde el portal).
+  // 'device' = Raspberry; 'web' = visualización pública de los datos guardados.
   var MODE = PREVIEW ? 'preview' : (CFG.mode === 'device' ? 'device' : 'web');
+  var selectedScreen = /[?&]pantalla=([^&]+)/.exec(location.search);
+  if (selectedScreen) {
+    try { CFG.screenSlug = decodeURIComponent(selectedScreen[1]); } catch (e) {}
+  }
   SIG.preview = PREVIEW;
   SIG.mode = MODE;
 
@@ -148,7 +151,7 @@
   /* ---- cargas ---- */
   function loadPantalla() {
     return SIG.api('signage_pantallas?slug=eq.' + encodeURIComponent(CFG.screenSlug) +
-      '&select=id,nombre,institucion,siglas,logo_path,layout,modo_nocturno&limit=1')
+      '&activo=eq.true&select=id,nombre,institucion,siglas,logo_path,layout,modo_nocturno&limit=1')
       .then(function (rows) {
         if (rows && rows[0]) {
           state.screen = rows[0];
@@ -159,6 +162,13 @@
             logo: rows[0].logo_path ? SIG.STORAGE_PUBLIC + rows[0].logo_path : '',
           };
           SIG.cache.put('screen', rows[0]);
+          $('#no-autorizado').hidden = true;
+        } else {
+          state.screen = null;
+          state.media = [];
+          SIG.cache.put('screen', null);
+          SIG.cache.put('media', []);
+          $('#no-autorizado').hidden = false;
         }
         diag.feed('pantalla', { ok: true, count: (rows && rows.length) || 0 });
       })
@@ -222,7 +232,8 @@
   }
 
   function loadMedia() {
-    return SIG.api('signage_media?activo=eq.true&order=orden.asc&select=id,pantalla_id,tipo,titulo,credito,storage_path,youtube_url,youtube_video_id,contenido,duracion_seg,vigente_desde,vigente_hasta')
+    if (!state.screen) { state.media = []; return Promise.resolve(); }
+    return SIG.api('signage_media?activo=eq.true&or=(pantalla_id.is.null,pantalla_id.eq.' + encodeURIComponent(state.screen.id) + ')&order=orden.asc&select=id,pantalla_id,tipo,titulo,credito,storage_path,youtube_url,youtube_video_id,contenido,duracion_seg,vigente_desde,vigente_hasta')
       .then(function (rows) {
         var today = SIG.time.isoDate();
         var sid = state.screen && state.screen.id;
@@ -317,6 +328,7 @@
   function bootPreview() {
     var driven = false;   // true en cuanto el Estudio manda un modelo
     window.addEventListener('message', function (ev) {
+      if (ev.source !== window.parent || ev.origin !== location.origin) return;
       var d = ev.data;
       if (!d || typeof d !== 'object' || String(d.type || '').indexOf('signage:') !== 0) return;
       if (d.type === 'signage:model') {
@@ -339,7 +351,7 @@
     // Carga TODO de la BD (pantalla, horario, calendario, medios) para que la
     // vista previa suelta muestre la cartelera real. El Estudio, si está,
     // sobrescribe layout/marca/medios por postMessage.
-    Promise.all([loadPantalla(), loadHorario(), loadCalendario(), loadMedia()]).then(function () {
+    loadPantalla().then(function () { return Promise.all([loadHorario(), loadCalendario(), loadMedia()]); }).then(function () {
       push();
       hideBoot();
       postToParent({ type: 'signage:ready' });
@@ -361,19 +373,11 @@
     setTimeout(function () { location.reload(); }, prox - ahora);
   }
 
-  /* ---- carga suelta en web: sin consultas, solo un aviso ---- */
-  function bootWeb() {
-    $('#boot').hidden = true;
-    $('#no-autorizado').hidden = false;
-    if (diag.forced()) diag.show();
-  }
-
   /* ---- común ---- */
   function boot() {
     document.documentElement.classList.toggle('is-preview', PREVIEW);
     if (diag.forced()) diag.show();
     setInterval(diag.refresh, 5000);
-    if (MODE === 'web') { bootWeb(); return; }
     applyGrid();
     cab.start(); vis.start(); hor.start();
     setInterval(applyReposo, 20000);

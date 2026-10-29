@@ -106,6 +106,7 @@ describe('evaluationService — offline fallback', () => {
       expect(queue[0].payload.session_id).toBe('s1')
       expect(queue[0].payload.indicator_id).toBe('ind-1')
       expect(queue[1].payload.student_id).toBe('alumno-2')
+      expect(queue[0].onConflict).toBe('session_id,indicator_id,student_id')
 
       expect(result).toHaveProperty('_offline', true)
     } finally {

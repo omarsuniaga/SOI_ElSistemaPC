@@ -30,6 +30,12 @@
     # tras un deploy (fue la causa de que las diapositivas no aparecieran).
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Visualización pública para navegadores de televisores.
+[[redirects]]
+  from = "/cartelera"
+  to = "/signage/index.html"
+  status = 200
+
 [[redirects]]
   from = "/maestros.html"
   to = "/"

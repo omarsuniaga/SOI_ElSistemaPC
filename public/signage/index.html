@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Cartelera · El Sistema Punta Cana</title>
+  <script>
+    // La ruta pública conserva /cartelera en la barra del navegador.
+    // La copia file:// de la Raspberry mantiene sus rutas relativas.
+    if (/^\/cartelera\/?$/.test(window.location.pathname)) {
+      var signageBase = document.createElement('base');
+      signageBase.href = '/signage/';
+      document.head.appendChild(signageBase);
+    }
+  </script>
   <link rel="stylesheet" href="css/app.css?v=1.2.0" />
 </head>
 <body>
@@ -31,13 +40,13 @@
 
     <div class="boot" id="no-autorizado" hidden>
       <div class="boot__mark">✳</div>
-      <p>Esta cartelera se administra desde el portal de El Sistema Punta Cana.</p>
+      <p>Esta cartelera no está disponible. Consulta con la administración de El Sistema Punta Cana.</p>
     </div>
   </div>
 
   <script src="js/config.js?v=1.2.0"></script>
   <!-- device.js solo existe en la Raspberry (lo escribe deploy-signage-pi.sh);
-       en Netlify da 404 y no pasa nada. Marca esta copia como "dispositivo". -->
+       en Netlify marca el modo público web. En la Pi marca "dispositivo". -->
   <script src="device.js" onerror="void 0"></script>
   <!-- build.js: sello de versión (lo genera scripts/stamp-signage-build.js en el
        build de Netlify y deploy-signage-pi.sh en la Raspberry). El overlay de

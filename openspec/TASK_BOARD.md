@@ -89,3 +89,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `attendance-entry-point` | Acceso visible a pendientes y exoneraciones | en_revision | alta | Codex / c16e853e5497 | `fix/attendance-entry-point` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Accesos en menú, Maestros y Asistencias; pruebas de navegación; lane liberado | 2026-10-24 |
 
 | `compact-exemption-flow` | Tarjetas compactas y flujo explícito Exonerar clases | en_revision | alta | Codex / c16e853e5497 | `fix/compact-exemption-flow` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Flujo fecha → clase → motivo y confirmación; tarjetas compactas; lane liberado | 2026-10-24 |
+
+| `public-cartelera` | Completar visualización pública de Cartelera | en_revision | alta | Codex / dcd93acef310 | `feat/public-cartelera` | `docs/SIGNAGE_CARTELERA.md` | 8 pruebas player + 5 módulo, build y DOM compilado con REST real aprobados; lane liberado; publicación autorizada por Omar el 2026-10-29 | 2026-10-29 |

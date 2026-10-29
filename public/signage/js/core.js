@@ -41,8 +41,8 @@
 
   /* ---- caché local ---- */
   SIG.cache = {
-    put: function (k, v) { try { localStorage.setItem('sig:' + k, JSON.stringify(v)); } catch (e) {} },
-    get: function (k) { try { return JSON.parse(localStorage.getItem('sig:' + k)); } catch (e) { return null; } },
+    put: function (k, v) { try { localStorage.setItem('sig:' + CFG.screenSlug + ':' + k, JSON.stringify(v)); } catch (e) {} },
+    get: function (k) { try { return JSON.parse(localStorage.getItem('sig:' + CFG.screenSlug + ':' + k)); } catch (e) { return null; } },
   };
 
   /* ---- tiempo (zona horaria de la config) ---- */

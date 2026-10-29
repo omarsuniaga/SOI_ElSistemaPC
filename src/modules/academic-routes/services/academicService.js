@@ -427,6 +427,7 @@ export const academicService = {
       await enqueue({
         tabla: 'student_node_progress',
         operacion: 'upsert',
+        preservar: true,
         payload: {
           student_id: studentId,
           node_id: nodeId,
@@ -492,6 +493,7 @@ export const academicService = {
       await enqueue({
         tabla: 'student_level_progress',
         operacion: 'upsert',
+        preservar: true,
         payload: {
           student_id: studentId,
           level_id: levelId,

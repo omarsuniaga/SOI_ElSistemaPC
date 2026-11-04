@@ -10,6 +10,8 @@
 
 import { supabase } from '../../../lib/supabaseClient.js'
 
+import { fechaCivilActividad } from '../../../shared/utils/institutionalDates.js'
+
 const CATEGORIAS_MODULO = ['feriado', 'suspension', 'actividad_especial']
 
 // clase_horarios.dia se guarda con tildes ("miércoles", "sábado"). Comparar
@@ -30,17 +32,7 @@ function normalizeDia(str) {
 
 function diaSemanaDe(fechaISO) {
   const [y, m, d] = fechaISO.split('-').map(Number)
-  return DIAS_ES_LARGO[new Date(y, m - 1, d).getDay()]
-}
-
-// fecha_inicio/fecha_fin son timestamptz (para poder guardar franja horaria a
-// futuro). Postgres las devuelve como "2026-09-24 00:00:00+00" — nada del
-// resto del código debe ver ese formato: se recorta acá, una sola vez, al
-// primer punto de entrada. Escribimos y leemos siempre en el mismo huso
-// horario (session tz = UTC), así que tomar los primeros 10 caracteres da el
-// mismo día calendario que se guardó, sin cálculos de zona horaria.
-function soloFecha(valor) {
-  return valor ? String(valor).slice(0, 10) : null
+  return DIAS_ES_LARGO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
 }
 
 function normalizeActividad(row) {
@@ -51,8 +43,8 @@ function normalizeActividad(row) {
     descripcion: row.descripcion ?? '',
     categoria: row.categoria,
     alcance: row.alcance,
-    fechaInicio: soloFecha(row.fecha_inicio),
-    fechaFin: soloFecha(row.fecha_fin),
+    fechaInicio: fechaCivilActividad(row.fecha_inicio),
+    fechaFin: fechaCivilActividad(row.fecha_fin),
     ubicacion: row.ubicacion ?? '',
     programasConvocados: row.programas_convocados ?? [],
     clasesConvocadas: row.clases_convocadas ?? [],
@@ -179,8 +171,8 @@ export async function crearActividad(payload) {
       descripcion: payload.descripcion || null,
       categoria,
       alcance,
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
+      fecha_inicio: fechaInicio + 'T00:00:00-04:00',
+      fecha_fin: fechaFin + 'T00:00:00-04:00',
       ubicacion: payload.ubicacion || null,
       programas_convocados: payload.programasConvocados || [],
       clases_convocadas: payload.clasesConvocadas || [],
@@ -203,24 +195,18 @@ export async function crearActividad(payload) {
  * @returns {Promise<Array<{claseId:string, claseNombre:string, programaId:string,
  *   totalAlumnos:number, decisionVigente:{tipoAfectacion:string}|null}>>}
  */
-export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [] }) {
+export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [], maestrosConvocados = [] }) {
   if (!fecha || !alcance) throw new Error('fecha y alcance son obligatorios')
 
   const diaSemana = normalizeDia(diaSemanaDe(fecha))
 
-  let clasesQuery = supabase
+  const convocados = await resolverAlumnosConvocados(clasesConvocadas, programasConvocados)
+
+  const { data: clases, error: clasesErr } = await supabase
     .from('clases')
-    .select('id, nombre, programa_id, clase_horarios!inner(dia)')
+    .select('id, nombre, programa_id, maestro_principal_id, maestro_id, clase_horarios!inner(dia)')
     .eq('activo', true)
-
-  if (alcance === 'clase' && clasesConvocadas.length) {
-    clasesQuery = clasesQuery.in('id', clasesConvocadas)
-  } else if (alcance === 'programa' && programasConvocados.length) {
-    clasesQuery = clasesQuery.in('programa_id', programasConvocados)
-  }
-  // alcance === 'institucional': sin filtro adicional, todas las clases activas.
-
-  const { data: clases, error: clasesErr } = await clasesQuery
+    .in('clase_horarios.dia', [diaSemana, diaSemana.replace('miercoles', 'miércoles').replace('sabado', 'sábado')])
   if (clasesErr) throw new Error(clasesErr.message || 'No se pudieron consultar las clases')
 
   const claseIdsDelDia = new Set(
@@ -238,7 +224,7 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
     supabase.from('alumnos_clases').select('clase_id, alumno_id').in('clase_id', claseIds).eq('activo', true),
     supabase
       .from('calendario_afectaciones_clase')
-      .select('clase_id, tipo_afectacion')
+      .select('clase_id, tipo_afectacion, calendario_exenciones_alumno(alumno_id)')
       .in('clase_id', claseIds)
       .eq('fecha', fecha)
       .eq('vigente', true),
@@ -250,14 +236,30 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
     map.set(i.clase_id, (map.get(i.clase_id) || 0) + 1)
     return map
   }, new Map())
-  const vigentePorClase = new Map((vigentes || []).map((v) => [v.clase_id, v.tipo_afectacion]))
+  const exentosPorClase = new Map()
+  for (const i of inscripciones || []) {
+    if (!convocados.has(i.alumno_id)) continue
+    const exentos = exentosPorClase.get(i.clase_id) || []
+    exentos.push(i.alumno_id)
+    exentosPorClase.set(i.clase_id, exentos)
+  }
+  const vigentePorClase = new Map((vigentes || []).map((v) => [v.clase_id, {
+    tipoAfectacion: v.tipo_afectacion,
+    exentos: (v.calendario_exenciones_alumno || []).map((e) => e.alumno_id),
+  }]))
 
-  return clasesDelDia.map((c) => ({
+  return clasesDelDia.filter((c) =>
+    alcance === 'institucional' || clasesConvocadas.includes(c.id) ||
+    programasConvocados.includes(c.programa_id) || exentosPorClase.has(c.id) ||
+    maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id)
+  ).map((c) => ({
     claseId: c.id,
     claseNombre: c.nombre,
     programaId: c.programa_id,
     totalAlumnos: totalPorClase.get(c.id) || 0,
-    decisionVigente: vigentePorClase.has(c.id) ? { tipoAfectacion: vigentePorClase.get(c.id) } : null,
+    maestroConvocado: maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id),
+    exentosSugeridos: exentosPorClase.get(c.id) || [],
+    decisionVigente: vigentePorClase.get(c.id) || null,
   }))
 }
 
@@ -387,6 +389,22 @@ export async function rechazarActividad(eventoId, motivo) {
   return data
 }
 
+async function resolverAlumnosConvocados(claseIds, programaIds) {
+  const alumnoIds = new Set()
+  if (claseIds.length) {
+    const { data, error } = await supabase.from('alumnos_clases').select('alumno_id').in('clase_id', claseIds).eq('activo', true)
+    if (error) throw new Error(error.message || 'No se pudieron cargar los alumnos convocados por clase')
+    for (const r of data || []) alumnoIds.add(r.alumno_id)
+  }
+
+  if (programaIds.length) {
+    const { data, error } = await supabase.from('alumnos_programas').select('alumno_id').in('programa_id', programaIds).eq('activo', true)
+    if (error) throw new Error(error.message || 'No se pudieron cargar los alumnos convocados por programa')
+    for (const r of data || []) alumnoIds.add(r.alumno_id)
+  }
+  return alumnoIds
+}
+
 /**
  * Resuelve el roster de alumnos convocados a la actividad (directo, vía clase
  * o vía programa) con su estado de asistencia actual (§4, §6: el responsable
@@ -404,22 +422,7 @@ export async function obtenerListaAsistenciaActividad(eventoId) {
   const claseIds = (convocatoria || []).map((c) => c.clase_id).filter(Boolean)
   const programaIds = (convocatoria || []).map((c) => c.programa_id).filter(Boolean)
 
-  if (claseIds.length) {
-    const { data, error } = await supabase.from('alumnos_clases').select('alumno_id').in('clase_id', claseIds).eq('activo', true)
-    if (error) throw new Error(error.message || 'No se pudieron cargar los alumnos convocados por clase')
-    for (const r of data || []) alumnoIds.add(r.alumno_id)
-  }
-
-  if (programaIds.length) {
-    const { data: clasesDelPrograma, error: clasesErr } = await supabase.from('clases').select('id').in('programa_id', programaIds)
-    if (clasesErr) throw new Error(clasesErr.message || 'No se pudieron cargar las clases del programa')
-    const idsClases = (clasesDelPrograma || []).map((c) => c.id)
-    if (idsClases.length) {
-      const { data, error } = await supabase.from('alumnos_clases').select('alumno_id').in('clase_id', idsClases).eq('activo', true)
-      if (error) throw new Error(error.message || 'No se pudieron cargar los alumnos convocados por programa')
-      for (const r of data || []) alumnoIds.add(r.alumno_id)
-    }
-  }
+  for (const id of await resolverAlumnosConvocados(claseIds, programaIds)) alumnoIds.add(id)
 
   if (!alumnoIds.size) return []
 

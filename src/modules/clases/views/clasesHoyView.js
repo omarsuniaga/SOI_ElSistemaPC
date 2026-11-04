@@ -1,6 +1,6 @@
 import '../styles/clasesHoy.css'
 import { router } from '../../../core/router/router.js'
-import { obtenerClasesDelDia, justificarAusencia, DIAS_SEMANA, obtenerDiaActual, COMPLIANCE_META } from '../api/clasesHoyApi.js'
+import { obtenerClasesDelDia, justificarAusencia, fechaParaDia, DIAS_SEMANA, obtenerDiaActual, COMPLIANCE_META } from '../api/clasesHoyApi.js'
 import { formatHora, escapeHTML, getInstrumentoIcon, timeToMinutes } from '../utils/clasesUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -8,11 +8,6 @@ import { renderViewInfoButton, attachViewInfoEvents } from '../../../shared/comp
 import { whatsappLink } from '../../../shared/utils/phoneUtils.js'
 
 let _abortController = null
-
-function _todayISO() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
 
 const ESTADO_LABEL = {
   'en-curso': { label: 'En curso', badge: 'success' },
@@ -558,7 +553,7 @@ function attachEvents(container, sesiones) {
     // dia-pill guarda un nombre de día de semana genérico ("lunes"), no una
     // fecha calendario — solo tiene sentido precargar si coincide con hoy.
     const diaActivo = container.querySelector('.clases-hoy__dia-pill.is-active')?.dataset.dia
-    const fecha = diaActivo && diaActivo === obtenerDiaActual() ? _todayISO() : null
+    const fecha = diaActivo && diaActivo === obtenerDiaActual() ? fechaParaDia(diaActivo) : null
     router.navigate('actividades-institucionales', { crear: true, fecha })
   }, { signal })
 

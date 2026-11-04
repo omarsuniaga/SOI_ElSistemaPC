@@ -1,3 +1,4 @@
+import { fechaSantoDomingo } from '../../../shared/utils/institutionalDates.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { config } from '../../../core/config/config.js'
 import { timeToMinutes } from '../utils/clasesUtils.js'
@@ -36,7 +37,7 @@ export const DIAS_SEMANA = [
  * de JS Date (0=domingo) al value de la tabla.
  */
 export function obtenerDiaActual() {
-  const idx = new Date().getDay() // 0=domingo ... 6=sábado
+  const idx = new Date(fechaSantoDomingo() + 'T00:00:00Z').getUTCDay() // 0=domingo ... 6=sábado
   const orden = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
   return orden[idx]
 }
@@ -49,13 +50,13 @@ export function obtenerDiaActual() {
 export function fechaParaDia(diaValue) {
   const orden = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
   const idxObjetivo = orden.indexOf(diaValue)
-  if (idxObjetivo === -1) return new Date().toISOString().slice(0, 10)
+  if (idxObjetivo === -1) return fechaSantoDomingo()
 
-  const hoy = new Date()
-  const idxHoy = hoy.getDay()
+  const hoy = new Date(fechaSantoDomingo() + 'T00:00:00Z')
+  const idxHoy = hoy.getUTCDay()
   const delta = (idxObjetivo - idxHoy + 7) % 7
   const objetivo = new Date(hoy)
-  objetivo.setDate(hoy.getDate() + delta)
+  objetivo.setUTCDate(hoy.getUTCDate() + delta)
   return objetivo.toISOString().slice(0, 10)
 }
 

@@ -159,6 +159,7 @@ describe('actividadesInstitucionalesView', () => {
     const modalBody = document.querySelector('.app-modal-body')
     expect(modalBody.textContent).toContain('Violín A')
 
+    await vi.waitFor(() => expect(modalBody.querySelector('.ai-select-tipo')).toBeTruthy())
     const select = modalBody.querySelector('.ai-select-tipo')
     select.value = 'suspendida'
     select.dispatchEvent(new Event('change'))
@@ -189,6 +190,7 @@ describe('actividadesInstitucionalesView', () => {
     await vi.waitFor(() => expect(document.querySelector('#ai-btn-rechazar')).toBeTruthy())
 
     const modalBody = document.querySelector('.app-modal-body')
+    await vi.waitFor(() => expect(modalBody.querySelector('.ai-select-tipo')).toBeTruthy())
     const select = modalBody.querySelector('.ai-select-tipo')
     select.value = 'impartida_con_exencion'
     select.dispatchEvent(new Event('change'))

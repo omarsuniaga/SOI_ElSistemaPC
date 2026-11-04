@@ -22,7 +22,7 @@ function normalizeDia(str) {
 
 function diaSemanaDe(fechaISO) {
   const [y, m, d] = fechaISO.split('-').map(Number)
-  return DIAS_ES_LARGO[new Date(y, m - 1, d).getDay()]
+  return DIAS_ES_LARGO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
 }
 
 function normalizeActividad(row) {
@@ -111,7 +111,7 @@ export async function crearActividad(payload) {
   return normalizeActividad(nueva)
 }
 
-export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [] }) {
+export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [], maestrosConvocados = [] }) {
   await delay()
   if (!fecha || !alcance) throw new Error('fecha y alcance son obligatorios')
 
@@ -125,6 +125,7 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
     candidatas = candidatas.filter((c) => programasConvocados.includes(c.programa_id))
   }
 
+  candidatas = todas.filter((c) => candidatas.includes(c) || maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id))
   const delDia = candidatas.filter((c) => (c.horarios || []).some((h) => normalizeDia(h.dia) === diaSemana))
 
   return delDia.map((c) => {
@@ -134,10 +135,11 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
       claseId: c.id,
       claseNombre: c.nombre,
       programaId: c.programa_id,
+      maestroConvocado: maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id),
       // Demo mode no tiene tabla de inscripciones simulada: se aproxima con
       // max_alumnos como estimación visible, documentada en la UI.
       totalAlumnos: c.max_alumnos ?? 0,
-      decisionVigente: decisionVigente ? { tipoAfectacion: decisionVigente.tipoAfectacion } : null,
+      decisionVigente: decisionVigente ? { tipoAfectacion: decisionVigente.tipoAfectacion, exentos: decisionVigente.exentos } : null,
     }
   })
 }

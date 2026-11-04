@@ -110,6 +110,12 @@ VALUES ('${evento}','Concierto','actividad_especial','2026-09-30 00:00+00','2026
 `)
 await db.exec(`INSERT INTO clase_horarios(id,clase_id,dia,hora_inicio,hora_fin,created_at,maestro_id)
 VALUES ('00000000-0000-0000-0000-000000000012','${cls}','jueves','08:30','10:00','2026-09-23','${teacher}')`)
+const draft = '00000000-0000-0000-0000-000000000013'
+await db.exec(`
+INSERT INTO sesiones_clase(id,clase_id,maestro_id,fecha,estado,borrador) VALUES ('${draft}','${cls}','${teacher}','2026-09-30','pendiente',true);
+INSERT INTO registros_pendientes(id,maestro_id,sesion_clase_id,tipo,estado)
+VALUES ('${draft}','${teacher}','${draft}','asistencia_pendiente','pendiente');
+`)
 await publish(1,[teacher],[alumno,alumno])
 r=await db.query('select tipo_afectacion,fecha from calendario_afectaciones_clase where vigente')
 assert.equal(r.rows.length,1)
@@ -120,7 +126,11 @@ assert.equal((await db.query(`select estado from fn_estado_asistencia_maestro('$
 assert.notEqual((await db.query(`select estado from fn_estado_asistencia_maestro('${teacher}','2026-10-01','2026-10-01')`)).rows[0].estado,'exonerada')
 await assert.rejects(publish(1,[],[]), /cambió/)
 await assert.rejects(db.exec(`insert into asistencias(clase_id,fecha,estado) values ('${cls}','2026-09-30','ausente')`), /suspendida/)
+assert.equal((await db.query('select estado from registros_pendientes where id=$1',[draft])).rows[0].estado,'cancelado')
+await db.exec(`UPDATE registros_pendientes SET estado='pendiente' WHERE id='${draft}'`)
+assert.equal((await db.query('select estado from registros_pendientes where id=$1',[draft])).rows[0].estado,'cancelado')
 await publish(2,[],[])
+assert.equal((await db.query('select estado from registros_pendientes where id=$1',[draft])).rows[0].estado,'pendiente')
 assert.equal((await db.query('select * from calendario_afectaciones_clase where vigente')).rows.length,0)
 await publish(3,[],[alumno])
 await db.exec(`insert into asistencias(clase_id,alumno_id,fecha,estado) values ('${cls}','${alumno}','2026-09-30','ausente')`)

@@ -298,3 +298,50 @@ BEGIN
 END;
 $$;
 NOTIFY pgrst, 'reload schema';
+
+ALTER TABLE public.registros_pendientes ADD COLUMN afectacion_institucional_id uuid
+  REFERENCES public.calendario_afectaciones_clase(id) ON DELETE SET NULL;
+
+CREATE FUNCTION public.guard_pending_institutional_activity() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$
+BEGIN
+  IF NEW.estado IN ('pendiente','visto') AND NEW.tipo IN (
+    'asistencia_pendiente','contenido_pendiente','sesion_sin_cerrar'
+  ) THEN
+    SELECT a.id INTO NEW.afectacion_institucional_id
+    FROM public.sesiones_clase s
+    JOIN public.calendario_afectaciones_clase a ON a.clase_id=s.clase_id AND a.fecha=s.fecha
+    JOIN public.calendario_institucional c ON c.id=a.evento_id
+    WHERE s.id=NEW.sesion_clase_id AND a.vigente AND c.estado='aprobado'
+      AND a.tipo_afectacion IN ('suspendida','sustituida');
+    IF NEW.afectacion_institucional_id IS NOT NULL THEN NEW.estado := 'cancelado'; END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER guard_pending_institutional_activity
+BEFORE INSERT OR UPDATE ON public.registros_pendientes FOR EACH ROW
+EXECUTE FUNCTION public.guard_pending_institutional_activity();
+
+CREATE FUNCTION public.sync_pending_institutional_activity() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND OLD.vigente AND NOT NEW.vigente THEN
+    UPDATE public.registros_pendientes SET estado='pendiente', afectacion_institucional_id=NULL, updated_at=now()
+    WHERE afectacion_institucional_id=NEW.id AND estado='cancelado';
+  ELSIF TG_OP='INSERT' AND NEW.vigente AND NEW.tipo_afectacion IN ('suspendida','sustituida') THEN
+    UPDATE public.registros_pendientes r
+    SET estado='cancelado', afectacion_institucional_id=NEW.id, updated_at=now()
+    FROM public.sesiones_clase s
+    WHERE r.sesion_clase_id=s.id AND s.clase_id=NEW.clase_id AND s.fecha=NEW.fecha
+      AND r.estado IN ('pendiente','visto')
+      AND r.tipo IN ('asistencia_pendiente','contenido_pendiente','sesion_sin_cerrar');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER sync_pending_institutional_activity
+AFTER INSERT OR UPDATE OF vigente ON public.calendario_afectaciones_clase FOR EACH ROW
+EXECUTE FUNCTION public.sync_pending_institutional_activity();

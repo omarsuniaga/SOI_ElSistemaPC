@@ -1,3 +1,4 @@
+import { isClassScheduledOn } from '../../asistencias/utils/classValidity.js'
 /**
  * @fileoverview Actividades institucionales: feriados, suspensiones y actividades
  * especiales aprobadas sobre calendario_institucional. Ver
@@ -195,23 +196,23 @@ export async function crearActividad(payload) {
  * @returns {Promise<Array<{claseId:string, claseNombre:string, programaId:string,
  *   totalAlumnos:number, decisionVigente:{tipoAfectacion:string}|null}>>}
  */
-export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [], maestrosConvocados = [] }) {
+export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [], maestrosConvocados = [], alumnosConvocados }) {
   if (!fecha || !alcance) throw new Error('fecha y alcance son obligatorios')
 
   const diaSemana = normalizeDia(diaSemanaDe(fecha))
 
-  const convocados = await resolverAlumnosConvocados(clasesConvocadas, programasConvocados)
+  const convocados = alumnosConvocados ? new Set(alumnosConvocados) : await resolverAlumnosConvocados(clasesConvocadas, programasConvocados)
 
   const { data: clases, error: clasesErr } = await supabase
     .from('clases')
-    .select('id, nombre, programa_id, maestro_principal_id, maestro_id, clase_horarios!inner(dia)')
+    .select('id, nombre, programa_id, maestro_principal_id, maestro_id, fecha_inicio, created_at, clase_horarios!inner(dia, maestro_id, vigente_desde, vigente_hasta, created_at)')
     .eq('activo', true)
     .in('clase_horarios.dia', [diaSemana, diaSemana.replace('miercoles', 'miércoles').replace('sabado', 'sábado')])
   if (clasesErr) throw new Error(clasesErr.message || 'No se pudieron consultar las clases')
 
   const claseIdsDelDia = new Set(
     (clases || [])
-      .filter((c) => (c.clase_horarios || []).some((h) => normalizeDia(h.dia) === diaSemana))
+      .filter((c) => (c.clase_horarios || []).some((h) => normalizeDia(h.dia) === diaSemana && isClassScheduledOn(c, h, fecha)))
       .map((c) => c.id),
   )
   const clasesDelDia = (clases || []).filter((c) => claseIdsDelDia.has(c.id))
@@ -248,16 +249,19 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
     exentos: (v.calendario_exenciones_alumno || []).map((e) => e.alumno_id),
   }]))
 
+  const maestroConvocado = (c) => (c.clase_horarios || []).some((h) =>
+    normalizeDia(h.dia) === diaSemana && isClassScheduledOn(c, h, fecha) && maestrosConvocados.includes(h.maestro_id || c.maestro_principal_id || c.maestro_id))
   return clasesDelDia.filter((c) =>
     alcance === 'institucional' || clasesConvocadas.includes(c.id) ||
     programasConvocados.includes(c.programa_id) || exentosPorClase.has(c.id) ||
-    maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id)
+    maestroConvocado(c)
   ).map((c) => ({
     claseId: c.id,
     claseNombre: c.nombre,
     programaId: c.programa_id,
     totalAlumnos: totalPorClase.get(c.id) || 0,
-    maestroConvocado: maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id),
+    maestroId: c.clase_horarios.find((h) => normalizeDia(h.dia) === diaSemana && isClassScheduledOn(c, h, fecha))?.maestro_id || c.maestro_principal_id || c.maestro_id,
+    maestroConvocado: maestroConvocado(c),
     exentosSugeridos: exentosPorClase.get(c.id) || [],
     decisionVigente: vigentePorClase.get(c.id) || null,
   }))
@@ -272,25 +276,27 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
  * @param {string[]} claseIds
  * @param {string} fecha 'YYYY-MM-DD'
  */
-export async function obtenerAfectacionesVigentes(claseIds, fecha) {
+export async function obtenerAfectacionesVigentes(claseIds, fecha, hasta = fecha) {
   if (!claseIds?.length || !fecha) return []
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('calendario_afectaciones_clase')
     .select(`
-      id, clase_id, tipo_afectacion, motivo,
-      calendario_institucional ( id, titulo, descripcion ),
+      id, clase_id, fecha, tipo_afectacion, motivo,
+      calendario_institucional ( id, titulo, descripcion, categoria ),
       calendario_exenciones_alumno ( alumno_id, alumnos ( nombre_completo ) )
     `)
     .in('clase_id', claseIds)
-    .eq('fecha', fecha)
-    .eq('vigente', true)
+
+  const rango = hasta === fecha ? query.eq('fecha', fecha) : query.gte('fecha', fecha).lte('fecha', hasta)
+  const { data, error } = await rango.eq('vigente', true)
 
   if (error) throw new Error(error.message || 'No se pudieron cargar las actividades institucionales del día')
 
   return (data || []).map((row) => ({
     claseId: row.clase_id,
     afectacionId: row.id,
+    ...(row.fecha ? { fecha: row.fecha, categoria: row.calendario_institucional?.categoria } : {}),
     tipoAfectacion: row.tipo_afectacion,
     motivo: row.motivo ?? '',
     actividadId: row.calendario_institucional?.id ?? null,
@@ -340,11 +346,11 @@ export async function aprobarActividad(eventoId, afectaciones, convocatoria = []
       motivo: a.motivo || null,
       exentos: a.exentos || [],
     })),
-    p_convocatoria: (convocatoria || []).map((c) => ({
+    p_convocatoria: Array.isArray(convocatoria) ? convocatoria.map((c) => ({
       programa_id: c.programaId || null,
       clase_id: c.claseId || null,
       alumno_id: c.alumnoId || null,
-    })),
+    })) : convocatoria,
     p_responsable_asistencia_id: responsableAsistenciaId,
   })
 
@@ -389,7 +395,7 @@ export async function rechazarActividad(eventoId, motivo) {
   return data
 }
 
-async function resolverAlumnosConvocados(claseIds, programaIds) {
+export async function resolverAlumnosConvocados(claseIds, programaIds) {
   const alumnoIds = new Set()
   if (claseIds.length) {
     const { data, error } = await supabase.from('alumnos_clases').select('alumno_id').in('clase_id', claseIds).eq('activo', true)

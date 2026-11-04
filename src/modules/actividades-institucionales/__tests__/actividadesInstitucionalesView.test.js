@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../api/actividadesInstitucionalesApi.js', () => ({
   listarActividades: vi.fn(),
+  obtenerActividad: vi.fn(),
+  resolverAlumnosConvocados: vi.fn(),
   crearActividad: vi.fn(),
   eliminarActividad: vi.fn(),
   previsualizarImpacto: vi.fn(),
@@ -24,6 +26,7 @@ vi.mock('../../../core/router/router.js', () => ({
 import { renderActividadesInstitucionalesView } from '../views/actividadesInstitucionalesView.js'
 import {
   listarActividades,
+  resolverAlumnosConvocados,
   crearActividad,
   eliminarActividad,
   previsualizarImpacto,
@@ -210,6 +213,32 @@ describe('actividadesInstitucionalesView', () => {
       [],
       null,
     )
+  })
+
+  it('comparte la convocatoria del alumno entre clases y la publica una sola vez', async () => {
+    listarActividades.mockResolvedValue([actividad({ categoria: 'actividad_especial' })])
+    resolverAlumnosConvocados.mockResolvedValue(new Set())
+    listarAlumnosDeClase.mockResolvedValue([{ id: 'al-1', nombreCompleto: 'Alumno Uno' }])
+    previsualizarImpacto.mockImplementation(async ({ alumnosConvocados }) =>
+      ['clase-1', 'clase-2'].map((claseId) => ({
+        claseId, claseNombre: claseId, totalAlumnos: 1, exentosSugeridos: alumnosConvocados,
+      })))
+
+    await renderActividadesInstitucionalesView(container)
+    await vi.waitFor(() => expect(container.querySelector('.ai-btn-revisar')).toBeTruthy())
+    container.querySelector('.ai-btn-revisar').click()
+    await vi.waitFor(() => expect(document.querySelectorAll('.ai-chk-exento')).toHaveLength(2))
+    document.querySelector('.ai-chk-exento').click()
+    await vi.waitFor(() => expect(document.querySelectorAll('.ai-chk-exento:checked')).toHaveLength(2))
+    document.querySelector('.app-modal-btn-save').click()
+    await vi.waitFor(() => expect(aprobarActividad).toHaveBeenCalledWith(
+      'act-1',
+      ['clase-1', 'clase-2'].map((claseId) => expect.objectContaining({
+        claseId, fecha: '2026-11-10', tipoAfectacion: 'impartida_con_exencion', exentos: ['al-1'],
+      })),
+      { maestros: [], alumnos: ['al-1'], version: 1 },
+      null,
+    ))
   })
 
   it('revisar: rechazar pide motivo y no llama a aprobar', async () => {

@@ -1,5 +1,7 @@
+vi.mock('../../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js', () => ({ obtenerAfectacionesVigentes: vi.fn() }))
 vi.mock('../../../modules/asistencias/api/recordExemptionsAdapter.js', () => ({ listRecordExemptions: vi.fn(async () => []) }))
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { obtenerAfectacionesVigentes } from '../../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js'
 import { renderCalendarioView } from '../calendarioView.js'
 import * as maestroDataService from '../../services/maestroDataService.js'
 import * as maestroAuth from '../../auth/maestroAuth.js'
@@ -61,6 +63,7 @@ describe('calendarioView — Receso Académico blanquea fechas fuera del períod
     vi.useFakeTimers()
     vi.setSystemTime(HOY)
 
+    obtenerAfectacionesVigentes.mockResolvedValue([])
     maestroAuth.getMaestroLocal.mockReturnValue({ id: 'maestro-1', nombre: 'Test' })
     maestroDataService.getMisClases.mockResolvedValue(clases)
     maestroDataService.getHorariosClases.mockResolvedValue(horarios)
@@ -111,4 +114,19 @@ describe('calendarioView — Receso Académico blanquea fechas fuera del períod
     expect(cell).toBeTruthy()
     expect(cell.classList.contains('estado-receso-academico')).toBe(false)
   })
+  it('marca la fecha del concierto y no genera alerta por la clase suspendida', async () => {
+    obtenerAfectacionesVigentes.mockResolvedValue([{
+      fecha: '2026-08-05', claseId: 'clase-1', categoria: 'actividad_especial',
+      tipoAfectacion: 'suspendida', actividadTitulo: 'Concierto de la Orquesta',
+    }])
+    await renderCalendarioView(container)
+
+    const celda = container.querySelector('[data-fecha="2026-08-05"]')
+    expect(celda.querySelector('.pm-day-activity').textContent).toContain('Actividad especial')
+    expect(celda.title).toContain('Concierto de la Orquesta')
+    expect(celda.querySelector('.pm-dot-exonerada')).toBeTruthy()
+    expect(celda.classList.contains('dia-alerta')).toBe(false)
+    expect(container.querySelector('[data-fecha="2026-08-06"] .pm-day-activity')).toBeNull()
+  })
+
 })

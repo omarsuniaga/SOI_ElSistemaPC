@@ -1,3 +1,4 @@
+import { obtenerAfectacionesVigentes } from '../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
@@ -246,6 +247,12 @@ export async function renderAsistenciaView(
   const fechaHoy = fecha || localToday
 
   try {
+    const [afectacion] = await obtenerAfectacionesVigentes([claseId], fechaHoy)
+    if (['suspendida', 'sustituida'].includes(afectacion?.tipoAfectacion)) {
+      container.innerHTML = `<p class="pm-empty">Clase suspendida y justificada · ${escHTML(afectacion.actividadTitulo)}</p>`
+      return
+    }
+    const exentosInstitucionales = new Set((afectacion?.exentos || []).map((e) => e.alumnoId))
     const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
 
     // ── Batch 1: datos cacheados (instantáneos si hoyView ya cargó) + sesión en paralelo ──
@@ -490,6 +497,12 @@ export async function renderAsistenciaView(
       justificaciones = justificacionesPorActividad(estado, actividadEmergente, justificaciones)
     }
 
+    for (const alumno of alumnos) {
+      if (!exentosInstitucionales.has(alumno.id)) continue
+      estado[alumno.id] = 'J'
+      justificaciones[alumno.id] = { motivo: afectacion.actividadTitulo }
+    }
+
     // === Render ===
     _renderVista(container, {
       clase,
@@ -499,6 +512,7 @@ export async function renderAsistenciaView(
       justificaciones,
       maestro,
       maestroIdSesion,
+      exentosInstitucionales,
       fechaHoy,
       claseId,
       sesionId,
@@ -527,6 +541,7 @@ function _renderVista(container, ctx) {
     justificaciones,
     maestro,
     maestroIdSesion,
+    exentosInstitucionales = new Set(),
     fechaHoy,
     claseId,
     snapshots,
@@ -2600,6 +2615,7 @@ function _renderVista(container, ctx) {
     snapshots,
     justificaciones,
     obtenerJustificacion,
+    exentosInstitucionales,
     isRotativa: clase?.tipo_clase === 'rotativa',
     onDeleteJustificacion: (alumnoId) => {
       delete justificaciones[alumnoId]
@@ -3425,9 +3441,10 @@ function _renderVista(container, ctx) {
   }
 
   // === Bulk Actions Logic ===
+  const alumnosRegistrables = alumnos.filter((a) => !exentosInstitucionales.has(a.id))
   const _bulkActions = createBulkActions(container, {
     onMarkAll: async (tipo) => {
-      const justificados = alumnos.filter((a) => estado[a.id] === 'J' || Boolean(justificaciones[a.id]))
+      const justificados = alumnosRegistrables.filter((a) => estado[a.id] === 'J' || Boolean(justificaciones[a.id]))
       if (justificados.length > 0) {
         const confirmar = window.confirm(
           `Hay ${justificados.length} alumno(s) con justificación registrada. ` +
@@ -3436,7 +3453,7 @@ function _renderVista(container, ctx) {
         )
         if (!confirmar) {
           // Si cancela, marcar solo los no justificados
-          alumnos.forEach((a) => {
+          alumnosRegistrables.forEach((a) => {
             if (estado[a.id] !== 'J' && !justificaciones[a.id]) {
               estado[a.id] = tipo
             }
@@ -3461,14 +3478,14 @@ function _renderVista(container, ctx) {
         }
       }
 
-      alumnos.forEach((a) => { estado[a.id] = tipo })
+      alumnosRegistrables.forEach((a) => { estado[a.id] = tipo })
       studentList.render()
       _updateProgress()
       try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on bulk ${tipo}:`, _e) }
-      announce(`Todos los ${alumnos.length} alumnos marcados como ${tipo === 'P' ? 'presentes' : 'ausentes'}.`)
+      announce(`Todos los ${alumnosRegistrables.length} alumnos marcados como ${tipo === 'P' ? 'presentes' : 'ausentes'}.`)
     },
     onClearAll: async () => {
-      const justificados = alumnos.filter((a) => estado[a.id] === 'J' || Boolean(justificaciones[a.id]))
+      const justificados = alumnosRegistrables.filter((a) => estado[a.id] === 'J' || Boolean(justificaciones[a.id]))
       if (justificados.length > 0) {
         const confirmar = window.confirm(
           `Hay ${justificados.length} alumno(s) con justificación registrada. ` +
@@ -3476,7 +3493,7 @@ function _renderVista(container, ctx) {
         )
         if (!confirmar) {
           // Si cancela, desmarcar solo los no justificados
-          alumnos.forEach((a) => {
+          alumnosRegistrables.forEach((a) => {
             if (estado[a.id] !== 'J' && !justificaciones[a.id]) {
               estado[a.id] = null
             }
@@ -3500,7 +3517,7 @@ function _renderVista(container, ctx) {
         }
       }
 
-      alumnos.forEach((a) => { estado[a.id] = null })
+      alumnosRegistrables.forEach((a) => { estado[a.id] = null })
       studentList.render()
       _updateProgress()
       try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on clear all:`, _e) }

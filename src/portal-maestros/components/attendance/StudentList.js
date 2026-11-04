@@ -28,6 +28,7 @@ export function createStudentList(container, {
   justificaciones = {},
   obtenerJustificacion,
   isRotativa = false,
+  exentosInstitucionales = new Set(),
   // callbacks
   onEstadoChange,
   onOpenProgressPanel,
@@ -256,6 +257,7 @@ export function createStudentList(container, {
 
     if (!btn) return
     const { id, action } = btn.dataset
+    if (exentosInstitucionales.has(id)) return
 
     if (window.navigator.vibrate) window.navigator.vibrate(10)
 

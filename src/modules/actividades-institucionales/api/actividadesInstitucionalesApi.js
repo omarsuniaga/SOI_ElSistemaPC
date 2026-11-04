@@ -16,3 +16,5 @@ export const aprobarActividad = (...args) => getApi().aprobarActividad(...args)
 export const rechazarActividad = (...args) => getApi().rechazarActividad(...args)
 export const obtenerListaAsistenciaActividad = (...args) => getApi().obtenerListaAsistenciaActividad(...args)
 export const registrarAsistenciaActividad = (...args) => getApi().registrarAsistenciaActividad(...args)
+
+export const resolverAlumnosConvocados = (...args) => getApi().resolverAlumnosConvocados(...args)

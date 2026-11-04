@@ -5,6 +5,7 @@ const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Persistencia en memoria de la sesión Demo, como permisosMock.js.
 const actividades = actividadesMockData.map((a) => ({ ...a }))
+const convocatoriaPorEvento = new Map()
 const afectacionesPorEvento = new Map() // eventoId -> [{claseId, fecha, tipoAfectacion, motivo, exentos}]
 
 const DIAS_ES_LARGO = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
@@ -22,7 +23,7 @@ function normalizeDia(str) {
 
 function diaSemanaDe(fechaISO) {
   const [y, m, d] = fechaISO.split('-').map(Number)
-  return DIAS_ES_LARGO[new Date(y, m - 1, d).getDay()]
+  return DIAS_ES_LARGO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
 }
 
 function normalizeActividad(row) {
@@ -76,7 +77,7 @@ export async function obtenerActividad(id) {
     }
   })
 
-  return { ...normalizeActividad(row), afectaciones, convocatoria: [] }
+  return { ...normalizeActividad(row), afectaciones, convocatoria: convocatoriaPorEvento.get(id) || [] }
 }
 
 export async function crearActividad(payload) {
@@ -111,7 +112,7 @@ export async function crearActividad(payload) {
   return normalizeActividad(nueva)
 }
 
-export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [] }) {
+export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = [], programasConvocados = [], maestrosConvocados = [], alumnosConvocados }) {
   await delay()
   if (!fecha || !alcance) throw new Error('fecha y alcance son obligatorios')
 
@@ -125,6 +126,7 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
     candidatas = candidatas.filter((c) => programasConvocados.includes(c.programa_id))
   }
 
+  candidatas = todas.filter((c) => candidatas.includes(c) || maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id) || alumnosConvocados?.some((id) => id.startsWith(`demo-alumno-${c.id}-`)))
   const delDia = candidatas.filter((c) => (c.horarios || []).some((h) => normalizeDia(h.dia) === diaSemana))
 
   return delDia.map((c) => {
@@ -134,24 +136,28 @@ export async function previsualizarImpacto({ fecha, alcance, clasesConvocadas = 
       claseId: c.id,
       claseNombre: c.nombre,
       programaId: c.programa_id,
+      exentosSugeridos: (alumnosConvocados || []).filter((id) => id.startsWith(`demo-alumno-${c.id}-`)),
+      maestroConvocado: maestrosConvocados.includes(c.maestro_principal_id || c.maestro_id),
       // Demo mode no tiene tabla de inscripciones simulada: se aproxima con
       // max_alumnos como estimación visible, documentada en la UI.
       totalAlumnos: c.max_alumnos ?? 0,
-      decisionVigente: decisionVigente ? { tipoAfectacion: decisionVigente.tipoAfectacion } : null,
+      decisionVigente: decisionVigente ? { tipoAfectacion: decisionVigente.tipoAfectacion, exentos: decisionVigente.exentos } : null,
     }
   })
 }
 
-export async function obtenerAfectacionesVigentes(claseIds, fecha) {
+export async function obtenerAfectacionesVigentes(claseIds, fecha, hasta = fecha) {
   await delay()
   if (!claseIds?.length || !fecha) return []
   const vigentes = afectacionesPorEvento.get('__todas__') || []
   return vigentes
-    .filter((a) => claseIds.includes(a.claseId) && a.fecha === fecha)
+    .filter((a) => claseIds.includes(a.claseId) && a.fecha >= fecha && a.fecha <= hasta)
     .map((a) => {
       const clase = (clasesMockData.clases || clasesMockData || []).find((c) => c.id === a.claseId)
       return {
         claseId: a.claseId,
+        fecha: a.fecha,
+        categoria: 'actividad_especial',
         afectacionId: `${a.claseId}-${a.fecha}`,
         tipoAfectacion: a.tipoAfectacion,
         motivo: a.motivo ?? '',
@@ -187,10 +193,18 @@ export async function aprobarActividad(eventoId, afectaciones = [], convocatoria
   row.version = (row.version || 1) + 1
   if (responsableAsistenciaId) row.responsable_asistencia_id = responsableAsistenciaId
 
+  if (!Array.isArray(convocatoria)) {
+    convocatoriaPorEvento.set(eventoId, [
+      ...convocatoria.maestros.map((maestroId) => ({ maestroId })),
+      ...convocatoria.alumnos.map((alumnoId) => ({ alumnoId })),
+    ])
+    convocatoria = convocatoriaPorEvento.get(eventoId)
+  }
+  const anteriores = afectacionesPorEvento.get(eventoId) || []
   afectacionesPorEvento.set(eventoId, afectaciones)
   const todas = afectacionesPorEvento.get('__todas__') || []
   afectacionesPorEvento.set('__todas__', [
-    ...todas.filter((a) => !afectaciones.some((n) => n.claseId === a.claseId && n.fecha === a.fecha)),
+    ...todas.filter((a) => !anteriores.includes(a) && !afectaciones.some((n) => n.claseId === a.claseId && n.fecha === a.fecha)),
     ...afectaciones,
   ])
 
@@ -208,9 +222,11 @@ const asistenciaActividad = new Map() // `${eventoId}:${alumnoId}` -> estado
 
 export async function obtenerListaAsistenciaActividad(eventoId) {
   await delay()
-  // Demo mode no simula convocatoria persistida; deja una lista fija corta
-  // para poder probar el flujo de pasar lista sin depender de datos reales.
-  return ['demo-alumno-1', 'demo-alumno-2', 'demo-alumno-3'].map((alumnoId, i) => ({
+  const convocatoria = convocatoriaPorEvento.get(eventoId)
+  const ids = convocatoria
+    ? convocatoria.map((c) => c.alumnoId).filter(Boolean)
+    : ['demo-alumno-1', 'demo-alumno-2', 'demo-alumno-3']
+  return ids.map((alumnoId, i) => ({
     alumnoId,
     nombreCompleto: `Alumno Demo ${i + 1}`,
     estado: asistenciaActividad.get(`${eventoId}:${alumnoId}`) || 'pendiente',
@@ -247,4 +263,11 @@ export async function rechazarActividad(eventoId, motivo) {
   row.estado = 'rechazado'
   row.motivo_rechazo = motivo || null
   return { evento_id: eventoId, estado: 'rechazado', motivo_rechazo: motivo || null }
+}
+
+export async function resolverAlumnosConvocados(claseIds, programaIds) {
+  const clases = (clasesMockData.clases || clasesMockData || []).filter((c) =>
+    claseIds.includes(c.id) || programaIds.includes(c.programa_id))
+  const listas = await Promise.all(clases.map((c) => listarAlumnosDeClase(c.id)))
+  return new Set(listas.flat().map((a) => a.id))
 }

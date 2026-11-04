@@ -1,3 +1,4 @@
+vi.mock('../../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js', () => ({ obtenerAfectacionesVigentes: vi.fn(async () => []) }))
 vi.mock('../../../modules/asistencias/api/recordExemptionsAdapter.js', () => ({ listRecordExemptions: vi.fn(async () => []) }))
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderCalendarioView } from '../calendarioView.js'

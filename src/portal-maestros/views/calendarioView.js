@@ -57,6 +57,7 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
         dotsMap,
         classCount,
         hasAssignedClasses,
+        actividadesPorFecha,
       } = await _calcularEstadoMes(maestro.id, anio, mes)
 
       if (!hasAssignedClasses) {
@@ -91,6 +92,7 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 
       _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
         classCount,
+        actividadesPorFecha,
         onFechaClick: (fecha) => {
           _openActionDrawer(fecha, container)
           onFechaClick?.(fecha)
@@ -137,8 +139,9 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 async function _calcularEstadoMes(maestroId, anio, mes) {
   const primerDia = new Date(anio, mes, 1)
   const ultimoDia = new Date(anio, mes + 1, 0)
-  const desde = primerDia.toISOString().split('T')[0]
-  const hasta = ultimoDia.toISOString().split('T')[0]
+  const prefijo = `${anio}-${String(mes + 1).padStart(2, '0')}`
+  const desde = `${prefijo}-01`
+  const hasta = `${prefijo}-${ultimoDia.getDate()}`
 
   // 1. Obtener clases del maestro (con cache)
   const clases = await getMisClases()
@@ -152,6 +155,17 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       hasAssignedClasses: false,
     }
   }
+
+  const actividadesPorFecha = new Map()
+  const afectaciones = await obtenerAfectacionesVigentes(claseIds, desde, hasta)
+  for (const afectacion of afectaciones) {
+    if (afectacion.categoria !== 'actividad_especial') continue
+    const titulos = actividadesPorFecha.get(afectacion.fecha) || new Set()
+    titulos.add(afectacion.actividadTitulo)
+    actividadesPorFecha.set(afectacion.fecha, titulos)
+  }
+  const suspendidas = new Set(afectaciones.filter((a) => ['suspendida', 'sustituida'].includes(a.tipoAfectacion))
+    .map((a) => `${a.claseId}|${a.fecha}`))
 
   // La RPC es la fuente compartida con Admin/ACM y Hermes. El cálculo local
   // se conserva temporalmente como respaldo mientras se despliega la migración
@@ -187,7 +201,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       if (estado === 'futura') estadoMap.set(fecha, 'sin-clase')
     }
 
-    return { estadoMap, dotsMap, classCount: clases.length, hasAssignedClasses: true }
+    return { estadoMap, dotsMap, actividadesPorFecha, classCount: clases.length, hasAssignedClasses: true }
   } catch (error) {
     console.warn('[Calendario] RPC de cumplimiento no disponible; usando respaldo local.', error.message)
   }
@@ -303,6 +317,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const dots = []
     const clasesDelDia = new Set(validSchedules.map(h => h.clase_id))
     clasesDelDia.forEach((claseId) => {
+      if (suspendidas.has(`${claseId}|${fecha}`)) { dots.push('exonerada'); return }
       if (exemptions.some(x => x.clase_id === claseId && x.fecha === fecha && !x.revocado_en && x.alcance !== 'contenido')) { dots.push('exonerada'); return }
       const s = sesionPorClaseFecha.get(`${fecha}|${claseId}`)
       if (diffDias === 0) {
@@ -397,6 +412,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   return {
     estadoMap,
     dotsMap,
+    actividadesPorFecha,
     classCount: clases.length,
     hasAssignedClasses: true,
   }
@@ -442,6 +458,7 @@ function _claseFinalizoHoy(horaFin) {
 
 function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
   classCount = 0,
+  actividadesPorFecha,
   onFechaClick,
   onPrev,
   onNext,
@@ -478,13 +495,16 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
     const esHoy = fecha === hoyStr ? 'today' : ''
     const isActive = fecha === activeDate
 
-    const ariaLabel = `${d} de ${MESES_ES[mes]} ${anio}${dots.length ? `, ${dots.length} clase(s)` : ''}`
+    const actividad = [...(actividadesPorFecha?.get(fecha) || [])].join(', ')
+    const etiqueta = actividad ? `Actividad especial · ${actividad}` : ''
+    const ariaLabel = `${d} de ${MESES_ES[mes]} ${anio}${dots.length ? `, ${dots.length} clase(s)` : ''}${etiqueta ? `, ${etiqueta}` : ''}`
     const ariaCurrent = fecha === hoyStr ? ' aria-current="date"' : ''
     const tabIndex = isActive ? '0' : '-1'
 
     diasHTML += `
-      <div class="pm-cal-day estado-${estado}${hayAlerta ? ' dia-alerta' : ''} ${esHoy}" data-fecha="${fecha}" title="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
+      <div class="pm-cal-day estado-${estado}${hayAlerta ? ' dia-alerta' : ''} ${esHoy}" data-fecha="${fecha}" title="${escHTML(etiqueta || fecha)}" role="gridcell" tabindex="${tabIndex}" aria-label="${escHTML(ariaLabel)}" aria-selected="false"${ariaCurrent}>
         <span class="pm-cal-day-num">${d}</span>
+        ${etiqueta ? `<span class="pm-day-activity" title="${escHTML(etiqueta)}"><i class="bi bi-calendar-event" aria-hidden="true"></i> Actividad especial</span>` : ''}
         ${dotsHTML}
       </div>
     `

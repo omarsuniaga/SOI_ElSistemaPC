@@ -159,9 +159,9 @@ describe('progressHistoryFormatter', () => {
         prog: [],
         attempts: [],
         obs: [
-          { alumno_id: 'alum-001', id: 'obs-3', texto: 'Third', fecha: '2026-05-05', tipo: 'alumno' },
-          { alumno_id: 'alum-001', id: 'obs-1', texto: 'First', fecha: '2026-05-01', tipo: 'alumno' },
-          { alumno_id: 'alum-001', id: 'obs-2', texto: 'Second', fecha: '2026-05-03', tipo: 'alumno' },
+          { alumno_id: 'alum-001', id: 'obs-3', texto: 'Third', fecha: '2026-05-06', tipo: 'alumno' },
+          { alumno_id: 'alum-001', id: 'obs-1', texto: 'First', fecha: '2026-05-04', tipo: 'alumno' },
+          { alumno_id: 'alum-001', id: 'obs-2', texto: 'Second', fecha: '2026-05-05', tipo: 'alumno' },
         ],
       })
 

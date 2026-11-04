@@ -6,6 +6,8 @@
 
 import {
   listarActividades,
+  obtenerActividad,
+  resolverAlumnosConvocados,
   crearActividad,
   eliminarActividad,
   previsualizarImpacto,
@@ -15,6 +17,8 @@ import {
   obtenerListaAsistenciaActividad,
   registrarAsistenciaActividad,
 } from '../api/actividadesInstitucionalesApi.js'
+import { fechasActividad } from '../../../shared/utils/institutionalDates.js'
+import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { obtenerProgramas } from '../../programas/api/programasApi.js'
 import { obtenerClases } from '../../clases/api/clasesApi.js'
 import { obtenerMaestrosActivos } from '../../maestros/api/maestrosApi.js'
@@ -412,7 +416,13 @@ async function _openRevisarModal(container, actividadId) {
   if (!actividad) return
 
   const yaAprobada = actividad.estado === 'aprobado'
-  const decisiones = new Map() // claseId -> { tipoAfectacion, motivo, exentos: Set }
+  const especial = actividad.categoria === 'actividad_especial'
+  let alumnosConvocados
+  let maestrosConvocados = []
+  let version = actividad.version
+  const nombresMaestros = new Map(state.maestros.map((m) => [m.id, m.nombre_completo || m.nombre]))
+  const decisiones = new Map()
+  let impactoListo = false
 
   AppModal.open({
     title: yaAprobada ? `Corregir: ${actividad.titulo}` : `Revisar: ${actividad.titulo}`,
@@ -424,6 +434,19 @@ async function _openRevisarModal(container, actividadId) {
         <span class="badge ${ESTADO_BADGE[actividad.estado]} border">${_esc(ESTADO_LABEL[actividad.estado])}</span>
         <span class="small text-muted ms-2">${_formatFecha(actividad.fechaInicio)}${actividad.fechaInicio !== actividad.fechaFin ? ` – ${_formatFecha(actividad.fechaFin)}` : ''} · Alcance: ${_esc(actividad.alcance)}</span>
       </div>
+      ${actividad.categoria === 'actividad_especial' ? `
+        <label class="form-label small fw-semibold" for="ai-maestros-convocados">Maestros convocados</label>
+        <select multiple class="form-select form-select-sm mb-2" id="ai-maestros-convocados">
+          ${state.maestros.map((m) => `<option value="${_esc(m.id)}">${_esc(m.nombre_completo || m.nombre)}</option>`).join('')}
+        </select>
+        <p class="small text-muted">Selecciona los maestros que dejarán de impartir sus clases durante la actividad. Cambiar la selección recalcula las sugerencias.</p>
+        <details id="ai-convocatoria-alumnos" class="mb-3">
+          <summary class="small fw-semibold">Revisar convocatoria completa o agregar un alumno</summary>
+          <input class="form-control form-control-sm my-2" id="ai-buscar-convocado" type="search"
+            aria-label="Buscar alumno por nombre" placeholder="Buscar alumno por nombre">
+          <div id="ai-lista-convocados" class="border rounded p-2" style="max-height: 220px; overflow-y: auto;"></div>
+        </details>
+      ` : ''}
       <div id="ai-impacto-loading" class="text-center text-muted py-3">
         <div class="spinner-border spinner-border-sm me-2"></div>Calculando clases afectadas...
       </div>
@@ -437,90 +460,186 @@ async function _openRevisarModal(container, actividadId) {
       `}
     `,
     onShow: async (body) => {
-      let impacto = []
-      try {
-        impacto = await previsualizarImpacto({
-          fecha: actividad.fechaInicio,
-          alcance: actividad.alcance,
-          clasesConvocadas: actividad.clasesConvocadas,
-          programasConvocados: actividad.programasConvocados,
-        })
-      } catch (err) {
-        body.querySelector('#ai-impacto-loading').innerHTML =
-          `<div class="text-danger small">${_esc(err.message || 'No se pudo calcular el impacto')}</div>`
-        return
-      }
-
-      body.querySelector('#ai-impacto-loading').classList.add('d-none')
+      const maestros = body.querySelector('#ai-maestros-convocados')
+      const loading = body.querySelector('#ai-impacto-loading')
       const listaEl = body.querySelector('#ai-impacto-lista')
-      listaEl.classList.remove('d-none')
-
-      if (!impacto.length) {
-        listaEl.innerHTML = `<div class="text-muted small py-3">Ninguna clase coincide con la fecha y el alcance seleccionados.</div>`
-      } else {
-        listaEl.innerHTML = `
-          <div class="small text-muted mb-2">Elegí qué pasa con cada clase afectada. "Convocar" no implica que la clase deje de darse — solo lo hace si la marcás como suspendida o con exención.</div>
-          ${impacto.map((i) => {
-            decisiones.set(i.claseId, { tipoAfectacion: i.decisionVigente?.tipoAfectacion || 'impartida_sin_cambios', motivo: '', exentos: new Set() })
-            return `
-              <div class="border rounded-3 p-2 mb-2 ai-impacto-row" data-clase-id="${_esc(i.claseId)}">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <span class="fw-semibold small">${_esc(i.claseNombre)}</span>
-                    <span class="small text-muted ms-2">${i.totalAlumnos} alumno(s)</span>
-                    ${i.decisionVigente ? `<span class="badge bg-secondary-subtle text-secondary-emphasis ms-2" style="font-size:0.65rem;">Ya tenía: ${_esc(TIPO_AFECTACION_LABEL[i.decisionVigente.tipoAfectacion] || i.decisionVigente.tipoAfectacion)}</span>` : ''}
-                  </div>
-                  <select class="form-select form-select-sm ai-select-tipo" style="width:auto; min-width:230px;">
-                    ${Object.entries(TIPO_AFECTACION_LABEL).map(([v, l]) => `<option value="${v}" ${decisiones.get(i.claseId).tipoAfectacion === v ? 'selected' : ''}>${l}</option>`).join('')}
-                  </select>
-                </div>
-                <div class="ai-exentos-wrap mt-2 ${decisiones.get(i.claseId).tipoAfectacion === 'impartida_con_exencion' ? '' : 'd-none'}">
-                  <div class="small text-muted mb-1">Cargando alumnos...</div>
-                </div>
-              </div>
-            `
-          }).join('')}
-        `
-
-        listaEl.querySelectorAll('.ai-impacto-row').forEach((row) => {
-          const claseId = row.dataset.claseId
-          const select = row.querySelector('.ai-select-tipo')
-          const exentosWrap = row.querySelector('.ai-exentos-wrap')
-
-          const cargarExentos = async () => {
-            const alumnos = await listarAlumnosDeClase(claseId).catch(() => [])
-            exentosWrap.innerHTML = alumnos.length
-              ? alumnos.map((al) => `
-                  <div class="form-check">
-                    <input class="form-check-input ai-chk-exento" type="checkbox" value="${_esc(al.id)}" id="ai-ex-${_esc(claseId)}-${_esc(al.id)}">
-                    <label class="form-check-label small" for="ai-ex-${_esc(claseId)}-${_esc(al.id)}">${_esc(al.nombreCompleto)}</label>
-                  </div>
-                `).join('')
-              : `<div class="small text-muted">Sin alumnos inscritos.</div>`
-
-            exentosWrap.querySelectorAll('.ai-chk-exento').forEach((chk) => {
-              chk.addEventListener('change', () => {
-                const set = decisiones.get(claseId).exentos
-                if (chk.checked) set.add(chk.value)
-                else set.delete(chk.value)
-              })
-            })
-          }
-
-          select.addEventListener('change', () => {
-            decisiones.get(claseId).tipoAfectacion = select.value
-            if (select.value === 'impartida_con_exencion') {
-              exentosWrap.classList.remove('d-none')
-              cargarExentos()
-            } else {
-              exentosWrap.classList.add('d-none')
-              decisiones.get(claseId).exentos.clear()
-            }
-          })
-
-          if (select.value === 'impartida_con_exencion') cargarExentos()
-        })
+      const roster = body.querySelector('#ai-convocatoria-alumnos')
+      const buscador = body.querySelector('#ai-buscar-convocado')
+      const listaConvocados = body.querySelector('#ai-lista-convocados')
+      let catalogo
+      const renderConvocatoria = () => {
+        if (!catalogo || !alumnosConvocados) return
+        const termino = buscador.value.trim().toLocaleLowerCase('es')
+        const coincidencias = catalogo.filter((a) => a.activo !== false || alumnosConvocados.has(a.id)).filter((a) => termino
+          ? a.nombre.toLocaleLowerCase('es').includes(termino)
+          : alumnosConvocados.has(a.id))
+        listaConvocados.innerHTML = coincidencias.map((a) => `
+          <label class="d-block small">
+            <input type="checkbox" value="${_esc(a.id)}" ${alumnosConvocados.has(a.id) ? 'checked' : ''}>
+            ${_esc(a.nombre)}
+          </label>`).join('') || '<span class="small text-muted">Sin coincidencias. Escribe un nombre para buscar.</span>'
       }
+      roster?.addEventListener('toggle', async () => {
+        if (!roster.open || catalogo) return
+        listaConvocados.textContent = 'Cargando alumnos...'
+        try {
+          catalogo = []
+          const pageSize = 250
+          for (let page = 0; ; page++) {
+            const { alumnos, total } = await obtenerAlumnos({ page, pageSize, soloActivos: false })
+            catalogo.push(...alumnos.map((a) => ({ id: a.id, nombre: a.nombre_completo || a.nombre || a.id, activo: a.activo })))
+            if (!alumnos.length || catalogo.length >= total) break
+          }
+          renderConvocatoria()
+        } catch (err) {
+          catalogo = null
+          listaConvocados.textContent = err.message || 'No se pudieron cargar los alumnos'
+        }
+      })
+      buscador?.addEventListener('input', renderConvocatoria)
+      let revision = 0
+      const cargarImpacto = async () => {
+        const actual = ++revision
+        impactoListo = false
+        decisiones.clear()
+        listaEl.classList.add('d-none')
+        loading.classList.remove('d-none')
+        loading.textContent = 'Calculando clases afectadas...'
+        let impacto
+        try {
+          if (especial && !alumnosConvocados) {
+            const detalle = yaAprobada ? await obtenerActividad(actividad.id) : null
+            if (detalle) {
+              version = detalle.version
+              const guardados = detalle.convocatoria
+              alumnosConvocados = new Set(guardados.map((c) => c.alumnoId).filter(Boolean))
+              const heredados = await resolverAlumnosConvocados(
+                guardados.map((c) => c.claseId).filter(Boolean),
+                guardados.map((c) => c.programaId).filter(Boolean))
+              for (const id of heredados) alumnosConvocados.add(id)
+              const ids = new Set(guardados.map((c) => c.maestroId))
+              for (const option of maestros.options) option.selected = ids.has(option.value)
+            } else {
+              alumnosConvocados = await resolverAlumnosConvocados(actividad.clasesConvocadas, actividad.programasConvocados)
+            }
+          }
+          maestrosConvocados = Array.from(maestros?.selectedOptions || [], (option) => option.value)
+          const seleccion = maestrosConvocados
+          impacto = (await Promise.all(fechasActividad(actividad.fechaInicio, actividad.fechaFin).map(async (fecha) => {
+            const clases = await previsualizarImpacto({
+              fecha,
+              alcance: actividad.alcance,
+              clasesConvocadas: actividad.clasesConvocadas,
+              programasConvocados: actividad.programasConvocados,
+              ...(especial ? { maestrosConvocados: seleccion, alumnosConvocados: [...alumnosConvocados] } : {}),
+            })
+            return clases.map((clase) => ({ ...clase, fecha }))
+          }))).flat()
+          if (especial) {
+            const listas = new Map()
+            for (const item of impacto) {
+              if (!listas.has(item.claseId)) listas.set(item.claseId, listarAlumnosDeClase(item.claseId))
+            }
+            await Promise.all(impacto.map(async (item) => {
+              item.alumnos = await listas.get(item.claseId)
+            }))
+          }
+        } catch (err) {
+          if (actual === revision) loading.textContent = err.message || 'No se pudo calcular el impacto'
+          return
+        }
+        if (actual !== revision) return
+        impactoListo = true
+        renderConvocatoria()
+        loading.classList.add('d-none')
+        listaEl.classList.remove('d-none')
+
+        if (!impacto.length) {
+          listaEl.innerHTML = `<div class="text-muted small py-3">Ninguna clase coincide con la fecha y el alcance seleccionados.</div>`
+        } else {
+          listaEl.innerHTML = `
+            <div class="small text-muted mb-2">${especial ? 'Marca a los alumnos que participarán. La selección se comparte entre sus clases. Las clases de maestros convocados quedan suspendidas y justificadas.' : 'Elige qué sucede con cada clase antes de publicar.'}</div>
+            ${impacto.map((i) => {
+              const key = `${i.claseId}-${i.fecha}`
+              const tipoSugerido = i.maestroConvocado || actividad.categoria !== 'actividad_especial'
+                ? 'suspendida'
+                : i.exentosSugeridos?.length ? 'impartida_con_exencion' : 'impartida_sin_cambios'
+              decisiones.set(key, {
+                claseId: i.claseId, fecha: i.fecha,
+                tipoAfectacion: especial ? tipoSugerido : i.decisionVigente?.tipoAfectacion || tipoSugerido,
+                exentos: new Set((especial ? i.exentosSugeridos : i.decisionVigente?.exentos || i.exentosSugeridos) || []),
+              })
+              return `
+                <div class="border rounded-3 p-2 mb-2 ai-impacto-row" data-clase-id="${_esc(i.claseId)}" data-decision-key="${_esc(key)}">
+                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                      <span class="fw-semibold small">${_esc(i.claseNombre)}</span>
+                      ${nombresMaestros.has(i.maestroId) ? `<span class="small text-muted"> · ${_esc(nombresMaestros.get(i.maestroId))}</span>` : ''}
+                      <span class="small text-muted ms-2">${i.totalAlumnos} alumno(s) · ${_formatFecha(i.fecha)}</span>
+                      ${i.decisionVigente ? `<span class="badge bg-secondary-subtle text-secondary-emphasis ms-2" style="font-size:0.65rem;">Ya tenía: ${_esc(TIPO_AFECTACION_LABEL[i.decisionVigente.tipoAfectacion] || i.decisionVigente.tipoAfectacion)}</span>` : ''}
+                    </div>
+                    ${especial ? `<span class="badge text-bg-secondary">${_esc(TIPO_AFECTACION_LABEL[tipoSugerido])}</span>` : `<select class="form-select form-select-sm ai-select-tipo" style="width:auto; min-width:230px;">
+                      ${Object.entries(TIPO_AFECTACION_LABEL).map(([v, l]) => `<option value="${v}" ${decisiones.get(key).tipoAfectacion === v ? 'selected' : ''}>${l}</option>`).join('')}
+                    </select>`}
+                  </div>
+                  <div class="ai-exentos-wrap mt-2 ${especial || decisiones.get(key).tipoAfectacion === 'impartida_con_exencion' ? '' : 'd-none'}">
+                    <div class="small text-muted mb-1">Cargando alumnos...</div>
+                  </div>
+                </div>
+              `
+            }).join('')}
+          `
+
+          listaEl.querySelectorAll('.ai-impacto-row').forEach((row) => {
+            const claseId = row.dataset.claseId
+            const decision = decisiones.get(row.dataset.decisionKey)
+            const select = row.querySelector('.ai-select-tipo')
+            const exentosWrap = row.querySelector('.ai-exentos-wrap')
+
+            const cargarExentos = async () => {
+              const alumnos = especial ? impacto.find((item) => `${item.claseId}-${item.fecha}` === row.dataset.decisionKey).alumnos : await listarAlumnosDeClase(claseId).catch(() => [])
+              exentosWrap.innerHTML = alumnos.length
+                ? alumnos.map((al) => `
+                    <div class="form-check">
+                      <input class="form-check-input ai-chk-exento" type="checkbox" value="${_esc(al.id)}" id="ai-ex-${_esc(row.dataset.decisionKey)}-${_esc(al.id)}" ${(especial ? alumnosConvocados : decision.exentos).has(al.id) ? 'checked' : ''}>
+                      <label class="form-check-label small" for="ai-ex-${_esc(row.dataset.decisionKey)}-${_esc(al.id)}">${_esc(al.nombreCompleto)}</label>
+                    </div>
+                  `).join('')
+                : `<div class="small text-muted">Sin alumnos inscritos.</div>`
+
+              exentosWrap.querySelectorAll('.ai-chk-exento').forEach((chk) => {
+                chk.addEventListener('change', () => {
+                  const set = especial ? alumnosConvocados : decision.exentos
+                  if (chk.checked) set.add(chk.value)
+                  else set.delete(chk.value)
+                    if (especial) cargarImpacto()
+                })
+              })
+            }
+
+            select?.addEventListener('change', () => {
+              decision.tipoAfectacion = select.value
+              if (select.value === 'impartida_con_exencion') {
+                exentosWrap.classList.remove('d-none')
+                cargarExentos()
+              } else {
+                exentosWrap.classList.add('d-none')
+                decision.exentos.clear()
+              }
+            })
+
+            if (especial || select?.value === 'impartida_con_exencion') cargarExentos()
+          })
+        }
+
+      }
+      maestros?.addEventListener('change', cargarImpacto)
+      listaConvocados?.addEventListener('change', (event) => {
+        if (!alumnosConvocados || !event.target.matches('input[type="checkbox"]')) return
+        if (event.target.checked) alumnosConvocados.add(event.target.value)
+        else alumnosConvocados.delete(event.target.value)
+        cargarImpacto()
+      })
 
       body.querySelector('#ai-btn-rechazar')?.addEventListener('click', async () => {
         const motivo = prompt('Motivo del rechazo:')
@@ -535,17 +654,20 @@ async function _openRevisarModal(container, actividadId) {
           AppToast.error(err.message || 'No se pudo rechazar')
         }
       })
+      await cargarImpacto()
     },
     onSave: async () => {
-      const afectaciones = Array.from(decisiones.entries()).map(([claseId, d]) => ({
-        claseId,
-        fecha: actividad.fechaInicio,
-        tipoAfectacion: d.tipoAfectacion,
-        motivo: d.motivo,
-        exentos: Array.from(d.exentos),
+      if (!impactoListo) {
+        AppToast.error('Espera a que se complete la revisión de impacto')
+        return false
+      }
+      const afectaciones = Array.from(decisiones.values()).map((decision) => ({
+        ...decision,
+        motivo: '',
+        exentos: decision.tipoAfectacion === 'impartida_con_exencion' ? Array.from(decision.exentos) : [],
       }))
 
-      const convocatoria = actividad.alcance === 'programa'
+      const convocatoria = especial ? { maestros: maestrosConvocados, alumnos: [...alumnosConvocados], version } : actividad.alcance === 'programa'
         ? actividad.programasConvocados.map((programaId) => ({ programaId }))
         : actividad.alcance === 'clase'
           ? actividad.clasesConvocadas.map((claseId) => ({ claseId }))

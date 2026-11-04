@@ -1,3 +1,4 @@
+vi.mock('../../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js', () => ({ obtenerAfectacionesVigentes: vi.fn(async () => []) }))
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 /**

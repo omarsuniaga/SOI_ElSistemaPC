@@ -35,8 +35,7 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const dateStr = today.toISOString().split('T')[0]
-    const [year, month, day] = dateStr.split('-')
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
     const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][today.getDay()]
 
     // Session with content but NO attendance (draft with content only)
@@ -80,8 +79,7 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const dateStr = today.toISOString().split('T')[0]
-    const [year, month, day] = dateStr.split('-')
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
     const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][today.getDay()]
 
     // Session with attendance recorded

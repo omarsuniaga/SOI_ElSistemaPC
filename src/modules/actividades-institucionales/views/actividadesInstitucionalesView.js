@@ -18,6 +18,7 @@ import {
   registrarAsistenciaActividad,
 } from '../api/actividadesInstitucionalesApi.js'
 import { fechasActividad } from '../../../shared/utils/institutionalDates.js'
+import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { obtenerProgramas } from '../../programas/api/programasApi.js'
 import { obtenerClases } from '../../clases/api/clasesApi.js'
 import { obtenerMaestrosActivos } from '../../maestros/api/maestrosApi.js'
@@ -439,6 +440,12 @@ async function _openRevisarModal(container, actividadId) {
           ${state.maestros.map((m) => `<option value="${_esc(m.id)}">${_esc(m.nombre_completo || m.nombre)}</option>`).join('')}
         </select>
         <p class="small text-muted">Selecciona los maestros que dejarán de impartir sus clases durante la actividad. Cambiar la selección recalcula las sugerencias.</p>
+        <details id="ai-convocatoria-alumnos" class="mb-3">
+          <summary class="small fw-semibold">Revisar convocatoria completa o agregar un alumno</summary>
+          <input class="form-control form-control-sm my-2" id="ai-buscar-convocado" type="search"
+            aria-label="Buscar alumno por nombre" placeholder="Buscar alumno por nombre">
+          <div id="ai-lista-convocados" class="border rounded p-2" style="max-height: 220px; overflow-y: auto;"></div>
+        </details>
       ` : ''}
       <div id="ai-impacto-loading" class="text-center text-muted py-3">
         <div class="spinner-border spinner-border-sm me-2"></div>Calculando clases afectadas...
@@ -456,6 +463,40 @@ async function _openRevisarModal(container, actividadId) {
       const maestros = body.querySelector('#ai-maestros-convocados')
       const loading = body.querySelector('#ai-impacto-loading')
       const listaEl = body.querySelector('#ai-impacto-lista')
+      const roster = body.querySelector('#ai-convocatoria-alumnos')
+      const buscador = body.querySelector('#ai-buscar-convocado')
+      const listaConvocados = body.querySelector('#ai-lista-convocados')
+      let catalogo
+      const renderConvocatoria = () => {
+        if (!catalogo || !alumnosConvocados) return
+        const termino = buscador.value.trim().toLocaleLowerCase('es')
+        const coincidencias = catalogo.filter((a) => a.activo !== false || alumnosConvocados.has(a.id)).filter((a) => termino
+          ? a.nombre.toLocaleLowerCase('es').includes(termino)
+          : alumnosConvocados.has(a.id))
+        listaConvocados.innerHTML = coincidencias.map((a) => `
+          <label class="d-block small">
+            <input type="checkbox" value="${_esc(a.id)}" ${alumnosConvocados.has(a.id) ? 'checked' : ''}>
+            ${_esc(a.nombre)}
+          </label>`).join('') || '<span class="small text-muted">Sin coincidencias. Escribe un nombre para buscar.</span>'
+      }
+      roster?.addEventListener('toggle', async () => {
+        if (!roster.open || catalogo) return
+        listaConvocados.textContent = 'Cargando alumnos...'
+        try {
+          catalogo = []
+          const pageSize = 250
+          for (let page = 0; ; page++) {
+            const { alumnos, total } = await obtenerAlumnos({ page, pageSize, soloActivos: false })
+            catalogo.push(...alumnos.map((a) => ({ id: a.id, nombre: a.nombre_completo || a.nombre || a.id, activo: a.activo })))
+            if (!alumnos.length || catalogo.length >= total) break
+          }
+          renderConvocatoria()
+        } catch (err) {
+          catalogo = null
+          listaConvocados.textContent = err.message || 'No se pudieron cargar los alumnos'
+        }
+      })
+      buscador?.addEventListener('input', renderConvocatoria)
       let revision = 0
       const cargarImpacto = async () => {
         const actual = ++revision
@@ -509,6 +550,7 @@ async function _openRevisarModal(container, actividadId) {
         }
         if (actual !== revision) return
         impactoListo = true
+        renderConvocatoria()
         loading.classList.add('d-none')
         listaEl.classList.remove('d-none')
 
@@ -592,6 +634,12 @@ async function _openRevisarModal(container, actividadId) {
 
       }
       maestros?.addEventListener('change', cargarImpacto)
+      listaConvocados?.addEventListener('change', (event) => {
+        if (!alumnosConvocados || !event.target.matches('input[type="checkbox"]')) return
+        if (event.target.checked) alumnosConvocados.add(event.target.value)
+        else alumnosConvocados.delete(event.target.value)
+        cargarImpacto()
+      })
 
       body.querySelector('#ai-btn-rechazar')?.addEventListener('click', async () => {
         const motivo = prompt('Motivo del rechazo:')

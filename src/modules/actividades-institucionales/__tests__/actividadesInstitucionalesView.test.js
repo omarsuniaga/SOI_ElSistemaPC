@@ -13,6 +13,7 @@ vi.mock('../api/actividadesInstitucionalesApi.js', () => ({
   obtenerListaAsistenciaActividad: vi.fn(),
   registrarAsistenciaActividad: vi.fn(),
 }))
+vi.mock('../../alumnos/api/alumnosApi.js', () => ({ obtenerAlumnos: vi.fn() }))
 vi.mock('../../programas/api/programasApi.js', () => ({ obtenerProgramas: vi.fn().mockResolvedValue([]) }))
 vi.mock('../../clases/api/clasesApi.js', () => ({ obtenerClases: vi.fn().mockResolvedValue([]) }))
 vi.mock('../../maestros/api/maestrosApi.js', () => ({ obtenerMaestrosActivos: vi.fn().mockResolvedValue([]) }))
@@ -36,6 +37,7 @@ import {
   obtenerListaAsistenciaActividad,
   registrarAsistenciaActividad,
 } from '../api/actividadesInstitucionalesApi.js'
+import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -221,7 +223,7 @@ describe('actividadesInstitucionalesView', () => {
     listarAlumnosDeClase.mockResolvedValue([{ id: 'al-1', nombreCompleto: 'Alumno Uno' }])
     previsualizarImpacto.mockImplementation(async ({ alumnosConvocados }) =>
       ['clase-1', 'clase-2'].map((claseId) => ({
-        claseId, claseNombre: claseId, totalAlumnos: 1, exentosSugeridos: alumnosConvocados,
+        claseId, claseNombre: claseId, totalAlumnos: 1, exentosSugeridos: alumnosConvocados.filter((id) => id === 'al-1'),
       })))
 
     await renderActividadesInstitucionalesView(container)
@@ -230,13 +232,21 @@ describe('actividadesInstitucionalesView', () => {
     await vi.waitFor(() => expect(document.querySelectorAll('.ai-chk-exento')).toHaveLength(2))
     document.querySelector('.ai-chk-exento').click()
     await vi.waitFor(() => expect(document.querySelectorAll('.ai-chk-exento:checked')).toHaveLength(2))
+    obtenerAlumnos.mockResolvedValue({ alumnos: [{ id: 'al-2', nombre: 'Invitada' }], total: 1 })
+    document.querySelector('#ai-convocatoria-alumnos').open = true
+    await vi.waitFor(() => expect(obtenerAlumnos).toHaveBeenCalled())
+    const buscar = document.querySelector('#ai-buscar-convocado')
+    buscar.value = 'Invitada'
+    buscar.dispatchEvent(new Event('input'))
+    document.querySelector('#ai-lista-convocados input').click()
+    await vi.waitFor(() => expect(document.querySelector('#ai-impacto-loading').classList.contains('d-none')).toBe(true))
     document.querySelector('.app-modal-btn-save').click()
     await vi.waitFor(() => expect(aprobarActividad).toHaveBeenCalledWith(
       'act-1',
       ['clase-1', 'clase-2'].map((claseId) => expect.objectContaining({
         claseId, fecha: '2026-11-10', tipoAfectacion: 'impartida_con_exencion', exentos: ['al-1'],
       })),
-      { maestros: [], alumnos: ['al-1'], version: 1 },
+      { maestros: [], alumnos: ['al-1', 'al-2'], version: 1 },
       null,
     ))
   })

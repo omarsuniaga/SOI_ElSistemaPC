@@ -355,7 +355,132 @@ function _openCrearModal(container, { fechaInicial } = {}) {
       const descripcion = body.querySelector('#ai-c-descripcion').value.trim()
       const categoria = body.querySelector('#ai-c-categoria').value
       const alcance = body.querySelector('#ai-c-alcance').value
-      const f…1483 tokens truncated…class="text-muted small py-3">Ninguna clase coincide con la fecha y el alcance seleccionados.</div>`
+      const fechaInicio = body.querySelector('#ai-c-fecha-inicio').value
+      const fechaFin = body.querySelector('#ai-c-fecha-fin').value
+      const ubicacion = body.querySelector('#ai-c-ubicacion').value.trim()
+      const responsableAsistenciaId = body.querySelector('#ai-c-responsable').value || null
+      const programaId = body.querySelector('#ai-c-programa')?.value || null
+      const clasesSeleccionadas = Array.from(body.querySelectorAll('.ai-c-clase-chk:checked')).map((el) => el.value)
+
+      if (!titulo || !fechaInicio || !fechaFin) {
+        AppToast.error('Completa título y fechas')
+        return false
+      }
+      if (fechaFin < fechaInicio) {
+        AppToast.error('La fecha de fin no puede ser anterior a la de inicio')
+        return false
+      }
+      if (alcance === 'programa' && !programaId) {
+        AppToast.error('Selecciona el programa convocado')
+        return false
+      }
+      if (alcance === 'clase' && !clasesSeleccionadas.length) {
+        AppToast.error('Selecciona al menos una clase convocada')
+        return false
+      }
+
+      try {
+        await crearActividad({
+          titulo,
+          descripcion,
+          categoria,
+          alcance,
+          fechaInicio,
+          fechaFin,
+          ubicacion,
+          responsableAsistenciaId,
+          programasConvocados: alcance === 'programa' ? [programaId] : [],
+          clasesConvocadas: alcance === 'clase' ? clasesSeleccionadas : [],
+        })
+        state.actividades = await listarActividades()
+        state.filtroEstado = 'pendiente_revision'
+        _renderLayout(container)
+        AppToast.success('Propuesta creada. Queda pendiente de revisión.')
+        return true
+      } catch (err) {
+        AppToast.error(err.message || 'No se pudo crear la actividad')
+        return false
+      }
+    },
+  })
+}
+
+// ── Revisar / aprobar / rechazar ────────────────────────────────────────
+
+async function _openRevisarModal(container, actividadId) {
+  const state = _getState(container)
+  const actividad = state.actividades.find((a) => a.id === actividadId)
+  if (!actividad) return
+
+  const yaAprobada = actividad.estado === 'aprobado'
+  const decisiones = new Map()
+  let impactoListo = false
+
+  AppModal.open({
+    title: yaAprobada ? `Corregir: ${actividad.titulo}` : `Revisar: ${actividad.titulo}`,
+    size: 'lg',
+    saveText: yaAprobada ? 'Guardar corrección' : 'Aprobar y publicar',
+    cancelText: 'Cerrar',
+    body: `
+      <div class="mb-3">
+        <span class="badge ${ESTADO_BADGE[actividad.estado]} border">${_esc(ESTADO_LABEL[actividad.estado])}</span>
+        <span class="small text-muted ms-2">${_formatFecha(actividad.fechaInicio)}${actividad.fechaInicio !== actividad.fechaFin ? ` – ${_formatFecha(actividad.fechaFin)}` : ''} · Alcance: ${_esc(actividad.alcance)}</span>
+      </div>
+      ${actividad.categoria === 'actividad_especial' ? `
+        <label class="form-label small fw-semibold" for="ai-maestros-convocados">Maestros convocados</label>
+        <select multiple class="form-select form-select-sm mb-2" id="ai-maestros-convocados">
+          ${state.maestros.map((m) => `<option value="${_esc(m.id)}">${_esc(m.nombre_completo || m.nombre)}</option>`).join('')}
+        </select>
+        <p class="small text-muted">Selecciona los maestros que dejarán de impartir sus clases durante la actividad. Cambiar la selección recalcula las sugerencias.</p>
+      ` : ''}
+      <div id="ai-impacto-loading" class="text-center text-muted py-3">
+        <div class="spinner-border spinner-border-sm me-2"></div>Calculando clases afectadas...
+      </div>
+      <div id="ai-impacto-lista" class="d-none"></div>
+      ${yaAprobada ? '' : `
+        <div class="mt-3 pt-2 border-top d-flex justify-content-end">
+          <button type="button" class="btn btn-sm btn-outline-danger" id="ai-btn-rechazar">
+            <i class="bi bi-x-circle me-1"></i>Rechazar propuesta
+          </button>
+        </div>
+      `}
+    `,
+    onShow: async (body) => {
+      const maestros = body.querySelector('#ai-maestros-convocados')
+      const loading = body.querySelector('#ai-impacto-loading')
+      const listaEl = body.querySelector('#ai-impacto-lista')
+      let revision = 0
+      const cargarImpacto = async () => {
+        const actual = ++revision
+        impactoListo = false
+        decisiones.clear()
+        listaEl.classList.add('d-none')
+        loading.classList.remove('d-none')
+        loading.textContent = 'Calculando clases afectadas...'
+        let impacto
+        try {
+          const seleccion = Array.from(maestros?.selectedOptions || [], (option) => option.value)
+          impacto = (await Promise.all(fechasActividad(actividad.fechaInicio, actividad.fechaFin).map(async (fecha) => {
+            const clases = await previsualizarImpacto({
+              fecha,
+              alcance: actividad.alcance,
+              clasesConvocadas: actividad.clasesConvocadas,
+              programasConvocados: actividad.programasConvocados,
+              ...(seleccion.length ? { maestrosConvocados: seleccion } : {}),
+            })
+            return clases.map((clase) => ({ ...clase, fecha }))
+          }))).flat()
+        } catch (err) {
+          if (actual === revision) loading.textContent = err.message || 'No se pudo calcular el impacto'
+          return
+        }
+        if (actual !== revision) return
+        impactoListo = true
+        loading.classList.add('d-none')
+        listaEl.classList.remove('d-none')
+
+        if (!impacto.length) {
+          listaEl.innerHTML = `<div class="text-muted small py-3">Ninguna clase coincide con la fecha y el alcance seleccionados.</div>`
         } else {
           listaEl.innerHTML = `
             <div class="small text-muted mb-2">Elegí qué pasa con cada clase afectada. "Convocar" no implica que la clase deje de darse — solo lo hace si la marcás como suspendida o con exención.</div>

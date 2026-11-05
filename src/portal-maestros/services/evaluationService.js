@@ -221,6 +221,7 @@ export async function saveEvaluaciones(
         await enqueue({
           tabla: 'indicator_attempts',
           operacion: 'upsert',
+          onConflict: 'session_id,indicator_id,student_id',
           payload: row,
         })
       }

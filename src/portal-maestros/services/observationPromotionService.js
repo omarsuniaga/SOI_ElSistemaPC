@@ -94,9 +94,20 @@ export async function promocionarObservacionesAlumnos(
   })
 
   try {
+    // La tabla no tiene UNIQUE (sesion_clase_id, alumno_id): un upsert con esa
+    // clave fallaba siempre. Se reutiliza el id existente y se escribe por id.
+    const { data: existing, error: lookupError } = await supabase
+      .from('observaciones_alumnos')
+      .select('id, alumno_id')
+      .eq('sesion_clase_id', sesionId)
+      .in('alumno_id', rows.map((r) => r.alumno_id))
+    if (lookupError) throw lookupError
+    const existingIds = new Map((existing || []).map((r) => [r.alumno_id, r.id]))
+    for (const row of rows) row.id = row.id || existingIds.get(row.alumno_id) || crypto.randomUUID()
+
     const { data, error } = await supabase
       .from('observaciones_alumnos')
-      .upsert(rows, { onConflict: 'sesion_clase_id,alumno_id' })
+      .upsert(rows, { onConflict: 'id' })
 
     if (error) throw error
 
@@ -109,7 +120,9 @@ export async function promocionarObservacionesAlumnos(
         await enqueue({
           tabla: 'observaciones_alumnos',
           operacion: 'upsert',
-          payload: row,
+          // Sin UNIQUE (sesion_clase_id, alumno_id) en la tabla: id fijo por fila encolada.
+          onConflict: 'id',
+          payload: { id: row.id || crypto.randomUUID(), ...row },
         })
       }
       return { success: true, _offline: true, count: rows.length }

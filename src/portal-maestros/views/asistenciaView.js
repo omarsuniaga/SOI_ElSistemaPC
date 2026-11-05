@@ -2951,6 +2951,8 @@ function _renderVista(container, ctx) {
                 await enqueue({
                   tabla: 'asistencias',
                   operacion: 'upsert',
+                  // El payload puede no llevar sesion_clase_id: usar la otra clave única.
+                  onConflict: 'clase_id,alumno_id,fecha',
                   payload: {
                     clase_id: claseId,
                     alumno_id: a.alumno_id,

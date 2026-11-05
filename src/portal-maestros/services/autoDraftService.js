@@ -221,6 +221,8 @@ export async function saveObservation(
     if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
       console.warn('[autoDraftService] Offline, encolando saveObservation...')
       const offlinePayload = {
+        // Sin clave natural única en la tabla: el id fijado al encolar hace idempotente el reintento.
+        id: crypto.randomUUID(),
         sesion_id: sesionId,
         maestro_id: maestroId,
         contenido_raw: contenidoRaw,
@@ -234,6 +236,7 @@ export async function saveObservation(
       await enqueue({
         tabla: 'observaciones_sesion',
         operacion: 'upsert',
+        onConflict: 'id',
         payload: offlinePayload,
       })
       return { _offline: true, sesion_id: sesionId }

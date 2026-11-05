@@ -107,6 +107,9 @@ describe('autoDraftService — offline fallback', () => {
         expect(queue[0].operacion).toBe('upsert')
         expect(queue[0].payload.sesion_id).toBe('session-1')
         expect(queue[0].payload.contenido_raw).toBe('contenido raw de prueba')
+        // Idempotente al reintentar: se escribe por un id generado al encolar.
+        expect(queue[0].onConflict).toBe('id')
+        expect(queue[0].payload.id).toMatch(/^[0-9a-f-]{36}$/)
 
         // Should return offline marker
         expect(result).toHaveProperty('_offline', true)

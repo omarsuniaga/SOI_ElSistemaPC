@@ -50,9 +50,12 @@ export class AlumnoDeleteModal {
             <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3">
               <i class="bi bi-info-circle-fill fs-6 mt-1 flex-shrink-0"></i>
               <div class="small">
-                <strong>Archivo seguro:</strong> Su historial de asistencias, notas, datos médicos y comodatos de instrumentos permanecerán resguardados en el archivo institucional y podrás <strong>reactivarlo en cualquier momento</strong>.
+                <strong>Archivo seguro:</strong> Su historial de asistencias, notas, datos médicos y comodatos de instrumentos permanecerán resguardados en el archivo institucional y estarán disponibles para una <strong>reactivación administrativa posterior</strong>.
               </div>
             </div>
+
+            <label class="form-label" for="inactive-student-reason">Motivo de la inactivación</label>
+            <textarea id="inactive-student-reason" class="form-control mb-3" rows="2" required maxlength="1000" placeholder="Indica por qué el alumno pasa a inactivos"></textarea>
 
             ${activeClasses.length > 0 ? `
               <div class="border rounded p-2 bg-light bg-opacity-50 mb-2">
@@ -64,9 +67,14 @@ export class AlumnoDeleteModal {
             ` : ''}
           </div>
         `,
-        onSave: async () => {
+        onSave: async (modalBody) => {
+          const motivo = modalBody?.querySelector('#inactive-student-reason')?.value.trim()
+          if (!motivo) {
+            AppToast.error('Indica el motivo de la inactivación')
+            return false
+          }
           try {
-            await inactivarAlumno(alumnoId)
+            await inactivarAlumno(alumnoId, { motivo })
             AppToast.success('Alumno movido a la lista de inactivos')
             if (typeof onDeleted === 'function') onDeleted()
             return true // Closes modal

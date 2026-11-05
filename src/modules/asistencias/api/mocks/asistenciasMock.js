@@ -1,3 +1,4 @@
+import { obtenerAlumnos } from '../../../alumnos/api/alumnosMock.js'
 import clasesMock from '../../../../assets/data/mocks/clases.json'
 import maestrosMock from '../../../../assets/data/mocks/maestros.json'
 import alumnosMock from '../../../../assets/data/mocks/alumnos.json'
@@ -298,6 +299,14 @@ export async function crearAsistencia(asistencia) {
 }
 
 export async function registrarAsistenciaBulk(asistencias) {
+  const { alumnos } = await obtenerAlumnos({ soloActivos: false, pageSize: Number.MAX_SAFE_INTEGER })
+  for (const mark of asistencias) {
+    const alumno = alumnos.find(row => row.id === mark.alumno_id)
+    if (alumno?.is_active === false) {
+      const previous = dbAsistencias.find(row => row.clase_id === mark.clase_id && row.alumno_id === mark.alumno_id && row.fecha === mark.fecha)
+      if (!previous || previous.estado !== mark.estado) throw new Error('El alumno está inactivo. Actualice la lista de asistencia antes de guardar.')
+    }
+  }
   asistencias.forEach(a => {
     const idx = dbAsistencias.findIndex(da => da.clase_id === a.clase_id && da.alumno_id === a.alumno_id && da.fecha === a.fecha)
     const previous = idx >= 0 ? dbAsistencias[idx] : null

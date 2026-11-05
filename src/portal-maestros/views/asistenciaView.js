@@ -1,3 +1,4 @@
+import { subscribeStudentRosterChanges } from '../../shared/events/studentRosterEvents.js'
 import { obtenerAfectacionesVigentes } from '../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
@@ -19,6 +20,7 @@ import {
   getMisClases,
   getHorariosClases,
   getInscripcionesClases,
+  getActiveStudentIds,
   getSalones,
   getRutasMaestro,
   invalidateClasesCache,
@@ -159,9 +161,10 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
     if (alumnoIds.length > 0) {
       const { data: alumnosData } = await supabase
         .from('alumnos')
-        .select('id, nombre_completo, instrumento_principal')
+        .select('id, nombre_completo, instrumento_principal, activo')
         .in('id', alumnoIds)
-      alumnos = alumnosData || []
+        .eq('activo', true)
+      alumnos = (alumnosData || []).filter(a => a.activo !== false)
     }
 
     const estado = {}
@@ -271,7 +274,7 @@ export async function renderAsistenciaView(
     ] = await Promise.all([
       getMisClases(), // cache: 1min
       getHorariosClases([claseId]), // cache: 5min
-      getInscripcionesClases([claseId]), // cache: 2min
+      getInscripcionesClases([claseId], true), // Nómina fresca: puede cambiar desde administración.
       supabase
         .from('sesiones_clase')
         // Solo columnas que existen en sesiones_clase: PostgREST rechaza la
@@ -315,7 +318,7 @@ export async function renderAsistenciaView(
 
     let alumnos = (todasInscripciones || [])
       .map((i) => (i.alumnos ? { ...i.alumnos, hora_inicio: i.hora_inicio, hora_fin: i.hora_fin, dia: i.dia } : null))
-      .filter(Boolean)
+      .filter(a => a && a.activo !== false)
       .sort((a, b) => {
         const cmp1 = (a.instrumento_principal || '').localeCompare(b.instrumento_principal || '')
         if (cmp1 !== 0) return cmp1
@@ -350,9 +353,10 @@ export async function renderAsistenciaView(
         try {
           const { data: alumnosExtra } = await supabase
             .from('alumnos')
-            .select('id, nombre_completo, instrumento_principal')
+            .select('id, nombre_completo, instrumento_principal, activo')
             .in('id', missingIds)
-          alumnos = alumnos.concat(alumnosExtra || [])
+            .eq('activo', true)
+          alumnos = alumnos.concat((alumnosExtra || []).filter(a => a.activo !== false))
         } catch (_e) {
           console.warn('[asistencia] No se pudieron cargar alumnos extra de clase emergente:', _e)
         }
@@ -533,6 +537,7 @@ export async function renderAsistenciaView(
 }
 
 function _renderVista(container, ctx) {
+  let rosterRefreshInFlight = null
   const {
     clase,
     horario,
@@ -2782,6 +2787,12 @@ function _renderVista(container, ctx) {
             throw error
           }
         } catch (err) {
+          if (err?.code === '23514' && /inactivo/i.test(err.message || '')) {
+            invalidateClasesCache()
+            await refreshActiveRoster()
+            AppToast.show(err.message, 'warning')
+            throw err // Regla de negocio: no reintentar mediante la cola offline.
+          }
           console.warn('[asistencia] Fallo operación directa, usando cola offline:', err.message)
         }
       }
@@ -3525,6 +3536,40 @@ function _renderVista(container, ctx) {
     },
   })
   _cleanups.push(() => _bulkActions.destroy())
+  // Mutate the shared arrays in place: components retain their references,
+  // while content and marks of remaining alumnos stay untouched.
+  function refreshActiveRoster() {
+    if (rosterRefreshInFlight) return rosterRefreshInFlight
+    rosterRefreshInFlight = (async () => {
+      if (!navigator.onLine) return
+      const activeIds = await getActiveStudentIds(alumnos.map(a => a.id))
+      if (claseId) {
+        const currentEnrollments = await getInscripcionesClases([claseId], true)
+        const enrolledIds = new Set(currentEnrollments.map(row => row.alumno_id || row.alumnos?.id))
+        for (const id of activeIds) if (!enrolledIds.has(id)) activeIds.delete(id)
+      }
+      if (!container.isConnected) return
+      for (let i = alumnos.length - 1; i >= 0; i--) {
+        if (!activeIds.has(alumnos[i].id)) {
+          delete estado[alumnos[i].id]
+          alumnos.splice(i, 1)
+        }
+      }
+      for (let i = alumnosRegistrables.length - 1; i >= 0; i--) {
+        if (!activeIds.has(alumnosRegistrables[i].id)) alumnosRegistrables.splice(i, 1)
+      }
+      studentList.render()
+      _updateProgress()
+    })().finally(() => { rosterRefreshInFlight = null })
+    return rosterRefreshInFlight
+  }
+  const refreshRosterOnFocus = () => {
+    refreshActiveRoster().catch(err => console.warn('[asistencia] No se pudo actualizar la nómina:', err))
+  }
+  _cleanups.push(subscribeStudentRosterChanges(refreshRosterOnFocus))
+  window.addEventListener('focus', refreshRosterOnFocus)
+  _cleanups.push(() => window.removeEventListener('focus', refreshRosterOnFocus))
+
   studentList.render()
   _updateProgress()
 

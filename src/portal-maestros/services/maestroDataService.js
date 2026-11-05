@@ -1,3 +1,5 @@
+import { config } from '../../core/config/config.js'
+import { subscribeStudentRosterChanges } from '../../shared/events/studentRosterEvents.js'
 /**
  * MaestroDataService - Capa de datos con cache para el portal de maestros
  * Centraliza todas las consultas a Supabase con cache en memoria
@@ -235,6 +237,20 @@ function _getCacheKeys() {
   return viewCache._keys ? viewCache._keys() : []
 }
 
+/** Fresh activity check for open attendance screens, including emergent sessions. */
+export async function getActiveStudentIds(studentIds) {
+  if (!studentIds.length) return new Set()
+  if (config.isDemoMode) {
+    const { obtenerAlumnos } = await import('../../modules/alumnos/api/alumnosMock.js')
+    const { alumnos } = await obtenerAlumnos({ soloActivos: true, pageSize: Number.MAX_SAFE_INTEGER })
+    return new Set(alumnos.filter(row => studentIds.includes(row.id)).map(row => row.id))
+  }
+  const { data, error } = await supabase.from('alumnos')
+    .select('id').in('id', studentIds).eq('activo', true)
+  if (error) throw error
+  return new Set((data || []).map(row => row.id))
+}
+
 export async function getInscripcionesClases(claseIds, forceRefresh = false) {
   const isTestEnv =
     typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
@@ -274,14 +290,16 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
   return _singleFlight(cacheKey, async (generation) => {
     const { data, error } = await supabase
       .from('alumnos_clases')
-      .select('clase_id, alumno_id, hora_inicio, hora_fin, dia, alumnos(id, nombre_completo, instrumento_principal)')
+      .select('clase_id, alumno_id, hora_inicio, hora_fin, dia, alumnos!inner(id, nombre_completo, instrumento_principal, activo)')
       .in('clase_id', stableClaseIds)
       .eq('activo', true)
+      .eq('alumnos.activo', true)
     if (error) {
       console.warn('[MaestroData] Error cargando inscripciones:', error.message)
+      if (forceRefresh) throw error
       return []
     }
-    const inscripciones = data || []
+    const inscripciones = (data || []).filter(row => row.alumnos?.activo === true)
     _setCacheIfCurrent(generation, cacheKey, inscripciones, 'inscripciones')
     return inscripciones
   }, forceRefresh)
@@ -988,3 +1006,6 @@ export default {
   getIndicadorEvaluations,
   CACHE_KEYS,
 }
+
+// Invalidate persistent and in-flight snapshots after administrative changes.
+subscribeStudentRosterChanges(invalidateClasesCache)

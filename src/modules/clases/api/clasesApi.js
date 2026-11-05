@@ -1,3 +1,4 @@
+import { publishStudentRosterChange } from '../../../shared/events/studentRosterEvents.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { formatHora, timeToMinutes } from '../utils/clasesUtils.js'
 import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
@@ -728,6 +729,7 @@ export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, hora
     if (error.code === '23505') throw new Error('El alumno ya está inscrito en esta clase')
     throw error
   }
+  publishStudentRosterChange()
   return data[0]
 }
 
@@ -739,6 +741,7 @@ export async function desinscribirAlumno(claseId, alumnoId) {
     .eq('alumno_id', alumnoId)
 
   if (error) throw error
+  publishStudentRosterChange()
 }
 
 export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin, dia = undefined) {

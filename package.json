@@ -33,6 +33,7 @@
     "policy:check": "node scripts/check-structural-policy.mjs",
     "policy:list": "node scripts/check-structural-policy.mjs --list",
     "policy:record": "node scripts/check-structural-policy.mjs --record",
+    "test:db:inactive-attendance": "node supabase/tests/inactiveStudentAttendance.test.mjs",
     "test:db:class-exemptions": "node supabase/tests/classValidityExemptions.test.mjs"
   },
   "devDependencies": {

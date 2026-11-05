@@ -1,3 +1,4 @@
+import { matchesInstrument } from '../domain/instrumentFilter.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 
 const ALUMNO_PROGRAMS_SELECT = '*, alumnos_programas(activo,programa:programas(id,nombre))'
@@ -327,10 +328,10 @@ export async function actualizarAlumno(id, actualizaciones) {
   return normalizeAlumno(data[0])
 }
 
-export async function inactivarAlumno(id) {
+export async function inactivarAlumno(id, { motivo = 'Desactivación administrativa' } = {}) {
   const { data, error } = await supabase
     .from('alumnos')
-    .update({ activo: false, updated_at: new Date().toISOString() })
+    .update({ activo: false, motivo_baja: motivo.trim() || 'Desactivación administrativa', updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
 
@@ -503,10 +504,8 @@ export async function obtenerAlumnosFiltradosYOrdenados({
     query = query.eq('activo', true)
   }
 
-  // Filtro por instrumento principal
-  if (instrumento) {
-    query = query.eq('instrumento_principal', instrumento)
-  }
+  // El campo histórico puede contener varias asignaciones separadas por comas.
+  // Se compara cada término tras cargar, sin coincidencias parciales ambiguas.
 
   // Ordenamiento por instrumento
   if (ordenInstrumentoAsc !== undefined) {
@@ -528,7 +527,7 @@ export async function obtenerAlumnosFiltradosYOrdenados({
     throw new Error('No se pudieron obtener los alumnos con los filtros especificados')
   }
 
-  return data.map(normalizeAlumno)
+  return (data || []).filter(row => matchesInstrument(row.instrumento_principal, instrumento)).map(normalizeAlumno)
 }
 
 export async function verificarEliminacionAlumno(alumnoId) {

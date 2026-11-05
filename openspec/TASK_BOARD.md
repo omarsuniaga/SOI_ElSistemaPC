@@ -91,3 +91,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `compact-exemption-flow` | Tarjetas compactas y flujo explícito Exonerar clases | en_revision | alta | Codex / c16e853e5497 | `fix/compact-exemption-flow` | `docs/planning/CLASS_VALIDITY_EXEMPTIONS.md` | Flujo fecha → clase → motivo y confirmación; tarjetas compactas; lane liberado | 2026-10-24 |
 
 | `public-cartelera` | Completar visualización pública de Cartelera | en_revision | alta | Codex / dcd93acef310 | `feat/public-cartelera` | `docs/SIGNAGE_CARTELERA.md` | 8 pruebas player + 5 módulo, build y DOM compilado con REST real aprobados; lane liberado; publicación autorizada por Omar el 2026-10-29 | 2026-10-29 |
+
+| `inactive-student-attendance` | Excluir alumnos inactivos y conservar historial | en_revision | alta | Codex / 3bd3787bdadd | `fix/inactive-student-attendance` | `docs/planning/INACTIVE_STUDENT_ATTENDANCE.md` | Implementación y regresiones listas; política comparada con master sin deuda nueva; lane liberado | 2026-11-05 |

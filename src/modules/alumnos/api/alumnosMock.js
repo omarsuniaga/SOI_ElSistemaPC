@@ -1,3 +1,4 @@
+import { matchesInstrument } from '../domain/instrumentFilter.js'
 import alumnosMockData from '../../../assets/data/mocks/alumnos.json'
 
 // Simulación de delay para que se sienta como una API real (0ms en modo test)
@@ -157,14 +158,14 @@ export async function actualizarAlumno(id, actualizaciones) {
   return normalizeAlumno(alumnos[index])
 }
 
-export async function inactivarAlumno(id) {
+export async function inactivarAlumno(id, { motivo = 'Desactivación administrativa' } = {}) {
   await delay()
-  return actualizarAlumno(id, { activo: false, is_active: false })
+  return actualizarAlumno(id, { activo: false, is_active: false, estado_academico: 'retirado', motivo_baja: motivo })
 }
 
 export async function reactivarAlumno(id) {
   await delay()
-  return actualizarAlumno(id, { activo: true, is_active: true })
+  return actualizarAlumno(id, { activo: true, is_active: true, estado_academico: 'activo' })
 }
 
 export async function eliminarAlumno(id) {
@@ -235,7 +236,7 @@ export async function obtenerAlumnosFiltradosYOrdenados({
 
   // Filtrar por instrumento
   if (instrumento) {
-    result = (result || []).filter(a => a && a.instrumento_principal === instrumento)
+    result = (result || []).filter(a => a && matchesInstrument(a.instrumento_principal, instrumento))
   }
 
   // Ordenar

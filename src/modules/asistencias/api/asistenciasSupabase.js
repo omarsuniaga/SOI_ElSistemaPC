@@ -762,6 +762,7 @@ export async function registrarAsistenciaBulk(asistencias, auditContext = {}) {
     return insertData || []
   }
 
+  if (error?.code === '23514' && /inactivo/i.test(error.message || '')) throw error
   if (error) throwError('No se pudieron registrar las asistencias', error)
   if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, auditContext.maestroId || auditContext.maestro?.id)) {
     await logSubstituteActivity({

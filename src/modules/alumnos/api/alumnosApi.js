@@ -1,3 +1,4 @@
+import { publishStudentRosterChange } from '../../../shared/events/studentRosterEvents.js'
 import { config } from '../../../core/config/config.js'
 import * as supabaseImpl from './alumnosSupabase.js'
 import * as mockImpl from './alumnosMock.js'
@@ -30,9 +31,21 @@ export async function crearAlumno(draft) {
   return getApi().crearAlumno(payload)
 }
 
-export const actualizarAlumno = (...args) => getApi().actualizarAlumno(...args)
-export const inactivarAlumno = (...args) => getApi().inactivarAlumno(...args)
-export const reactivarAlumno = (...args) => getApi().reactivarAlumno(...args)
+export async function actualizarAlumno(...args) {
+  const result = await getApi().actualizarAlumno(...args)
+  publishStudentRosterChange()
+  return result
+}
+export async function inactivarAlumno(...args) {
+  const result = await getApi().inactivarAlumno(...args)
+  publishStudentRosterChange()
+  return result
+}
+export async function reactivarAlumno(...args) {
+  const result = await getApi().reactivarAlumno(...args)
+  publishStudentRosterChange()
+  return result
+}
 export const obtenerAlumnosInactivos = (...args) => getApi().obtenerAlumnosInactivos(...args)
 export const eliminarAlumno = (...args) => getApi().eliminarAlumno(...args)
 export const validarEmail = (...args) => getApi().validarEmail(...args)

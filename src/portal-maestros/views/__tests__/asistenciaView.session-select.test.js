@@ -126,8 +126,10 @@ vi.mock('../../services/maestroDataService.js', () => ({
     Promise.resolve([
       { alumnos: { id: 'al-1', nombre_completo: 'Alumna Uno', instrumento_principal: 'Violín' } },
       { alumnos: { id: 'al-2', nombre_completo: 'Alumno Dos', instrumento_principal: 'Violín' } },
+      { alumnos: { id: 'inactive', nombre_completo: 'Alumno Inactivo', instrumento_principal: 'Clarinete', activo: false } },
     ]),
   ),
+  getActiveStudentIds: vi.fn(async () => new Set(['al-1'])),
   getSalones: vi.fn(() => Promise.resolve([])),
   getRutasMaestro: vi.fn(() => Promise.resolve([])),
   invalidateClasesCache: vi.fn(),
@@ -201,4 +203,21 @@ describe('asistenciaView · lectura de la sesión del día desde sesiones_clase'
     expect(container.querySelector('#pm-dsl-editable')?.textContent).toContain(SAVED_TEXT)
     expect(container.querySelector('#pm-content-save-status')?.dataset.status).toBe('saved')
   })
+  it('excludes inactive alumnos even when an old enrollment snapshot includes them', async () => {
+    await renderAsistenciaView('asistencia-container', { claseId: 'clase-2b', fecha: '2026-10-09' })
+    expect(container.querySelector('#pm-alumnos-list').textContent).not.toContain('Alumno Inactivo')
+    expect(container.querySelector('#pm-alumnos-list').textContent).toContain('Alumna Uno')
+  })
+
+  it('refreshes activity on focus without losing content or remaining attendance', async () => {
+    const cleanup = await renderAsistenciaView('asistencia-container', { claseId: 'clase-2b', fecha: '2026-10-09' })
+    expect(container.querySelector('#pm-alumnos-list').textContent).toContain('Alumno Dos')
+    window.dispatchEvent(new Event('focus'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(container.querySelector('#pm-alumnos-list').textContent).not.toContain('Alumno Dos')
+    expect(container.querySelector('#pm-alumnos-list').textContent).toContain('Alumna Uno')
+    expect(container.querySelector('#pm-dsl-editable').textContent).toContain(SAVED_TEXT)
+    if (typeof cleanup === 'function') cleanup()
+  })
+
 })

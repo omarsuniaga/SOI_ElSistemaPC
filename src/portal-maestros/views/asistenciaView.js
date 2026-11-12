@@ -1,3 +1,6 @@
+import { saveObservation } from '../services/autoDraftService.js'
+import { getSessionObservations } from '../services/sessionObservationsApi.js'
+import { renderSignedSessionObservations } from '../../shared/components/signedSessionObservations.js'
 import { obtenerAfectacionesVigentes } from '../../modules/actividades-institucionales/api/actividadesInstitucionalesApi.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
@@ -555,6 +558,7 @@ function _renderVista(container, ctx) {
     repertoireAdapter,
   } = ctx
   let sesionId = ctx.sesionId
+  let lastSignedContent = serverDSL || ''
   let isSessionRegistered =
     Boolean(ctx.sesionId) &&
     (sesionExistenteData?.borrador === false ||
@@ -1641,6 +1645,8 @@ function _renderVista(container, ctx) {
         <!-- 1. Lista de Alumnos (Asistencia) -->
         <div id="pm-alumnos-list" class="pm-alumnos-queue"></div>
 
+        <div id="pm-signed-observations" class="mt-3"></div>
+
         <!-- 2. Bloque de Observaciones (Registro de Clase) -->
         <div class="pm-asist-dsl-section" style="margin-top:1.5rem;">
           <h3 class="pm-asist-section-title"><i class="bi bi-chat-left-text"></i> Observaciones de Clase</h3>
@@ -2577,8 +2583,28 @@ function _renderVista(container, ctx) {
   container.querySelector('#btn-evaluar-presentes')?.addEventListener('click', openPresentRatings)
   _cleanups.push(() => presentRatingsPanel.destroy())
 
+  const observationHistory = container.querySelector('#pm-signed-observations')
+  let observationHistoryActive = true
+  _cleanups.push(() => { observationHistoryActive = false })
+  const refreshObservationHistory = async () => {
+    try {
+      const rows = await getSessionObservations(sesionId)
+      if (observationHistoryActive && observationHistory) {
+        observationHistory.innerHTML = renderSignedSessionObservations(rows)
+      }
+    } catch (error) {
+      if (observationHistoryActive && observationHistory) {
+        observationHistory.textContent = 'No se pudieron cargar las observaciones de la clase.'
+      }
+      console.warn('[asistencia] Error cargando observaciones:', error)
+    }
+  }
+  refreshObservationHistory()
+
   // === Save Observation Button ===
   createObservationSaveButton(container, {
+    getSesionId: () => sesionId,
+    onObservationSaved: () => { refreshObservationHistory() },
     rutaId,
     sesionId,
     claseId,
@@ -3046,6 +3072,17 @@ function _renderVista(container, ctx) {
           fetchNotificaciones().catch((e) =>
             console.warn('[asistenciaView] Error al actualizar notificaciones:', e),
           )
+          if (tieneContenido && dslContent !== lastSignedContent) {
+            await saveObservation(sesionId, maestroIdSesion, dslContent, {}, null, null, {
+              clase,
+              actorMaestroId: maestro.id,
+              actorNombre: maestro.nombre_completo || maestro.nombre || null,
+              maestroUserId: maestro.user_id || null,
+              fechaHoy,
+            })
+            lastSignedContent = dslContent
+            await refreshObservationHistory()
+          }
           isSessionRegistered = true
           contentSaver?.record(dslContent || '', 'saved')
           if (planificationCard?.refreshTree) {

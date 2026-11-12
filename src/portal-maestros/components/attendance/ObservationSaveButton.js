@@ -21,7 +21,8 @@ export function createObservationSaveButton(container, opts) {
       return
     }
 
-    if (!opts.sesionId) {
+    const sessionId = opts.getSesionId?.() || opts.sesionId
+    if (!sessionId) {
       AppToast.warning('Primero guarda la sesión (asistencia) para poder registrar observaciones.')
       return
     }
@@ -82,7 +83,7 @@ export function createObservationSaveButton(container, opts) {
 
       if (resultado.evaluaciones.length > 0) {
         const { error } = await saveEvaluaciones(
-          opts.sesionId,
+          sessionId,
           indicadorActivo.id,
           resultado.evaluaciones,
           opts.maestro.id,
@@ -93,7 +94,7 @@ export function createObservationSaveButton(container, opts) {
 
       const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
       const savedObservation = await saveObservation(
-        opts.sesionId,
+        sessionId,
         // Dueño de la fila: titular preferido (opts.maestroIdSesion), igual que
         // sesiones_clase — así el suplente edita la misma observación en vez de
         // crear una paralela. El actor real sigue viajando en auditContext para
@@ -106,10 +107,12 @@ export function createObservationSaveButton(container, opts) {
         {
           clase: opts.clase || null,
           actorMaestroId: opts.maestro.id,
+          actorNombre: opts.maestro.nombre_completo || opts.maestro.nombre || null,
           maestroUserId: opts.maestro?.user_id || opts.maestro?.id || null,
           fechaHoy: opts.fechaHoy || null,
         },
       )
+      opts.onObservationSaved?.(savedObservation)
       const repertoireWorkId = opts.getRepertoireWorkId?.()
       if (repertoireWorkId && savedObservation?.id && opts.linkObservationToRepertoire) {
         await opts.linkObservationToRepertoire(savedObservation?.id, repertoireWorkId)
@@ -123,7 +126,7 @@ export function createObservationSaveButton(container, opts) {
           nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
         }))
         saveProgressFromDSL({
-          sesionId: opts.sesionId,
+          sesionId: sessionId,
           claseId: opts.claseId,
           maestroId: opts.maestro.id,
           fechaHoy: opts.fechaHoy,
@@ -136,7 +139,7 @@ export function createObservationSaveButton(container, opts) {
       }
 
       const promo = await promocionarObservacionesAlumnos(
-        opts.sesionId,
+        sessionId,
         opts.claseId,
         opts.maestro.id,
         resultado.evaluaciones,
@@ -180,7 +183,7 @@ export function createObservationSaveButton(container, opts) {
 
       if (resultado.evaluaciones.length > 0 && opts.claseId && indicadorActivo?.nombre) {
         const { error } = await saveProgressFromEvaluaciones({
-          sesionId: opts.sesionId,
+          sesionId: sessionId,
           claseId: opts.claseId,
           maestroId: opts.maestro.id,
           fechaHoy: opts.fechaHoy,
@@ -190,9 +193,9 @@ export function createObservationSaveButton(container, opts) {
         if (error) console.warn('[asistencia] Error al sincronizar progresos:', error)
       }
 
-      if (opts.sesionId) {
+      if (sessionId) {
         const { academicService } = await import('../../../modules/academic-routes/services/academicService.js')
-        const achievements = await academicService.processSessionClosure(opts.sesionId)
+        const achievements = await academicService.processSessionClosure(sessionId)
         if (achievements && achievements.length > 0) {
           const { createAchievementsSummaryModal } = await import('../AchievementsSummaryModal.js')
           await createAchievementsSummaryModal(container, achievements)

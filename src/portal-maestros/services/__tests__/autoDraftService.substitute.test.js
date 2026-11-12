@@ -129,7 +129,7 @@ describe('autoDraftService substitute audit integration', () => {
 
     // La fila en observaciones_sesion queda bajo el titular
     expect(insertChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ maestro_id: 'maestro-titular' }),
+      expect.objectContaining({ maestro_id: 'maestro-titular', contenido_parsed: expect.objectContaining({ _author: expect.objectContaining({ maestro_id: 'maestro-suplente', rol: 'suplente' }) }) }),
     )
     // isSubstituteAssignment se evalúa con el ACTOR real, no con el dueño de la fila
     expect(isSubstituteAssignmentMock).toHaveBeenCalledWith(

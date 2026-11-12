@@ -73,6 +73,17 @@ describe('bitacoraView substitute audit mode', () => {
     vi.clearAllMocks()
   })
 
+  it('resolves the actor through the teacher auth user without changing ownership', async () => {
+    obtenerMaestrosMock.mockResolvedValue([
+      { id: 'maestro-titular', nombre_completo: 'Ana Titular' },
+      { id: 'maestro-suplente', user_id: 'user-1', nombre_completo: 'Luis Suplente' },
+    ])
+    await renderBitacoraView(container, { mode: 'suplentes' })
+    const row = container.querySelector('tbody tr')
+    expect(row.lastElementChild.textContent).toBe('Luis Suplente')
+    expect(row.textContent).toContain('Ana Titular')
+  })
+
   it('renders substitute audit logs when mode is suplentes', async () => {
     await renderBitacoraView(container, { mode: 'suplentes' })
 

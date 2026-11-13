@@ -1,5 +1,6 @@
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { processarEvaluacion, saveEvaluaciones } from '../../services/evaluationService.js'
+import { buildObservationSignature } from '../../services/observationSignature.js'
 import { saveObservation } from '../../services/autoDraftService.js'
 import { parseDSL } from '../../utils/dslParser.js'
 import { saveProgressFromDSL, saveProgressFromEvaluaciones } from '../../services/progressAggregatorService.js'
@@ -47,7 +48,7 @@ export function createObservationSaveButton(container, opts) {
     btn.textContent = 'Procesando...'
 
     try {
-      const presentes = opts.alumnos.filter((a) => opts.estado[a.id] === 'P')
+      const presentes = opts.alumnos.filter((a) => ['P', 'T'].includes(opts.estado[a.id]))
 
       const resultado = await processarEvaluacion(
         raw,
@@ -92,7 +93,7 @@ export function createObservationSaveButton(container, opts) {
         if (error) throw error
       }
 
-      const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
+      const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones, _rating_scale: 5 }
       const savedObservation = await saveObservation(
         sessionId,
         // Dueño de la fila: titular preferido (opts.maestroIdSesion), igual que
@@ -146,7 +147,10 @@ export function createObservationSaveButton(container, opts) {
         opts.claseNombre || 'Clase',
         presentes,
       )
-      if (!promo.success) console.warn('[Fase C] Fallo parcial en promoción:', promo.error)
+      if (!promo.success) {
+        console.warn('[Fase C] Fallo parcial en promoción:', promo.error)
+        AppToast.warning('La observación se conservó; su copia en el seguimiento individual está pendiente de sincronizar.')
+      }
 
       if (opts.planificationCard?.refreshTree) await opts.planificationCard.refreshTree()
 
@@ -188,9 +192,13 @@ export function createObservationSaveButton(container, opts) {
           maestroId: opts.maestro.id,
           fechaHoy: opts.fechaHoy,
           contenido: indicadorActivo.nombre,
+          author: buildObservationSignature(opts.maestro.id, { clase: opts.clase, actorNombre: opts.maestro.nombre_completo || opts.maestro.nombre, maestroUserId: opts.maestro.user_id }),
           evaluaciones: resultado.evaluaciones,
         })
-        if (error) console.warn('[asistencia] Error al sincronizar progresos:', error)
+        if (error) {
+          console.warn('[asistencia] Error al sincronizar progresos:', error)
+          AppToast.warning('La observación se conservó en la clase; no se pudo actualizar la copia de progreso. Puedes consultarla desde el historial.')
+        }
       }
 
       if (sessionId) {

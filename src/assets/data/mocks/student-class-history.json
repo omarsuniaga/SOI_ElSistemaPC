@@ -1,0 +1,75 @@
+{
+  "classes": [
+    {
+      "id": "clase_001",
+      "nombre": "Violín · demostración",
+      "instrumento": "Violín",
+      "maestro_principal_id": "maestro_001",
+      "maestro_suplente_id": "maestro_003"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "history-demo-session",
+      "clase_id": "clase_001",
+      "fecha": "2026-11-01",
+      "estado": "registrada",
+      "borrador": false,
+      "contenido": "[Escalas y sonido]",
+      "asistencia": [
+        {
+          "alumno_id": "1",
+          "estado": "T"
+        }
+      ]
+    },
+    {
+      "id": "history-demo-missed",
+      "clase_id": "clase_001",
+      "fecha": "2026-10-25",
+      "estado": "registrada",
+      "borrador": false,
+      "contenido": "[Escalas y sonido]",
+      "asistencia": [
+        {
+          "alumno_id": "1",
+          "estado": "A"
+        }
+      ]
+    }
+  ],
+  "attendance": [],
+  "progress": [],
+  "studentObservations": [],
+  "sessionObservations": [
+    {
+      "id": "history-demo-feedback",
+      "sesion_id": "history-demo-session",
+      "es_borrador": false,
+      "contenido_parsed": {
+        "_rating_scale": 5,
+        "_author": {
+          "maestro_id": "maestro_003",
+          "nombre": "Luis (demostración)",
+          "rol": "suplente"
+        },
+        "evaluaciones": [
+          {
+            "alumno_id": "1",
+            "nota": 4,
+            "observacion": "Mejor control del arco.",
+            "tarea": "Estudiar dos octavas lentamente."
+          }
+        ]
+      }
+    }
+  ],
+  "teachers": [],
+  "students": [
+    {
+      "id": "1",
+      "nombre_completo": "Juan Pérez",
+      "instrumento_principal": "Violín"
+    }
+  ]
+}

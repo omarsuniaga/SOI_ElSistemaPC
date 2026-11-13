@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderAlumnoPerfilView } from '../alumnoPerfilView.js'
+import { config } from '../../../core/config/config.js'
 import * as maestroAuth from '../../auth/maestroAuth.js'
 
 /**
  * alumnoPerfilView.historial.test.js
  *
  * "Historial de Clases" en el perfil del alumno debe: (a) mostrar solo
- * sesiones donde el alumno estuvo "presente" (estado 'P'), (b) mostrar el
+ * sesiones finalizadas con asistencia P/T/A/J, (b) mostrar el
  * contenido de esa sesión, y (c) mostrar la calificación de esa MISMA
  * sesión cuando existe un registro en `progresos` (que ya trae
  * sesion_clase_id + contenido_dsl + calificacion en una sola fila — a
@@ -28,6 +29,8 @@ function chain(resolvedValue) {
     not: vi.fn().mockReturnThis(),
     filter: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -47,7 +50,7 @@ const MOCK_ALUMNO = {
   created_at: '2026-01-01',
 }
 
-function setupSupabase({ sesiones = [], progresos = [], clases = [], periodoActivo = null }) {
+function setupSupabase({ sesiones = [], progresos = [], clases = [{ id: 'clase-1', nombre: 'Violín', maestro_principal_id: 'maestro-1' }], periodoActivo = null }) {
   const chains = {}
   supabase.from.mockImplementation((table) => {
     switch (table) {
@@ -75,7 +78,7 @@ function setupSupabase({ sesiones = [], progresos = [], clases = [], periodoActi
         chains.progresos = chain({ data: progresos, error: null })
         return chains.progresos
       case 'clases':
-        return chain({ data: clases, error: null })
+        return chain({ data: clases.length ? clases : [{ id: 'clase-1', nombre: 'Violín', maestro_principal_id: 'maestro-1' }], error: null })
       default:
         return chain({ data: [], error: null })
     }
@@ -108,12 +111,14 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
         asistencia: [{ alumno_id: ALUMNO_ID, estado: 'P' }],
       }],
       progresos: [{
+        alumno_id: ALUMNO_ID,
         id: 'prog-1',
         sesion_clase_id: 'sesion-1',
         clase_id: 'clase-1',
         contenido_dsl: 'Escalas de Do Mayor',
         estado_cualitativo: 'LOGRADO',
         calificacion: 8,
+        indicadores: { escala: 10 },
         observaciones: 'Muy buena postura',
         fecha_evaluacion: '2026-08-01',
       }],
@@ -157,12 +162,14 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
         asistencia: [{ alumno_id: ALUMNO_ID, estado: 'P' }],
       }],
       progresos: [{
+        alumno_id: ALUMNO_ID,
         id: 'prog-3',
         sesion_clase_id: 'sesion-3',
         clase_id: 'clase-1',
         contenido_dsl: 'Postura corporal',
         estado_cualitativo: 'EN_PROGRESO',
         calificacion: 5,
+        indicadores: { escala: 5 },
         observaciones: null,
         fecha_evaluacion: '2026-08-03',
       }],
@@ -172,7 +179,7 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
     await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID })
 
     expect(container.textContent).toContain('Postura corporal')
-    expect(container.textContent).toContain('5/10')
+    expect(container.textContent).toContain('5/5')
   })
 
   it('sesión "Ausente" muestra el contenido dado (sin calificación) con badge de No asistió', async () => {
@@ -214,7 +221,7 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
     expect(container.textContent).toContain('Justificado')
   })
 
-  it('si el alumno recupera el mismo contenido en una sesión posterior, se anota la recuperación en la sesión perdida', async () => {
+  it('repetir contenido en una sesión posterior no confirma una recuperación', async () => {
     setupSupabase({
       sesiones: [
         {
@@ -238,8 +245,9 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
 
     await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID })
 
-    expect(container.textContent).toContain('Recuperó este contenido')
-    expect(container.textContent).not.toContain('Pendiente de recuperar')
+    expect(container.textContent).not.toContain('Recuperó este contenido')
+    expect(container.textContent).toContain('Pendiente de recuperar')
+    expect(container.textContent).toContain('Confirmar recuperación verificada')
   })
 
   it('NO anota recuperación si el contenido posterior es distinto o es de otra clase', async () => {
@@ -277,7 +285,8 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
     await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID })
 
     expect(chains.sesiones.gte).toHaveBeenCalledWith('fecha', '2026-07-01')
-    expect(chains.progresos.gte).toHaveBeenCalledWith('fecha_evaluacion', '2026-07-01')
+    // Related evidence is scoped by the already date-filtered session IDs, not its save date.
+    expect(chains.sesiones.range).toHaveBeenCalledWith(0, 499)
     expect(chains.ausencias.gte).toHaveBeenCalledWith('fecha_inicio', '2026-07-01')
     expect(container.textContent).toContain('2do Semestre 2026')
     expect(container.textContent).toContain('Mostrando desde el inicio')
@@ -290,7 +299,7 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
     await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID, rango: 'todo' })
 
     expect(chains.sesiones.gte).not.toHaveBeenCalled()
-    expect(chains.progresos.gte).not.toHaveBeenCalled()
+    expect(chains.sesiones.range).toHaveBeenCalledWith(0, 499)
   })
 
   it('sin período activo configurado, "Período actual" no corta nada (fail-open) y avisa en la UI', async () => {
@@ -313,13 +322,13 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
     expect(cutoffUsado < '2026-07-01').toBe(true) // es anterior — cubre más historia
   })
 
-  it('sesión con estado "Tardanza" no entra al historial (solo P/A/J muestran contenido)', async () => {
+  it('sesión con tardanza participa y muestra contenido', async () => {
     setupSupabase({
       sesiones: [{
         id: 'sesion-4',
         clase_id: 'clase-1',
         fecha: '2026-08-04',
-        contenido_dsl: 'Contenido que no debe verse',
+        contenido_dsl: 'Contenido recibido con tardanza',
         asistencia: [{ alumno_id: ALUMNO_ID, estado: 'T' }],
       }],
       progresos: [],
@@ -328,6 +337,20 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
 
     await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID })
 
-    expect(container.textContent).not.toContain('Contenido que no debe verse')
+    expect(container.textContent).toContain('Contenido recibido con tardanza')
+    expect(container.textContent).toContain('100% de participación')
   })
+  it('ofrece el historial demo completo sin consultar datos reales', async () => {
+    const previous = config.isDemoMode
+    config.isDemoMode = true
+    maestroAuth.getMaestroLocal.mockReturnValue({ id: 'maestro_001', nombre: 'Carlos' })
+    try {
+      await renderAlumnoPerfilView(container, { alumnoId: '1' })
+      expect(container.textContent).toContain('Modo demostración')
+      expect(container.textContent).toContain('Mejor control del arco')
+      expect(container.textContent).toContain('Confirmar recuperación verificada')
+      expect(supabase.from).not.toHaveBeenCalled()
+    } finally { config.isDemoMode = previous }
+  })
+
 })

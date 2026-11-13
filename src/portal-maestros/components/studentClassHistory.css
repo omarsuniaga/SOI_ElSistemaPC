@@ -1,0 +1,15 @@
+.pm-history { min-width: 0; }
+.pm-history p, .pm-history small, .pm-history summary { overflow-wrap: anywhere; }
+.pm-history-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+.pm-history label { display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; min-width: 0; }
+.pm-history select, .pm-history input { width: 100%; min-width: 0; min-height: 44px; padding: .5rem; border: 1px solid var(--pm-border, #ccc); border-radius: .5rem; background: var(--pm-bg, white); color: var(--pm-text, inherit); box-sizing: border-box; }
+.pm-history-card h4 { font-size: .9rem; margin: .8rem 0 .3rem; }
+.pm-history-card details { margin-top: .65rem; }
+.pm-history-card summary { cursor: pointer; min-height: 32px; }
+.pm-history-card .pm-btn { margin-top: .75rem; white-space: normal; min-height: 44px; }
+.pm-history-note { padding: .7rem 0; border-top: 1px dashed var(--pm-border, #ccc); }
+.pm-history-note p { margin: .25rem 0; white-space: pre-wrap; }
+.pm-history-state { font-weight: 700; }
+.pm-history-summary { font-weight: 600; }
+@media (max-width: 700px) { .pm-history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pm-history-card .pm-zen-bitacora-header { flex-wrap: wrap; gap: .3rem; } }
+@media (max-width: 360px) { .pm-history-filters { grid-template-columns: 1fr; } }

@@ -69,3 +69,11 @@ La validación manual con dos cuentas reales (titular y suplente) está pendient
 - Sitio: https://soi-el-sistema-pc.netlify.app.
 - Sin nuevas funciones de Netlify ni ejecuciones de Agent Runner; no se utilizaron sus servicios de IA.
 - Las actualizaciones documentales posteriores omiten CI y despliegue. La validación manual con cuentas reales continúa pendiente; el lane se libera al terminar la implementación publicada.
+
+## Corrección de contraste del historial (13/11/2026)
+
+Se reprodujo el problema de texto claro sobre filtros blancos: `--pm-bg` no existe en los tokens del portal y activaba el fondo blanco de reserva. El contraste calculado en modo oscuro era aproximadamente 1,10:1.
+
+Los controles ahora usan `--pm-surface` con `--pm-text`. Títulos, etiquetas, fechas, autores, botones y opciones usan los colores semánticos del tema; los calendarios y desplegables nativos reciben `color-scheme` según el modo elegido. Los estilos están limitados a `.pm-history`, sin cambiar datos ni comportamiento.
+
+Verificación local: 8 combinaciones de contraste (select/input, claro/oscuro y ambos atributos de tema) superiores o iguales a 4,5:1; 25 pruebas focalizadas aprobadas; lint y build aprobados. La prueba de contraste fallaba en las cuatro combinaciones oscuras antes de la corrección.

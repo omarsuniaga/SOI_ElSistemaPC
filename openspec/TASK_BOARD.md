@@ -58,6 +58,7 @@ cualquier tarea `disponible` según su contexto o especialidad.
 | `shared-teacher-registration` | Registro compartido titular y suplente | completada | alta | Codex / edcee9bcd1ed | `fix/shared-teacher-registration` | `docs/planning/SHARED_TEACHER_REGISTRATION.md` | Publicación autorizada por Omar el 13/11; firma automática, historial y planificación ajustados; 1.006 tests de integración y CI aprobados; deuda de política idéntica a master; PR #167 fusionado; deploy 6af6a70ecad442ed6670deba publicado; validación con cuentas reales pendiente; lane liberado | 2026-11-13 | 
 
 | `student-class-history` | Completar historial individual de clases | completada | alta | Codex / 9a7a9213b62a | `feat/student-class-history` | `docs/planning/STUDENT_CLASS_HISTORY.md` | PR #169 integrado; 4.877 pruebas CI aprobadas y 7 omitidas; regresiones de asistencia/exoneraciones aprobadas; producción 6af6b4c29b0af9aaead2fc56 publicada; validación manual con dos cuentas reales pendiente por autenticación; lane académico liberado | 2026-11-13 |
+| `student-history-dark-contrast` | Corregir contraste del historial en modo oscuro | en_progreso | alta | Codex / 9a7a9213b62a | `fix/student-history-dark-contrast` | `docs/planning/STUDENT_CLASS_HISTORY.md` | Corrección solicitada por Omar; lane académico tomado | 2026-11-13 |
 
 ## Backlog no convertido a change todavía
 

@@ -164,6 +164,7 @@ export async function saveProgressFromEvaluaciones({
   fechaHoy,
   contenido,
   evaluaciones,
+  author = null,
   alumnos, // optional — needed for seccion expansion
 }) {
   if (!evaluaciones || evaluaciones.length === 0) return { saved: 0, error: null }
@@ -200,6 +201,8 @@ export async function saveProgressFromEvaluaciones({
       observaciones: ev.observacion || null,
       indicadores: {
         tipo: 'tecnica',
+        escala: 5,
+        ...(author ? { _author: author } : {}),
         es_colectivo: false,
         tarea: ev.tarea || null,
       },

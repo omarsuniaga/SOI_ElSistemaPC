@@ -297,4 +297,13 @@ describe('progressAggregatorService — resolución de nombres mencionados (save
     const upsertedRows = chain.upsert.mock.calls[0][0]
     expect(upsertedRows[0].alumno_id).toBe('pedro-1')
   })
+  it('persists the known five-point scale, zero and teacher signature for new structured feedback', async () => {
+    const chain = mockUpsertChain({ data: [{ id: 'new' }] })
+    supabase.from.mockReturnValue(chain)
+    const { saveProgressFromEvaluaciones } = await import('../progressAggregatorService.js')
+    const author = { maestro_id: 'm2', nombre: 'Luis', rol: 'suplente' }
+    await saveProgressFromEvaluaciones({ sesionId: 's1', claseId: 'c1', maestroId: 'm2', fechaHoy: '2026-11-01', contenido: 'Escalas', author, evaluaciones: [{ alumno_id: 'a1', nota: 0 }] })
+    expect(chain.upsert.mock.calls[0][0][0]).toMatchObject({ calificacion: 0, indicadores: { escala: 5, _author: author } })
+  })
+
 })

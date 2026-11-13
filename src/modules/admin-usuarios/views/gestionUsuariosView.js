@@ -59,7 +59,7 @@ function _createState() {
 function _renderLayout(_state) {
   return `
     <div class="gu-root">
-      <div class="card border-0 shadow-sm rounded-4 p-3 bg-body mb-2 border border-body-tertiary">
+      <div class="gu-page-header card border-0 shadow-sm rounded-4 p-3 bg-body mb-2 border border-body-tertiary">
         <div class="d-flex align-items-center gap-3">
           <div class="p-2.5 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
             <i class="bi bi-person-gear fs-4"></i>
@@ -91,7 +91,7 @@ function _renderLayout(_state) {
           </div>
 
           <div class="mb-3" id="gu-maestro-group">
-            <label class="form-label small fw-semibold">Seleccionar maestro</label>
+            <label class="form-label small fw-semibold" for="gu-maestro-select">Seleccionar maestro</label>
             <select class="form-select form-select-sm" id="gu-maestro-select">
               <option value="">Selecciona un maestro...</option>
             </select>
@@ -99,17 +99,17 @@ function _renderLayout(_state) {
           </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Nombre completo</label>
+            <label class="form-label small fw-semibold" for="gu-nombre">Nombre completo</label>
             <input type="text" class="form-control form-control-sm" id="gu-nombre" placeholder="Ej. Ana Pérez" required>
           </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Correo electrónico</label>
+            <label class="form-label small fw-semibold" for="gu-email">Correo electrónico</label>
             <input type="email" class="form-control form-control-sm" id="gu-email" placeholder="correo@ejemplo.com" required>
           </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Rol principal</label>
+            <label class="form-label small fw-semibold" for="gu-rol">Rol principal</label>
             <select class="form-select form-select-sm" id="gu-rol">
               ${ROLES_USUARIO.map((rol) => `<option value="${rol}" ${rol === 'maestro' ? 'selected' : ''}>${_formatRol(rol)}</option>`).join('')}
             </select>
@@ -140,7 +140,7 @@ function _renderLayout(_state) {
           </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Contraseña temporal</label>
+            <label class="form-label small fw-semibold" for="gu-password">Contraseña temporal</label>
             <div class="input-group input-group-sm">
               <input type="password" class="form-control" id="gu-password" placeholder="Mínimo 8 caracteres" required minlength="8">
               <button class="btn btn-outline-secondary" type="button" id="gu-toggle-pass" aria-label="Mostrar u ocultar contraseña">
@@ -162,26 +162,15 @@ function _renderLayout(_state) {
 
         <!-- Columna Derecha: Credenciales y Listado de Usuarios -->
         <div class="gu-side-stack">
-          <!-- Credenciales Creadas en Sesión -->
-          <div class="gu-list-card shadow-sm">
-            <div class="gu-side-header">
-              <h5 class="gu-card-title mb-0"><i class="bi bi-key-fill text-warning me-2"></i>Credenciales Creadas</h5>
-              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2">Esta sesión</span>
-            </div>
-            <div id="gu-credenciales-list">
-              <p class="text-muted small m-0 p-3 text-center">Todavía no has creado credenciales en esta sesión.</p>
-            </div>
-          </div>
-
           <!-- Listado y Administración de Usuarios -->
-          <div class="gu-list-card shadow-sm">
+          <div class="gu-list-card gu-users-card shadow-sm">
             <div class="gu-side-header flex-wrap gap-2">
               <div>
                 <h5 class="gu-card-title mb-0"><i class="bi bi-people-fill text-info me-2"></i>Usuarios Registrados</h5>
                 <small class="text-muted" style="font-size:0.75rem;">Gestiona roles y portales de cada cuenta</small>
               </div>
               <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                <select class="form-select form-select-sm" id="gu-user-filter" style="width: auto; font-size:0.78rem;">
+                <select class="form-select form-select-sm" id="gu-user-filter" aria-label="Filtrar usuarios por rol">
                   <option value="all">Todos los roles</option>
                   <option value="superadmin">SuperAdmin</option>
                   <option value="admin">Administradores</option>
@@ -199,7 +188,7 @@ function _renderLayout(_state) {
             <div class="mb-2">
               <div class="input-group input-group-sm">
                 <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="search" class="form-control border-start-0" id="gu-user-search" placeholder="Buscar por nombre o correo...">
+                <input type="search" class="form-control border-start-0" id="gu-user-search" aria-label="Buscar usuarios por nombre o correo" placeholder="Buscar por nombre o correo...">
               </div>
             </div>
 
@@ -207,14 +196,25 @@ function _renderLayout(_state) {
               <div class="d-flex justify-content-center p-4"><div class="spinner-border text-primary spinner-border-sm me-2"></div><span class="small text-muted">Cargando usuarios...</span></div>
             </div>
           </div>
+          <!-- Credenciales Creadas en Sesión -->
+          <div class="gu-list-card gu-credentials-card shadow-sm">
+            <div class="gu-side-header">
+              <h5 class="gu-card-title mb-0"><i class="bi bi-key-fill text-warning me-2"></i>Credenciales Creadas</h5>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2">Esta sesión</span>
+            </div>
+            <div id="gu-credenciales-list">
+              <p class="text-muted small m-0 p-3 text-center">Todavía no has creado credenciales en esta sesión.</p>
+            </div>
+          </div>
+
         </div>
       </div>
 
       <!-- Modal Asignación de Portales -->
       <div class="gu-modal-backdrop d-none" id="gu-portales-modal">
-        <div class="gu-modal-card shadow-lg">
+        <div class="gu-modal-card shadow-lg" role="dialog" aria-modal="true" aria-labelledby="gu-portales-title">
           <div class="gu-modal-header">
-            <h5 class="m-0 fw-bold"><i class="bi bi-door-open-fill me-2 text-primary"></i> Asignar Portales</h5>
+            <h5 class="m-0 fw-bold" id="gu-portales-title"><i class="bi bi-door-open-fill me-2 text-primary"></i> Asignar Portales</h5>
             <button type="button" class="btn-close" id="gu-close-modal" aria-label="Cerrar"></button>
           </div>
           <div class="gu-modal-body">
@@ -804,7 +804,7 @@ async function _openPortalesModal(container, userId) {
           const isAssigned = assignedSet.has(p.portal_id.toUpperCase())
           const isRoleDefault = Array.isArray(p.roles_default) && p.roles_default.includes(user.rol)
           return `
-            <label class="gu-modal-portal-item ${isAssigned ? 'is-active' : ''}">
+            <div class="gu-modal-portal-item ${isAssigned ? 'is-active' : ''}">
               <div class="form-check m-0">
                 <input class="form-check-input gu-modal-chk" type="checkbox" value="${_esc(p.portal_id)}" id="chk-m-${_esc(p.portal_id)}" ${isAssigned ? 'checked' : ''}>
                 <label class="form-check-label ms-2" for="chk-m-${_esc(p.portal_id)}">
@@ -812,7 +812,7 @@ async function _openPortalesModal(container, userId) {
                   <div class="small text-muted">${_esc(p.descripcion || '')} ${isRoleDefault ? '· <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.65rem;">Rol base</span>' : ''}</div>
                 </label>
               </div>
-            </label>
+            </div>
           `
         }).join('')}
       </div>
@@ -948,8 +948,10 @@ function _injectStyles() {
   const style = document.createElement('style')
   style.id = 'gu-custom-styles'
   style.textContent = `
-    .gu-root { display: flex; flex-direction: column; gap: 1.25rem; }
-    .gu-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1.25rem; }
+    .gu-root { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; width: 100%; }
+    .gu-root *, .gu-root *::before, .gu-root *::after { box-sizing: border-box; }
+    .gu-grid { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); align-items: start; gap: 1.25rem; }
+    .gu-grid > *, .gu-side-stack > * { min-width: 0; }
     @media (max-width: 991px) { .gu-grid { grid-template-columns: 1fr; } }
     
     .gu-form, .gu-list-card { 
@@ -971,7 +973,9 @@ function _injectStyles() {
       gap: 3px; 
     }
     .gu-segment-option { flex: 1; text-align: center; cursor: pointer; margin: 0; }
-    .gu-segment-option input { display: none; }
+    .gu-segment-option { position: relative; min-width: 0; }
+    .gu-segment-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .gu-segment-option input:focus-visible + span { outline: 2px solid var(--bs-primary); outline-offset: 2px; }
     .gu-segment-option span { 
       display: block; 
       padding: 6px 12px; 
@@ -1029,8 +1033,8 @@ function _injectStyles() {
     }
     
     .gu-admin-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .gu-admin-name { font-weight: 600; font-size: 0.88rem; color: var(--bs-body-color, #1e293b); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .gu-admin-email { font-size: 0.76rem; color: var(--bs-secondary-color, #64748b); }
+    .gu-admin-name { font-weight: 600; font-size: 0.88rem; color: var(--bs-body-color, #1e293b); overflow-wrap: anywhere; }
+    .gu-admin-email { overflow-wrap: anywhere; font-size: 0.76rem; color: var(--bs-secondary-color, #64748b); }
     .gu-admin-conexion { font-size: 0.7rem; }
     .gu-manage-section { padding: 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 8px; background: var(--bs-tertiary-bg, #f8fafc); }
     [data-bs-theme="dark"] .gu-manage-section { background: #2c2c2e; border-color: rgba(255,255,255,0.08); }
@@ -1090,12 +1094,66 @@ function _injectStyles() {
     .gu-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1rem; }
     .gu-modal-card { background: var(--bs-body-bg, #fff); color: var(--bs-body-color); border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 14px; width: 100%; max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; }
     .gu-modal-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--bs-border-color, #dee2e6); display: flex; justify-content: space-between; align-items: center; }
-    .gu-modal-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
+    .gu-modal-body { padding: 1.25rem; overflow-y: auto; overscroll-behavior: contain; min-height: 0; flex: 1; }
     .gu-modal-footer { padding: 0.75rem 1.25rem; border-top: 1px solid var(--bs-border-color, #dee2e6); display: flex; justify-content: flex-end; gap: 0.5rem; }
     .gu-modal-portales-grid { display: flex; flex-direction: column; gap: 0.5rem; }
     .gu-modal-portal-item { display: block; padding: 0.65rem 0.85rem; border: 1px solid var(--bs-border-color, #dee2e6); background: var(--bs-body-bg); border-radius: 8px; cursor: pointer; transition: all 0.15s; }
     .gu-modal-portal-item:hover { background: var(--bs-tertiary-bg, #f8fafc); border-color: var(--bs-primary); }
     .gu-modal-portal-item.is-active { background: var(--bs-primary-subtle, #eff6ff); border-color: var(--bs-primary); }
+
+    /* Intrinsic sizing keeps long names, emails and portal labels inside cards. */
+    .gu-side-header { flex-wrap: wrap; gap: 0.75rem; }
+    .gu-card-title { line-height: 1.4; }
+    .gu-page-header .d-flex > div:last-child { min-width: 0; }
+    .gu-page-header h4 { font-size: clamp(1.15rem, 2vw, 1.5rem); overflow-wrap: anywhere; }
+    .gu-admin-items { max-height: min(70vh, 760px); scrollbar-gutter: stable; }
+    .gu-admin-item { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+    .gu-user-meta { grid-column: 2; align-items: flex-start; }
+    .gu-user-meta > div { flex-wrap: wrap; gap: 0.5rem !important; }
+    .gu-root .btn-xs { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; white-space: normal; }
+    .gu-root .gu-btn-toggle-estado { min-height: 36px; padding-inline: 0.5rem !important; }
+    .gu-root .form-control, .gu-root .form-select { min-width: 0; max-width: 100%; }
+    #gu-user-filter { width: 100%; min-height: 40px; }
+    .gu-portales-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); max-height: 240px; }
+    .gu-portal-chip { min-height: 44px; }
+    .gu-portal-chip span { min-width: 0; overflow-wrap: anywhere; }
+    .gu-portal-chip input { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--bs-primary); }
+    .gu-portal-chip:focus-within { outline: 2px solid var(--bs-primary); outline-offset: 1px; }
+    .gu-credential-row, .gu-credential-field { flex-wrap: wrap; gap: 0.5rem; overflow-wrap: anywhere; }
+    .gu-credential-field code { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+    .gu-user-summary, .gu-modal-portal-item { overflow-wrap: anywhere; }
+    .gu-modal-header, .gu-modal-footer { flex-shrink: 0; gap: 0.75rem; }
+    .gu-modal-header h5 { min-width: 0; font-size: 1.1rem; }
+    .gu-modal-header .btn-close { flex-shrink: 0; min-width: 32px; min-height: 32px; }
+    .gu-modal-backdrop { z-index: 10810; padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left)); }
+    .gu-modal-card { max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); }
+    .gu-modal-footer { flex-wrap: wrap; }
+    .gu-modal-footer .btn { min-height: 44px; }
+    @media (min-width: 1400px) {
+      .gu-admin-item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+      .gu-user-meta { grid-column: 3; align-items: flex-end; max-width: 300px; }
+    }
+    @media (max-width: 575.98px) {
+      .gu-root { gap: 0.75rem; }
+      .gu-grid, .gu-side-stack { gap: 0.75rem; }
+      .gu-form, .gu-list-card { padding: 1rem; }
+      .gu-page-header > .d-flex { align-items: flex-start !important; gap: 0.75rem !important; }
+      .gu-side-header > div, .gu-users-card .gu-side-header > .d-flex { width: 100%; }
+      .gu-admin-items, .gu-credential-items { max-height: none; overflow: visible; }
+      .gu-admin-item { padding: 0.75rem; gap: 0.5rem 0.75rem; }
+      .gu-user-meta { grid-column: 1 / -1; width: 100%; }
+      .gu-user-meta > div { width: 100%; }
+      .gu-user-meta > div:first-child > .btn { flex: 1 1 110px; }
+      .gu-root .btn-xs, .gu-root .gu-btn-toggle-estado { min-height: 44px; }
+      .gu-root .form-control, .gu-root .form-select { font-size: 16px; min-height: 44px; }
+      .gu-segment-option span { min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 8px; }
+      #gu-toggle-pass, #gu-regenerate-pass { min-height: 44px; }
+      #gu-password { flex-basis: calc(100% - 48px); }
+      #gu-regenerate-pass { flex: 1 0 100%; margin-left: 0; margin-top: 0.5rem; border-radius: 0.375rem; }
+      .gu-modal-header, .gu-modal-body, .gu-modal-footer { padding: 1rem; }
+      .gu-modal-footer .btn { flex: 1 1 120px; }
+      .gu-modal-portal-item { padding: 0.85rem; min-height: 48px; }
+    }
 
     /* Dark Mode Overrides */
     [data-bs-theme="dark"] .gu-form,

@@ -59,3 +59,13 @@ La validación manual con dos cuentas reales (titular y suplente) está pendient
 - `lint --quiet`, `typecheck` y compilación de producción: aprobados.
 - `policy:check`: mantiene exactamente el mismo fallo que `master`, verificado con una extracción completa de esa revisión; no se altera la línea base ni se agregan migraciones.
 - La validación de cuentas reales descrita arriba continúa pendiente.
+
+## Publicación verificada
+
+- PR #169 integrado: https://github.com/omarsuniaga/SOI_ElSistemaPC/pull/169.
+- Revisión publicada: `3570de7c6ce6ec81566b928c576123b014063f44`.
+- CI de la revisión final: **4.877 pruebas aprobadas, 7 omitidas; cero fallos**, además de lint, tipos, build y regresiones de base de datos aprobados. Incluye la prueba añadida de acceso con matrícula histórica inactiva y rango vacío.
+- Producción Netlify: `6af6b4c29b0af9aaead2fc56`, estado `ready`, publicada el 13/11/2026 a las 06:57:24 UTC.
+- Sitio: https://soi-el-sistema-pc.netlify.app.
+- Sin nuevas funciones de Netlify ni ejecuciones de Agent Runner; no se utilizaron sus servicios de IA.
+- Las actualizaciones documentales posteriores omiten CI y despliegue. La validación manual con cuentas reales continúa pendiente; el lane se libera al terminar la implementación publicada.

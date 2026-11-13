@@ -72,10 +72,10 @@ export function createStudentClassHistoryAdapter(client = supabase, options = {}
     }
     const entries = buildStudentHistory(studentId, { classes, sessions, attendance, progress, studentObservations, sessionObservations, teachers })
     const allowedIds = new Set(classes.map(c => c.id))
-    // Permit an empty timeline for a currently enrolled student, but reject arbitrary profile IDs.
+    // A historical enrollment also authorizes an empty range; inactive students retain their history.
     let enrolled = false
     if (!entries.length && !useDemo()) {
-      const result = await client.from('alumnos_clases').select('clase_id').eq('alumno_id', studentId).eq('activo', true).in('clase_id', [...allowedIds])
+      const result = await client.from('alumnos_clases').select('clase_id').eq('alumno_id', studentId).in('clase_id', [...allowedIds])
       if (result.error) throw new Error(result.error.message)
       enrolled = !!result.data?.length
     }

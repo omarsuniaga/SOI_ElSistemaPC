@@ -125,7 +125,7 @@ function getClaseNombre(clases, claseId) {
 
 function getMaestroNombre(maestros, maestroId) {
   if (!maestroId) return '—'
-  const maestro = maestros?.find((item) => String(item.id) === String(maestroId))
+  const maestro = maestros?.find((item) => (String(item.id) === String(maestroId) || String(item.user_id) === String(maestroId)))
   return maestro?.nombre_completo || maestro?.nombre || maestro?.email || maestroId
 }
 

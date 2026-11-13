@@ -1,3 +1,5 @@
+import { getSessionObservations } from '../../../portal-maestros/services/sessionObservationsApi.js'
+import { renderSignedSessionObservations } from '../../../shared/components/signedSessionObservations.js'
 import '../../../shared/styles/adm-responsive.css'
 /**
  * asistenciasView.js — Control de Asistencia y Evaluación Didáctica.
@@ -1138,7 +1140,10 @@ async function _reloadView() {
 async function openDetailModal(sesionId) {
   AppToast.info('Cargando detalle...')
   try {
-    const detail = await getDetalleSesion(sesionId)
+    const [detail, signedObservations] = await Promise.all([
+      getDetalleSesion(sesionId),
+      getSessionObservations(sesionId).catch(() => null),
+    ])
     AppModal.open({
       title: `Sesión: ${detail.sesion.claseNombre}`,
       size: 'lg',
@@ -1149,6 +1154,9 @@ async function openDetailModal(sesionId) {
           <div class="col-md-8">
             <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Contenido registrado por el maestro</label>
             ${renderContenidoMaestro(detail.sesion)}
+            ${signedObservations === null
+              ? '<p class="text-muted small">No se pudieron cargar las firmas de las observaciones.</p>'
+              : renderSignedSessionObservations(signedObservations)}
           </div>
           <div class="col-md-4 bg-body-tertiary p-3 rounded">
             <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${escapeHTML(formatFechaLarga(detail.sesion.fecha))}</strong></div>

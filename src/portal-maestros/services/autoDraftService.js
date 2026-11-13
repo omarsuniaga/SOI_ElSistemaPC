@@ -1,3 +1,5 @@
+import { buildObservationSignature } from './observationSignature.js'
+import { saveDemoSessionObservation } from './sessionObservationsApi.js'
 /**
  * autoDraftService - Debounced auto-draft saving for session observations
  */
@@ -145,6 +147,17 @@ export async function saveObservation(
   auditContext = {},
 ) {
   const actorMaestroId = auditContext.actorMaestroId || maestroId
+  const signedContent = {
+    ...(contenidoParsed || {}),
+    _author: buildObservationSignature(maestroId, auditContext),
+  }
+  if (import.meta.env.VITE_USE_MOCK === 'true') {
+    return saveDemoSessionObservation({
+      sesion_id: sesionId, maestro_id: maestroId, contenido_raw: contenidoRaw,
+      contenido_parsed: signedContent, contenido_ia_dsl: contenidoIaDsl,
+      contenido_ia_mejorado: contenidoIaMejorado, es_borrador: false,
+    })
+  }
   try {
     // Delete any active draft first
     const { error: deleteError } = await supabase
@@ -160,7 +173,7 @@ export async function saveObservation(
       sesion_id: sesionId,
       maestro_id: maestroId,
       contenido_raw: contenidoRaw,
-      contenido_parsed: contenidoParsed,
+      contenido_parsed: signedContent,
       contenido_ia_dsl: contenidoIaDsl,
       es_borrador: false,
     }
@@ -224,7 +237,7 @@ export async function saveObservation(
         sesion_id: sesionId,
         maestro_id: maestroId,
         contenido_raw: contenidoRaw,
-        contenido_parsed: contenidoParsed,
+        contenido_parsed: signedContent,
         contenido_ia_dsl: contenidoIaDsl,
         es_borrador: false,
       }

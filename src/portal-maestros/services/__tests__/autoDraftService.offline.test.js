@@ -149,7 +149,7 @@ describe('autoDraftService — offline fallback', () => {
 
         const queue = await getQueue()
         expect(queue[0].payload.contenido_raw).toBe('raw text')
-        expect(queue[0].payload.contenido_parsed).toEqual({ data: true })
+        expect(queue[0].payload.contenido_parsed).toEqual(expect.objectContaining({ data: true, _author: expect.objectContaining({ maestro_id: 't1' }) }))
         expect(queue[0].payload.contenido_ia_dsl).toBe('ia-dsl')
         expect(queue[0].payload.contenido_ia_mejorado).toBe('mejorado')
         expect(queue[0].payload.es_borrador).toBe(false)

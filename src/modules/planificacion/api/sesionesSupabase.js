@@ -190,10 +190,11 @@ export async function obtenerSesionesPorFechaYClase(fecha, claseId) {
 }
 
 export async function obtenerClasesDelMaestro(maestroId) {
+  if (!maestroId) return []
   const { data, error } = await supabase
     .from('clases')
     .select('*')
-    .or(`maestro_principal_id.eq.${maestroId},maestro_auxiliar_id.eq.${maestroId}`)
+    .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId},maestro_auxiliar_id.eq.${maestroId}`)
 
   if (error) {
     console.error('Error cargando clases del maestro:', error.message)

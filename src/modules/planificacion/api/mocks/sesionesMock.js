@@ -179,7 +179,8 @@ export async function obtenerSesionesPorFechaYClase(fecha, claseId) {
 }
 
 export async function obtenerClasesDelMaestro(maestroId) {
+  if (!maestroId) return []
   return MOCK_CLASES.clases.filter(
-    (c) => c.maestro_titular_id === maestroId || c.maestro_auxiliar_id === maestroId
+    (c) => [c.maestro_principal_id, c.maestro_suplente_id, c.maestro_id, c.maestro_titular_id, c.maestro_auxiliar_id].includes(maestroId)
   )
 }

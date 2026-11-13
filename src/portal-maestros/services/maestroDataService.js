@@ -6,6 +6,7 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import viewCache from './viewCache.js'
+import { applySharedSessionAccess } from './sharedSessionAccess.js'
 
 const CACHE_KEYS = {
   MIS_CLASES: 'mis_clases',
@@ -161,12 +162,11 @@ export async function getSesiones(maestroId, desde, hasta, forceRefresh = false)
   }
 
   return _singleFlight(cacheKey, async (generation) => {
-    const { data, error } = await supabase
-      .from('sesiones_clase')
-      .select('*')
-      .eq('maestro_id', maestroId)
-      .gte('fecha', desde)
-      .lte('fecha', hasta)
+    const { data, error } = await applySharedSessionAccess(
+      supabase.from('sesiones_clase').select('*')
+        .gte('fecha', desde).lte('fecha', hasta),
+      maestroId,
+    )
     if (error) {
       console.warn('[MaestroData] Error cargando sesiones:', error.message)
       return []
@@ -193,12 +193,11 @@ export async function getSesionesResumen(maestroId, desde, hasta, forceRefresh =
   }
 
   return _singleFlight(cacheKey, async (generation) => {
-    const { data, error } = await supabase
-      .from('sesiones_clase')
-      .select('id, clase_id, fecha, estado, borrador, asistencia, contenido, contenido_dsl, updated_at')
-      .eq('maestro_id', maestroId)
-      .gte('fecha', desde)
-      .lte('fecha', hasta)
+    const { data, error } = await applySharedSessionAccess(
+      supabase.from('sesiones_clase').select('id, clase_id, fecha, estado, borrador, asistencia, contenido, contenido_dsl, updated_at')
+        .gte('fecha', desde).lte('fecha', hasta),
+      maestroId,
+    )
 
     if (error) {
       console.warn('[MaestroData] Error cargando resumen de sesiones:', error.message)

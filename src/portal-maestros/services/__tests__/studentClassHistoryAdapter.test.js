@@ -54,4 +54,11 @@ describe('student history adapter', () => {
     expect(client.from).not.toHaveBeenCalled()
     await expect(adapter.confirmRecovery({ studentId: 'a1', maestro: { id: 'm1' }, originalId: 'later', recoveryId: 'missed' })).rejects.toThrow('posterior asistida')
   })
+  it('permite un rango vacío a un alumno con matrícula histórica sin exigir que siga activo', async () => {
+    const { client, calls } = clientFor({ clases: [clazz], alumnos_clases: [{ clase_id: 'c1', activo: false }] })
+    const result = await createStudentClassHistoryAdapter(client, { demo: false }).load('a1', 'm1', { from: '2026-11-01' })
+    expect(result.entries).toEqual([])
+    expect(calls.find(c => c.table === 'alumnos_clases').filters.some(([field]) => field === 'activo')).toBe(false)
+  })
+
 })

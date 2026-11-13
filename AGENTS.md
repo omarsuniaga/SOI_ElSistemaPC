@@ -117,3 +117,11 @@ exige **no retroceder**. `npm run policy:check` falla solo si la deuda **crece**
 
 **Excepciones** se declaran en el PR: `POLICY-EXCEPTION R<n>: <qué> — <por qué> — <cómo y cuándo se paga>`.
 Una excepción sin plan de pago es deuda silenciosa — el mecanismo exacto que produjo las 123 tablas vacías.
+
+## 9. Netlify: control del saldo mensual
+
+Decisión de Omar, 2026-11-13: reservar el saldo de Netlify para alojamiento y despliegues necesarios.
+No usar Agent Runners, AI Gateway, inferencia ni servicios de IA de Netlify sin autorización
+explícita de Omar para ese consumo. Priorizar pruebas locales y CI de GitHub; evitar
+compilaciones y consultas repetidas innecesarias. Una autorización para publicar el SOI
+no autoriza consumo de servicios de IA de Netlify.

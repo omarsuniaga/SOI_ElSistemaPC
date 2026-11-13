@@ -55,6 +55,8 @@ cualquier tarea `disponible` según su contexto o especialidad.
 
 ---
 
+| `shared-teacher-registration` | Registro compartido titular y suplente | en_revision | alta | Codex / edcee9bcd1ed | `fix/shared-teacher-registration` | `docs/planning/SHARED_TEACHER_REGISTRATION.md` | Publicación autorizada por Omar el 13/11; firma automática, historial y planificación ajustados; 407 tests y build/tipos aprobados; deuda de política idéntica a master; validación con cuentas reales pendiente; lane liberado | 2026-11-13 | 
+
 ## Backlog no convertido a change todavía
 
 Fuentes con trabajo pendiente identificado pero sin `openspec/changes/`
@@ -93,5 +95,3 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `public-cartelera` | Completar visualización pública de Cartelera | en_revision | alta | Codex / dcd93acef310 | `feat/public-cartelera` | `docs/SIGNAGE_CARTELERA.md` | 8 pruebas player + 5 módulo, build y DOM compilado con REST real aprobados; lane liberado; publicación autorizada por Omar el 2026-10-29 | 2026-10-29 |
 
 | `adm-users-responsive` | Adaptar Gestión de Usuarios y Portales a móvil y escritorio | completada | alta | Codex / 9a7a9213b62a | `fix/adm-users-responsive` | `docs/planning/ADM_USERS_RESPONSIVE.md` | PR #168 fusionado; 4.843 tests y CI aprobados; publicado en Netlify 6af69e10fb188ea178350f8c; revisión visual autenticada pendiente; lane liberado | 2026-11-13 |
-
-| `shared-teacher-registration` | Registro compartido titular y suplente | en_revision | alta | Codex / edcee9bcd1ed | `fix/shared-teacher-registration` | `docs/planning/SHARED_TEACHER_REGISTRATION.md` | Publicación autorizada por Omar el 13/11; firma automática, historial y planificación ajustados; 407 tests y build/tipos aprobados; deuda de política idéntica a master; validación con cuentas reales pendiente; lane liberado | 2026-11-13 |

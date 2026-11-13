@@ -5,6 +5,8 @@ import { formatPhone } from '../../shared/utils/phoneUtils.js'
 import { PlanEstudiosPanel } from '../components/PlanEstudiosPanel.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { CalculadorSaludPerfil } from '../../modules/planificacion/domain/CalculadorSaludPerfil.js'
+import { studentClassHistoryAdapter } from '../services/studentClassHistoryAdapter.js'
+import { mountStudentClassHistory } from '../components/StudentClassHistory.js'
 import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js'
 
 // ─── Rango de métricas ──────────────────────────────────────────────────────
@@ -80,38 +82,6 @@ function waApplyVars(text, { alumno, contacto }) {
   return text.replace(/\{alumno\}/g, alumno).replace(/\{contacto\}/g, contacto)
 }
 // ───────────────────────────────────────────────────────────────────────────
-
-/**
- * Normaliza contenido para comparar si dos sesiones cubrieron "lo mismo"
- * (recuperación de clases perdidas): minúsculas, sin tildes, sin espacios
- * sobrantes. Coincidencia exacta tras normalizar — no substring, para no
- * emparejar contenidos distintos que solo comparten una palabra suelta.
- */
-function _normalizarContenido(str) {
-  return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-}
-
-/**
- * Converts contenido_dsl to readable plain text.
- * Strips DSL bracket markers like [tipo:valor] or [bloque] → readable label.
- */
-function parseDslToText(dsl) {
-  if (!dsl) return ''
-  return dsl
-    // Remove bracket-wrapped labels like [Objetivo:], [Actividad:], etc. and keep the value
-    .replace(/\[([^\]]+)\]/g, (_, inner) => {
-      // If it contains a colon, treat as label:value → "Label: value"
-      const colonIdx = inner.indexOf(':')
-      if (colonIdx > 0) {
-        const label = inner.slice(0, colonIdx).trim()
-        const value = inner.slice(colonIdx + 1).trim()
-        return value ? `${label}: ${value}` : label
-      }
-      return inner.trim()
-    })
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
 
 // ─── Estado config ────────────────────────────────────────────────────────────
 const ESTADO_CFG = {
@@ -891,6 +861,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
   }
 
   try {
+    if (studentClassHistoryAdapter.isDemo) {
+      const history = await studentClassHistoryAdapter.load(alumnoId, maestro.id)
+      if (!history.student) throw new Error('Alumno no disponible en los datos de demostración')
+      container.innerHTML = `<div class="pm-zen-section"><h2>${escHTML(history.student.nombre_completo)}</h2><p>Modo demostración · los cambios no afectan datos reales.</p><section id="pm-student-history" aria-label="Historial individual de clases"></section></div>`
+      mountStudentClassHistory(container.querySelector('#pm-student-history'), { entries: history.entries, studentId: alumnoId, maestro, adapter: studentClassHistoryAdapter })
+      return
+    }
     // Oleada 1: lo mínimo para poder calcular la fecha de corte del rango
     // de métricas elegido — "Período actual" (default) necesita saber
     // cuándo empezó ese período ANTES de poder filtrar el resto.
@@ -932,22 +909,12 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
     // justificaciones), sumando la latencia de cada ida y vuelta a Supabase
     // antes de poder pintar nada.
     const [
-      { data: sesiones },
+      history,
       [{ data: evaluaciones }, starEvaluaciones],
       { data: ausencias },
       { data: justificaciones },
-      { data: progresos },
     ] = await Promise.all([
-      // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
-      // estados: 'P' | 'A' | 'J' | 'T'
-      (() => {
-        let q = supabase
-          .from('sesiones_clase')
-          .select('id, clase_id, fecha, contenido_dsl, asistencia')
-          .filter('asistencia', 'cs', JSON.stringify([{ alumno_id: alumnoId }]))
-        if (fechaCorte) q = q.gte('fecha', fechaCorte)
-        return q.order('fecha', { ascending: false }).limit(60)
-      })(),
+      studentClassHistoryAdapter.load(alumnoId, maestro.id, { from: fechaCorte }),
       Promise.all([
         (() => {
           let q = supabase
@@ -972,51 +939,14 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
         .select('sesion_id, motivo, evidencia_url, estado, fecha')
         .eq('alumno_id', alumnoId)
         .order('fecha', { ascending: false }),
-      // Registros estructurados por alumno+sesión (contenido + calificación
-      // ya vinculados vía sesion_clase_id) — la fuente que de verdad conecta
-      // "qué recibió" con "qué nota sacó" en la MISMA fila. Se guarda sola
-      // cuando el maestro guarda observaciones de la sesión (ObservationSaveButton).
-      (() => {
-        let q = supabase
-          .from('progresos')
-          .select('id, sesion_clase_id, clase_id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion')
-          .eq('alumno_id', alumnoId)
-          .not('sesion_clase_id', 'is', null)
-        if (fechaCorte) q = q.gte('fecha_evaluacion', fechaCorte)
-        return q.order('fecha_evaluacion', { ascending: false }).limit(150)
-      })(),
     ])
 
     const inscritaIds = (inscripcionesRaw || []).map(r => r.clase_id).filter(Boolean)
 
-    // Aplanar a filas simples y extraer el registro del alumno de cada sesión
-    const asistenciaRows = (sesiones || []).map(s => {
-      const reg = s.asistencia?.find(a => a.alumno_id === alumnoId)
-      return reg ? {
-        fecha:         s.fecha,
-        estado:        reg.estado,          // 'P' | 'A' | 'J' | 'T'
-        clase_id:      s.clase_id,
-        sesion_id:     s.id,
-        contenido_dsl: s.contenido_dsl,
-        observaciones: reg.observaciones || null
-      } : null
-    }).filter(Boolean)
-
-    // Mapa de contenido DSL por sesión (ya está en asistenciaRows)
-    const sesionDslMap = new Map(asistenciaRows.map(r => [r.sesion_id, r.contenido_dsl]))
-
-    // progresos SÍ conecta contenido + calificación en una sola fila por
-    // sesión (sesion_clase_id) — a diferencia de indicator_attempts, que
-    // solo referencia la clase, nunca la sesión puntual. Agrupamos por
-    // sesión para poder mostrar, en el historial, qué calificación salió
-    // de CADA clase que el alumno recibió (no solo una lista de notas
-    // suelta y desconectada del contenido que las originó).
-    const progresosPorSesion = new Map()
-    for (const p of (progresos || [])) {
-      if (!p.sesion_clase_id) continue
-      if (!progresosPorSesion.has(p.sesion_clase_id)) progresosPorSesion.set(p.sesion_clase_id, [])
-      progresosPorSesion.get(p.sesion_clase_id).push(p)
-    }
+    const asistenciaRows = history.entries.map(entry => ({
+      fecha: entry.date, estado: entry.status, clase_id: entry.classId,
+      sesion_id: entry.id, contenido_dsl: entry.content, observaciones: entry.attendanceNote,
+    }))
 
     const justifMap = new Map((justificaciones || []).map(j => [j.sesion_id, j]))
 
@@ -1026,7 +956,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
     const ausentes   = asistenciaRows.filter(r => r.estado === 'A').length
     const justifica  = asistenciaRows.filter(r => r.estado === 'J').length
     const tardanzas  = asistenciaRows.filter(r => r.estado === 'T').length
-    const pctAsistencia = totalSesiones > 0 ? Math.round((presentes / totalSesiones) * 100) : 0
+    const pctAsistencia = totalSesiones > 0 ? Math.round(((presentes + tardanzas) / totalSesiones) * 100) : 0
 
     const evaluacionesContenido = evaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
     const evaluacionesEstrella = starEvaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
@@ -1067,39 +997,8 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
       ...inscritaIds,
       ...Object.keys(sesionesPorClase)
     ])
-    const { data: clasesInfo } = claseIdSet.size > 0
-      ? await supabase.from('clases').select('id, nombre, instrumento, nivel').in('id', [...claseIdSet])
-      : { data: [] }
+    const clasesInfo = history.classes.filter(c => claseIdSet.has(c.id))
     const claseMap = new Map((clasesInfo || []).map(c => [c.id, c]))
-
-    // Sesiones con contenido para mostrar en el historial: presente (con
-    // calificación si la hay), o ausente/justificado (sin calificación,
-    // pero el contenido SÍ se muestra — la clase se dio igual, el alumno
-    // simplemente no la recibió ese día y debe recuperarla).
-    const sesionesPresentes = asistenciaRows.filter(r =>
-      (r.estado === 'P' || r.estado === 'A' || r.estado === 'J') &&
-      (r.contenido_dsl?.trim() || progresosPorSesion.has(r.sesion_id))
-    )
-
-    // Recuperación: si el alumno faltó/justificó una sesión con cierto
-    // contenido y MÁS ADELANTE aparece presente en otra sesión de la MISMA
-    // clase con el mismo contenido (normalizado), se anota en la entrada
-    // perdida que la recuperó — sin duplicar la fila (la sesión de
-    // recuperación ya aparece por su cuenta, al ser presente). El alumno
-    // puede quedar desfasado del resto del grupo y aun así recuperar.
-    const recuperacionPorSesion = new Map() // sesion_id (de la perdida) -> { fecha }
-    const perdidas = sesionesPresentes.filter(r => r.estado !== 'P')
-    for (const perdida of perdidas) {
-      const contenidoPerdida = _normalizarContenido(perdida.contenido_dsl)
-      if (!contenidoPerdida) continue
-      const recuperacion = sesionesPresentes.find(r =>
-        r.estado === 'P' &&
-        r.clase_id === perdida.clase_id &&
-        r.fecha > perdida.fecha &&
-        _normalizarContenido(r.contenido_dsl) === contenidoPerdida
-      )
-      if (recuperacion) recuperacionPorSesion.set(perdida.sesion_id, recuperacion)
-    }
 
     // Evaluaciones que tienen observaciones del maestro
     const conObservaciones = evaluaciones?.filter(e => e.observations?.trim()) || []
@@ -1294,65 +1193,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
           </div>
           ` : ''}
 
-          <!-- 📖 Historial de Clases (contenido + calificación de esa misma sesión, cuando existe) -->
-          ${sesionesPresentes.length > 0 ? `
-          <div class="pm-zen-section">
-            <h3 class="pm-zen-section-title">📖 Historial de Clases</h3>
-            <div class="pm-zen-bitacora">
-              ${sesionesPresentes.map(r => {
-                const clase = claseMap.get(r.clase_id)
-                const contenidoGeneral = parseDslToText(r.contenido_dsl)
-                const fechaStr = new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
-                // progresos trae el registro estructurado (contenido + nota) de ESTA
-                // sesión puntual — puede haber más de uno si se calificó más de un
-                // indicador/tema el mismo día.
-                const registros = progresosPorSesion.get(r.sesion_id) || []
-
-                const registrosHTML = registros.map(p => {
-                  const cfg = ESTADO_CFG[p.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
-                  const contenidoRegistro = p.contenido_dsl && p.contenido_dsl !== r.contenido_dsl
-                    ? escHTML(p.contenido_dsl)
-                    : ''
-                  return `
-                    <div class="pm-zen-bitacora-registro" style="display:flex; align-items:flex-start; gap:0.4rem; margin-top:0.35rem; padding-top:0.35rem; border-top:1px dashed var(--pm-border);">
-                      <span style="color:${cfg.color}; flex-shrink:0;">${cfg.icon}</span>
-                      <div style="min-width:0;">
-                        ${contenidoRegistro ? `<span style="font-size:0.78rem;">${contenidoRegistro}</span><br/>` : ''}
-                        <span style="font-size:0.72rem; font-weight:700; color:${cfg.color};">${cfg.label}${p.calificacion != null ? ` · ${p.calificacion}/10` : ''}</span>
-                        ${p.observaciones ? `<span style="font-size:0.72rem; color:var(--pm-text-muted);"> — ${escHTML(p.observaciones)}</span>` : ''}
-                      </div>
-                    </div>
-                  `
-                }).join('')
-
-                // No asistió (Ausente/Justificado): la clase se dio igual —
-                // se muestra el contenido para que quede claro qué debe
-                // recuperar, sin calificación (no la recibió ese día).
-                const noAsistio = r.estado !== 'P'
-                const badgeAusencia = noAsistio
-                  ? `<span style="font-size:0.68rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:999px; background:${r.estado === 'J' ? 'rgba(13,110,253,0.12)' : 'rgba(220,53,69,0.12)'}; color:${r.estado === 'J' ? '#0d6efd' : '#dc3545'};">${r.estado === 'J' ? '📌 Justificado — no asistió' : '❌ No asistió'}</span>`
-                  : ''
-
-                const recuperacion = recuperacionPorSesion.get(r.sesion_id)
-                const notaRecuperacion = recuperacion
-                  ? `<p style="font-size:0.72rem; color:var(--pm-success); margin:0.35rem 0 0;">🔁 Recuperó este contenido el ${new Date(recuperacion.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}.</p>`
-                  : (noAsistio ? `<p style="font-size:0.72rem; color:var(--pm-text-muted); margin:0.35rem 0 0; font-style:italic;">Pendiente de recuperar.</p>` : '')
-
-                return `
-                  <div class="pm-zen-bitacora-item pm-glass" style="${noAsistio ? 'opacity:0.75;' : ''}">
-                    <div class="pm-zen-bitacora-header">
-                      <span class="pm-zen-bitacora-clase">${escHTML(clase?.nombre || 'Clase')}</span>
-                      <span class="pm-zen-bitacora-fecha">${fechaStr}</span>
-                    </div>
-                    ${badgeAusencia}
-                    ${contenidoGeneral ? `<p class="pm-zen-bitacora-contenido">${escHTML(contenidoGeneral)}</p>` : ''}
-                    ${noAsistio ? notaRecuperacion : registrosHTML}
-                  </div>
-                `
-              }).join('')}
-            </div>
-          </div>
-          ` : ''}
+          <section id="pm-student-history" class="pm-zen-section" aria-label="Historial individual de clases"></section>
 
           <!-- 📝 Últimas Evaluaciones -->
           ${notasValidas.length > 0 ? `
@@ -2276,6 +2117,11 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
       sendLink.addEventListener('click', () => setTimeout(closeModal, 300))
     }
 
+    mountStudentClassHistory(container.querySelector('#pm-student-history'), {
+      entries: history.entries, studentId: alumnoId, maestro,
+      adapter: studentClassHistoryAdapter, from: fechaCorte,
+    })
+
     // Plan de Estudios — bitácora de dominio individual
     const planRoot = container.querySelector('#pm-alumno-progreso-root')
     if (planRoot) {
@@ -2298,8 +2144,11 @@ export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'per
       <div class="pm-zen-error">
         <i class="bi bi-exclamation-octagon"></i>
         <p>No pudimos cargar el perfil en este momento</p>
+        <p>${escHTML(err.message)}</p>
+        <button class="pm-btn pm-btn-primary" id="pm-profile-retry">Reintentar</button>
         <button class="pm-btn pm-btn-secondary" onclick="window.history.back()">Regresar</button>
       </div>
     `
+    container.querySelector('#pm-profile-retry')?.addEventListener('click', () => renderAlumnoPerfilView(container, { alumnoId, rango }))
   }
 }

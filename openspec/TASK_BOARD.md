@@ -55,7 +55,7 @@ cualquier tarea `disponible` según su contexto o especialidad.
 
 ---
 
-| `shared-teacher-registration` | Registro compartido titular y suplente | en_revision | alta | Codex / edcee9bcd1ed | `fix/shared-teacher-registration` | `docs/planning/SHARED_TEACHER_REGISTRATION.md` | Publicación autorizada por Omar el 13/11; firma automática, historial y planificación ajustados; 407 tests y build/tipos aprobados; deuda de política idéntica a master; validación con cuentas reales pendiente; lane liberado | 2026-11-13 | 
+| `shared-teacher-registration` | Registro compartido titular y suplente | completada | alta | Codex / edcee9bcd1ed | `fix/shared-teacher-registration` | `docs/planning/SHARED_TEACHER_REGISTRATION.md` | Publicación autorizada por Omar el 13/11; firma automática, historial y planificación ajustados; 1.006 tests de integración y CI aprobados; deuda de política idéntica a master; PR #167 fusionado; deploy 6af6a70ecad442ed6670deba publicado; validación con cuentas reales pendiente; lane liberado | 2026-11-13 | 
 
 ## Backlog no convertido a change todavía
 

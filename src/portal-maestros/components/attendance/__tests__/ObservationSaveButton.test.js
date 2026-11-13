@@ -50,6 +50,7 @@ vi.mock('../../../../shared/components/AppToast.js', () => ({
   },
 }))
 
+import { processarEvaluacion } from '../../../services/evaluationService.js'
 import { createObservationSaveButton } from '../ObservationSaveButton.js'
 
 describe('ObservationSaveButton', () => {
@@ -105,7 +106,7 @@ describe('ObservationSaveButton', () => {
         'ses-1',
         'maestro-suplente',
         'Texto de prueba',
-        expect.objectContaining({ indicador_id: 'ind-1' }),
+        expect.objectContaining({ indicador_id: 'ind-1', _rating_scale: 5 }),
         null,
         null,
         expect.objectContaining({
@@ -116,4 +117,15 @@ describe('ObservationSaveButton', () => {
       )
     })
   })
+  it('incluye tardanzas como participantes y excluye ausentes al guardar evaluación', async () => {
+    createObservationSaveButton(container, {
+      rutaId: 'ruta-1', sesionId: 'ses-1', claseId: 'clase-1', maestro: { id: 'm1' },
+      alumnos: [{ id: 'p' }, { id: 't' }, { id: 'a' }], estado: { p: 'P', t: 'T', a: 'A' },
+      getEditorValue: () => 'Texto', setEditorValue: vi.fn(),
+      planificationCard: { getActivePlanificacionId: () => null, getActiveIndicador: () => ({ id: 'ind-1', nombre: 'Escalas' }) },
+    })
+    fireEvent.click(container.querySelector('#btn-guardar-obs'))
+    await waitFor(() => expect(processarEvaluacion).toHaveBeenLastCalledWith('Texto', 'ind-1', [{ id: 'p' }, { id: 't' }], 'Escalas'))
+  })
+
 })

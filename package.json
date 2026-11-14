@@ -33,7 +33,8 @@
     "policy:check": "node scripts/check-structural-policy.mjs",
     "policy:list": "node scripts/check-structural-policy.mjs --list",
     "policy:record": "node scripts/check-structural-policy.mjs --record",
-    "test:db:class-exemptions": "node supabase/tests/classValidityExemptions.test.mjs"
+    "test:db:class-exemptions": "node supabase/tests/classValidityExemptions.test.mjs",
+    "test:db:birthdays": "node supabase/tests/monthlyBirthdays.test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.11",

@@ -14,6 +14,7 @@ const nodeSuites = [
 ]
 const dedicatedSuites = [
   'supabase/tests/classValidityExemptions.test.mjs',
+  'supabase/tests/monthlyBirthdays.test.mjs',
   'tools/unicode-reviewer/revisar-textos.test.mjs',
   'tools/security-regression/closure-adapter.test.js',
   'tools/security-regression/security.test.js',
@@ -32,6 +33,7 @@ describe('test runner discovery contract', () => {
     const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts
     for (const file of nodeSuites) expect(scripts['test:node']).toContain(file)
     expect(scripts['test:db:class-exemptions']).toContain('supabase/tests/classValidityExemptions.test.mjs')
+    expect(scripts['test:db:birthdays']).toContain('supabase/tests/monthlyBirthdays.test.mjs')
     expect(scripts['unicode:test']).toContain('vitest.unicode.config.mjs')
   }, 30000)
 })

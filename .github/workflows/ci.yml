@@ -55,6 +55,9 @@ jobs:
       - name: Run attendance database regressions
         run: npm run test:db:class-exemptions
 
+      - name: Run monthly birthdays database regressions
+        run: npm run test:db:birthdays
+
       - name: Run tests
         run: npm run test:run
         env:

@@ -1,3 +1,4 @@
+import { mountTeacherBirthDateField } from '../../modules/birthdays/components/teacherBirthDateField.js';
 import { getMaestroLocal, clearMaestroLocal, logoutPortal, STORAGE_KEY } from '../auth/maestroAuth.js';
 import { APP_VERSION, APP_BUILD_DATE, getLatestVersion, getVersionTypeMeta } from '../../core/version/CHANGELOG.js';
 import { supabase } from '../../lib/supabaseClient.js';
@@ -86,6 +87,7 @@ export function renderPerfilView(container) {
         <p>SOI Sistema Operativo Institucional</p>
         <p class="pm-settings-footer__version">
           v${APP_VERSION} &copy; 2026
+          <button id="pm-ver-versiones-btn" class="btn-apple-utility" type="button">Versiones y novedades</button>
           ${(maestro?.es_admin || import.meta.env.DEV) ? `<button id="pm-ver-sistema-btn" style="
             margin-left:0.5rem;background:none;border:none;cursor:pointer;
             color:var(--pm-primary,#3b82f6);font-size:0.72rem;font-weight:600;
@@ -100,6 +102,7 @@ export function renderPerfilView(container) {
 
   renderHero(colIzq, maestro);
   renderPersonalData(colIzq, maestro);
+  mountTeacherBirthDateField(container.querySelector('#pm-birthday-self'));
   // [OCULTO] Sección "Disponibilidad Horaria" — descomentar para reactivar.
   // renderAvailability(colIzq, maestro);
   renderAppearance(colDer);
@@ -186,6 +189,7 @@ function renderPersonalData(container, maestro) {
           <input type="text" class="input-apple" id="perfilEspecialidad" value="${escHTML(maestro.especialidad || '')}" placeholder="Ej. Violín">
         </div>
       </div>
+      <div id="pm-birthday-self" class="mt-3"></div>
       <div class="pm-settings-actions">
         <button class="btn-apple-primary" id="btnGuardarPerfil" disabled>
           <i class="bi bi-check2" aria-hidden="true"></i>
@@ -858,6 +862,14 @@ function initListeners(maestro) {
 
   // Cerrar sesión
   document.getElementById('btnCerrarSesion')?.addEventListener('click', confirmarCerrarSesion);
+
+  // Novedades de producto para todos los maestros, sin herramientas administrativas.
+  document.getElementById('pm-ver-versiones-btn')?.addEventListener('click', () => {
+    import('../../core/version/versionHistoryView.js').then(({ renderVersionHistoryView }) => {
+      AppModal.open({ title: 'Versiones y novedades del SOI', size: 'xl', saveText: null, cancelText: 'Cerrar', body: '<div data-release-history></div>',
+        onOpen: body => renderVersionHistoryView(body.querySelector('[data-release-history]')) });
+    });
+  });
 
   // Sistema — historial de versiones (solo admin)
   document.getElementById('pm-ver-sistema-btn')?.addEventListener('click', () => {

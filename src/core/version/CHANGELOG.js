@@ -15,11 +15,29 @@
  *   3. Hacer commit con mensaje: "chore: bump version to X.Y.Z"
  */
 
-export const APP_VERSION = '1.5.1'
-export const APP_BUILD_DATE = '2026-10-11'
+export const APP_VERSION = '1.6.0'
+export const APP_BUILD_DATE = '2026-11-14'
 
 /** @type {Array<{version: string, date: string, type: string, title: string, changes: string[], author?: string}>} */
 export const CHANGELOG = [
+  {
+    version: '1.6.0', date: '2026-11-14', type: 'feature', title: 'Cumpleañeros, compartir mensual e historial de versiones',
+    changes: [
+      'Cumpleañeros de alumnos y maestros en ADM, con filtros, conteos y fechas pendientes.',
+      'Reserva y gestión de un compartir mensual en el calendario, sin afectar asistencias ni enviar convocatorias.',
+      'Cada maestro puede completar su propia fecha de nacimiento desde Perfil; el listado muestra solo día y mes.',
+      'Resumen de cumpleaños del mes en Clases de Hoy del portal ADM.',
+      'Historial de versiones y novedades accesible en ADM y en el perfil del portal maestros.',
+    ], author: 'SOI',
+  },
+  {
+    version: '1.5.3', date: '2026-11-13', type: 'fix', title: 'Contraste del historial en modo oscuro', retrospective: true, pullRequests: [170],
+    changes: ['Colores del tema para filtros, textos, botones y fechas del historial de clases.', 'Calendarios y desplegables nativos adaptados al modo oscuro, con pruebas de contraste.'],
+  },
+  {
+    version: '1.5.2', date: '2026-11-13', type: 'feature', title: 'Suplencias e historial individual de clases', retrospective: true, pullRequests: [167,168,169],
+    changes: ['Registro compartido de clases y planificación entre titular y suplente, con firma de observaciones.', 'Mejoras responsive en Gestión de Usuarios y portales de ADM.', 'Historial individual con contenido, asistencia, evaluación, tareas y recuperación confirmada por el maestro.'],
+  },
   {
     version: '1.5.1',
     date: '2026-10-11',

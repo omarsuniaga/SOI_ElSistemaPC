@@ -582,6 +582,7 @@ function renderContent(container, dia, kpis, sesiones) {
   container.innerHTML = `
     <div class="clases-hoy page-container">
       
+      <div data-birthday-summary></div>
       <!-- Header & Toolbar Unificada V2 (Estilo Alumnos) -->
       <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-body mb-3 border border-body-tertiary">
         
@@ -679,6 +680,10 @@ function renderContent(container, dia, kpis, sesiones) {
     </div>
   `
 
+  if (/^\/(adm|admin)(?:\.html)?\/?$/.test(window.location.pathname)) {
+    const slot=container.querySelector('[data-birthday-summary]')
+    import('../../birthdays/components/birthdaySummary.js').then(({renderBirthdaySummary}) => renderBirthdaySummary(slot)).catch(() => { if(slot)slot.textContent='No se pudo cargar el resumen de cumpleaños.' })
+  }
   attachEvents(container, sesionesOrdenadas)
   attachViewInfoEvents(container)
 }

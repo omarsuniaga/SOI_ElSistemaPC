@@ -32,6 +32,9 @@ const CATEGORIA_LABEL = {
   actividad_especial: 'Actividad Especial',
 }
 const ESTADO_LABEL = {
+  programado: 'Programada',
+  completado: 'Realizada',
+  en_curso: 'En curso',
   borrador: 'Borrador',
   pendiente_revision: 'Pendiente de revisión',
   aprobado: 'Aprobada',
@@ -65,6 +68,7 @@ function _createState() {
 
 export async function renderActividadesInstitucionalesView(container, params = {}) {
   const state = _createState()
+  if (params.estado !== undefined && ['', 'pendiente_revision', 'aprobado', 'rechazado', 'programado', 'completado', 'cancelado', 'borrador'].includes(params.estado)) state.filtroEstado=params.estado
   container.__aiState = state
 
   container.innerHTML = _renderLoading()
@@ -182,6 +186,7 @@ function _renderLista(container) {
 
   listEl.innerHTML = items.map((a) => _cardHTML(a)).join('')
 
+  listEl.querySelectorAll('.ai-btn-cumpleanos').forEach(btn => btn.addEventListener('click', () => router.navigate('cumpleaneros', { period: btn.dataset.period })))
   listEl.querySelectorAll('.ai-btn-revisar').forEach((btn) => {
     btn.addEventListener('click', () => _openRevisarModal(container, btn.dataset.id))
   })
@@ -215,7 +220,7 @@ function _cardHTML(a) {
         <div>
           <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
             <span class="fw-bold text-body">${_esc(a.titulo)}</span>
-            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">${_esc(CATEGORIA_LABEL[a.categoria] || a.categoria)}</span>
+            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">${_esc(a.esCompartirCumpleanos ? 'Compartir de cumpleaños' : (CATEGORIA_LABEL[a.categoria] || a.categoria))}</span>
             <span class="badge ${ESTADO_BADGE[a.estado] || 'bg-secondary-subtle'} border">${_esc(ESTADO_LABEL[a.estado] || a.estado)}</span>
           </div>
           <div class="small text-muted">
@@ -226,7 +231,7 @@ function _cardHTML(a) {
           ${a.motivoRechazo ? `<div class="small text-danger mt-1"><i class="bi bi-x-circle me-1"></i>${_esc(a.motivoRechazo)}</div>` : ''}
         </div>
         <div class="d-flex gap-1">
-          ${a.estado === 'pendiente_revision' || a.estado === 'borrador'
+          ${a.esCompartirCumpleanos ? `<button type="button" class="btn btn-sm btn-outline-primary ai-btn-cumpleanos" data-period="${_esc(a.periodoCumpleanos)}">Gestionar compartir</button>` : a.estado === 'pendiente_revision' || a.estado === 'borrador'
             ? `
               <button type="button" class="btn btn-sm btn-outline-primary ai-btn-revisar" data-id="${_esc(a.id)}"><i class="bi bi-clipboard-check me-1"></i>Revisar</button>
               <button type="button" class="btn btn-sm btn-outline-danger ai-btn-eliminar" data-id="${_esc(a.id)}" title="Eliminar propuesta"><i class="bi bi-trash"></i></button>

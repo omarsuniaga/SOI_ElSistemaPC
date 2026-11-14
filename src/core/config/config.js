@@ -1,5 +1,6 @@
+import { APP_VERSION } from '../version/CHANGELOG.js'
 export const config = {
-  version: '1.0.0',
+  version: APP_VERSION,
   environment: import.meta.env.MODE || 'development',
   // Modo Demo: Se activa si la variable de entorno está presente o si hay un flag en localStorage
   isDemoMode: import.meta.env.VITE_DEMO_MODE === 'true' || localStorage.getItem('demo_mode') === 'true',

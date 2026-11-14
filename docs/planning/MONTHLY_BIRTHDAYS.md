@@ -59,3 +59,14 @@ La revisión visual interactiva del entorno de pruebas quedó limitada por la fa
 ## Reversión
 
 Se puede restaurar el despliegue anterior conservando fechas y eventos registrados. No se deben borrar los datos nuevos para revertir el frontend. La migración es aditiva y no altera las funciones de aprobación académica; la exclusión de cumpleaños del disparador de Hermes evita que una reserva de convivencia se convierta en una automatización de tareas.
+
+## Publicación verificada
+
+- PR #171: https://github.com/omarsuniaga/SOI_ElSistemaPC/pull/171.
+- Versión **1.6.0**, revisión `74e0001841ef55dbd201e757b02aaa887deb536b`.
+- Despliegue de producción `6af7eaf13e093aa9478b30e6`, estado `ready`, publicado el **14/11/2026 a la 01:00:53 de Santo Domingo** (05:00:53 UTC).
+- CI completo aprobado, incluidas las suites de base de datos de cumpleaños y asistencia.
+- El endpoint de fecha propia rechaza una petición HTTP anónima con estado 401 y código PostgreSQL 42501.
+- Las hojas de estilos de ambas vistas coinciden con los artefactos probados en la vista previa; el despliegue corresponde exactamente a la revisión integrada.
+- Sin funciones nuevas de Netlify y sin Agent Runner/servicios de IA. Las actualizaciones documentales omiten compilación y despliegue.
+- La comprobación visual manual con cuentas reales continúa pendiente. Se liberan los lanes al cerrar la implementación publicada.

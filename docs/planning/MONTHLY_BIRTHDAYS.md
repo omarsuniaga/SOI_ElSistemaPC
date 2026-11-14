@@ -33,7 +33,7 @@ Las nuevas funciones son `SECURITY INVOKER`, tienen acceso anónimo revocado y r
 
 El guardado propio no recibe un ID de maestro: lo resuelve con `auth.uid()` y exige ficha activa. La política de actualización propia está acompañada de un guard que impide modificar campos administrativos, cambiar de propietario o elevar permisos. Se conservan los campos personales que ya edita el perfil existente: nombre, teléfono, especialidad y disponibilidad. Otros miembros de coordinación que corrigen una ficha ajena solo pueden cambiar su fecha; las operaciones administrativas y las funciones privilegiadas existentes conservan sus permisos y guardas.
 
-La vista administrativa recibe día/mes, contexto e identificadores, sin fecha de nacimiento completa. Solo el formulario de captura administrativa y el propietario trabajan con la fecha completa. No se guarda esa fecha nueva en el almacenamiento local del navegador ni en metadatos del evento.
+La vista administrativa recibe día/mes, contexto e identificadores, sin fecha de nacimiento completa. Solo el formulario de captura administrativa y el propietario trabajan con la fecha completa. El componente nuevo no copia la fecha al almacenamiento local ni a los metadatos del evento. El caché de sesión preexistente del portal carga la ficha propia con `SELECT *` y puede conservar sus campos, incluida la fecha, tras iniciar sesión; ese mecanismo de autenticación no se modificó en esta entrega.
 
 Migración aplicada: `20261114044553_monthly_birthdays.sql`, con el mismo identificador registrado en Supabase. No se ingresaron fechas ficticias ni se crearon celebraciones reales para probar.
 

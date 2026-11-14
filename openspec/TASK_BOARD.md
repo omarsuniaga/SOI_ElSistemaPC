@@ -60,7 +60,7 @@ cualquier tarea `disponible` según su contexto o especialidad.
 | `student-class-history` | Completar historial individual de clases | completada | alta | Codex / 9a7a9213b62a | `feat/student-class-history` | `docs/planning/STUDENT_CLASS_HISTORY.md` | PR #169 integrado; 4.877 pruebas CI aprobadas y 7 omitidas; regresiones de asistencia/exoneraciones aprobadas; producción 6af6b4c29b0af9aaead2fc56 publicada; validación manual con dos cuentas reales pendiente por autenticación; lane académico liberado | 2026-11-13 |
 | `student-history-dark-contrast` | Corregir contraste del historial en modo oscuro | en_progreso | alta | Codex / 9a7a9213b62a | `fix/student-history-dark-contrast` | `docs/planning/STUDENT_CLASS_HISTORY.md` | Corrección solicitada por Omar; lane académico tomado | 2026-11-13 |
 
-| `monthly-birthdays` | Cumpleañeros de alumnos y maestros y compartir mensual | tomada | alta | Codex / 9a7a9213b62a | `feat/monthly-birthdays` | `docs/planning/MONTHLY_BIRTHDAYS.md` | Autorizado por Omar; lane ADM y calendario tomado; sin Engram disponible | 2026-11-14 |
+| `monthly-birthdays` | Cumpleañeros, compartir mensual y versiones del SOI | en_revision | alta | Codex / 9a7a9213b62a | `feat/monthly-birthdays` | `docs/planning/MONTHLY_BIRTHDAYS.md` | Autorizado por Omar; incluye fecha propia del maestro y versiones; migración aplicada; 4.901 pruebas y SQL aprobados; lane ADM/calendario/versiones tomado; revisión visual real pendiente | 2026-11-14 |
 
 ## Backlog no convertido a change todavía
 

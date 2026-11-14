@@ -125,3 +125,9 @@ No usar Agent Runners, AI Gateway, inferencia ni servicios de IA de Netlify sin 
 explícita de Omar para ese consumo. Priorizar pruebas locales y CI de GitHub; evitar
 compilaciones y consultas repetidas innecesarias. Una autorización para publicar el SOI
 no autoriza consumo de servicios de IA de Netlify.
+
+## 10. Historial de versiones del producto
+
+Toda publicación funcional registra su entrega en `src/core/version/CHANGELOG.js`: versión semántica única y descendente, fecha real de publicación, título y cambios visibles para las personas usuarias. `APP_VERSION` y `APP_BUILD_DATE` coinciden con la primera entrada. Las mejoras funcionales incrementan la versión menor; las correcciones incrementan el parche. Los cambios documentales sin impacto funcional no crean una versión nueva.
+
+No confundir versiones con commits ni inventar fechas históricas. La numeración reconstruida se marca `retrospective: true`. El registro vive en Git, lo consumen las vistas del SOI y se verifica con pruebas de integridad. El historial de producto no expone herramientas administrativas a maestros.

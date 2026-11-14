@@ -40,6 +40,8 @@ function normalizeActividad(row) {
   if (!row) return null
   return {
     id: row.id,
+    esCompartirCumpleanos: row.metadata?.tipo === 'cumpleanos_mes',
+    periodoCumpleanos: row.metadata?.cumpleanos_periodo || null,
     titulo: row.titulo,
     descripcion: row.descripcion ?? '',
     categoria: row.categoria,
@@ -70,7 +72,7 @@ export async function listarActividades(filtros = {}) {
   let query = supabase
     .from('calendario_institucional')
     .select('*')
-    .in('categoria', CATEGORIAS_MODULO)
+    .in('categoria', [...CATEGORIAS_MODULO, 'otro'])
     .order('fecha_inicio', { ascending: false })
 
   if (filtros.estado) {
@@ -80,7 +82,7 @@ export async function listarActividades(filtros = {}) {
   const { data, error } = await query
   if (error) throw new Error(error.message || 'No se pudieron cargar las actividades')
 
-  return (data || []).map(normalizeActividad)
+  return (data || []).filter(row => CATEGORIAS_MODULO.includes(row.categoria) || row.metadata?.tipo === 'cumpleanos_mes').map(normalizeActividad)
 }
 
 /**

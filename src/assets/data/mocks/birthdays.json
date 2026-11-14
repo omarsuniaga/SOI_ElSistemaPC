@@ -1,0 +1,11 @@
+{
+  "people": [
+    {"id":"birthday-demo-a1","nombre_completo":"Ana del Valle","activo":true,"fecha_nacimiento":"2013-11-20","kind":"alumno","context":"Violín inicial"},
+    {"id":"birthday-demo-a2","nombre_completo":"Diego Torres","activo":true,"fecha_nacimiento":"2011-02-28","kind":"alumno","context":"Coro infantil"},
+    {"id":"birthday-demo-a3","nombre_completo":"Lucía Pérez","activo":true,"fecha_nacimiento":null,"kind":"alumno","context":"Iniciación musical"},
+    {"id":"birthday-demo-a4","nombre_completo":"Mateo Díaz","activo":false,"fecha_nacimiento":"2010-11-02","kind":"alumno","context":"Sin clase activa"},
+    {"id":"birthday-demo-m1","nombre_completo":"Laura Mendoza","activo":true,"fecha_nacimiento":"1990-11-12","kind":"maestro","context":"Violín"},
+    {"id":"birthday-demo-m2","nombre_completo":"Carlos Flores","activo":true,"fecha_nacimiento":null,"kind":"maestro","context":"Coro"}
+  ],
+  "celebrations": []
+}

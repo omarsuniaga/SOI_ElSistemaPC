@@ -1,3 +1,5 @@
+import { registerRoutesBirthdays } from './modules/birthdays/birthdays.router.js'
+import { registerRoutesSistema } from './modules/sistema/sistema.router.js'
 // ============================================================================
 // SISTEMA ACADÉMICO - Main Entry Point
 // ============================================================================
@@ -138,6 +140,8 @@ import {
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
 // ============================================================================
 const MODULES_REGISTRY = [
+  {id:'birthdays',label:'Cumpleañeros',enabled:true,register:registerRoutesBirthdays},
+  {id:'sistema',label:'Versiones y novedades',enabled:true,register:registerRoutesSistema},
   {
     id: 'periodos',
     label: 'Períodos Académicos',

@@ -33,7 +33,7 @@ const module = (moduleId, source, owner, routes) => defineModule(moduleId, { sou
 /**
  * Read-only route inventory. It never imports or invokes route registrars.
  *
- * The 29 entries that mirror MODULES_REGISTRY contain 91 registrations. A
+ * The 31 entries that mirror MODULES_REGISTRY contain 98 registrations. A
  * previous 79-route report was an arithmetic undercount of the same sources,
  * not a difference between the registry and portal shells.
  */
@@ -55,6 +55,8 @@ export const moduleCatalog = Object.freeze([
   module('admin-notificaciones', 'src/modules/admin-notificaciones/admin-notificaciones.router.js', 'DIR', [['admin-notificaciones']]),
   module('admin-aprobacion', 'src/modules/admin-aprobacion/admin-aprobacion.router.js', 'DIR', [['admin-aprobacion'], ['admin-ausencias']]),
   module('gestion-usuarios', 'src/modules/admin-usuarios/admin-usuarios.router.js', 'DIR', [['gestion-usuarios']]),
+  module('birthdays', 'src/modules/birthdays/birthdays.router.js', 'ADM', [['cumpleaneros']]),
+  module('sistema', 'src/modules/sistema/sistema.router.js', 'shared', [['historial-versiones']]),
   module('maestros', 'src/modules/maestros/maestros.router.js', 'ADM', [
     ['maestros'], ['clases-hoy'], ['bitacora-suplentes', 'workflow'],
   ]),
@@ -125,4 +127,4 @@ export const externalRouteIds = Object.freeze(routeCatalog
 export const findCataloguedRoute = routeId => routeCatalog.find(route => route.routeId === routeId) || null
 export const isCataloguedExternalRoute = routeId => externalRouteIds.includes(routeId)
 
-export const MODULE_REGISTRY_ROUTE_COUNT = 96
+export const MODULE_REGISTRY_ROUTE_COUNT = 98

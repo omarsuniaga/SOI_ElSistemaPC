@@ -1,3 +1,4 @@
+import { demoBirthdayCelebrations } from '../../../assets/data/mocks/birthdayCelebrationsStore.js'
 import actividadesMockData from '../../../assets/data/mocks/actividadesInstitucionales.json'
 import clasesMockData from '../../../assets/data/mocks/clases.json'
 
@@ -29,6 +30,8 @@ function diaSemanaDe(fechaISO) {
 function normalizeActividad(row) {
   return {
     id: row.id,
+    esCompartirCumpleanos: row.metadata?.tipo === 'cumpleanos_mes',
+    periodoCumpleanos: row.metadata?.cumpleanos_periodo || null,
     titulo: row.titulo,
     descripcion: row.descripcion ?? '',
     categoria: row.categoria,
@@ -52,7 +55,7 @@ function normalizeActividad(row) {
 
 export async function listarActividades(filtros = {}) {
   await delay()
-  let list = actividades
+  let list = [...actividades, ...demoBirthdayCelebrations.map(c => ({ id:c.id,titulo:'Compartir de cumpleaños · '+c.period,descripcion:c.notes,categoria:'otro',fecha_inicio:c.date,fecha_fin:c.date,ubicacion:c.location,estado:c.status,version:c.version,alcance:'institucional',requiere_aprobacion:false,metadata:{tipo:'cumpleanos_mes',cumpleanos_periodo:c.period} }))]
   if (filtros.estado) list = list.filter((a) => a.estado === filtros.estado)
   return [...list]
     .sort((a, b) => (a.fecha_inicio < b.fecha_inicio ? 1 : -1))

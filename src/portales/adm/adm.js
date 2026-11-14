@@ -23,6 +23,7 @@ const navGroups = [
       // registradas en alumnos.router.js y son accesibles por URL o deep-link.
       // { id: 'ficha-360', label: 'Ficha 360° Alumnos', icon: 'bi-stars' },
       { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
+      { id: 'cumpleaneros', label: 'Cumpleañeros', icon: 'bi-gift' },
       { id: 'postulados', label: 'Postulados', icon: 'bi-person-plus-fill' },
       // { id: 'postulados-calendario', label: 'Calendario Citas', icon: 'bi-calendar-event' },
     ],
@@ -82,6 +83,7 @@ const navGroups = [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
+      { id: 'historial-versiones', label: 'Versiones y novedades', icon: 'bi-clock-history' },
       { id: 'permisos', label: 'Permisos & Roles', icon: 'bi-shield-lock' },
     ],
   },

@@ -82,3 +82,9 @@ Este documento establece el **Lenguaje Ubicuo (Domain-Driven Design)** para desa
 ### Exoneración de registro
 * Decisión administrativa sobre la obligación de registrar asistencia, contenido o ambos para una clase, maestro y fecha. Conserva motivo, autoría y eventual revocación. No equivale a asistencia del alumno ni a clase impartida/registrada.
 * Vigencia: intervalo efectivo de una clase y su horario; fuera de él no se generan obligaciones sintéticas. Una sesión histórica registrada sigue siendo evidencia aunque la carga del horario sea posterior.
+
+## Convivencia y publicaciones del SOI
+
+- **Cumpleañeros:** fichas de alumnos y maestros con día y mes de nacimiento registrados. El listado ADM muestra personas activas por defecto y contabiliza aparte las fechas pendientes; no publica edades ni años de nacimiento. Cada maestro puede completar únicamente su propia fecha desde Perfil.
+- **Compartir mensual:** evento de convivencia registrado en `calendario_institucional`, categoría `otro`, con metadatos `tipo=cumpleanos_mes` y `cumpleanos_periodo=AAAA-MM`. Existe un solo registro por mes, reutilizable al cancelar/reprogramar. No genera suspensiones, justificaciones, convocatorias ni tareas automáticas.
+- **Versión del SOI:** entrega funcional documentada en `src/core/version/CHANGELOG.js`, con número semántico, fecha y lista de cambios. El número de versiones/cambios documentados no equivale al número de commits. La numeración reconstruida retrospectivamente debe indicarse expresamente.

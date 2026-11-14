@@ -1,3 +1,5 @@
+import { registerRoutesBirthdays } from '../../modules/birthdays/birthdays.router.js'
+import { registerRoutesSistema } from '../../modules/sistema/sistema.router.js'
 /**
  * allRegistrars.js — Lista única de registrars de módulos (espejo de MODULES_REGISTRY
  * en main.js). Ambos portales departamentales registran TODOS los módulos para que
@@ -40,6 +42,8 @@ import { registerRoutesDocumentosPublicos } from '../../modules/documentos-publi
 import { registerRoutesActividadesInstitucionales } from '../../modules/actividades-institucionales/actividades-institucionales.router.js'
 
 export const allRegistrars = [
+  registerRoutesBirthdays,
+  registerRoutesSistema,
   registerRoutesPeriodos,
   registerRoutesComunicaciones,
   registerRoutesDepartamentos,

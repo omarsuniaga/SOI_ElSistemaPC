@@ -12,10 +12,10 @@ describe('shadow catalog', () => {
   })
 
   it('documents the real registry count instead of the previous aggregate undercount', () => {
-    const registryModules = moduleCatalog.slice(0, 29)
-    expect(registryModules).toHaveLength(29)
+    const registryModules = moduleCatalog.slice(0, 31)
+    expect(registryModules).toHaveLength(31)
     expect(registryModules.flatMap(module => module.routeIds)).toHaveLength(MODULE_REGISTRY_ROUTE_COUNT)
-    expect(MODULE_REGISTRY_ROUTE_COUNT).toBe(96)
+    expect(MODULE_REGISTRY_ROUTE_COUNT).toBe(98)
   })
 
   it('freezes critical defaults without becoming runtime authority', () => {

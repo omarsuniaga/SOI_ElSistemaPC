@@ -13,8 +13,8 @@ export function render(draft, errors = {}) {
       <div class="card border-warning mb-4">
         <div class="card-body">
           <h6 class="card-title text-warning"><i class="bi bi-star-fill me-1"></i>Beca El Sistema Punta Cana</h6>
-          <p class="card-text mb-1">Al inscribirse, el alumno recibe una <strong>beca por RD$4,500</strong> que cubre materiales y programa de formación.</p>
-          <p class="card-text mb-1">El representante realizará un <strong>aporte mensual de RD$600</strong> para el sostenimiento del programa.</p>
+          <p class="card-text mb-1">El valor real del programa es de <strong>RD$5,150.00 mensuales</strong>. El alumno recibe una <strong>beca de RD$4,500.00 mensuales (87% cubierto)</strong>.</p>
+          <p class="card-text mb-1">Para cubrir el aporte restante, el representante puede elegir entre dos modalidades:<br><strong>Pago Mensual Regular:</strong> RD$650.00 cada mes.<br><strong>Plan Semestral por Adelantado:</strong> pago único de RD$3,600.00 en enero por enero a junio, equivalente a RD$600.00 por mes, con un ahorro de RD$300.00 en el semestre y sin preocuparse por fechas de pago mensuales.</p>
           <p class="card-text small text-muted mb-0">La beca se mantiene siempre que el alumno demuestre <strong>rendimiento, interés y asistencia notable</strong>.</p>
         </div>
       </div>
@@ -27,9 +27,9 @@ export function render(draft, errors = {}) {
             <li>Constancia de inscripción en El Sistema Punta Cana</li>
             <li>Tarjeta de pago mensual</li>
             <li>Horario de clases asignado</li>
-            <li>Lista de útiles: lápiz, cuaderno pentagramado, borrador, T-shirt de El Sistema PC</li>
+
           </ul>
-          <p class="mt-2 mb-0 small text-muted">El pago inicial de <strong>RD$600</strong> se realiza en caja al momento de recibir estos materiales.</p>
+          <p class="mt-2 mb-0 small text-muted">Materiales con costo adicional, separados del aporte al programa: <strong>T-shirt oficial RD$500.00</strong> y <strong>cuaderno pentagramado RD$150.00</strong>.</p>
         </div>
       </div>
 
@@ -38,7 +38,7 @@ export function render(draft, errors = {}) {
       <div class="mb-3 p-3 bg-light rounded">
         ${renderFormField({
           name: 'acepta_beca_4500',
-          label: 'Estoy consciente de que el alumno recibe una beca de RD$4,500 y que solo pagaré RD$600 mensuales, siempre que el rendimiento, interés y asistencia sean notables.',
+          label: 'Estoy consciente de que el programa tiene un valor real de RD$5,150.00 mensuales y el alumno recibe una beca de RD$4,500.00 mensuales (87% cubierto), sujeta a rendimiento, interés y asistencia notable.',
           type: 'checkbox',
           value: draft.acepta_beca_4500 ?? false,
           error: errors.acepta_beca_4500 ?? '',
@@ -48,7 +48,7 @@ export function render(draft, errors = {}) {
       <div class="mb-3 p-3 bg-light rounded">
         ${renderFormField({
           name: 'acepta_pago_600',
-          label: 'Me comprometo a realizar el aporte mensual de RD$600 de manera responsable y puntual.',
+          label: 'Me comprometo a cubrir el aporte restante mediante una de las modalidades: RD$650.00 cada mes o pago semestral adelantado de RD$3,600.00 en enero por enero a junio (RD$600.00 por mes y ahorro de RD$300.00 en el semestre).',
           type: 'checkbox',
           value: draft.acepta_pago_600 ?? false,
           error: errors.acepta_pago_600 ?? '',

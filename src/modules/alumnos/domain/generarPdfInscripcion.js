@@ -403,7 +403,7 @@ export function generarFichaAlumno(alumno) {
   y = checkSpace(doc, y, 55, DOC_TITLE, alumno.nombre_completo, page)
   y = sectionBar(doc, '9 · COMPROMISOS Y AUTORIZACIONES', y, C.verde)
   y = tabla(doc, [
-    ['Acepta beca RD$4,500',  sn(alumno.acepta_beca_4500),  'Acepta pago RD$600/mes', sn(alumno.acepta_pago_600)],
+    ['Acepta beca RD$4,500',  sn(alumno.acepta_beca_4500),  'Acepta modalidad de aporte', sn(alumno.acepta_pago_600)],
     ['Autoriza fotos/redes',  sn(alumno.autoriza_fotos_redes), 'Fecha compromisos',  fecha(alumno.fecha_aceptacion_compromisos?.slice(0,10))],
   ], y)
 
@@ -460,8 +460,8 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   doc.setTextColor(...C.dorado)
   doc.setDrawColor(...C.dorado)
   doc.setLineWidth(0.6)
-  doc.roundedRect(W_LETTER - MARGIN - 28, 36, 28, 7, 1, 1, 'S')
-  doc.text('ORIGINAL', W_LETTER - MARGIN - 14, 41, { align: 'center' })
+  doc.roundedRect(W_LETTER - MARGIN - 28, 43, 28, 7, 1, 1, 'S')
+  doc.text('ORIGINAL', W_LETTER - MARGIN - 14, 48, { align: 'center' })
   doc.setTextColor(...C.grisOscuro)
   doc.setLineWidth(0.2)
 
@@ -502,10 +502,18 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
       : `El/La estudiante cuenta con conocimientos musicales previos, con interés en ` +
         `${interes(alumno.interes_musical).toLowerCase()} — instrumento: ${p(alumno.instrumento_interes)}.`,
     '',
-    `El representante, ${rep} (${repPar}), ha aceptado los términos del programa,` +
-    ` incluyendo el aporte mensual de RD$600, con pleno conocimiento de que el/la estudiante` +
-    ` recibe una beca valorada en RD$4,500 mensuales, la cual se mantendrá mientras` +
-    ` demuestre rendimiento, interés y asistencia notable.`,
+    `El valor real del programa es de RD$5,150.00 mensuales. El/La estudiante recibe una beca` +
+    ` otorgada por El Sistema de RD$4,500.00 mensuales (87% cubierto), la cual se mantendrá` +
+    ` mientras demuestre rendimiento, interés y asistencia notable.`,
+    '',
+    `El representante, ${rep} (${repPar}), ha aceptado los términos del programa.` +
+    ` Para cubrir el aporte restante, puede elegir entre dos modalidades:`,
+    '',
+    `1. Pago Mensual Regular: RD$650.00 cada mes.`,
+    '',
+    `2. Plan Semestral por Adelantado: pago único de RD$3,600.00 en enero, que cubre` +
+    ` de enero a junio y equivale a RD$600.00 por mes. Ahorro de RD$300.00 en el semestre,` +
+    ` sin preocuparse por fechas de pago mensuales.`,
   ]
 
   parrafos.forEach(linea => {
@@ -516,47 +524,6 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   })
 
   y += 6
-
-  // ── Caja: Al presentar esta constancia ───────────────────────────────────
-  const items = [
-    ['bi-credit-card',  '✓  Tarjeta de pagos mensuales'],
-    ['bi-calendar',     '✓  Horario de clases asignado'],
-    ['bi-pencil',       '✓  Lista de útiles: lápiz HB, cuaderno pentagramado, borrador'],
-    ['bi-shirt',        '✓  T-Shirt oficial de El Sistema Punta Cana'],
-  ]
-  const boxH = 9 + (items.length * 7) + 12   // título + ítems + franja rojo
-  doc.setFillColor(...C.azulClaro)
-  doc.setDrawColor(...C.azulMedio)
-  doc.setLineWidth(0.5)
-  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, boxH, 3, 3, 'FD')
-
-  // Título caja
-  doc.setFillColor(...C.azul)
-  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, 9, 3, 3, 'F')
-  doc.rect(MARGIN, y + 5, W_LETTER - MARGIN * 2, 4, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(...C.blanco)
-  doc.text('AL PRESENTAR ESTA CONSTANCIA EN CAJA RECIBIRÁ:', MARGIN + 4, y + 6.5)
-  y += 13
-
-  // Items
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9.5)
-  doc.setTextColor(...C.azul)
-  items.forEach(([, label]) => {
-    doc.text(label, MARGIN + 5, y)
-    y += 7
-  })
-
-  y += 1
-  doc.setFillColor(...C.rojo)
-  doc.roundedRect(MARGIN + 3, y, W_LETTER - MARGIN * 2 - 6, 8, 1.5, 1.5, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8.5)
-  doc.setTextColor(...C.blanco)
-  doc.text('PAGO OBLIGATORIO: RD$600 en caja al retirar los materiales', MARGIN + (W_LETTER - MARGIN * 2) / 2, y + 5.2, { align: 'center' })
-  y += 16
 
   // ── Recursos institucionales ──────────────────────────────────────────────
   const links = [

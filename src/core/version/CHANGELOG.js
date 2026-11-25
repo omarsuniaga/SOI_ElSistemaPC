@@ -15,11 +15,19 @@
  *   3. Hacer commit con mensaje: "chore: bump version to X.Y.Z"
  */
 
-export const APP_VERSION = '1.6.0'
-export const APP_BUILD_DATE = '2026-11-14'
+export const APP_VERSION = '1.6.1'
+export const APP_BUILD_DATE = '2026-11-25'
 
 /** @type {Array<{version: string, date: string, type: string, title: string, changes: string[], author?: string}>} */
 export const CHANGELOG = [
+  {
+    version: '1.6.1', date: '2026-11-25', type: 'fix', title: 'Constancia y compromisos de inscripción actualizados',
+    changes: [
+      'Valor real del programa de RD$5,150.00 mensuales y beca de RD$4,500.00 (87% cubierto).',
+      'Modalidades de aporte: RD$650.00 mensuales o RD$3,600.00 adelantados en enero por enero a junio.',
+      'Eliminado el cuadro de materiales de la constancia; el formulario aclara los costos adicionales de camiseta y cuaderno.',
+    ], author: 'SOI',
+  },
   {
     version: '1.6.0', date: '2026-11-14', type: 'feature', title: 'Cumpleañeros, compartir mensual e historial de versiones',
     changes: [

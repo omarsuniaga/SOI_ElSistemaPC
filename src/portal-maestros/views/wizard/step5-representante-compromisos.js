@@ -25,19 +25,19 @@ export function render(draft, errors = {}) {
       <hr>
       <h6 class="text-muted mb-3">Compromisos económicos</h6>
       <div class="alert alert-warning">
-        <p class="mb-2"><strong>Beca:</strong> El programa otorga una beca por valor de <strong>RD$4,500</strong> para cubrir los materiales del primer año.</p>
-        <p class="mb-0"><strong>Aporte mensual:</strong> El representante se compromete a un aporte mensual de <strong>RD$600</strong> para el sostenimiento del programa.</p>
+        <p class="mb-2"><strong>Beca:</strong> El programa tiene un valor real de <strong>RD$5,150.00 mensuales</strong> y otorga una beca de <strong>RD$4,500.00 mensuales (87% cubierto)</strong>, sujeta a rendimiento, interés y asistencia notable.</p>
+        <p class="mb-0"><strong>Aporte mensual:</strong> Puede elegir <strong>RD$650.00 cada mes</strong> o un <strong>pago semestral adelantado de RD$3,600.00 en enero</strong> por enero a junio (RD$600.00 por mes y ahorro de RD$300.00 en el semestre).</p>
       </div>
       ${renderFormField({
         name: 'acepta_beca_4500',
-        label: 'Acepto y entiendo los términos de la beca de RD$4,500',
+        label: 'Acepto y entiendo los términos de la beca de RD$4,500.00 mensuales (87% cubierto)',
         type: 'checkbox',
         value: draft.acepta_beca_4500 ?? false,
         error: errors.acepta_beca_4500 ?? '',
       })}
       ${renderFormField({
         name: 'acepta_pago_600',
-        label: 'Me comprometo a realizar el aporte mensual de RD$600',
+        label: 'Me comprometo a cubrir el aporte restante: RD$650.00 cada mes o RD$3,600.00 por adelantado en enero por enero a junio',
         type: 'checkbox',
         value: draft.acepta_pago_600 ?? false,
         error: errors.acepta_pago_600 ?? '',

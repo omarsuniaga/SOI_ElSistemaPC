@@ -1,10 +1,11 @@
 import { Modal } from 'bootstrap'
+import { router } from '../../../core/router/router.js'
 import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR } from '../domain/completitudAlumno.js'
 import { perfilMusicalAlumno } from '../domain/perfilMusicalAlumno.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
-import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'
+import { descargarFichaAlumno } from '../domain/generarPdfInscripcion.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm, SECTIONS } from '../components/AlumnoForm.js'
 import { PostulanteResolver } from '../components/PostulanteResolver.js'
@@ -410,10 +411,10 @@ export async function renderAlumnoAdminView(container, params = {}) {
                   aria-label="Descargar ficha PDF" title="Ficha PDF">
                   <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span class="alumno-profile-action-label">Ficha PDF</span>
                 </button>
-                <button class="btn btn-outline-success btn-sm alumno-profile-icon-action" id="btn-constancia" type="button"
-                  aria-label="Descargar constancia" title="Constancia">
-                  <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span class="alumno-profile-action-label">Constancia</span>
-                </button>
+                <a class="btn btn-outline-success btn-sm" data-certificate-link="inscripcion"
+                  href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-inscripcion">Constancia de inscripción</a>
+                <a class="btn btn-outline-success btn-sm" data-certificate-link="estudios"
+                  href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-estudios">Constancia de estudios</a>
                 <div class="dropdown alumno-profile-more">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle alumno-profile-icon-action" type="button" data-bs-toggle="dropdown"
                     aria-label="Más acciones" title="Más acciones" aria-expanded="false"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i><span class="alumno-profile-action-label">Más</span></button>
@@ -918,19 +919,13 @@ export async function renderAlumnoAdminView(container, params = {}) {
       })
     }
 
-    const btnConstancia = document.getElementById('btn-constancia')
-    if (btnConstancia) {
-      btnConstancia.addEventListener('click', async () => {
-        try {
-          btnConstancia.disabled = true
-          await descargarConstancia(alumno)
-        } catch (e) {
-          console.error('Error generando constancia:', e)
-        } finally {
-          btnConstancia.disabled = false
-        }
+    container.querySelectorAll('[data-certificate-link]').forEach(link => {
+      link.addEventListener('click', event => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+        event.preventDefault()
+        router.navigate(`alumnos/${encodeURIComponent(alumno.id)}/constancia-${link.dataset.certificateLink}`)
       })
-    }
+    })
 
     // Inactivar / Eliminar alumno
     const btnEliminar = document.getElementById('btn-eliminar-alumno')

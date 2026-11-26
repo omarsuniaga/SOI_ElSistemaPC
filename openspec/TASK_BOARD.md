@@ -102,3 +102,5 @@ propio aún — no forman parte del tablero hasta que alguien las convierta
 | `adm-users-responsive` | Adaptar Gestión de Usuarios y Portales a móvil y escritorio | completada | alta | Codex / 9a7a9213b62a | `fix/adm-users-responsive` | `docs/planning/ADM_USERS_RESPONSIVE.md` | PR #168 fusionado; 4.843 tests y CI aprobados; publicado en Netlify 6af69e10fb188ea178350f8c; revisión visual autenticada pendiente; lane liberado | 2026-11-13 |
 
 | `enrollment-certificate-fees` | Corregir constancia y compromisos de inscripción | completada | alta | Codex / 59b59934d050 | `fix/enrollment-certificate-fees` | — | Autorizado por Omar; 15 pruebas, lint y build aprobados; política sin regresiones frente a master; lane liberado | 2026-11-25 |
+
+| `student-certificates` | Separar constancias de inscripción y estudios con revisión de datos | en_progreso | alta | Codex / 59b59934d050 | `feat/student-certificates` | `docs/planning/STUDENT_CERTIFICATES.md` | Autorizado por Omar; lane adm-inscripción tomado; Engram no disponible | 2026-11-26 |

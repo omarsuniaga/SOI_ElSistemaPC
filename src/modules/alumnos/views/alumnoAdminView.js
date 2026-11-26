@@ -411,10 +411,6 @@ export async function renderAlumnoAdminView(container, params = {}) {
                   aria-label="Descargar ficha PDF" title="Ficha PDF">
                   <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span class="alumno-profile-action-label">Ficha PDF</span>
                 </button>
-                <a class="btn btn-outline-success btn-sm" data-certificate-link="inscripcion"
-                  href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-inscripcion">Constancia de inscripción</a>
-                <a class="btn btn-outline-success btn-sm" data-certificate-link="estudios"
-                  href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-estudios">Constancia de estudios</a>
                 <div class="dropdown alumno-profile-more">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle alumno-profile-icon-action" type="button" data-bs-toggle="dropdown"
                     aria-label="Más acciones" title="Más acciones" aria-expanded="false"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i><span class="alumno-profile-action-label">Más</span></button>
@@ -429,6 +425,12 @@ export async function renderAlumnoAdminView(container, params = {}) {
                   </ul>
                 </div>
               </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3" aria-label="Constancias del alumno">
+                <a class="btn btn-outline-success btn-sm" data-certificate-link="inscripcion"
+                  href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-inscripcion">Constancia de inscripción</a>
+                <a class="btn btn-outline-success btn-sm" data-certificate-link="estudios"
+                  href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-estudios">Constancia de estudios</a>
             </div>
             <div id="completitud-banner-container">${renderCompletitudBanner(alumno, clases)}</div>
           </div>

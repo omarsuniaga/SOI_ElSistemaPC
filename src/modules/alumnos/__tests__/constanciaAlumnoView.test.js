@@ -65,7 +65,7 @@ describe('Generación de constancias por alumno', () => {
     expect(container.querySelector('button[type="submit"]').disabled).toBe(false)
   })
   it('escapa los datos del perfil al precargar el formulario', async () => {
-    mocks.alumno.mockResolvedValue({ ...student, nombre_completo: '\"><img src=x onerror=alert(1)>' })
+    mocks.alumno.mockResolvedValue({ ...student, nombre_completo: '"><img src=x onerror=alert(1)>' })
     await renderConstanciaEstudiosView(container, { id: 'al-1' })
     expect(container.querySelector('img')).toBeNull()
     expect(container.querySelector('[name="nombre_completo"]').value).toContain('<img')

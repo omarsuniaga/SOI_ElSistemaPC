@@ -15,11 +15,20 @@
  *   3. Hacer commit con mensaje: "chore: bump version to X.Y.Z"
  */
 
-export const APP_VERSION = '1.6.1'
-export const APP_BUILD_DATE = '2026-11-25'
+export const APP_VERSION = '1.7.0'
+export const APP_BUILD_DATE = '2026-11-26'
 
 /** @type {Array<{version: string, date: string, type: string, title: string, changes: string[], author?: string}>} */
 export const CHANGELOG = [
+  {
+    version: '1.7.0', date: '2026-11-26', type: 'feature', title: 'Constancias de inscripción y de estudios por alumno',
+    changes: [
+      'Dos enlaces desde el perfil: constancia de inscripción y constancia de estudios.',
+      'La inscripción incluye aceptación de la beca, condiciones de permanencia, compromiso de pago y firma del representante.',
+      'Revisión y captura de datos faltantes antes de generar PDFs, con fecha real de ingreso y formación musical.',
+      'Constancia tradicional de estudios con firma y sello institucional, sin compromisos económicos.',
+    ], author: 'SOI',
+  },
   {
     version: '1.6.1', date: '2026-11-25', type: 'fix', title: 'Constancia y compromisos de inscripción actualizados',
     changes: [

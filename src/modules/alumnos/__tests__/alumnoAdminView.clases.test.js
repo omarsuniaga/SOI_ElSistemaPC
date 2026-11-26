@@ -83,6 +83,16 @@ describe('alumnoAdminView — gestión de clases del alumno', () => {
 
   afterEach(() => vi.unstubAllGlobals())
 
+  it('ofrece enlaces separados a las constancias del alumno seleccionado', async () => {
+    const container = await montar()
+    const inscription = container.querySelector('[data-certificate-link="inscripcion"]')
+    const studies = container.querySelector('[data-certificate-link="estudios"]')
+    expect(inscription.textContent).toBe('Constancia de inscripción')
+    expect(studies.textContent).toBe('Constancia de estudios')
+    expect(inscription.getAttribute('href')).toContain('/alumnos/al-1/constancia-inscripcion')
+    expect(studies.getAttribute('href')).toContain('/alumnos/al-1/constancia-estudios')
+  })
+
   it('cada clase inscrita tiene un botón para quitarla', async () => {
     const container = await montar()
     const panel = container.querySelector('#panel-clases')

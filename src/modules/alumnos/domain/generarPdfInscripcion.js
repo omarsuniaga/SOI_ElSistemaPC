@@ -8,6 +8,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getDocumentosInstitucionales } from '../../config/api/configApi.js'
+import { validateCertificate } from './certificateData.js'
 
 // ─── Paleta institucional ────────────────────────────────────────────────────
 
@@ -147,7 +148,7 @@ function serial(alumno) {
   return `SOI-PC-${y}-${b}`
 }
 function nowLong() {
-  return new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
+  return new Date().toLocaleDateString('es-DO', { timeZone: 'America/Santo_Domingo', day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 // ─── Primitivas de dibujo ────────────────────────────────────────────────────
@@ -488,37 +489,48 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   const rep          = p(alumno.representante_nombre)
   const repPar       = p(alumno.representante_parentesco)
 
+  const formacion = alumno.formacion || alumno.instrumento_principal || 'el programa de formación musical'
+  const ingreso = alumno.fecha_ingreso ? ` desde el ${fecha(alumno.fecha_ingreso.slice(0, 10))}` : ''
+  const identidad = [
+    alumno.fecha_nacimiento && `nacido/a el ${fecha(alumno.fecha_nacimiento)}`,
+    alumno.nacionalidad && `de nacionalidad ${alumno.nacionalidad}`,
+  ].filter(Boolean).join(', ')
   const parrafos = [
-    `Por medio de la presente, El Sistema Punta Cana hace constar que:`,
+    `El Sistema Punta Cana hace constar que el/la estudiante ${nombreAlumno}` +
+    `${identidad ? `, ${identidad},` : ''} está inscrito/a en su Programa de Formación Musical${ingreso}.`,
     '',
-    `El/La estudiante ${nombreAlumno}, de ${edad(alumno.fecha_nacimiento)},` +
-    ` nacido/a el ${fecha(alumno.fecha_nacimiento)}, de nacionalidad ${p(alumno.nacionalidad)},` +
-    ` ha sido debidamente inscrito/a en el Programa de Formación Musical de` +
-    ` El Sistema Punta Cana, a partir del día ${now}.`,
+    `El/La estudiante recibe formación musical en ${formacion}, con clases y actividades` +
+    ` del programa conforme al horario asignado por la institución.`,
     '',
-    alumno.requiere_iniciacion_musical
-      ? `El/La estudiante participará en el programa de iniciación musical, con interés en ` +
-        `${interes(alumno.interes_musical).toLowerCase()} — instrumento asignado: ${p(alumno.instrumento_interes)}.`
-      : `El/La estudiante cuenta con conocimientos musicales previos, con interés en ` +
-        `${interes(alumno.interes_musical).toLowerCase()} — instrumento: ${p(alumno.instrumento_interes)}.`,
+    `El valor real del programa es de RD$5,150.00 mensuales. El Sistema otorga una beca de` +
+    ` RD$4,500.00 mensuales (87% cubierto). El aporte restante es de RD$650.00 mensuales.`,
     '',
-    `El valor real del programa es de RD$5,150.00 mensuales. El/La estudiante recibe una beca` +
-    ` otorgada por El Sistema de RD$4,500.00 mensuales (87% cubierto), la cual se mantendrá` +
-    ` mientras demuestre rendimiento, interés y asistencia notable.`,
+    `ACEPTACIÓN DE LA BECA Y COMPROMISO DE PAGO`,
     '',
-    `El representante, ${rep} (${repPar}), ha aceptado los términos del programa.` +
-    ` Para cubrir el aporte restante, puede elegir entre dos modalidades:`,
+    `Yo, ${rep}, en calidad de ${repPar} del/de la estudiante, con documento de identidad` +
+    ` ${p(alumno.representante_cedula)}, acepto la beca otorgada por El Sistema Punta Cana.` +
+    ` Entiendo que para conservarla el/la estudiante debe demostrar rendimiento, interés y asistencia notable.`,
     '',
-    `1. Pago Mensual Regular: RD$650.00 cada mes.`,
+    `Me comprometo a pagar de manera responsable y puntual el aporte restante de RD$650.00 cada mes` +
+    ` (Pago Mensual Regular). Si opto por el Plan Semestral por Adelantado, realizaré un pago único` +
+    ` de RD$3,600.00 en enero por enero a junio, equivalente a RD$600.00 por mes, con un ahorro` +
+    ` de RD$300.00 en el semestre.`,
     '',
-    `2. Plan Semestral por Adelantado: pago único de RD$3,600.00 en enero, que cubre` +
-    ` de enero a junio y equivale a RD$600.00 por mes. Ahorro de RD$300.00 en el semestre,` +
-    ` sin preocuparse por fechas de pago mensuales.`,
+    `Con mi firma dejo constancia de que he leído y acepto estas condiciones.`,
   ]
 
+  let pageNumber = 1
   parrafos.forEach(linea => {
     if (!linea) { y += 4; return }
+    doc.setFont('helvetica', linea === 'ACEPTACIÓN DE LA BECA Y COMPROMISO DE PAGO' ? 'bold' : 'normal')
     const lines = doc.splitTextToSize(linea, W_LETTER - MARGIN * 2)
+    if (y + lines.length * 5.8 > H_LETTER - 25) {
+      footer(doc, pageNumber++)
+      doc.addPage()
+      y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN (cont.)', `Serie: ${ser}`) + 8
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+    }
     doc.text(lines, MARGIN, y)
     y += lines.length * 5.8
   })
@@ -533,17 +545,27 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   ].filter(Boolean)
 
   if (links.length > 0) {
+    if (y > H_LETTER - 55) {
+      footer(doc, pageNumber++)
+      doc.addPage()
+      y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN (cont.)', `Serie: ${ser}`) + 8
+    }
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(...C.azul)
     doc.text('Recursos digitales para el representante:', MARGIN, y)
     y += 6
 
-    links.forEach(({ icon, label, url }) => {
+    links.forEach(({ label, url }) => {
+      if (y > H_LETTER - 45) {
+        footer(doc, pageNumber++)
+        doc.addPage()
+        y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN (cont.)', `Serie: ${ser}`) + 8
+      }
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8.5)
       doc.setTextColor(...C.grisOscuro)
-      doc.text(`${icon}  ${label}`, MARGIN + 2, y)
+      doc.text(label, MARGIN + 2, y)
       y += 5
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
@@ -553,18 +575,15 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
       y += 7
     })
     y += 2
-  } else {
-    // Placeholder cuando no hay links configurados
-    doc.setFont('helvetica', 'italic')
-    doc.setFontSize(8)
-    doc.setTextColor(...C.grisMedio)
-    doc.text('Los recursos digitales serán comunicados por el coordinador del programa.', MARGIN, y)
-    y += 8
   }
 
   // ── Firmas ────────────────────────────────────────────────────────────────
-  if (y > H_LETTER - 55) {
-    footer(doc, 1)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7.5)
+  const representativeLines = doc.splitTextToSize(p(alumno.representante_nombre), W_LETTER / 2 - MARGIN - 6)
+  const extraNameHeight = Math.max(0, representativeLines.length - 1) * 3.5
+  if (y + 6 + 50 + extraNameHeight > H_LETTER - 17) {
+    footer(doc, pageNumber++)
     doc.addPage()
     y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN (cont.)', `Serie: ${ser}`)
   }
@@ -595,8 +614,9 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
   doc.setTextColor(...C.grisMedio)
-  doc.text(p(alumno.representante_nombre), xRep, y + 29)
-  doc.text(`C.I.: ${p(alumno.representante_cedula)}`, xRep, y + 33)
+  doc.text(representativeLines, xRep, y + 29)
+  doc.text(`C.I.: ${p(alumno.representante_cedula)}`, xRep, y + 34 + extraNameHeight)
+  doc.text('Fecha de firma: __________________', xRep, y + 40 + extraNameHeight)
 
   // Serial al pie (antes del footer)
   doc.setFont('helvetica', 'normal')
@@ -604,7 +624,62 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   doc.setTextColor(170, 170, 170)
   doc.text(`Serie: ${ser}`, W_LETTER - MARGIN, H_LETTER - 15, { align: 'right' })
 
-  footer(doc, 1)
+  footer(doc, pageNumber)
+  return doc
+}
+
+/** Constancia tradicional de estudios; no acredita pagos ni aceptación de becas. */
+export function generarConstanciaEstudios(alumno) {
+  const errors = validateCertificate(alumno, 'estudios')
+  if (Object.keys(errors).length) throw new Error('Completa los datos requeridos de la constancia de estudios.')
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
+  const ser = `${serial(alumno)}-EST`
+  let pageNumber = 1
+  let y = header(doc, 'CONSTANCIA DE ESTUDIOS', `Serie: ${ser}`)
+  doc.setFontSize(10)
+  doc.setTextColor(...C.grisMedio)
+  doc.text(`Punta Cana, ${nowLong()}`, W_LETTER - MARGIN, y, { align: 'right' })
+  y += 15
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...C.azul)
+  doc.text('A QUIEN PUEDA INTERESAR:', MARGIN, y)
+  y += 14
+  const identity = [
+    alumno.fecha_nacimiento && `nacido/a el ${fecha(alumno.fecha_nacimiento)}`,
+    alumno.nacionalidad && `de nacionalidad ${alumno.nacionalidad}`,
+  ].filter(Boolean).join(', ')
+  const paragraphs = [
+    `Por medio de la presente, El Sistema Punta Cana hace constar que el/la estudiante` +
+    ` ${alumno.nombre_completo.toUpperCase()}${identity ? `, ${identity},` : ''}` +
+    ` forma parte de esta institución desde el ${fecha(alumno.fecha_ingreso)}.`,
+    `El/La estudiante recibe formación musical en ${alumno.formacion}, dentro del Programa` +
+    ` de Formación Musical de El Sistema Punta Cana.`,
+    `Se expide la presente constancia a solicitud de la parte interesada, para los fines que estime pertinentes.`,
+  ]
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...C.grisOscuro)
+  for (const paragraph of paragraphs) {
+    const lines = doc.splitTextToSize(paragraph, W_LETTER - MARGIN * 2)
+    if (y + lines.length * 6 > H_LETTER - 65) {
+      footer(doc, pageNumber++)
+      doc.addPage()
+      y = header(doc, 'CONSTANCIA DE ESTUDIOS (cont.)', `Serie: ${ser}`) + 12
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+    }
+    doc.text(lines, MARGIN, y)
+    y += lines.length * 6 + 10
+  }
+  y = Math.max(y + 15, 175)
+  doc.setDrawColor(...C.grisMedio)
+  doc.line(MARGIN, y, MARGIN + 85, y)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Encargado Administrativo', MARGIN, y + 7)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text('El Sistema Punta Cana', MARGIN, y + 13)
+  doc.text('Firma y sello institucional', MARGIN, y + 20)
+  footer(doc, pageNumber)
   return doc
 }
 
@@ -621,7 +696,7 @@ export async function descargarConstancia(alumno) {
   try { docs = await getDocumentosInstitucionales() } catch { /* genera sin links */ }
   const doc    = generarConstanciaInscripcion(alumno, docs)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
-  doc.save(`constancia-${nombre}.pdf`)
+  doc.save(`constancia-inscripcion-${nombre}.pdf`)
 }
 
 export function descargarFichaDemo() {

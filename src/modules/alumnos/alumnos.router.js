@@ -1,3 +1,4 @@
+import { renderConstanciaInscripcionView, renderConstanciaEstudiosView } from './views/constanciaAlumnoView.js'
 import { router } from '../../core/router/router.js'
 import { renderAlumnosView } from './views/alumnosView.js'
 import { renderReporteInscripcionesMes } from './views/reporteInscripcionesMes.js'
@@ -23,6 +24,8 @@ export function registerRoutesAlumnos() {
   router.register('alumnos-inscribir', renderWizardInscripcionAlumnoView)
   router.register('alumnos/pdf-demo', renderPdfDemoView)
   router.register('alumnos-pdf-demo', renderPdfDemoView)
+  router.register('alumnos/:id/constancia-inscripcion', renderConstanciaInscripcionView)
+  router.register('alumnos/:id/constancia-estudios', renderConstanciaEstudiosView)
   router.register('alumnos/:id', renderAlumnoAdminView)
   router.register('alumno/:id', renderAlumnoAdminView)
   router.register('alumno', renderAlumnoAdminView)

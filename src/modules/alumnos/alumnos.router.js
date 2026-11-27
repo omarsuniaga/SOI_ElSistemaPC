@@ -26,6 +26,10 @@ export function registerRoutesAlumnos() {
   router.register('alumnos-pdf-demo', renderPdfDemoView)
   router.register('alumnos/:id/constancia-inscripcion', renderConstanciaInscripcionView)
   router.register('alumnos/:id/constancia-estudios', renderConstanciaEstudiosView)
+  router.register('alumnos/:id/historial', async (container, params) => {
+    const { renderHistorialPdfAlumno } = await import('./views/historialPdfAlumno.js')
+    return renderHistorialPdfAlumno(container, params)
+  })
   router.register('alumnos/:id', renderAlumnoAdminView)
   router.register('alumno/:id', renderAlumnoAdminView)
   router.register('alumno', renderAlumnoAdminView)

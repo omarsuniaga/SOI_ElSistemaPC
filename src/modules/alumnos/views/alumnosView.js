@@ -16,6 +16,7 @@ import {
   getParentescoLabel,
   obtenerAlumnosFiltradosYOrdenados,
 } from '../api/alumnosApi.js'
+import { descargarDocumentoIndividual } from './documentosAlumno.js'
 import { descargarPdfListadoAlumnos } from '../domain/generarPdfInscripcion.js'
 import { detectarCandidatosDe } from '../domain/duplicadosAlumnos.js'
 import {
@@ -128,6 +129,16 @@ export async function renderAlumnosView(container) {
 
   // ─── Nested View Functions ──────────────────────────────────────────
 
+  function selectorAlumno(scope) {
+    return `<label for="select-${scope}" class="fw-semibold">Seleccionar alumno</label>
+      <input type="search" class="form-control" data-picker-filter aria-label="Filtrar alumnos por nombre" placeholder="Filtrar por nombre…">
+      <select id="select-${scope}" class="form-select" data-student-picker></select>`
+  }
+
+  function accionAlumno(action, label, description = '') {
+    return `<button type="button" data-student-action="${action}" disabled>${label}${description ? `<small>${description}</small>` : ''}</button>`
+  }
+
   function renderContent(container) {
     const totalAlumnos = state.alumnosOriginales.length
     const totalActivos = state.alumnosOriginales.filter(a => a.is_active ?? true).length
@@ -165,50 +176,44 @@ export async function renderAlumnosView(container) {
               </div>
             </div>
 
-            <!-- Toolbar de Botones de Acción con 0.85rem de separación -->
-            <div class="d-flex align-items-center flex-wrap" style="gap: 0.85rem;">
-              <button class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnConciliarPostulados" title="Completar datos faltantes desde Postulados" style="font-size:0.78rem;">
-                <i class="bi bi-arrow-repeat"></i>
-                <span class="d-none d-sm-inline">Conciliar</span>
-              </button>
-              <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnDetectarDuplicados" title="Buscar y fusionar alumnos duplicados" style="font-size:0.78rem;">
-                <i class="bi bi-copy"></i>
-                <span class="d-none d-sm-inline">Duplicados</span>
-              </button>
-              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnExportarCSV" title="Exportar CSV" style="font-size:0.78rem;">
-                <i class="bi bi-file-earmark-spreadsheet"></i>
-                <span class="d-none d-sm-inline">CSV</span>
-              </button>
-              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnDescargarPdfListado" title="Descargar PDF del listado de alumnos" style="font-size:0.78rem;">
-                <i class="bi bi-file-earmark-pdf"></i>
-                <span class="d-none d-sm-inline">PDF</span>
-              </button>
-              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnReporteMes" title="Inscritos por mes" style="font-size:0.78rem;">
-                <i class="bi bi-bar-chart"></i>
-                <span class="d-none d-sm-inline">Reporte</span>
-              </button>
-              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnPdfDemo" title="Vista previa PDFs" style="font-size:0.78rem;">
-                <i class="bi bi-file-earmark-pdf"></i>
-                <span class="d-none d-sm-inline">Demo</span>
-              </button>
-              <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnInscribir" title="Inscribir Alumno" style="font-size:0.78rem;">
-                <i class="bi bi-person-plus-fill"></i>
-                <span>Inscribir</span>
-              </button>
-              <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnAgregarAlumno" style="font-size:0.78rem;">
-                <i class="bi bi-plus-circle-fill"></i>
-                <span>Nuevo Alumno</span>
-              </button>
-              <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-3 fw-semibold shadow-xs" id="btnIrInactivos" title="Ver alumnos inactivos" style="font-size:0.78rem;">
-                <i class="bi bi-person-dash-fill"></i>
-                <span class="d-none d-sm-inline">Inactivos</span>
-              </button>
+            <div class="student-tools">
+              <details name="student-tools"><summary>Generar PDF</summary>
+                <div class="student-tool-panel">
+                  ${selectorAlumno('pdf')}
+                  ${accionAlumno('constancia-inscripcion', 'Constancia de inscripción', 'Aceptación de beca y compromiso de pago para firma del representante.')}
+                  ${accionAlumno('constancia-estudios', 'Constancia de estudios', 'Acredita la fecha de ingreso y la formación que cursa.')}
+                  ${accionAlumno('ficha', 'Ficha técnica', 'Datos de inscripción, contactos y clases activas.')}
+                  ${accionAlumno('horario', 'Horario individual', 'Días y horas según las clases y el turno asignado.')}
+                  ${accionAlumno('historial', 'Historial académico', 'Asistencia, contenidos, progreso y síntesis con IA para revisar.')}
+                </div>
+              </details>
+              <details name="student-tools"><summary>Gestionar alumnos</summary>
+                <div class="student-tool-panel">
+                  <button id="btnInscribir">Inscripción guiada <small>Datos familiares y compromisos paso a paso.</small></button>
+                  <button id="btnAgregarAlumno">Registrar en un formulario <small>Alta administrativa directa.</small></button>
+                  <button id="btnBuscarPostulados">Buscar en postulados</button>
+                  <button id="btnIrInactivos">Ver alumnos inactivos</button>
+                  ${selectorAlumno('gestion')}
+                  ${accionAlumno('editar', 'Modificar datos')}
+                  ${accionAlumno('inactivar', 'Inactivar alumno', 'Conserva el expediente y permite reactivarlo.')}
+                </div>
+              </details>
+              <details name="student-tools"><summary>Reportes y herramientas</summary>
+                <div class="student-tool-panel">
+                  <button id="btnExportarCSV">Exportar listado a CSV</button>
+                  <button id="btnDescargarPdfListado">Descargar listado general en PDF</button>
+                  <button id="btnReporteMes">Inscripciones por mes</button>
+                  <button id="btnConciliarPostulados">Completar datos desde postulados</button>
+                  <button id="btnDetectarDuplicados">Revisar duplicados</button>
+                  <button id="btnPdfDemo">Ver ejemplos de PDF</button>
+                </div>
+              </details>
             </div>
           </div>
 
           <!-- Fila 2: Búsqueda y Botón Desplegable de Filtros & Orden -->
           <div class="d-flex align-items-center justify-content-between flex-wrap pt-1" style="gap: 0.85rem;">
-            <div class="flex-grow-1" style="min-width: 260px;">
+            <div class="flex-grow-1" style="min-width: min(100%, 260px);">
               <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
                 <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="buscar" placeholder="Buscar alumno por nombre, cédula, teléfono o email..." autocomplete="off" style="font-size:0.8rem;">
@@ -365,18 +370,18 @@ export async function renderAlumnosView(container) {
               </div>
             </div>
 
-            <!-- Barra Inferior de Acciones: solo íconos (Editar · WhatsApp · Eliminar), sin texto -->
+            <!-- Acciones del alumno -->
             <div class="pt-2 border-top d-flex align-items-center gap-1 mt-auto">
-              <button class="btn btn-xs btn-outline-secondary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="edit" data-id="${a.id}" title="Editar perfil de alumno" aria-label="Editar perfil de alumno" style="font-size:0.85rem;">
-                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+              <button class="btn btn-xs btn-outline-secondary rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="edit" data-id="${a.id}" title="Ver perfil del alumno" aria-label="Ver perfil del alumno" style="font-size:0.85rem;">
+                Ver perfil
               </button>
 
               <button class="btn btn-xs btn-outline-success rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="whatsapp" data-id="${a.id}" ${a.telefono ? 'title="Enviar WhatsApp" aria-label="Enviar WhatsApp"' : 'disabled aria-disabled="true" title="Sin teléfono: no se puede enviar WhatsApp" aria-label="WhatsApp no disponible: el alumno no tiene teléfono"'} style="font-size:0.85rem;">
-                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                WhatsApp
               </button>
 
-              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="delete" data-id="${a.id}" title="Eliminar alumno" aria-label="Eliminar alumno" style="font-size:0.85rem;">
-                <i class="bi bi-trash" aria-hidden="true"></i>
+              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="delete" data-id="${a.id}" title="Inactivar alumno" aria-label="Inactivar alumno" style="font-size:0.85rem;">
+                Inactivar
               </button>
             </div>
 
@@ -411,6 +416,42 @@ export async function renderAlumnosView(container) {
   function attachGlobalEvents(container) {
     const signal = _abortController?.signal
 
+    container.querySelector('#btnBuscarPostulados').addEventListener('click', () => router.navigate('postulados'), { signal })
+    for (const picker of container.querySelectorAll('[data-student-picker]')) {
+      const menu = picker.closest('details')
+      const buttons = menu.querySelectorAll('[data-student-action]')
+      const sync = () => buttons.forEach(button => { button.disabled = !picker.value })
+      const search = menu.querySelector('[data-picker-filter]')
+      const refresh = () => {
+        if (!menu.open) return
+        const previous = picker.value
+        const normalize = text => text.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const term = normalize(search.value.trim())
+        const options = state.alumnosOriginales.filter(a => normalize(a.nombre || a.nombre_completo || '').includes(term)).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
+        picker.replaceChildren(new Option('Elige un alumno…', ''), ...options.map(a => new Option(
+          [a.nombre || a.nombre_completo, a.instrumento || a.clases, String(a.id).slice(-6)].filter(Boolean).join(' · '), a.id)))
+        picker.value = options.some(a => String(a.id) === previous) ? previous : ''
+        sync()
+      }
+      menu.addEventListener('toggle', refresh, { signal })
+      search.addEventListener('input', refresh, { signal })
+      picker.addEventListener('change', sync, { signal })
+      for (const button of buttons) button.addEventListener('click', async () => {
+        const id = picker.value
+        if (!id) return
+        const action = button.dataset.studentAction
+        if (action === 'editar') return openEditModal(id)
+        if (action === 'inactivar') return openDeleteModal(id)
+        if (['ficha', 'horario'].includes(action)) {
+          button.disabled = true
+          try { await descargarDocumentoIndividual(id, action) }
+          catch (error) { AppToast.error(error.message) }
+          finally { sync() }
+          return
+        }
+        router.navigate(`alumnos/${encodeURIComponent(id)}/${action}`)
+      }, { signal })
+    }
     container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal(), { signal })
     container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
     container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })

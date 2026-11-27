@@ -2,7 +2,7 @@
  * alumnosView.cards.test.js
  * Zona de acciones de las cards del portal ADM:
  *   - sin botón 360° en la card
- *   - solo íconos (Editar · WhatsApp · Eliminar), sin texto visible
+ *   - etiquetas visibles (Editar · WhatsApp · Eliminar), sin texto visible
  *   - card sin teléfono → tinte rojo translúcido + WhatsApp deshabilitado
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -48,7 +48,7 @@ vi.mock('../utils/alumnosUtils.js', () => ({
 vi.mock('../domain/generarPdfInscripcion.js', () => ({ descargarPdfListadoAlumnos: vi.fn() }))
 vi.mock('../styles/alumnos.css', () => ({}))
 
-describe('alumnosView — acciones de la card (solo íconos)', () => {
+describe('alumnosView — acciones de la card (etiquetas visibles)', () => {
   let container
 
   beforeEach(async () => {
@@ -79,14 +79,31 @@ describe('alumnosView — acciones de la card (solo íconos)', () => {
     }
   })
 
-  it('los botones de acción no muestran texto (solo ícono) pero tienen aria-label', () => {
+  it('muestra el nombre de cada acción y conserva una etiqueta accesible', () => {
     for (const id of ['con-tel', 'sin-tel']) {
       for (const btn of actions(id)) {
-        expect(btn.textContent.trim()).toBe('')
-        expect(btn.querySelector('i.bi')).toBeTruthy()
+        expect(['Ver perfil', 'WhatsApp', 'Inactivar']).toContain(btn.textContent.trim())
         expect(btn.getAttribute('aria-label')).toBeTruthy()
       }
     }
+  })
+
+  it('permite seleccionar un alumno y filtrar sin dejar acciones apuntando a otro alumno', () => {
+    const picker = container.querySelector('#select-pdf')
+    const menu = picker.closest('details')
+    menu.open = true
+    menu.dispatchEvent(new Event('toggle'))
+    const buttons = [...menu.querySelectorAll('[data-student-action]')]
+    expect(buttons).toHaveLength(5)
+    expect(buttons.every(button => button.disabled)).toBe(true)
+    picker.value = 'con-tel'
+    picker.dispatchEvent(new Event('change'))
+    expect(buttons.every(button => !button.disabled)).toBe(true)
+    const filter = menu.querySelector('[data-picker-filter]')
+    filter.value = 'sin teléfono'
+    filter.dispatchEvent(new Event('input'))
+    expect(picker.value).toBe('')
+    expect(buttons.every(button => button.disabled)).toBe(true)
   })
 
   it('card SIN teléfono: tinte rojo (clase) y WhatsApp deshabilitado', () => {

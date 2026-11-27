@@ -5,7 +5,7 @@ import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR } from '../domain/completitudAlumno.js'
 import { perfilMusicalAlumno } from '../domain/perfilMusicalAlumno.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
-import { descargarFichaAlumno } from '../domain/generarPdfInscripcion.js'
+import { descargarFichaAlumno, generarHorarioAlumno } from '../domain/generarPdfInscripcion.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm, SECTIONS } from '../components/AlumnoForm.js'
 import { PostulanteResolver } from '../components/PostulanteResolver.js'
@@ -407,10 +407,6 @@ export async function renderAlumnoAdminView(container, params = {}) {
                 </div>
               </div>
               <div class="alumno-profile-actions">
-                <button class="btn btn-outline-primary btn-sm alumno-profile-icon-action" id="btn-ficha-pdf" type="button"
-                  aria-label="Descargar ficha PDF" title="Ficha PDF">
-                  <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span class="alumno-profile-action-label">Ficha PDF</span>
-                </button>
                 <div class="dropdown alumno-profile-more">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle alumno-profile-icon-action" type="button" data-bs-toggle="dropdown"
                     aria-label="Más acciones" title="Más acciones" aria-expanded="false"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i><span class="alumno-profile-action-label">Más</span></button>
@@ -426,12 +422,17 @@ export async function renderAlumnoAdminView(container, params = {}) {
                 </div>
               </div>
             </div>
-            <div class="d-flex flex-wrap gap-2 mt-3" aria-label="Constancias del alumno">
+            <details class="mt-3"><summary class="fw-semibold">Generar PDF</summary>
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                <button class="btn btn-outline-primary btn-sm" id="btn-ficha-pdf">Ficha técnica</button>
+                <button class="btn btn-outline-primary btn-sm" id="btn-horario-pdf">Horario individual</button>
+                <button class="btn btn-outline-primary btn-sm" id="btn-historial-pdf">Historial académico</button>
                 <a class="btn btn-outline-success btn-sm" data-certificate-link="inscripcion"
                   href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-inscripcion">Constancia de inscripción</a>
                 <a class="btn btn-outline-success btn-sm" data-certificate-link="estudios"
                   href="${router._portalPrefix}/alumnos/${encodeURIComponent(alumno.id)}/constancia-estudios">Constancia de estudios</a>
             </div>
+            </details>
             <div id="completitud-banner-container">${renderCompletitudBanner(alumno, clases)}</div>
           </div>
         </div>
@@ -906,13 +907,15 @@ export async function renderAlumnoAdminView(container, params = {}) {
       })
     }
 
+    container.querySelector('#btn-horario-pdf').onclick = () => generarHorarioAlumno(alumno, clases).save(`horario-${alumno.nombre_completo || alumno.nombre}.pdf`)
+    container.querySelector('#btn-historial-pdf').onclick = () => router.navigate(`alumnos/${encodeURIComponent(alumno.id)}/historial`)
     // PDF buttons
     const btnFicha = document.getElementById('btn-ficha-pdf')
     if (btnFicha) {
       btnFicha.addEventListener('click', async () => {
         try {
           btnFicha.disabled = true
-          await descargarFichaAlumno(alumno)
+          await descargarFichaAlumno(alumno, clases)
         } catch (e) {
           console.error('Error generando ficha PDF:', e)
         } finally {

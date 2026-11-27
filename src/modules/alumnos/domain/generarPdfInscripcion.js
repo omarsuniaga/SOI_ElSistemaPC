@@ -287,7 +287,7 @@ function checkSpace(doc, y, needed, titulo, nombre, pageRef) {
 // FICHA TÉCNICA DEL ALUMNO
 // ════════════════════════════════════════════════════════════════════════════
 
-export function generarFichaAlumno(alumno) {
+export function generarFichaAlumno(alumno, clases) {
   const doc  = new jsPDF({ unit: 'mm', format: 'letter' })
   const page = { n: 1 }
   const DOC_TITLE = 'FICHA TÉCNICA DEL ALUMNO'
@@ -407,6 +407,16 @@ export function generarFichaAlumno(alumno) {
     ['Acepta beca RD$4,500',  sn(alumno.acepta_beca_4500),  'Acepta modalidad de aporte', sn(alumno.acepta_pago_600)],
     ['Autoriza fotos/redes',  sn(alumno.autoriza_fotos_redes), 'Fecha compromisos',  fecha(alumno.fecha_aceptacion_compromisos?.slice(0,10))],
   ], y)
+
+  if (clases) {
+    y = checkSpace(doc, y, 30, DOC_TITLE, alumno.nombre_completo, page)
+    y = sectionBar(doc, '10 · INSCRIPCIÓN Y CLASES ACTIVAS', y)
+    y = tablaSimple(doc, [
+      ['Ingreso', fecha(alumno.fecha_ingreso)],
+      ['Programas', alumno.programas?.map(item => item.nombre).join(', ') || 'Sin programa registrado'],
+      ['Clases', clases.map(item => item.nombre).join(', ') || 'Sin clases activas'],
+    ], y)
+  }
 
   // ── Firmas ────────────────────────────────────────────────────────────────
   y = checkSpace(doc, y, 45, DOC_TITLE, alumno.nombre_completo, page)
@@ -685,8 +695,23 @@ export function generarConstanciaEstudios(alumno) {
 
 // ─── Descargas ───────────────────────────────────────────────────────────────
 
-export function descargarFichaAlumno(alumno) {
-  const doc    = generarFichaAlumno(alumno)
+export function generarHorarioAlumno(alumno, clases) {
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
+  const startY = header(doc, 'HORARIO INDIVIDUAL', alumno.nombre_completo || alumno.nombre)
+  const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo', 'Por asignar']
+  const rows = clases.flatMap(c => {
+    const slots = c.turno ? [c.turno] : c.clase_horarios || []
+    return (slots.length ? slots : [{}]).map(slot => [slot.dia || 'Por asignar',
+      slot.hora_inicio?.slice(0, 5) || '—', slot.hora_fin?.slice(0, 5) || '—', c.nombre])
+  }).sort((a, b) => days.indexOf(a[0]) - days.indexOf(b[0]) || a[1].localeCompare(b[1]))
+  autoTable(doc, { startY, head: [['Día', 'Desde', 'Hasta', 'Clase']], body: rows,
+    margin: { bottom: 20 }, didDrawPage: data => footer(doc, data.pageNumber) })
+  if (!rows.length) { doc.setTextColor(...C.grisOscuro); doc.text('Sin clases activas registradas.', MARGIN, startY + 20) }
+  return doc
+}
+
+export function descargarFichaAlumno(alumno, clases) {
+  const doc    = generarFichaAlumno(alumno, clases)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
   doc.save(`ficha-${nombre}.pdf`)
 }

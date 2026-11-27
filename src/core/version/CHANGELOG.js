@@ -15,11 +15,17 @@
  *   3. Hacer commit con mensaje: "chore: bump version to X.Y.Z"
  */
 
-export const APP_VERSION = '1.7.0'
-export const APP_BUILD_DATE = '2026-11-26'
+export const APP_VERSION = '1.8.0'
+export const APP_BUILD_DATE = '2026-11-27'
 
 /** @type {Array<{version: string, date: string, type: string, title: string, changes: string[], author?: string}>} */
 export const CHANGELOG = [
+  {
+    version: '1.8.0', date: '2026-11-27', type: 'feature', title: 'Directorio de alumnos y documentos individuales',
+    changes: ['Menús de documentos, gestión y reportes con etiquetas visibles en móvil.',
+      'Horario individual y clases activas en la ficha técnica.',
+      'Historial académico descargable con registros individuales y síntesis con IA revisable.'], author: 'SOI',
+  },
   {
     version: '1.7.0', date: '2026-11-26', type: 'feature', title: 'Constancias de inscripción y de estudios por alumno',
     changes: [

@@ -626,3 +626,14 @@
 [data-bs-theme] .list-group-item.alumno-card--sin-telefono:hover {
   background: rgba(var(--bs-danger-rgb), 0.14);
 }
+
+.student-tools { width: 100%; display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem; }
+.student-tools details { flex: 1 1 12rem; min-width: 0; border: 1px solid var(--bs-border-color); border-radius: .65rem; }
+.student-tools summary { cursor: pointer; padding: .7rem .9rem; font-weight: 600; }
+.student-tools details[open] summary { color: var(--bs-primary-text-emphasis); background: var(--bs-primary-bg-subtle); }
+.student-tool-panel { display: grid; gap: .3rem; padding: .65rem; }
+.student-tool-panel button { text-align: left; padding: .55rem; background: var(--bs-body-bg); color: var(--bs-body-color); border: 0; border-bottom: 1px solid var(--bs-border-color); }
+.student-tool-panel button:enabled:hover { background: var(--bs-tertiary-bg); }
+.student-tool-panel small { display: block; color: var(--bs-secondary-color); }
+.student-tool-panel button:disabled { opacity: .65; }
+@media (max-width: 575px) { .student-tools details { flex-basis: 100%; } }

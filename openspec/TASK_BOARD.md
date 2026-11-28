@@ -45,6 +45,7 @@ cualquier tarea `disponible` según su contexto o especialidad.
 
 | task_id | título | estado | prioridad | agente_asignado | rama_git | openspec_change | notas | última_actualización |
 |---|---|---|---|---|---|---|---|---|
+| `student-directory-selection` | Búsqueda y expediente seleccionado | en_revision | alta | Codex / 59b59934d050 | `feat/directorio-seleccion` | — | Primera entrega del directorio | 2026-11-27 |
 | `student-directory-actions` | Menús ADM y documentos individuales | en_revision | alta | Codex / 59b59934d050 | `feat/student-directory-actions` | — | Directorio de alumnos | 2026-11-27 |
 | `adm-five-views-usability` | Reparar cinco vistas ADM y adaptar móvil | en_revision | alta | Codex / c0b56369375d | `fix/adm-views-usability` | `docs/planning/SPEC_REPARACION_VISTAS_ADM.md` | Autorizado por Omar; pruebas focalizadas, lint/tipos/build aprobados; revisión visual pendiente; lane liberado | 2026-10-19 |
 | `adm-permission-switch-reactivity` | Corregir bloqueo de switches de permisos ADM | en_revision | alta | Codex / 09a7f6673c6b | `fix/adm-permission-switch-reactivity` | `docs/planning/FIX_PERMISOS_ADM_REACTIVIDAD.md` | Autorizado por Omar; 47 tests, build, tipos y lint aprobados; lane liberado | 2026-10-19 |

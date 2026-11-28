@@ -1,3 +1,4 @@
+import { coincideAlumno } from '../domain/busquedaDirectorio.js'
 import '../styles/alumnos.css'
 import { router } from '../../../core/router/router.js'
 import { calcularCompletitud } from '../domain/completitudAlumno.js'
@@ -18,7 +19,7 @@ import {
 } from '../api/alumnosApi.js'
 import { descargarDocumentoIndividual } from './documentosAlumno.js'
 import { descargarPdfListadoAlumnos } from '../domain/generarPdfInscripcion.js'
-import { detectarCandidatosDe } from '../domain/duplicadosAlumnos.js'
+import { confirmarAltaIndividual } from '../api/coincidenciasAlta.js'
 import {
   formatDate,
   escapeHTML,
@@ -65,16 +66,17 @@ function renderError(container, mensaje) {
   document.getElementById('retryBtn')?.addEventListener('click', () => renderAlumnosView(container))
 }
 
-function renderEmpty() {
-  return `
-    <div class="text-center py-5 w-100 list-group-item text-muted" style="background: transparent; border: none;">
-      <div class="mb-3">
-        <i class="bi bi-inbox" style="font-size: 3rem; color: var(--bs-secondary);"></i>
-      </div>
-      <h4>No hay alumnos</h4>
-      <p class="text-muted mb-0">Crea tu primer alumno haciendo clic en el botón "Nuevo"</p>
-    </div>
-  `
+const directorios = new WeakMap()
+const camposDirectorio = ['buscar', 'filtroInstrumento', 'filtroCompletitud', 'filtroWhatsapp', 'selectOrdenarAlumnos']
+
+function renderEmpty(sinMatricula) {
+  return `<section class="text-center py-4">
+    <h4>${sinMatricula ? 'No hay alumnos activos' : 'Ningún alumno coincide con esta búsqueda'}</h4>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+      ${sinMatricula ? '<button class="btn btn-primary" data-empty="alta">Inscribir alumno</button>' : '<button class="btn btn-outline-secondary" data-empty="limpiar">Limpiar filtros</button>'}
+      <button class="btn btn-outline-secondary" data-empty="inactivos">Buscar en inactivos</button>
+      <button class="btn btn-outline-secondary" data-empty="postulados">Buscar en postulados</button>
+    </div></section>`
 }
 
 export async function renderAlumnosView(container) {
@@ -91,7 +93,9 @@ export async function renderAlumnosView(container) {
     sortBy: 'nombre',
     sortDir: 'asc',
   }
-  let currentContainer = container
+  const contexto = directorios.get(container) || { campos: {}, selected: '', scroll: [] }
+  directorios.set(container, contexto)
+  const currentContainer = container
 
   // D03: Abort previous listeners and create fresh AbortController
   _abortController?.abort()
@@ -114,9 +118,15 @@ export async function renderAlumnosView(container) {
 
     // Render and wire events first, then apply filters (which includes sort)
     renderContent(container)
+    for (const campo of camposDirectorio) {
+      if (contexto.campos[campo] != null) container.querySelector('#' + campo).value = contexto.campos[campo]
+    }
+    state.sortBy = contexto.sortBy || state.sortBy
+    state.sortDir = contexto.sortDir || state.sortDir
     attachGlobalEvents(container)
     // C07: Apply initial sort after rendering
     applyFilters()
+    for (const [element, top] of contexto.scroll) element.scrollTop = top
   } catch (error) {
     console.error(error)
     renderError(container, error.message)
@@ -129,10 +139,25 @@ export async function renderAlumnosView(container) {
 
   // ─── Nested View Functions ──────────────────────────────────────────
 
-  function selectorAlumno(scope) {
-    return `<label for="select-${scope}" class="fw-semibold">Seleccionar alumno</label>
-      <input type="search" class="form-control" data-picker-filter aria-label="Filtrar alumnos por nombre" placeholder="Filtrar por nombre…">
-      <select id="select-${scope}" class="form-select" data-student-picker></select>`
+  function guardarPosicion() {
+    contexto.scroll = []
+    for (let node = container; node; node = node.parentElement) {
+      if (node.scrollTop) contexto.scroll.push([node, node.scrollTop])
+    }
+  }
+
+  function actualizarSeleccion() {
+    const alumno = state.alumnos.find(a => String(a.id) === contexto.selected)
+    if (!alumno) contexto.selected = ''
+    const panel = container.querySelector('#expediente-seleccionado')
+    panel.hidden = !alumno
+    panel.querySelector('h2').textContent = alumno?.nombre || alumno?.nombre_completo || ''
+    panel.querySelector('[data-identidad]').textContent = alumno ? [
+      alumno.programas?.map(p => p.nombre).join(', ') || alumno.clases || alumno.instrumento,
+      alumno.representante_nombre || alumno.familiar_nombre || 'Sin representante registrado',
+      'Ref. ' + String(alumno.id).slice(-6),
+    ].filter(Boolean).join(' · ') : ''
+    panel.querySelectorAll('[data-student-action]').forEach(b => { b.disabled = !alumno })
   }
 
   function accionAlumno(action, label, description = '') {
@@ -177,29 +202,16 @@ export async function renderAlumnosView(container) {
             </div>
 
             <div class="student-tools">
-              <details name="student-tools"><summary>Generar PDF</summary>
-                <div class="student-tool-panel">
-                  ${selectorAlumno('pdf')}
-                  ${accionAlumno('constancia-inscripcion', 'Constancia de inscripción', 'Aceptación de beca y compromiso de pago para firma del representante.')}
-                  ${accionAlumno('constancia-estudios', 'Constancia de estudios', 'Acredita la fecha de ingreso y la formación que cursa.')}
-                  ${accionAlumno('ficha', 'Ficha técnica', 'Datos de inscripción, contactos y clases activas.')}
-                  ${accionAlumno('horario', 'Horario individual', 'Días y horas según las clases y el turno asignado.')}
-                  ${accionAlumno('historial', 'Historial académico', 'Asistencia, contenidos, progreso y síntesis con IA para revisar.')}
-                </div>
-              </details>
-              <details name="student-tools"><summary>Gestionar alumnos</summary>
+              <details id="alta-alumno" name="directorio"><summary>Inscribir alumno</summary>
                 <div class="student-tool-panel">
                   <button id="btnInscribir">Inscripción guiada <small>Datos familiares y compromisos paso a paso.</small></button>
-                  <button id="btnAgregarAlumno">Registrar en un formulario <small>Alta administrativa directa.</small></button>
-                  <button id="btnBuscarPostulados">Buscar en postulados</button>
-                  <button id="btnIrInactivos">Ver alumnos inactivos</button>
-                  ${selectorAlumno('gestion')}
-                  ${accionAlumno('editar', 'Modificar datos')}
-                  ${accionAlumno('inactivar', 'Inactivar alumno', 'Conserva el expediente y permite reactivarlo.')}
+                  <button id="btnAgregarAlumno">Registro administrativo en un formulario</button>
                 </div>
               </details>
-              <details name="student-tools"><summary>Reportes y herramientas</summary>
+              <details name="directorio"><summary>Reportes y herramientas</summary>
                 <div class="student-tool-panel">
+                  <button id="btnBuscarPostulados">Buscar en postulados</button>
+                  <button id="btnIrInactivos">Ver alumnos inactivos</button>
                   <button id="btnExportarCSV">Exportar listado a CSV</button>
                   <button id="btnDescargarPdfListado">Descargar listado general en PDF</button>
                   <button id="btnReporteMes">Inscripciones por mes</button>
@@ -216,7 +228,7 @@ export async function renderAlumnosView(container) {
             <div class="flex-grow-1" style="min-width: min(100%, 260px);">
               <div class="input-group input-group-sm rounded-3 shadow-xs overflow-hidden">
                 <span class="input-group-text bg-body-tertiary border-end-0 py-1.5"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="buscar" placeholder="Buscar alumno por nombre, cédula, teléfono o email..." autocomplete="off" style="font-size:0.8rem;">
+                <input type="text" class="form-control border-start-0 py-1.5 fw-medium" id="buscar" aria-label="Buscar alumno" placeholder="Nombre, representante, teléfono, cédula o correo" autocomplete="off" style="font-size:0.8rem;">
               </div>
             </div>
 
@@ -286,6 +298,27 @@ export async function renderAlumnosView(container) {
             </div>
           </div>
 
+          <section id="expediente-seleccionado" class="border rounded p-3 mt-3" hidden>
+            <h2 tabindex="-1" class="h5"></h2><p class="small" data-identidad></p>
+            <button class="btn btn-sm btn-primary mb-2" data-student-action="perfil">Ver perfil</button>
+            <div class="student-tools">
+              <details name="student-tools"><summary>Generar PDF</summary>
+                <div class="student-tool-panel">
+                  ${accionAlumno('constancia-inscripcion', 'Constancia de inscripción', 'Aceptación de beca y compromiso de pago para firma del representante.')}
+                  ${accionAlumno('constancia-estudios', 'Constancia de estudios', 'Acredita la fecha de ingreso y la formación que cursa.')}
+                  ${accionAlumno('ficha', 'Ficha técnica', 'Datos de inscripción, contactos y clases activas.')}
+                  ${accionAlumno('horario', 'Horario individual', 'Días y horas según las clases y el turno asignado.')}
+                  ${accionAlumno('historial', 'Historial académico', 'Asistencia, contenidos, progreso y síntesis con IA para revisar.')}
+                </div>
+              </details>
+              <details name="student-tools"><summary>Gestionar expediente</summary>
+                <div class="student-tool-panel">
+                  ${accionAlumno('editar', 'Modificar datos')}
+                  ${accionAlumno('inactivar', 'Inactivar alumno', 'Conserva el expediente y permite reactivarlo.')}
+                </div>
+              </details>
+            </div>
+          </section>
           <!-- Sort controls accesibles -->
           <div class="d-none" id="hiddenSortControls">
             <button class="btn btn-link btn-sm" data-sort="nombre">Nombre</button>
@@ -302,7 +335,7 @@ export async function renderAlumnosView(container) {
             ${renderProgramGroups(state.alumnos)}
           </div>
           <div id="emptyContainer">
-            ${state.alumnos.length === 0 ? renderEmpty() : ''}
+            ${state.alumnos.length === 0 ? renderEmpty(!state.alumnosOriginales.length) : ''}
           </div>
         </div>
 
@@ -335,9 +368,8 @@ export async function renderAlumnosView(container) {
             <div class="mb-2">
               
               <!-- Nombre del Alumno -->
-              <strong class="text-body text-truncate d-block mb-1" style="font-size: 0.92rem;" title="${escapeHTML(nombre)}">
-                ${escapeHTML(nombre)}
-              </strong>
+              <button type="button" class="btn btn-link p-0 fw-bold text-start" data-select-student aria-label="Seleccionar a ${escapeHTML(nombre)}">${escapeHTML(nombre)}</button>
+
 
               <!-- Instrumento / Cátedra -->
               <div class="mb-2">
@@ -346,7 +378,7 @@ export async function renderAlumnosView(container) {
                 </span>
               </div>
 
-              ${Array.isArray(a.programas) && a.programas.length > 1 ? `
+              ${Array.isArray(a.programas) && a.programas.length > 0 ? `
                 <div class="alumno-programa-tags mb-2" aria-label="Programas del alumno">
                   ${a.programas.map(programa => `
                     <span class="badge rounded-pill text-bg-light border me-1 mb-1">${escapeHTML(programa.nombre)}</span>
@@ -362,9 +394,9 @@ export async function renderAlumnosView(container) {
                   </div>
                 ` : '<div class="text-truncate text-muted fst-italic" style="font-size:0.72rem;"><i class="bi bi-telephone me-1"></i>Sin teléfono</div>'}
 
-                ${a.familiar_nombre ? `
+                ${(a.representante_nombre || a.familiar_nombre) ? `
                   <div class="text-truncate" title="Representante">
-                    <i class="bi bi-person me-1 text-secondary"></i>Rep: ${escapeHTML(a.familiar_nombre)}
+                    <i class="bi bi-person me-1 text-secondary"></i>Rep: ${escapeHTML(a.representante_nombre || a.familiar_nombre)}
                   </div>
                 ` : '<div class="text-truncate text-muted fst-italic" style="font-size:0.72rem;"><i class="bi bi-person me-1"></i>Sin representante</div>'}
               </div>
@@ -380,9 +412,7 @@ export async function renderAlumnosView(container) {
                 WhatsApp
               </button>
 
-              <button class="btn btn-xs btn-outline-danger rounded-3 shadow-xs d-flex align-items-center justify-content-center flex-fill py-1 px-2" data-action="delete" data-id="${a.id}" title="Inactivar alumno" aria-label="Inactivar alumno" style="font-size:0.85rem;">
-                Inactivar
-              </button>
+
             </div>
 
             <!-- Borde Inferior Sutil como Barra de Progreso de Completitud -->
@@ -416,37 +446,36 @@ export async function renderAlumnosView(container) {
   function attachGlobalEvents(container) {
     const signal = _abortController?.signal
 
-    container.querySelector('#btnBuscarPostulados').addEventListener('click', () => router.navigate('postulados'), { signal })
-    for (const picker of container.querySelectorAll('[data-student-picker]')) {
-      const menu = picker.closest('details')
-      const buttons = menu.querySelectorAll('[data-student-action]')
-      const sync = () => buttons.forEach(button => { button.disabled = !picker.value })
-      const search = menu.querySelector('[data-picker-filter]')
-      const refresh = () => {
-        if (!menu.open) return
-        const previous = picker.value
-        const normalize = text => text.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        const term = normalize(search.value.trim())
-        const options = state.alumnosOriginales.filter(a => normalize(a.nombre || a.nombre_completo || '').includes(term)).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
-        picker.replaceChildren(new Option('Elige un alumno…', ''), ...options.map(a => new Option(
-          [a.nombre || a.nombre_completo, a.instrumento || a.clases, String(a.id).slice(-6)].filter(Boolean).join(' · '), a.id)))
-        picker.value = options.some(a => String(a.id) === previous) ? previous : ''
-        sync()
-      }
-      menu.addEventListener('toggle', refresh, { signal })
-      search.addEventListener('input', refresh, { signal })
-      picker.addEventListener('change', sync, { signal })
-      for (const button of buttons) button.addEventListener('click', async () => {
-        const id = picker.value
+    const buscarEn = ruta => {
+      const consulta = container.querySelector('#buscar').value.trim()
+      if (consulta) window.router?.navigate(ruta, { consulta })
+      else window.router?.navigate(ruta)
+    }
+    container.addEventListener('click', guardarPosicion, { capture: true, signal })
+    window.addEventListener('routeChanged', event => {
+      if (event.detail === 'login') directorios.delete(container)
+    }, { signal })
+    container.querySelector('#btnBuscarPostulados').addEventListener('click', () => buscarEn('postulados'), { signal })
+    container.querySelector('#emptyContainer').addEventListener('click', event => {
+      const action = event.target.closest('[data-empty]')?.dataset.empty
+      if (action === 'limpiar') container.querySelector('#btnLimpiarFiltros').click()
+      if (action === 'inactivos') buscarEn('alumnos-inactivos')
+      if (action === 'postulados') buscarEn('postulados')
+      if (action === 'alta') container.querySelector('#alta-alumno summary').click()
+    }, { signal })
+    for (const button of container.querySelectorAll('[data-student-action]')) {
+      button.addEventListener('click', async () => {
+        const id = contexto.selected
         if (!id) return
         const action = button.dataset.studentAction
+        if (action === 'perfil') return router.navigate(`alumnos/${encodeURIComponent(id)}`)
         if (action === 'editar') return openEditModal(id)
         if (action === 'inactivar') return openDeleteModal(id)
         if (['ficha', 'horario'].includes(action)) {
           button.disabled = true
           try { await descargarDocumentoIndividual(id, action) }
           catch (error) { AppToast.error(error.message) }
-          finally { sync() }
+          finally { button.disabled = !contexto.selected }
           return
         }
         router.navigate(`alumnos/${encodeURIComponent(id)}/${action}`)
@@ -456,8 +485,8 @@ export async function renderAlumnosView(container) {
     container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
     container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
     container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })
-    container.querySelector('#btnIrInactivos')?.addEventListener('click', () => window.router?.navigate('alumnos-inactivos'), { signal })
-    container.querySelector('#btnAlumnosInactivos')?.addEventListener('click', () => window.router?.navigate('alumnos-inactivos'), { signal })
+    container.querySelector('#btnIrInactivos')?.addEventListener('click', () => buscarEn('alumnos-inactivos'), { signal })
+    container.querySelector('#btnAlumnosInactivos')?.addEventListener('click', () => buscarEn('alumnos-inactivos'), { signal })
 
 
     container.querySelector('#btnDescargarPdfListado')?.addEventListener('click', async (e) => {
@@ -582,20 +611,23 @@ export async function renderAlumnosView(container) {
     tbody?.addEventListener('click', async (e) => {
       const row = e.target.closest('.list-group-item[data-id]')
       if (row && !e.target.closest('[data-action]')) {
-        window.router?.navigate(`alumnos/${row.dataset.id}`, { id: row.dataset.id })
+        contexto.selected = row.dataset.id
+        actualizarSeleccion()
+        container.querySelector('#expediente-seleccionado h2').focus()
         return
       }
 
       const btn = e.target.closest('[data-action]')
       if (!btn) return
       const id = btn.dataset.id
+      contexto.selected = id
+      actualizarSeleccion()
       if (btn.dataset.action === 'ficha360') {
         const alumno = state.alumnosOriginales.find(a => a.id === id)
         Ficha360Modal.abrir(alumno || id)
       } else if (btn.dataset.action === 'edit') {
         window.router?.navigate(`alumnos/${id}`, { id })
-      } else if (btn.dataset.action === 'delete') {
-        openDeleteModal(id)
+
       } else if (btn.dataset.action === 'whatsapp') {
         openWhatsAppModal(id)
       }
@@ -640,13 +672,7 @@ export async function renderAlumnosView(container) {
     const filtroInstrumento = currentContainer.querySelector('#filtroInstrumento')?.value || 'todos'
 
     state.alumnos = state.alumnosOriginales.filter(a => {
-      const matchSearch = !searchTerm ||
-        (a.nombre || '').toLowerCase().includes(searchTerm) ||
-        (a.instrumento || '').toLowerCase().includes(searchTerm) ||
-        (a.telefono || '').toLowerCase().includes(searchTerm) ||
-        (a.familiar_nombre || '').toLowerCase().includes(searchTerm) ||
-        (a.email || '').toLowerCase().includes(searchTerm) ||
-        (a.cedula || '').toLowerCase().includes(searchTerm)
+      const matchSearch = coincideAlumno(searchTerm, a)
 
       const tieneWhatsapp = !!a.telefono && a.telefono.trim() !== ''
       const matchWhatsapp = filtroWhatsapp === 'todos' ||
@@ -700,6 +726,10 @@ export async function renderAlumnosView(container) {
       return 0
     })
 
+    for (const campo of camposDirectorio) contexto.campos[campo] = container.querySelector('#' + campo)?.value
+    contexto.sortBy = state.sortBy
+    contexto.sortDir = state.sortDir
+    actualizarSeleccion()
     refreshTable()
   }
 
@@ -721,12 +751,8 @@ export async function renderAlumnosView(container) {
 
         // Prevención de duplicados: antes de crear, avisar si el nuevo alumno
         // coincide fuertemente con uno existente.
-        const candidatos = detectarCandidatosDe(validation.data, state.alumnosOriginales)
-        if (candidatos.length) {
-          return confirmarAlumnoPosibleDuplicado(validation.data, candidatos)
-        }
-
         try {
+          if (!await confirmarAltaIndividual(validation.data)) return false
           const nuevo = await crearAlumno(validation.data)
           nuevo._completitud = calcularCompletitud(nuevo)
           state.alumnosOriginales.push(nuevo)
@@ -742,55 +768,9 @@ export async function renderAlumnosView(container) {
     })
   }
 
-  function confirmarAlumnoPosibleDuplicado(data, candidatos) {
-    const top = candidatos[0]
-    const existente = state.alumnosOriginales.find(a => a.id === top.a.id)
-    const nombreExistente = existente?.nombre || existente?.nombre_completo || 'alumno existente'
-    const pct = Math.round(top.puntaje * 100)
-
-    return new Promise(resolve => {
-      AppModal.open({
-        title: 'Posible alumno duplicado',
-        size: 'md',
-        saveText: 'Crear de todas formas',
-        cancelText: 'Revisar duplicados',
-        body: `
-          <div class="alert alert-warning py-2 small d-flex gap-2 align-items-start mb-3">
-            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-            <div>
-              El alumno ingresado coincide en un <strong>${pct}%</strong> con
-              <strong>${escapeHTML(nombreExistente)}</strong>. ¿Es realmente un alumno nuevo?
-            </div>
-          </div>
-          <p class="text-muted small mb-0">
-            Si prefieres no crearlo, pulsa "Revisar duplicados" y usa la herramienta de
-            duplicados para revisar o fusionar el registro existente.
-          </p>
-        `,
-        onCancel: () => resolve(false),
-        onSave: async () => {
-          try {
-            const nuevo = await crearAlumno(data)
-            nuevo._completitud = calcularCompletitud(nuevo)
-            state.alumnosOriginales.push(nuevo)
-            applyFilters()
-            AppToast.success('Alumno creado exitosamente')
-            resolve(true)
-            return true
-          } catch (err) {
-            console.error(err)
-            AppToast.error(err.message || 'Error al crear el alumno')
-            resolve(false)
-            return false
-          }
-        },
-      })
-    })
-  }
-
   function openEditModal(id) {
     const capturedId = id
-    const alumno = state.alumnosOriginales.find(a => a.id === capturedId)
+    const alumno = state.alumnosOriginales.find(a => String(a.id) === String(capturedId))
     if (!alumno) {
       AppToast.error('Alumno no encontrado')
       return
@@ -814,7 +794,7 @@ export async function renderAlumnosView(container) {
 
         try {
           const guardado = await actualizarAlumno(capturedId, validation.data)
-          const idx = state.alumnosOriginales.findIndex(a => a.id === capturedId)
+          const idx = state.alumnosOriginales.findIndex(a => String(a.id) === String(capturedId))
           if (idx !== -1) {
             const updatedAlumno = { ...state.alumnosOriginales[idx], ...guardado }
             updatedAlumno._completitud = calcularCompletitud(updatedAlumno)
@@ -1208,7 +1188,7 @@ export async function renderAlumnosView(container) {
 
   function openDeleteModal(id) {
     const capturedId = id
-    const alumno = state.alumnosOriginales.find(a => a.id === capturedId)
+    const alumno = state.alumnosOriginales.find(a => String(a.id) === String(capturedId))
     if (!alumno) {
       AppToast.error('Alumno no encontrado')
       return
@@ -1218,7 +1198,9 @@ export async function renderAlumnosView(container) {
       alumnoId: capturedId,
       alumnoNombre: alumno.nombre || alumno.nombre_completo || 'Alumno',
       onDeleted: () => {
-        state.alumnosOriginales = state.alumnosOriginales.filter(a => a.id !== capturedId)
+        state.alumnosOriginales = state.alumnosOriginales.filter(a => String(a.id) !== String(capturedId))
+        container.querySelector('#btnIrInactivos').closest('details').open = true
+        container.querySelector('#btnIrInactivos').focus()
         applyFilters()
       }
     })
@@ -1236,7 +1218,7 @@ export async function renderAlumnosView(container) {
 
     const emptyContainer = currentContainer.querySelector('#emptyContainer')
     if (emptyContainer) {
-      emptyContainer.innerHTML = state.alumnos.length === 0 ? renderEmpty() : ''
+      emptyContainer.innerHTML = state.alumnos.length === 0 ? renderEmpty(!state.alumnosOriginales.length) : ''
     }
 
     const countEl = currentContainer.querySelector('.alumnos-header-premium p.text-muted')

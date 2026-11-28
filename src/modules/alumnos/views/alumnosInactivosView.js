@@ -1,3 +1,4 @@
+import { coincideAlumno } from '../domain/busquedaDirectorio.js'
 import '../styles/alumnos.css'
 import { renderPageHeader, renderFilterPanel } from '../../../shared/components/pageShell.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
@@ -37,7 +38,7 @@ function renderEmpty() {
   `
 }
 
-export async function renderAlumnosInactivosView(container) {
+export async function renderAlumnosInactivosView(container, params = {}) {
   const abortController = new AbortController()
   const state = {
     alumnos: [],
@@ -57,6 +58,7 @@ export async function renderAlumnosInactivosView(container) {
     state.cargando = false
 
     renderContent(container)
+    container.querySelector('#buscarInactivos').value = params.consulta || ''
     attachEvents(container)
     applyFilters()
   } catch (error) {
@@ -72,7 +74,7 @@ export async function renderAlumnosInactivosView(container) {
         </div>
       </div>
     `
-    container.querySelector('#btnRetryInactivos')?.addEventListener('click', () => renderAlumnosInactivosView(container))
+    container.querySelector('#btnRetryInactivos')?.addEventListener('click', () => renderAlumnosInactivosView(container, params))
   }
 
   return {
@@ -272,21 +274,8 @@ export async function renderAlumnosInactivosView(container) {
     const filtroInstrumento = container.querySelector('#filtroInstrumentoInactivos')?.value || 'todos'
 
     state.alumnos = state.alumnosOriginales.filter(a => {
-      const nombre = a.nombre || a.nombre_completo || ''
+      const matchSearch = coincideAlumno(searchTerm, a)
       const inst = a.instrumento || a.instrumento_principal || ''
-      const tel = a.telefono || a.familiar_telefono || ''
-      const rep = a.familiar_nombre || ''
-      const email = a.email || a.correo_representante || ''
-      const ced = a.cedula || a.representante_cedula || ''
-
-      const matchSearch = !searchTerm ||
-        nombre.toLowerCase().includes(searchTerm) ||
-        inst.toLowerCase().includes(searchTerm) ||
-        tel.toLowerCase().includes(searchTerm) ||
-        rep.toLowerCase().includes(searchTerm) ||
-        email.toLowerCase().includes(searchTerm) ||
-        ced.toLowerCase().includes(searchTerm)
-
       const tieneInstrumento = !!inst && inst !== 'Sin instrumento'
       const matchInstrumento = filtroInstrumento === 'todos' ||
         (filtroInstrumento === 'con_instrumento' && tieneInstrumento) ||

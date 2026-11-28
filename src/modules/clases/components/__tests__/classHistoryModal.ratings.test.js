@@ -1,4 +1,5 @@
 import { it, expect, vi } from 'vitest'
+import { defaultClassHistoryRange } from '../../../asistencias/services/classHistoryService.js'
 const mocks = vi.hoisted(() => ({ pdf: vi.fn(), open: vi.fn() }))
 vi.mock('../../../../shared/components/AppModal.js', () => ({ AppModal: { open: mocks.open } }))
 vi.mock('../../../../shared/components/AppToast.js', () => ({ AppToast: { progress: () => ({ success() {}, error() {} }), error: vi.fn(), info: vi.fn() } }))
@@ -10,7 +11,7 @@ vi.mock('../../../asistencias/api/asistenciasApi.js', () => ({
     { alumnoId: 's2', estado: 'presente', valoracion: null },
     { alumnoId: 's3', estado: 'ausente', valoracion: 5 },
   ] }),
-  getReporteConsolidado: async () => ({ timelineByDate: [{ fecha: new Date().toISOString().slice(0, 10), clases: [{
+  getReporteConsolidado: async () => ({ timelineByDate: [{ fecha: defaultClassHistoryRange().to, clases: [{
     clase_id: 'c', sesion_clase_id: 'ses', maestro_nombre: 'Omar', observacion_sesion: 'Escalas',
     asistencias: [{ alumno_id: 's1', estado: 'presente' }, { alumno_id: 's2', estado: 'presente' }, { alumno_id: 's3', estado: 'ausente' }] }] }] }),
 }))

@@ -1,10 +1,11 @@
-import { 
-  getImportEntities, 
-  parseCSV, 
+import {
+  getImportEntities,
+  parseCSV,
   parseJSON,
   previewImport,
-  importData 
+  importData
 } from '../components/importData.js'
+import { createTextElement, setStatusMessage } from '../../../shared/utils/safeDom.js'
 
 let selectedEntity = null
 
@@ -315,7 +316,7 @@ export async function renderImportView(container) {
     const entity = entities[selectedEntity]
     editorCard.style.display = 'block'
     dataTextarea.value = ''
-    parseStatus.innerHTML = ''
+    parseStatus.replaceChildren()
     previewCard.style.display = 'none'
     executeImportBtn.disabled = true
     dataTextarea.focus()
@@ -324,31 +325,31 @@ export async function renderImportView(container) {
   // Auto-detectar formato
   dataTextarea.addEventListener('input', () => {
     const content = dataTextarea.value.trim()
-    parseStatus.innerHTML = ''
+    parseStatus.replaceChildren()
     executeImportBtn.disabled = true
-    
+
     if (!content) return
-    
+
     // Detectar si es JSON o CSV
     const isJSON = (content.startsWith('[') || content.startsWith('{')) && content.includes(':')
-    
+
     if (isJSON) {
       try {
         parsedData = parseJSON(content)
         if (parsedData.error) {
-          parseStatus.innerHTML = `<span class="text-danger">❌ ${parsedData.error}</span>`
+          setStatusMessage(parseStatus, 'text-danger', `❌ ${parsedData.error}`)
         } else {
-          parseStatus.innerHTML = `<span class="text-success">✓ JSON válido - ${parsedData.data.length} registros detectados</span>`
+          setStatusMessage(parseStatus, 'text-success', `✓ JSON válido - ${parsedData.data.length} registros detectados`)
         }
       } catch (e) {
-        parseStatus.innerHTML = `<span class="text-danger">❌ Error: ${e.message}</span>`
+        setStatusMessage(parseStatus, 'text-danger', `❌ Error: ${e.message}`)
       }
     } else {
       parsedData = parseCSV(content)
       if (parsedData.error) {
-        parseStatus.innerHTML = `<span class="text-danger">❌ ${parsedData.error}</span>`
+        setStatusMessage(parseStatus, 'text-danger', `❌ ${parsedData.error}`)
       } else {
-        parseStatus.innerHTML = `<span class="text-success">✓ CSV válido - ${parsedData.data.length} registros detectados</span>`
+        setStatusMessage(parseStatus, 'text-success', `✓ CSV válido - ${parsedData.data.length} registros detectados`)
       }
     }
   })
@@ -356,7 +357,7 @@ export async function renderImportView(container) {
   // Previsualizar
   previewBtn.addEventListener('click', async () => {
     if (!parsedData || parsedData.error || !parsedData.data) {
-      parseStatus.innerHTML = '<span class="text-danger">❌ No hay datos válidos</span>'
+      setStatusMessage(parseStatus, 'text-danger', '❌ No hay datos válidos')
       return
     }
     
@@ -390,25 +391,18 @@ export async function renderImportView(container) {
         `
       } else {
         header.className = 'card-header bg-warning bg-opacity-10'
-        content.innerHTML = `
-          <div class="alert alert-warning mb-0">
-            <h5>⚠️ Importación con errores</h5>
-            <p><strong>${results.success} exitosos</strong> - <strong>${results.errors.length} errores</strong></p>
-            <hr>
-            <small><strong>Errores:</strong><br>${results.errors.slice(0, 5).map(e => `• Fila ${e.row}: ${e.error}`).join('<br>')}</small>
-          </div>
-        `
+        content.replaceChildren(renderImportErrors(results))
       }
-      
+
       // Reset
       dataTextarea.value = ''
-      parseStatus.innerHTML = ''
+      parseStatus.replaceChildren()
       previewCard.style.display = 'none'
       executeImportBtn.disabled = true
       executeImportBtn.innerHTML = '<i class="bi bi-cloud-upload me-1"></i> Importar'
       
     } catch (err) {
-      parseStatus.innerHTML = `<span class="text-danger">❌ Error: ${err.message}</span>`
+      setStatusMessage(parseStatus, 'text-danger', `❌ Error: ${err.message}`)
       executeImportBtn.disabled = false
       executeImportBtn.innerHTML = '<i class="bi bi-cloud-upload me-1"></i> Importar'
     }
@@ -422,17 +416,44 @@ export async function renderImportView(container) {
     const issuesDiv = document.getElementById('preview-issues')
     
     const headers = Object.keys(previewData[0].data)
-    thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>'
-    
-    tbody.innerHTML = previewData.map(row => 
-      '<tr>' + headers.map(h => `<td>${row.data[h] ?? ''}</td>`).join('') + '</tr>'
-    ).join('')
-    
+    const headerRow = document.createElement('tr')
+    for (const header of headers) headerRow.appendChild(createTextElement('th', header))
+    thead.replaceChildren(headerRow)
+
+    tbody.replaceChildren(...previewData.map((row) => {
+      const tr = document.createElement('tr')
+      for (const header of headers) {
+        tr.appendChild(createTextElement('td', String(row.data[header] ?? '')))
+      }
+      return tr
+    }))
+
     const allIssues = previewData.flatMap(r => r.issues)
     if (allIssues.length > 0) {
-      issuesDiv.innerHTML = `<span class="text-warning">⚠️ ${allIssues.length} advertencias</span>`
+      setStatusMessage(issuesDiv, 'text-warning', `⚠️ ${allIssues.length} advertencias`)
     } else {
-      issuesDiv.innerHTML = `<span class="text-success">✓ Todo看起来 bien - listo para importar</span>`
+      setStatusMessage(issuesDiv, 'text-success', '✓ Todo se ve bien - listo para importar')
     }
+  }
+
+  function renderImportErrors(results) {
+    const alert = createTextElement('div', '', 'alert alert-warning mb-0')
+    alert.appendChild(createTextElement('h5', '⚠️ Importación con errores'))
+
+    const summary = document.createElement('p')
+    summary.appendChild(createTextElement('strong', `${results.success} exitosos`))
+    summary.appendChild(document.createTextNode(' - '))
+    summary.appendChild(createTextElement('strong', `${results.errors.length} errores`))
+    alert.appendChild(summary)
+
+    alert.appendChild(document.createElement('hr'))
+    const list = document.createElement('small')
+    list.appendChild(createTextElement('strong', 'Errores:'))
+    for (const error of results.errors.slice(0, 5)) {
+      list.appendChild(document.createElement('br'))
+      list.appendChild(document.createTextNode(`• Fila ${error.row}: ${error.error}`))
+    }
+    alert.appendChild(list)
+    return alert
   }
 }

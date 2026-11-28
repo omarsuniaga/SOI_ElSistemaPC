@@ -46,6 +46,7 @@ import { registrarAsistenciaBulk, getValoracionesSesion, guardarValoracionesSesi
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { reviewLessonObservation } from '../services/lessonReviewService.js'
 import { createLessonReviewPanel } from '../components/LessonReviewPanel.js'
+import { createBitacoraPanel } from '../components/attendance/BitacoraPanel.js'
 import { isLessonPresent, attendanceSignature } from '../utils/lessonReview.js'
 import { linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
 
@@ -1801,6 +1802,15 @@ function _renderVista(container, ctx) {
   })
   _cleanups.push(() => contentSaver.destroy())
 
+  // Panel de registros en vivo (solo lectura). Declarado antes del editor: su
+  // `onChange` inicial puede dispararse durante el montaje.
+  let bitacoraPanel = null
+  let bitacoraTimer = null
+  const _scheduleBitacora = (value) => {
+    clearTimeout(bitacoraTimer)
+    bitacoraTimer = setTimeout(() => bitacoraPanel?.update(value), 250)
+  }
+
   const dslSection = createDslSection(container, {
     initialContent: dslContent,
     claseId,
@@ -1810,6 +1820,7 @@ function _renderVista(container, ctx) {
       // (IA, estructura, borrador recuperado): el autosaver ignora lo que ya
       // está persistido y no crea sesiones vacías.
       contentSaver.change(value)
+      _scheduleBitacora(value)
     },
   })
   const editor = dslSection.getEditor()
@@ -1848,6 +1859,12 @@ function _renderVista(container, ctx) {
     getAlumnos: () => alumnos,
     getPresentes: () => alumnos.filter(a => isLessonPresent(estado[a.id])),
   })
+  bitacoraPanel = createBitacoraPanel(editorContainer.parentNode, {
+    getAlumnos: () => alumnos,
+    getEstado: () => estado,
+  })
+  _cleanups.push(() => { clearTimeout(bitacoraTimer); bitacoraPanel?.destroy(); bitacoraPanel = null })
+  bitacoraPanel.update(editor.getValue())
   const lessonReview = createLessonReviewPanel(editorContainer.parentNode, {
     getAlumnos: () => alumnos,
     getEstado: () => estado,
@@ -2701,6 +2718,7 @@ function _renderVista(container, ctx) {
   // === Sync & Helpers ===
   function _updateProgress() {
     const counts = _getAttendanceCounts()
+    if (bitacoraPanel) _scheduleBitacora(editor.getValue())
     if (headerComp?.updateCounts) {
       headerComp.updateCounts(counts)
     }

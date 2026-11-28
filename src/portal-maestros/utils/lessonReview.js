@@ -1,3 +1,5 @@
+import { findMentionGroups, isPresentState, studentName } from '../../shared/utils/bitacoraParser.js'
+
 /** Revisión de clase: propuestas de texto y destinatarios; nunca inventa notas. */
 export const LESSON_KINDS = {
   contenido: { label: 'Contenido trabajado', open: '[', close: ']' },
@@ -6,16 +8,9 @@ export const LESSON_KINDS = {
   observacion: { label: 'Desempeño observado', open: '', close: '' },
 }
 
-export const isLessonPresent = state => ['P', 'T', 'presente', 'tarde', 'tardanza'].includes(state)
-export const lessonName = student => student.nombre_completo || student.nombre || student.name || ''
+export const isLessonPresent = isPresentState
+export const lessonName = studentName
 const normalize = text => String(text).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
-
-// Plegado carácter a carácter: conserva la longitud para mapear posiciones al original.
-const fold = text => Array.from(text, ch => {
-  const folded = ch.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-  return folded.length === 1 ? folded : ch
-}).join('')
-const CONNECTOR = /^\s*(?:,|;|&|\/|y|e)?\s*$/
 const hasLetters = text => /[\p{L}\p{N}]/u.test(text)
 
 /**
@@ -24,34 +19,9 @@ const hasLetters = text => /[\p{L}\p{N}]/u.test(text)
  * Devuelve null si no se puede resolver ninguna mención.
  */
 export function splitByMentions(original, roster = []) {
-  const folded = fold(original)
-  const names = new Map()
-  for (const student of roster) {
-    const key = fold(lessonName(student)).trim()
-    if (key) names.set(key, names.has(key) ? null : student.id)
-  }
-  names.set('todos', 'todos')
-  const keys = [...names.keys()].sort((a, b) => b.length - a.length)
-
-  const mentions = []
-  for (let i = 0; i < folded.length; i++) {
-    if (folded[i] !== '#') continue
-    const key = keys.find(name => folded.startsWith(name, i + 1) && !/[\p{L}\p{N}]/u.test(folded[i + 1 + name.length] || ''))
-    if (!key || names.get(key) === null) continue
-    mentions.push({ start: i, end: i + 1 + key.length, id: names.get(key) })
-    i += key.length
-  }
-  if (!mentions.length) return null
-
-  // "#Ana y #Luis hicieron…" es un solo mensaje con dos destinatarios.
-  const groups = []
-  for (const mention of mentions) {
-    const last = groups.at(-1)
-    if (last && CONNECTOR.test(folded.slice(last.end, mention.start))) {
-      last.end = mention.end
-      last.ids.push(mention.id)
-    } else groups.push({ start: mention.start, end: mention.end, ids: [mention.id] })
-  }
+  // Resolución de menciones compartida con el intérprete de la bitácora (src/shared).
+  const { groups } = findMentionGroups(original, roster)
+  if (!groups.length) return null
 
   const blocks = []
   const leading = original.slice(0, groups[0].start).trim()

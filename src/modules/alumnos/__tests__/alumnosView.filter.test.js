@@ -79,51 +79,21 @@ describe('C02 — search includes email and cedula', () => {
     vi.clearAllMocks()
   })
 
-  it('finds alumno by email partial match', async () => {
-    const { renderAlumnosView } = await import('../views/alumnosView.js')
-
-    const container = buildContainer()
-    document.body.appendChild(container)
-    await renderAlumnosView(container)
-
-    // The rendered HTML should contain Juan's email reference or the alumno card
-    // We verify the filter logic by checking the source code includes email in its filter
-    // (structural test — the full-DOM filter test requires more integration)
-    const fs = await import('fs')
-    const path = await import('path')
-    const { fileURLToPath } = await import('url')
-    const { dirname } = await import('path')
-
-    const thisFile = fileURLToPath(import.meta.url)
-    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
-    const source = fs.readFileSync(viewPath, 'utf8')
-
-    // After GREEN: the applyFilters function must include email and cedula
-    expect(source).toMatch(/a\.email.*toLowerCase.*includes\(searchTerm\)|toLowerCase.*a\.email.*includes/)
-    expect(source).toMatch(/a\.cedula.*includes\(|cedula.*toLowerCase.*includes\(searchTerm\)/)
-
-    document.body.removeChild(container)
-  })
-
-  it('applyFilters source includes email and cedula in text search', async () => {
-    const fs = await import('fs')
-    const path = await import('path')
-    const { fileURLToPath } = await import('url')
-    const { dirname } = await import('path')
-
-    const thisFile = fileURLToPath(import.meta.url)
-    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
-    const source = fs.readFileSync(viewPath, 'utf8')
-
-    // The applyFilters block must contain email and cedula search terms
-    // Extract the applyFilters function body heuristically
-    const applyFiltersIdx = source.indexOf('function applyFilters')
-    expect(applyFiltersIdx).toBeGreaterThan(-1)
-
-    const applyFiltersBody = source.slice(applyFiltersIdx, applyFiltersIdx + 2000)
-    expect(applyFiltersBody).toMatch(/email/)
-    expect(applyFiltersBody).toMatch(/cedula/)
-  })
+  it.each([['juan@test', '1'], ['00298765431', '2'], ['maria lopez', '2'], ['(809) 123-4567', '1']])(
+    'identifica al alumno al buscar %s y conserva la selección al volver', async (query, id) => {
+      const { renderAlumnosView } = await import('../views/alumnosView.js')
+      const container = buildContainer()
+      await renderAlumnosView(container)
+      const input = container.querySelector('#buscar')
+      input.value = query
+      input.dispatchEvent(new Event('input'))
+      const cards = [...container.querySelectorAll('.list-group-item[data-id]')]
+      expect(cards.map(card => card.dataset.id)).toEqual([id])
+      cards[0].querySelector('[data-select-student]').click()
+      await renderAlumnosView(container)
+      expect(container.querySelector('#buscar').value).toBe(query)
+      expect(container.querySelector('#expediente-seleccionado').hidden).toBe(false)
+    })
 })
 
 describe('D02 — memoized calcularCompletitud', () => {

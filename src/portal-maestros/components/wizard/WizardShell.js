@@ -164,6 +164,10 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
         fecha_aceptacion_compromisos: new Date().toISOString(),
       })
 
+      if (alumnoGuardado === null) {
+        if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Finalizar' }
+        return
+      }
       const postulanteId = state.draft._postulante_id
       if (postulanteId && alumnoGuardado?.id) {
         try {

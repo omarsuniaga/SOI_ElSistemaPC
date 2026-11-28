@@ -1,4 +1,7 @@
+import { coincideBusqueda } from '../../domain/busquedaDirectorio.js'
+import { escapeHTML } from '../../utils/alumnosUtils.js'
 import {
+  listarPostulantes,
   listarPostulantesPorMes,
   listarPostulantesPorRango,
   sincronizarPostulantes,
@@ -144,7 +147,9 @@ function formatearNumero(n) {
   return n
 }
 
-export async function renderPostuladosView(container) {
+export async function renderPostuladosView(container, params = {}) {
+  state.desdeDirectorio = params.consulta !== undefined
+  state.searchQuery = params.consulta || ''
   state.filtroEstado = 'todos'
   state.page = 1 // Reset de página al recargar
   await cargarDatos(container)
@@ -155,9 +160,9 @@ async function cargarDatos(container) {
     state.cargando = true
     renderSkeleton(container)
 
-    const todos = await listarPostulantesPorMes(state.year, state.month)
+    const todos = await (state.desdeDirectorio ? listarPostulantes() : listarPostulantesPorMes(state.year, state.month))
     // Solo postulantes con al menos un número de WhatsApp contactable
-    state.postulantes = todos.filter((p) => resolverTelefonoPrincipal(p) !== null)
+    state.postulantes = todos.filter((p) => state.desdeDirectorio || resolverTelefonoPrincipal(p) !== null)
     const hiddenCount = todos.length - state.postulantes.length
     state.hiddenCount = hiddenCount
     state.cargando = false
@@ -206,7 +211,7 @@ function renderError(container, message) {
 
   document
     .getElementById('btn-error-retry')
-    ?.addEventListener('click', () => renderPostuladosView(container))
+    ?.addEventListener('click', () => cargarDatos(container))
 }
 
 function renderPipelineGraphic(counts, total) {
@@ -268,7 +273,7 @@ function renderContent(container) {
         </div>
         
         <div class="d-flex align-items-center gap-4">
-          <div class="d-flex align-items-center">
+${state.desdeDirectorio ? '<button class="btn btn-outline-secondary" id="volver-directorio">Volver al directorio</button><span>Todos los meses</span>' : `          <div class="d-flex align-items-center">
             <button class="btn btn-link text-body-secondary p-1 text-decoration-none" id="btn-month-prev">
               <i class="bi bi-chevron-left"></i>
             </button>
@@ -278,7 +283,7 @@ function renderContent(container) {
             <button class="btn btn-link text-body-secondary p-1 text-decoration-none" id="btn-month-next">
               <i class="bi bi-chevron-right"></i>
             </button>
-          </div>
+          </div>`}
           
           <button class="btn btn-link text-decoration-none text-primary fw-medium p-0" id="btn-sync">
             <span class="spinner-border spinner-border-sm d-none me-1" id="sync-spinner"></span>
@@ -315,7 +320,7 @@ function renderContent(container) {
 
       <!-- C05: SEARCH INPUT -->
       <div class="mb-3">
-        <input type="search" id="buscar-postulante" class="form-control form-control-sm" placeholder="Buscar por nombre, teléfono o municipio..." value="${state.searchQuery || ''}">
+        <input type="search" id="buscar-postulante" class="form-control form-control-sm" placeholder="Buscar por nombre, teléfono o municipio..." value="${escapeHTML(state.searchQuery || '')}">
       </div>
 
       <!-- MINIMALIST TABS -->
@@ -375,11 +380,8 @@ function getFilteredPostulantes() {
   // C05: apply text search
   const q = (state.searchQuery || '').toLowerCase().trim()
   if (q) {
-    list = list.filter(p =>
-      (resolverNombre(p) || '').toLowerCase().includes(q) ||
-      (resolverTelefonoPrincipal(p) || '').includes(q) ||
-      (p.municipio || '').toLowerCase().includes(q)
-    )
+    list = list.filter(p => coincideBusqueda(q, [resolverNombre(p), resolverTelefonoPrincipal(p), p.municipio,
+      p.madre_nombre, p.padre_nombre, p.representante_nombre, p.representante_cedula, p.cedula, p.correo_representante, ...resolverTelefonos(p).map(t => t.numero)]))
   }
 
   return list
@@ -415,10 +417,10 @@ function renderTable(list) {
           const digits = numero.replace(/\D/g, '')
           const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent('Hola, le contactamos de El Sistema Punta Cana.')}`
           const etiqueta = nombre ? `${nombre} (${rol})` : rol
-          return `<a href="${waUrl}" target="_blank" rel="noopener" class="d-flex align-items-center gap-2 text-decoration-none text-body mb-1" title="${etiqueta}">
+          return `<a href="${waUrl}" target="_blank" rel="noopener" class="d-flex align-items-center gap-2 text-decoration-none text-body mb-1" title="${escapeHTML(etiqueta)}">
         <i class="bi bi-whatsapp text-success small"></i>
         <span class="small">${formatearNumero(numero)}</span>
-        <span class="text-body-secondary small fw-light">· ${etiqueta}</span>
+        <span class="text-body-secondary small fw-light">· ${escapeHTML(etiqueta)}</span>
       </a>`
         })
         .join('')
@@ -435,9 +437,9 @@ function renderTable(list) {
       const estadoLabel = ESTADO_LABELS[p.estado || 'postulado']
 
       return `
-      <tr class="cursor-pointer" data-id="${p.id}">
+      <tr class="cursor-pointer" data-id="${escapeHTML(p.id)}">
         <td class="py-3">
-          <div class="fw-medium text-body">${resolverNombre(p)}</div>
+          <div class="fw-medium text-body">${escapeHTML(resolverNombre(p))}</div>
           ${
             estadoLabel
               ? `
@@ -454,7 +456,7 @@ function renderTable(list) {
         </td>
         <td class="text-body-secondary small py-3 align-middle">${dateStr}</td>
         <td class="text-end pe-2 py-3 align-middle">
-          <button class="btn btn-link text-body-secondary p-0 hover-danger btn-delete-postulante" data-id="${p.id}" data-name="${resolverNombre(p)}" title="Eliminar">
+          <button class="btn btn-link text-body-secondary p-0 hover-danger btn-delete-postulante" data-id="${escapeHTML(p.id)}" data-name="${escapeHTML(resolverNombre(p))}" title="Eliminar">
             <i class="bi bi-x-lg"></i>
           </button>
         </td>
@@ -485,10 +487,10 @@ function renderTable(list) {
       const estadoLabel = ESTADO_LABELS[p.estado || 'postulado']
 
       return `
-      <div class="border-bottom border-secondary-subtle py-3 cursor-pointer" data-id="${p.id}">
+      <div class="border-bottom border-secondary-subtle py-3 cursor-pointer" data-id="${escapeHTML(p.id)}">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
-            <div class="fw-semibold text-body fs-6">${resolverNombre(p)}</div>
+            <div class="fw-semibold text-body fs-6">${escapeHTML(resolverNombre(p))}</div>
             ${
               estadoLabel
                 ? `
@@ -540,6 +542,7 @@ function renderTable(list) {
 }
 
 function attachEvents(container) {
+  container.querySelector('#volver-directorio')?.addEventListener('click', () => router.navigate('alumnos'))
   // Prevenir propagación de eventos en los links de WhatsApp para no gatillar la navegación al perfil
   container.querySelectorAll('.btn-wa-link').forEach((el) => {
     el.addEventListener('click', (e) => {
@@ -550,8 +553,12 @@ function attachEvents(container) {
   // C05: Search input — filter postulantes by name, phone, or municipio
   container.querySelector('#buscar-postulante')?.addEventListener('input', (e) => {
     state.searchQuery = e.target.value
+    const caret = e.target.selectionStart
     state.page = 1
     renderContent(container)
+    const input = container.querySelector('#buscar-postulante')
+    input.focus()
+    input.setSelectionRange(caret, caret)
   })
 
   // Selector de mes ← — scoped to container

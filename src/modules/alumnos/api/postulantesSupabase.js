@@ -60,17 +60,15 @@ export async function sincronizarPostulantes() {
 }
 
 export async function listarPostulantes() {
-  const { data, error } = await supabase
-    .from('postulantes')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('[postulantesSupabase] Error listing:', error)
-    throw error
+  const rows = []
+  const size = 500
+  for (let from = 0; ; from += size) {
+    const { data, error } = await supabase.from('postulantes').select('*')
+      .order('created_at', { ascending: false }).order('id').range(from, from + size - 1)
+    if (error) throw error
+    rows.push(...(data || []))
+    if (!data || data.length < size) return rows
   }
-
-  return data ?? []
 }
 
 /**

@@ -1,3 +1,4 @@
+import { confirmarAltaIndividual } from '../../modules/alumnos/api/coincidenciasAlta.js'
 /**
  * wizardInscripcionAlumnoView — Wizard de inscripción de alumnos, 7 pasos.
  */
@@ -49,6 +50,7 @@ export async function renderWizardInscripcionAlumnoView(container) {
   })
 
   async function handleSubmit(draft) {
+    if (!await confirmarAltaIndividual(draft)) return null
     const alumno = await crearAlumno(draft)
     return alumno
   }

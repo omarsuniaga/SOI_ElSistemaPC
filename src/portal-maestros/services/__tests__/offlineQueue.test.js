@@ -165,6 +165,22 @@ describe('offlineQueue', () => {
     })
   })
 
+  describe('upsert offline', () => {
+    it('stores the conflict key with the item', async () => {
+      await enqueue({ tabla: 'asistencias', operacion: 'upsert', onConflict: 'clase_id,alumno_id,fecha', payload: {} })
+      expect((await getQueue())[0].onConflict).toBe('clase_id,alumno_id,fecha')
+    })
+
+    it('never discards an item rejected as permanent (unsupported operation)', async () => {
+      await enqueue({ tabla: 't1', operacion: 'merge', payload: { a: 1 } })
+      const permanent = Object.assign(new Error('unsupported'), { permanent: true })
+      for (let i = 0; i < 8; i++) await processQueue(vi.fn().mockRejectedValue(permanent))
+      const queue = await getQueue()
+      expect(queue).toHaveLength(1)
+      expect(queue[0]).toMatchObject({ fallido: true, payload: { a: 1 } })
+    })
+  })
+
   describe('processQueue', () => {
     it('should call syncFn for each item in order', async () => {
       await enqueue({ tabla: 't1', operacion: 'insert', payload: { id: 1 } })

@@ -28,14 +28,17 @@ async function getDB() {
  * `preservar: true` marca datos del usuario que no deben descartarse jamás
  * (p. ej. el texto de una clase): tras agotar los reintentos quedan en la cola
  * con `fallido: true` y se siguen reintentando en cada sincronización.
- * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object, preservar?: boolean }} item
+ * `onConflict` acompaña a los `upsert` para que la sincronización use la misma
+ * clave única que la escritura online.
+ * @param {{ tabla: string, operacion: 'insert'|'update'|'delete'|'upsert', payload: object, onConflict?: string, preservar?: boolean }} item
  */
-export async function enqueue({ tabla, operacion, payload, preservar = false }) {
+export async function enqueue({ tabla, operacion, payload, onConflict, preservar = false }) {
   const db = await getDB()
   await db.add(STORE_NAME, {
     tabla,
     operacion,
     payload,
+    ...(onConflict ? { onConflict } : {}),
     ...(preservar ? { preservar: true } : {}),
     intentos: 0,
     created_at: new Date().toISOString(),
@@ -82,7 +85,8 @@ export async function clearQueue() {
 /**
  * Procesa la cola: intenta sincronizar cada item con Supabase.
  * Llama a `syncFn` por cada item. Si tiene éxito, lo elimina.
- * Si falla, incrementa intentos (máximo 5 reintentos).
+ * Si falla, incrementa intentos (máximo 5 reintentos). Un error `permanent`
+ * (operación no soportada) nunca descarta el ítem: queda `fallido` en la cola.
  * @param {(item: object) => Promise<void>} syncFn
  */
 export async function processQueue(syncFn) {
@@ -94,7 +98,7 @@ export async function processQueue(syncFn) {
     } catch (_err) {
       const db = await getDB()
       const MAX_INTENTOS = 5
-      if (item.preservar) {
+      if (item.preservar || _err?.permanent) {
         await db.put(STORE_NAME, {
           ...item,
           intentos: item.intentos + 1,

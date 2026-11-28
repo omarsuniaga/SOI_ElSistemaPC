@@ -17,21 +17,31 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   let requesting = false
   let permissionStatus = null
 
+  // En una PWA instalada el teléfono a veces nunca responde al permiso: sin límite el botón quedaba
+  // muerto para siempre (requesting seguía en true y cada toque salía sin avisar).
+  const PERMISSION_TIMEOUT_MS = 12000
+
   // Pide el permiso del micrófono al sistema (en una PWA instalada lo recuerda el teléfono).
   // Solo abre y cierra el stream: el reconocimiento de voz usa su propia captura.
+  // Devuelve 'granted', 'denied' o 'timeout'.
   async function requestMic() {
-    if (!navigator.mediaDevices?.getUserMedia) return true
-    if (requesting) return false
+    if (!navigator.mediaDevices?.getUserMedia) return 'granted'
     requesting = true
+    let timer
+    const probe = navigator.mediaDevices.getUserMedia({ audio: true }).then(
+      (stream) => {
+        stream.getTracks().forEach(track => track.stop())
+        return 'granted'
+      },
+      () => 'denied',
+    )
+    const timeout = new Promise((resolve) => { timer = setTimeout(() => resolve('timeout'), PERMISSION_TIMEOUT_MS) })
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach(track => track.stop())
-      permission = 'granted'
-      return true
-    } catch {
-      permission = 'denied'
-      return false
+      const outcome = await Promise.race([probe, timeout])
+      if (outcome !== 'timeout') permission = outcome
+      return outcome
     } finally {
+      clearTimeout(timer)
       requesting = false
     }
   }
@@ -47,8 +57,12 @@ export function createObservationDictation(button, status, { onInsert, getEditor
   }
 
   // Primer toque en la vista: si aún no se decidió, pedir el permiso por adelantado.
-  function preRequestOnFirstGesture() {
-    if (permission !== 'prompt') return
+  // Un toque sobre el propio micrófono se ignora: su `click` ya pide el permiso, y adelantarse
+  // aquí hacía que ese `click` encontrara la petición en curso y no hiciera nada.
+  function preRequestOnFirstGesture(event) {
+    if (button.contains(event.target)) return
+    document.removeEventListener('pointerdown', preRequestOnFirstGesture)
+    if (permission !== 'prompt' || requesting) return
     requestMic()
   }
 
@@ -97,7 +111,10 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       return
     }
 
-    if (requesting) return
+    if (requesting) {
+      show('Esperando tu respuesta al permiso del micrófono…')
+      return
+    }
     stopRequested = false
     fastFailures = 0
     receivedText = false
@@ -110,9 +127,15 @@ export function createObservationDictation(button, status, { onInsert, getEditor
       return
     }
     show('Permite el micrófono cuando el teléfono te lo pregunte…')
-    requestMic().then((granted) => {
+    requestMic().then((outcome) => {
       if (disposed || phase !== 'starting' || recognition) return
-      if (!granted) {
+      if (outcome === 'timeout') {
+        phase = 'idle'
+        render()
+        show('No se recibió respuesta del permiso del micrófono. Revisa en Chrome: Ajustes del sitio → Micrófono → Permitir, y vuelve a intentarlo.')
+        return
+      }
+      if (outcome !== 'granted') {
         phase = 'idle'
         render()
         show('Permite el acceso al micrófono en tu navegador para dictar.')
@@ -209,7 +232,7 @@ export function createObservationDictation(button, status, { onInsert, getEditor
 
   button.addEventListener('click', toggle)
   watchPermission()
-  document.addEventListener('pointerdown', preRequestOnFirstGesture, { once: true })
+  document.addEventListener('pointerdown', preRequestOnFirstGesture)
   window.addEventListener('pagehide', suspend)
   document.addEventListener('visibilitychange', onVisibilityChange)
   render()

@@ -146,6 +146,64 @@ describe('Observation dictation', () => {
     expect(instances).toHaveLength(2)
   })
 
+  describe('first tap in an installed PWA (permission not decided yet)', () => {
+    let getUserMedia, resolveStream
+    const remount = () => {
+      controller.destroy()
+      controller = createObservationDictation(button, status, { onInsert, getEditorContent: () => '' })
+    }
+    beforeEach(async () => {
+      getUserMedia = vi.fn(() => new Promise((resolve) => { resolveStream = resolve }))
+      vi.stubGlobal('navigator', {
+        ...navigator,
+        mediaDevices: { getUserMedia },
+        permissions: { query: vi.fn().mockResolvedValue({ state: 'prompt', onchange: null }) },
+      })
+      remount()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const grant = () => resolveStream({ getTracks: () => [{ stop: vi.fn() }] })
+
+    it('does not swallow the first tap: the pointerdown that precedes the click must not start a second permission request', async () => {
+      button.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+      button.click()
+      expect(getUserMedia).toHaveBeenCalledTimes(1)
+      expect(status.textContent).toContain('Permite el micrófono')
+      grant()
+      await vi.waitFor(() => expect(instances).toHaveLength(1))
+      expect(instances[0].start).toHaveBeenCalledTimes(1)
+    })
+
+    it('still asks ahead of time when the first touch is elsewhere in the view', () => {
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+      expect(getUserMedia).toHaveBeenCalledTimes(1)
+    })
+
+    it('tells the user it is waiting instead of ignoring a tap while the permission is pending', () => {
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+      status.textContent = ''
+      button.click()
+      expect(status.textContent).toContain('permiso')
+      expect(getUserMedia).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not stay dead if the system never answers the permission request', async () => {
+      vi.useFakeTimers()
+      try {
+        button.click()
+        await vi.advanceTimersByTimeAsync(12000)
+        expect(status.textContent).toContain('No se recibió respuesta')
+        expect(button.disabled).toBe(false)
+        expect(button.getAttribute('aria-pressed')).toBe('false')
+        button.click()
+        expect(getUserMedia).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   it('explains the keyboard fallback if recognition is unavailable', () => {
     vi.stubGlobal('SpeechRecognition', undefined)
     vi.stubGlobal('webkitSpeechRecognition', undefined)

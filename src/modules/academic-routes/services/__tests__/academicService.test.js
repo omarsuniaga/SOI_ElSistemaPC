@@ -77,3 +77,54 @@ describe('academicService.processSessionClosure', () => {
     expect(academicService.recalculateNodeProgress).toHaveBeenCalledTimes(2)
   })
 })
+
+vi.mock('../../../../portal-maestros/services/offlineQueue.js', () => ({
+  enqueue: vi.fn(async () => {}),
+  getQueue: vi.fn(async () => []),
+}))
+
+describe('academicService progreso offline', () => {
+  beforeEach(async () => {
+    // Módulo fresco: el bloque anterior sustituye métodos del singleton compartido.
+    vi.resetModules()
+    Object.keys(tableData).forEach((key) => delete tableData[key])
+    const { enqueue } = await import('../../../../portal-maestros/services/offlineQueue.js')
+    enqueue.mockClear()
+  })
+
+  it('recalculateNodeProgress encola el upsert del nodo con preservar: true', async () => {
+    const { academicService } = await import('../academicService.js')
+    const { enqueue } = await import('../../../../portal-maestros/services/offlineQueue.js')
+
+    tableData.indicators = [{ id: 'i1', node_id: 'n1' }]
+    tableData.indicator_attempts = [{ student_id: 'st1', indicator_id: 'i1', status: 'approved' }]
+
+    await academicService.recalculateNodeProgress('st1', 'n1')
+
+    expect(enqueue).toHaveBeenCalledTimes(1)
+    expect(enqueue.mock.calls[0][0]).toMatchObject({
+      tabla: 'student_node_progress',
+      operacion: 'upsert',
+      preservar: true,
+      payload: { student_id: 'st1', node_id: 'n1', status: 'approved' },
+    })
+  })
+
+  it('checkLevelCompletion encola el upsert del nivel con preservar: true', async () => {
+    const { academicService } = await import('../academicService.js')
+    const { enqueue } = await import('../../../../portal-maestros/services/offlineQueue.js')
+
+    tableData.nodes = [{ id: 'n1', level_id: 'l1', title: 'Nodo 1', is_critical: true }]
+    tableData.student_node_progress = [{ student_id: 'st1', node_id: 'n1', status: 'approved' }]
+
+    await academicService.checkLevelCompletion('st1', 'l1')
+
+    expect(enqueue).toHaveBeenCalledTimes(1)
+    expect(enqueue.mock.calls[0][0]).toMatchObject({
+      tabla: 'student_level_progress',
+      operacion: 'upsert',
+      preservar: true,
+      payload: { student_id: 'st1', level_id: 'l1', status: 'approved' },
+    })
+  })
+})
